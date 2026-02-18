@@ -946,12 +946,10 @@ pub fn atomic_notify(
         .into());
     }
 
-    log::debug!(
-        "Atomic notify at offset {} with count {} (simplified implementation)",
-        offset,
-        count
-    );
-    Ok(0)
+    Err(WasmtimeError::Runtime {
+        message: "atomic_notify not yet implemented".to_string(),
+        backtrace: None,
+    })
 }
 
 /// Core function for atomic wait on 32-bit value

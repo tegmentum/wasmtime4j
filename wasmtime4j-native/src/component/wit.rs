@@ -40,26 +40,10 @@ impl WitParser {
     /// # Errors
     ///
     /// Returns `WasmtimeError::Compilation` if the WIT text is invalid or cannot be parsed.
-    pub fn parse_interface(&mut self, wit_text: &str) -> WasmtimeResult<InterfaceDefinition> {
-        if wit_text.is_empty() {
-            return Err(WasmtimeError::InvalidParameter {
-                message: "WIT text cannot be empty".to_string(),
-            });
-        }
-
-        // Basic WIT parsing - this is a simplified implementation
-        // A full implementation would use a proper WIT parser
-        let interface_name = self.extract_interface_name(wit_text)?;
-        let namespace = self.extract_namespace(wit_text);
-        let version = self.extract_version(wit_text);
-
-        Ok(InterfaceDefinition {
-            name: interface_name,
-            namespace,
-            version,
-            functions: Vec::new(), // Would be extracted from actual WIT parsing
-            types: Vec::new(),     // Would be extracted from actual WIT parsing
-            resources: Vec::new(), // Would be extracted from actual WIT parsing
+    pub fn parse_interface(&mut self, _wit_text: &str) -> WasmtimeResult<InterfaceDefinition> {
+        Err(WasmtimeError::Runtime {
+            message: "WIT interface parsing not yet implemented".to_string(),
+            backtrace: None,
         })
     }
 
@@ -87,55 +71,6 @@ impl WitParser {
         let valid_keywords = self.check_valid_keywords(wit_text);
 
         Ok(has_interface && balanced_braces && valid_keywords)
-    }
-
-    /// Extract interface name from WIT text
-    fn extract_interface_name(&self, wit_text: &str) -> WasmtimeResult<String> {
-        // Look for pattern: interface <name> {
-        for line in wit_text.lines() {
-            let trimmed = line.trim();
-            if trimmed.starts_with("interface ") {
-                let parts: Vec<&str> = trimmed.split_whitespace().collect();
-                if parts.len() >= 2 {
-                    let name = parts[1].trim_end_matches('{').trim();
-                    return Ok(name.to_string());
-                }
-            }
-        }
-
-        Err(WasmtimeError::Compilation {
-            message: "No interface name found in WIT text".to_string(),
-        })
-    }
-
-    /// Extract namespace from WIT text
-    fn extract_namespace(&self, wit_text: &str) -> Option<String> {
-        // Look for package declarations or namespace hints
-        for line in wit_text.lines() {
-            let trimmed = line.trim();
-            if trimmed.starts_with("package ") || trimmed.starts_with("namespace ") {
-                let parts: Vec<&str> = trimmed.split_whitespace().collect();
-                if parts.len() >= 2 {
-                    return Some(parts[1].to_string());
-                }
-            }
-        }
-        None
-    }
-
-    /// Extract version from WIT text
-    fn extract_version(&self, wit_text: &str) -> Option<String> {
-        // Look for version declarations
-        for line in wit_text.lines() {
-            let trimmed = line.trim();
-            if trimmed.starts_with("version ") || trimmed.contains("@version") {
-                let parts: Vec<&str> = trimmed.split_whitespace().collect();
-                if parts.len() >= 2 {
-                    return Some(parts[1].to_string());
-                }
-            }
-        }
-        None
     }
 
     /// Check if braces are balanced in WIT text
