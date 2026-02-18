@@ -106,35 +106,6 @@ impl FfiWasmFeature {
         }
     }
 
-    /// Convert from native WasmFeature to FFI representation
-    pub fn to_ffi(enum_value: WasmFeature) -> i32 {
-        match enum_value {
-            WasmFeature::Threads => 0,
-            WasmFeature::ReferenceTypes => 1,
-            WasmFeature::Simd => 2,
-            WasmFeature::BulkMemory => 3,
-            WasmFeature::MultiValue => 4,
-            WasmFeature::MultiMemory => 5,
-            WasmFeature::TailCall => 6,
-            WasmFeature::RelaxedSimd => 7,
-            WasmFeature::FunctionReferences => 8,
-            WasmFeature::Gc => 9,
-            WasmFeature::Exceptions => 10,
-            WasmFeature::Memory64 => 11,
-            WasmFeature::ExtendedConst => 12,
-            WasmFeature::ComponentModel => 13,
-            WasmFeature::CustomPageSizes => 14,
-            WasmFeature::WideArithmetic => 15,
-            WasmFeature::StackSwitching => 16,
-            WasmFeature::SharedEverythingThreads => 17,
-            WasmFeature::ComponentModelAsync => 18,
-            WasmFeature::ComponentModelAsyncBuiltins => 19,
-            WasmFeature::ComponentModelAsyncStackful => 20,
-            WasmFeature::ComponentModelErrorContext => 21,
-            WasmFeature::ComponentModelGc => 22,
-        }
-    }
-
     /// Validate FFI value without conversion (for early parameter checking)
     pub fn validate(value: i32) -> WasmtimeResult<()> {
         match value {

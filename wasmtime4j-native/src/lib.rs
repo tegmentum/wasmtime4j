@@ -59,7 +59,6 @@ pub mod module;
 pub mod store;
 pub mod table;
 pub mod typed_func; // Typed function wrapper for zero-cost calls
-pub mod value_serialization; // WASM value serialization for thread execution
 pub mod wast_runner; // WAST test execution
 
 // Additional core functionality for comprehensive API coverage

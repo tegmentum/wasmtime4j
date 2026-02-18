@@ -1279,7 +1279,6 @@ pub mod memory_utils {
 
     use crate::error::WasmtimeError;
 
-    use std::os::raw::c_void;
     use std::ptr;
 
     /// Memory error types for specific memory management failures
@@ -1518,50 +1517,6 @@ pub mod memory_utils {
         true
     }
 
-    /// Resource lifecycle tracker for automatic cleanup
-    ///
-    /// This struct ensures that resources are properly cleaned up
-    /// even if explicit cleanup is forgotten.
-    pub struct ResourceTracker<T> {
-        resource: Option<T>,
-        cleanup_fn: Option<fn(T)>,
-    }
-
-    impl<T> ResourceTracker<T> {
-        /// Create a new resource tracker with automatic cleanup
-        ///
-        /// # Arguments
-        /// * `resource` - Resource to track
-        /// * `cleanup_fn` - Function to call for cleanup
-        pub fn new(resource: T, cleanup_fn: fn(T)) -> Self {
-            Self {
-                resource: Some(resource),
-                cleanup_fn: Some(cleanup_fn),
-            }
-        }
-
-        /// Take ownership of the tracked resource
-        ///
-        /// This removes the resource from tracking, preventing automatic cleanup
-        pub fn take(&mut self) -> Option<T> {
-            self.resource.take()
-        }
-
-        /// Check if resource is still being tracked
-        pub fn is_active(&self) -> bool {
-            self.resource.is_some()
-        }
-    }
-
-    impl<T> Drop for ResourceTracker<T> {
-        /// Automatic cleanup when tracker is dropped
-        fn drop(&mut self) {
-            if let (Some(resource), Some(cleanup)) = (self.resource.take(), self.cleanup_fn) {
-                cleanup(resource);
-            }
-        }
-    }
-
     /// Safe array access with bounds checking
     ///
     /// # Arguments
@@ -1727,30 +1682,4 @@ pub mod memory_utils {
         unsafe { Ok(std::slice::from_raw_parts(ptr, len)) }
     }
 
-    /// Unified resource destruction for FFI boundaries
-    ///
-    /// # Arguments
-    /// * `ptr` - Raw pointer to resource
-    /// * `name` - Resource name for logging
-    ///
-    /// # Safety
-    /// This function assumes the pointer was created by Box::into_raw
-    /// and performs safe cleanup with logging
-    pub unsafe fn destroy_ffi_resource<T>(ptr: *mut c_void, name: &str) {
-        if !ptr.is_null() {
-            // Convert to typed pointer and create Box for automatic cleanup
-            match safe_box_from_raw(ptr as *mut T, name) {
-                Ok(_boxed_resource) => {
-                    // Box automatically cleans up when it goes out of scope
-                    log::debug!("{} destroyed successfully", name);
-                }
-                Err(error) => {
-                    log::error!("Failed to destroy {}: {:?}", name, error);
-                    // Force cleanup anyway to prevent leaks - this is unsafe
-                    // but necessary if the pointer validation failed
-                    let _ = Box::from_raw(ptr as *mut T);
-                }
-            }
-        }
-    }
 }

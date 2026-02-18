@@ -922,7 +922,7 @@ pub fn atomic_notify(
     memory: &Memory,
     store: &Store,
     offset: usize,
-    count: i32,
+    _count: i32,
 ) -> WasmtimeResult<i32> {
     if !memory_is_shared(memory, store)? {
         return Err(WasmtimeError::Memory {
