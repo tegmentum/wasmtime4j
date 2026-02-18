@@ -693,22 +693,7 @@ public final class JniInstance extends JniResource implements Instance {
   public InstanceStatistics getStatistics() throws WasmException {
     ensureNotClosed();
 
-    try {
-      // For now, return basic statistics
-      // In a full implementation, these would come from native code
-      return new InstanceStatistics(
-          0, // functionCallCount - would need tracking
-          0, // totalExecutionTime - would need tracking
-          0, // memoryBytesAllocated - would need tracking
-          0, // peakMemoryUsage - would need tracking
-          0, // activeTableElements - would need tracking
-          0, // activeGlobals - would need tracking
-          0, // fuelConsumed - would need tracking
-          0 // epochTicks - would need tracking
-          );
-    } catch (final RuntimeException e) {
-      throw new WasmException("Failed to get instance statistics", e);
-    }
+    throw new UnsupportedOperationException("Instance statistics not yet implemented");
   }
 
   @Override

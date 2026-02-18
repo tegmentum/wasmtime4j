@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.InstanceStatistics;
+
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -349,22 +349,11 @@ class JniInstanceTest {
   }
 
   @Test
-  void testInstanceStatistics() throws WasmException {
+  void testInstanceStatisticsThrowsUnsupported() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
-    // Test basic statistics retrieval
-    final InstanceStatistics stats = instance.getStatistics();
-    assertNotNull(stats);
-
-    // Verify statistics structure
-    assertTrue(stats.getFunctionCallCount() >= 0);
-    assertTrue(stats.getTotalExecutionTime() >= 0);
-    assertTrue(stats.getMemoryBytesAllocated() >= 0);
-    assertTrue(stats.getPeakMemoryUsage() >= 0);
-    assertTrue(stats.getActiveTableElements() >= 0);
-    assertTrue(stats.getActiveGlobals() >= 0);
-    assertTrue(stats.getFuelConsumed() >= 0);
-    assertTrue(stats.getEpochTicks() >= 0);
+    // getStatistics() is not yet implemented and should throw
+    assertThrows(UnsupportedOperationException.class, instance::getStatistics);
   }
 
   @Test
