@@ -13,13 +13,13 @@
 //! ## Core Components
 //!
 //! - `ReturnValueConverter<T>`: Consistent return value handling with error codes
-//! - `FfiOptLevel`, `FfiWasmFeature`: FFI-compatible enum representations
+//! - `FfiWasmFeature`: FFI-compatible enum representation
 //! - `validation`: Pointer and bounds validation utilities
 
 use crate::engine::WasmFeature;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::os::raw::c_void;
-use wasmtime::OptLevel;
+
 
 /// Standard FFI return codes
 pub const FFI_SUCCESS: i32 = 0;
@@ -41,69 +41,6 @@ pub trait ReturnValueConverter<T> {
 
     /// Convert result to simple error code for success/failure operations
     fn to_ffi_code(result: WasmtimeResult<()>) -> i32;
-}
-
-/// FFI-compatible OptLevel enum representation
-#[repr(i32)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(missing_docs)]
-pub enum FfiOptLevel {
-    None = 0,
-    Speed = 1,
-    SpeedAndSize = 2,
-}
-
-impl FfiOptLevel {
-    /// Convert from FFI representation to native OptLevel with validation
-    pub fn from_ffi(value: i32) -> WasmtimeResult<OptLevel> {
-        match value {
-            0 => Ok(OptLevel::None),
-            1 => Ok(OptLevel::Speed),
-            2 => Ok(OptLevel::SpeedAndSize),
-            _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid optimization level: {}. Expected 0 (None), 1 (Speed), or 2 (SpeedAndSize)", value)
-            }),
-        }
-    }
-
-    /// Convert from native OptLevel to FFI representation
-    pub fn to_ffi(enum_value: OptLevel) -> i32 {
-        match enum_value {
-            OptLevel::None => 0,
-            OptLevel::Speed => 1,
-            OptLevel::SpeedAndSize => 2,
-            _ => 1, // Default to Speed for any new variants
-        }
-    }
-
-    /// Validate FFI value without conversion (for early parameter checking)
-    pub fn validate(value: i32) -> WasmtimeResult<()> {
-        match value {
-            0..=2 => Ok(()),
-            _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid optimization level: {}. Expected 0 (None), 1 (Speed), or 2 (SpeedAndSize)", value)
-            }),
-        }
-    }
-
-    /// Convert FFI optimization level to native OptLevel enum
-    pub fn to_native(self) -> OptLevel {
-        match self {
-            FfiOptLevel::None => OptLevel::None,
-            FfiOptLevel::Speed => OptLevel::Speed,
-            FfiOptLevel::SpeedAndSize => OptLevel::SpeedAndSize,
-        }
-    }
-
-    /// Create FFI optimization level from native OptLevel enum
-    pub fn from_native(opt_level: OptLevel) -> Self {
-        match opt_level {
-            OptLevel::None => FfiOptLevel::None,
-            OptLevel::Speed => FfiOptLevel::Speed,
-            OptLevel::SpeedAndSize => FfiOptLevel::SpeedAndSize,
-            _ => FfiOptLevel::Speed, // Default to Speed for any new variants
-        }
-    }
 }
 
 /// FFI-compatible WasmFeature enum representation
@@ -1814,22 +1751,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_opt_level_conversion() {
-        // Test valid conversions
-        assert_eq!(FfiOptLevel::from_ffi(0).unwrap(), OptLevel::None);
-        assert_eq!(FfiOptLevel::from_ffi(1).unwrap(), OptLevel::Speed);
-        assert_eq!(FfiOptLevel::from_ffi(2).unwrap(), OptLevel::SpeedAndSize);
-
-        // Test invalid conversion
-        assert!(FfiOptLevel::from_ffi(99).is_err());
-
-        // Test bidirectional conversion
-        assert_eq!(FfiOptLevel::to_ffi(OptLevel::None), 0);
-        assert_eq!(FfiOptLevel::to_ffi(OptLevel::Speed), 1);
-        assert_eq!(FfiOptLevel::to_ffi(OptLevel::SpeedAndSize), 2);
-    }
-
-    #[test]
     fn test_wasm_feature_conversion() {
         // Test valid conversions
         assert_eq!(FfiWasmFeature::from_ffi(0).unwrap(), WasmFeature::Threads);
@@ -1899,23 +1820,6 @@ mod tests {
         let slice = &[1, 2, 3, 4, 5];
         assert!(validate_slice_bounds(slice, 1, 3, "test_slice").is_ok());
         assert!(validate_slice_bounds(slice, 3, 5, "test_slice").is_err());
-    }
-
-    #[test]
-    fn test_opt_level_boundary_values() {
-        // Test boundary values for opt level conversion
-        assert!(
-            FfiOptLevel::from_ffi(-1).is_err(),
-            "Negative values should fail"
-        );
-        assert!(
-            FfiOptLevel::from_ffi(3).is_err(),
-            "Value 3 should fail (only 0-2 valid)"
-        );
-        assert!(
-            FfiOptLevel::from_ffi(i32::MAX).is_err(),
-            "Max i32 should fail"
-        );
     }
 
     #[test]
@@ -2098,58 +2002,6 @@ mod tests {
             FFI_SUCCESS, FFI_ERROR,
             "Success and error codes should differ"
         );
-    }
-
-    // =========================================================================
-    // FfiOptLevel Native Conversion Tests (5 tests)
-    // =========================================================================
-
-    #[test]
-    fn test_ffi_opt_level_to_native() {
-        assert_eq!(FfiOptLevel::None.to_native(), OptLevel::None);
-        assert_eq!(FfiOptLevel::Speed.to_native(), OptLevel::Speed);
-        assert_eq!(
-            FfiOptLevel::SpeedAndSize.to_native(),
-            OptLevel::SpeedAndSize
-        );
-    }
-
-    #[test]
-    fn test_ffi_opt_level_from_native() {
-        assert_eq!(FfiOptLevel::from_native(OptLevel::None), FfiOptLevel::None);
-        assert_eq!(
-            FfiOptLevel::from_native(OptLevel::Speed),
-            FfiOptLevel::Speed
-        );
-        assert_eq!(
-            FfiOptLevel::from_native(OptLevel::SpeedAndSize),
-            FfiOptLevel::SpeedAndSize
-        );
-    }
-
-    #[test]
-    fn test_ffi_opt_level_roundtrip() {
-        for opt_level in [OptLevel::None, OptLevel::Speed, OptLevel::SpeedAndSize] {
-            let ffi = FfiOptLevel::from_native(opt_level.clone());
-            let native = ffi.to_native();
-            assert_eq!(native, opt_level);
-        }
-    }
-
-    #[test]
-    fn test_ffi_opt_level_repr_values() {
-        assert_eq!(FfiOptLevel::None as i32, 0);
-        assert_eq!(FfiOptLevel::Speed as i32, 1);
-        assert_eq!(FfiOptLevel::SpeedAndSize as i32, 2);
-    }
-
-    #[test]
-    fn test_ffi_opt_level_clone_and_copy() {
-        let opt_level = FfiOptLevel::Speed;
-        let cloned = opt_level.clone();
-        let copied = opt_level;
-        assert_eq!(opt_level, cloned);
-        assert_eq!(opt_level, copied);
     }
 
     // =========================================================================

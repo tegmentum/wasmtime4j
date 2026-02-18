@@ -219,7 +219,7 @@ pub use gc_types::{
 // Re-export shared FFI utilities for interface implementations
 pub use shared_ffi::{
     convert_wasm_features, validate_wasm_features, validation,
-    BooleanReturnConverter, FfiOptLevel, FfiWasmFeature, IntegerReturnConverter,
+    BooleanReturnConverter, FfiWasmFeature, IntegerReturnConverter,
     PointerReturnConverter, ReturnValueConverter, FFI_ERROR, FFI_SUCCESS,
 };
 

@@ -20,6 +20,7 @@
 //! - Graceful error handling and resource cleanup
 //! - Thread-safe callback dispatch to Java
 
+#[cfg(feature = "jni-bindings")]
 use jni::JavaVM;
 use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
