@@ -572,7 +572,7 @@ public final class PanamaModule implements Module {
         issues.isEmpty(),
         issues,
         validatedImports,
-        moduleImports.size(),
+        importTypes.size(),
         validCount,
         validationTime);
   }

@@ -522,7 +522,7 @@ public class JniModule extends JniResource implements Module {
         issues.isEmpty(),
         issues,
         validatedImports,
-        moduleImports.size(),
+        importTypes.size(),
         validCount,
         validationTime);
   }
