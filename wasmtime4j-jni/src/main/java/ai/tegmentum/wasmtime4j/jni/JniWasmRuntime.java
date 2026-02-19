@@ -10,7 +10,6 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.memory.Tag;
@@ -76,9 +75,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    */
   private static long initializeRuntime() throws WasmException {
     try {
-      // Ensure native library is loaded
-      NativeLibraryLoader.loadNativeLibrary();
-
       final long handle = nativeCreateRuntime();
       if (handle == 0) {
         throw new WasmException("Failed to create native runtime");

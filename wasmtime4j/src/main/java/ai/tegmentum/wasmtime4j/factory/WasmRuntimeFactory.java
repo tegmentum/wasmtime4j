@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.factory;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import java.util.logging.Logger;
 
 /**
@@ -44,20 +45,6 @@ public final class WasmRuntimeFactory {
   }
 
   /**
-   * Sanitizes a string for safe logging by removing CRLF injection characters.
-   *
-   * @param input the string to sanitize for logging
-   * @return the sanitized string safe for logging
-   */
-  private static String sanitizeForLog(final String input) {
-    if (input == null) {
-      return "null";
-    }
-    // Remove all control and format characters to prevent log injection
-    return input.replaceAll("[\\p{Cntrl}\\p{Cf}]", "_");
-  }
-
-  /**
    * Creates a new WebAssembly runtime with automatic implementation selection.
    *
    * <p>This method automatically selects the best available runtime implementation based on the
@@ -86,7 +73,7 @@ public final class WasmRuntimeFactory {
     }
 
     logger.info(
-        "Creating WebAssembly runtime with type: " + sanitizeForLog(runtimeType.toString()));
+        "Creating WebAssembly runtime with type: " + PlatformDetector.sanitizeForLog(runtimeType.toString()));
 
     // Check if the requested runtime is available before attempting to create it
     if (!isRuntimeAvailable(runtimeType)) {
@@ -143,9 +130,9 @@ public final class WasmRuntimeFactory {
     } catch (final Exception e) {
       logger.warning(
           "Error checking runtime availability for "
-              + sanitizeForLog(runtimeType.toString())
+              + PlatformDetector.sanitizeForLog(runtimeType.toString())
               + ": "
-              + sanitizeForLog(e.getMessage()));
+              + PlatformDetector.sanitizeForLog(e.getMessage()));
       return false;
     }
   }
@@ -210,7 +197,7 @@ public final class WasmRuntimeFactory {
         } else {
           logger.warning(
               "Unknown runtime type in system property: "
-                  + sanitizeForLog(override)
+                  + PlatformDetector.sanitizeForLog(override)
                   + ", using automatic selection");
         }
       }
@@ -221,11 +208,11 @@ public final class WasmRuntimeFactory {
 
       if (javaVersion >= 23 && isPanamaRuntimeAvailable()) {
         logger.info(
-            "Auto-selected Panama runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
+            "Auto-selected Panama runtime for Java " + PlatformDetector.sanitizeForLog(String.valueOf(javaVersion)));
         selected = RuntimeType.PANAMA;
       } else {
         logger.info(
-            "Auto-selected JNI runtime for Java " + sanitizeForLog(String.valueOf(javaVersion)));
+            "Auto-selected JNI runtime for Java " + PlatformDetector.sanitizeForLog(String.valueOf(javaVersion)));
         selected = RuntimeType.JNI;
       }
 
@@ -276,20 +263,20 @@ public final class WasmRuntimeFactory {
         jniAvailable = Boolean.TRUE;
         return true;
       } catch (final ClassNotFoundException e) {
-        logger.fine("JNI runtime class not found: " + sanitizeForLog(e.getMessage()));
+        logger.fine("JNI runtime class not found: " + PlatformDetector.sanitizeForLog(e.getMessage()));
         jniAvailable = Boolean.FALSE;
         return false;
       } catch (final ExceptionInInitializerError e) {
-        logger.warning("JNI runtime initialization failed: " + sanitizeForLog(e.getMessage()));
+        logger.warning("JNI runtime initialization failed: " + PlatformDetector.sanitizeForLog(e.getMessage()));
         if (e.getCause() != null) {
-          logger.warning("  Caused by: " + sanitizeForLog(e.getCause().toString()));
+          logger.warning("  Caused by: " + PlatformDetector.sanitizeForLog(e.getCause().toString()));
         }
         jniAvailable = Boolean.FALSE;
         return false;
       } catch (final Exception e) {
         logger.warning(
             "Unexpected error checking JNI runtime availability: "
-                + sanitizeForLog(e.getMessage()));
+                + PlatformDetector.sanitizeForLog(e.getMessage()));
         jniAvailable = Boolean.FALSE;
         return false;
       }
@@ -313,20 +300,20 @@ public final class WasmRuntimeFactory {
         panamaAvailable = Boolean.TRUE;
         return true;
       } catch (final ClassNotFoundException e) {
-        logger.fine("Panama runtime class not found: " + sanitizeForLog(e.getMessage()));
+        logger.fine("Panama runtime class not found: " + PlatformDetector.sanitizeForLog(e.getMessage()));
         panamaAvailable = Boolean.FALSE;
         return false;
       } catch (final ExceptionInInitializerError e) {
-        logger.warning("Panama runtime initialization failed: " + sanitizeForLog(e.getMessage()));
+        logger.warning("Panama runtime initialization failed: " + PlatformDetector.sanitizeForLog(e.getMessage()));
         if (e.getCause() != null) {
-          logger.warning("  Caused by: " + sanitizeForLog(e.getCause().toString()));
+          logger.warning("  Caused by: " + PlatformDetector.sanitizeForLog(e.getCause().toString()));
         }
         panamaAvailable = Boolean.FALSE;
         return false;
       } catch (final Exception e) {
         logger.warning(
             "Unexpected error checking Panama runtime availability: "
-                + sanitizeForLog(e.getMessage()));
+                + PlatformDetector.sanitizeForLog(e.getMessage()));
         panamaAvailable = Boolean.FALSE;
         return false;
       }

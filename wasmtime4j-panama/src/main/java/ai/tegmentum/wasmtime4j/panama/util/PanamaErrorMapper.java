@@ -1,16 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama.util;
 
-import ai.tegmentum.wasmtime4j.exception.CompilationException;
-import ai.tegmentum.wasmtime4j.exception.InstantiationException;
-import ai.tegmentum.wasmtime4j.exception.LinkingException;
-import ai.tegmentum.wasmtime4j.exception.LinkingException.LinkingErrorType;
-import ai.tegmentum.wasmtime4j.exception.ResourceException;
-import ai.tegmentum.wasmtime4j.exception.WasmSecurityException;
-import ai.tegmentum.wasmtime4j.exception.ValidationException;
-import ai.tegmentum.wasmtime4j.exception.WasiException;
+import ai.tegmentum.wasmtime4j.exception.ErrorMapper;
 import ai.tegmentum.wasmtime4j.exception.WasmErrorCode;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
 import ai.tegmentum.wasmtime4j.panama.NativeMemoryBindings;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -59,86 +51,15 @@ public final class PanamaErrorMapper {
   /**
    * Maps a native error code and context message to an appropriate Java exception.
    *
-   * <p>The returned exception type is chosen based on the error code category:
-   *
-   * <ul>
-   *   <li>Compilation errors (-1) → {@link CompilationException}
-   *   <li>Validation errors (-2) → {@link ValidationException}
-   *   <li>Runtime/memory/function/type errors → {@link WasmRuntimeException}
-   *   <li>Import/export errors (-9) → {@link LinkingException}
-   *   <li>Instance errors (-6) → {@link InstantiationException}
-   *   <li>Resource errors (-11) → {@link ResourceException}
-   *   <li>WASI errors (-15) → {@link WasiException}
-   *   <li>Security errors (-16, -22) → {@link WasmSecurityException}
-   *   <li>All others → {@link WasmException}
-   * </ul>
+   * <p>Delegates to the shared {@link ErrorMapper} for consistent error categorization across both
+   * JNI and Panama implementations.
    *
    * @param errorCode the native error code
    * @param context a description of the operation that failed
    * @return the appropriate Java exception
    */
   public static WasmException mapNativeError(final int errorCode, final String context) {
-    final WasmErrorCode wasmErrorCode = WasmErrorCode.fromCode(errorCode);
-    final String prefix = context != null ? context + ": " : "";
-
-    if (wasmErrorCode == null) {
-      LOGGER.warning("Unknown native error code: " + errorCode);
-      return new WasmException(prefix + "Unknown native error (code " + errorCode + ")");
-    }
-
-    final String message = prefix + wasmErrorCode.getDescription();
-
-    switch (wasmErrorCode) {
-      case SUCCESS:
-        LOGGER.warning("mapNativeError called with SUCCESS");
-        return new WasmException(prefix + "No error occurred");
-
-      case COMPILATION_ERROR:
-        return new CompilationException(message);
-
-      case VALIDATION_ERROR:
-        return new ValidationException(message);
-
-      case INSTANCE_ERROR:
-        return new InstantiationException(message);
-
-      case IMPORT_EXPORT_ERROR:
-        return new LinkingException(LinkingErrorType.UNKNOWN, message);
-
-      case RESOURCE_ERROR:
-        return new ResourceException(message);
-
-      case WASI_ERROR:
-        return new WasiException(message);
-
-      case SECURITY_ERROR:
-      case SECURITY_VIOLATION:
-        return new WasmSecurityException(message);
-
-      case RUNTIME_ERROR:
-      case ENGINE_CONFIG_ERROR:
-      case STORE_ERROR:
-      case MEMORY_ERROR:
-      case FUNCTION_ERROR:
-      case TYPE_ERROR:
-      case CONCURRENCY_ERROR:
-      case COMPONENT_ERROR:
-      case INTERFACE_ERROR:
-      case NETWORK_ERROR:
-      case PROCESS_ERROR:
-      case INTERNAL_ERROR:
-      case IO_ERROR:
-      case IO_OPERATION_ERROR:
-      case INVALID_PARAMETER_ERROR:
-      case INVALID_DATA:
-      case UNSUPPORTED_OPERATION:
-      case WOULD_BLOCK:
-        return new WasmRuntimeException(message);
-
-      default:
-        LOGGER.warning("Unhandled WasmErrorCode: " + wasmErrorCode);
-        return new WasmException(prefix + "Unknown native error (code " + errorCode + ")");
-    }
+    return ErrorMapper.mapErrorCode(errorCode, context);
   }
 
   /**

@@ -89,3 +89,6 @@ monitoring/
 profiling-results/
 tests/logs/
 .flattened-pom.xml
+
+# Bindgen generated sources
+wasmtime4j-bindgen/generated-sources/

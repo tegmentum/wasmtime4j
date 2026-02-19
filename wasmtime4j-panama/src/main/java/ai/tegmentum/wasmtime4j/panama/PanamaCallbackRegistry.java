@@ -16,26 +16,17 @@
 
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.func.AsyncCallbackHandleImpl;
+import ai.tegmentum.wasmtime4j.func.AbstractCallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.CallbackEntry;
-import ai.tegmentum.wasmtime4j.func.CallbackHandleImpl;
-import ai.tegmentum.wasmtime4j.func.CallbackMetricsImpl;
-import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,32 +34,18 @@ import java.util.logging.Logger;
  * Panama FFI implementation of the callback registry for managing callbacks and asynchronous
  * operations.
  *
- * <p>This registry provides centralized management of callback functions with thread safety,
- * resource cleanup, and performance monitoring using Panama's Foreign Function Interface for
- * optimal performance.
- *
- * <p>Key Features:
- *
- * <ul>
- *   <li>Thread-safe callback registration and invocation
- *   <li>Asynchronous callback support with timeouts
- *   <li>Automatic resource cleanup through Arena management
- *   <li>Performance metrics collection
- *   <li>Comprehensive error handling and recovery
- * </ul>
+ * <p>This registry extends {@link AbstractCallbackRegistry} with Panama-specific function reference
+ * creation and resource cleanup through {@link NativeResourceHandle} and {@link
+ * ArenaResourceManager}.
  *
  * @since 1.0.0
  */
-public final class PanamaCallbackRegistry implements CallbackRegistry {
+public final class PanamaCallbackRegistry extends AbstractCallbackRegistry {
   private static final Logger LOGGER = Logger.getLogger(PanamaCallbackRegistry.class.getName());
-  private static final long DEFAULT_ASYNC_TIMEOUT_MILLIS = 30_000; // 30 seconds
 
   private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
-  private final ConcurrentHashMap<Long, CallbackEntry> callbacks = new ConcurrentHashMap<>();
-  private final AtomicLong nextCallbackId = new AtomicLong(1L);
-  private volatile ScheduledExecutorService asyncExecutor; // Lazy initialized
-  private final CallbackMetricsImpl metrics = new CallbackMetricsImpl();
+  private volatile ScheduledExecutorService asyncExecutor;
   private final NativeResourceHandle resourceHandle;
 
   /**
@@ -80,19 +57,14 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
   PanamaCallbackRegistry(final PanamaStore store, final ArenaResourceManager arenaManager) {
     this.storeRef = new WeakReference<>(Objects.requireNonNull(store, "Store cannot be null"));
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
-    // asyncExecutor is lazy initialized when first needed
 
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaCallbackRegistry",
             () -> {
-              // Unregister all callbacks
               for (final CallbackEntry entry : callbacks.values()) {
                 try {
-                  if (entry.getFunctionReference()
-                      instanceof PanamaFunctionReference panamaFuncRef) {
-                    panamaFuncRef.close();
-                  }
+                  closeFunctionReference(entry.getFunctionReference());
                 } catch (final Exception e) {
                   LOGGER.log(
                       Level.WARNING,
@@ -102,7 +74,6 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
               }
               callbacks.clear();
 
-              // Shutdown async executor only if it was created
               if (asyncExecutor != null) {
                 asyncExecutor.shutdownNow();
               }
@@ -117,12 +88,26 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
     }
   }
 
-  /**
-   * Gets the async executor, creating it lazily if needed.
-   *
-   * @return the scheduled executor service for async callbacks
-   */
-  private ScheduledExecutorService getAsyncExecutor() {
+  @Override
+  protected FunctionReference createFunctionReferenceForCallback(
+      final HostFunction callback, final FunctionType functionType) throws WasmException {
+    final PanamaStore store = getStore();
+    return new PanamaFunctionReference(callback, functionType, store, arenaManager);
+  }
+
+  @Override
+  protected void closeFunctionReference(final FunctionReference ref) {
+    if (ref instanceof PanamaFunctionReference panamaFuncRef) {
+      try {
+        panamaFuncRef.close();
+      } catch (final WasmException e) {
+        LOGGER.log(Level.WARNING, "Error closing Panama function reference", e);
+      }
+    }
+  }
+
+  @Override
+  protected ScheduledExecutorService getAsyncExecutor() {
     if (asyncExecutor == null) {
       synchronized (this) {
         if (asyncExecutor == null) {
@@ -141,229 +126,8 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
   }
 
   @Override
-  public CallbackHandle registerCallback(
-      final String name, final HostFunction callback, final FunctionType functionType)
-      throws WasmException {
-    ensureNotClosed();
-    Objects.requireNonNull(name, "Callback name cannot be null");
-    Objects.requireNonNull(callback, "Callback cannot be null");
-    Objects.requireNonNull(functionType, "Function type cannot be null");
-
-    final long callbackId = nextCallbackId.getAndIncrement();
-    final CallbackHandleImpl handle = new CallbackHandleImpl(callbackId, name, functionType);
-
-    try {
-      // Create function reference for the callback
-      final PanamaStore store = getStore();
-      final FunctionReference functionReference =
-          new PanamaFunctionReference(callback, functionType, store, arenaManager);
-
-      // Register the callback
-      final CallbackEntry entry = new CallbackEntry(handle, callback, null, functionReference);
-      callbacks.put(callbackId, entry);
-
-      if (LOGGER.isLoggable(Level.FINE)) {
-        LOGGER.fine("Registered callback '" + name + "' with ID: " + callbackId);
-      }
-
-      return handle;
-
-    } catch (Exception e) {
-      callbacks.remove(callbackId);
-      throw new WasmException("Failed to register callback: " + name, e);
-    }
-  }
-
-  @Override
-  public AsyncCallbackHandle registerAsyncCallback(
-      final String name, final AsyncHostFunction callback, final FunctionType functionType)
-      throws WasmException {
-    ensureNotClosed();
-    Objects.requireNonNull(name, "Callback name cannot be null");
-    Objects.requireNonNull(callback, "Callback cannot be null");
-    Objects.requireNonNull(functionType, "Function type cannot be null");
-
-    final long callbackId = nextCallbackId.getAndIncrement();
-    final AsyncCallbackHandleImpl handle =
-        new AsyncCallbackHandleImpl(callbackId, name, functionType, DEFAULT_ASYNC_TIMEOUT_MILLIS);
-
-    try {
-      // Create a wrapper host function that handles async execution
-      final HostFunction syncWrapper =
-          (params) -> {
-            try {
-              final CompletableFuture<WasmValue[]> future = callback.executeAsync(params);
-              return future.get(handle.getTimeoutMillis(), TimeUnit.MILLISECONDS);
-            } catch (TimeoutException e) {
-              metrics.recordTimeout();
-              throw new WasmException(
-                  "Async callback timed out after " + handle.getTimeoutMillis() + "ms", e);
-            } catch (Exception e) {
-              throw new WasmException("Async callback execution failed", e);
-            }
-          };
-
-      // Create function reference for the wrapper
-      final PanamaStore store = getStore();
-      final FunctionReference functionReference =
-          new PanamaFunctionReference(syncWrapper, functionType, store, arenaManager);
-
-      // Register the callback
-      final CallbackEntry entry =
-          new CallbackEntry(handle, syncWrapper, callback, functionReference);
-      callbacks.put(callbackId, entry);
-
-      if (LOGGER.isLoggable(Level.FINE)) {
-        LOGGER.fine("Registered async callback '" + name + "' with ID: " + callbackId);
-      }
-
-      return handle;
-
-    } catch (Exception e) {
-      callbacks.remove(callbackId);
-      throw new WasmException("Failed to register async callback: " + name, e);
-    }
-  }
-
-  @Override
-  public FunctionReference createFunctionReference(final CallbackHandle handle)
-      throws WasmException {
-    ensureNotClosed();
-    Objects.requireNonNull(handle, "Callback handle cannot be null");
-
-    final CallbackEntry entry = callbacks.get(handle.getId());
-    if (entry == null) {
-      throw new WasmException("Callback not found: " + handle.getName());
-    }
-
-    return entry.getFunctionReference();
-  }
-
-  @Override
-  public void unregisterCallback(final CallbackHandle handle) throws WasmException {
-    ensureNotClosed();
-    Objects.requireNonNull(handle, "Callback handle cannot be null");
-
-    final CallbackEntry entry = callbacks.remove(handle.getId());
-    if (entry == null) {
-      LOGGER.warning("Attempted to unregister unknown callback: " + handle.getName());
-      return;
-    }
-
-    try {
-      // Invalidate the handle to prevent further use
-      if (entry.getHandle() instanceof CallbackHandleImpl handleImpl) {
-        handleImpl.invalidate();
-      }
-
-      // Close the function reference to clean up native resources
-      if (entry.getFunctionReference() instanceof PanamaFunctionReference panamaFuncRef) {
-        panamaFuncRef.close();
-      }
-
-      if (LOGGER.isLoggable(Level.FINE)) {
-        LOGGER.fine("Unregistered callback '" + handle.getName() + "' with ID: " + handle.getId());
-      }
-
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Error cleaning up callback: " + handle.getName(), e);
-      throw new WasmException("Failed to unregister callback: " + handle.getName(), e);
-    }
-  }
-
-  @Override
-  public WasmValue[] invokeCallback(final CallbackHandle handle, final WasmValue... params)
-      throws WasmException {
-    ensureNotClosed();
-    Objects.requireNonNull(handle, "Callback handle cannot be null");
-    Objects.requireNonNull(params, "Parameters cannot be null");
-
-    // Check if handle is still valid
-    if (!handle.isValid()) {
-      throw new WasmException("Callback handle is no longer valid: " + handle.getName());
-    }
-
-    final CallbackEntry entry = callbacks.get(handle.getId());
-    if (entry == null) {
-      throw new WasmException("Callback not found: " + handle.getName());
-    }
-
-    final long startTime = System.nanoTime();
-    try {
-      final WasmValue[] result = entry.getSyncCallback().execute(params);
-      final long executionTime = System.nanoTime() - startTime;
-      metrics.recordInvocation(executionTime);
-      return result;
-
-    } catch (Exception e) {
-      final long executionTime = System.nanoTime() - startTime;
-      metrics.recordFailure(executionTime);
-      throw new WasmException("Callback invocation failed: " + handle.getName(), e);
-    }
-  }
-
-  @Override
-  public CompletableFuture<WasmValue[]> invokeAsyncCallback(
-      final AsyncCallbackHandle handle, final WasmValue... params) throws WasmException {
-    ensureNotClosed();
-    Objects.requireNonNull(handle, "Callback handle cannot be null");
-    Objects.requireNonNull(params, "Parameters cannot be null");
-
-    // Check if handle is still valid
-    if (!handle.isValid()) {
-      throw new WasmException("Async callback handle is no longer valid: " + handle.getName());
-    }
-
-    final CallbackEntry entry = callbacks.get(handle.getId());
-    if (entry == null) {
-      throw new WasmException("Async callback not found: " + handle.getName());
-    }
-
-    if (!entry.isAsync()) {
-      throw new WasmException("Callback is not asynchronous: " + handle.getName());
-    }
-
-    return CompletableFuture.supplyAsync(
-        () -> {
-          final long startTime = System.nanoTime();
-          try {
-            final CompletableFuture<WasmValue[]> future =
-                entry.getAsyncCallback().executeAsync(params);
-            final WasmValue[] result = future.get(handle.getTimeoutMillis(), TimeUnit.MILLISECONDS);
-            final long executionTime = System.nanoTime() - startTime;
-            metrics.recordInvocation(executionTime);
-            return result;
-
-          } catch (TimeoutException e) {
-            final long executionTime = System.nanoTime() - startTime;
-            metrics.recordTimeout();
-            throw new RuntimeException(
-                "Async callback timed out after " + handle.getTimeoutMillis() + "ms", e);
-
-          } catch (Exception e) {
-            final long executionTime = System.nanoTime() - startTime;
-            metrics.recordFailure(executionTime);
-            throw new RuntimeException("Async callback execution failed", e);
-          }
-        },
-        getAsyncExecutor());
-  }
-
-  @Override
-  public CallbackMetrics getMetrics() {
-    return metrics;
-  }
-
-  @Override
-  public int getCallbackCount() {
-    return callbacks.size();
-  }
-
-  @Override
-  public boolean hasCallback(final String name) {
-    Objects.requireNonNull(name, "Callback name cannot be null");
-    return callbacks.values().stream()
-        .anyMatch(entry -> name.equals(entry.getHandle().getName()));
+  protected void ensureNotClosed() {
+    resourceHandle.ensureNotClosed();
   }
 
   @Override
@@ -383,14 +147,5 @@ public final class PanamaCallbackRegistry implements CallbackRegistry {
       throw new WasmException("Store is no longer available");
     }
     return store;
-  }
-
-  /**
-   * Ensures the registry is not closed.
-   *
-   * @throws IllegalStateException if the registry is closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

@@ -8,6 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.exception.CompilationException;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.exception.WasmRuntimeException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
@@ -27,10 +30,9 @@ class JniErrorHandlingTest {
   void testAllErrorCodesMapped() {
     // Test that all Rust error codes (-1 to -18) are properly handled
     for (int errorCode = -1; errorCode >= -18; errorCode--) {
-      JniException exception = JniExceptionMapper.mapNativeError(errorCode, "test message");
+      WasmException exception = JniExceptionMapper.mapNativeError(errorCode, "test message");
 
       assertNotNull(exception, "Error code " + errorCode + " should map to exception");
-      assertEquals(errorCode, exception.getNativeErrorCode(), "Error code should be preserved");
       assertTrue(
           exception.getMessage().contains("test message"),
           "Exception should contain original message");
@@ -59,12 +61,12 @@ class JniErrorHandlingTest {
     "-18, Interface definition or binding error"
   })
   void testErrorCodeMessageMapping(int errorCode, String expectedMessagePrefix) {
-    JniException exception = JniExceptionMapper.mapNativeError(errorCode, "test");
+    WasmException exception = JniExceptionMapper.mapNativeError(errorCode, "test");
     assertTrue(
-        exception.getMessage().startsWith(expectedMessagePrefix),
+        exception.getMessage().contains(expectedMessagePrefix),
         "Error code "
             + errorCode
-            + " should start with '"
+            + " should contain '"
             + expectedMessagePrefix
             + "' but got: "
             + exception.getMessage());
@@ -72,41 +74,45 @@ class JniErrorHandlingTest {
 
   @Test
   void testResourceExceptionTypes() {
-    // Memory error (-7) should return JniException with memory error message
-    JniException memoryException = JniExceptionMapper.mapNativeError(-7, "memory test");
+    // Memory error (-7) should return WasmRuntimeException with memory error message
+    WasmException memoryException = JniExceptionMapper.mapNativeError(-7, "memory test");
+    assertTrue(
+        memoryException instanceof WasmRuntimeException,
+        "Memory errors should produce WasmRuntimeException");
     assertTrue(
         memoryException.getMessage().contains("Memory access or allocation error"),
         "Memory errors should indicate memory access error");
 
-    // Resource error (-11) should return JniException with resource error message
-    JniException resourceException = JniExceptionMapper.mapNativeError(-11, "resource test");
+    // Resource error (-11) should return ResourceException with resource error message
+    WasmException resourceException = JniExceptionMapper.mapNativeError(-11, "resource test");
     assertTrue(
         resourceException.getMessage().contains("Resource management error"),
         "Resource errors should indicate resource error");
 
-    // Compilation error (-1) should use regular JniException
-    JniException compilationException = JniExceptionMapper.mapNativeError(-1, "compilation test");
-    assertEquals(
-        JniException.class,
-        compilationException.getClass(),
-        "Compilation errors should use regular JniException");
+    // Compilation error (-1) should use CompilationException
+    WasmException compilationException = JniExceptionMapper.mapNativeError(-1, "compilation test");
+    assertTrue(
+        compilationException instanceof CompilationException,
+        "Compilation errors should produce CompilationException");
   }
 
   @Test
   void testNullMessageHandling() {
-    // Test null message
-    JniException nullException = JniExceptionMapper.mapNativeError(-1, null);
+    // Test null message — null is replaced with "Unknown native error" before delegation
+    WasmException nullException = JniExceptionMapper.mapNativeError(-1, null);
     assertNotNull(nullException.getMessage());
     assertFalse(nullException.getMessage().isEmpty());
-    assertTrue(nullException.getMessage().contains("Unknown native error"));
+    assertTrue(
+        nullException instanceof CompilationException,
+        "Should still produce CompilationException with null message");
 
     // Test empty message
-    JniException emptyException = JniExceptionMapper.mapNativeError(-1, "");
+    WasmException emptyException = JniExceptionMapper.mapNativeError(-1, "");
     assertNotNull(emptyException.getMessage());
     assertFalse(emptyException.getMessage().isEmpty());
 
     // Test whitespace-only message
-    JniException whitespaceException = JniExceptionMapper.mapNativeError(-1, "   ");
+    WasmException whitespaceException = JniExceptionMapper.mapNativeError(-1, "   ");
     assertNotNull(whitespaceException.getMessage());
     assertFalse(whitespaceException.getMessage().trim().isEmpty());
   }
@@ -167,11 +173,10 @@ class JniErrorHandlingTest {
                 try {
                   for (int j = 0; j < 100; j++) {
                     int errorCode = -1 - (j % 18);
-                    JniException exception =
+                    WasmException exception =
                         JniExceptionMapper.mapNativeError(
                             errorCode, "Thread " + threadId + " iteration " + j);
                     assertNotNull(exception);
-                    assertEquals(errorCode, exception.getNativeErrorCode());
                   }
                 } catch (Exception e) {
                   exceptions[threadId] = e;
@@ -197,14 +202,14 @@ class JniErrorHandlingTest {
       sb.append("x");
     }
     String longMessage = sb.toString();
-    JniException exception = JniExceptionMapper.mapNativeError(-1, longMessage);
+    WasmException exception = JniExceptionMapper.mapNativeError(-1, longMessage);
 
     assertNotNull(exception);
     assertTrue(exception.getMessage().contains(longMessage));
 
     // Test message with special characters
     String specialMessage = "Error with special chars: (C) (R) (TM) and newlines\n\r\ttabs";
-    JniException specialException = JniExceptionMapper.mapNativeError(-1, specialMessage);
+    WasmException specialException = JniExceptionMapper.mapNativeError(-1, specialMessage);
 
     assertNotNull(specialException);
     assertTrue(specialException.getMessage().contains(specialMessage));
@@ -213,20 +218,20 @@ class JniErrorHandlingTest {
   @Test
   void testEdgeCaseErrorCodes() {
     // Test boundary values
-    JniException exception1 = JniExceptionMapper.mapNativeError(1, "positive error code");
+    WasmException exception1 = JniExceptionMapper.mapNativeError(1, "positive error code");
     assertNotNull(exception1);
     assertTrue(exception1.getMessage().contains("Unknown native error"));
 
-    JniException exception2 = JniExceptionMapper.mapNativeError(Integer.MAX_VALUE, "max int");
+    WasmException exception2 = JniExceptionMapper.mapNativeError(Integer.MAX_VALUE, "max int");
     assertNotNull(exception2);
     assertTrue(exception2.getMessage().contains("Unknown native error"));
 
-    JniException exception3 = JniExceptionMapper.mapNativeError(Integer.MIN_VALUE, "min int");
+    WasmException exception3 = JniExceptionMapper.mapNativeError(Integer.MIN_VALUE, "min int");
     assertNotNull(exception3);
     assertTrue(exception3.getMessage().contains("Unknown native error"));
 
     // Test just outside valid range (-27 is beyond the -26 maximum)
-    JniException exception4 = JniExceptionMapper.mapNativeError(-27, "beyond range");
+    WasmException exception4 = JniExceptionMapper.mapNativeError(-27, "beyond range");
     assertNotNull(exception4);
     assertTrue(exception4.getMessage().contains("Unknown native error"));
   }

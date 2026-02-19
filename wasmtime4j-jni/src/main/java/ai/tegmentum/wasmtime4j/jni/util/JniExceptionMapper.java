@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
-import ai.tegmentum.wasmtime4j.exception.WasmErrorCode;
+import ai.tegmentum.wasmtime4j.exception.ErrorMapper;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import java.util.logging.Logger;
@@ -26,30 +27,18 @@ public final class JniExceptionMapper {
   }
 
   /**
-   * Maps a native error code and message to an appropriate Java exception.
+   * Maps a native error code and message to an appropriate categorized Java exception.
    *
-   * <p>Uses {@link WasmErrorCode} as the single source of truth for error descriptions.
+   * <p>Delegates to the shared {@link ErrorMapper} for consistent error categorization across both
+   * JNI and Panama implementations.
    *
    * @param errorCode the native error code
    * @param message the error message from native code
    * @return the appropriate Java exception
    */
-  public static JniException mapNativeError(final int errorCode, final String message) {
+  public static WasmException mapNativeError(final int errorCode, final String message) {
     final String safeMessage = message != null ? message : "Unknown native error";
-    final WasmErrorCode wasmErrorCode = WasmErrorCode.fromCode(errorCode);
-
-    if (wasmErrorCode == null) {
-      LOGGER.warning("Unknown native error code: " + errorCode);
-      return new JniException(
-          "Unknown native error (code " + errorCode + "): " + safeMessage, errorCode);
-    }
-
-    if (wasmErrorCode == WasmErrorCode.SUCCESS) {
-      LOGGER.warning("mapNativeError called with SUCCESS");
-      return new JniException("No error occurred", errorCode);
-    }
-
-    return new JniException(wasmErrorCode.getDescription() + ": " + safeMessage, errorCode);
+    return ErrorMapper.mapErrorCode(errorCode, safeMessage);
   }
 
   /**

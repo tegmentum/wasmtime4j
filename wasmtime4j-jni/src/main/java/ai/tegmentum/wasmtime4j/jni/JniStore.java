@@ -96,8 +96,8 @@ public final class JniStore extends JniResource implements Store {
   /** The engine that created this store. */
   private final Engine engine;
 
-  /** Callback registry for managing callbacks and asynchronous operations. */
-  private final CallbackRegistry callbackRegistry;
+  /** Callback registry for managing callbacks and asynchronous operations. Lazily initialized. */
+  private volatile CallbackRegistry callbackRegistry;
 
   /**
    * Creates a new JNI store with the given native handle.
@@ -112,7 +112,6 @@ public final class JniStore extends JniResource implements Store {
   JniStore(final long nativeHandle, final Engine engine) {
     super(nativeHandle);
     this.engine = engine;
-    this.callbackRegistry = new JniCallbackRegistry(this);
     LOGGER.fine("Created JNI store with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
@@ -528,6 +527,13 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public CallbackRegistry getCallbackRegistry() {
+    if (callbackRegistry == null) {
+      synchronized (this) {
+        if (callbackRegistry == null) {
+          callbackRegistry = new JniCallbackRegistry(this);
+        }
+      }
+    }
     return callbackRegistry;
   }
 
@@ -567,11 +573,12 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   protected void doClose() throws Exception {
-    try {
-      // Close the callback registry first
-      callbackRegistry.close();
-    } catch (Exception e) {
-      LOGGER.warning("Error closing callback registry: " + e.getMessage());
+    if (callbackRegistry != null) {
+      try {
+        callbackRegistry.close();
+      } catch (Exception e) {
+        LOGGER.warning("Error closing callback registry: " + e.getMessage());
+      }
     }
 
     // Clean up resource limiter callback

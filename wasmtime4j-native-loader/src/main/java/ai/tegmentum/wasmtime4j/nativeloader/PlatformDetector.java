@@ -203,7 +203,7 @@ public final class PlatformDetector {
    * @param input the string to sanitize for logging
    * @return the sanitized string safe for logging
    */
-  static String sanitizeForLog(final String input) {
+  public static String sanitizeForLog(final String input) {
     if (input == null) {
       return "null";
     }

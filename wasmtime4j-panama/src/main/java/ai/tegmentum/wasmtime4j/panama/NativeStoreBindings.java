@@ -45,6 +45,15 @@ public final class NativeStoreBindings extends NativeBindingsBase {
   // Signature: (ADDRESS) -> ADDRESS
   private volatile MethodHandle mhStoreCreate;
 
+  // Pre-cached fuel/epoch MethodHandles to avoid ConcurrentHashMap lookups on hot paths
+  private volatile MethodHandle mhStoreSetFuel;
+  private volatile MethodHandle mhStoreGetFuel;
+  private volatile MethodHandle mhStoreAddFuel;
+  private volatile MethodHandle mhStoreConsumeFuel;
+  private volatile MethodHandle mhStoreSetFuelAsyncYieldInterval;
+  private volatile MethodHandle mhStoreSetEpochDeadline;
+  private volatile MethodHandle mhStoreGc;
+
   private NativeStoreBindings() {
     super();
     initializeBindings();
@@ -65,10 +74,26 @@ public final class NativeStoreBindings extends NativeBindingsBase {
 
   /** Eagerly initializes hot-path MethodHandles after all bindings are registered. */
   private void initializeHotPathHandles() {
-    FunctionBinding storeCreateBinding = getFunctionBinding("wasmtime4j_store_create");
-    if (storeCreateBinding != null) {
-      this.mhStoreCreate = storeCreateBinding.getMethodHandle().orElse(null);
-    }
+    this.mhStoreCreate = resolveHandle("wasmtime4j_store_create");
+    this.mhStoreSetFuel = resolveHandle("wasmtime4j_panama_store_set_fuel");
+    this.mhStoreGetFuel = resolveHandle("wasmtime4j_panama_store_get_fuel");
+    this.mhStoreAddFuel = resolveHandle("wasmtime4j_panama_store_add_fuel");
+    this.mhStoreConsumeFuel = resolveHandle("wasmtime4j_panama_store_consume_fuel");
+    this.mhStoreSetFuelAsyncYieldInterval =
+        resolveHandle("wasmtime4j_panama_store_set_fuel_async_yield_interval");
+    this.mhStoreSetEpochDeadline = resolveHandle("wasmtime4j_panama_store_set_epoch_deadline");
+    this.mhStoreGc = resolveHandle("wasmtime4j_panama_store_gc");
+  }
+
+  /**
+   * Resolves a MethodHandle from a registered function binding.
+   *
+   * @param functionName the native function name
+   * @return the MethodHandle, or null if the binding is not available
+   */
+  private MethodHandle resolveHandle(final String functionName) {
+    FunctionBinding binding = getFunctionBinding(functionName);
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
   }
 
   // ===== Binding Registrations =====
@@ -428,6 +453,14 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    */
   public int storeGc(final MemorySegment storePtr) {
     validatePointer(storePtr, "storePtr");
+    final MethodHandle mh = mhStoreGc;
+    if (mh != null) {
+      try {
+        return (int) mh.invokeExact(storePtr);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native storeGc failed", t);
+      }
+    }
     return callNativeFunction("wasmtime4j_panama_store_gc", Integer.class, storePtr);
   }
 
@@ -647,8 +680,7 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @return the method handle, or null if not available
    */
   public MethodHandle getPanamaStoreSetFuel() {
-    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_set_fuel");
-    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+    return mhStoreSetFuel;
   }
 
   /**
@@ -657,8 +689,7 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @return the method handle, or null if not available
    */
   public MethodHandle getPanamaStoreGetFuel() {
-    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_get_fuel");
-    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+    return mhStoreGetFuel;
   }
 
   /**
@@ -667,8 +698,7 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @return the method handle, or null if not available
    */
   public MethodHandle getPanamaStoreAddFuel() {
-    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_add_fuel");
-    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+    return mhStoreAddFuel;
   }
 
   /**
@@ -677,8 +707,7 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @return the method handle, or null if not available
    */
   public MethodHandle getPanamaStoreConsumeFuel() {
-    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_consume_fuel");
-    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+    return mhStoreConsumeFuel;
   }
 
   /**
@@ -687,9 +716,7 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @return the method handle, or null if not available
    */
   public MethodHandle getPanamaStoreSetFuelAsyncYieldInterval() {
-    FunctionBinding binding =
-        getFunctionBinding("wasmtime4j_panama_store_set_fuel_async_yield_interval");
-    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+    return mhStoreSetFuelAsyncYieldInterval;
   }
 
   /**
@@ -698,8 +725,7 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @return the method handle, or null if not available
    */
   public MethodHandle getPanamaStoreSetEpochDeadline() {
-    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_set_epoch_deadline");
-    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+    return mhStoreSetEpochDeadline;
   }
 
   /**
@@ -708,7 +734,6 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @return the method handle, or null if not available
    */
   public MethodHandle getPanamaStoreGetExecutionStats() {
-    FunctionBinding binding = getFunctionBinding("wasmtime4j_panama_store_get_execution_stats");
-    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+    return resolveHandle("wasmtime4j_panama_store_get_execution_stats");
   }
 }
