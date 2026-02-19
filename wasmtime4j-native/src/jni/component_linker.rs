@@ -564,11 +564,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     linker_handle: jlong,
 ) {
     jni_utils::jni_try_void(&mut env, || {
-        let _linker = unsafe {
+        let linker = unsafe {
             component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
         };
-        // WASI P2 enablement is handled through the ComponentLinker's internal state
-        // The actual WASI P2 functions are linked via the wasmtime-wasi crate
+        linker.enable_wasi_preview2()?;
         Ok(())
     });
 }

@@ -40,6 +40,24 @@ public final class PanamaWasiContext implements WasiContext {
   private final MemorySegment contextHandle;
   private final NativeResourceHandle resourceHandle;
 
+  /** WASI Preview 2 config: network access enabled. */
+  private boolean networkEnabled;
+
+  /** WASI Preview 2 config: async I/O enabled. */
+  private boolean asyncIoEnabled;
+
+  /** WASI Preview 2 config: process spawning enabled. */
+  private boolean processEnabled;
+
+  /** WASI Preview 2 config: component model enabled. */
+  private boolean componentModelEnabled;
+
+  /** WASI Preview 2 config: max async operations (-1 = unlimited). */
+  private int maxAsyncOperations = -1;
+
+  /** WASI Preview 2 config: async timeout in milliseconds (-1 = no timeout). */
+  private long asyncTimeoutMs = -1;
+
   /** Creates a new Panama WASI context. */
   public PanamaWasiContext() {
     this.contextHandle = NATIVE_BINDINGS.wasiContextCreate();
@@ -290,9 +308,8 @@ public final class PanamaWasiContext implements WasiContext {
 
   @Override
   public WasiContext setNetworkEnabled(final boolean enabled) {
-    // Network enabling requires additional native binding
-    // For now, this is a no-op that doesn't fail
     ensureNotClosed();
+    this.networkEnabled = enabled;
     return this;
   }
 
@@ -309,9 +326,8 @@ public final class PanamaWasiContext implements WasiContext {
 
   @Override
   public WasiContext setAsyncIoEnabled(final boolean enabled) {
-    // Async I/O requires additional native binding
-    // For now, this is a no-op that doesn't fail
     ensureNotClosed();
+    this.asyncIoEnabled = enabled;
     return this;
   }
 
@@ -320,9 +336,8 @@ public final class PanamaWasiContext implements WasiContext {
     if (maxOps < -1) {
       throw new IllegalArgumentException("maxOps must be >= -1");
     }
-    // Async operations limiting requires additional native binding
-    // For now, this is a no-op that doesn't fail
     ensureNotClosed();
+    this.maxAsyncOperations = maxOps;
     return this;
   }
 
@@ -331,25 +346,22 @@ public final class PanamaWasiContext implements WasiContext {
     if (timeoutMs < -1) {
       throw new IllegalArgumentException("timeoutMs must be >= -1");
     }
-    // Async timeout requires additional native binding
-    // For now, this is a no-op that doesn't fail
     ensureNotClosed();
+    this.asyncTimeoutMs = timeoutMs;
     return this;
   }
 
   @Override
   public WasiContext setComponentModelEnabled(final boolean enabled) {
-    // Component Model support requires additional native binding
-    // For now, this is a no-op that doesn't fail
     ensureNotClosed();
+    this.componentModelEnabled = enabled;
     return this;
   }
 
   @Override
   public WasiContext setProcessEnabled(final boolean enabled) {
-    // Process operations require additional native binding
-    // For now, this is a no-op that doesn't fail
     ensureNotClosed();
+    this.processEnabled = enabled;
     return this;
   }
 
@@ -362,6 +374,62 @@ public final class PanamaWasiContext implements WasiContext {
     // For now, this is a no-op that doesn't fail
     ensureNotClosed();
     return this;
+  }
+
+  // ===== WASI Preview 2 Config Getters =====
+
+  /**
+   * Returns whether network access is enabled.
+   *
+   * @return true if network access is enabled
+   */
+  public boolean isNetworkEnabled() {
+    return networkEnabled;
+  }
+
+  /**
+   * Returns whether async I/O is enabled.
+   *
+   * @return true if async I/O is enabled
+   */
+  public boolean isAsyncIoEnabled() {
+    return asyncIoEnabled;
+  }
+
+  /**
+   * Returns whether process spawning is enabled.
+   *
+   * @return true if process spawning is enabled
+   */
+  public boolean isProcessEnabled() {
+    return processEnabled;
+  }
+
+  /**
+   * Returns whether component model is enabled.
+   *
+   * @return true if component model is enabled
+   */
+  public boolean isComponentModelEnabled() {
+    return componentModelEnabled;
+  }
+
+  /**
+   * Returns the max async operations limit.
+   *
+   * @return the max async operations (-1 = unlimited)
+   */
+  public int getMaxAsyncOperations() {
+    return maxAsyncOperations;
+  }
+
+  /**
+   * Returns the async timeout in milliseconds.
+   *
+   * @return the async timeout (-1 = no timeout)
+   */
+  public long getAsyncTimeoutMs() {
+    return asyncTimeoutMs;
   }
 
   // ===== Output Capture Methods =====

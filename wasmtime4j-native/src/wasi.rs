@@ -51,6 +51,18 @@ pub struct WasiContext {
     pub initial_cwd: Arc<RwLock<Option<String>>>,
     /// Operation counter for generating unique IDs
     pub next_operation_id: std::sync::atomic::AtomicU64,
+    /// WASI Preview 2 config: network access enabled
+    pub network_enabled: bool,
+    /// WASI Preview 2 config: async I/O enabled
+    pub async_io_enabled: bool,
+    /// WASI Preview 2 config: process spawning enabled
+    pub process_enabled: bool,
+    /// WASI Preview 2 config: component model enabled
+    pub component_model_enabled: bool,
+    /// WASI Preview 2 config: max async operations (-1 = unlimited)
+    pub max_async_operations: i32,
+    /// WASI Preview 2 config: async timeout in milliseconds (-1 = no timeout)
+    pub async_timeout_ms: i64,
 }
 
 impl Clone for WasiContext {
@@ -74,6 +86,12 @@ impl Clone for WasiContext {
                 self.next_operation_id
                     .load(std::sync::atomic::Ordering::SeqCst),
             ),
+            network_enabled: self.network_enabled,
+            async_io_enabled: self.async_io_enabled,
+            process_enabled: self.process_enabled,
+            component_model_enabled: self.component_model_enabled,
+            max_async_operations: self.max_async_operations,
+            async_timeout_ms: self.async_timeout_ms,
         }
     }
 }
@@ -100,6 +118,12 @@ impl std::fmt::Debug for WasiContext {
             .field("stderr_handle", &"<stderr_handle>")
             .field("exit_code", &"<exit_code>")
             .field("inner", &"<WasiCtx>")
+            .field("network_enabled", &self.network_enabled)
+            .field("async_io_enabled", &self.async_io_enabled)
+            .field("process_enabled", &self.process_enabled)
+            .field("component_model_enabled", &self.component_model_enabled)
+            .field("max_async_operations", &self.max_async_operations)
+            .field("async_timeout_ms", &self.async_timeout_ms)
             .finish()
     }
 }
@@ -422,6 +446,12 @@ impl WasiContext {
             exit_code: Arc::new(RwLock::new(None)),
             initial_cwd: Arc::new(RwLock::new(None)),
             next_operation_id: std::sync::atomic::AtomicU64::new(100), // Start at 100 to avoid conflicts with stdio handles
+            network_enabled: false,
+            async_io_enabled: false,
+            process_enabled: false,
+            component_model_enabled: false,
+            max_async_operations: -1,
+            async_timeout_ms: -1,
         })
     }
 
@@ -830,6 +860,12 @@ impl Default for WasiContext {
                     exit_code: Arc::new(RwLock::new(None)),
                     initial_cwd: Arc::new(RwLock::new(None)),
                     next_operation_id: std::sync::atomic::AtomicU64::new(100),
+                    network_enabled: false,
+                    async_io_enabled: false,
+                    process_enabled: false,
+                    component_model_enabled: false,
+                    max_async_operations: -1,
+                    async_timeout_ms: -1,
                 }
             }
         }

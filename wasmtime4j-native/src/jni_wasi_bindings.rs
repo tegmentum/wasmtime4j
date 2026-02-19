@@ -901,14 +901,20 @@ pub mod jni_wasi {
         _env: JNIEnv,
         _class: JClass,
         context_handle: jlong,
-        _enabled: jboolean,
+        enabled: jboolean,
     ) -> jint {
-        // Network configuration is handled by WasiCtxBuilder in Rust
-        // This is a no-op as network access is controlled at context creation
         if context_handle == 0 {
             return -1;
         }
-        0 // Success - configuration stored for later use
+        let wasi_tuple = unsafe {
+            &mut *(context_handle
+                as *mut (
+                    crate::wasi::WasiContext,
+                    crate::wasi::WasiFileDescriptorManager,
+                ))
+        };
+        wasi_tuple.0.network_enabled = enabled != 0;
+        0
     }
 
     #[no_mangle]
@@ -931,13 +937,20 @@ pub mod jni_wasi {
         _env: JNIEnv,
         _class: JClass,
         context_handle: jlong,
-        _enabled: jboolean,
+        enabled: jboolean,
     ) -> jint {
-        // Async I/O is controlled by wasmtime's async features
         if context_handle == 0 {
             return -1;
         }
-        0 // Success
+        let wasi_tuple = unsafe {
+            &mut *(context_handle
+                as *mut (
+                    crate::wasi::WasiContext,
+                    crate::wasi::WasiFileDescriptorManager,
+                ))
+        };
+        wasi_tuple.0.async_io_enabled = enabled != 0;
+        0
     }
 
     #[no_mangle]
@@ -945,13 +958,20 @@ pub mod jni_wasi {
         _env: JNIEnv,
         _class: JClass,
         context_handle: jlong,
-        _max_ops: jint,
+        max_ops: jint,
     ) -> jint {
-        // Async operations limit
         if context_handle == 0 {
             return -1;
         }
-        0 // Success
+        let wasi_tuple = unsafe {
+            &mut *(context_handle
+                as *mut (
+                    crate::wasi::WasiContext,
+                    crate::wasi::WasiFileDescriptorManager,
+                ))
+        };
+        wasi_tuple.0.max_async_operations = max_ops;
+        0
     }
 
     #[no_mangle]
@@ -959,13 +979,20 @@ pub mod jni_wasi {
         _env: JNIEnv,
         _class: JClass,
         context_handle: jlong,
-        _timeout_ms: jlong,
+        timeout_ms: jlong,
     ) -> jint {
-        // Async timeout configuration
         if context_handle == 0 {
             return -1;
         }
-        0 // Success
+        let wasi_tuple = unsafe {
+            &mut *(context_handle
+                as *mut (
+                    crate::wasi::WasiContext,
+                    crate::wasi::WasiFileDescriptorManager,
+                ))
+        };
+        wasi_tuple.0.async_timeout_ms = timeout_ms;
+        0
     }
 
     #[no_mangle]
@@ -973,13 +1000,20 @@ pub mod jni_wasi {
         _env: JNIEnv,
         _class: JClass,
         context_handle: jlong,
-        _enabled: jboolean,
+        enabled: jboolean,
     ) -> jint {
-        // Component model is enabled at engine configuration level
         if context_handle == 0 {
             return -1;
         }
-        0 // Success
+        let wasi_tuple = unsafe {
+            &mut *(context_handle
+                as *mut (
+                    crate::wasi::WasiContext,
+                    crate::wasi::WasiFileDescriptorManager,
+                ))
+        };
+        wasi_tuple.0.component_model_enabled = enabled != 0;
+        0
     }
 
     #[no_mangle]
@@ -987,13 +1021,20 @@ pub mod jni_wasi {
         _env: JNIEnv,
         _class: JClass,
         context_handle: jlong,
-        _enabled: jboolean,
+        enabled: jboolean,
     ) -> jint {
-        // Process spawning configuration
         if context_handle == 0 {
             return -1;
         }
-        0 // Success
+        let wasi_tuple = unsafe {
+            &mut *(context_handle
+                as *mut (
+                    crate::wasi::WasiContext,
+                    crate::wasi::WasiFileDescriptorManager,
+                ))
+        };
+        wasi_tuple.0.process_enabled = enabled != 0;
+        0
     }
 
     #[no_mangle]
