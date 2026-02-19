@@ -595,7 +595,7 @@ pub extern "C" fn wasmtime4j_panama_tag_get_param_types(
     store_ptr: *mut c_void,
     out_count: *mut c_int,
 ) -> *mut c_int {
-    use wasmtime::{Tag, ValType};
+    use wasmtime::Tag;
 
     if tag_ptr.is_null() || store_ptr.is_null() || out_count.is_null() {
         if !out_count.is_null() {
@@ -622,17 +622,7 @@ pub extern "C" fn wasmtime4j_panama_tag_get_param_types(
     let func_type = tag_type.ty();
     let params: Vec<c_int> = func_type
         .params()
-        .map(|vt| match vt {
-            ValType::I32 => 0,
-            ValType::I64 => 1,
-            ValType::F32 => 2,
-            ValType::F64 => 3,
-            ValType::V128 => 4,
-            ValType::Ref(r) => match r.heap_type() {
-                wasmtime::HeapType::Func => 5,
-                _ => 6, // EXTERNREF or other ref types
-            },
-        })
+        .map(|vt| crate::ffi_common::valtype_conversion::valtype_to_int(&vt))
         .collect();
 
     let count = params.len();
@@ -660,7 +650,7 @@ pub extern "C" fn wasmtime4j_panama_tag_get_return_types(
     store_ptr: *mut c_void,
     out_count: *mut c_int,
 ) -> *mut c_int {
-    use wasmtime::{Tag, ValType};
+    use wasmtime::Tag;
 
     if tag_ptr.is_null() || store_ptr.is_null() || out_count.is_null() {
         if !out_count.is_null() {
@@ -687,17 +677,7 @@ pub extern "C" fn wasmtime4j_panama_tag_get_return_types(
     let func_type = tag_type.ty();
     let results: Vec<c_int> = func_type
         .results()
-        .map(|vt| match vt {
-            ValType::I32 => 0,
-            ValType::I64 => 1,
-            ValType::F32 => 2,
-            ValType::F64 => 3,
-            ValType::V128 => 4,
-            ValType::Ref(r) => match r.heap_type() {
-                wasmtime::HeapType::Func => 5,
-                _ => 6, // EXTERNREF or other ref types
-            },
-        })
+        .map(|vt| crate::ffi_common::valtype_conversion::valtype_to_int(&vt))
         .collect();
 
     let count = results.len();

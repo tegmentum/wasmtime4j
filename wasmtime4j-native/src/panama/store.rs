@@ -8,7 +8,7 @@ use crate::error::ffi_utils;
 use crate::store::core;
 use crate::WasmtimeResult;
 use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
-use wasmtime::{FuncType, RefType, ValType};
+use wasmtime::{FuncType, ValType};
 
 /// Create a new WebAssembly store with default configuration (Panama FFI version)
 #[no_mangle]
@@ -323,50 +323,7 @@ type StoreHostFunctionCallback = extern "C" fn(
     error_message_len: c_uint,
 ) -> c_int;
 
-/// Convert integer to ValType for store module
-fn store_int_to_valtype(val: c_int) -> crate::WasmtimeResult<ValType> {
-    match val {
-        0 => Ok(ValType::I32),
-        1 => Ok(ValType::I64),
-        2 => Ok(ValType::F32),
-        3 => Ok(ValType::F64),
-        4 => Ok(ValType::V128),
-        5 => Ok(ValType::Ref(RefType::FUNCREF)),
-        6 => Ok(ValType::Ref(RefType::EXTERNREF)),
-        7 => Ok(ValType::Ref(RefType::ANYREF)),
-        8 => Ok(ValType::Ref(wasmtime::RefType::new(
-            true,
-            wasmtime::HeapType::Eq,
-        ))),
-        9 => Ok(ValType::Ref(wasmtime::RefType::new(
-            true,
-            wasmtime::HeapType::I31,
-        ))),
-        10 => Ok(ValType::Ref(wasmtime::RefType::new(
-            true,
-            wasmtime::HeapType::Struct,
-        ))),
-        11 => Ok(ValType::Ref(wasmtime::RefType::new(
-            true,
-            wasmtime::HeapType::Array,
-        ))),
-        12 => Ok(ValType::Ref(wasmtime::RefType::new(
-            true,
-            wasmtime::HeapType::None,
-        ))),
-        13 => Ok(ValType::Ref(wasmtime::RefType::new(
-            true,
-            wasmtime::HeapType::NoFunc,
-        ))),
-        14 => Ok(ValType::Ref(wasmtime::RefType::new(
-            true,
-            wasmtime::HeapType::NoExtern,
-        ))),
-        _ => Err(crate::error::WasmtimeError::InvalidParameter {
-            message: format!("Invalid ValType code: {}", val),
-        }),
-    }
-}
+use crate::ffi_common::valtype_conversion;
 
 /// Create a host function and register it for table operations (Panama FFI version)
 ///
@@ -406,7 +363,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
         let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
         let param_val_types: Vec<ValType> = param_slice
             .iter()
-            .map(|&t| store_int_to_valtype(t))
+            .map(|&t| valtype_conversion::int_to_valtype(t))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Convert return types
@@ -414,7 +371,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
             unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
         let return_val_types: Vec<ValType> = return_slice
             .iter()
-            .map(|&t| store_int_to_valtype(t))
+            .map(|&t| valtype_conversion::int_to_valtype(t))
             .collect::<Result<Vec<_>, _>>()?;
 
         // Create FuncType using the Store's engine

@@ -3,6 +3,84 @@
 //! This module provides simple utility functions to eliminate code duplication
 //! while maintaining clear interfaces and compilation integrity.
 
+/// ValType conversion utilities shared between JNI and Panama implementations.
+///
+/// These functions provide the canonical mapping between integer type codes
+/// and wasmtime::ValType, ensuring consistency across all FFI boundaries.
+pub mod valtype_conversion {
+    use crate::error::{WasmtimeError, WasmtimeResult};
+    use wasmtime::{HeapType, RefType, ValType};
+
+    /// Convert an integer type code to a wasmtime ValType.
+    ///
+    /// # Type Code Mapping
+    /// | Code | ValType |
+    /// |------|---------|
+    /// | 0 | I32 |
+    /// | 1 | I64 |
+    /// | 2 | F32 |
+    /// | 3 | F64 |
+    /// | 4 | V128 |
+    /// | 5 | FuncRef |
+    /// | 6 | ExternRef |
+    /// | 7 | AnyRef |
+    /// | 8 | EqRef |
+    /// | 9 | I31Ref |
+    /// | 10 | StructRef |
+    /// | 11 | ArrayRef |
+    /// | 12 | NullRef |
+    /// | 13 | NullFuncRef |
+    /// | 14 | NullExternRef |
+    pub fn int_to_valtype(code: i32) -> WasmtimeResult<ValType> {
+        match code {
+            0 => Ok(ValType::I32),
+            1 => Ok(ValType::I64),
+            2 => Ok(ValType::F32),
+            3 => Ok(ValType::F64),
+            4 => Ok(ValType::V128),
+            5 => Ok(ValType::Ref(RefType::FUNCREF)),
+            6 => Ok(ValType::Ref(RefType::EXTERNREF)),
+            7 => Ok(ValType::Ref(RefType::ANYREF)),
+            8 => Ok(ValType::Ref(RefType::new(true, HeapType::Eq))),
+            9 => Ok(ValType::Ref(RefType::new(true, HeapType::I31))),
+            10 => Ok(ValType::Ref(RefType::new(true, HeapType::Struct))),
+            11 => Ok(ValType::Ref(RefType::new(true, HeapType::Array))),
+            12 => Ok(ValType::Ref(RefType::new(true, HeapType::None))),
+            13 => Ok(ValType::Ref(RefType::new(true, HeapType::NoFunc))),
+            14 => Ok(ValType::Ref(RefType::new(true, HeapType::NoExtern))),
+            _ => Err(WasmtimeError::InvalidParameter {
+                message: format!("Invalid ValType code: {}. Expected 0-14", code),
+            }),
+        }
+    }
+
+    /// Convert a wasmtime ValType to its integer type code.
+    ///
+    /// See [`int_to_valtype`] for the code mapping.
+    pub fn valtype_to_int(val_type: &ValType) -> i32 {
+        match val_type {
+            ValType::I32 => 0,
+            ValType::I64 => 1,
+            ValType::F32 => 2,
+            ValType::F64 => 3,
+            ValType::V128 => 4,
+            ValType::Ref(ref_type) => match ref_type.heap_type() {
+                HeapType::Func => 5,
+                HeapType::Extern => 6,
+                HeapType::Any => 7,
+                HeapType::Eq => 8,
+                HeapType::I31 => 9,
+                HeapType::Struct => 10,
+                HeapType::Array => 11,
+                HeapType::None => 12,
+                HeapType::NoFunc => 13,
+                HeapType::NoExtern => 14,
+                _ => 6, // Default to EXTERNREF for unknown heap types
+            },
+        }
+    }
+}
+
 /// Parameter conversion utilities for FFI operations
 pub mod parameter_conversion {
     //! Utilities for converting parameters between FFI interfaces and internal types.
@@ -384,7 +462,9 @@ mod tests {
     use super::memory_utils::*;
     use super::parameter_conversion::*;
     use super::resource_destruction::*;
+    use super::valtype_conversion::*;
     use std::ptr;
+    use wasmtime::{HeapType, RefType, ValType};
     use wasmtime::{OptLevel, Strategy};
 
     // Parameter conversion tests
@@ -977,6 +1057,76 @@ mod tests {
         }
 
         clear_destroyed_pointers();
+    }
+
+    // ValType conversion tests
+
+    #[test]
+    fn test_int_to_valtype_all_valid_codes() {
+        for code in 0..=14 {
+            let result = int_to_valtype(code);
+            assert!(result.is_ok(), "Code {} should be valid", code);
+        }
+    }
+
+    #[test]
+    fn test_int_to_valtype_invalid_codes() {
+        for code in [15, 100, -1, i32::MAX, i32::MIN] {
+            let result = int_to_valtype(code);
+            assert!(result.is_err(), "Code {} should be invalid", code);
+        }
+    }
+
+    #[test]
+    fn test_int_to_valtype_primitive_types() {
+        assert!(matches!(int_to_valtype(0).unwrap(), ValType::I32));
+        assert!(matches!(int_to_valtype(1).unwrap(), ValType::I64));
+        assert!(matches!(int_to_valtype(2).unwrap(), ValType::F32));
+        assert!(matches!(int_to_valtype(3).unwrap(), ValType::F64));
+        assert!(matches!(int_to_valtype(4).unwrap(), ValType::V128));
+    }
+
+    #[test]
+    fn test_int_to_valtype_ref_types() {
+        assert!(matches!(int_to_valtype(5).unwrap(), ValType::Ref(_)));
+        assert!(matches!(int_to_valtype(6).unwrap(), ValType::Ref(_)));
+        assert!(matches!(int_to_valtype(7).unwrap(), ValType::Ref(_)));
+    }
+
+    #[test]
+    fn test_valtype_to_int_primitive_types() {
+        assert_eq!(valtype_to_int(&ValType::I32), 0);
+        assert_eq!(valtype_to_int(&ValType::I64), 1);
+        assert_eq!(valtype_to_int(&ValType::F32), 2);
+        assert_eq!(valtype_to_int(&ValType::F64), 3);
+        assert_eq!(valtype_to_int(&ValType::V128), 4);
+    }
+
+    #[test]
+    fn test_valtype_to_int_ref_types() {
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::FUNCREF)), 5);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::EXTERNREF)), 6);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::ANYREF)), 7);
+    }
+
+    #[test]
+    fn test_valtype_to_int_gc_types() {
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Eq))), 8);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::I31))), 9);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Struct))), 10);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Array))), 11);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::None))), 12);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoFunc))), 13);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoExtern))), 14);
+    }
+
+    #[test]
+    fn test_valtype_roundtrip() {
+        for code in 0..=14 {
+            let valtype = int_to_valtype(code).unwrap();
+            let back = valtype_to_int(&valtype);
+            assert_eq!(code, back, "Roundtrip failed for code {}", code);
+        }
     }
 }
 

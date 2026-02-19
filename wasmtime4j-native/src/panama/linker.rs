@@ -9,7 +9,7 @@ use crate::instance::{FfiWasmValue, WasmValue};
 use crate::linker::core as linker_core;
 use std::ffi::CStr;
 use std::os::raw::{c_char, c_int, c_uint, c_void};
-use wasmtime::{FuncType, RefType, ValType};
+use wasmtime::{FuncType, ValType};
 
 /// Type for Panama callback function pointer
 ///
@@ -957,16 +957,5 @@ pub extern "C" fn wasmtime4j_panama_linker_get_default(
 
 /// Helper: Convert int to ValType
 fn int_to_valtype(val: c_int) -> crate::WasmtimeResult<ValType> {
-    match val {
-        0 => Ok(ValType::I32),
-        1 => Ok(ValType::I64),
-        2 => Ok(ValType::F32),
-        3 => Ok(ValType::F64),
-        4 => Ok(ValType::V128),
-        5 => Ok(ValType::Ref(RefType::FUNCREF)),
-        6 => Ok(ValType::Ref(RefType::EXTERNREF)),
-        _ => Err(crate::error::WasmtimeError::Type {
-            message: format!("Unknown value type: {}", val),
-        }),
-    }
+    crate::ffi_common::valtype_conversion::int_to_valtype(val)
 }

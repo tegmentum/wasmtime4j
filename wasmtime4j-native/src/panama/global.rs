@@ -7,7 +7,7 @@ use crate::error::ffi_utils;
 use crate::global::core;
 use crate::store::Store;
 use std::os::raw::{c_char, c_int, c_ulong, c_void};
-use wasmtime::{Mutability, RefType, ValType};
+use wasmtime::Mutability;
 
 /// Create a new WebAssembly global variable (Panama FFI version)
 #[no_mangle]
@@ -28,28 +28,7 @@ pub extern "C" fn wasmtime4j_panama_global_create(
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
 
-        let val_type = match value_type {
-            0 => ValType::I32,
-            1 => ValType::I64,
-            2 => ValType::F32,
-            3 => ValType::F64,
-            4 => ValType::V128,
-            5 => ValType::Ref(RefType::FUNCREF),
-            6 => ValType::Ref(RefType::EXTERNREF),
-            7 => ValType::Ref(RefType::ANYREF),
-            8 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
-            9 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
-            10 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
-            11 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
-            12 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
-            13 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
-            14 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
-            _ => {
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Invalid value type: {}", value_type),
-                })
-            }
-        };
+        let val_type = crate::ffi_common::valtype_conversion::int_to_valtype(value_type)?;
 
         let mutability_enum = match mutability {
             0 => Mutability::Const,
@@ -178,28 +157,7 @@ pub extern "C" fn wasmtime4j_panama_global_set(
         let global = unsafe { core::get_global_ref(global_ptr)? };
         let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
 
-        let val_type = match value_type {
-            0 => ValType::I32,
-            1 => ValType::I64,
-            2 => ValType::F32,
-            3 => ValType::F64,
-            4 => ValType::V128,
-            5 => ValType::Ref(RefType::FUNCREF),
-            6 => ValType::Ref(RefType::EXTERNREF),
-            7 => ValType::Ref(RefType::ANYREF),
-            8 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
-            9 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
-            10 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
-            11 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
-            12 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
-            13 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
-            14 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
-            _ => {
-                return Err(crate::error::WasmtimeError::InvalidParameter {
-                    message: format!("Invalid value type: {}", value_type),
-                })
-            }
-        };
+        let val_type = crate::ffi_common::valtype_conversion::int_to_valtype(value_type)?;
 
         let ref_id_opt = if ref_id_present != 0 {
             Some(ref_id)
@@ -248,29 +206,7 @@ pub extern "C" fn wasmtime4j_panama_global_metadata(
 
         unsafe {
             if !value_type.is_null() {
-                *value_type = match &metadata.value_type {
-                    ValType::I32 => 0,
-                    ValType::I64 => 1,
-                    ValType::F32 => 2,
-                    ValType::F64 => 3,
-                    ValType::V128 => 4,
-                    ValType::Ref(ref_type) => {
-                        // Check the heap type to determine funcref vs externref
-                        match ref_type.heap_type() {
-                            wasmtime::HeapType::Func => 5,      // FUNCREF
-                            wasmtime::HeapType::Extern => 6,    // EXTERNREF
-                            wasmtime::HeapType::Any => 7,       // ANYREF
-                            wasmtime::HeapType::Eq => 8,        // EQREF
-                            wasmtime::HeapType::I31 => 9,       // I31REF
-                            wasmtime::HeapType::Struct => 10,   // STRUCTREF
-                            wasmtime::HeapType::Array => 11,    // ARRAYREF
-                            wasmtime::HeapType::None => 12,     // NULLREF
-                            wasmtime::HeapType::NoFunc => 13,   // NULLFUNCREF
-                            wasmtime::HeapType::NoExtern => 14, // NULLEXTERNREF
-                            _ => 6, // Default to EXTERNREF for other/unknown types
-                        }
-                    }
-                };
+                *value_type = crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
             }
             if !mutability.is_null() {
                 *mutability = match metadata.mutability {

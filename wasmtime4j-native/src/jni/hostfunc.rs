@@ -12,7 +12,7 @@ use jni::JNIEnv;
 use crate::error::jni_utils;
 use crate::{WasmtimeError, WasmtimeResult};
 use std::os::raw::c_void;
-use wasmtime::{FuncType, ValType};
+use wasmtime::FuncType;
 
 /// Create a new host function (JNI version)
 #[no_mangle]
@@ -194,36 +194,16 @@ pub fn unmarshal_function_type(engine: &wasmtime::Engine, data: &[u8]) -> Wasmti
     // Parse parameter types
     let mut param_types = Vec::with_capacity(param_count);
     for i in 0..param_count {
-        let val_type = match data[4 + i] {
-            0 => ValType::I32,
-            1 => ValType::I64,
-            2 => ValType::F32,
-            3 => ValType::F64,
-            4 => ValType::V128,
-            _ => {
-                return Err(WasmtimeError::Validation {
-                    message: format!("Invalid parameter type: {}", data[4 + i]),
-                })
-            }
-        };
+        let val_type = crate::ffi_common::valtype_conversion::int_to_valtype(data[4 + i] as i32)?;
         param_types.push(val_type);
     }
 
     // Parse return types
     let mut return_types = Vec::with_capacity(return_count);
     for i in 0..return_count {
-        let val_type = match data[return_count_offset + 4 + i] {
-            0 => ValType::I32,
-            1 => ValType::I64,
-            2 => ValType::F32,
-            3 => ValType::F64,
-            4 => ValType::V128,
-            _ => {
-                return Err(WasmtimeError::Validation {
-                    message: format!("Invalid return type: {}", data[return_count_offset + 4 + i]),
-                })
-            }
-        };
+        let val_type = crate::ffi_common::valtype_conversion::int_to_valtype(
+            data[return_count_offset + 4 + i] as i32,
+        )?;
         return_types.push(val_type);
     }
 

@@ -1765,29 +1765,7 @@ pub mod core {
 
     /// Convert wasmtime::ValType to integer representation
     fn wasmtime_val_type_to_int(val_type: wasmtime::ValType) -> i32 {
-        match val_type {
-            wasmtime::ValType::I32 => 0,
-            wasmtime::ValType::I64 => 1,
-            wasmtime::ValType::F32 => 2,
-            wasmtime::ValType::F64 => 3,
-            wasmtime::ValType::V128 => 4,
-            wasmtime::ValType::Ref(ref_type) => {
-                // Check the heap type to determine funcref vs externref
-                match ref_type.heap_type() {
-                    wasmtime::HeapType::Func => 5,      // FUNCREF
-                    wasmtime::HeapType::Extern => 6,    // EXTERNREF
-                    wasmtime::HeapType::Any => 7,       // ANYREF
-                    wasmtime::HeapType::Eq => 8,        // EQREF
-                    wasmtime::HeapType::I31 => 9,       // I31REF
-                    wasmtime::HeapType::Struct => 10,   // STRUCTREF
-                    wasmtime::HeapType::Array => 11,    // ARRAYREF
-                    wasmtime::HeapType::None => 12,     // NULLREF
-                    wasmtime::HeapType::NoFunc => 13,   // NULLFUNCREF
-                    wasmtime::HeapType::NoExtern => 14, // NULLEXTERNREF
-                    _ => 6, // Default to EXTERNREF for other/unknown types
-                }
-            }
-        }
+        crate::ffi_common::valtype_conversion::valtype_to_int(&val_type)
     }
 
     /// Core function to get exports as a vector (for FFI use)

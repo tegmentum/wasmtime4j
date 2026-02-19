@@ -7,7 +7,7 @@ use jni::JNIEnv;
 use crate::error::{ffi_utils, jni_utils, WasmtimeError, WasmtimeResult};
 use crate::global::core;
 use crate::store::Store;
-use wasmtime::{Mutability, RefType, ValType};
+use wasmtime::{Mutability, ValType};
 
 /// Helper function to check ValType equality (since ValType doesn't implement PartialEq)
 fn val_type_matches(val_type: &ValType, expected: &ValType) -> bool {
@@ -53,28 +53,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeCreateGl
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
         };
 
-        let val_type = match value_type {
-            0 => ValType::I32,
-            1 => ValType::I64,
-            2 => ValType::F32,
-            3 => ValType::F64,
-            4 => ValType::V128,
-            5 => ValType::Ref(RefType::FUNCREF),
-            6 => ValType::Ref(RefType::EXTERNREF),
-            7 => ValType::Ref(RefType::ANYREF),
-            8 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
-            9 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
-            10 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
-            11 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
-            12 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
-            13 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
-            14 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
-            _ => {
-                return Err(WasmtimeError::InvalidParameter {
-                    message: format!("Invalid value type: {}", value_type),
-                })
-            }
-        };
+        let val_type = crate::ffi_common::valtype_conversion::int_to_valtype(value_type)?;
 
         let mutability_enum = match mutability {
             0 => Mutability::Const,
@@ -178,28 +157,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetGloba
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
         };
 
-        let val_type = match value_type {
-            0 => ValType::I32,
-            1 => ValType::I64,
-            2 => ValType::F32,
-            3 => ValType::F64,
-            4 => ValType::V128,
-            5 => ValType::Ref(RefType::FUNCREF),
-            6 => ValType::Ref(RefType::EXTERNREF),
-            7 => ValType::Ref(RefType::ANYREF),
-            8 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
-            9 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
-            10 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
-            11 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
-            12 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
-            13 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
-            14 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
-            _ => {
-                return Err(WasmtimeError::InvalidParameter {
-                    message: format!("Invalid value type: {}", value_type),
-                })
-            }
-        };
+        let val_type = crate::ffi_common::valtype_conversion::int_to_valtype(value_type)?;
 
         let ref_id_opt = if ref_id_present != 0 {
             Some(ref_id as u64)
@@ -236,15 +194,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetMetad
 
         let mut data = Vec::with_capacity(9); // 2 ints + 1 byte for name presence
 
-        let value_type_code = match metadata.value_type {
-            ValType::I32 => 0,
-            ValType::I64 => 1,
-            ValType::F32 => 2,
-            ValType::F64 => 3,
-            ValType::V128 => 4,
-            ValType::Ref(_) => 5, // Generic ref type for now
-        };
-        data.extend_from_slice(&(value_type_code as i32).to_le_bytes());
+        let value_type_code = crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
+        data.extend_from_slice(&value_type_code.to_le_bytes());
 
         let mutability_code = match metadata.mutability {
             Mutability::Const => 0,
@@ -972,19 +923,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGloba
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let metadata = core::get_global_metadata(global);
 
-        // Map ValType to type code
-        let type_code = match metadata.value_type {
-            wasmtime::ValType::I32 => 0,
-            wasmtime::ValType::I64 => 1,
-            wasmtime::ValType::F32 => 2,
-            wasmtime::ValType::F64 => 3,
-            wasmtime::ValType::V128 => 4,
-            wasmtime::ValType::Ref(_) => {
-                // For now, all ref types map to FUNCREF (5) or EXTERNREF (6)
-                // We'll use 5 as a generic ref type
-                5
-            }
-        };
+        let type_code = crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
 
         let is_mutable = if metadata.mutability == wasmtime::Mutability::Var {
             1

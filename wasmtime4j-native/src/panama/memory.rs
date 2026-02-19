@@ -715,20 +715,7 @@ pub extern "C" fn wasmtime4j_instance_get_global_type(
         store.with_context_ro(|ctx| {
             let global_type = global.ty(&ctx);
 
-            // Map wasmtime value type to our type codes
-            let type_code = match global_type.content() {
-                wasmtime::ValType::I32 => 0,
-                wasmtime::ValType::I64 => 1,
-                wasmtime::ValType::F32 => 2,
-                wasmtime::ValType::F64 => 3,
-                wasmtime::ValType::V128 => 4,
-                wasmtime::ValType::Ref(ref_type) => {
-                    match ref_type.heap_type() {
-                        wasmtime::HeapType::Func => 5, // FuncRef
-                        _ => 6,                        // ExternRef or other
-                    }
-                }
-            };
+            let type_code = crate::ffi_common::valtype_conversion::valtype_to_int(global_type.content());
 
             unsafe {
                 if !value_type_out.is_null() {

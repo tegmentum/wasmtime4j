@@ -215,23 +215,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableT
         let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
         let metadata = core::get_table_metadata(table);
 
-        // Map element type to type code
-        let type_code = match &metadata.element_type {
-            wasmtime::ValType::I32 => 0,
-            wasmtime::ValType::I64 => 1,
-            wasmtime::ValType::F32 => 2,
-            wasmtime::ValType::F64 => 3,
-            wasmtime::ValType::V128 => 4,
-            wasmtime::ValType::Ref(ref_type) => {
-                // Map reference types based on heap type
-                use wasmtime::HeapType;
-                match ref_type.heap_type() {
-                    HeapType::Extern => 6, // EXTERNREF
-                    HeapType::Func => 5,   // FUNCREF
-                    _ => 5,                // Default to FUNCREF for other ref types
-                }
-            }
-        };
+        let type_code = crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.element_type);
 
         let minimum = metadata.initial_size as i64;
         let maximum = metadata.maximum_size.map(|m| m as i64).unwrap_or(-1);

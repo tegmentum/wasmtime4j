@@ -12,7 +12,7 @@ use crate::linker::core as linker_core;
 
 use std::os::raw::c_void;
 use std::sync::Arc;
-use wasmtime::{RefType, ValType};
+use wasmtime::ValType;
 
 /// Extract the message from a pending Java exception and clear it.
 /// Returns the exception message or a default message if extraction fails.
@@ -195,19 +195,7 @@ impl HostFunctionCallback for JniHostFunctionCallback {
 
 /// Convert integer type code to ValType
 fn int_to_valtype(type_code: i32) -> WasmtimeResult<ValType> {
-    match type_code {
-        0 => Ok(ValType::I32),
-        1 => Ok(ValType::I64),
-        2 => Ok(ValType::F32),
-        3 => Ok(ValType::F64),
-        4 => Ok(ValType::V128),
-        5 => Ok(ValType::Ref(RefType::FUNCREF)),
-        6 => Ok(ValType::Ref(RefType::EXTERNREF)),
-        _ => Err(WasmtimeError::Runtime {
-            message: format!("Unknown type code: {}", type_code),
-            backtrace: None,
-        }),
-    }
+    crate::ffi_common::valtype_conversion::int_to_valtype(type_code)
 }
 
 /// Convert Rust WasmValue slice to Java WasmValue array

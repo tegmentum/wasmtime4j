@@ -14,36 +14,12 @@ use crate::store::Store;
 
 /// Helper to convert ValType to integer code
 fn val_type_to_code(ty: &ValType) -> i32 {
-    use wasmtime::HeapType;
-    match ty {
-        ValType::I32 => 0,
-        ValType::I64 => 1,
-        ValType::F32 => 2,
-        ValType::F64 => 3,
-        ValType::V128 => 4,
-        ValType::Ref(r) => {
-            // Check heap_type() to determine the reference type
-            match r.heap_type() {
-                HeapType::Func => 5,   // funcref
-                HeapType::Extern => 6, // externref
-                _ => 7,                // Other reference types (anyref, eqref, etc.)
-            }
-        }
-    }
+    crate::ffi_common::valtype_conversion::valtype_to_int(ty)
 }
 
 /// Helper to convert integer code to ValType
 fn code_to_val_type(code: i32) -> Option<ValType> {
-    match code {
-        0 => Some(ValType::I32),
-        1 => Some(ValType::I64),
-        2 => Some(ValType::F32),
-        3 => Some(ValType::F64),
-        4 => Some(ValType::V128),
-        5 => Some(ValType::FUNCREF),
-        6 => Some(ValType::EXTERNREF),
-        _ => None,
-    }
+    crate::ffi_common::valtype_conversion::int_to_valtype(code).ok()
 }
 
 /// JNI binding for WasmRuntime.nativeCreateTag
