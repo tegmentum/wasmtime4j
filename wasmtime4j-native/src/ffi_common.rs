@@ -79,6 +79,60 @@ pub mod parameter_conversion {
         }
     }
 
+    /// Convert a zero value to None, non-zero to Some(value as u64).
+    ///
+    /// Used for store config parameters where 0 means "no limit/no timeout".
+    ///
+    /// # Arguments
+    /// * `value` - Value to convert (0 = None)
+    ///
+    /// # Returns
+    /// * `None` if value is 0
+    /// * `Some(value as u64)` otherwise
+    pub fn zero_to_none_u64(value: i64) -> Option<u64> {
+        if value == 0 {
+            None
+        } else {
+            Some(value as u64)
+        }
+    }
+
+    /// Convert a zero value to None, non-zero to Some(value as usize).
+    ///
+    /// Used for store config parameters where 0 means "no limit".
+    ///
+    /// # Arguments
+    /// * `value` - Value to convert (0 = None)
+    ///
+    /// # Returns
+    /// * `None` if value is 0
+    /// * `Some(value as usize)` otherwise
+    pub fn zero_to_none_usize(value: i64) -> Option<usize> {
+        if value == 0 {
+            None
+        } else {
+            Some(value as usize)
+        }
+    }
+
+    /// Convert a zero value to None, non-zero to Some(value as u32).
+    ///
+    /// Used for store config parameters where 0 means "no limit".
+    ///
+    /// # Arguments
+    /// * `value` - Value to convert (0 = None)
+    ///
+    /// # Returns
+    /// * `None` if value is 0
+    /// * `Some(value as u32)` otherwise
+    pub fn zero_to_none_u32(value: i32) -> Option<u32> {
+        if value == 0 {
+            None
+        } else {
+            Some(value as u32)
+        }
+    }
+
     /// Convert integer boolean (0/1) to Rust boolean
     ///
     /// # Arguments

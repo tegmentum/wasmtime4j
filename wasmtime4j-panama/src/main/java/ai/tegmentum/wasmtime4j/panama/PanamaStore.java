@@ -32,7 +32,7 @@ import java.util.logging.Logger;
  */
 public final class PanamaStore implements Store {
   private static final Logger LOGGER = Logger.getLogger(PanamaStore.class.getName());
-  private static final NativeEngineBindings NATIVE_BINDINGS = NativeEngineBindings.getInstance();
+  private static final NativeStoreBindings NATIVE_BINDINGS = NativeStoreBindings.getInstance();
   private static final NativeInstanceBindings INSTANCE_BINDINGS =
       NativeInstanceBindings.getInstance();
   private static final NativeMemoryBindings MEMORY_BINDINGS = NativeMemoryBindings.getInstance();
@@ -1272,7 +1272,7 @@ public final class PanamaStore implements Store {
       }
 
       final MemorySegment executionCountSegment = arena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment totalExecutionTimeMsSegment = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment totalExecutionTimeUsSegment = arena.allocate(ValueLayout.JAVA_LONG);
       final MemorySegment fuelConsumedSegment = arena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
@@ -1280,7 +1280,7 @@ public final class PanamaStore implements Store {
               getStatsHandle.invoke(
                   nativeStore,
                   executionCountSegment,
-                  totalExecutionTimeMsSegment,
+                  totalExecutionTimeUsSegment,
                   fuelConsumedSegment);
 
       if (result != 0) {
@@ -1288,10 +1288,10 @@ public final class PanamaStore implements Store {
       }
 
       final long executionCount = executionCountSegment.get(ValueLayout.JAVA_LONG, 0);
-      final long totalExecutionTimeMs = totalExecutionTimeMsSegment.get(ValueLayout.JAVA_LONG, 0);
+      final long totalExecutionTimeUs = totalExecutionTimeUsSegment.get(ValueLayout.JAVA_LONG, 0);
       final long fuelConsumed = fuelConsumedSegment.get(ValueLayout.JAVA_LONG, 0);
 
-      return new ExecutionStats(executionCount, totalExecutionTimeMs * 1000L, fuelConsumed);
+      return new ExecutionStats(executionCount, totalExecutionTimeUs, fuelConsumed);
     } catch (final Throwable e) {
       if (e instanceof WasmException) {
         throw (WasmException) e;

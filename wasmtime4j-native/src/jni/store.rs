@@ -41,45 +41,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSto
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-        let fuel_limit_opt = if fuel_limit == 0 {
-            None
-        } else {
-            Some(fuel_limit as u64)
-        };
-        let memory_limit_opt = if memory_limit_bytes == 0 {
-            None
-        } else {
-            Some(memory_limit_bytes as usize)
-        };
-        let timeout_opt = if execution_timeout_secs == 0 {
-            None
-        } else {
-            Some(execution_timeout_secs as u64)
-        };
-        let max_instances_opt = if max_instances == 0 {
-            None
-        } else {
-            Some(max_instances as usize)
-        };
-        let max_table_elements_opt = if max_table_elements == 0 {
-            None
-        } else {
-            Some(max_table_elements as u32)
-        };
-        let max_functions_opt = if max_functions == 0 {
-            None
-        } else {
-            Some(max_functions as usize)
-        };
+        use crate::ffi_common::parameter_conversion::{zero_to_none_u32, zero_to_none_u64, zero_to_none_usize};
 
         let store = core::create_store_with_config(
             engine,
-            fuel_limit_opt,
-            memory_limit_opt,
-            timeout_opt,
-            max_instances_opt,
-            max_table_elements_opt,
-            max_functions_opt,
+            zero_to_none_u64(fuel_limit),
+            zero_to_none_usize(memory_limit_bytes),
+            zero_to_none_u64(execution_timeout_secs),
+            zero_to_none_usize(max_instances as i64),
+            zero_to_none_u32(max_table_elements),
+            zero_to_none_usize(max_functions as i64),
         )?;
         let store_ptr = store.as_ref() as *const _ as *const c_void;
         crate::memory::core::register_store_handle(store_ptr)?;
@@ -399,20 +370,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeEpochDead
     });
 }
 
-/// Force garbage collection in the store
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGarbageCollect(
-    mut env: JNIEnv,
-    _class: JClass,
-    store_ptr: jlong,
-) -> jboolean {
-    jni_utils::jni_try_bool(&mut env, || {
-        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
-        core::garbage_collect(store)?;
-        Ok(true)
-    }) as jboolean
-}
-
 /// Validate store functionality
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeValidate(
@@ -451,7 +408,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetExecut
     jni_utils::jni_try_with_default(&mut env, -1, || {
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
         let stats = core::get_execution_stats(store)?;
-        Ok(stats.total_execution_time.as_millis() as jlong)
+        Ok(stats.total_execution_time.as_micros() as jlong)
     })
 }
 
@@ -821,29 +778,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-        let memory_limit_opt = if memory_size == 0 {
-            None
-        } else {
-            Some(memory_size as usize)
-        };
-        let table_limit_opt = if table_elements == 0 {
-            None
-        } else {
-            Some(table_elements as u32)
-        };
-        let instances_limit_opt = if instances == 0 {
-            None
-        } else {
-            Some(instances as usize)
-        };
+        use crate::ffi_common::parameter_conversion::{zero_to_none_u32, zero_to_none_usize};
 
         let store = core::create_store_with_config(
             engine,
             None, // fuel_limit
-            memory_limit_opt,
+            zero_to_none_usize(memory_size),
             None, // execution_timeout
-            instances_limit_opt,
-            table_limit_opt,
+            zero_to_none_usize(instances),
+            zero_to_none_u32(table_elements as i32),
             None, // max_functions
         )?;
         let store_ptr = store.as_ref() as *const _ as *const c_void;
@@ -865,27 +808,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-        let fuel_limit_opt = if fuel_limit == 0 {
-            None
-        } else {
-            Some(fuel_limit as u64)
-        };
-        let memory_limit_opt = if memory_size == 0 {
-            None
-        } else {
-            Some(memory_size as usize)
-        };
-        let timeout_opt = if execution_timeout_secs == 0 {
-            None
-        } else {
-            Some(execution_timeout_secs as u64)
-        };
+        use crate::ffi_common::parameter_conversion::{zero_to_none_u64, zero_to_none_usize};
 
         let store = core::create_store_with_config(
             engine,
-            fuel_limit_opt,
-            memory_limit_opt,
-            timeout_opt,
+            zero_to_none_u64(fuel_limit),
+            zero_to_none_usize(memory_size),
+            zero_to_none_u64(execution_timeout_secs),
             None, // instances
             None, // table_elements
             None, // max_functions
@@ -1489,29 +1418,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCall
 }
 
 /// Set an async call hook on the store
+/// Delegates to the sync version since Java handles async dispatch.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetCallHookAsync(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
 ) {
-    let _ = jni_utils::jni_try_void(&mut env, || {
-        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
-        core::set_call_hook(store)?;
-        Ok(())
-    });
+    Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetCallHook(env, _class, store_ptr);
 }
 
 /// Clear the async call hook from the store
+/// Delegates to the sync version since Java handles async dispatch.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCallHookAsync(
-    mut env: JNIEnv,
+    env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
 ) {
-    let _ = jni_utils::jni_try_void(&mut env, || {
-        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
-        core::clear_call_hook(store)?;
-        Ok(())
-    });
+    Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCallHook(env, _class, store_ptr);
 }

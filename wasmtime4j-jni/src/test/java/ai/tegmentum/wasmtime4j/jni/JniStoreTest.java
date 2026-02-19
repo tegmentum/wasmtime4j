@@ -85,17 +85,7 @@ class JniStoreTest {
         assertThrows(IllegalArgumentException.class, () -> store.addFuel(-1));
 
     assertThat(exception.getMessage()).contains("additionalFuel");
-    assertThat(exception.getMessage()).containsIgnoringCase("positive");
-  }
-
-  @Test
-  void testAddFuelWithZero() {
-    final JniStore store = new JniStore(VALID_HANDLE, testEngine);
-
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> store.addFuel(0));
-
-    assertThat(exception.getMessage()).contains("additionalFuel");
+    assertThat(exception.getMessage()).containsIgnoringCase("non-negative");
   }
 
   @Test
@@ -106,17 +96,7 @@ class JniStoreTest {
         assertThrows(IllegalArgumentException.class, () -> store.setFuel(-1));
 
     assertThat(exception.getMessage()).contains("fuel");
-    assertThat(exception.getMessage()).containsIgnoringCase("positive");
-  }
-
-  @Test
-  void testSetFuelWithZero() {
-    final JniStore store = new JniStore(VALID_HANDLE, testEngine);
-
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> store.setFuel(0));
-
-    assertThat(exception.getMessage()).contains("fuel");
+    assertThat(exception.getMessage()).containsIgnoringCase("non-negative");
   }
 
   @Test
@@ -127,17 +107,7 @@ class JniStoreTest {
         assertThrows(IllegalArgumentException.class, () -> store.consumeFuel(-1));
 
     assertThat(exception.getMessage()).contains("fuel");
-    assertThat(exception.getMessage()).containsIgnoringCase("positive");
-  }
-
-  @Test
-  void testConsumeFuelWithZero() {
-    final JniStore store = new JniStore(VALID_HANDLE, testEngine);
-
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> store.consumeFuel(0));
-
-    assertThat(exception.getMessage()).contains("fuel");
+    assertThat(exception.getMessage()).containsIgnoringCase("non-negative");
   }
 
   @Test

@@ -47,8 +47,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       new ConcurrentHashMap<>();
   private static final NativeInstanceBindings NATIVE_INSTANCE_BINDINGS =
       NativeInstanceBindings.getInstance();
-  private static final NativeEngineBindings NATIVE_ENGINE_BINDINGS =
-      NativeEngineBindings.getInstance();
+  private static final NativeStoreBindings NATIVE_STORE_BINDINGS =
+      NativeStoreBindings.getInstance();
   private static final NativeMemoryBindings NATIVE_MEMORY_BINDINGS =
       NativeMemoryBindings.getInstance();
 
@@ -504,11 +504,11 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // If we have a WASI context, attach it to the store before instantiation
     if (wasiContext != null) {
-      final int hasWasi = NATIVE_ENGINE_BINDINGS.storeHasWasiContext(panamaStore.getNativeStore());
+      final int hasWasi = NATIVE_STORE_BINDINGS.storeHasWasiContext(panamaStore.getNativeStore());
       if (hasWasi == 0) {
         // Store doesn't have WASI context yet, attach it
         final int result =
-            NATIVE_ENGINE_BINDINGS.storeSetWasiContext(
+            NATIVE_STORE_BINDINGS.storeSetWasiContext(
                 panamaStore.getNativeStore(), wasiContext.getNativeContext());
         if (result != 0) {
           throw PanamaErrorMapper.mapNativeError(

@@ -46,45 +46,16 @@ pub extern "C" fn wasmtime4j_panama_store_create_with_config(
     ffi_utils::ffi_try_code(|| {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
 
-        let fuel_limit_opt = if fuel_limit == 0 {
-            None
-        } else {
-            Some(fuel_limit as u64)
-        };
-        let memory_limit_opt = if memory_limit_bytes == 0 {
-            None
-        } else {
-            Some(memory_limit_bytes as usize)
-        };
-        let timeout_opt = if execution_timeout_secs == 0 {
-            None
-        } else {
-            Some(execution_timeout_secs)
-        };
-        let max_instances_opt = if max_instances == 0 {
-            None
-        } else {
-            Some(max_instances as usize)
-        };
-        let max_table_elements_opt = if max_table_elements == 0 {
-            None
-        } else {
-            Some(max_table_elements)
-        };
-        let max_functions_opt = if max_functions == 0 {
-            None
-        } else {
-            Some(max_functions as usize)
-        };
+        use crate::ffi_common::parameter_conversion::{zero_to_none_u32, zero_to_none_u64, zero_to_none_usize};
 
         let store = core::create_store_with_config(
             engine,
-            fuel_limit_opt,
-            memory_limit_opt,
-            timeout_opt,
-            max_instances_opt,
-            max_table_elements_opt,
-            max_functions_opt,
+            zero_to_none_u64(fuel_limit as i64),
+            zero_to_none_usize(memory_limit_bytes as i64),
+            zero_to_none_u64(execution_timeout_secs as i64),
+            zero_to_none_usize(max_instances as i64),
+            zero_to_none_u32(max_table_elements as i32),
+            zero_to_none_usize(max_functions as i64),
         )?;
         let raw_ptr = Box::into_raw(store);
         crate::memory::core::register_store_handle(raw_ptr as *const c_void)?;
@@ -273,7 +244,7 @@ pub extern "C" fn wasmtime4j_panama_store_validate(store_ptr: *mut c_void) -> c_
 pub extern "C" fn wasmtime4j_panama_store_get_execution_stats(
     store_ptr: *mut c_void,
     execution_count_ptr: *mut c_ulong,
-    total_execution_time_ms_ptr: *mut c_ulong,
+    total_execution_time_us_ptr: *mut c_ulong,
     fuel_consumed_ptr: *mut c_ulong,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
@@ -282,7 +253,7 @@ pub extern "C" fn wasmtime4j_panama_store_get_execution_stats(
 
         unsafe {
             *execution_count_ptr = stats.execution_count;
-            *total_execution_time_ms_ptr = stats.total_execution_time.as_millis() as c_ulong;
+            *total_execution_time_us_ptr = stats.total_execution_time.as_micros() as c_ulong;
             *fuel_consumed_ptr = stats.fuel_consumed;
         }
 
@@ -678,7 +649,7 @@ pub extern "C" fn wasmtime4j_panama_store_gc(store_ptr: *mut c_void) -> c_int {
 pub extern "C" fn wasmtime4j_panama_store_set_fuel(store_ptr: *mut c_void, fuel: c_ulong) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
-        crate::store::core::set_fuel_level(store, fuel as u64)?;
+        crate::store::core::set_fuel(store, fuel as u64)?;
         Ok(())
     })
 }
@@ -929,26 +900,16 @@ pub extern "C" fn wasmtime4j_panama_store_clear_call_hook(store_ptr: *mut c_void
 
 /// Set an async call hook on the store (Panama FFI version)
 ///
-/// Installs a no-op async call hook on the wasmtime Store.
-/// For the async variant, we use the same synchronous no-op hook since
-/// the Java side handles the actual async dispatch.
+/// Delegates to the sync version since Java handles async dispatch.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_set_call_hook_async(store_ptr: *mut c_void) -> c_int {
-    ffi_utils::ffi_try_code(|| {
-        let store = unsafe { core::get_store_ref(store_ptr)? };
-        core::set_call_hook(store)?;
-        Ok(())
-    })
+    wasmtime4j_panama_store_set_call_hook(store_ptr)
 }
 
 /// Clear the async call hook on the store (Panama FFI version)
 ///
-/// Replaces the active async call hook with a no-op.
+/// Delegates to the sync version since Java handles async dispatch.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_clear_call_hook_async(store_ptr: *mut c_void) -> c_int {
-    ffi_utils::ffi_try_code(|| {
-        let store = unsafe { core::get_store_ref(store_ptr)? };
-        core::clear_call_hook(store)?;
-        Ok(())
-    })
+    wasmtime4j_panama_store_clear_call_hook(store_ptr)
 }

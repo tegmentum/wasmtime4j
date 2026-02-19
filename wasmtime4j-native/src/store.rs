@@ -1478,11 +1478,6 @@ pub mod core {
         store.with_context(func)
     }
 
-    /// Core function to set fuel level
-    pub fn set_fuel_level(store: &Store, fuel: u64) -> WasmtimeResult<()> {
-        store.set_fuel(fuel)
-    }
-
     /// Core function to set a callback-based resource limiter on a store
     pub fn set_resource_limiter(
         store: &Store,

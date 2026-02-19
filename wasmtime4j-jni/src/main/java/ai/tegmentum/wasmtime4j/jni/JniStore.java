@@ -177,7 +177,7 @@ public final class JniStore extends JniResource implements Store {
    */
   @Override
   public void addFuel(final long additionalFuel) throws WasmException {
-    Validation.requirePositive(additionalFuel, "additionalFuel");
+    Validation.requireNonNegative(additionalFuel, "additionalFuel");
     ensureNotClosed();
 
     try {
@@ -226,7 +226,7 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public void setFuel(final long fuel) throws WasmException {
-    Validation.requirePositive(fuel, "fuel");
+    Validation.requireNonNegative(fuel, "fuel");
     ensureNotClosed();
 
     try {
@@ -272,7 +272,7 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public long consumeFuel(final long fuel) throws WasmException {
-    Validation.requirePositive(fuel, "fuel");
+    Validation.requireNonNegative(fuel, "fuel");
     ensureNotClosed();
 
     try {
