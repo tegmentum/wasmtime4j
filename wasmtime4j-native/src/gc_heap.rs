@@ -300,33 +300,6 @@ impl GcHeap {
         Ok(())
     }
 
-    /// Record an allocation for statistics tracking
-    pub fn record_allocation(&self, size_bytes: usize) -> WasmtimeResult<()> {
-        let mut stats = self.stats.lock().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire stats lock".to_string(),
-        })?;
-
-        stats.total_allocated += 1;
-        stats.bytes_allocated += size_bytes as u64;
-        stats.current_heap_size += size_bytes;
-        stats.peak_heap_size = stats.peak_heap_size.max(stats.current_heap_size);
-
-        Ok(())
-    }
-
-    /// Record a deallocation for statistics tracking
-    pub fn record_deallocation(&self, size_bytes: usize) -> WasmtimeResult<()> {
-        let mut stats = self.stats.lock().map_err(|_| WasmtimeError::Concurrency {
-            message: "Failed to acquire stats lock".to_string(),
-        })?;
-
-        stats.total_collected += 1;
-        stats.bytes_collected += size_bytes as u64;
-        stats.current_heap_size = stats.current_heap_size.saturating_sub(size_bytes);
-
-        Ok(())
-    }
-
     /// Clean up invalid weak references
     fn cleanup_weak_refs(&self) -> WasmtimeResult<u64> {
         let mut weak_refs = self
@@ -351,11 +324,6 @@ pub struct GcWeakReference {
 }
 
 impl GcWeakReference {
-    /// Create a new weak reference (for use by WasmGcRuntime)
-    pub fn new(object_id: ObjectId, _heap: Arc<GcHeap>) -> Self {
-        Self { object_id }
-    }
-
     /// Attempt to upgrade weak reference to check if object is still valid
     pub fn upgrade(&self, heap: &GcHeap) -> Option<ObjectId> {
         heap.object_exists(self.object_id).ok().and_then(|exists| {
@@ -394,33 +362,6 @@ mod tests {
         let stats = heap.get_stats().unwrap();
         assert_eq!(stats.total_allocated, 0);
         assert_eq!(stats.current_heap_size, 0);
-    }
-
-    #[test]
-    fn test_allocation_tracking() {
-        let heap = create_test_heap();
-
-        heap.record_allocation(100).unwrap();
-        heap.record_allocation(200).unwrap();
-
-        let stats = heap.get_stats().unwrap();
-        assert_eq!(stats.total_allocated, 2);
-        assert_eq!(stats.bytes_allocated, 300);
-        assert_eq!(stats.current_heap_size, 300);
-    }
-
-    #[test]
-    fn test_deallocation_tracking() {
-        let heap = create_test_heap();
-
-        heap.record_allocation(100).unwrap();
-        heap.record_allocation(200).unwrap();
-        heap.record_deallocation(100).unwrap();
-
-        let stats = heap.get_stats().unwrap();
-        assert_eq!(stats.total_allocated, 2);
-        assert_eq!(stats.total_collected, 1);
-        assert_eq!(stats.current_heap_size, 200);
     }
 
     #[test]
@@ -485,19 +426,6 @@ mod tests {
 
         let result = heap.create_weak_reference(42);
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_peak_heap_tracking() {
-        let heap = create_test_heap();
-
-        heap.record_allocation(100).unwrap();
-        heap.record_allocation(200).unwrap();
-        heap.record_deallocation(100).unwrap();
-
-        let stats = heap.get_stats().unwrap();
-        assert_eq!(stats.peak_heap_size, 300);
-        assert_eq!(stats.current_heap_size, 200);
     }
 
     #[test]

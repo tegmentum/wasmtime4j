@@ -129,30 +129,6 @@ impl WasmGcRuntime {
         })
     }
 
-    /// Create a new WebAssembly GC runtime with custom configuration
-    pub fn with_config(engine: Engine, heap_config: GcHeapConfig) -> WasmtimeResult<Self> {
-        let type_registry = Arc::new(GcTypeRegistry::new());
-        let heap = Arc::new(GcHeap::new(heap_config, type_registry.clone()));
-
-        // Create Wasmtime store with GC features enabled
-        let store = Store::new(&engine, ());
-
-        // Initialize real GC operations with Wasmtime integration
-        let gc_operations = WasmtimeGcOperations::new(store).map_err(|e| {
-            WasmtimeError::from_string(&format!("Failed to initialize GC operations: {}", e))
-        })?;
-
-        Ok(Self {
-            type_registry,
-            heap,
-            gc_operations: Mutex::new(gc_operations),
-            next_object_id: Mutex::new(1),
-            gc_objects: RwLock::new(HashMap::new()),
-            allocation_count: AtomicU64::new(0),
-            collection_count: AtomicU64::new(0),
-        })
-    }
-
     // === Struct Operations ===
 
     /// Create a new struct instance using real Wasmtime GC (struct.new)
@@ -242,7 +218,7 @@ impl WasmGcRuntime {
         }
     }
 
-    /// Create a new struct instance with default values (struct.new_default) including advanced SIMD
+    /// Create a new struct instance with default values (struct.new_default)
     pub fn struct_new_default(&self, type_def: StructTypeDefinition) -> StructOperationResult {
         let default_values: Vec<GcValue> = type_def
             .fields
@@ -253,8 +229,6 @@ impl WasmGcRuntime {
                 crate::gc_types::FieldType::F32 => GcValue::F32(0.0),
                 crate::gc_types::FieldType::F64 => GcValue::F64(0.0),
                 crate::gc_types::FieldType::V128 => GcValue::V128([0; 16]),
-                crate::gc_types::FieldType::V256 => GcValue::V256([0; 32]),
-                crate::gc_types::FieldType::V512 => GcValue::V512([0; 64]),
                 crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => {
                     GcValue::I32(0)
                 }
@@ -502,8 +476,6 @@ impl WasmGcRuntime {
             crate::gc_types::FieldType::F32 => GcValue::F32(0.0),
             crate::gc_types::FieldType::F64 => GcValue::F64(0.0),
             crate::gc_types::FieldType::V128 => GcValue::V128([0; 16]),
-            crate::gc_types::FieldType::V256 => GcValue::V256([0; 32]),
-            crate::gc_types::FieldType::V512 => GcValue::V512([0; 64]),
             crate::gc_types::FieldType::PackedI8 | crate::gc_types::FieldType::PackedI16 => {
                 GcValue::I32(0)
             }
@@ -511,16 +483,6 @@ impl WasmGcRuntime {
         };
 
         let elements = vec![default_value; length as usize];
-        self.array_new(type_def, elements)
-    }
-
-    /// Create a new fixed-size array (array.new_fixed)
-    pub fn array_new_fixed(
-        &self,
-        type_def: ArrayTypeDefinition,
-        elements: Vec<GcValue>,
-    ) -> ArrayOperationResult {
-        // Validation for fixed arrays would be more strict
         self.array_new(type_def, elements)
     }
 
@@ -1001,76 +963,6 @@ impl WasmGcRuntime {
         }
     }
 
-    /// Create a null reference (ref.null)
-    pub fn ref_null(&self, ref_type: GcReferenceType) -> RefOperationResult {
-        // Validate that the reference type is valid
-        match ref_type {
-            GcReferenceType::AnyRef
-            | GcReferenceType::EqRef
-            | GcReferenceType::I31Ref
-            | GcReferenceType::StructRef(_)
-            | GcReferenceType::ArrayRef(_)
-            | GcReferenceType::ExternRef
-            | GcReferenceType::FuncRef
-            | GcReferenceType::NullRef
-            | GcReferenceType::NullFuncRef
-            | GcReferenceType::NullExternRef => RefOperationResult {
-                success: true,
-                cast_result: None,
-                test_result: None,
-                eq_result: None,
-                is_null: Some(true),
-                value: None,
-                error: None,
-            },
-        }
-    }
-
-    /// Assert that a reference is not null (ref.as_non_null)
-    pub fn ref_as_non_null(&self, object_id: Option<ObjectId>) -> RefOperationResult {
-        match object_id {
-            Some(id) => {
-                // Check if object exists in our gc_objects map
-                let exists = self
-                    .gc_objects
-                    .read()
-                    .map(|objects| objects.contains_key(&id))
-                    .unwrap_or(false);
-
-                if exists {
-                    RefOperationResult {
-                        success: true,
-                        cast_result: Some(id),
-                        test_result: None,
-                        eq_result: None,
-                        is_null: Some(false),
-                        value: None,
-                        error: None,
-                    }
-                } else {
-                    RefOperationResult {
-                        success: false,
-                        cast_result: None,
-                        test_result: None,
-                        eq_result: None,
-                        is_null: None,
-                        value: None,
-                        error: Some(format!("Object {} not found", id)),
-                    }
-                }
-            }
-            None => RefOperationResult {
-                success: false,
-                cast_result: None,
-                test_result: None,
-                eq_result: None,
-                is_null: None,
-                value: None,
-                error: Some("Null reference assertion failed".to_string()),
-            },
-        }
-    }
-
     // === I31 Operations ===
 
     /// Create an I31 reference using real Wasmtime GC (i31.new)
@@ -1278,120 +1170,6 @@ impl WasmGcRuntime {
         self.heap.create_weak_reference(object_id)
     }
 
-    // === Advanced GC Features ===
-
-    /// Create a weak reference to an object for future GC support
-    pub fn create_weak_reference_advanced(
-        &self,
-        object_id: ObjectId,
-        finalization_callback: Option<Box<dyn Fn() + Send + Sync>>,
-    ) -> WasmtimeResult<GcWeakReference> {
-        // Store the finalization callback for future use
-        if let Some(_callback) = finalization_callback {
-            // In a real implementation, this would be stored in a finalization registry
-            // For now, we just create the weak reference
-        }
-        // Use the same logic as create_weak_reference
-        self.create_weak_reference(object_id)
-    }
-
-    /// Register object for finalization monitoring (future GC proposal support)
-    pub fn register_finalization_callback(
-        &self,
-        _object_id: ObjectId,
-        _callback: Box<dyn Fn() + Send + Sync>,
-    ) -> WasmtimeResult<()> {
-        // This is a placeholder for future WebAssembly GC finalization support
-        // When the GC proposal includes finalization, this will integrate with Wasmtime's finalizers
-        Ok(())
-    }
-
-    /// Advanced GC collection with incremental and concurrent support
-    pub fn collect_garbage_advanced(
-        &self,
-        max_pause_millis: Option<u64>,
-        concurrent: bool,
-    ) -> WasmtimeResult<GcCollectionResult> {
-        // This prepares for future advanced GC algorithms in Wasmtime
-        let result = if concurrent {
-            // Future: concurrent GC support
-            self.heap.collect_garbage(CollectionTrigger::Explicit)?
-        } else if let Some(_pause_limit) = max_pause_millis {
-            // Future: incremental GC with pause time limits
-            self.heap.collect_garbage(CollectionTrigger::Explicit)?
-        } else {
-            self.heap.collect_garbage(CollectionTrigger::Explicit)?
-        };
-        self.collection_count.fetch_add(1, Ordering::Relaxed);
-        Ok(result)
-    }
-
-    /// Support for GC object pinning (future WebAssembly GC feature)
-    pub fn pin_object(&self, _object_id: ObjectId) -> WasmtimeResult<()> {
-        // Pinned objects won't be moved during GC
-        // This is preparation for future GC proposal features
-        Ok(())
-    }
-
-    /// Support for GC object unpinning (future WebAssembly GC feature)
-    pub fn unpin_object(&self, _object_id: ObjectId) -> WasmtimeResult<()> {
-        // Allow pinned objects to be moved again
-        // This is preparation for future GC proposal features
-        Ok(())
-    }
-
-    /// Advanced type casting with performance optimization
-    pub fn ref_cast_optimized(
-        &self,
-        object_id: ObjectId,
-        target_type: GcReferenceType,
-        enable_caching: bool,
-    ) -> RefOperationResult {
-        // Use caching for frequent cast operations to improve performance
-        if enable_caching {
-            // Future: implement cast result caching
-            self.ref_cast(object_id, target_type)
-        } else {
-            self.ref_cast(object_id, target_type)
-        }
-    }
-
-    /// Batch GC operations for better performance
-    pub fn batch_struct_operations(
-        &self,
-        operations: Vec<StructBatchOperation>,
-    ) -> Vec<StructOperationResult> {
-        operations
-            .into_iter()
-            .map(|op| match op {
-                StructBatchOperation::Get {
-                    object_id,
-                    field_index,
-                } => self.struct_get(object_id, field_index),
-                StructBatchOperation::Set {
-                    object_id,
-                    field_index,
-                    value,
-                } => self.struct_set(object_id, field_index, value),
-            })
-            .collect()
-    }
-}
-
-/// Batch operation types for performance optimization
-#[derive(Debug, Clone)]
-pub enum StructBatchOperation {
-    /// Get a struct field value
-    Get {
-        object_id: ObjectId,
-        field_index: u32,
-    },
-    /// Set a struct field value
-    Set {
-        object_id: ObjectId,
-        field_index: u32,
-        value: GcValue,
-    },
 }
 
 #[cfg(test)]

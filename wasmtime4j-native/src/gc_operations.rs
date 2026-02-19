@@ -1430,8 +1430,6 @@ impl WasmtimeGcOperations {
             FieldType::F32 => Ok(ValType::F32.into()),
             FieldType::F64 => Ok(ValType::F64.into()),
             FieldType::V128 => Ok(ValType::V128.into()),
-            FieldType::V256 => Ok(ValType::V128.into()), // V256 not yet in Wasmtime, use V128
-            FieldType::V512 => Ok(ValType::V128.into()), // V512 not yet in Wasmtime, use V128
             FieldType::PackedI8 => Ok(StorageType::I8),
             FieldType::PackedI16 => Ok(StorageType::I16),
             FieldType::Reference(ref_type) => {
@@ -1516,24 +1514,6 @@ impl WasmtimeGcOperations {
                 let value = u128::from_le_bytes(*bytes);
                 Ok(Val::V128(value.into()))
             }
-            GcValue::V256(bytes) => {
-                // V256 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
-                // V256 is [u8; 32], so slicing first 16 bytes is always valid
-                let v128_bytes: [u8; 16] = bytes[0..16]
-                    .try_into()
-                    .expect("V256 is 32 bytes, slicing 16 always valid");
-                let value = u128::from_le_bytes(v128_bytes);
-                Ok(Val::V128(value.into()))
-            }
-            GcValue::V512(bytes) => {
-                // V512 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
-                // V512 is [u8; 64], so slicing first 16 bytes is always valid
-                let v128_bytes: [u8; 16] = bytes[0..16]
-                    .try_into()
-                    .expect("V512 is 64 bytes, slicing 16 always valid");
-                let value = u128::from_le_bytes(v128_bytes);
-                Ok(Val::V128(value.into()))
-            }
             GcValue::Reference => {
                 // Reference types are handled through gc_operations, return null as placeholder
                 Ok(Val::null_any_ref())
@@ -1584,24 +1564,6 @@ impl WasmtimeGcOperations {
             GcValue::F64(f) => Ok(Val::F64(f.to_bits())),
             GcValue::V128(bytes) => {
                 let value = u128::from_le_bytes(*bytes);
-                Ok(Val::V128(value.into()))
-            }
-            GcValue::V256(bytes) => {
-                // V256 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
-                // V256 is [u8; 32], so slicing first 16 bytes is always valid
-                let v128_bytes: [u8; 16] = bytes[0..16]
-                    .try_into()
-                    .expect("V256 is 32 bytes, slicing 16 always valid");
-                let value = u128::from_le_bytes(v128_bytes);
-                Ok(Val::V128(value.into()))
-            }
-            GcValue::V512(bytes) => {
-                // V512 not yet in Wasmtime, use V128 as fallback (first 16 bytes)
-                // V512 is [u8; 64], so slicing first 16 bytes is always valid
-                let v128_bytes: [u8; 16] = bytes[0..16]
-                    .try_into()
-                    .expect("V512 is 64 bytes, slicing 16 always valid");
-                let value = u128::from_le_bytes(v128_bytes);
                 Ok(Val::V128(value.into()))
             }
             GcValue::Reference => {

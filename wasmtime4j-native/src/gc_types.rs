@@ -100,10 +100,6 @@ pub enum FieldType {
     F64,
     /// 128-bit SIMD vector (standard WebAssembly)
     V128,
-    /// 256-bit SIMD vector (advanced SIMD from Task #307)
-    V256,
-    /// 512-bit SIMD vector (AVX-512 support from Task #307)
-    V512,
     /// 8-bit packed integer (storage type)
     PackedI8,
     /// 16-bit packed integer (storage type)
@@ -125,10 +121,6 @@ pub enum GcValue {
     F64(f64),
     /// 128-bit SIMD vector value (standard WebAssembly)
     V128([u8; 16]),
-    /// 256-bit SIMD vector value (advanced SIMD)
-    V256([u8; 32]),
-    /// 512-bit SIMD vector value (AVX-512 support)
-    V512([u8; 64]),
     /// Reference (placeholder - actual GC refs handled by gc_operations)
     Reference,
     /// Null reference
@@ -317,7 +309,7 @@ impl GcTypeRegistry {
         Ok(array_def.element_type.clone())
     }
 
-    /// Validate that a value is compatible with a field type including advanced SIMD from Task #307
+    /// Validate that a value is compatible with a field type
     pub fn validate_value_type(
         &self,
         value: &GcValue,
@@ -329,8 +321,6 @@ impl GcTypeRegistry {
             (GcValue::F32(_), FieldType::F32) => Ok(()),
             (GcValue::F64(_), FieldType::F64) => Ok(()),
             (GcValue::V128(_), FieldType::V128) => Ok(()),
-            (GcValue::V256(_), FieldType::V256) => Ok(()),
-            (GcValue::V512(_), FieldType::V512) => Ok(()),
             (GcValue::I32(i), FieldType::PackedI8) if *i >= -128 && *i <= 127 => Ok(()),
             (GcValue::I32(i), FieldType::PackedI16) if *i >= -32768 && *i <= 32767 => Ok(()),
             (GcValue::Reference, FieldType::Reference(_)) => Ok(()),
@@ -381,8 +371,6 @@ impl GcTypeRegistry {
             | FieldType::F32
             | FieldType::F64
             | FieldType::V128
-            | FieldType::V256
-            | FieldType::V512
             | FieldType::PackedI8
             | FieldType::PackedI16 => Ok(()),
             FieldType::Reference(_) => {
@@ -635,8 +623,6 @@ mod tests {
             FieldType::F32,
             FieldType::F64,
             FieldType::V128,
-            FieldType::V256,
-            FieldType::V512,
             FieldType::PackedI8,
             FieldType::PackedI16,
             FieldType::Reference(GcReferenceType::AnyRef),

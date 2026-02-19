@@ -527,8 +527,6 @@ fn struct_new_internal(
                         FieldType::F32 => GcValue::F32(f32::from_bits(raw_value as u32)),
                         FieldType::F64 => GcValue::F64(f64::from_bits(raw_value as u64)),
                         FieldType::V128 => GcValue::I32(raw_value as i32), // Simplified - V128 needs special handling
-                        FieldType::V256 => GcValue::I32(raw_value as i32), // V256 not yet fully supported
-                        FieldType::V512 => GcValue::I32(raw_value as i32), // V512 not yet fully supported
                         FieldType::PackedI8 => GcValue::I32(raw_value as i32),
                         FieldType::PackedI16 => GcValue::I32(raw_value as i32),
                         // Pass reference object IDs as I64 so gc_operations can look them up
@@ -556,8 +554,6 @@ fn struct_new_internal(
                 FieldType::F32 => GcValue::F32(0.0),
                 FieldType::F64 => GcValue::F64(0.0),
                 FieldType::V128 => GcValue::I32(0),
-                FieldType::V256 => GcValue::I32(0),
-                FieldType::V512 => GcValue::I32(0),
                 FieldType::PackedI8 => GcValue::I32(0),
                 FieldType::PackedI16 => GcValue::I32(0),
                 FieldType::Reference(_) => GcValue::Null, // Null reference for default
