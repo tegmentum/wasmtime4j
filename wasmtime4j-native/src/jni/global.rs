@@ -61,6 +61,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeCreateGl
             4 => ValType::V128,
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
+            7 => ValType::Ref(RefType::ANYREF),
+            8 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
+            9 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
+            10 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
+            11 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
+            12 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
+            13 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
+            14 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
             _ => {
                 return Err(WasmtimeError::InvalidParameter {
                     message: format!("Invalid value type: {}", value_type),
@@ -178,6 +186,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetGloba
             4 => ValType::V128,
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
+            7 => ValType::Ref(RefType::ANYREF),
+            8 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
+            9 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
+            10 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
+            11 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
+            12 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
+            13 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
+            14 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
             _ => {
                 return Err(WasmtimeError::InvalidParameter {
                     message: format!("Invalid value type: {}", value_type),

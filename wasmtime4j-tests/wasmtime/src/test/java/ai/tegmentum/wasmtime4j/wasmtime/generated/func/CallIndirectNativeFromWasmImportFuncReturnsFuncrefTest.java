@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.wasmtime.generated.func;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -96,15 +95,8 @@ public final class CallIndirectNativeFromWasmImportFuncReturnsFuncrefTest extend
                 new WasmValueType[] {WasmValueType.I32, WasmValueType.I32, WasmValueType.I32});
 
         // Create a FunctionReference for the target function
-        final FunctionReference targetFuncRef;
-        try {
-          targetFuncRef = store.createFunctionReference(targetFunc, targetFuncType);
-        } catch (final Exception e) {
-          LOGGER.warning("Failed to create function reference: " + e.getMessage());
-          assumeTrue(false, "createFunctionReference not fully implemented: " + e.getMessage());
-          return;
-        }
-
+        final FunctionReference targetFuncRef =
+            store.createFunctionReference(targetFunc, targetFuncType);
         assertNotNull(targetFuncRef, "Target function reference should not be null");
         LOGGER.info("Created target function reference with ID: " + targetFuncRef.getId());
 
@@ -119,48 +111,17 @@ public final class CallIndirectNativeFromWasmImportFuncReturnsFuncrefTest extend
             new FunctionType(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.FUNCREF});
 
         // Define the host function as import "" ""
-        try {
-          linker.defineHostFunction("", "", getFuncrefType, getFuncrefFunc);
-        } catch (final Exception e) {
-          LOGGER.warning("Failed to define host function: " + e.getMessage());
-          assumeTrue(
-              false, "defineHostFunction with funcref return not implemented: " + e.getMessage());
-          return;
-        }
-
+        linker.defineHostFunction("", "", getFuncrefType, getFuncrefFunc);
         LOGGER.info("Defined host function returning funcref");
 
         // Compile and instantiate the module
-        final Module module;
-        try {
-          module = engine.compileWat(wat);
-        } catch (final Exception e) {
-          LOGGER.warning("Failed to compile module: " + e.getMessage());
-          assumeTrue(false, "Module compilation failed: " + e.getMessage());
-          return;
-        }
-
-        final Instance instance;
-        try {
-          instance = linker.instantiate(store, module);
-        } catch (final Exception e) {
-          LOGGER.warning("Failed to instantiate module: " + e.getMessage());
-          assumeTrue(false, "Module instantiation failed: " + e.getMessage());
-          return;
-        }
-
+        final Module module = engine.compileWat(wat);
+        final Instance instance = linker.instantiate(store, module);
         assertNotNull(instance, "Instance should not be null");
         LOGGER.info("Module instantiated successfully");
 
         // Call "run" function
-        final WasmValue[] results;
-        try {
-          results = instance.callFunction("run");
-        } catch (final Exception e) {
-          LOGGER.warning("Failed to call 'run' function: " + e.getMessage());
-          assumeTrue(false, "Function call failed: " + e.getMessage());
-          return;
-        }
+        final WasmValue[] results = instance.callFunction("run");
 
         // Verify results are (10, 20, 30)
         assertNotNull(results, "Results should not be null");

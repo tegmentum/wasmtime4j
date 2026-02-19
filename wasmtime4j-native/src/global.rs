@@ -168,14 +168,14 @@ impl Global {
             (GlobalValue::FuncRef(_), ValType::Ref(ref_type)) => {
                 matches!(
                     *ref_type.heap_type(),
-                    HeapType::Func | HeapType::ConcreteFunc(_)
+                    HeapType::Func | HeapType::ConcreteFunc(_) | HeapType::NoFunc
                 )
             }
             (GlobalValue::ExternRef(_), ValType::Ref(ref_type)) => {
-                matches!(*ref_type.heap_type(), HeapType::Extern)
+                matches!(*ref_type.heap_type(), HeapType::Extern | HeapType::NoExtern)
             }
             (GlobalValue::AnyRef(_), ValType::Ref(ref_type)) => {
-                matches!(*ref_type.heap_type(), HeapType::Any)
+                matches!(*ref_type.heap_type(), HeapType::Any | HeapType::None)
             }
             (GlobalValue::EqRef(_), ValType::Ref(ref_type)) => {
                 matches!(*ref_type.heap_type(), HeapType::Eq)
@@ -290,8 +290,9 @@ impl Global {
             Val::FuncRef(func_ref) => {
                 if let Some(func) = func_ref {
                     // Register the function in the table reference registry and get its ID
+                    // Use store_id 0 since we don't have store context in global value conversion
                     use crate::table::core::register_function_reference;
-                    let id = register_function_reference(func)?;
+                    let id = register_function_reference(func, 0)?;
                     GlobalValue::FuncRef(Some(id))
                 } else {
                     GlobalValue::FuncRef(None)
@@ -440,10 +441,18 @@ pub mod core {
             ValType::Ref(ref ref_type) => {
                 use wasmtime::HeapType;
 
-                // Match on dereferenced heap_type to distinguish funcref/externref
                 match *ref_type.heap_type() {
                     HeapType::Func | HeapType::ConcreteFunc(_) => GlobalValue::FuncRef(ref_id),
+                    HeapType::NoFunc => GlobalValue::FuncRef(None),
                     HeapType::Extern => GlobalValue::ExternRef(ref_id),
+                    HeapType::NoExtern => GlobalValue::ExternRef(None),
+                    HeapType::Eq => GlobalValue::EqRef(ref_id),
+                    HeapType::I31 => GlobalValue::I31Ref(ref_id.map(|id| id as i32)),
+                    HeapType::Struct | HeapType::ConcreteStruct(_) => {
+                        GlobalValue::StructRef(ref_id)
+                    }
+                    HeapType::Array | HeapType::ConcreteArray(_) => GlobalValue::ArrayRef(ref_id),
+                    HeapType::None => GlobalValue::AnyRef(None),
                     _ => GlobalValue::AnyRef(ref_id),
                 }
             }
@@ -634,5 +643,131 @@ mod tests {
             GlobalValue::F64(val) => assert!((val - 2.71828).abs() < 0.00001),
             _ => panic!("Expected F64 value"),
         }
+    }
+
+    #[test]
+    fn test_gc_type_globals() {
+        use wasmtime::RefType;
+
+        // Create engine with GC enabled
+        let engine = Engine::builder()
+            .wasm_gc(true)
+            .wasm_function_references(true)
+            .gc_support(true)
+            .build()
+            .expect("Failed to create GC-enabled engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // Test ANYREF global (HeapType::Any)
+        let anyref_result = Global::new(
+            &store,
+            ValType::Ref(RefType::ANYREF),
+            Mutability::Var,
+            GlobalValue::AnyRef(None),
+            Some("test_anyref".to_string()),
+        );
+        assert!(
+            anyref_result.is_ok(),
+            "Failed to create anyref global: {:?}",
+            anyref_result.err()
+        );
+
+        // Test EQREF global (HeapType::Eq)
+        let eqref_result = Global::new(
+            &store,
+            ValType::Ref(RefType::new(true, wasmtime::HeapType::Eq)),
+            Mutability::Var,
+            GlobalValue::EqRef(None),
+            Some("test_eqref".to_string()),
+        );
+        assert!(
+            eqref_result.is_ok(),
+            "Failed to create eqref global: {:?}",
+            eqref_result.err()
+        );
+
+        // Test I31REF global (HeapType::I31)
+        let i31ref_result = Global::new(
+            &store,
+            ValType::Ref(RefType::new(true, wasmtime::HeapType::I31)),
+            Mutability::Var,
+            GlobalValue::I31Ref(None),
+            Some("test_i31ref".to_string()),
+        );
+        assert!(
+            i31ref_result.is_ok(),
+            "Failed to create i31ref global: {:?}",
+            i31ref_result.err()
+        );
+
+        // Test STRUCTREF global (HeapType::Struct)
+        let structref_result = Global::new(
+            &store,
+            ValType::Ref(RefType::new(true, wasmtime::HeapType::Struct)),
+            Mutability::Var,
+            GlobalValue::StructRef(None),
+            Some("test_structref".to_string()),
+        );
+        assert!(
+            structref_result.is_ok(),
+            "Failed to create structref global: {:?}",
+            structref_result.err()
+        );
+
+        // Test ARRAYREF global (HeapType::Array)
+        let arrayref_result = Global::new(
+            &store,
+            ValType::Ref(RefType::new(true, wasmtime::HeapType::Array)),
+            Mutability::Var,
+            GlobalValue::ArrayRef(None),
+            Some("test_arrayref".to_string()),
+        );
+        assert!(
+            arrayref_result.is_ok(),
+            "Failed to create arrayref global: {:?}",
+            arrayref_result.err()
+        );
+
+        // Test NULLREF global (HeapType::None)
+        let nullref_result = Global::new(
+            &store,
+            ValType::Ref(RefType::new(true, wasmtime::HeapType::None)),
+            Mutability::Var,
+            GlobalValue::AnyRef(None),
+            Some("test_nullref".to_string()),
+        );
+        assert!(
+            nullref_result.is_ok(),
+            "Failed to create nullref global: {:?}",
+            nullref_result.err()
+        );
+
+        // Test NULLFUNCREF global (HeapType::NoFunc)
+        let nullfuncref_result = Global::new(
+            &store,
+            ValType::Ref(RefType::new(true, wasmtime::HeapType::NoFunc)),
+            Mutability::Var,
+            GlobalValue::FuncRef(None),
+            Some("test_nullfuncref".to_string()),
+        );
+        assert!(
+            nullfuncref_result.is_ok(),
+            "Failed to create nullfuncref global: {:?}",
+            nullfuncref_result.err()
+        );
+
+        // Test NULLEXTERNREF global (HeapType::NoExtern)
+        let nullexternref_result = Global::new(
+            &store,
+            ValType::Ref(RefType::new(true, wasmtime::HeapType::NoExtern)),
+            Mutability::Var,
+            GlobalValue::ExternRef(None),
+            Some("test_nullexternref".to_string()),
+        );
+        assert!(
+            nullexternref_result.is_ok(),
+            "Failed to create nullexternref global: {:?}",
+            nullexternref_result.err()
+        );
     }
 }

@@ -334,6 +334,34 @@ fn store_int_to_valtype(val: c_int) -> crate::WasmtimeResult<ValType> {
         5 => Ok(ValType::Ref(RefType::FUNCREF)),
         6 => Ok(ValType::Ref(RefType::EXTERNREF)),
         7 => Ok(ValType::Ref(RefType::ANYREF)),
+        8 => Ok(ValType::Ref(wasmtime::RefType::new(
+            true,
+            wasmtime::HeapType::Eq,
+        ))),
+        9 => Ok(ValType::Ref(wasmtime::RefType::new(
+            true,
+            wasmtime::HeapType::I31,
+        ))),
+        10 => Ok(ValType::Ref(wasmtime::RefType::new(
+            true,
+            wasmtime::HeapType::Struct,
+        ))),
+        11 => Ok(ValType::Ref(wasmtime::RefType::new(
+            true,
+            wasmtime::HeapType::Array,
+        ))),
+        12 => Ok(ValType::Ref(wasmtime::RefType::new(
+            true,
+            wasmtime::HeapType::None,
+        ))),
+        13 => Ok(ValType::Ref(wasmtime::RefType::new(
+            true,
+            wasmtime::HeapType::NoFunc,
+        ))),
+        14 => Ok(ValType::Ref(wasmtime::RefType::new(
+            true,
+            wasmtime::HeapType::NoExtern,
+        ))),
         _ => Err(crate::error::WasmtimeError::InvalidParameter {
             message: format!("Invalid ValType code: {}", val),
         }),
@@ -506,7 +534,8 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
         )?;
 
         // Register the Wasmtime Func in the reference registry
-        let func_ref_id = crate::table::core::register_function_reference(wasmtime_func)?;
+        let func_ref_id =
+            crate::table::core::register_function_reference(wasmtime_func, store.id())?;
 
         unsafe {
             *func_ref_id_out = func_ref_id;

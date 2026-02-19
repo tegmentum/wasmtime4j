@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,7 +25,9 @@ class GlobalCreationTest {
 
   @BeforeEach
   void setUp() throws WasmException {
-    engine = Engine.create();
+    final EngineConfig config =
+        Engine.builder().wasmGc(true).gcSupport(true).wasmFunctionReferences(true);
+    engine = Engine.create(config);
     store = Store.create(engine);
   }
 
@@ -187,12 +189,6 @@ class GlobalCreationTest {
   @ParameterizedTest
   @EnumSource(WasmValueType.class)
   void testCreateGlobalAllTypes(final WasmValueType valueType) throws WasmException {
-    // Skip WasmGC reference types - they require struct/array type definitions
-    // which cannot be created standalone via store.createGlobal()
-    Assumptions.assumeFalse(
-        valueType.isGcReference(),
-        "WasmGC reference types require type definitions and are tested separately");
-
     final WasmValue initialValue = createDefaultValue(valueType);
 
     assertDoesNotThrow(
@@ -203,8 +199,14 @@ class GlobalCreationTest {
           assertThat(global.isMutable()).isTrue();
 
           final WasmValue retrievedValue = global.get();
-          assertThat(retrievedValue.getType()).isEqualTo(valueType);
-          assertValuesEqual(initialValue, retrievedValue);
+          if (valueType.isGcReference()) {
+            // GC reference types: null values may be returned as ANYREF/FUNCREF/EXTERNREF
+            // depending on the runtime representation, so verify the value is null
+            assertThat(retrievedValue.getValue()).isNull();
+          } else {
+            assertThat(retrievedValue.getType()).isEqualTo(valueType);
+            assertValuesEqual(initialValue, retrievedValue);
+          }
         });
   }
 
@@ -370,6 +372,22 @@ class GlobalCreationTest {
         return WasmValue.funcref(null);
       case EXTERNREF:
         return WasmValue.externref(null);
+      case ANYREF:
+        return WasmValue.nullAnyRef();
+      case EQREF:
+        return WasmValue.nullEqRef();
+      case I31REF:
+        return WasmValue.nullI31Ref();
+      case STRUCTREF:
+        return WasmValue.nullStructRef();
+      case ARRAYREF:
+        return WasmValue.nullArrayRef();
+      case NULLREF:
+        return WasmValue.nullRef();
+      case NULLFUNCREF:
+        return WasmValue.nullNullFuncRef();
+      case NULLEXTERNREF:
+        return WasmValue.nullNullExternRef();
       default:
         throw new IllegalArgumentException("Unsupported value type: " + valueType);
     }
@@ -399,6 +417,17 @@ class GlobalCreationTest {
         break;
       case EXTERNREF:
         assertThat(actual.asExternref()).isEqualTo(expected.asExternref());
+        break;
+      case ANYREF:
+      case EQREF:
+      case I31REF:
+      case STRUCTREF:
+      case ARRAYREF:
+      case NULLREF:
+      case NULLFUNCREF:
+      case NULLEXTERNREF:
+        // GC reference types: verify the value is null
+        assertThat(actual.getValue()).isNull();
         break;
       default:
         throw new IllegalArgumentException("Unsupported value type: " + expected.getType());

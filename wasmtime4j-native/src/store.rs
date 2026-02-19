@@ -64,6 +64,8 @@ pub struct StoreMetadata {
 
 /// Store-specific data for host function context
 pub struct StoreData {
+    /// Store ID for cross-store validation (accessible from Caller<StoreData> in callbacks)
+    pub store_id: u64,
     /// Optional user-defined data attached to the store
     pub user_data: Option<Box<dyn std::any::Any + Send + Sync>>,
     /// Resource limits and quotas for this store
@@ -93,8 +95,9 @@ pub struct StoreData {
 
 impl StoreData {
     /// Create a new StoreData with the given resource limits and all other fields at defaults.
-    pub fn new(resource_limits: ResourceLimits) -> Self {
+    pub fn new(store_id: u64, resource_limits: ResourceLimits) -> Self {
         Self {
+            store_id,
             user_data: None,
             resource_limits,
             execution_state: ExecutionState::default(),
@@ -177,6 +180,7 @@ impl std::fmt::Debug for StoreData {
 impl Clone for StoreData {
     fn clone(&self) -> Self {
         StoreData {
+            store_id: self.store_id,
             user_data: None, // Can't clone arbitrary Any type, set to None
             resource_limits: self.resource_limits.clone(),
             execution_state: self.execution_state.clone(),
@@ -806,7 +810,7 @@ impl Store {
         // looked up when stored in globals and used with call_indirect
         // Return the registry ID, not the host function ID
         use crate::table::core::register_function_reference;
-        let registry_id = register_function_reference(func)?;
+        let registry_id = register_function_reference(func, self.id)?;
 
         Ok(registry_id)
     }
@@ -1164,7 +1168,7 @@ impl StoreBuilder {
             id
         };
 
-        let store_data = StoreData::new(self.resource_limits);
+        let store_data = StoreData::new(store_id, self.resource_limits);
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
 
         // Configure fuel if specified OR if Engine requires it
@@ -1225,7 +1229,7 @@ impl StoreBuilder {
             id
         };
 
-        let store_data = StoreData::new(self.resource_limits);
+        let store_data = StoreData::new(store_id, self.resource_limits);
 
         // CRITICAL: Use the wasmtime Engine from the Module's internal wasmtime::Module
         // This ensures the Store's internal Arc matches the Module's internal Arc

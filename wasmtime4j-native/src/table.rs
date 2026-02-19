@@ -44,11 +44,25 @@ use once_cell::sync::Lazy;
 static REFERENCE_REGISTRY: Lazy<ManuallyDrop<Arc<Mutex<ReferenceRegistry>>>> =
     Lazy::new(|| ManuallyDrop::new(Arc::new(Mutex::new(ReferenceRegistry::new()))));
 
+/// Registry entry pairing a reference with its originating store ID
+#[derive(Debug)]
+struct FuncEntry {
+    store_id: u64,
+    func: Arc<Func>,
+}
+
+/// Registry entry pairing an external reference with its originating store ID
+#[derive(Debug)]
+struct ExternEntry {
+    store_id: u64,
+    external: Arc<Extern>,
+}
+
 /// Registry for managing WebAssembly references by ID
 #[derive(Debug)]
 struct ReferenceRegistry {
-    functions: HashMap<u64, Arc<Func>>,
-    externals: HashMap<u64, Arc<Extern>>,
+    functions: HashMap<u64, FuncEntry>,
+    externals: HashMap<u64, ExternEntry>,
     next_id: u64,
 }
 
@@ -61,34 +75,54 @@ impl ReferenceRegistry {
         }
     }
 
-    fn register_function(&mut self, func: Func) -> u64 {
+    fn register_function(&mut self, func: Func, store_id: u64) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
-        self.functions.insert(id, Arc::new(func));
+        self.functions.insert(
+            id,
+            FuncEntry {
+                store_id,
+                func: Arc::new(func),
+            },
+        );
         id
     }
 
-    fn register_external(&mut self, external: Extern) -> u64 {
+    fn register_external(&mut self, external: Extern, store_id: u64) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
-        self.externals.insert(id, Arc::new(external));
+        self.externals.insert(
+            id,
+            ExternEntry {
+                store_id,
+                external: Arc::new(external),
+            },
+        );
         id
     }
 
     fn get_function(&self, id: u64) -> Option<Arc<Func>> {
-        self.functions.get(&id).cloned()
+        self.functions.get(&id).map(|entry| entry.func.clone())
+    }
+
+    fn get_function_with_store(&self, id: u64) -> Option<(u64, Arc<Func>)> {
+        self.functions
+            .get(&id)
+            .map(|entry| (entry.store_id, entry.func.clone()))
     }
 
     fn get_external(&self, id: u64) -> Option<Arc<Extern>> {
-        self.externals.get(&id).cloned()
+        self.externals
+            .get(&id)
+            .map(|entry| entry.external.clone())
     }
 
     fn remove_function(&mut self, id: u64) -> Option<Arc<Func>> {
-        self.functions.remove(&id)
+        self.functions.remove(&id).map(|entry| entry.func)
     }
 
     fn remove_external(&mut self, id: u64) -> Option<Arc<Extern>> {
-        self.externals.remove(&id)
+        self.externals.remove(&id).map(|entry| entry.external)
     }
 }
 
@@ -809,7 +843,7 @@ impl Table {
                     // This is a funcref
                     match func_opt {
                         Some(func) => {
-                            // Non-null funcref - register and return
+                            // Non-null funcref - register with store_id 0 (table context)
                             log::debug!(
                                 "wasmtime_val_to_table_element: registering non-null funcref"
                             );
@@ -818,7 +852,7 @@ impl Table {
                                     message: format!("Failed to lock reference registry: {}", e),
                                 }
                             })?;
-                            let id = registry.register_function(func.clone());
+                            let id = registry.register_function(func.clone(), 0);
                             log::debug!("wasmtime_val_to_table_element: registered with id={}", id);
                             TableElement::FuncRef(Some(id))
                         }
@@ -1131,37 +1165,62 @@ pub mod core {
     }
 
     /// Register a function reference and return its ID
-    pub fn register_function_reference(func: Func) -> WasmtimeResult<u64> {
+    pub fn register_function_reference(func: Func, store_id: u64) -> WasmtimeResult<u64> {
         let mut registry = REFERENCE_REGISTRY
             .lock()
             .map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to lock reference registry: {}", e),
             })?;
-        Ok(registry.register_function(func))
+        Ok(registry.register_function(func, store_id))
     }
 
     /// Register an external reference and return its ID
-    pub fn register_external_reference(external: Extern) -> WasmtimeResult<u64> {
+    pub fn register_external_reference(external: Extern, store_id: u64) -> WasmtimeResult<u64> {
         let mut registry = REFERENCE_REGISTRY
             .lock()
             .map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to lock reference registry: {}", e),
             })?;
-        Ok(registry.register_external(external))
+        Ok(registry.register_external(external, store_id))
     }
 
-    /// Get a function reference by ID
+    /// Get a function reference by ID, validating store affinity
     pub fn get_function_reference(id: u64) -> WasmtimeResult<Option<Func>> {
         let registry = REFERENCE_REGISTRY
             .lock()
             .map_err(|e| WasmtimeError::Concurrency {
                 message: format!("Failed to lock reference registry: {}", e),
             })?;
-        // Get Arc<Func> and dereference it to get a clone of the Func
-        // This is safe because Func is Clone and the Arc keeps the original alive
         Ok(registry
             .get_function(id)
             .map(|arc_func| (*arc_func).clone()))
+    }
+
+    /// Get a function reference by ID with store affinity validation
+    pub fn get_function_reference_with_store_check(
+        id: u64,
+        expected_store_id: u64,
+    ) -> WasmtimeResult<Option<Func>> {
+        let registry = REFERENCE_REGISTRY
+            .lock()
+            .map_err(|e| WasmtimeError::Concurrency {
+                message: format!("Failed to lock reference registry: {}", e),
+            })?;
+        match registry.get_function_with_store(id) {
+            Some((store_id, arc_func)) => {
+                if store_id != expected_store_id {
+                    return Err(WasmtimeError::Runtime {
+                        message: format!(
+                            "Function reference {} belongs to store {} but was used with store {}",
+                            id, store_id, expected_store_id
+                        ),
+                        backtrace: None,
+                    });
+                }
+                Ok(Some((*arc_func).clone()))
+            }
+            None => Ok(None),
+        }
     }
 
     /// Get an external reference by ID

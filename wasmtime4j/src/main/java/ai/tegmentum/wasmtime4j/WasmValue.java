@@ -515,6 +515,42 @@ public final class WasmValue {
   }
 
   /**
+   * Creates a null ref value (bottom type for the anyref hierarchy).
+   *
+   * <p>This is used in WebAssembly GC for the null bottom reference type. NULLREF can only hold
+   * null and is a subtype of all nullable reference types in the anyref hierarchy.
+   *
+   * @return a new WasmValue representing null ref
+   */
+  public static WasmValue nullRef() {
+    return new WasmValue(WasmValueType.NULLREF, null);
+  }
+
+  /**
+   * Creates a null funcref bottom type value.
+   *
+   * <p>This is used in WebAssembly GC for the null bottom type in the funcref hierarchy. NULLFUNCREF
+   * can only hold null and is a subtype of all nullable function reference types.
+   *
+   * @return a new WasmValue representing null funcref bottom type
+   */
+  public static WasmValue nullNullFuncRef() {
+    return new WasmValue(WasmValueType.NULLFUNCREF, null);
+  }
+
+  /**
+   * Creates a null externref bottom type value.
+   *
+   * <p>This is used in WebAssembly GC for the null bottom type in the externref hierarchy.
+   * NULLEXTERNREF can only hold null and is a subtype of all nullable external reference types.
+   *
+   * @return a new WasmValue representing null externref bottom type
+   */
+  public static WasmValue nullNullExternRef() {
+    return new WasmValue(WasmValueType.NULLEXTERNREF, null);
+  }
+
+  /**
    * Checks if this value is a reference type (funcref or externref).
    *
    * @return true if this is a reference type, false otherwise

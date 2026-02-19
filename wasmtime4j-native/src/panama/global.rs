@@ -36,6 +36,14 @@ pub extern "C" fn wasmtime4j_panama_global_create(
             4 => ValType::V128,
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
+            7 => ValType::Ref(RefType::ANYREF),
+            8 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
+            9 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
+            10 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
+            11 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
+            12 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
+            13 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
+            14 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
             _ => {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid value type: {}", value_type),
@@ -178,6 +186,14 @@ pub extern "C" fn wasmtime4j_panama_global_set(
             4 => ValType::V128,
             5 => ValType::Ref(RefType::FUNCREF),
             6 => ValType::Ref(RefType::EXTERNREF),
+            7 => ValType::Ref(RefType::ANYREF),
+            8 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
+            9 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
+            10 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
+            11 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
+            12 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
+            13 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
+            14 => ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
             _ => {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid value type: {}", value_type),

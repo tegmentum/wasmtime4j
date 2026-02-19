@@ -80,6 +80,7 @@ impl CallerContext {
 
         Ok(CallerContext {
             store_data: Arc::new(StoreData {
+                store_id: 0, // Caller context doesn't have a real store ID
                 user_data: None,
                 resource_limits: crate::store::ResourceLimits {
                     max_memory_bytes: None,

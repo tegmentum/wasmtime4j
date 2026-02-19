@@ -72,7 +72,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCr
 
         // Register the wasmtime_func in the function reference registry so it can be
         // retrieved later for table.set() operations
-        let func_ref_id = crate::table::core::register_function_reference(wasmtime_func)?;
+        let func_ref_id =
+            crate::table::core::register_function_reference(wasmtime_func, store.id())?;
 
         // Create a struct to hold both IDs - the host_function_id for callback management
         // and func_ref_id for table operations

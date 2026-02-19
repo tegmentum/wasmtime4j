@@ -479,11 +479,13 @@ fn java_to_wasm_value(
             if value.is_null() {
                 Ok(WasmValue::FuncRef(None))
             } else {
-                // Get the FunctionReference ID
+                // Get the Rust registry ID via longValue() (NOT getId() which is the Java-side ID).
+                // longValue() returns getNativeHandle() which is the Rust REFERENCE_REGISTRY ID
+                // assigned by Store::create_function_reference.
                 let id = env
-                    .call_method(&value, "getId", "()J", &[])
+                    .call_method(&value, "longValue", "()J", &[])
                     .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to call getId on FunctionReference: {}", e),
+                        message: format!("Failed to call longValue on FunctionReference: {}", e),
                         backtrace: None,
                     })?
                     .j()

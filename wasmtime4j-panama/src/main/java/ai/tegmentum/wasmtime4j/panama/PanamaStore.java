@@ -864,6 +864,16 @@ public final class PanamaStore implements Store {
             }
           }
           break;
+        case ANYREF:
+        case EQREF:
+        case I31REF:
+        case STRUCTREF:
+        case ARRAYREF:
+        case NULLREF:
+        case NULLFUNCREF:
+        case NULLEXTERNREF:
+          // GC reference types: null initial value (refIdPresent defaults to 0)
+          break;
         default:
           throw new IllegalArgumentException("Unsupported global type: " + valueType);
       }
@@ -887,7 +897,11 @@ public final class PanamaStore implements Store {
                   globalPtr);
 
       if (result != 0) {
-        throw new WasmException("Failed to create global");
+        final String nativeError =
+            ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            "Failed to create global"
+                + (nativeError != null ? ": " + nativeError : " (error code: " + result + ")"));
       }
 
       final MemorySegment nativeGlobalPtr = globalPtr.get(ValueLayout.ADDRESS, 0);

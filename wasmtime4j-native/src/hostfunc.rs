@@ -8,7 +8,10 @@
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::WasmValue;
 use crate::store::StoreData;
-use crate::table::core::{get_function_reference, register_function_reference};
+use crate::table::core::{
+    get_function_reference_with_store_check, register_function_reference,
+    remove_function_reference,
+};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use wasmtime::{Func, FuncType, RefType, Val, ValType};
@@ -21,6 +24,11 @@ fn valtype_eq(a: &ValType, b: &ValType) -> bool {
         (ValType::F32, ValType::F32) => true,
         (ValType::F64, ValType::F64) => true,
         (ValType::V128, ValType::V128) => true,
+        (ValType::Ref(ra), ValType::Ref(rb)) => {
+            // Compare ref types by heap type category and nullability
+            ra.is_nullable() == rb.is_nullable()
+                && format!("{:?}", ra.heap_type()) == format!("{:?}", rb.heap_type())
+        }
         _ => false,
     }
 }
@@ -218,6 +226,9 @@ impl HostFunction {
                 host_func_id
             );
 
+            // Get the store_id from the caller's StoreData for store affinity validation
+            let store_id = caller.data().store_id;
+
             // Look up the host function in the registry
             let host_function = {
                 let registry = get_host_function_registry().lock().map_err(|e| {
@@ -246,23 +257,27 @@ impl HostFunction {
                     "[HOSTFUNC] Zero-overhead path, marshaling {} params",
                     params.len()
                 );
-                let wasm_params = marshal_params_from_wasmtime(params)?;
+                let (wasm_params, temp_ids) =
+                    marshal_params_from_wasmtime(params, store_id)?;
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
                     log::error!("[HOSTFUNC] Callback execution failed: {}", e);
                     anyhow::anyhow!("Host function execution failed: {}", e)
                 })?;
+                // Clean up temporary funcref registrations from param marshalling
+                cleanup_temp_funcref_ids(&temp_ids);
                 log::debug!(
                     "[HOSTFUNC] Callback returned {} results",
                     wasm_results.len()
                 );
-                marshal_results_to_wasmtime(&wasm_results, results)?;
+                marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
             } else {
                 // Full caller context path
                 log::debug!(
                     "[HOSTFUNC] Full caller context path, marshaling {} params",
                     params.len()
                 );
-                let wasm_params = marshal_params_from_wasmtime(params)?;
+                let (wasm_params, temp_ids) =
+                    marshal_params_from_wasmtime(params, store_id)?;
 
                 // Create minimal caller context based on usage pattern
                 let _context =
@@ -275,12 +290,14 @@ impl HostFunction {
                     log::error!("[HOSTFUNC] Callback execution failed: {}", e);
                     anyhow::anyhow!("Host function execution failed: {}", e)
                 })?;
+                // Clean up temporary funcref registrations from param marshalling
+                cleanup_temp_funcref_ids(&temp_ids);
                 log::debug!(
                     "[HOSTFUNC] Callback returned {} results",
                     wasm_results.len()
                 );
 
-                marshal_results_to_wasmtime(&wasm_results, results)?;
+                marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
             }
 
             log::debug!("[HOSTFUNC] Host function callback completed successfully");
@@ -308,6 +325,8 @@ impl HostFunction {
             func_type,
             move |mut caller, params: &[Val], results: &mut [Val]| {
                 Box::new(async move {
+                    let store_id = caller.data().store_id;
+
                     // Look up the host function in the registry
                     let host_function = {
                         let registry = get_host_function_registry().lock().map_err(|e| {
@@ -322,15 +341,18 @@ impl HostFunction {
                     // Optimize execution based on caller context requirements
                     if !requires_caller {
                         // Zero-overhead path: no caller context needed
-                        let wasm_params = marshal_params_from_wasmtime(params)?;
+                        let (wasm_params, temp_ids) =
+                            marshal_params_from_wasmtime(params, store_id)?;
                         let wasm_results =
                             host_function.callback.execute(&wasm_params).map_err(|e| {
                                 anyhow::anyhow!("Host function execution failed: {}", e)
                             })?;
-                        marshal_results_to_wasmtime(&wasm_results, results)?;
+                        cleanup_temp_funcref_ids(&temp_ids);
+                        marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
                     } else {
                         // Full caller context path
-                        let wasm_params = marshal_params_from_wasmtime(params)?;
+                        let (wasm_params, temp_ids) =
+                            marshal_params_from_wasmtime(params, store_id)?;
 
                         // Create minimal caller context based on usage pattern
                         let _context = create_optimized_caller_context(&mut caller, usage)?;
@@ -339,8 +361,9 @@ impl HostFunction {
                             host_function.callback.execute(&wasm_params).map_err(|e| {
                                 anyhow::anyhow!("Host function execution failed: {}", e)
                             })?;
+                        cleanup_temp_funcref_ids(&temp_ids);
 
-                        marshal_results_to_wasmtime(&wasm_results, results)?;
+                        marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
                     }
 
                     Ok(())
@@ -460,8 +483,15 @@ impl HostFunctionBuilder {
 }
 
 /// Marshal parameters from Wasmtime Val to WasmValue
-fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow::Error> {
+///
+/// Returns the marshalled parameters and a list of temporary funcref registry IDs
+/// that should be cleaned up after the callback completes.
+fn marshal_params_from_wasmtime(
+    params: &[Val],
+    store_id: u64,
+) -> Result<(Vec<WasmValue>, Vec<u64>), anyhow::Error> {
     let mut wasm_params = Vec::with_capacity(params.len());
+    let mut temp_funcref_ids = Vec::new();
 
     for param in params {
         let wasm_value = match param {
@@ -471,13 +501,15 @@ fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow
             Val::F64(v) => WasmValue::F64(f64::from_bits(*v)),
             Val::V128(v) => WasmValue::V128(u128::from(*v).to_le_bytes()),
             Val::FuncRef(func_ref) => {
-                // Extract funcref and register it to get an ID
+                // Extract funcref and register it temporarily to get an ID
                 if let Some(func) = func_ref {
-                    let id = register_function_reference(func.clone()).map_err(|e| {
+                    let id = register_function_reference(func.clone(), store_id).map_err(|e| {
                         WasmtimeError::Execution {
                             message: format!("Failed to register function reference: {:?}", e),
                         }
                     })?;
+                    // Track for cleanup after callback completes
+                    temp_funcref_ids.push(id);
                     // Convert u64 to i64 for WasmValue storage
                     WasmValue::FuncRef(Some(id as i64))
                 } else {
@@ -496,13 +528,21 @@ fn marshal_params_from_wasmtime(params: &[Val]) -> Result<Vec<WasmValue>, anyhow
         wasm_params.push(wasm_value);
     }
 
-    Ok(wasm_params)
+    Ok((wasm_params, temp_funcref_ids))
+}
+
+/// Clean up temporary funcref IDs registered during parameter marshalling
+fn cleanup_temp_funcref_ids(ids: &[u64]) {
+    for &id in ids {
+        let _ = remove_function_reference(id);
+    }
 }
 
 /// Marshal results from WasmValue to Wasmtime Val
 fn marshal_results_to_wasmtime(
     wasm_results: &[WasmValue],
     results: &mut [Val],
+    store_id: u64,
 ) -> Result<(), anyhow::Error> {
     if wasm_results.len() != results.len() {
         return Err(anyhow::anyhow!(
@@ -526,8 +566,9 @@ fn marshal_results_to_wasmtime(
             WasmValue::V128(v) => Val::V128(wasmtime::V128::from(u128::from_le_bytes(*v))),
             WasmValue::FuncRef(ref_id) => {
                 // Convert funcref ID to Func handle using the function registry
+                // with store affinity validation
                 if let Some(id) = ref_id {
-                    let func = get_function_reference(*id as u64)
+                    let func = get_function_reference_with_store_check(*id as u64, store_id)
                         .map_err(|e| anyhow::anyhow!("Failed to get function reference: {:?}", e))?
                         .ok_or_else(|| anyhow::anyhow!("Invalid function reference ID: {}", id))?;
                     Val::FuncRef(Some(func))

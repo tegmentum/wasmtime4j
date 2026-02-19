@@ -36,14 +36,6 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  */
 public final class TrapsSkipCatchAllTest extends DualRuntimeTest {
 
-  private static void assumeX86() {
-    final PlatformDetector.Architecture arch = PlatformDetector.detect().getArchitecture();
-    assumeTrue(
-        arch == PlatformDetector.Architecture.X86_64,
-        "Trap handling tests are skipped on aarch64 due to JVM signal handler conflicts. "
-            + "Wasmtime's trap instructions cause SIGILL on ARM64.");
-  }
-
   private static String loadResource(final String path) throws IOException {
     try (final InputStream is = TrapsSkipCatchAllTest.class.getResourceAsStream(path)) {
       if (is == null) {
@@ -57,7 +49,9 @@ public final class TrapsSkipCatchAllTest extends DualRuntimeTest {
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("traps skip catch all")
   public void testTrapsSkipCatchAll(final RuntimeType runtime) throws Exception {
-    assumeX86();
+    assumeTrue(
+        PlatformDetector.detectArchitecture() == PlatformDetector.Architecture.X86_64,
+        "Skipped on aarch64: trap handling causes JVM crash (SIGILL)");
     setRuntime(runtime);
 
     try (final WastTestRunner runner = new WastTestRunner()) {

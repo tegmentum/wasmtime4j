@@ -250,6 +250,22 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
             return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
           }
           return WasmValue.externref(null);
+        case ANYREF:
+          return WasmValue.nullAnyRef();
+        case EQREF:
+          return WasmValue.nullEqRef();
+        case I31REF:
+          return WasmValue.nullI31Ref();
+        case STRUCTREF:
+          return WasmValue.nullStructRef();
+        case ARRAYREF:
+          return WasmValue.nullArrayRef();
+        case NULLREF:
+          return WasmValue.nullRef();
+        case NULLFUNCREF:
+          return WasmValue.nullNullFuncRef();
+        case NULLEXTERNREF:
+          return WasmValue.nullNullExternRef();
         default:
           throw new WasmTypeException("Unsupported global type: " + type);
       }
@@ -384,6 +400,22 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
         return WasmValueType.FUNCREF;
       case 6:
         return WasmValueType.EXTERNREF;
+      case 7:
+        return WasmValueType.ANYREF;
+      case 8:
+        return WasmValueType.EQREF;
+      case 9:
+        return WasmValueType.I31REF;
+      case 10:
+        return WasmValueType.STRUCTREF;
+      case 11:
+        return WasmValueType.ARRAYREF;
+      case 12:
+        return WasmValueType.NULLREF;
+      case 13:
+        return WasmValueType.NULLFUNCREF;
+      case 14:
+        return WasmValueType.NULLEXTERNREF;
       default:
         LOGGER.warning("Unknown type code: " + typeCode);
         return WasmValueType.I32; // Default fallback

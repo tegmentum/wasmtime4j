@@ -1250,9 +1250,10 @@ impl Instance {
             }
             Val::FuncRef(func_ref) => {
                 // Extract funcref and register it to get an ID
+                // Use store_id 0 since instance context doesn't track store affinity
                 if let Some(func) = func_ref {
                     use crate::table::core::register_function_reference;
-                    let id = register_function_reference(func)?;
+                    let id = register_function_reference(func, 0)?;
                     // Convert u64 to i64 for WasmValue storage
                     Ok(WasmValue::FuncRef(Some(id as i64)))
                 } else {

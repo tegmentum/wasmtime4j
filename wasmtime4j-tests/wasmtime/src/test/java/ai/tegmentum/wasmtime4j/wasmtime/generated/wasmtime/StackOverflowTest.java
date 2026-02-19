@@ -44,14 +44,6 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  */
 public final class StackOverflowTest extends DualRuntimeTest {
 
-  private static void assumeX86() {
-    final PlatformDetector.Architecture arch = PlatformDetector.detect().getArchitecture();
-    assumeTrue(
-        arch == PlatformDetector.Architecture.X86_64,
-        "Stack overflow tests are skipped on aarch64 due to JVM signal handler conflicts. "
-            + "Wasmtime's trap instructions for stack overflow detection cause SIGILL on ARM64.");
-  }
-
   private static String loadResource(final String path) throws IOException {
     try (final InputStream is = StackOverflowTest.class.getResourceAsStream(path)) {
       if (is == null) {
@@ -65,7 +57,9 @@ public final class StackOverflowTest extends DualRuntimeTest {
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("stack overflow - direct recursion")
   public void testStackOverflowDirectRecursion(final RuntimeType runtime) throws Exception {
-    assumeX86();
+    assumeTrue(
+        PlatformDetector.detectArchitecture() == PlatformDetector.Architecture.X86_64,
+        "Skipped on aarch64: stack overflow handling causes JVM crash (SIGILL)");
     setRuntime(runtime);
 
     try (final WastTestRunner runner = new WastTestRunner()) {
@@ -84,7 +78,9 @@ public final class StackOverflowTest extends DualRuntimeTest {
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("stack overflow - mutual recursion")
   public void testStackOverflowMutualRecursion(final RuntimeType runtime) throws Exception {
-    assumeX86();
+    assumeTrue(
+        PlatformDetector.detectArchitecture() == PlatformDetector.Architecture.X86_64,
+        "Skipped on aarch64: stack overflow handling causes JVM crash (SIGILL)");
     setRuntime(runtime);
 
     try (final WastTestRunner runner = new WastTestRunner()) {
