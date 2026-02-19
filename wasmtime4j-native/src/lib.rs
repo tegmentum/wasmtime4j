@@ -175,12 +175,7 @@ pub use wasi::{
 };
 
 // Re-export async runtime functionality
-pub use async_runtime::{
-    cancel_async_operation, compile_module_async, execute_async_function_call, get_async_runtime,
-    get_operation_status, get_runtime_handle, wait_for_operation, AsyncCompilationContext,
-    AsyncFunctionCallContext, AsyncOperation, AsyncOperationStatus, AsyncOperationType,
-    CompilationOptions,
-};
+pub use async_runtime::{get_async_runtime, get_runtime_handle, AsyncCallback};
 
 // Re-export WASI Preview 2 functionality
 pub use wasi_preview2::{
