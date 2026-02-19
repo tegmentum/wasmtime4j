@@ -349,14 +349,6 @@ class JniInstanceTest {
   }
 
   @Test
-  void testInstanceStatisticsThrowsUnsupported() {
-    final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
-
-    // getStatistics() is not yet implemented and should throw
-    assertThrows(UnsupportedOperationException.class, instance::getStatistics);
-  }
-
-  @Test
   void testI32FunctionCallValidation() {
     final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
 
@@ -414,16 +406,6 @@ class JniInstanceTest {
     // This test just verifies the instance exists and is valid
     assertNotNull(instance);
     assertFalse(instance.isClosed());
-  }
-
-  @Test
-  void testSetImportsUnsupported() {
-    final JniInstance instance = new JniInstance(VALID_HANDLE, testModule, testStore);
-
-    // Test that setImports throws UnsupportedOperationException
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> instance.setImports(java.util.Collections.emptyMap()));
   }
 
   @Test

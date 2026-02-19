@@ -251,28 +251,6 @@ public interface Instance extends Closeable {
    */
   java.util.Map<String, Object> getAllExports();
 
-  /**
-   * Sets imports for this instance (used during instantiation).
-   *
-   * <p>This method is typically used internally during module instantiation to provide the required
-   * imports.
-   *
-   * @param imports a map of import names to import objects
-   * @throws IllegalArgumentException if imports is null
-   * @throws WasmException if setting imports fails
-   */
-  void setImports(final java.util.Map<String, Object> imports) throws WasmException;
-
-  /**
-   * Gets runtime statistics for this instance.
-   *
-   * <p>Statistics include information about execution time, memory usage, function calls, and other
-   * runtime metrics.
-   *
-   * @return the instance statistics
-   * @throws WasmException if statistics collection fails
-   */
-  InstanceStatistics getStatistics() throws WasmException;
 
   /**
    * Gets the current lifecycle state of this instance.

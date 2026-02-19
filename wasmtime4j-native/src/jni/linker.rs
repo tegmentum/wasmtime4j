@@ -1215,3 +1215,32 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowUnk
         }
     }
 }
+
+/// Get the default function for a given module name
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetDefault(
+    mut env: JNIEnv,
+    _obj: jobject,
+    linker_handle: jlong,
+    store_handle: jlong,
+    module_name: JString,
+) -> jlong {
+    let name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+        match linker_core::get_default(linker, store, &name_str)? {
+            Some(func) => {
+                let func_handle =
+                    crate::jni::function::FunctionHandle::new(func, name_str.clone(), store);
+                Ok(Box::into_raw(Box::new(func_handle)) as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}

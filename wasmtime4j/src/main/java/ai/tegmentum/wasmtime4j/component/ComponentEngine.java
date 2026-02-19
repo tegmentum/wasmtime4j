@@ -5,22 +5,37 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
+import java.io.Closeable;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * WebAssembly component compilation engine interface.
  *
- * <p>A ComponentEngine extends the base Engine interface to provide component-specific compilation
- * and management capabilities. It supports the WebAssembly Component Model, allowing composition
- * and linking of components.
+ * <p>A ComponentEngine provides component-specific compilation and management capabilities. It
+ * supports the WebAssembly Component Model, allowing composition and linking of components.
+ *
+ * <p>ComponentEngines use composition rather than inheritance with the base Engine interface.
+ * Wasmtime has a single engine type that handles both modules and components. The ComponentEngine
+ * wraps a regular Engine with additional component model functionality. Access the underlying
+ * Engine via {@link #getEngine()}.
  *
  * <p>ComponentEngines are thread-safe and can be shared across multiple threads for concurrent
  * component compilation and instantiation.
  *
  * @since 1.0.0
  */
-public interface ComponentEngine extends Engine {
+public interface ComponentEngine extends Closeable {
+
+  /**
+   * Gets the underlying Wasmtime engine.
+   *
+   * <p>The returned Engine can be used for core module operations, store creation, and other
+   * non-component engine functionality.
+   *
+   * @return the underlying engine
+   */
+  Engine getEngine();
 
   /**
    * Compiles WebAssembly component bytecode into a component using this engine.
@@ -119,4 +134,34 @@ public interface ComponentEngine extends Engine {
    * @return the maximum link depth, or empty if unlimited
    */
   Optional<Integer> getMaxLinkDepth();
+
+  /**
+   * Checks if two engines share the same underlying Wasmtime engine.
+   *
+   * @param other the other engine to compare with
+   * @return true if both share the same underlying engine
+   */
+  boolean same(Engine other);
+
+  /**
+   * Checks if async support is enabled.
+   *
+   * @return true if async support is enabled
+   */
+  boolean isAsync();
+
+  /**
+   * Checks if this engine is still valid (not closed).
+   *
+   * @return true if the engine is valid
+   */
+  boolean isValid();
+
+  /**
+   * Detects if bytes contain a precompiled module or component.
+   *
+   * @param bytes the bytes to check
+   * @return the precompiled type, or null if not precompiled
+   */
+  ai.tegmentum.wasmtime4j.Precompiled detectPrecompiled(byte[] bytes);
 }

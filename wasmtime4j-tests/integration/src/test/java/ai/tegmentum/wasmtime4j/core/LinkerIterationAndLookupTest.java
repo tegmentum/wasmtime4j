@@ -319,36 +319,19 @@ public class LinkerIterationAndLookupTest extends DualRuntimeTest {
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getDefault returns null for unknown module name")
-  void getDefaultReturnsNullForUnknownModule(final RuntimeType runtime) throws Exception {
+  @DisplayName("getDefault returns a default function for any module name")
+  void getDefaultReturnsDefaultFunctionForAnyModule(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getDefault for unknown module");
+    LOGGER.info("[" + runtime + "] Testing getDefault for any module name");
 
     try (Engine engine = Engine.create();
         Store store = engine.createStore();
         Linker<?> linker = Linker.create(engine)) {
 
-      try {
-        final WasmFunction result = linker.getDefault(store, "nomod");
-        assertNull(result, "getDefault should return null for unknown module");
-        LOGGER.info("[" + runtime + "] getDefault('nomod') returned null as expected");
-      } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        LOGGER.info(
-            "["
-                + runtime
-                + "] getDefault not implemented: "
-                + e.getClass().getSimpleName()
-                + " - "
-                + e.getMessage());
-      } catch (final Exception e) {
-        LOGGER.info(
-            "["
-                + runtime
-                + "] getDefault threw: "
-                + e.getClass().getName()
-                + " - "
-                + e.getMessage());
-      }
+      // Wasmtime's Linker.get_default() returns a default function stub for any module name
+      final WasmFunction result = linker.getDefault(store, "nomod");
+      assertNotNull(result, "getDefault should return a function for any module name");
+      LOGGER.info("[" + runtime + "] getDefault('nomod') returned: " + result);
     }
   }
 

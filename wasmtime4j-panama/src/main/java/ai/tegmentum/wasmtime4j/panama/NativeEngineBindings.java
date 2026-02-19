@@ -217,12 +217,22 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // engine_ptr
 
     addFunctionBinding(
+        "wasmtime4j_panama_engine_same",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 1=same, 0=different, -1=error
+            ValueLayout.ADDRESS, // engine_ptr1
+            ValueLayout.ADDRESS)); // engine_ptr2
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_is_async",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
         "wasmtime4j_panama_engine_precompile_compatibility_hash",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
             ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS, // out_data_ptr
-            ValueLayout.ADDRESS)); // out_len_ptr
+            ValueLayout.ADDRESS)); // out_hash (pointer to u64)
 
     addFunctionBinding(
         "wasmtime4j_panama_engine_precompile_module",
@@ -765,6 +775,32 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Checks if two engines are the same (share the same underlying Wasmtime engine).
+   *
+   * @param enginePtr1 pointer to the first engine
+   * @param enginePtr2 pointer to the second engine
+   * @return true if both engines share the same underlying engine
+   */
+  public boolean engineSame(final MemorySegment enginePtr1, final MemorySegment enginePtr2) {
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_panama_engine_same", Integer.class, enginePtr1, enginePtr2);
+    return result == 1;
+  }
+
+  /**
+   * Checks if async support is enabled for the engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if async support is enabled, false otherwise
+   */
+  public boolean engineIsAsync(final MemorySegment enginePtr) {
+    final int result =
+        callNativeFunction("wasmtime4j_panama_engine_is_async", Integer.class, enginePtr);
+    return result == 1;
+  }
+
+  /**
    * Gets the maximum number of instances.
    *
    * @param enginePtr pointer to the engine
@@ -817,30 +853,27 @@ public final class NativeEngineBindings extends NativeBindingsBase {
    */
   public byte[] enginePrecompileCompatibilityHash(final MemorySegment enginePtr) {
     try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment outDataPtr = tempArena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment outLenPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment outHash = tempArena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
           callNativeFunction(
               "wasmtime4j_panama_engine_precompile_compatibility_hash",
               Integer.class,
               enginePtr,
-              outDataPtr,
-              outLenPtr);
+              outHash);
 
       if (result != 0) {
         return null;
       }
 
-      final MemorySegment dataPtr = outDataPtr.get(ValueLayout.ADDRESS, 0);
-      final long dataLen = outLenPtr.get(ValueLayout.JAVA_LONG, 0);
-
-      if (dataPtr.equals(MemorySegment.NULL) || dataLen <= 0) {
-        return null;
+      // Read the u64 hash value and convert to big-endian byte array (matching JNI behavior)
+      long hashValue = outHash.get(ValueLayout.JAVA_LONG, 0);
+      final byte[] bytes = new byte[8];
+      for (int i = 7; i >= 0; i--) {
+        bytes[i] = (byte) (hashValue & 0xFF);
+        hashValue >>>= 8;
       }
-
-      final MemorySegment hashData = dataPtr.reinterpret(dataLen);
-      return hashData.toArray(ValueLayout.JAVA_BYTE);
+      return bytes;
     } catch (final Exception e) {
       return null;
     }

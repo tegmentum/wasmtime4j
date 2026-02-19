@@ -598,14 +598,13 @@ class PanamaEngineTest {
     }
 
     @Test
-    @DisplayName("detectPrecompiled with random bytes should throw (native not implemented)")
-    void shouldThrowForRandomBytes() throws Exception {
+    @DisplayName("detectPrecompiled with random bytes should return null")
+    void shouldReturnNullForRandomBytes() throws Exception {
       final PanamaEngine engine = createEngine();
       final byte[] random = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
-      assertThrows(
-          IllegalStateException.class,
-          () -> engine.detectPrecompiled(random),
-          "Random bytes should throw since native function is not implemented");
+      assertNull(
+          engine.detectPrecompiled(random),
+          "Random bytes should return null (not precompiled)");
     }
 
     @Test

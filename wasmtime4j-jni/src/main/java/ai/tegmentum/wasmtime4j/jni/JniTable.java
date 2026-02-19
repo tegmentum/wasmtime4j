@@ -21,6 +21,7 @@ public final class JniTable extends JniResource implements WasmTable {
 
   private static final Logger LOGGER = Logger.getLogger(JniTable.class.getName());
   private final JniStore store;
+  private final long instanceHandle;
 
   // Load native library when this class is first loaded
   static {
@@ -41,9 +42,23 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws IllegalArgumentException if store is null
    */
   JniTable(final long nativeHandle, final JniStore store) {
+    this(nativeHandle, store, 0L);
+  }
+
+  /**
+   * Creates a new JNI table with the given native handle, store, and instance handle.
+   *
+   * @param nativeHandle the native table handle
+   * @param store the store that owns this table
+   * @param instanceHandle the native instance handle (0 if not associated with an instance)
+   * @throws JniResourceException if nativeHandle is invalid
+   * @throws IllegalArgumentException if store is null
+   */
+  JniTable(final long nativeHandle, final JniStore store, final long instanceHandle) {
     super(nativeHandle);
     Validation.requireNonNull(store, "store");
     this.store = store;
+    this.instanceHandle = instanceHandle;
     LOGGER.fine("Created JNI table with handle: 0x" + Long.toHexString(nativeHandle));
   }
 
@@ -556,13 +571,40 @@ public final class JniTable extends JniResource implements WasmTable {
 
   @Override
   public void dropElementSegment(final int segmentIndex) {
-    throw new UnsupportedOperationException("dropElementSegment not yet implemented");
+    if (segmentIndex < 0) {
+      throw new IllegalArgumentException("Element segment index cannot be negative");
+    }
+    ensureUsable();
+    if (instanceHandle == 0) {
+      throw new IllegalStateException(
+          "Cannot drop element segment: table not associated with an instance");
+    }
+    nativeElemDrop(instanceHandle, segmentIndex);
   }
 
   @Override
   public void init(
       final int destOffset, final int srcOffset, final int srcSegmentIndex, final int length) {
-    throw new UnsupportedOperationException("table init not yet implemented");
+    if (destOffset < 0) {
+      throw new IndexOutOfBoundsException("Destination offset cannot be negative");
+    }
+    if (srcSegmentIndex < 0) {
+      throw new IllegalArgumentException("Element segment index cannot be negative");
+    }
+    if (srcOffset < 0) {
+      throw new IndexOutOfBoundsException("Source offset cannot be negative");
+    }
+    if (length < 0) {
+      throw new IllegalArgumentException("Length cannot be negative");
+    }
+    ensureUsable();
+    if (instanceHandle == 0) {
+      throw new IllegalStateException(
+          "Cannot init table: table not associated with an instance");
+    }
+    nativeTableInit(
+        getNativeHandle(), store.getNativeHandle(), instanceHandle,
+        destOffset, srcOffset, length, srcSegmentIndex);
   }
 
   /**
@@ -595,4 +637,27 @@ public final class JniTable extends JniResource implements WasmTable {
    * @return true if 64-bit addressing is supported
    */
   private static native boolean nativeSupports64BitAddressing(long tableHandle, long storeHandle);
+
+  /**
+   * Initializes a table range from an element segment.
+   *
+   * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
+   * @param instanceHandle the native instance handle
+   * @param dst the destination starting index in the table
+   * @param src the source starting index in the element segment
+   * @param len the number of elements to copy
+   * @param segmentIndex the element segment index
+   */
+  private static native void nativeTableInit(
+      long tableHandle, long storeHandle, long instanceHandle,
+      int dst, int src, int len, int segmentIndex);
+
+  /**
+   * Drops an element segment, freeing its data.
+   *
+   * @param instanceHandle the native instance handle
+   * @param segmentIndex the element segment index to drop
+   */
+  private static native void nativeElemDrop(long instanceHandle, int segmentIndex);
 }

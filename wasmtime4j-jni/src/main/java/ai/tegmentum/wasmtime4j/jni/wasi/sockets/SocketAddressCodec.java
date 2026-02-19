@@ -98,8 +98,8 @@ final class SocketAddressCodec {
           null,
           segmentBytes,
           ipv6.getPort(),
-          (int) ipv6.getFlowInfo(),
-          (int) ipv6.getScopeId());
+          ipv6.getFlowInfo(),
+          ipv6.getScopeId());
     }
   }
 
@@ -121,7 +121,7 @@ final class SocketAddressCodec {
     if (isIpv4) {
       final byte[] octets =
           new byte[] {(byte) encoded[1], (byte) encoded[2], (byte) encoded[3], (byte) encoded[4]};
-      final int port = (int) encoded[5];
+      final int port = (int) encoded[5] & 0xFFFF;
 
       final Ipv4Address ipv4Address = new Ipv4Address(octets);
       return IpSocketAddress.ipv4(new Ipv4SocketAddress(port, ipv4Address));
@@ -130,7 +130,7 @@ final class SocketAddressCodec {
       for (int i = 0; i < 8; i++) {
         segments[i] = (short) encoded[i + 1];
       }
-      final int port = (int) encoded[9];
+      final int port = (int) encoded[9] & 0xFFFF;
       final long flowInfo = encoded[10];
       final long scopeId = encoded[11];
 

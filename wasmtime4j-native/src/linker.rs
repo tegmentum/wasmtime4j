@@ -1373,6 +1373,31 @@ pub mod core {
     pub fn import_count(linker: &Linker) -> usize {
         linker.imports().len()
     }
+
+    /// Core function to get the default function for a module name
+    ///
+    /// Returns the "default export" for the given module name, which is
+    /// typically the `_start` function or the empty-string export.
+    ///
+    /// # Arguments
+    /// * `linker` - The linker to query
+    /// * `store` - The store context (mutable borrow needed by wasmtime)
+    /// * `module_name` - The module name to look up
+    ///
+    /// # Returns
+    /// `Ok(Some(func))` if a default was found, `Ok(None)` if not
+    pub fn get_default(
+        linker: &Linker,
+        store: &mut crate::store::Store,
+        module_name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Func>> {
+        let linker_guard = linker.inner()?;
+        let mut store_guard = store.try_lock_store()?;
+        match linker_guard.get_default(&mut *store_guard, module_name) {
+            Ok(func) => Ok(Some(func)),
+            Err(_) => Ok(None),
+        }
+    }
 }
 
 /// Instantiate module with linker

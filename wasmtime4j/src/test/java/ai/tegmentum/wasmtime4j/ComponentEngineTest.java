@@ -354,13 +354,18 @@ class ComponentEngineTest {
       Set<String> expectedMethods =
           new HashSet<>(
               Arrays.asList(
+                  "getEngine",
                   "compileComponent",
                   "linkComponents",
                   "checkCompatibility",
                   "createInstance",
                   "getWitSupportInfo",
                   "supportsComponentModel",
-                  "getMaxLinkDepth"));
+                  "getMaxLinkDepth",
+                  "same",
+                  "isAsync",
+                  "isValid",
+                  "detectPrecompiled"));
 
       Method[] methods = ComponentEngine.class.getDeclaredMethods();
       Set<String> actualMethodNames = new HashSet<>();
@@ -408,15 +413,16 @@ class ComponentEngineTest {
     }
 
     @Test
-    @DisplayName("ComponentEngine extends Engine which extends Closeable")
-    void shouldExtendCloseableViaEngine() {
-      // ComponentEngine -> Engine -> Closeable
+    @DisplayName("ComponentEngine extends Closeable (composition, not Engine)")
+    void shouldExtendCloseableDirectly() {
+      // ComponentEngine extends Closeable directly (composition over inheritance)
       assertTrue(
-          Engine.class.isAssignableFrom(ComponentEngine.class),
-          "ComponentEngine should be assignable to Engine");
+          java.io.Closeable.class.isAssignableFrom(ComponentEngine.class),
+          "ComponentEngine should be assignable to Closeable");
+      // ComponentEngine should NOT extend Engine — it uses composition via getEngine()
       assertTrue(
-          java.io.Closeable.class.isAssignableFrom(Engine.class),
-          "Engine should be assignable to Closeable");
+          !Engine.class.isAssignableFrom(ComponentEngine.class),
+          "ComponentEngine should NOT be assignable to Engine (uses composition)");
     }
 
     @Test

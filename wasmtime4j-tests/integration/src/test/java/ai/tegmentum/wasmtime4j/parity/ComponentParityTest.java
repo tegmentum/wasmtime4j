@@ -63,6 +63,8 @@ class ComponentParityTest {
   private WasmRuntime panamaRuntime;
   private Engine jniEngine;
   private Engine panamaEngine;
+  private ComponentEngine jniComponentEngine;
+  private ComponentEngine panamaComponentEngine;
   private Store jniStore;
   private Store panamaStore;
   private boolean jniComponentsSupported;
@@ -116,9 +118,12 @@ class ComponentParityTest {
         jniEngine = jniRuntime.createEngine();
         jniStore = jniEngine.createStore();
 
-        // Check if engine supports components
-        if (jniEngine instanceof ComponentEngine) {
-          jniComponentsSupported = ((ComponentEngine) jniEngine).supportsComponentModel();
+        // Create component engine separately
+        try {
+          jniComponentEngine = jniRuntime.createComponentEngine();
+          jniComponentsSupported = jniComponentEngine.supportsComponentModel();
+        } catch (final Exception e) {
+          LOGGER.info("JNI component engine not available: " + e.getMessage());
         }
         LOGGER.info("JNI runtime created, component support: " + jniComponentsSupported);
       } catch (final Exception e) {
@@ -132,9 +137,12 @@ class ComponentParityTest {
         panamaEngine = panamaRuntime.createEngine();
         panamaStore = panamaEngine.createStore();
 
-        // Check if engine supports components
-        if (panamaEngine instanceof ComponentEngine) {
-          panamaComponentsSupported = ((ComponentEngine) panamaEngine).supportsComponentModel();
+        // Create component engine separately
+        try {
+          panamaComponentEngine = panamaRuntime.createComponentEngine();
+          panamaComponentsSupported = panamaComponentEngine.supportsComponentModel();
+        } catch (final Exception e) {
+          LOGGER.info("Panama component engine not available: " + e.getMessage());
         }
         LOGGER.info("Panama runtime created, component support: " + panamaComponentsSupported);
       } catch (final Exception e) {
@@ -148,9 +156,11 @@ class ComponentParityTest {
     LOGGER.info("Cleaning up component parity test runtimes");
 
     closeResource(jniStore, "JNI store");
+    closeResource(jniComponentEngine, "JNI component engine");
     closeResource(jniEngine, "JNI engine");
     closeResource(jniRuntime, "JNI runtime");
     closeResource(panamaStore, "Panama store");
+    closeResource(panamaComponentEngine, "Panama component engine");
     closeResource(panamaEngine, "Panama engine");
     closeResource(panamaRuntime, "Panama runtime");
   }
@@ -187,9 +197,9 @@ class ComponentParityTest {
       LOGGER.info("Panama component support: " + panamaComponentsSupported);
 
       // Log the support status - both should either support or not support
-      if (jniEngine instanceof ComponentEngine && panamaEngine instanceof ComponentEngine) {
-        final boolean jniSupport = ((ComponentEngine) jniEngine).supportsComponentModel();
-        final boolean panamaSupport = ((ComponentEngine) panamaEngine).supportsComponentModel();
+      if (jniComponentEngine != null && panamaComponentEngine != null) {
+        final boolean jniSupport = jniComponentEngine.supportsComponentModel();
+        final boolean panamaSupport = panamaComponentEngine.supportsComponentModel();
 
         LOGGER.info(
             "ComponentEngine.supportsComponentModel() - JNI: "
@@ -208,11 +218,11 @@ class ComponentParityTest {
       assumeTrue(
           jniRuntime != null && panamaRuntime != null, "Both runtimes required for this test");
 
-      // Verify engines are ComponentEngine instances
-      assertThat(jniEngine).isInstanceOf(ComponentEngine.class);
-      assertThat(panamaEngine).isInstanceOf(ComponentEngine.class);
+      // Verify component engines were created
+      assertThat(jniComponentEngine).isNotNull();
+      assertThat(panamaComponentEngine).isNotNull();
 
-      LOGGER.info("Both engines are ComponentEngine instances");
+      LOGGER.info("Both component engines created successfully");
     }
   }
 
@@ -253,11 +263,8 @@ class ComponentParityTest {
       requireBothRuntimesWithComponents();
 
       try {
-        final ComponentEngine jniCompEngine = (ComponentEngine) jniEngine;
-        final ComponentEngine panamaCompEngine = (ComponentEngine) panamaEngine;
-
-        final Component jniComponent = jniCompEngine.compileComponent(componentBytes);
-        final Component panamaComponent = panamaCompEngine.compileComponent(componentBytes);
+        final Component jniComponent = jniComponentEngine.compileComponent(componentBytes);
+        final Component panamaComponent = panamaComponentEngine.compileComponent(componentBytes);
 
         assertThat(jniComponent).isNotNull();
         assertThat(panamaComponent).isNotNull();
@@ -283,11 +290,8 @@ class ComponentParityTest {
       requireBothRuntimesWithComponents();
 
       try {
-        final ComponentEngine jniCompEngine = (ComponentEngine) jniEngine;
-        final ComponentEngine panamaCompEngine = (ComponentEngine) panamaEngine;
-
-        final Component jniComponent = jniCompEngine.compileComponent(componentBytes);
-        final Component panamaComponent = panamaCompEngine.compileComponent(componentBytes);
+        final Component jniComponent = jniComponentEngine.compileComponent(componentBytes);
+        final Component panamaComponent = panamaComponentEngine.compileComponent(componentBytes);
 
         final long jniSize = jniComponent.getSize();
         final long panamaSize = panamaComponent.getSize();
@@ -317,11 +321,8 @@ class ComponentParityTest {
       requireBothRuntimesWithComponents();
 
       try {
-        final ComponentEngine jniCompEngine = (ComponentEngine) jniEngine;
-        final ComponentEngine panamaCompEngine = (ComponentEngine) panamaEngine;
-
-        final Component jniComponent = jniCompEngine.compileComponent(componentBytes);
-        final Component panamaComponent = panamaCompEngine.compileComponent(componentBytes);
+        final Component jniComponent = jniComponentEngine.compileComponent(componentBytes);
+        final Component panamaComponent = panamaComponentEngine.compileComponent(componentBytes);
 
         final var jniExports = jniComponent.getExportedInterfaces();
         final var panamaExports = panamaComponent.getExportedInterfaces();
@@ -346,11 +347,8 @@ class ComponentParityTest {
       requireBothRuntimesWithComponents();
 
       try {
-        final ComponentEngine jniCompEngine = (ComponentEngine) jniEngine;
-        final ComponentEngine panamaCompEngine = (ComponentEngine) panamaEngine;
-
-        final Component jniComponent = jniCompEngine.compileComponent(componentBytes);
-        final Component panamaComponent = panamaCompEngine.compileComponent(componentBytes);
+        final Component jniComponent = jniComponentEngine.compileComponent(componentBytes);
+        final Component panamaComponent = panamaComponentEngine.compileComponent(componentBytes);
 
         final var jniImports = jniComponent.getImportedInterfaces();
         final var panamaImports = panamaComponent.getImportedInterfaces();

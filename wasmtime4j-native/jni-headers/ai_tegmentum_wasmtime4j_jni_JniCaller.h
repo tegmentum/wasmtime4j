@@ -89,14 +89,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeHasE
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
- * Method:    nativeGetEpochDeadline
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetEpochDeadline
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
  * Method:    nativeSetEpochDeadline
  * Signature: (JJ)V
  */

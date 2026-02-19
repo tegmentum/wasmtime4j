@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstanceState;
-import ai.tegmentum.wasmtime4j.InstanceStatistics;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -921,22 +920,6 @@ public final class PanamaInstance implements Instance {
     }
 
     return count;
-  }
-
-  @Override
-  public void setImports(final Map<String, Object> imports) throws WasmException {
-    if (imports == null) {
-      throw new IllegalArgumentException("Imports cannot be null");
-    }
-    ensureNotClosed();
-    // Imports cannot be set after instantiation - this matches JNI behavior
-    throw new UnsupportedOperationException(
-        "Setting imports is not supported for instantiated instances");
-  }
-
-  @Override
-  public InstanceStatistics getStatistics() throws WasmException {
-    throw new UnsupportedOperationException("getStatistics not yet implemented");
   }
 
   @Override

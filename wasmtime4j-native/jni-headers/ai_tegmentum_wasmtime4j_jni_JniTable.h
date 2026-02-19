@@ -95,6 +95,22 @@ JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSupports64BitAddressing
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
+ * Method:    nativeTableInit
+ * Signature: (JJJIIII)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableInit
+  (JNIEnv *, jclass, jlong, jlong, jlong, jint, jint, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
+ * Method:    nativeElemDrop
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeElemDrop
+  (JNIEnv *, jclass, jlong, jint);
+
 #ifdef __cplusplus
 }
 #endif

@@ -43,8 +43,7 @@ final class PanamaExternTable implements Extern {
 
   @Override
   public WasmTable asTable() {
-    throw new UnsupportedOperationException(
-        "PanamaExternTable.asTable() not yet implemented");
+    return new PanamaTable(nativeHandle, store);
   }
 
   MemorySegment getNativeHandle() {

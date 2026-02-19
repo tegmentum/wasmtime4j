@@ -1319,7 +1319,32 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   @Override
   public ai.tegmentum.wasmtime4j.WasmFunction getDefault(
       final Store store, final String moduleName) {
-    throw new UnsupportedOperationException("getDefault not yet implemented");
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = tempArena.allocateFrom(moduleName);
+      final MemorySegment funcHandle = NATIVE_INSTANCE_BINDINGS.linkerGetDefault(
+          nativeLinker, panamaStore.getNativeStore(), nameSegment);
+
+      if (funcHandle == null || funcHandle.equals(MemorySegment.NULL)
+          || funcHandle.address() == 0) {
+        return null;
+      }
+
+      return new PanamaCallerFunction(funcHandle, panamaStore, moduleName);
+    }
   }
 
   /** Wrapper for host function callbacks. */

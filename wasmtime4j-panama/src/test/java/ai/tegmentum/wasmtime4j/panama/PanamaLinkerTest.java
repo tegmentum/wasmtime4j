@@ -910,13 +910,36 @@ class PanamaLinkerTest {
   class GetDefaultTests {
 
     @Test
-    @DisplayName("Should throw UnsupportedOperationException")
-    void shouldThrowUnsupportedOperationException() throws Exception {
+    @DisplayName("Should reject null store")
+    void shouldRejectNullStore() throws Exception {
       final PanamaLinker<?> linker = createLinker();
 
       assertThrows(
-          UnsupportedOperationException.class, () -> linker.getDefault(null, "module"));
-      LOGGER.info("getDefault correctly throws UnsupportedOperationException");
+          IllegalArgumentException.class, () -> linker.getDefault(null, "module"));
+      LOGGER.info("getDefault correctly rejected null store");
+    }
+
+    @Test
+    @DisplayName("Should reject null module name")
+    void shouldRejectNullModuleName() throws Exception {
+      final PanamaLinker<?> linker = createLinker();
+      final PanamaStore store = createStore();
+
+      assertThrows(
+          IllegalArgumentException.class, () -> linker.getDefault(store, null));
+      LOGGER.info("getDefault correctly rejected null module name");
+    }
+
+    @Test
+    @DisplayName("Should return a default function for any module name")
+    void shouldReturnDefaultFunctionForAnyModule() throws Exception {
+      final PanamaLinker<?> linker = createLinker();
+      final PanamaStore store = createStore();
+
+      // Wasmtime's Linker.get_default() returns a default function stub for any module name
+      final var result = linker.getDefault(store, "nonexistent_module");
+      assertNotNull(result, "getDefault should return a function for any module name");
+      LOGGER.info("getDefault correctly returned a function: " + result);
     }
   }
 

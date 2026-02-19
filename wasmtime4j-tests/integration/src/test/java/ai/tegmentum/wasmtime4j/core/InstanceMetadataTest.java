@@ -27,8 +27,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -169,63 +167,4 @@ public class InstanceMetadataTest extends DualRuntimeTest {
     }
   }
 
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("setImports throws UnsupportedOperationException")
-  void setImportsThrowsUnsupported(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing setImports throws UnsupportedOperationException");
-
-    try (Engine engine = Engine.create();
-        Module module = engine.compileWat(TWO_EXPORTS_WAT);
-        Store store = engine.createStore();
-        Instance instance = module.instantiate(store)) {
-
-      final Map<String, Object> imports = new HashMap<>();
-      imports.put("key", "value");
-
-      assertThrows(
-          UnsupportedOperationException.class,
-          () -> instance.setImports(imports),
-          "setImports should throw UnsupportedOperationException");
-
-      LOGGER.info("[" + runtime + "] Correctly threw UnsupportedOperationException");
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("setImports with null throws exception")
-  void setImportsNullThrows(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing setImports with null");
-
-    try (Engine engine = Engine.create();
-        Module module = engine.compileWat(TWO_EXPORTS_WAT);
-        Store store = engine.createStore();
-        Instance instance = module.instantiate(store)) {
-
-      // Should throw either IllegalArgumentException or UnsupportedOperationException
-      final Exception thrown =
-          assertThrows(
-              Exception.class,
-              () -> instance.setImports(null),
-              "setImports(null) should throw an exception");
-
-      assertNotNull(thrown, "Exception should not be null");
-      assertTrue(
-          thrown instanceof IllegalArgumentException
-              || thrown instanceof UnsupportedOperationException,
-          "Should be IllegalArgumentException or UnsupportedOperationException, was: "
-              + thrown.getClass().getName());
-
-      LOGGER.info(
-          "["
-              + runtime
-              + "] Threw "
-              + thrown.getClass().getSimpleName()
-              + ": "
-              + thrown.getMessage());
-    }
-  }
 }

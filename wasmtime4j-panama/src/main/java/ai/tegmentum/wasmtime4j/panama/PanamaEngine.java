@@ -355,14 +355,14 @@ public final class PanamaEngine implements Engine {
         || otherEngine.nativeEngine.equals(java.lang.foreign.MemorySegment.NULL)) {
       return false;
     }
-    // Compare native pointers for equality
-    return this.nativeEngine.equals(otherEngine.nativeEngine);
+    return NATIVE_BINDINGS.engineSame(this.nativeEngine, otherEngine.nativeEngine);
   }
 
   @Override
   public boolean isAsync() {
-    // Panama engines don't support async mode by default
-    // This would require async_support feature in wasmtime
-    return false;
+    if (resourceHandle.isClosed()) {
+      return false;
+    }
+    return NATIVE_BINDINGS.engineIsAsync(nativeEngine);
   }
 }

@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstanceState;
-import ai.tegmentum.wasmtime4j.InstanceStatistics;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -222,7 +221,7 @@ public final class JniInstance extends JniResource implements Instance {
       if (tableHandle == 0) {
         return Optional.empty();
       }
-      return Optional.of(new JniTable(tableHandle, (JniStore) store));
+      return Optional.of(new JniTable(tableHandle, (JniStore) store, getNativeHandle()));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -690,13 +689,6 @@ public final class JniInstance extends JniResource implements Instance {
   }
 
   @Override
-  public InstanceStatistics getStatistics() throws WasmException {
-    ensureNotClosed();
-
-    throw new UnsupportedOperationException("Instance statistics not yet implemented");
-  }
-
-  @Override
   public java.util.Map<String, Object> getAllExports() {
     ensureNotClosed();
 
@@ -735,12 +727,6 @@ public final class JniInstance extends JniResource implements Instance {
       LOGGER.warning("Failed to get all exports: " + e.getMessage());
       return java.util.Collections.emptyMap();
     }
-  }
-
-  @Override
-  public void setImports(final java.util.Map<String, Object> imports) throws WasmException {
-    throw new UnsupportedOperationException(
-        "Setting imports is not supported for instantiated instances");
   }
 
   /**

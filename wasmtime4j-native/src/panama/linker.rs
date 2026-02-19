@@ -921,6 +921,40 @@ pub extern "C" fn wasmtime4j_panama_function_reference_is_valid(registry_id: u64
     }
 }
 
+/// Get the default function for a given module name (Panama FFI version)
+///
+/// # Safety
+///
+/// All pointers must be valid. Returns a boxed Func pointer or null.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_get_default(
+    linker_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    module_name: *const c_char,
+) -> *mut c_void {
+    if linker_ptr.is_null() || store_ptr.is_null() || module_name.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    ffi_utils::ffi_try_ptr(|| {
+        let linker = unsafe { linker_core::get_linker_ref(linker_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let name_str = unsafe { CStr::from_ptr(module_name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+
+        match linker_core::get_default(linker, store, name_str)? {
+            Some(func) => Ok(Box::new(func)),
+            None => Err(crate::error::WasmtimeError::Runtime {
+                message: format!("No default function for module '{}'", name_str),
+                backtrace: None,
+            }),
+        }
+    })
+}
+
 /// Helper: Convert int to ValType
 fn int_to_valtype(val: c_int) -> crate::WasmtimeResult<ValType> {
     match val {

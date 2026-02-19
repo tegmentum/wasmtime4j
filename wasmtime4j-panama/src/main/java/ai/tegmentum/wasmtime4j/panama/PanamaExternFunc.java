@@ -43,8 +43,7 @@ final class PanamaExternFunc implements Extern {
 
   @Override
   public WasmFunction asFunction() {
-    throw new UnsupportedOperationException(
-        "PanamaExternFunc.asFunction() not yet implemented");
+    return new PanamaCallerFunction(nativeHandle, store, "extern");
   }
 
   MemorySegment getNativeHandle() {

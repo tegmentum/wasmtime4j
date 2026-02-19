@@ -137,6 +137,31 @@ public final class PanamaTable implements WasmTable {
     LOGGER.fine("Created table from store with type: " + elementType);
   }
 
+  /**
+   * Package-private constructor for extern tables with automatic element type detection.
+   *
+   * <p>This constructor queries the native table handle to determine the element type,
+   * similar to the instance-based constructor but without requiring a PanamaInstance.
+   *
+   * @param nativeTable the native table pointer from Wasmtime
+   * @param store the store that owns this table
+   */
+  PanamaTable(final MemorySegment nativeTable, final PanamaStore store) {
+    this(nativeTable, queryElementTypeWithTempArena(nativeTable), store);
+  }
+
+  /**
+   * Queries element type using a temporary arena that is properly closed.
+   *
+   * @param nativeTable the native table pointer
+   * @return the element type
+   */
+  private static WasmValueType queryElementTypeWithTempArena(final MemorySegment nativeTable) {
+    try (Arena tempArena = Arena.ofConfined()) {
+      return queryElementTypeFromNative(nativeTable, tempArena);
+    }
+  }
+
   @Override
   public int getSize() {
     ensureNotClosed();

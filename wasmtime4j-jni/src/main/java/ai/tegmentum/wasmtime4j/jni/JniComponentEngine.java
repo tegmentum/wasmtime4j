@@ -1,27 +1,23 @@
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentLoadConfig;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -131,72 +127,17 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
-  public EngineConfig getConfig() {
-    return config.toEngineConfig();
-  }
-
-  @Override
-  public Store createStore() throws WasmException {
-    ensureNotClosed();
+  public Engine getEngine() {
     throw new UnsupportedOperationException(
-        "ComponentEngine does not support Store creation - use regular Engine");
-  }
-
-  @Override
-  public Store createStore(final Object data) throws WasmException {
-    ensureNotClosed();
-    throw new UnsupportedOperationException(
-        "ComponentEngine does not support Store creation - use regular Engine");
-  }
-
-  @Override
-  public WasmRuntime getRuntime() {
-    return runtime;
-  }
-
-  @Override
-  public Module compileModule(final byte[] wasmBytes) throws WasmException {
-    ensureNotClosed();
-    throw new UnsupportedOperationException(
-        "ComponentEngine does not support Module compilation - use compileComponent() instead");
-  }
-
-  @Override
-  public Module compileWat(final String wat) throws WasmException {
-    ensureNotClosed();
-    throw new UnsupportedOperationException(
-        "ComponentEngine does not support WAT compilation - use compileComponent() instead");
-  }
-
-  @Override
-  public byte[] precompileModule(final byte[] wasmBytes) throws WasmException {
-    ensureNotClosed();
-    throw new UnsupportedOperationException(
-        "ComponentEngine does not support module precompilation - use JniEngine instead");
-  }
-
-  @Override
-  public Module compileFromStream(final java.io.InputStream stream)
-      throws WasmException, java.io.IOException {
-    ensureNotClosed();
-    throw new UnsupportedOperationException(
-        "ComponentEngine does not support streaming Module compilation - use JniEngine instead");
-  }
-
-  @Override
-  public boolean supportsFeature(final WasmFeature feature) {
-    Validation.requireNonNull(feature, "feature");
-    throw new UnsupportedOperationException(
-        "Component engine feature detection not yet implemented");
+        "JniComponentEngine does not yet expose its underlying Engine. "
+            + "Use WasmRuntime.createEngine() to obtain a regular Engine.");
   }
 
   @Override
   public boolean same(final ai.tegmentum.wasmtime4j.Engine other) {
-    if (other == null || !(other instanceof JniComponentEngine)) {
-      return false;
-    }
-    final JniComponentEngine otherEngine = (JniComponentEngine) other;
-    return getNativeHandle() == otherEngine.getNativeHandle();
+    // ComponentEngine creates its own internal native engine, which is never
+    // shared with any separately-created Engine instance.
+    return false;
   }
 
   @Override
@@ -225,37 +166,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     } catch (final Exception e) {
       throw new WasmException("Failed to instantiate component", e);
     }
-  }
-
-  @Override
-  public int getMemoryLimitPages() {
-    return 0; // No limit
-  }
-
-  @Override
-  public long getStackSizeLimit() {
-    return 0; // Default
-  }
-
-  @Override
-  public boolean isFuelEnabled() {
-    return false;
-  }
-
-  @Override
-  public boolean isEpochInterruptionEnabled() {
-    return false;
-  }
-
-  @Override
-  public boolean isCoredumpOnTrapEnabled() {
-    return false;
-  }
-
-  @Override
-  public void incrementEpoch() {
-    // Component engines don't support epoch interruption in the same way
-    // This is a no-op for component engines
   }
 
   @Override
@@ -331,44 +241,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     } catch (final java.io.IOException e) {
       throw new WasmException("Failed to read component file: " + filePath, e);
     }
-  }
-
-  /**
-   * Loads a component asynchronously from a URL.
-   *
-   * @param url the URL to load the component from
-   * @param loadConfig the component load configuration
-   * @return a CompletableFuture that completes with the loaded Component
-   * @throws WasmException if loading fails
-   */
-  public CompletableFuture<Component> loadComponentFromUrl(
-      final String url, final ComponentLoadConfig loadConfig) throws WasmException {
-    Validation.requireNonEmpty(url, "url");
-    Validation.requireNonNull(loadConfig, "loadConfig");
-    ensureNotClosed();
-
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            final java.net.URI uri = java.net.URI.create(url);
-            final byte[] wasmBytes;
-            try (java.io.InputStream in = uri.toURL().openStream();
-                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
-              final byte[] buffer = new byte[8192];
-              int bytesRead;
-              while ((bytesRead = in.read(buffer)) != -1) {
-                out.write(buffer, 0, bytesRead);
-              }
-              wasmBytes = out.toByteArray();
-            }
-            return loadComponentFromBytes(wasmBytes);
-          } catch (final WasmException e) {
-            throw new java.util.concurrent.CompletionException(e);
-          } catch (final Exception e) {
-            throw new java.util.concurrent.CompletionException(
-                new WasmException("Failed to load component from URL: " + url, e));
-          }
-        });
   }
 
   @Override
@@ -473,22 +345,14 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   public WitSupportInfo getWitSupportInfo() {
-    final Set<String> features = new HashSet<>();
-    features.add("wit");
-    features.add("component-model");
-    final List<String> types = new ArrayList<>();
-    types.add("u8");
-    types.add("u16");
-    types.add("u32");
-    types.add("u64");
-    types.add("s8");
-    types.add("s16");
-    types.add("s32");
-    types.add("s64");
-    types.add("f32");
-    types.add("f64");
-    types.add("string");
-    return new WitSupportInfo(true, "1.0", features, types, 10);
+    return new WitSupportInfo(
+        true,
+        "1.0",
+        new HashSet<>(Arrays.asList("interface", "world", "resource", "variant", "record", "enum",
+            "flags", "tuple", "option", "result")),
+        Arrays.asList("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64",
+            "char", "string"),
+        10);
   }
 
   @Override
@@ -540,6 +404,15 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   protected void doClose() throws Exception {
+    for (final Component component : loadedComponents.values()) {
+      try {
+        component.close();
+      } catch (final Exception e) {
+        LOGGER.warning("Error closing component during engine shutdown: " + e.getMessage());
+      }
+    }
+    loadedComponents.clear();
+
     if (nativeEngine != null && nativeEngine.isValid()) {
       nativeEngine.close();
       LOGGER.fine("Closed JNI component engine: " + engineId);

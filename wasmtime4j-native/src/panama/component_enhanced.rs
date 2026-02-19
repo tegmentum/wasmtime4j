@@ -213,6 +213,51 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_get_exports(
     })
 }
 
+/// Check if two enhanced component engines share the same underlying Wasmtime engine
+///
+/// Returns 1 if same, 0 if different, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_same(
+    engine_ptr1: *mut c_void,
+    engine_ptr2: *mut c_void,
+) -> c_int {
+    if engine_ptr1.is_null() || engine_ptr2.is_null() {
+        return -1;
+    }
+    match (
+        unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr1, "engine1") },
+        unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr2, "engine2") },
+    ) {
+        (Ok(engine1), Ok(engine2)) => {
+            if wasmtime::Engine::same(engine1.engine(), engine2.engine()) {
+                1
+            } else {
+                0
+            }
+        }
+        _ => -1,
+    }
+}
+
+/// Check if async support is enabled for an enhanced component engine
+///
+/// Returns 1 if async, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_is_async(
+    engine_ptr: *mut c_void,
+) -> c_int {
+    if engine_ptr.is_null() {
+        return -1;
+    }
+    match unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine") } {
+        Ok(_engine) => {
+            // EnhancedComponentEngine always creates its engine with async_support(false)
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
 /// Destroy an enhanced component engine
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_destroy(engine_ptr: *mut c_void) {

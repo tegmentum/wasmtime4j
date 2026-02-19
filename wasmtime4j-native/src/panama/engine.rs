@@ -472,6 +472,72 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
     }
 }
 
+/// Detect if bytes are a precompiled WebAssembly module or component (Panama FFI version)
+///
+/// Returns -1 if not precompiled, 0 for MODULE, 1 for COMPONENT.
+/// Note: detect_precompiled is a static method on wasmtime::Engine that does not
+/// require an engine instance, so the engine_ptr is only validated for non-null.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_detect_precompiled(
+    engine_ptr: *mut c_void,
+    bytes_ptr: *const u8,
+    bytes_len: u64,
+) -> c_int {
+    if engine_ptr.is_null() || bytes_ptr.is_null() || bytes_len == 0 {
+        return -1;
+    }
+
+    let bytes = unsafe { std::slice::from_raw_parts(bytes_ptr, bytes_len as usize) };
+    match wasmtime::Engine::detect_precompiled(bytes) {
+        Some(wasmtime::Precompiled::Module) => 0,
+        Some(wasmtime::Precompiled::Component) => 1,
+        None => -1,
+    }
+}
+
+/// Check if two engines are the same (share the same underlying Wasmtime engine) (Panama FFI version)
+///
+/// Returns 1 if same, 0 if different, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_same(
+    engine_ptr1: *mut c_void,
+    engine_ptr2: *mut c_void,
+) -> c_int {
+    if engine_ptr1.is_null() || engine_ptr2.is_null() {
+        return -1;
+    }
+    match (
+        unsafe { core::get_engine_ref(engine_ptr1) },
+        unsafe { core::get_engine_ref(engine_ptr2) },
+    ) {
+        (Ok(engine1), Ok(engine2)) => {
+            if engine1.same(engine2) {
+                1
+            } else {
+                0
+            }
+        }
+        _ => -1,
+    }
+}
+
+/// Check if async support is enabled for the engine (Panama FFI version)
+///
+/// Returns 1 if async, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_is_async(engine_ptr: *mut c_void) -> c_int {
+    match unsafe { core::get_engine_ref(engine_ptr) } {
+        Ok(engine) => {
+            if engine.async_support_enabled() {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => -1,
+    }
+}
+
 /// Detect if a host CPU feature is available (Panama FFI version)
 ///
 /// feature_name: Null-terminated C string of the feature name (e.g., "sse4.2", "avx2")

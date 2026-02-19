@@ -1,21 +1,17 @@
 package ai.tegmentum.wasmtime4j.panama;
 
-import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitSupportInfo;
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -308,11 +304,13 @@ public final class PanamaComponentEngine implements ComponentEngine {
   public WitSupportInfo getWitSupportInfo() {
     ensureNotClosed();
     return new WitSupportInfo(
-        true, // supportsWit
-        "1.0", // witVersion
-        Set.of("interface", "world", "resource", "variant", "record", "enum"), // supportedFeatures
-        List.of("i32", "i64", "f32", "f64", "string", "bool"), // supportedTypes
-        10); // maxInterfaceDepth
+        true,
+        "1.0",
+        Set.of("interface", "world", "resource", "variant", "record", "enum", "flags", "tuple",
+            "option", "result"),
+        List.of("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64",
+            "char", "string"),
+        10);
   }
 
   @Override
@@ -330,58 +328,11 @@ public final class PanamaComponentEngine implements ComponentEngine {
     resourceHandle.close();
   }
 
-  // Engine interface methods - delegate to PanamaEngine
-
   @Override
-  public Store createStore() throws WasmException {
+  public Engine getEngine() {
     throw new UnsupportedOperationException(
-        "Store creation not supported - use PanamaEngine for store creation");
-  }
-
-  @Override
-  public Store createStore(final Object storeData) throws WasmException {
-    throw new UnsupportedOperationException(
-        "Store creation not supported - use PanamaEngine for store creation");
-  }
-
-  @Override
-  public WasmRuntime getRuntime() {
-    return runtime;
-  }
-
-  @Override
-  public Module compileModule(final byte[] wasmBytes) throws WasmException {
-    throw new UnsupportedOperationException(
-        "Module compilation not supported - use PanamaEngine for module compilation");
-  }
-
-  @Override
-  public Module compileWat(final String watText) throws WasmException {
-    throw new UnsupportedOperationException(
-        "WAT compilation not supported - use PanamaEngine for WAT compilation");
-  }
-
-  @Override
-  public byte[] precompileModule(final byte[] wasmBytes) throws WasmException {
-    throw new UnsupportedOperationException(
-        "Module precompilation not supported - use PanamaEngine for module precompilation");
-  }
-
-  @Override
-  public Module compileFromStream(final InputStream stream) throws WasmException, IOException {
-    throw new UnsupportedOperationException(
-        "Module compilation from stream not supported - use PanamaEngine for module compilation");
-  }
-
-  @Override
-  public void incrementEpoch() {
-    throw new UnsupportedOperationException(
-        "Epoch interruption not supported - use PanamaEngine for epoch interruption");
-  }
-
-  @Override
-  public EngineConfig getConfig() {
-    return config.toEngineConfig();
+        "PanamaComponentEngine does not yet expose its underlying Engine. "
+            + "Use WasmRuntime.createEngine() to obtain a regular Engine.");
   }
 
   @Override
@@ -392,50 +343,18 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
-  public boolean supportsFeature(final WasmFeature feature) {
-    // Component model specific features
-    return false;
-  }
-
-  @Override
   public boolean same(final ai.tegmentum.wasmtime4j.Engine other) {
-    if (other == null || !(other instanceof PanamaComponentEngine)) {
-      return false;
-    }
-    final PanamaComponentEngine otherEngine = (PanamaComponentEngine) other;
-    return enhancedEngineHandle != null
-        && enhancedEngineHandle.equals(otherEngine.enhancedEngineHandle);
+    // ComponentEngine creates its own internal native engine, which is never
+    // shared with any separately-created Engine instance.
+    return false;
   }
 
   @Override
   public boolean isAsync() {
-    // Component engines are not async by default
-    return false;
-  }
-
-  @Override
-  public int getMemoryLimitPages() {
-    return 0; // Unlimited by default
-  }
-
-  @Override
-  public long getStackSizeLimit() {
-    return 0; // Unlimited by default
-  }
-
-  @Override
-  public boolean isFuelEnabled() {
-    return false;
-  }
-
-  @Override
-  public boolean isEpochInterruptionEnabled() {
-    return false;
-  }
-
-  @Override
-  public boolean isCoredumpOnTrapEnabled() {
-    return false;
+    if (resourceHandle.isClosed()) {
+      return false;
+    }
+    return NATIVE_BINDINGS.enhancedComponentEngineIsAsync(enhancedEngineHandle);
   }
 
   // Helper methods

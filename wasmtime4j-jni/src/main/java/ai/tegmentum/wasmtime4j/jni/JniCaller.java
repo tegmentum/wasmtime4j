@@ -256,13 +256,9 @@ final class JniCaller<T> implements Caller<T> {
 
   @Override
   public Optional<Long> epochDeadline() {
-    try {
-      final long deadline = nativeGetEpochDeadline(callerHandle);
-      return deadline >= 0 ? Optional.of(deadline) : Optional.empty();
-    } catch (Exception e) {
-      LOGGER.log(Level.FINE, "Epoch deadline not available", e);
-      return Optional.empty();
-    }
+    // Wasmtime does not expose a getter for the current epoch deadline value.
+    // Only setEpochDeadline() and hasEpochDeadline() are supported.
+    return Optional.empty();
   }
 
   @Override
@@ -440,14 +436,6 @@ final class JniCaller<T> implements Caller<T> {
    * @return true if an epoch deadline is set
    */
   private static native boolean nativeHasEpochDeadline(long callerHandle);
-
-  /**
-   * Gets the epoch deadline.
-   *
-   * @param callerHandle the native caller handle
-   * @return the epoch deadline, or -1 if not set
-   */
-  private static native long nativeGetEpochDeadline(long callerHandle);
 
   /**
    * Sets the epoch deadline.

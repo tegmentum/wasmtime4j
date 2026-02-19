@@ -1,7 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.component.Component;
-import ai.tegmentum.wasmtime4j.component.ComponentDebugInfo;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -195,10 +194,6 @@ public final class JniComponentImpl implements Component {
     return nativeComponent.getNativeHandle();
   }
 
-  public ComponentDebugInfo getDebugInfo() {
-    return new JniComponentDebugInfoImpl(componentId, componentId);
-  }
-
   @Override
   public void close() {
     if (nativeComponent != null && !nativeComponent.isClosed()) {
@@ -217,119 +212,4 @@ public final class JniComponentImpl implements Component {
     }
   }
 
-  /** Stub implementation of ComponentDebugInfo. */
-  private static class JniComponentDebugInfoImpl implements ComponentDebugInfo {
-    private final String componentId;
-    private final String componentName;
-
-    JniComponentDebugInfoImpl(final String componentId, final String componentName) {
-      this.componentId = componentId;
-      this.componentName = componentName;
-    }
-
-    @Override
-    public String getComponentId() {
-      return componentId;
-    }
-
-    @Override
-    public String getComponentName() {
-      return componentName;
-    }
-
-    @Override
-    public DebugSymbols getSymbols() {
-      return new DebugSymbols() {
-        @Override
-        public java.util.Map<String, Symbol> getSymbolTable() {
-          return java.util.Collections.emptyMap();
-        }
-
-        @Override
-        public Symbol getSymbolAt(final long address) {
-          return null;
-        }
-
-        @Override
-        public java.util.List<Symbol> getSymbolsByName(final String name) {
-          return java.util.Collections.emptyList();
-        }
-      };
-    }
-
-    @Override
-    public java.util.List<SourceMap> getSourceMaps() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<VariableInfo> getVariables() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<FunctionInfo> getFunctions() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public MemoryLayout getMemoryLayout() {
-      return new MemoryLayout() {
-        @Override
-        public HeapInfo getHeapInfo() {
-          return new HeapInfo() {
-            @Override
-            public long getStartAddress() {
-              return 0;
-            }
-
-            @Override
-            public long getSize() {
-              return 0;
-            }
-
-            @Override
-            public long getUsedSize() {
-              return 0;
-            }
-          };
-        }
-
-        @Override
-        public StackInfo getStackInfo() {
-          return new StackInfo() {
-            @Override
-            public long getStartAddress() {
-              return 0;
-            }
-
-            @Override
-            public long getSize() {
-              return 0;
-            }
-
-            @Override
-            public long getStackPointer() {
-              return 0;
-            }
-          };
-        }
-
-        @Override
-        public java.util.List<MemorySegment> getSegments() {
-          return java.util.Collections.emptyList();
-        }
-      };
-    }
-
-    @Override
-    public java.util.List<StackFrame> getStackTrace() {
-      return java.util.Collections.emptyList();
-    }
-
-    @Override
-    public java.util.List<Breakpoint> getBreakpoints() {
-      return java.util.Collections.emptyList();
-    }
-  }
 }

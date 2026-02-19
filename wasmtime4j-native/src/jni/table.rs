@@ -394,3 +394,62 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSupports6
         Ok(if metadata.is_64 { 1 } else { 0 })
     })
 }
+
+/// Initialize table from element segment (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableInit(
+    mut env: JNIEnv,
+    _class: JClass,
+    table_ptr: jlong,
+    store_ptr: jlong,
+    instance_ptr: jlong,
+    dst: jint,
+    src: jint,
+    len: jint,
+    segment_index: jint,
+) {
+    jni_utils::jni_try(&mut env, || {
+        let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe {
+            ffi_utils::deref_ptr::<Store>(store_ptr as *const std::os::raw::c_void, "store")?
+        };
+        let instance = unsafe {
+            ffi_utils::deref_ptr::<crate::instance::Instance>(
+                instance_ptr as *const std::os::raw::c_void,
+                "instance",
+            )?
+        };
+
+        table.init_from_segment(
+            store,
+            instance,
+            dst as u32,
+            src as u32,
+            len as u32,
+            segment_index as u32,
+        )?;
+        Ok(())
+    });
+}
+
+/// Drop an element segment (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeElemDrop(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_ptr: jlong,
+    segment_index: jint,
+) {
+    jni_utils::jni_try(&mut env, || {
+        let instance = unsafe {
+            ffi_utils::deref_ptr::<crate::instance::Instance>(
+                instance_ptr as *const std::os::raw::c_void,
+                "instance",
+            )?
+        };
+
+        let segment_manager = instance.get_element_segment_manager();
+        segment_manager.drop_segment(segment_index as u32)?;
+        Ok(())
+    });
+}

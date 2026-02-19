@@ -331,6 +331,17 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // count out
 
     addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_engine_same",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 1=same, 0=different, -1=error
+            ValueLayout.ADDRESS, // engine_ptr1
+            ValueLayout.ADDRESS)); // engine_ptr2
+
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_engine_is_async",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
         "wasmtime4j_panama_enhanced_component_engine_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // engine handle
 
@@ -1142,6 +1153,37 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         instanceId,
         functionsOut,
         countOut);
+  }
+
+  /**
+   * Checks if two enhanced component engines share the same underlying Wasmtime engine.
+   *
+   * @param enginePtr1 pointer to the first enhanced component engine
+   * @param enginePtr2 pointer to the second enhanced component engine
+   * @return true if both engines share the same underlying engine
+   */
+  public boolean enhancedComponentEngineSame(
+      final MemorySegment enginePtr1, final MemorySegment enginePtr2) {
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_panama_enhanced_component_engine_same",
+            Integer.class,
+            enginePtr1,
+            enginePtr2);
+    return result == 1;
+  }
+
+  /**
+   * Checks if async support is enabled for an enhanced component engine.
+   *
+   * @param enginePtr pointer to the enhanced component engine
+   * @return true if async support is enabled
+   */
+  public boolean enhancedComponentEngineIsAsync(final MemorySegment enginePtr) {
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_panama_enhanced_component_engine_is_async", Integer.class, enginePtr);
+    return result == 1;
   }
 
   /**

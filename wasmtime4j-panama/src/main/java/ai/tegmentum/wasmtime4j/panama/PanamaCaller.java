@@ -185,7 +185,26 @@ final class PanamaCaller<T> implements Caller<T> {
 
   @Override
   public Optional<WasmTable> getTable(final String name) {
-    throw new UnsupportedOperationException("getTable not yet implemented");
+    if (name == null) {
+      throw new IllegalArgumentException("Table name cannot be null");
+    }
+
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(name);
+      final MemorySegment tableOut = arena.allocate(ValueLayout.ADDRESS);
+      final int result = bindings.callerGetTable(callerPtr, nameSegment, tableOut);
+      if (result != 0) {
+        return Optional.empty();
+      }
+      final MemorySegment tableHandle = tableOut.get(ValueLayout.ADDRESS, 0);
+      if (tableHandle.equals(MemorySegment.NULL) || tableHandle.address() == 0) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaTable(tableHandle, store));
+    } catch (Exception e) {
+      LOGGER.log(Level.WARNING, "Failed to get table: " + name, e);
+      return Optional.empty();
+    }
   }
 
   @Override
@@ -291,7 +310,9 @@ final class PanamaCaller<T> implements Caller<T> {
 
   @Override
   public Optional<Long> epochDeadline() {
-    throw new UnsupportedOperationException("epochDeadline not yet implemented");
+    // Wasmtime does not expose a getter for the current epoch deadline value.
+    // Only setEpochDeadline() and hasEpochDeadline() are supported.
+    return Optional.empty();
   }
 
   @Override
