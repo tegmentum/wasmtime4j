@@ -22,7 +22,6 @@ import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 /**
@@ -920,17 +919,6 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
-  public java.util.concurrent.CompletableFuture<Void> gcAsync()
-      throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    return java.util.concurrent.CompletableFuture.supplyAsync(
-        () -> {
-          nativeGcAsync(nativeHandle);
-          return null;
-        });
-  }
-
-  @Override
   public void epochDeadlineAsyncYieldAndUpdate(final long deltaTicks)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     ensureNotClosed();
@@ -1045,8 +1033,6 @@ public final class JniStore extends JniResource implements Store {
 
   private native boolean nativeHasPendingException(long storeHandle);
 
-  private native void nativeGcAsync(long storeHandle);
-
   private static native void nativeEpochDeadlineAsyncYieldAndUpdate(
       long storeHandle, long deltaTicks);
 
@@ -1154,31 +1140,4 @@ public final class JniStore extends JniResource implements Store {
   // Native methods for new functionality
   private native void nativeSetFuelAsyncYieldInterval(long storeHandle, long interval);
 
-  // ===== Async Creation Methods =====
-
-  @Override
-  public CompletableFuture<WasmTable> createTableAsync(
-      final WasmValueType elementType, final int initialSize, final int maxSize) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return createTable(elementType, initialSize, maxSize);
-          } catch (WasmException e) {
-            throw new RuntimeException(e);
-          }
-        });
-  }
-
-  @Override
-  public CompletableFuture<WasmMemory> createMemoryAsync(
-      final int initialPages, final int maxPages) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return createMemory(initialPages, maxPages);
-          } catch (WasmException e) {
-            throw new RuntimeException(e);
-          }
-        });
-  }
 }

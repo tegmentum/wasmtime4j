@@ -990,21 +990,6 @@ public final class PanamaStore implements Store {
   }
 
   @Override
-  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
-      final ai.tegmentum.wasmtime4j.WasmValueType elementType,
-      final int initialSize,
-      final int maxSize) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return createTable(elementType, initialSize, maxSize);
-          } catch (WasmException e) {
-            throw new RuntimeException(e);
-          }
-        });
-  }
-
-  @Override
   public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
       throws WasmException {
     if (initialPages < 0) {
@@ -1060,19 +1045,6 @@ public final class PanamaStore implements Store {
       }
       throw new WasmException("Error creating memory: " + e.getMessage(), e);
     }
-  }
-
-  @Override
-  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
-      createMemoryAsync(final int initialPages, final int maxPages) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return createMemory(initialPages, maxPages);
-          } catch (WasmException e) {
-            throw new RuntimeException(e);
-          }
-        });
   }
 
   @Override
@@ -1394,21 +1366,6 @@ public final class PanamaStore implements Store {
     if (result != 0) {
       throw PanamaErrorMapper.mapNativeError(result, "Failed to perform garbage collection");
     }
-  }
-
-  @Override
-  public java.util.concurrent.CompletableFuture<Void> gcAsync()
-      throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    return java.util.concurrent.CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            gc();
-          } catch (ai.tegmentum.wasmtime4j.exception.WasmException e) {
-            throw new RuntimeException(e);
-          }
-          return null;
-        });
   }
 
   @Override

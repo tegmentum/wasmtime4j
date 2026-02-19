@@ -223,44 +223,6 @@ public interface Store extends Closeable {
    */
   WasmMemory createSharedMemory(int initialPages, int maxPages) throws WasmException;
 
-  // ===== Async Creation Methods =====
-
-  /**
-   * Creates a new WebAssembly table asynchronously with the specified element type and size.
-   *
-   * <p>This method performs table creation in an async context, allowing the operation to yield if
-   * the store is configured with async resource limiting. This is useful when table creation needs
-   * to check external quotas or resources asynchronously.
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param elementType the type of elements this table will store (FUNCREF or EXTERNREF)
-   * @param initialSize the initial number of elements
-   * @param maxSize the maximum number of elements, or -1 for unlimited
-   * @return a future that completes with a new WasmTable
-   * @throws IllegalArgumentException if any parameter is invalid
-   * @since 1.0.0
-   */
-  CompletableFuture<WasmTable> createTableAsync(
-      WasmValueType elementType, int initialSize, int maxSize);
-
-  /**
-   * Creates a new WebAssembly linear memory asynchronously with the specified size.
-   *
-   * <p>This method performs memory creation in an async context, allowing the operation to yield if
-   * the store is configured with async resource limiting. This is useful when memory allocation
-   * needs to check external quotas or resources asynchronously.
-   *
-   * <p><b>Note:</b> The async feature must be enabled in the engine configuration.
-   *
-   * @param initialPages the initial number of 64KB pages
-   * @param maxPages the maximum number of pages, or -1 for unlimited
-   * @return a future that completes with a new WasmMemory
-   * @throws IllegalArgumentException if initialPages or maxPages is invalid
-   * @since 1.0.0
-   */
-  CompletableFuture<WasmMemory> createMemoryAsync(int initialPages, int maxPages);
-
   /**
    * Creates a function reference from a host function.
    *
@@ -391,21 +353,6 @@ public interface Store extends Closeable {
    * @since 1.0.0
    */
   void gc() throws WasmException;
-
-  /**
-   * Performs asynchronous garbage collection of externrefs in this store.
-   *
-   * <p>This method is similar to {@link #gc()} but designed for use in async contexts. It performs
-   * cooperative, async-yielding during GC if configured with epoch-based interruption.
-   *
-   * <p><b>Note:</b> Requires both the GC feature and async feature to be enabled. The store must
-   * also be configured with async support via epoch interruption.
-   *
-   * @return a CompletableFuture that completes when GC is finished
-   * @throws WasmException if the async GC operation fails
-   * @since 1.0.0
-   */
-  java.util.concurrent.CompletableFuture<Void> gcAsync() throws WasmException;
 
   /**
    * Configures epoch-deadline expiration to yield to the async caller and update the deadline.
