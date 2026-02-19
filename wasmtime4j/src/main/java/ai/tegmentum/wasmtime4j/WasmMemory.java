@@ -187,12 +187,12 @@ public interface WasmMemory {
    * Fills a memory region with the specified byte value using long addressing.
    *
    * @param offset the starting offset in memory
-   * @param length the number of bytes to fill
    * @param value the byte value to fill with
+   * @param length the number of bytes to fill
    * @throws IndexOutOfBoundsException if offset or length is out of bounds
    * @since 1.1.0
    */
-  default void fill(final long offset, final long length, final byte value) {
+  default void fill(final long offset, final byte value, final long length) {
     // Use chunked filling for efficiency with large regions
     final int chunkSize = 1024 * 1024; // 1MB chunks
     final byte[] fillBuffer = new byte[chunkSize];

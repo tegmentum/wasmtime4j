@@ -488,7 +488,7 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       final WasmMemory memory = instance.getMemory("mem").get();
 
       // Fill 16 bytes at offset 0 with 0xAB via Java default method
-      memory.fill(0L, 16L, (byte) 0xAB);
+      memory.fill(0L, (byte) 0xAB, 16L);
 
       // Verify all 16 bytes using load_byte
       for (int i = 0; i < 16; i++) {
@@ -507,7 +507,7 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
   @DisplayName("long fill zero length is no-op via Java API")
   void longFillZeroLength(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing WasmMemory.fill(long,long,byte) zero length no-op");
+    LOGGER.info("[" + runtime + "] Testing WasmMemory.fill(long,byte,long) zero length no-op");
 
     try (Engine engine = Engine.create();
         Store store = engine.createStore()) {
@@ -516,7 +516,7 @@ public class MemoryBulkOperationsTest extends DualRuntimeTest {
       final WasmMemory memory = instance.getMemory("mem").get();
 
       // Zero length fill should be a no-op
-      memory.fill(0L, 0L, (byte) 0xFF);
+      memory.fill(0L, (byte) 0xFF, 0L);
       LOGGER.info("[" + runtime + "] Long fill zero-length no-op succeeded");
 
       instance.close();
