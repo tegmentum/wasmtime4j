@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.func;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
-import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -177,21 +176,6 @@ public interface Caller<T> {
    * @since 1.0.0
    */
   void setEpochDeadline(long deadline) throws WasmException;
-
-  // ===== Additional Caller Methods =====
-
-  /**
-   * Gets an export using a pre-computed ModuleExport reference.
-   *
-   * @param moduleExport the pre-computed module export reference
-   * @return the export if it exists, empty otherwise
-   * @throws IllegalArgumentException if moduleExport is null
-   * @since 1.0.0
-   * @deprecated Use {@link #getExport(String)} instead. This method only uses the export name
-   *     internally.
-   */
-  @Deprecated
-  Optional<Extern> getExportByModuleExport(ModuleExport moduleExport);
 
   /**
    * Gets the engine associated with the caller's store.

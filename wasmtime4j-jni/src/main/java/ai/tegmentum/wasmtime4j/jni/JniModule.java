@@ -42,14 +42,17 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public List<ImportType> getImports() {
-    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
-    final List<ImportType> imports = new java.util.ArrayList<>(moduleImports.size());
-    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      imports.add(moduleImport.getImportType());
+    ensureNotClosed();
+    if (!isNativeHandleReasonable()) {
+      return java.util.Collections.emptyList();
     }
-    return java.util.Collections.unmodifiableList(imports);
+
+    try {
+      return nativeGetModuleImports(nativeHandle);
+    } catch (final Throwable t) {
+      return java.util.Collections.emptyList();
+    }
   }
 
   @Override
@@ -104,14 +107,30 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
+  @SuppressFBWarnings(
+      value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
+      justification =
+          "Error details are logged internally only; exception thrown to caller has sanitized"
+              + " message")
   public List<ExportType> getExports() {
-    final List<ai.tegmentum.wasmtime4j.ModuleExport> moduleExports = getModuleExports();
-    final List<ExportType> exports = new java.util.ArrayList<>(moduleExports.size());
-    for (final ai.tegmentum.wasmtime4j.ModuleExport moduleExport : moduleExports) {
-      exports.add(moduleExport.getExportType());
+    ensureNotClosed();
+    if (!isNativeHandleReasonable()) {
+      return java.util.Collections.emptyList();
     }
-    return java.util.Collections.unmodifiableList(exports);
+
+    try {
+      final List<ExportType> result = nativeGetModuleExports(nativeHandle);
+      if (result == null) {
+        java.util.logging.Logger.getLogger(JniModule.class.getName())
+            .warning("nativeGetModuleExports returned null for handle: " + nativeHandle);
+        return java.util.Collections.emptyList();
+      }
+      return result;
+    } catch (final Throwable t) {
+      java.util.logging.Logger.getLogger(JniModule.class.getName())
+          .log(java.util.logging.Level.SEVERE, "nativeGetModuleExports failed", t);
+      throw new RuntimeException("Failed to get module exports");
+    }
   }
 
   @Override
@@ -189,55 +208,6 @@ public class JniModule extends JniResource implements Module {
    */
   private boolean isNativeHandleReasonable() {
     return isNativeHandleReasonable(nativeHandle);
-  }
-
-  @Override
-  @SuppressWarnings("deprecation")
-  public List<ai.tegmentum.wasmtime4j.ModuleImport> getModuleImports() {
-    ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
-      // Return empty list for unreasonable handle - prevents crashes from test fake pointers
-      return java.util.Collections.emptyList();
-    }
-
-    try {
-      return nativeGetModuleImports(nativeHandle);
-    } catch (final Throwable t) {
-      // Defensive: Return empty list on native error instead of crashing JVM
-      return java.util.Collections.emptyList();
-    }
-  }
-
-  @Override
-  @SuppressWarnings("deprecation")
-  @SuppressFBWarnings(
-      value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
-      justification =
-          "Error details are logged internally only; exception thrown to caller has sanitized"
-              + " message")
-  public List<ai.tegmentum.wasmtime4j.ModuleExport> getModuleExports() {
-    ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
-      // Return empty list for unreasonable handle - prevents crashes from test fake pointers
-      return java.util.Collections.emptyList();
-    }
-
-    try {
-      final List<ai.tegmentum.wasmtime4j.ModuleExport> result =
-          nativeGetModuleExports(nativeHandle);
-      if (result == null) {
-        java.util.logging.Logger.getLogger(JniModule.class.getName())
-            .warning("nativeGetModuleExports returned null for handle: " + nativeHandle);
-        return java.util.Collections.emptyList();
-      }
-      return result;
-    } catch (final Throwable t) {
-      // Defensive: Log error details internally, rethrow with sanitized message
-      java.util.logging.Logger.getLogger(JniModule.class.getName())
-          .log(java.util.logging.Level.SEVERE, "nativeGetModuleExports failed", t);
-      // Wrap in new exception with sanitized message to avoid exposing internal details
-      throw new RuntimeException("Failed to get module exports");
-    }
   }
 
   @Override
@@ -346,36 +316,27 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public boolean validateImports(final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {
       throw new IllegalArgumentException("imports cannot be null");
     }
     ensureNotClosed();
 
-    // Get all module imports and check if they're satisfied by the provided ImportMap
-    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
+    final List<ImportType> importTypes = getImports();
 
-    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
+    for (final ImportType importType : importTypes) {
       final String moduleName = importType.getModuleName();
       final String fieldName = importType.getName();
 
-      // Check if the import exists in the ImportMap
       if (!imports.contains(moduleName, fieldName)) {
         return false;
       }
-
-      // TODO: Add type checking - verify that the provided import type
-      // matches the expected type from the module
-      // This requires access to the import value and type comparison logic
     }
 
     return true;
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImportsDetailed(
       final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {
@@ -390,12 +351,10 @@ public class JniModule extends JniResource implements Module {
         new java.util.ArrayList<>();
     final java.util.Map<String, java.util.Map<String, Object>> importsMap = imports.getImports();
 
-    // Get all module imports and validate each one
-    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
+    final List<ImportType> importTypes = getImports();
     int validCount = 0;
 
-    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
+    for (final ImportType importType : importTypes) {
       final String moduleName = importType.getModuleName();
       final String fieldName = importType.getName();
       final ai.tegmentum.wasmtime4j.type.WasmType expectedType = importType.getType();
@@ -684,8 +643,7 @@ public class JniModule extends JniResource implements Module {
    * @param moduleHandle the native module handle
    * @return list of module exports
    */
-  private native List<ai.tegmentum.wasmtime4j.ModuleExport> nativeGetModuleExports(
-      long moduleHandle);
+  private native List<ExportType> nativeGetModuleExports(long moduleHandle);
 
   /**
    * Native method to get module imports.
@@ -693,8 +651,7 @@ public class JniModule extends JniResource implements Module {
    * @param moduleHandle the native module handle
    * @return list of module imports
    */
-  private native List<ai.tegmentum.wasmtime4j.ModuleImport> nativeGetModuleImports(
-      long moduleHandle);
+  private native List<ImportType> nativeGetModuleImports(long moduleHandle);
 
   /**
    * Native method to check if module has an export.

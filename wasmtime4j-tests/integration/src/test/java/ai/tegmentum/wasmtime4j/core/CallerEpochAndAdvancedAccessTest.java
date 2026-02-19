@@ -24,7 +24,7 @@ import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.ModuleExport;
+import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * methods.
  *
  * <p>Covers: {@link Caller#hasEpochDeadline()}, {@link Caller#epochDeadline()}, {@link
- * Caller#getExportByModuleExport(ModuleExport)}, {@link Caller#fuelAsyncYieldInterval()}, {@link
+ * Caller#getExport(String)}, {@link Caller#fuelAsyncYieldInterval()}, {@link
  * Caller#setFuelAsyncYieldInterval(long)}.
  *
  * <p>All tests use host functions registered via the Linker with {@link
@@ -60,7 +60,6 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * @since 1.0.0
  */
 @DisplayName("Caller Epoch and Advanced Access Tests")
-@SuppressWarnings("deprecation")
 public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
 
   private static final Logger LOGGER =
@@ -225,34 +224,34 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Verified: epochDeadline() = " + epochResult.get().get());
   }
 
-  // ========== getExportByModuleExport Tests ==========
+  // ========== getExport by name Tests ==========
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("Caller.getExportByModuleExport finds memory export")
-  void callerGetExportByModuleExportFindsMemory(final RuntimeType runtime) throws Exception {
+  @DisplayName("Caller.getExport finds memory export")
+  void callerGetExportFindsMemory(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing Caller.getExportByModuleExport() for memory export");
+    LOGGER.info("[" + runtime + "] Testing Caller.getExport() for memory export");
 
     final AtomicReference<Optional<Extern>> exportResult = new AtomicReference<>();
-    final AtomicReference<ModuleExport> usedModuleExport = new AtomicReference<>();
+    final AtomicReference<String> usedExportName = new AtomicReference<>();
 
     final HostFunction hostFn =
         HostFunction.multiValueWithCaller(
             (Caller<Void> caller, WasmValue[] params) -> {
-              final ModuleExport me = usedModuleExport.get();
-              if (me != null) {
-                exportResult.set(caller.getExportByModuleExport(me));
+              final String name = usedExportName.get();
+              if (name != null) {
+                exportResult.set(caller.getExport(name));
                 LOGGER.info(
                     "["
                         + runtime
-                        + "] Caller.getExportByModuleExport("
-                        + me
+                        + "] Caller.getExport("
+                        + name
                         + "): "
                         + exportResult.get());
               } else {
                 LOGGER.warning(
-                    "[" + runtime + "] No ModuleExport was set before host function call");
+                    "[" + runtime + "] No export name was set before host function call");
                 exportResult.set(Optional.empty());
               }
               return new WasmValue[] {WasmValue.i32(42)};
@@ -264,17 +263,17 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
         Module module = engine.compileWat(WAT)) {
 
       // Find the "memory" export from module exports
-      final List<ModuleExport> moduleExports = module.getModuleExports();
-      LOGGER.info("[" + runtime + "] Module exports: " + moduleExports);
-      ModuleExport memoryExport = null;
-      for (final ModuleExport me : moduleExports) {
-        if ("memory".equals(me.getName())) {
-          memoryExport = me;
+      final List<ExportType> exports = module.getExports();
+      LOGGER.info("[" + runtime + "] Module exports: " + exports);
+      String memoryExportName = null;
+      for (final ExportType et : exports) {
+        if ("memory".equals(et.getName())) {
+          memoryExportName = et.getName();
           break;
         }
       }
-      assertNotNull(memoryExport, "WAT module should have a 'memory' export in getModuleExports()");
-      usedModuleExport.set(memoryExport);
+      assertNotNull(memoryExportName, "WAT module should have a 'memory' export in getExports()");
+      usedExportName.set(memoryExportName);
 
       linker.defineHostFunction("env", "host_fn", HOST_FN_TYPE, hostFn);
 
@@ -294,23 +293,23 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
       }
     }
 
-    assertNotNull(exportResult.get(), "getExportByModuleExport() result should not be null");
+    assertNotNull(exportResult.get(), "getExport() result should not be null");
     assertTrue(
         exportResult.get().isPresent(),
-        "getExportByModuleExport() should find the 'memory' export");
+        "getExport() should find the 'memory' export");
     LOGGER.info(
         "["
             + runtime
-            + "] Verified: getExportByModuleExport() found memory export: "
+            + "] Verified: getExport() found memory export: "
             + exportResult.get().get());
   }
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("Caller.getExportByModuleExport with null throws IllegalArgumentException")
-  void callerGetExportByModuleExportNullThrows(final RuntimeType runtime) throws Exception {
+  @DisplayName("Caller.getExport with null throws IllegalArgumentException")
+  void callerGetExportNullThrows(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing Caller.getExportByModuleExport(null) throws");
+    LOGGER.info("[" + runtime + "] Testing Caller.getExport(null) throws");
 
     final AtomicBoolean threwException = new AtomicBoolean(false);
     final AtomicReference<Exception> caughtException = new AtomicReference<>();
@@ -319,14 +318,14 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
         HostFunction.multiValueWithCaller(
             (Caller<Void> caller, WasmValue[] params) -> {
               try {
-                caller.getExportByModuleExport(null);
+                caller.getExport(null);
               } catch (final IllegalArgumentException | NullPointerException e) {
                 threwException.set(true);
                 caughtException.set(e);
                 LOGGER.info(
                     "["
                         + runtime
-                        + "] getExportByModuleExport(null) threw: "
+                        + "] getExport(null) threw: "
                         + e.getClass().getSimpleName()
                         + " - "
                         + e.getMessage());
@@ -359,7 +358,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
 
     assertTrue(
         threwException.get(),
-        "getExportByModuleExport(null) should throw IllegalArgumentException or "
+        "getExport(null) should throw IllegalArgumentException or "
             + "NullPointerException");
     LOGGER.info(
         "["

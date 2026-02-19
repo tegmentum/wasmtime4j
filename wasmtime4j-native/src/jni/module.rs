@@ -845,7 +845,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         Err(_) => return std::ptr::null_mut(),
     };
 
-    // For each export, create ModuleExport object
+    // For each export, create ExportType object
     for (export_name, export_kind) in &exports_data {
         // Create export name string
         let name_jstring = match env.new_string(export_name) {
@@ -891,29 +891,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             Err(_) => continue,
         };
 
-        // Create ModuleExport(String name, ExportType exportType)
-        let module_export_class = match env.find_class("ai/tegmentum/wasmtime4j/ModuleExport") {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-        let module_export_obj = match env.new_object(
-            module_export_class,
-            "(Ljava/lang/String;Lai/tegmentum/wasmtime4j/type/ExportType;)V",
-            &[
-                JValue::Object(&name_jstring),
-                JValue::Object(&export_type_obj),
-            ],
-        ) {
-            Ok(obj) => obj,
-            Err(_) => continue,
-        };
-
-        // Add to ArrayList
+        // Add ExportType directly to ArrayList
         let _ = env.call_method(
             &array_list,
             "add",
             "(Ljava/lang/Object;)Z",
-            &[JValue::Object(&module_export_obj)],
+            &[JValue::Object(&export_type_obj)],
         );
     }
 
@@ -964,7 +947,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         Err(_) => return std::ptr::null_mut(),
     };
 
-    // For each import, create ModuleImport object with proper type
+    // For each import, create ImportType object with proper type
     for (module_name, field_name, import_kind) in &imports_data {
         // Create import strings
         let module_name_jstring = match env.new_string(module_name) {
@@ -1022,30 +1005,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             Err(_) => continue,
         };
 
-        // Create ModuleImport(String moduleName, String fieldName, ImportType importType)
-        let module_import_class = match env.find_class("ai/tegmentum/wasmtime4j/ModuleImport") {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-        let module_import_obj = match env.new_object(
-            module_import_class,
-            "(Ljava/lang/String;Ljava/lang/String;Lai/tegmentum/wasmtime4j/type/ImportType;)V",
-            &[
-                JValue::Object(&module_name_jstring),
-                JValue::Object(&field_name_jstring),
-                JValue::Object(&import_type_obj),
-            ],
-        ) {
-            Ok(obj) => obj,
-            Err(_) => continue,
-        };
-
-        // Add to ArrayList
+        // Add ImportType directly to ArrayList
         let _ = env.call_method(
             &array_list,
             "add",
             "(Ljava/lang/Object;)Z",
-            &[JValue::Object(&module_import_obj)],
+            &[JValue::Object(&import_type_obj)],
         );
     }
 

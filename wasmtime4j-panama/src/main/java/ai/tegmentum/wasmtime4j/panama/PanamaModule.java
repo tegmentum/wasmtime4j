@@ -3,8 +3,6 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.ModuleExport;
-import ai.tegmentum.wasmtime4j.ModuleImport;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
@@ -177,25 +175,51 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public List<ExportType> getExports() {
-    final List<ai.tegmentum.wasmtime4j.ModuleExport> moduleExports = getModuleExports();
-    final List<ExportType> exports = new java.util.ArrayList<>(moduleExports.size());
-    for (final ai.tegmentum.wasmtime4j.ModuleExport moduleExport : moduleExports) {
-      exports.add(moduleExport.getExportType());
+    ensureNotClosed();
+
+    final long exportCount = NATIVE_BINDINGS.moduleExportsLen(nativeModule);
+    if (exportCount == 0) {
+      return java.util.Collections.emptyList();
     }
-    return java.util.Collections.unmodifiableList(exports);
+
+    final java.lang.foreign.MemorySegment jsonPtr =
+        NATIVE_BINDINGS.moduleGetExportsJson(nativeModule);
+    if (jsonPtr == null || jsonPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+      LOGGER.warning("Failed to retrieve module exports");
+      return java.util.Collections.emptyList();
+    }
+
+    try {
+      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
+      return java.util.Collections.unmodifiableList(parseExportsJson(jsonString));
+    } finally {
+      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+    }
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public List<ImportType> getImports() {
-    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
-    final List<ImportType> imports = new java.util.ArrayList<>(moduleImports.size());
-    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      imports.add(moduleImport.getImportType());
+    ensureNotClosed();
+
+    final long importCount = NATIVE_BINDINGS.moduleImportsLen(nativeModule);
+    if (importCount == 0) {
+      return java.util.Collections.emptyList();
     }
-    return java.util.Collections.unmodifiableList(imports);
+
+    final java.lang.foreign.MemorySegment jsonPtr =
+        NATIVE_BINDINGS.moduleGetImportsJson(nativeModule);
+    if (jsonPtr == null || jsonPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+      LOGGER.warning("Failed to retrieve module imports");
+      return java.util.Collections.emptyList();
+    }
+
+    try {
+      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
+      return java.util.Collections.unmodifiableList(parseImportsJson(jsonString));
+    } finally {
+      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+    }
   }
 
   @Override
@@ -259,14 +283,13 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public boolean hasExport(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
     ensureNotClosed();
-    final List<ModuleExport> exports = getModuleExports();
-    for (final ModuleExport export : exports) {
+    final List<ExportType> exports = getExports();
+    for (final ExportType export : exports) {
       if (export.getName().equals(name)) {
         return true;
       }
@@ -275,7 +298,6 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public boolean hasImport(final String moduleName, final String fieldName) {
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
@@ -284,10 +306,10 @@ public final class PanamaModule implements Module {
       throw new IllegalArgumentException("Field name cannot be null");
     }
     ensureNotClosed();
-    final List<ModuleImport> imports = getModuleImports();
-    for (final ModuleImport moduleImport : imports) {
-      if (moduleImport.getModuleName().equals(moduleName)
-          && moduleImport.getFieldName().equals(fieldName)) {
+    final List<ImportType> imports = getImports();
+    for (final ImportType importType : imports) {
+      if (importType.getModuleName().equals(moduleName)
+          && importType.getName().equals(fieldName)) {
         return true;
       }
     }
@@ -300,19 +322,18 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public boolean validateImports(final ImportMap imports) {
     if (imports == null) {
       throw new IllegalArgumentException("Imports cannot be null");
     }
     ensureNotClosed();
-    final List<ModuleImport> requiredImports = getModuleImports();
-    for (final ModuleImport requiredImport : requiredImports) {
-      if (!imports.contains(requiredImport.getModuleName(), requiredImport.getFieldName())) {
+    final List<ImportType> requiredImports = getImports();
+    for (final ImportType requiredImport : requiredImports) {
+      if (!imports.contains(requiredImport.getModuleName(), requiredImport.getName())) {
         LOGGER.fine(
             String.format(
                 "Missing required import: %s.%s",
-                requiredImport.getModuleName(), requiredImport.getFieldName()));
+                requiredImport.getModuleName(), requiredImport.getName()));
         return false;
       }
     }
@@ -320,7 +341,6 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImportsDetailed(
       final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {
@@ -335,12 +355,10 @@ public final class PanamaModule implements Module {
         new java.util.ArrayList<>();
     final java.util.Map<String, java.util.Map<String, Object>> importsMap = imports.getImports();
 
-    // Get all module imports and validate each one
-    final List<ai.tegmentum.wasmtime4j.ModuleImport> moduleImports = getModuleImports();
+    final List<ImportType> importTypes = getImports();
     int validCount = 0;
 
-    for (final ai.tegmentum.wasmtime4j.ModuleImport moduleImport : moduleImports) {
-      final ai.tegmentum.wasmtime4j.type.ImportType importType = moduleImport.getImportType();
+    for (final ImportType importType : importTypes) {
       final String moduleName = importType.getModuleName();
       final String fieldName = importType.getName();
       final ai.tegmentum.wasmtime4j.type.WasmType expectedType = importType.getType();
@@ -609,67 +627,6 @@ public final class PanamaModule implements Module {
         type.isShared() ? "shared" : "not-shared");
   }
 
-  @Override
-  @SuppressWarnings("deprecation")
-  public List<ModuleImport> getModuleImports() {
-    ensureNotClosed();
-
-    final long importCount = NATIVE_BINDINGS.moduleImportsLen(nativeModule);
-    if (importCount == 0) {
-      return Collections.emptyList();
-    }
-
-    // Get imports as JSON from native code
-    final MemorySegment jsonPtr = NATIVE_BINDINGS.moduleGetImportsJson(nativeModule);
-    if (jsonPtr == null || jsonPtr.equals(MemorySegment.NULL)) {
-      LOGGER.warning("Failed to retrieve module imports");
-      return Collections.emptyList();
-    }
-
-    try {
-      // Convert C string to Java String
-      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
-
-      // Parse JSON and create ModuleImport objects
-      final List<ModuleImport> imports = parseImportsJson(jsonString);
-
-      return Collections.unmodifiableList(imports);
-    } finally {
-      // Free the native string
-      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
-    }
-  }
-
-  @Override
-  @SuppressWarnings("deprecation")
-  public List<ModuleExport> getModuleExports() {
-    ensureNotClosed();
-
-    final long exportCount = NATIVE_BINDINGS.moduleExportsLen(nativeModule);
-    if (exportCount == 0) {
-      return Collections.emptyList();
-    }
-
-    // Get exports as JSON from native code
-    final MemorySegment jsonPtr = NATIVE_BINDINGS.moduleGetExportsJson(nativeModule);
-    if (jsonPtr == null || jsonPtr.equals(MemorySegment.NULL)) {
-      LOGGER.warning("Failed to retrieve module exports");
-      return Collections.emptyList();
-    }
-
-    try {
-      // Convert C string to Java String
-      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
-
-      // Parse JSON and create ModuleExport objects
-      final List<ModuleExport> exports = parseExportsJson(jsonString);
-
-      return Collections.unmodifiableList(exports);
-    } finally {
-      // Free the native string
-      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
-    }
-  }
 
   @Override
   public List<FuncType> getFunctionTypes() {
@@ -842,14 +799,14 @@ public final class PanamaModule implements Module {
    * Parses JSON string containing module imports.
    *
    * @param jsonString JSON string from native code
-   * @return list of ModuleImport objects
+   * @return list of ImportType objects
    */
-  private List<ModuleImport> parseImportsJson(final String jsonString) {
+  private List<ImportType> parseImportsJson(final String jsonString) {
     final com.google.gson.Gson gson = new com.google.gson.Gson();
     final com.google.gson.JsonArray jsonArray =
         gson.fromJson(jsonString, com.google.gson.JsonArray.class);
 
-    final List<ModuleImport> imports = new java.util.ArrayList<>();
+    final List<ImportType> imports = new java.util.ArrayList<>();
 
     for (final com.google.gson.JsonElement element : jsonArray) {
       final com.google.gson.JsonObject importObj = element.getAsJsonObject();
@@ -858,9 +815,7 @@ public final class PanamaModule implements Module {
       final com.google.gson.JsonObject importTypeObj = importObj.getAsJsonObject("import_type");
 
       final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseImportTypeJson(importTypeObj);
-      final ai.tegmentum.wasmtime4j.type.ImportType importType =
-          new ai.tegmentum.wasmtime4j.type.ImportType(moduleName, fieldName, wasmType);
-      imports.add(new ModuleImport(moduleName, fieldName, importType));
+      imports.add(new ImportType(moduleName, fieldName, wasmType));
     }
 
     return imports;
@@ -870,14 +825,14 @@ public final class PanamaModule implements Module {
    * Parses JSON string containing module exports.
    *
    * @param jsonString JSON string from native code
-   * @return list of ModuleExport objects
+   * @return list of ExportType objects
    */
-  private List<ModuleExport> parseExportsJson(final String jsonString) {
+  private List<ExportType> parseExportsJson(final String jsonString) {
     final com.google.gson.Gson gson = new com.google.gson.Gson();
     final com.google.gson.JsonArray jsonArray =
         gson.fromJson(jsonString, com.google.gson.JsonArray.class);
 
-    final List<ModuleExport> exports = new java.util.ArrayList<>();
+    final List<ExportType> exports = new java.util.ArrayList<>();
 
     for (final com.google.gson.JsonElement element : jsonArray) {
       final com.google.gson.JsonObject exportObj = element.getAsJsonObject();
@@ -885,9 +840,7 @@ public final class PanamaModule implements Module {
       final com.google.gson.JsonObject exportTypeObj = exportObj.getAsJsonObject("export_type");
 
       final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseExportTypeJson(exportTypeObj);
-      final ai.tegmentum.wasmtime4j.type.ExportType exportType =
-          new ai.tegmentum.wasmtime4j.type.ExportType(name, wasmType);
-      exports.add(new ModuleExport(name, exportType));
+      exports.add(new ExportType(name, wasmType));
     }
 
     return exports;

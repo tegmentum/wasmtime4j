@@ -183,8 +183,8 @@ public final class ResourceCloseSafetyIntegrationTest {
 
       assertThrows(
           IllegalStateException.class,
-          module::getModuleExports,
-          "getModuleExports() on closed module should throw");
+          module::getExports,
+          "getExports() on closed module should throw");
       LOGGER.info("IllegalStateException thrown as expected");
 
       engine.close();

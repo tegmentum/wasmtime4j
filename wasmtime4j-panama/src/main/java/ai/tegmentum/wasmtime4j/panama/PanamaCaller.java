@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
-import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -326,23 +325,6 @@ final class PanamaCaller<T> implements Caller<T> {
       throw e;
     } catch (Exception e) {
       throw new WasmException("Failed to set epoch deadline: " + e.getMessage(), e);
-    }
-  }
-
-  @Override
-  @SuppressWarnings("deprecation")
-  public Optional<Extern> getExportByModuleExport(final ModuleExport moduleExport) {
-    if (moduleExport == null) {
-      throw new IllegalArgumentException("moduleExport cannot be null");
-    }
-
-    try {
-      // Use the name from the module export for lookup
-      return getExport(moduleExport.getName());
-    } catch (Exception e) {
-      LOGGER.log(
-          Level.WARNING, "Failed to get export by module export: " + moduleExport.getName(), e);
-      return Optional.empty();
     }
   }
 

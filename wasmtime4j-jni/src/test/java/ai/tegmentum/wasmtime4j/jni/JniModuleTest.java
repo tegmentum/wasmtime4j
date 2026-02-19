@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Test;
  * <p>Note: Integration tests with actual WebAssembly modules are in wasmtime4j-tests.
  */
 @DisplayName("JniModule Tests")
-@SuppressWarnings("deprecation")
 class JniModuleTest {
 
   private static final long VALID_HANDLE = 0x12345678L;
@@ -249,43 +248,6 @@ class JniModuleTest {
     // Note: Testing closed module with validateImports would require a valid ImportMap,
     // which depends on runtime implementations (JniImportMap or PanamaImportMap).
     // This test is covered by integration tests in wasmtime4j-tests module.
-  }
-
-  @Nested
-  @DisplayName("GetModuleImports Tests")
-  class GetModuleImportsTests {
-
-    @Test
-    @DisplayName("should return empty list for fake handle")
-    void shouldReturnEmptyListForFakeHandle() {
-      final JniModule module = new JniModule(VALID_HANDLE, testEngine);
-
-      // Fake handles return empty to prevent crashes
-      final List<ai.tegmentum.wasmtime4j.ModuleImport> imports = module.getModuleImports();
-
-      assertNotNull(imports, "Imports should not be null");
-      assertTrue(imports.isEmpty(), "Should return empty list for fake handle");
-    }
-
-    // Note: Test for closed module getModuleImports is covered by integration tests
-    // because calling close() on fake handles crashes the JVM
-  }
-
-  @Nested
-  @DisplayName("GetModuleExports Tests")
-  class GetModuleExportsTests {
-
-    @Test
-    @DisplayName("should return empty list for fake handle")
-    void shouldReturnEmptyListForFakeHandle() {
-      final JniModule module = new JniModule(VALID_HANDLE, testEngine);
-
-      // Fake handles return empty to prevent crashes
-      final List<ai.tegmentum.wasmtime4j.ModuleExport> exports = module.getModuleExports();
-
-      assertNotNull(exports, "Exports should not be null");
-      assertTrue(exports.isEmpty(), "Should return empty list for fake handle");
-    }
   }
 
   @Nested

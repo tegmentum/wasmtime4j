@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.ModuleExport;
 import java.lang.reflect.Method;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -102,16 +101,6 @@ class JniCallerTest {
       assertEquals(boolean.class, method.getReturnType(), "hasExport should return boolean");
     }
 
-    @Test
-    @DisplayName("should have getExportByModuleExport method")
-    @SuppressWarnings("deprecation")
-    void shouldHaveGetExportByModuleExportMethod() throws NoSuchMethodException {
-      final Method method =
-          JniCaller.class.getMethod("getExportByModuleExport", ModuleExport.class);
-      assertNotNull(method, "getExportByModuleExport method should exist");
-      assertEquals(
-          Optional.class, method.getReturnType(), "getExportByModuleExport should return Optional");
-    }
   }
 
   @Nested

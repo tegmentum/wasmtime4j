@@ -70,12 +70,12 @@ public final class TableTypeFromNativeTest {
         boolean hasTable = module.hasExport("table");
         assertTrue(hasTable, "hasExport should return true for table export");
 
-        // However, getModuleExports returns empty list - this is the bug
-        int exportCount = module.getModuleExports().size();
-        LOGGER.info("hasExport(table)=" + hasTable + ", getModuleExports().size()=" + exportCount);
+        // However, getExports returns empty list - this is the bug
+        int exportCount = module.getExports().size();
+        LOGGER.info("hasExport(table)=" + hasTable + ", getExports().size()=" + exportCount);
 
         // This test passes because hasExport works, but documents the bug
-        // where getModuleExports/getExports returns empty
+        // where getExports returns empty
       }
     }
   }

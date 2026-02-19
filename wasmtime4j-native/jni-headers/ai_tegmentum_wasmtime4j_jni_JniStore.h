@@ -177,14 +177,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeHasPe
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeGcAsync
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGcAsync
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeEpochDeadlineAsyncYieldAndUpdate
  * Signature: (JJ)V
  */

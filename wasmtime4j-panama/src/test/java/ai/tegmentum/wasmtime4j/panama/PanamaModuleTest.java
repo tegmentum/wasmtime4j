@@ -9,8 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.ModuleExport;
-import ai.tegmentum.wasmtime4j.ModuleImport;
 import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
@@ -36,7 +34,6 @@ import org.junit.jupiter.api.Test;
  * management.
  */
 @DisplayName("PanamaModule Tests")
-@SuppressWarnings("deprecation")
 class PanamaModuleTest {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaModuleTest.class.getName());
@@ -216,7 +213,7 @@ class PanamaModuleTest {
       final List<ExportType> exports = module.getExports();
       assertThat(exports).isEmpty();
 
-      final List<ModuleExport> moduleExports = module.getModuleExports();
+      final List<ExportType> moduleExports = module.getExports();
       assertThat(moduleExports).isEmpty();
       LOGGER.info("Empty module correctly has no exports");
     }
@@ -349,7 +346,7 @@ class PanamaModuleTest {
       final List<ImportType> imports = module.getImports();
       assertThat(imports).isEmpty();
 
-      final List<ModuleImport> moduleImports = module.getModuleImports();
+      final List<ImportType> moduleImports = module.getImports();
       assertThat(moduleImports).isEmpty();
       LOGGER.info("Empty module correctly has no imports");
     }
@@ -390,7 +387,7 @@ class PanamaModuleTest {
       final List<ImportType> imports = module.getImports();
       assertThat(imports).isEmpty();
 
-      final List<ModuleImport> moduleImports = module.getModuleImports();
+      final List<ImportType> moduleImports = module.getImports();
       assertThat(moduleImports).isEmpty();
       LOGGER.info("Function module correctly has no imports");
     }
@@ -683,8 +680,8 @@ class PanamaModuleTest {
       final PanamaModule module = (PanamaModule) engine.compileWat(FUNCTION_MODULE_WAT);
       module.close();
 
-      assertThrows(IllegalStateException.class, module::getModuleExports);
-      assertThrows(IllegalStateException.class, module::getModuleImports);
+      assertThrows(IllegalStateException.class, module::getExports);
+      assertThrows(IllegalStateException.class, module::getImports);
       assertThrows(IllegalStateException.class, () -> module.hasExport("add"));
       assertThrows(IllegalStateException.class, () -> module.hasImport("env", "log"));
       assertThrows(IllegalStateException.class, module::getName);

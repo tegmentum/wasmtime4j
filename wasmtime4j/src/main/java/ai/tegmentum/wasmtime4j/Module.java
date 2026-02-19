@@ -239,26 +239,6 @@ public interface Module extends Closeable {
   }
 
   /**
-   * Gets the imports required by this module as ModuleImport objects.
-   *
-   * @return an immutable list of module imports with complete type information
-   * @deprecated Use {@link #getImports()} instead. ModuleImport wraps ImportType without adding
-   *     information.
-   */
-  @Deprecated
-  java.util.List<ModuleImport> getModuleImports();
-
-  /**
-   * Gets the exports defined by this module as ModuleExport objects.
-   *
-   * @return an immutable list of module exports with complete type information
-   * @deprecated Use {@link #getExports()} instead. ModuleExport wraps ExportType without adding
-   *     information.
-   */
-  @Deprecated
-  java.util.List<ModuleExport> getModuleExports();
-
-  /**
    * Gets all function types defined in this module.
    *
    * <p>This includes function types for both imported and exported functions, as well as internal
