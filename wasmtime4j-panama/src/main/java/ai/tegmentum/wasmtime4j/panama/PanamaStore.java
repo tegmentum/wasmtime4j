@@ -933,6 +933,10 @@ public final class PanamaStore implements Store {
     if (maxSize < -1) {
       throw new IllegalArgumentException("Max size must be -1 (unlimited) or non-negative");
     }
+    if (maxSize != -1 && maxSize < initialSize) {
+      throw new IllegalArgumentException(
+          "Max size (" + maxSize + ") cannot be less than initial size (" + initialSize + ")");
+    }
     ensureNotClosed();
 
     try {
@@ -1009,6 +1013,10 @@ public final class PanamaStore implements Store {
     if (maxPages < -1) {
       throw new IllegalArgumentException("Max pages must be -1 (unlimited) or non-negative");
     }
+    if (maxPages != -1 && maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
     ensureNotClosed();
 
     try {
@@ -1075,6 +1083,10 @@ public final class PanamaStore implements Store {
     }
     if (maxPages < 1) {
       throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+    }
+    if (maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
     }
     ensureNotClosed();
 
