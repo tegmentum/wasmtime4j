@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import java.lang.reflect.Method;
@@ -100,20 +99,11 @@ class JniCallerTest {
       assertNotNull(method, "hasExport method should exist");
       assertEquals(boolean.class, method.getReturnType(), "hasExport should return boolean");
     }
-
   }
 
   @Nested
   @DisplayName("Fuel Method Tests")
   class FuelMethodTests {
-
-    @Test
-    @DisplayName("should have fuelConsumed method")
-    void shouldHaveFuelConsumedMethod() throws NoSuchMethodException {
-      final Method method = JniCaller.class.getMethod("fuelConsumed");
-      assertNotNull(method, "fuelConsumed method should exist");
-      assertEquals(Optional.class, method.getReturnType(), "fuelConsumed should return Optional");
-    }
 
     @Test
     @DisplayName("should have fuelRemaining method")
@@ -129,24 +119,6 @@ class JniCallerTest {
       final Method method = JniCaller.class.getMethod("addFuel", long.class);
       assertNotNull(method, "addFuel method should exist");
       assertEquals(void.class, method.getReturnType(), "addFuel should return void");
-    }
-
-    @Test
-    @DisplayName("should have fuelAsyncYieldInterval method")
-    void shouldHaveFuelAsyncYieldIntervalMethod() throws NoSuchMethodException {
-      final Method method = JniCaller.class.getMethod("fuelAsyncYieldInterval");
-      assertNotNull(method, "fuelAsyncYieldInterval method should exist");
-      assertEquals(
-          Optional.class, method.getReturnType(), "fuelAsyncYieldInterval should return Optional");
-    }
-
-    @Test
-    @DisplayName("should have setFuelAsyncYieldInterval method")
-    void shouldHaveSetFuelAsyncYieldIntervalMethod() throws NoSuchMethodException {
-      final Method method = JniCaller.class.getMethod("setFuelAsyncYieldInterval", long.class);
-      assertNotNull(method, "setFuelAsyncYieldInterval method should exist");
-      assertEquals(
-          void.class, method.getReturnType(), "setFuelAsyncYieldInterval should return void");
     }
   }
 

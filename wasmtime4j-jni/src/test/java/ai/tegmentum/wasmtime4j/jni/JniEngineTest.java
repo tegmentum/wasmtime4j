@@ -413,9 +413,7 @@ class JniEngineTest {
       engine.markClosedForTesting();
 
       assertThrows(
-          JniResourceException.class,
-          engine::incrementEpoch,
-          "Should throw on closed engine");
+          JniResourceException.class, engine::incrementEpoch, "Should throw on closed engine");
     }
 
     @Test

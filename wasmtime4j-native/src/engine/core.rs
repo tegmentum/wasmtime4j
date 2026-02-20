@@ -108,6 +108,9 @@ pub fn create_engine_with_extended_config(
     // Experimental features
     wasm_custom_page_sizes: bool,
     wasm_wide_arithmetic: bool,
+    // Profiling and debug
+    profiling_strategy: Option<wasmtime::ProfilingStrategy>,
+    native_unwind_info: bool,
 ) -> WasmtimeResult<Box<Engine>> {
     let mut builder = Engine::builder();
 
@@ -170,6 +173,13 @@ pub fn create_engine_with_extended_config(
     if let Some(growth_reservation) = memory_reservation_for_growth {
         builder = builder.memory_reservation_for_growth(growth_reservation);
     }
+
+    // Profiling and debug
+    if let Some(profiling) = profiling_strategy {
+        builder = builder.profiling_strategy(profiling);
+    }
+
+    builder = builder.native_unwind_info(native_unwind_info);
 
     builder.build().map(Box::new)
 }

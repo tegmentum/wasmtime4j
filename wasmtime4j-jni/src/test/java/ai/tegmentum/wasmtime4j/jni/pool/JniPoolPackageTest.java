@@ -17,8 +17,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Comprehensive test suite for the JNI pool package.
  *
- * <p>This test covers behavioral aspects of classes in the ai.tegmentum.wasmtime4j.jni.pool
- * package including JniPoolStatistics and JniPoolingAllocatorConfigBuilder.
+ * <p>This test covers behavioral aspects of classes in the ai.tegmentum.wasmtime4j.jni.pool package
+ * including JniPoolStatistics and JniPoolingAllocatorConfigBuilder.
  */
 @DisplayName("JNI Pool Package Tests")
 class JniPoolPackageTest {

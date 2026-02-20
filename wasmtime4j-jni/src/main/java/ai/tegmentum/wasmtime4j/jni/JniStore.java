@@ -6,8 +6,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
-import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
@@ -624,7 +622,6 @@ public final class JniStore extends JniResource implements Store {
     }
   }
 
-
   /**
    * Gets the total execution time in microseconds for this store.
    *
@@ -668,7 +665,6 @@ public final class JniStore extends JniResource implements Store {
   }
 
   // Native method declarations
-
 
   /**
    * Creates a new store that is compatible with a specific module.
@@ -716,7 +712,6 @@ public final class JniStore extends JniResource implements Store {
    * @return true on success, false on failure
    */
   private static native boolean nativeSetEpochDeadline(long storeHandle, long ticks);
-
 
   /**
    * Validates the store and checks its current state.
@@ -1139,5 +1134,4 @@ public final class JniStore extends JniResource implements Store {
 
   // Native methods for new functionality
   private native void nativeSetFuelAsyncYieldInterval(long storeHandle, long interval);
-
 }

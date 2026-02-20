@@ -220,7 +220,8 @@ class JniStoreTest {
 
     final IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class, () -> store.createGlobal(WasmValueType.I32, false, null));
+            IllegalArgumentException.class,
+            () -> store.createGlobal(WasmValueType.I32, false, null));
 
     assertThat(exception.getMessage()).contains("initialValue");
     assertThat(exception.getMessage()).containsIgnoringCase("must not be null");

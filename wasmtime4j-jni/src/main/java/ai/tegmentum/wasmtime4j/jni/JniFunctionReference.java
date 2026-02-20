@@ -551,7 +551,6 @@ public final class JniFunctionReference extends JniResource implements FunctionR
   private static native int nativeCallFunctionReference(
       long functionReferenceHandle, byte[] paramsData, byte[] resultsBuffer);
 
-
   @Override
   public String toString() {
     if (isClosed()) {

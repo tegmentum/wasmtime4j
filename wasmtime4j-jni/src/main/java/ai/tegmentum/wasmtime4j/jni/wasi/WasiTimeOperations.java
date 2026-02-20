@@ -10,8 +10,8 @@ import java.util.logging.Logger;
 /**
  * JNI implementation of WASI time and clock operations.
  *
- * <p>Provides access to WASI time operations using JNI native calls. Constants, convenience methods,
- * and static utilities are inherited from {@link AbstractWasiTimeOperations}.
+ * <p>Provides access to WASI time operations using JNI native calls. Constants, convenience
+ * methods, and static utilities are inherited from {@link AbstractWasiTimeOperations}.
  *
  * @since 1.0.0
  */

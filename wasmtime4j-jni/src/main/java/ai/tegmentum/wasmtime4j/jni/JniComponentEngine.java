@@ -348,10 +348,21 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     return new WitSupportInfo(
         true,
         "1.0",
-        new HashSet<>(Arrays.asList("interface", "world", "resource", "variant", "record", "enum",
-            "flags", "tuple", "option", "result")),
-        Arrays.asList("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64",
-            "char", "string"),
+        new HashSet<>(
+            Arrays.asList(
+                "interface",
+                "world",
+                "resource",
+                "variant",
+                "record",
+                "enum",
+                "flags",
+                "tuple",
+                "option",
+                "result")),
+        Arrays.asList(
+            "bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "char",
+            "string"),
         10);
   }
 

@@ -498,5 +498,4 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
 
   private static native float nativeCallF32I32ToF32(
       long handlePtr, long storePtr, float param1, int param2);
-
 }

@@ -8,8 +8,8 @@ import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.jni.util.JniTypeConverter;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -154,7 +154,6 @@ public final class JniFunction extends JniResource
       throw new RuntimeException("Unexpected error getting function type for '" + name + "'", e);
     }
   }
-
 
   /**
    * Calls this function with the given WebAssembly parameters.
@@ -453,5 +452,4 @@ public final class JniFunction extends JniResource
    * @return the return value as a double
    */
   private static native double nativeCallDouble(long functionHandle, double[] parameters);
-
 }

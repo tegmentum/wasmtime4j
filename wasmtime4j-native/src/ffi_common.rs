@@ -105,6 +105,28 @@ pub mod parameter_conversion {
         }
     }
 
+    /// Convert integer profiling strategy to wasmtime ProfilingStrategy enum
+    ///
+    /// # Arguments
+    /// * `strategy` - Integer value representing profiling strategy
+    ///   - 0 = None (no profiling)
+    ///   - 1 = JitDump
+    ///   - 2 = PerfMap
+    ///   - 3 = VTune
+    ///
+    /// # Returns
+    /// * `Some(ProfilingStrategy)` for valid values 0-3
+    /// * `None` for invalid values
+    pub fn convert_profiling_strategy(strategy: i32) -> Option<wasmtime::ProfilingStrategy> {
+        match strategy {
+            0 => Some(wasmtime::ProfilingStrategy::None),
+            1 => Some(wasmtime::ProfilingStrategy::JitDump),
+            2 => Some(wasmtime::ProfilingStrategy::PerfMap),
+            3 => Some(wasmtime::ProfilingStrategy::VTune),
+            _ => None,
+        }
+    }
+
     /// Convert integer optimization level to wasmtime OptLevel enum
     ///
     /// # Arguments  

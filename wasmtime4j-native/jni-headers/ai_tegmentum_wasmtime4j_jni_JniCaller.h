@@ -9,14 +9,6 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
- * Method:    nativeGetExport
- * Signature: (JLjava/lang/String;)[B
- */
-JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetExport
-  (JNIEnv *, jclass, jlong, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
  * Method:    nativeGetMemory
  * Signature: (JLjava/lang/String;)J
  */
@@ -57,14 +49,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeHasE
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
- * Method:    nativeGetFuelConsumed
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFuelConsumed
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
  * Method:    nativeGetFuelRemaining
  * Signature: (J)J
  */
@@ -93,30 +77,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeHasE
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetEpochDeadline
-  (JNIEnv *, jclass, jlong, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
- * Method:    nativeGc
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGc
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
- * Method:    nativeGetFuelAsyncYieldInterval
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetFuelAsyncYieldInterval
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
- * Method:    nativeSetFuelAsyncYieldInterval
- * Signature: (JJ)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetFuelAsyncYieldInterval
   (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus

@@ -131,7 +131,9 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT, // coredump_on_trap
             ValueLayout.JAVA_INT, // cranelift_nan_canonicalization
             ValueLayout.JAVA_INT, // wasm_custom_page_sizes
-            ValueLayout.JAVA_INT)); // wasm_wide_arithmetic
+            ValueLayout.JAVA_INT, // wasm_wide_arithmetic
+            ValueLayout.JAVA_INT, // profiling_strategy
+            ValueLayout.JAVA_INT)); // native_unwind_info
 
     addFunctionBinding("wasmtime4j_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
@@ -555,6 +557,8 @@ public final class NativeEngineBindings extends NativeBindingsBase {
       int craneliftNanCanonicalization = config.isCraneliftNanCanonicalization() ? 1 : 0;
       int wasmCustomPageSizes = config.isWasmCustomPageSizes() ? 1 : 0;
       int wasmWideArithmetic = config.isWasmWideArithmetic() ? 1 : 0;
+      int profilingStrategy = config.getProfilingStrategy().ordinal();
+      int nativeUnwindInfo = config.isNativeUnwindInfo() ? 1 : 0;
 
       MemorySegment result =
           callNativeFunction(
@@ -589,7 +593,9 @@ public final class NativeEngineBindings extends NativeBindingsBase {
               coredumpOnTrap,
               craneliftNanCanonicalization,
               wasmCustomPageSizes,
-              wasmWideArithmetic);
+              wasmWideArithmetic,
+              profilingStrategy,
+              nativeUnwindInfo);
 
       if (result == null || result.equals(MemorySegment.NULL)) {
         LOGGER.warning(

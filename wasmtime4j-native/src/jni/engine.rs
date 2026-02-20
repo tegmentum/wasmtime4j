@@ -104,6 +104,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
     // Experimental features
     wasm_custom_page_sizes: jboolean,
     wasm_wide_arithmetic: jboolean,
+    // Profiling and debug
+    profiling_strategy: jint,
+    native_unwind_info: jboolean,
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
@@ -166,6 +169,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
             // Experimental features
             parameter_conversion::convert_int_to_bool(wasm_custom_page_sizes as i32),
             parameter_conversion::convert_int_to_bool(wasm_wide_arithmetic as i32),
+            // Profiling and debug
+            parameter_conversion::convert_profiling_strategy(profiling_strategy),
+            parameter_conversion::convert_int_to_bool(native_unwind_info as i32),
         )
     }) as jlong
 }

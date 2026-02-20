@@ -13,9 +13,9 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.memory.Tag;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.nativeloader.PlatformDetector;
 import ai.tegmentum.wasmtime4j.type.TagType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import java.util.logging.Logger;
 
@@ -399,7 +399,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     // with the correct engine instance and avoid cross-Engine instantiation errors
     return engine.compileModule(wasmBytes);
   }
-
 
   @Override
   public Instance instantiate(final Module module) throws WasmException {

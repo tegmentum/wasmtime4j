@@ -65,7 +65,8 @@ class JniTypeConverterTest {
   @Test
   void testStringToTypeWithInvalidString() {
     final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.stringToType("invalid"));
+        assertThrows(
+            IllegalArgumentException.class, () -> JniTypeConverter.stringToType("invalid"));
 
     assertThat(exception.getMessage()).contains("Invalid WebAssembly type string: invalid");
   }
@@ -173,7 +174,8 @@ class JniTypeConverterTest {
 
     final IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class, () -> JniTypeConverter.wasmValuesToNativeParams(values));
+            IllegalArgumentException.class,
+            () -> JniTypeConverter.wasmValuesToNativeParams(values));
 
     assertThat(exception.getMessage()).contains("Parameter at index 1 is null");
   }
@@ -263,7 +265,8 @@ class JniTypeConverterTest {
   void testNativeResultToWasmValueWithNullExpectedType() {
     final IllegalArgumentException exception =
         assertThrows(
-            IllegalArgumentException.class, () -> JniTypeConverter.nativeResultToWasmValue(42, null));
+            IllegalArgumentException.class,
+            () -> JniTypeConverter.nativeResultToWasmValue(42, null));
 
     assertThat(exception.getMessage()).contains("expectedType").contains("must not be null");
   }
@@ -434,7 +437,8 @@ class JniTypeConverterTest {
     final String[] strings = {"i32", null, "f64"};
 
     final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.stringsToTypes(strings));
+        assertThrows(
+            IllegalArgumentException.class, () -> JniTypeConverter.stringsToTypes(strings));
 
     assertThat(exception.getMessage()).contains("Type string at index 1 is null");
   }

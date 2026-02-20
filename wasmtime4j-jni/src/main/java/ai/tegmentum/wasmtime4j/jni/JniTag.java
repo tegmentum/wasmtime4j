@@ -125,5 +125,4 @@ public final class JniTag extends JniResource implements Tag {
   private static native int[] nativeGetReturnTypes(long tagHandle, long storeHandle);
 
   private static native boolean nativeEquals(long tag1Handle, long tag2Handle, long storeHandle);
-
 }

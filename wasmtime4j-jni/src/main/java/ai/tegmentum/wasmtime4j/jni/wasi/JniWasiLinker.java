@@ -455,7 +455,6 @@ public final class JniWasiLinker implements WasiLinker {
     }
   }
 
-
   /** Internal class to hold directory mapping configuration. */
   private static final class DirectoryMapping {
     final String guestPath;

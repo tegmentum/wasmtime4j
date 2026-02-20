@@ -221,7 +221,6 @@ public class JniEngine extends JniResource implements Engine {
     return compileModule(wasmBytes);
   }
 
-
   private native long nativeCompileModule(long engineHandle, byte[] wasmBytes);
 
   private native long nativeCompileWat(long engineHandle, String wat);
@@ -409,7 +408,10 @@ public class JniEngine extends JniResource implements Engine {
             config.isCraneliftNanCanonicalization(),
             // Experimental features
             config.isWasmCustomPageSizes(),
-            config.isWasmWideArithmetic());
+            config.isWasmWideArithmetic(),
+            // Profiling and debug
+            config.getProfilingStrategy().ordinal(),
+            config.isNativeUnwindInfo());
 
     if (handle == 0) {
       throw new WasmException("Failed to create engine with configuration");
@@ -417,7 +419,6 @@ public class JniEngine extends JniResource implements Engine {
 
     return new JniEngine(handle, runtime, config);
   }
-
 
   private static native long nativeCreateEngineWithExtendedConfig(
       int strategy,
@@ -449,7 +450,9 @@ public class JniEngine extends JniResource implements Engine {
       boolean coredumpOnTrap,
       boolean craneliftNanCanonicalization,
       boolean wasmCustomPageSizes,
-      boolean wasmWideArithmetic);
+      boolean wasmWideArithmetic,
+      int profilingStrategy,
+      boolean nativeUnwindInfo);
 
   /**
    * Clears the native handle registries used for memory and store validation.

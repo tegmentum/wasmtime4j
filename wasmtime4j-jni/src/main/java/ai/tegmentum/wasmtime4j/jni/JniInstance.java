@@ -12,10 +12,10 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.type.FuncType;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.TableType;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
@@ -46,7 +46,6 @@ public final class JniInstance extends JniResource implements Instance {
 
   /** Flag to track if resources have been cleaned up. */
   private final AtomicBoolean cleanedUp = new AtomicBoolean(false);
-
 
   /** Reference to the module used to create this instance. */
   private final Module module;
@@ -813,7 +812,6 @@ public final class JniInstance extends JniResource implements Instance {
    */
   private static native String[] nativeGetExportNames(long instanceHandle);
 
-
   /**
    * Disposes of a native instance.
    *
@@ -896,5 +894,4 @@ public final class JniInstance extends JniResource implements Instance {
    * @return true if cleanup was successful, false otherwise
    */
   private static native boolean nativeCleanupResources(long instanceHandle);
-
 }

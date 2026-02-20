@@ -457,6 +457,10 @@ pub struct EngineBuilder {
     pub(crate) module_version_strategy: Option<wasmtime::ModuleVersionStrategy>,
     // Instance allocation strategy
     pub(crate) allocation_strategy: Option<wasmtime::InstanceAllocationStrategy>,
+    // Profiling strategy
+    pub(crate) profiling_strategy: wasmtime::ProfilingStrategy,
+    // Native unwind info
+    pub(crate) native_unwind_info: bool,
 }
 
 impl EngineBuilder {
@@ -551,6 +555,8 @@ impl EngineBuilder {
             macos_use_mach_ports: true, // Mach ports on macOS - on by default
             module_version_strategy: None, // Module version - use wasmtime default
             allocation_strategy: None, // Allocation strategy - use wasmtime default (OnDemand)
+            profiling_strategy: wasmtime::ProfilingStrategy::None, // No profiling by default
+            native_unwind_info: true, // Native unwind info - on by default (wasmtime default)
         }
     }
 
@@ -1122,6 +1128,32 @@ impl EngineBuilder {
     pub fn allocation_strategy(mut self, strategy: wasmtime::InstanceAllocationStrategy) -> Self {
         self.config.allocation_strategy(strategy.clone());
         self.allocation_strategy = Some(strategy);
+        self
+    }
+
+    /// Set the profiling strategy for the engine.
+    ///
+    /// This configures how profiling information is collected during
+    /// WebAssembly execution.
+    ///
+    /// # Arguments
+    /// * `strategy` - The profiling strategy to use
+    pub fn profiling_strategy(mut self, strategy: wasmtime::ProfilingStrategy) -> Self {
+        self.config.profiler(strategy.clone());
+        self.profiling_strategy = strategy;
+        self
+    }
+
+    /// Enable or disable native unwind information.
+    ///
+    /// This controls whether the engine generates native unwind tables,
+    /// which are needed for proper stack unwinding on some platforms.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to generate native unwind info
+    pub fn native_unwind_info(mut self, enable: bool) -> Self {
+        self.config.native_unwind_info(enable);
+        self.native_unwind_info = enable;
         self
     }
 

@@ -19,12 +19,11 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
-
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

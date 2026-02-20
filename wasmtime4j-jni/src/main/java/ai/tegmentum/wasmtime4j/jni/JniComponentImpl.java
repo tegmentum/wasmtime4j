@@ -98,13 +98,14 @@ public final class JniComponentImpl implements Component {
 
     try {
       final Set<String> exports = new HashSet<>();
-      final int exportCount =
-          JniComponent.nativeGetComponentExportCount(nativeComponent.getNativeHandle());
+      final long handle = nativeComponent.getNativeHandle();
+      final int exportCount = JniComponent.nativeGetComponentExportCount(handle);
 
-      // For now, generate placeholder names based on export count
-      // Full implementation would enumerate actual export names
       for (int i = 0; i < exportCount; i++) {
-        exports.add("export-" + i);
+        final String name = JniComponent.nativeGetComponentExportName(handle, i);
+        if (name != null) {
+          exports.add(name);
+        }
       }
 
       return exports;
@@ -119,13 +120,14 @@ public final class JniComponentImpl implements Component {
 
     try {
       final Set<String> imports = new HashSet<>();
-      final int importCount =
-          JniComponent.nativeGetComponentImportCount(nativeComponent.getNativeHandle());
+      final long handle = nativeComponent.getNativeHandle();
+      final int importCount = JniComponent.nativeGetComponentImportCount(handle);
 
-      // For now, generate placeholder names based on import count
-      // Full implementation would enumerate actual import names
       for (int i = 0; i < importCount; i++) {
-        imports.add("import-" + i);
+        final String name = JniComponent.nativeGetComponentImportName(handle, i);
+        if (name != null) {
+          imports.add(name);
+        }
       }
 
       return imports;
@@ -211,5 +213,4 @@ public final class JniComponentImpl implements Component {
       throw new WasmException("Component is no longer valid");
     }
   }
-
 }

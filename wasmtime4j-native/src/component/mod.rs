@@ -1149,7 +1149,7 @@ pub unsafe extern "C" fn wasmtime4j_component_instance_destroy(instance_ptr: *mu
     }
 }
 
-/// Get the total number of exported functions from a component
+/// Get the number of exported interfaces from a component
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_export_count(component_ptr: *const c_void) -> usize {
     if component_ptr.is_null() {
@@ -1157,14 +1157,7 @@ pub unsafe extern "C" fn wasmtime4j_component_export_count(component_ptr: *const
     }
 
     let component = &*(component_ptr as *const Component);
-
-    // Count total functions across all exported interfaces
-    component
-        .metadata
-        .exports
-        .iter()
-        .map(|export| export.functions.len())
-        .sum()
+    component.metadata.exports.len()
 }
 
 /// Get the number of imports required by a component
@@ -1321,7 +1314,7 @@ pub unsafe extern "C" fn wasmtime4j_component_validate(
     }
 }
 
-/// Get exported function name by index
+/// Get export interface name by index
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_get_export_name(
     component_ptr: *const c_void,
@@ -1334,21 +1327,13 @@ pub unsafe extern "C" fn wasmtime4j_component_get_export_name(
 
     let component = &*(component_ptr as *const Component);
 
-    // Flatten all function names from all exported interfaces
-    let mut all_functions: Vec<&str> = Vec::new();
-    for export in &component.metadata.exports {
-        for function in &export.functions {
-            all_functions.push(&function.name);
-        }
-    }
-
-    if index >= all_functions.len() {
+    if index >= component.metadata.exports.len() {
         return FFI_ERROR;
     }
 
-    let function_name = all_functions[index];
+    let export_name = &component.metadata.exports[index].name;
 
-    match CString::new(function_name) {
+    match CString::new(export_name.as_str()) {
         Ok(c_string) => {
             *name_out = c_string.into_raw();
             FFI_SUCCESS

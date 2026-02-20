@@ -2,8 +2,8 @@ package ai.tegmentum.wasmtime4j.jni.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.logging.Logger;
 
 /**

@@ -195,6 +195,24 @@ public final class JniComponent {
   static native int nativeGetComponentImportCount(long componentHandle);
 
   /**
+   * Gets the name of an exported interface by index.
+   *
+   * @param componentHandle the native component handle
+   * @param index the export index
+   * @return export interface name or null if index is out of bounds
+   */
+  static native String nativeGetComponentExportName(long componentHandle, int index);
+
+  /**
+   * Gets the name of an imported interface by index.
+   *
+   * @param componentHandle the native component handle
+   * @param index the import index
+   * @return import interface name or null if index is out of bounds
+   */
+  static native String nativeGetComponentImportName(long componentHandle, int index);
+
+  /**
    * Checks if a component has a specific export.
    *
    * @param componentHandle the native component handle

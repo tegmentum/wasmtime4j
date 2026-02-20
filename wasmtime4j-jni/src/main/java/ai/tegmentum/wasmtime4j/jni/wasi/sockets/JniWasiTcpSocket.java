@@ -23,8 +23,6 @@ import ai.tegmentum.wasmtime4j.jni.wasi.io.JniWasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddressFamily;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpSocketAddress;
-import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv4SocketAddress;
-import ai.tegmentum.wasmtime4j.wasi.sockets.Ipv6SocketAddress;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiNetwork;
 import ai.tegmentum.wasmtime4j.wasi.sockets.WasiTcpSocket;
 import java.util.logging.Logger;

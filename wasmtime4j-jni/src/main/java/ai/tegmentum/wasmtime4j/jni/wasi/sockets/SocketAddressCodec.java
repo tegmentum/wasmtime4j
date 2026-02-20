@@ -94,12 +94,7 @@ final class SocketAddressCodec {
       }
 
       return new AddressParams(
-          false,
-          null,
-          segmentBytes,
-          ipv6.getPort(),
-          ipv6.getFlowInfo(),
-          ipv6.getScopeId());
+          false, null, segmentBytes, ipv6.getPort(), ipv6.getFlowInfo(), ipv6.getScopeId());
     }
   }
 
@@ -107,9 +102,10 @@ final class SocketAddressCodec {
    * Decodes a long array from JNI into an {@link IpSocketAddress}.
    *
    * <p>The array format is:
+   *
    * <ul>
-   *   <li>IPv4: [is_ipv4=1, octet0, octet1, octet2, octet3, port, flow_info, scope_id]</li>
-   *   <li>IPv6: [is_ipv4=0, seg0, seg1, ..., seg7, port, flow_info, scope_id]</li>
+   *   <li>IPv4: [is_ipv4=1, octet0, octet1, octet2, octet3, port, flow_info, scope_id]
+   *   <li>IPv6: [is_ipv4=0, seg0, seg1, ..., seg7, port, flow_info, scope_id]
    * </ul>
    *
    * @param encoded the encoded long array from native code

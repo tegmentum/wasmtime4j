@@ -404,6 +404,9 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
     // Experimental features
     wasm_custom_page_sizes: c_int,
     wasm_wide_arithmetic: c_int,
+    // Profiling and debug
+    profiling_strategy: c_int,
+    native_unwind_info: c_int,
 ) -> *mut c_void {
     let strategy_opt = parameter_conversion::convert_strategy(strategy);
     let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
@@ -463,6 +466,9 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
         // Experimental features
         parameter_conversion::convert_int_to_bool(wasm_custom_page_sizes),
         parameter_conversion::convert_int_to_bool(wasm_wide_arithmetic),
+        // Profiling and debug
+        parameter_conversion::convert_profiling_strategy(profiling_strategy),
+        parameter_conversion::convert_int_to_bool(native_unwind_info),
     ) {
         Ok(engine) => Box::into_raw(engine) as *mut c_void,
         Err(e) => {

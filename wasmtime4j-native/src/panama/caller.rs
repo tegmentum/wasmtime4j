@@ -10,38 +10,6 @@ use crate::store::StoreData;
 use std::os::raw::{c_char, c_int, c_ulong, c_void};
 use wasmtime::Caller as WasmtimeCaller;
 
-/// Get fuel consumed by the caller if fuel metering is enabled (Panama FFI version)
-#[no_mangle]
-pub extern "C" fn wasmtime4j_panama_caller_get_fuel(
-    caller_ptr: *mut c_void,
-    fuel_out: *mut c_ulong,
-) -> c_int {
-    if caller_ptr.is_null() || fuel_out.is_null() {
-        return -1; // Error: null pointer
-    }
-
-    let result = (|| -> crate::WasmtimeResult<c_int> {
-        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
-        match core::caller_get_fuel(caller)? {
-            Some(fuel) => {
-                unsafe {
-                    *fuel_out = fuel;
-                }
-                Ok(0) // Success
-            }
-            None => Ok(-1), // Fuel metering not enabled
-        }
-    })();
-
-    match result {
-        Ok(code) => code,
-        Err(e) => {
-            ffi_utils::set_last_error(e);
-            -1
-        }
-    }
-}
-
 /// Get fuel remaining in the caller if fuel metering is enabled (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_caller_get_fuel_remaining(

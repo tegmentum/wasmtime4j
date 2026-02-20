@@ -74,6 +74,100 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
     })
 }
 
+/// Get the number of exported interfaces from a component
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentExportCount(
+    _env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+) -> jint {
+    if component_ptr == 0 {
+        log::error!("Component pointer is null");
+        return 0;
+    }
+
+    let component = unsafe { &*(component_ptr as *const Component) };
+    component.metadata.exports.len() as jint
+}
+
+/// Get the number of imports required by a component
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentImportCount(
+    _env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+) -> jint {
+    if component_ptr == 0 {
+        log::error!("Component pointer is null");
+        return 0;
+    }
+
+    let component = unsafe { &*(component_ptr as *const Component) };
+    component.metadata.imports.len() as jint
+}
+
+/// Get export interface name by index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentExportName(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+    index: jint,
+) -> jstring {
+    if component_ptr == 0 {
+        log::error!("Component pointer is null");
+        return std::ptr::null_mut();
+    }
+
+    let component = unsafe { &*(component_ptr as *const Component) };
+    let idx = index as usize;
+
+    if idx >= component.metadata.exports.len() {
+        log::error!("Export index {} out of bounds (len={})", idx, component.metadata.exports.len());
+        return std::ptr::null_mut();
+    }
+
+    let export_name = &component.metadata.exports[idx].name;
+    match env.new_string(export_name) {
+        Ok(s) => s.into_raw(),
+        Err(e) => {
+            log::error!("Failed to create Java string: {:?}", e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Get import interface name by index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentImportName(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+    index: jint,
+) -> jstring {
+    if component_ptr == 0 {
+        log::error!("Component pointer is null");
+        return std::ptr::null_mut();
+    }
+
+    let component = unsafe { &*(component_ptr as *const Component) };
+    let idx = index as usize;
+
+    if idx >= component.metadata.imports.len() {
+        log::error!("Import index {} out of bounds (len={})", idx, component.metadata.imports.len());
+        return std::ptr::null_mut();
+    }
+
+    let import_name = &component.metadata.imports[idx].name;
+    match env.new_string(import_name) {
+        Ok(s) => s.into_raw(),
+        Err(e) => {
+            log::error!("Failed to create Java string: {:?}", e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
 /// Get component size in bytes
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentSize(

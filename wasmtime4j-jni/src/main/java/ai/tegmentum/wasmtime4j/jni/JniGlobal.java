@@ -3,9 +3,9 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.exception.WasmTypeException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
-import ai.tegmentum.wasmtime4j.exception.WasmTypeException;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.logging.Logger;
 
@@ -16,8 +16,8 @@ import java.util.logging.Logger;
  * Wasmtime library. Globals can store various value types and may be mutable or immutable.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive type checking for global variable access using Validation and the JniResource
- * base class.
+ * comprehensive type checking for global variable access using Validation and the JniResource base
+ * class.
  */
 public final class JniGlobal extends JniResource implements WasmGlobal {
 
@@ -608,7 +608,6 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    */
   private static native boolean nativeSetDoubleValue(
       long globalHandle, long storeHandle, double value);
-
 
   /**
    * Gets global type information directly from the global.

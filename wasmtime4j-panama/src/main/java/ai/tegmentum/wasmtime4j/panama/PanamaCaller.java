@@ -247,22 +247,6 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Long> fuelConsumed() {
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment fuelOut = arena.allocate(ValueLayout.JAVA_LONG);
-      final int result = bindings.callerGetFuel(callerPtr, fuelOut);
-      if (result != 0) {
-        return Optional.empty();
-      }
-      final long fuel = fuelOut.get(ValueLayout.JAVA_LONG, 0);
-      return fuel >= 0 ? Optional.of(fuel) : Optional.empty();
-    } catch (Exception e) {
-      LOGGER.log(Level.FINE, "Fuel consumption not available", e);
-      return Optional.empty();
-    }
-  }
-
-  @Override
   public Optional<Long> fuelRemaining() {
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment fuelOut = arena.allocate(ValueLayout.JAVA_LONG);
@@ -340,30 +324,6 @@ final class PanamaCaller<T> implements Caller<T> {
       store.gc();
     } catch (Exception e) {
       throw new WasmException("Failed to perform GC: " + e.getMessage(), e);
-    }
-  }
-
-  @Override
-  public Optional<Long> fuelAsyncYieldInterval() {
-    try {
-      final long interval = store.getFuelAsyncYieldInterval();
-      return interval >= 0 ? Optional.of(interval) : Optional.empty();
-    } catch (Exception e) {
-      LOGGER.log(Level.FINE, "Fuel async yield interval not available", e);
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
-    if (interval < 0) {
-      throw new IllegalArgumentException("Interval cannot be negative");
-    }
-
-    try {
-      store.setFuelAsyncYieldInterval(interval);
-    } catch (Exception e) {
-      throw new WasmException("Failed to set fuel async yield interval: " + e.getMessage(), e);
     }
   }
 

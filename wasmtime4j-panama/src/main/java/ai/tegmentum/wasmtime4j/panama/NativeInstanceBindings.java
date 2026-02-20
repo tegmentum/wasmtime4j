@@ -659,30 +659,17 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   // =============================================================================
 
   /**
-   * Gets the fuel consumed by the caller if fuel metering is enabled.
-   *
-   * @param callerPtr pointer to the caller context
-   * @param fuelOut pointer to store the fuel value
-   * @return 1 if fuel is available, 0 if fuel metering not enabled, negative error code on failure
-   */
-  public int callerGetFuel(final MemorySegment callerPtr, final MemorySegment fuelOut) {
-    validatePointer(callerPtr, "callerPtr");
-    validatePointer(fuelOut, "fuelOut");
-    return callNativeFunction("wasmtime4j_caller_get_fuel", Integer.class, callerPtr, fuelOut);
-  }
-
-  /**
    * Gets the fuel remaining in the caller if fuel metering is enabled.
    *
    * @param callerPtr pointer to the caller context
    * @param fuelOut pointer to store the fuel value
-   * @return 1 if fuel is available, 0 if fuel metering not enabled, negative error code on failure
+   * @return 0 on success, negative error code on failure
    */
   public int callerGetFuelRemaining(final MemorySegment callerPtr, final MemorySegment fuelOut) {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(fuelOut, "fuelOut");
     return callNativeFunction(
-        "wasmtime4j_caller_get_fuel_remaining", Integer.class, callerPtr, fuelOut);
+        "wasmtime4j_panama_caller_get_fuel_remaining", Integer.class, callerPtr, fuelOut);
   }
 
   /**
@@ -694,7 +681,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    */
   public int callerAddFuel(final MemorySegment callerPtr, final long fuel) {
     validatePointer(callerPtr, "callerPtr");
-    return callNativeFunction("wasmtime4j_caller_add_fuel", Integer.class, callerPtr, fuel);
+    return callNativeFunction("wasmtime4j_panama_caller_add_fuel", Integer.class, callerPtr, fuel);
   }
 
   /**
@@ -707,7 +694,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   public int callerSetEpochDeadline(final MemorySegment callerPtr, final long deadline) {
     validatePointer(callerPtr, "callerPtr");
     return callNativeFunction(
-        "wasmtime4j_caller_set_epoch_deadline", Integer.class, callerPtr, deadline);
+        "wasmtime4j_panama_caller_set_epoch_deadline", Integer.class, callerPtr, deadline);
   }
 
   /**
@@ -718,7 +705,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    */
   public int callerHasEpochDeadline(final MemorySegment callerPtr) {
     validatePointer(callerPtr, "callerPtr");
-    return callNativeFunction("wasmtime4j_caller_has_epoch_deadline", Integer.class, callerPtr);
+    return callNativeFunction("wasmtime4j_panama_caller_has_epoch_deadline", Integer.class, callerPtr);
   }
 
   /**
@@ -731,7 +718,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   public int callerHasExport(final MemorySegment callerPtr, final MemorySegment name) {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(name, "name");
-    return callNativeFunction("wasmtime4j_caller_has_export", Integer.class, callerPtr, name);
+    return callNativeFunction("wasmtime4j_panama_caller_has_export", Integer.class, callerPtr, name);
   }
 
   /**
@@ -748,7 +735,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(name, "name");
     validatePointer(memoryOut, "memoryOut");
     return callNativeFunction(
-        "wasmtime4j_caller_get_memory", Integer.class, callerPtr, name, memoryOut);
+        "wasmtime4j_panama_caller_get_memory", Integer.class, callerPtr, name, memoryOut);
   }
 
   /**
@@ -765,7 +752,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(name, "name");
     validatePointer(functionOut, "functionOut");
     return callNativeFunction(
-        "wasmtime4j_caller_get_function", Integer.class, callerPtr, name, functionOut);
+        "wasmtime4j_panama_caller_get_function", Integer.class, callerPtr, name, functionOut);
   }
 
   /**
@@ -782,7 +769,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(name, "name");
     validatePointer(globalOut, "globalOut");
     return callNativeFunction(
-        "wasmtime4j_caller_get_global", Integer.class, callerPtr, name, globalOut);
+        "wasmtime4j_panama_caller_get_global", Integer.class, callerPtr, name, globalOut);
   }
 
   /**
@@ -799,7 +786,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(name, "name");
     validatePointer(tableOut, "tableOut");
     return callNativeFunction(
-        "wasmtime4j_caller_get_table", Integer.class, callerPtr, name, tableOut);
+        "wasmtime4j_panama_caller_get_table", Integer.class, callerPtr, name, tableOut);
   }
 
   // =============================================================================
@@ -1691,55 +1678,6 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   private void initializeCallerBindings() {
-    addFunctionBinding(
-        "wasmtime4j_caller_get_fuel",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_get_fuel_remaining",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_add_fuel",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_set_epoch_deadline",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_has_epoch_deadline",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_has_export",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_get_memory",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_get_function",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_get_global",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_caller_get_table",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    // Also register panama-prefixed caller bindings for compatibility
-    addFunctionBinding(
-        "wasmtime4j_panama_caller_get_fuel",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
     addFunctionBinding(
         "wasmtime4j_panama_caller_get_fuel_remaining",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));

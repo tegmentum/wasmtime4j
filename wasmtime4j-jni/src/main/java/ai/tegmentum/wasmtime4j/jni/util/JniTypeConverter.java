@@ -295,8 +295,7 @@ public final class JniTypeConverter {
       try {
         types[i] = WasmValueType.valueOf(typeStrings[i].toUpperCase(java.util.Locale.ROOT));
       } catch (final IllegalArgumentException e) {
-        throw new IllegalArgumentException(
-            "Invalid WebAssembly type string: " + typeStrings[i], e);
+        throw new IllegalArgumentException("Invalid WebAssembly type string: " + typeStrings[i], e);
       }
     }
     return types;

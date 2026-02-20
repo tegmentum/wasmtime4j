@@ -74,6 +74,9 @@ public final class EngineConfig {
   private CompilationStrategy strategy = CompilationStrategy.AUTO;
   private String target = null; // null = native target
 
+  // Profiling configuration
+  private ProfilingStrategy profilingStrategy = ProfilingStrategy.NONE;
+
   // Security and advanced config options (wasmtime 39.0.1)
   private boolean asyncStackZeroing = false;
   private boolean nativeUnwindInfo = true;
@@ -303,9 +306,18 @@ public final class EngineConfig {
     if (strategy == null) {
       throw new IllegalArgumentException("Profiling strategy cannot be null");
     }
-    // Note: For now, we'll just validate the parameter.
-    // Full implementation will be added with native backing.
+    this.profilingStrategy = strategy;
     return this;
+  }
+
+  /**
+   * Gets the profiling strategy.
+   *
+   * @return the profiling strategy
+   * @since 1.0.0
+   */
+  public ProfilingStrategy getProfilingStrategy() {
+    return profilingStrategy;
   }
 
   /**

@@ -16,7 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.core;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -43,8 +42,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests {@link Caller#fuelConsumed()}, {@link Caller#fuelRemaining()}, and {@link
- * Caller#addFuel(long)} through actual WASM execution with fuel-enabled engines.
+ * Tests {@link Caller#fuelRemaining()} and {@link Caller#addFuel(long)} through actual WASM
+ * execution with fuel-enabled engines.
  *
  * <p>Fuel tracking requires {@link EngineConfig#consumeFuel(boolean)} set to true and {@link
  * Store#setFuel(long)} called before execution.
@@ -116,57 +115,6 @@ public class CallerFuelTrackingTest extends DualRuntimeTest {
       current = current.getCause();
     }
     return false;
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("Caller.fuelConsumed returns value with fuel enabled")
-  void callerFuelConsumedReturnsValue(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing Caller.fuelConsumed() with fuel enabled");
-
-    final AtomicReference<Optional<Long>> fuelConsumedResult = new AtomicReference<>();
-
-    final HostFunction hostFn =
-        HostFunction.multiValueWithCaller(
-            (Caller<Void> caller, WasmValue[] params) -> {
-              fuelConsumedResult.set(caller.fuelConsumed());
-              LOGGER.info("[" + runtime + "] Caller.fuelConsumed(): " + fuelConsumedResult.get());
-              return new WasmValue[] {WasmValue.i32(42)};
-            });
-
-    final EngineConfig config = Engine.builder().consumeFuel(true);
-    try (Engine engine = Engine.create(config);
-        Linker<Void> linker = Linker.create(engine);
-        Store store = engine.createStore();
-        Module module = engine.compileWat(WAT)) {
-
-      store.setFuel(INITIAL_FUEL);
-      linker.defineHostFunction("env", "host_fn", HOST_FN_TYPE, hostFn);
-
-      try (Instance instance = linker.instantiate(store, module)) {
-        final Optional<WasmFunction> callHostOpt = instance.getFunction("call_host");
-        assertTrue(callHostOpt.isPresent(), "call_host export must be present");
-
-        try {
-          callHostOpt.get().call();
-        } catch (final WasmException e) {
-          if (isCallerUnavailable(e)) {
-            LOGGER.info("[" + runtime + "] " + CALLER_NOT_AVAILABLE);
-            return;
-          }
-          throw e;
-        }
-      }
-    }
-
-    assertTrue(
-        fuelConsumedResult.get().isPresent(),
-        "fuelConsumed() should be present when fuel is enabled");
-    assertTrue(
-        fuelConsumedResult.get().get() >= 0,
-        "fuelConsumed() should be >= 0, got: " + fuelConsumedResult.get().get());
-    LOGGER.info("[" + runtime + "] Caller.fuelConsumed() = " + fuelConsumedResult.get().get());
   }
 
   @ParameterizedTest
@@ -297,63 +245,6 @@ public class CallerFuelTrackingTest extends DualRuntimeTest {
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("Caller.fuelConsumed returns empty without fuel enabled")
-  void callerFuelConsumedWithoutFuelEnabledReturnsEmpty(final RuntimeType runtime)
-      throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing Caller.fuelConsumed() without fuel enabled");
-
-    final AtomicReference<Optional<Long>> fuelConsumedResult = new AtomicReference<>();
-
-    final HostFunction hostFn =
-        HostFunction.multiValueWithCaller(
-            (Caller<Void> caller, WasmValue[] params) -> {
-              fuelConsumedResult.set(caller.fuelConsumed());
-              LOGGER.info(
-                  "[" + runtime + "] Caller.fuelConsumed() (no fuel): " + fuelConsumedResult.get());
-              return new WasmValue[] {WasmValue.i32(42)};
-            });
-
-    try (Engine engine = Engine.create();
-        Linker<Void> linker = Linker.create(engine);
-        Store store = engine.createStore();
-        Module module = engine.compileWat(WAT)) {
-
-      linker.defineHostFunction("env", "host_fn", HOST_FN_TYPE, hostFn);
-
-      try (Instance instance = linker.instantiate(store, module)) {
-        final Optional<WasmFunction> callHostOpt = instance.getFunction("call_host");
-        assertTrue(callHostOpt.isPresent(), "call_host export must be present");
-
-        try {
-          callHostOpt.get().call();
-        } catch (final WasmException e) {
-          if (isCallerUnavailable(e)) {
-            LOGGER.info("[" + runtime + "] " + CALLER_NOT_AVAILABLE);
-            return;
-          }
-          throw e;
-        }
-      }
-    }
-
-    if (fuelConsumedResult.get().isPresent()) {
-      LOGGER.info(
-          "["
-              + runtime
-              + "] fuelConsumed() returned value even without fuel enabled: "
-              + fuelConsumedResult.get().get()
-              + " (runtime-specific behavior, accepting)");
-    } else {
-      assertFalse(
-          fuelConsumedResult.get().isPresent(),
-          "fuelConsumed() should be empty when fuel is not enabled");
-      LOGGER.info("[" + runtime + "] Caller.fuelConsumed() correctly returned empty without fuel");
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Caller.fuelRemaining returns empty without fuel enabled")
   void callerFuelRemainingWithoutFuelReturnsEmpty(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
@@ -404,9 +295,6 @@ public class CallerFuelTrackingTest extends DualRuntimeTest {
               + fuelRemainingResult.get().get()
               + " (runtime-specific behavior, accepting)");
     } else {
-      assertFalse(
-          fuelRemainingResult.get().isPresent(),
-          "fuelRemaining() should be empty when fuel is not enabled");
       LOGGER.info("[" + runtime + "] Caller.fuelRemaining() correctly returned empty without fuel");
     }
   }

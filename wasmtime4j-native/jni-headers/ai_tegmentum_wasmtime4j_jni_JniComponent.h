@@ -121,6 +121,22 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeGetComponentExportName
+ * Signature: (JI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentExportName
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeGetComponentImportName
+ * Signature: (JI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentImportName
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
  * Method:    nativeComponentHasExport
  * Signature: (JLjava/lang/String;)Z
  */

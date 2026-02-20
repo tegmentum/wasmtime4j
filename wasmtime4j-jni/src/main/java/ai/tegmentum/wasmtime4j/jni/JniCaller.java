@@ -209,17 +209,6 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
-  public Optional<Long> fuelConsumed() {
-    try {
-      final long fuel = nativeGetFuelConsumed(callerHandle);
-      return fuel >= 0 ? Optional.of(fuel) : Optional.empty();
-    } catch (Exception e) {
-      LOGGER.log(Level.FINE, "Fuel consumption not available", e);
-      return Optional.empty();
-    }
-  }
-
-  @Override
   public Optional<Long> fuelRemaining() {
     try {
       final long fuel = nativeGetFuelRemaining(callerHandle);
@@ -278,33 +267,9 @@ final class JniCaller<T> implements Caller<T> {
   @Override
   public void gc() throws WasmException {
     try {
-      nativeGc(callerHandle);
+      store.gc();
     } catch (Exception e) {
       throw new WasmException("Failed to perform GC: " + e.getMessage(), e);
-    }
-  }
-
-  @Override
-  public Optional<Long> fuelAsyncYieldInterval() {
-    try {
-      final long interval = nativeGetFuelAsyncYieldInterval(callerHandle);
-      return interval >= 0 ? Optional.of(interval) : Optional.empty();
-    } catch (Exception e) {
-      LOGGER.log(Level.FINE, "Fuel async yield interval not available", e);
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
-    if (interval < 0) {
-      throw new IllegalArgumentException("Interval cannot be negative");
-    }
-
-    try {
-      nativeSetFuelAsyncYieldInterval(callerHandle, interval);
-    } catch (Exception e) {
-      throw new WasmException("Failed to set fuel async yield interval: " + e.getMessage(), e);
     }
   }
 
@@ -332,15 +297,6 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   // Native method declarations
-
-  /**
-   * Gets an export by name from the caller.
-   *
-   * @param callerHandle the native caller handle
-   * @param name the export name
-   * @return marshalled export data, or null if not found
-   */
-  private static native byte[] nativeGetExport(long callerHandle, String name);
 
   /**
    * Gets a memory export by name.
@@ -388,14 +344,6 @@ final class JniCaller<T> implements Caller<T> {
   private static native boolean nativeHasExport(long callerHandle, String name);
 
   /**
-   * Gets the fuel consumed by the caller.
-   *
-   * @param callerHandle the native caller handle
-   * @return fuel consumed, or -1 if not available
-   */
-  private static native long nativeGetFuelConsumed(long callerHandle);
-
-  /**
    * Gets the fuel remaining in the caller.
    *
    * @param callerHandle the native caller handle
@@ -426,27 +374,4 @@ final class JniCaller<T> implements Caller<T> {
    * @param deadline the epoch deadline to set
    */
   private static native void nativeSetEpochDeadline(long callerHandle, long deadline);
-
-  /**
-   * Triggers garbage collection from within the caller context.
-   *
-   * @param callerHandle the native caller handle
-   */
-  private static native void nativeGc(long callerHandle);
-
-  /**
-   * Gets the fuel async yield interval.
-   *
-   * @param callerHandle the native caller handle
-   * @return the yield interval, or -1 if not configured
-   */
-  private static native long nativeGetFuelAsyncYieldInterval(long callerHandle);
-
-  /**
-   * Sets the fuel async yield interval.
-   *
-   * @param callerHandle the native caller handle
-   * @param interval the yield interval to set
-   */
-  private static native void nativeSetFuelAsyncYieldInterval(long callerHandle, long interval);
 }

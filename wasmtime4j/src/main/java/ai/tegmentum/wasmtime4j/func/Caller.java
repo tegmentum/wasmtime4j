@@ -112,17 +112,6 @@ public interface Caller<T> {
   boolean hasExport(String name);
 
   /**
-   * Gets the current fuel consumption if fuel metering is enabled.
-   *
-   * <p>Fuel metering allows limiting the execution time of WebAssembly code. This method returns
-   * the amount of fuel consumed so far in the current call.
-   *
-   * @return the fuel consumed, or empty if fuel metering is not enabled
-   * @since 1.0.0
-   */
-  Optional<Long> fuelConsumed();
-
-  /**
    * Gets the fuel remaining in the caller if fuel metering is enabled.
    *
    * <p>This method returns the amount of fuel remaining for the current execution. When fuel is
@@ -203,23 +192,4 @@ public interface Caller<T> {
    */
   void gc() throws WasmException;
 
-  /**
-   * Gets or sets the fuel async yield interval from within a host function.
-   *
-   * <p>This allows dynamic adjustment of the fuel-based async yielding interval during execution.
-   * Setting a non-zero value enables fuel-based cooperative scheduling.
-   *
-   * @return the current fuel async yield interval
-   * @since 1.0.0
-   */
-  Optional<Long> fuelAsyncYieldInterval();
-
-  /**
-   * Sets the fuel async yield interval from within a host function.
-   *
-   * @param interval the interval (0 to disable)
-   * @throws WasmException if setting fails
-   * @since 1.0.0
-   */
-  void setFuelAsyncYieldInterval(long interval) throws WasmException;
 }

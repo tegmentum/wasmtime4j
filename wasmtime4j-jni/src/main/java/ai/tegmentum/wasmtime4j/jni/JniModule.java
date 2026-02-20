@@ -519,12 +519,7 @@ public class JniModule extends JniResource implements Module {
     final java.time.Duration validationTime = java.time.Duration.ofNanos(endTime - startTime);
 
     return new ai.tegmentum.wasmtime4j.validation.ImportValidation(
-        issues.isEmpty(),
-        issues,
-        validatedImports,
-        importTypes.size(),
-        validCount,
-        validationTime);
+        issues.isEmpty(), issues, validatedImports, importTypes.size(), validCount, validationTime);
   }
 
   private boolean typesMatch(

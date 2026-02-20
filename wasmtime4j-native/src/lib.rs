@@ -77,8 +77,6 @@ pub mod test_runtime_completion;
 #[cfg(feature = "jni-bindings")]
 pub mod jni;
 #[cfg(feature = "jni-bindings")]
-pub mod jni_component_bindings;
-#[cfg(feature = "jni-bindings")]
 pub mod jni_gc_bindings;
 #[cfg(feature = "jni-bindings")]
 pub mod jni_pooling_allocator_bindings;
@@ -163,8 +161,6 @@ pub use store::{
 };
 pub use table::{Table, TableElement, TableMetadata};
 
-// Re-export additional core functionality
-pub use caller::{CallerContext, CallerExport, CallerExportType, ExportCounts};
 // Optional re-exports based on features
 #[cfg(feature = "wasi")]
 pub use wasi::{

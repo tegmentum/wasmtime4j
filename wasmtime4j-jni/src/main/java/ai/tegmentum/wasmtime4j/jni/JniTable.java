@@ -14,8 +14,7 @@ import java.util.logging.Logger;
  * library. Tables store references to functions or other objects that can be called indirectly.
  *
  * <p>This implementation ensures defensive programming to prevent JVM crashes and provides
- * comprehensive bounds checking for table access using Validation and the JniResource base
- * class.
+ * comprehensive bounds checking for table access using Validation and the JniResource base class.
  */
 public final class JniTable extends JniResource implements WasmTable {
 
@@ -385,10 +384,11 @@ public final class JniTable extends JniResource implements WasmTable {
    * Converts an Object reference value to a native long handle for table operations.
    *
    * <p>The convention matches the native Rust side:
+   *
    * <ul>
-   *   <li>{@code null} maps to {@code 0L} (null reference)</li>
-   *   <li>{@link Long} maps directly to its value (registry ID from prior {@code get()} calls)</li>
-   *   <li>{@link JniFunctionReference} maps to its native handle</li>
+   *   <li>{@code null} maps to {@code 0L} (null reference)
+   *   <li>{@link Long} maps directly to its value (registry ID from prior {@code get()} calls)
+   *   <li>{@link JniFunctionReference} maps to its native handle
    * </ul>
    *
    * @param value the reference value to convert
@@ -559,7 +559,6 @@ public final class JniTable extends JniResource implements WasmTable {
   private static native boolean nativeCopyFromTable(
       long dstTableHandle, int dst, long srcTableHandle, int src, int count);
 
-
   /**
    * Gets table type information directly from the table.
    *
@@ -599,12 +598,16 @@ public final class JniTable extends JniResource implements WasmTable {
     }
     ensureUsable();
     if (instanceHandle == 0) {
-      throw new IllegalStateException(
-          "Cannot init table: table not associated with an instance");
+      throw new IllegalStateException("Cannot init table: table not associated with an instance");
     }
     nativeTableInit(
-        getNativeHandle(), store.getNativeHandle(), instanceHandle,
-        destOffset, srcOffset, length, srcSegmentIndex);
+        getNativeHandle(),
+        store.getNativeHandle(),
+        instanceHandle,
+        destOffset,
+        srcOffset,
+        length,
+        srcSegmentIndex);
   }
 
   /**
@@ -650,8 +653,13 @@ public final class JniTable extends JniResource implements WasmTable {
    * @param segmentIndex the element segment index
    */
   private static native void nativeTableInit(
-      long tableHandle, long storeHandle, long instanceHandle,
-      int dst, int src, int len, int segmentIndex);
+      long tableHandle,
+      long storeHandle,
+      long instanceHandle,
+      int dst,
+      int src,
+      int len,
+      int segmentIndex);
 
   /**
    * Drops an element segment, freeing its data.
