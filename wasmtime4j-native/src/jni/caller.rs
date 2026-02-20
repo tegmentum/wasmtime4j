@@ -48,6 +48,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeAddFuel(
     });
 }
 
+/// Set fuel to a specific value for the caller (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetFuel(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    fuel: jlong,
+) {
+    if caller_handle == 0 {
+        return;
+    }
+
+    jni_utils::jni_try_void(&mut env, || {
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        core::caller_set_fuel(caller, fuel as u64)
+    });
+}
+
 /// Set epoch deadline for the caller (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetEpochDeadline(

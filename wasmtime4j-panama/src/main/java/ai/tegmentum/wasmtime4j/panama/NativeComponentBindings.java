@@ -597,6 +597,30 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // namespace string
             ValueLayout.ADDRESS, // interface name string
             ValueLayout.ADDRESS)); // json out pointer
+
+    // ===== Component Serialize/Deserialize =====
+    addFunctionBinding(
+        "wasmtime4j_component_serialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // component_ptr
+            ValueLayout.ADDRESS, // data_ptr out
+            ValueLayout.ADDRESS)); // len out
+
+    addFunctionBinding(
+        "wasmtime4j_component_free_serialized_data",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // data_ptr
+            ValueLayout.JAVA_LONG)); // len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_deserialize",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine_ptr (enhanced component engine)
+            ValueLayout.ADDRESS, // data_ptr
+            ValueLayout.JAVA_LONG, // len
+            ValueLayout.ADDRESS)); // component_ptr_out
   }
 
   // ===== Component Engine (legacy API) =====
@@ -1781,5 +1805,67 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         namespacePtr,
         interfaceNamePtr,
         jsonOutPtr);
+  }
+
+  // ===== Component Serialize/Deserialize =====
+
+  /**
+   * Serializes a component to bytes.
+   *
+   * <p>The caller must free the returned data using {@link #componentFreeSerializedData}.
+   *
+   * @param componentPtr the component pointer
+   * @param dataPtrOut output pointer to receive the serialized data pointer
+   * @param lenOut output pointer to receive the data length
+   * @return 0 on success, non-zero on error
+   */
+  public int componentSerialize(
+      final MemorySegment componentPtr,
+      final MemorySegment dataPtrOut,
+      final MemorySegment lenOut) {
+    validatePointer(componentPtr, "componentPtr");
+    validatePointer(dataPtrOut, "dataPtrOut");
+    validatePointer(lenOut, "lenOut");
+    return callNativeFunction(
+        "wasmtime4j_component_serialize", Integer.class, componentPtr, dataPtrOut, lenOut);
+  }
+
+  /**
+   * Frees serialized component data previously returned by {@link #componentSerialize}.
+   *
+   * @param dataPtr the data pointer to free
+   * @param len the length of the data
+   */
+  public void componentFreeSerializedData(final MemorySegment dataPtr, final long len) {
+    if (dataPtr != null && !dataPtr.equals(MemorySegment.NULL) && len > 0) {
+      callNativeFunction(
+          "wasmtime4j_component_free_serialized_data", Void.class, dataPtr, len);
+    }
+  }
+
+  /**
+   * Deserializes a component from bytes using the enhanced component engine.
+   *
+   * @param enginePtr pointer to the enhanced component engine
+   * @param dataPtr pointer to the serialized data
+   * @param len length of the serialized data
+   * @param componentPtrOut output pointer to receive the new component pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int panamaComponentDeserialize(
+      final MemorySegment enginePtr,
+      final MemorySegment dataPtr,
+      final long len,
+      final MemorySegment componentPtrOut) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(dataPtr, "dataPtr");
+    validatePointer(componentPtrOut, "componentPtrOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_component_deserialize",
+        Integer.class,
+        enginePtr,
+        dataPtr,
+        len,
+        componentPtrOut);
   }
 }

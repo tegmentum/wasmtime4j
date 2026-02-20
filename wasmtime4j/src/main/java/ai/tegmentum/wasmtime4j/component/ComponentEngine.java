@@ -158,6 +158,21 @@ public interface ComponentEngine extends Closeable {
   boolean isValid();
 
   /**
+   * Deserializes a component from previously serialized bytes.
+   *
+   * <p>This method can be used to quickly load a previously compiled component without going
+   * through the compilation process again. The bytes must have been created by a compatible version
+   * of the same engine.
+   *
+   * @param bytes the serialized component data
+   * @return the deserialized Component
+   * @throws WasmException if deserialization fails or data is invalid
+   * @throws IllegalArgumentException if bytes is null or empty
+   * @since 1.0.0
+   */
+  Component deserializeComponent(byte[] bytes) throws WasmException;
+
+  /**
    * Detects if bytes contain a precompiled module or component.
    *
    * @param bytes the bytes to check

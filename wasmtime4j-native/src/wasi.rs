@@ -1255,6 +1255,17 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_inherit_env(ctx_ptr: *mut c_voi
     })
 }
 
+/// Inherit host command-line arguments (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_inherit_args(ctx_ptr: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        let args: Vec<String> = std::env::args().collect();
+        ctx.set_arguments(args)?;
+        Ok(())
+    })
+}
+
 /// Inherit host stdio (Panama FFI version)
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_wasi_context_inherit_stdio(ctx_ptr: *mut c_void) -> c_int {

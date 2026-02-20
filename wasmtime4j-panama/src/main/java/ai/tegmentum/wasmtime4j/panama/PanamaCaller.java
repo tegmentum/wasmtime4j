@@ -281,6 +281,24 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
+  public void setFuel(final long fuel) throws WasmException {
+    if (fuel < 0) {
+      throw new IllegalArgumentException("Fuel amount cannot be negative");
+    }
+
+    try {
+      final int result = bindings.callerSetFuel(callerPtr, fuel);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to set fuel");
+      }
+    } catch (WasmException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new WasmException("Failed to set fuel: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public boolean hasEpochDeadline() {
     try {
       final int result = bindings.callerHasEpochDeadline(callerPtr);

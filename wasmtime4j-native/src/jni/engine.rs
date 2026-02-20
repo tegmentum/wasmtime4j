@@ -107,7 +107,46 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
     // Profiling and debug
     profiling_strategy: jint,
     native_unwind_info: jboolean,
+    // Extended config options
+    cranelift_debug_verifier: jboolean,
+    async_stack_size: jlong,
+    memory_may_move: jboolean,
+    guard_before_linear_memory: jboolean,
+    parallel_compilation: jboolean,
+    pooling_allocator: jboolean,
+    table_lazy_init: jboolean,
+    relaxed_simd_deterministic: jboolean,
+    memory_init_cow: jboolean,
+    async_stack_zeroing: jboolean,
+    gc_support: jboolean,
+    // Cranelift flags (JSON string, nullable)
+    cranelift_flags_json: JString,
+    // Module version: 0=WasmtimeVersion, 1=None, 2=Custom
+    module_version_strategy: jint,
+    module_version_custom: JString,
 ) -> jlong {
+    // Extract JNI strings before entering the closure (to avoid borrow issues)
+    let cranelift_flags_str: String = if cranelift_flags_json.is_null() {
+        String::new()
+    } else {
+        match env.get_string(&cranelift_flags_json) {
+            Ok(s) => s.into(),
+            Err(_) => String::new(),
+        }
+    };
+
+    let module_version_custom_str: Option<String> = if module_version_custom.is_null() {
+        None
+    } else {
+        match env.get_string(&module_version_custom) {
+            Ok(s) => {
+                let s: String = s.into();
+                if s.is_empty() { None } else { Some(s) }
+            }
+            Err(_) => None,
+        }
+    };
+
     jni_utils::jni_try_ptr(&mut env, || {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
         let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
@@ -133,6 +172,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
         } else {
             None
         };
+
+        let async_stack_size_opt = if async_stack_size > 0 {
+            Some(async_stack_size as usize)
+        } else {
+            None
+        };
+
+        // Parse cranelift flags from JSON string
+        let cranelift_flags_vec = parse_cranelift_flags_json(&cranelift_flags_str);
 
         core::create_engine_with_extended_config(
             strategy_opt,
@@ -172,8 +220,56 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
             // Profiling and debug
             parameter_conversion::convert_profiling_strategy(profiling_strategy),
             parameter_conversion::convert_int_to_bool(native_unwind_info as i32),
+            // Extended config
+            parameter_conversion::convert_int_to_bool(cranelift_debug_verifier as i32),
+            async_stack_size_opt,
+            parameter_conversion::convert_int_to_bool(memory_may_move as i32),
+            parameter_conversion::convert_int_to_bool(guard_before_linear_memory as i32),
+            parameter_conversion::convert_int_to_bool(parallel_compilation as i32),
+            parameter_conversion::convert_int_to_bool(pooling_allocator as i32),
+            parameter_conversion::convert_int_to_bool(table_lazy_init as i32),
+            parameter_conversion::convert_int_to_bool(relaxed_simd_deterministic as i32),
+            parameter_conversion::convert_int_to_bool(memory_init_cow as i32),
+            parameter_conversion::convert_int_to_bool(async_stack_zeroing as i32),
+            parameter_conversion::convert_int_to_bool(gc_support as i32),
+            // Cranelift flags
+            &cranelift_flags_vec,
+            // Module version
+            module_version_strategy,
+            module_version_custom_str.as_deref(),
         )
     }) as jlong
+}
+
+/// Parse cranelift flags from a JSON string like {"key":"value","key2":"value2"}
+fn parse_cranelift_flags_json(json_str: &str) -> Vec<(String, String)> {
+    let trimmed = json_str.trim();
+    if trimmed.is_empty() || trimmed == "{}" {
+        return Vec::new();
+    }
+
+    let inner = trimmed
+        .strip_prefix('{')
+        .and_then(|s| s.strip_suffix('}'))
+        .unwrap_or("");
+
+    if inner.is_empty() {
+        return Vec::new();
+    }
+
+    let mut flags = Vec::new();
+    for pair in inner.split(',') {
+        let pair = pair.trim();
+        if let Some((key, value)) = pair.split_once(':') {
+            let key = key.trim().trim_matches('"');
+            let value = value.trim().trim_matches('"');
+            if !key.is_empty() {
+                flags.push((key.to_string(), value.to_string()));
+            }
+        }
+    }
+
+    flags
 }
 
 /// Detect if a host CPU feature is available

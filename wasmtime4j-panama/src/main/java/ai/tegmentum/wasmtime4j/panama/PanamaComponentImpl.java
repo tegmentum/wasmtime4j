@@ -194,6 +194,36 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
+  public byte[] serialize() throws WasmException {
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment dataPtrOut = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment lenOut = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int errorCode = NATIVE_BINDINGS.componentSerialize(componentHandle, dataPtrOut, lenOut);
+      if (errorCode != 0) {
+        throw new WasmException("Failed to serialize component: native error code " + errorCode);
+      }
+
+      final MemorySegment dataPtr = dataPtrOut.get(ValueLayout.ADDRESS, 0);
+      final long len = lenOut.get(ValueLayout.JAVA_LONG, 0);
+
+      if (dataPtr == null || dataPtr.equals(MemorySegment.NULL) || len <= 0) {
+        throw new WasmException("Failed to serialize component: null data returned");
+      }
+
+      try {
+        final MemorySegment unbounded = dataPtr.reinterpret(len);
+        final byte[] result = unbounded.toArray(ValueLayout.JAVA_BYTE);
+        return result;
+      } finally {
+        NATIVE_BINDINGS.componentFreeSerializedData(dataPtr, len);
+      }
+    }
+  }
+
+  @Override
   public boolean isValid() {
     return !resourceHandle.isClosed()
         && componentHandle != null

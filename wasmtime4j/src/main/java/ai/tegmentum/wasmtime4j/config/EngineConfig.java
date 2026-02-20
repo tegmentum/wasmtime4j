@@ -84,6 +84,12 @@ public final class EngineConfig {
   private boolean memoryInitCow = true;
   private boolean wasmExceptions = false;
   private boolean wasmComponentModelAsyncBuiltins = false;
+  private boolean tableLazyInit = true;
+
+  // Module version strategy for precompiled module compatibility
+  private ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy moduleVersionStrategy =
+      ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy.WASMTIME_VERSION;
+  private String moduleVersionCustom;
 
   // Register allocation and backtrace configuration
   private ai.tegmentum.wasmtime4j.config.RegallocAlgorithm regallocAlgorithm =
@@ -1451,5 +1457,109 @@ public final class EngineConfig {
    */
   public boolean isWasmComponentModelAsyncBuiltins() {
     return wasmComponentModelAsyncBuiltins;
+  }
+
+  /**
+   * Returns whether the WebAssembly Component Model is enabled.
+   *
+   * <p>This checks if the COMPONENT_MODEL feature is in the enabled features set.
+   *
+   * @return true if component model is enabled
+   * @since 1.1.0
+   */
+  public boolean isWasmComponentModel() {
+    return wasmFeatures.contains(WasmFeature.COMPONENT_MODEL);
+  }
+
+  /**
+   * Returns whether table lazy initialization is enabled.
+   *
+   * <p>Table lazy initialization is enabled by default, matching the Wasmtime default. When enabled,
+   * tables are initialized lazily for faster instantiation but slightly slower indirect calls.
+   *
+   * @return true if table lazy initialization is enabled
+   * @since 1.1.0
+   */
+  public boolean isTableLazyInit() {
+    return tableLazyInit;
+  }
+
+  /**
+   * Enables or disables table lazy initialization.
+   *
+   * <p>When enabled (the default), tables are initialized lazily which results in faster
+   * instantiation but slightly slower indirect calls. When disabled, tables are initialized eagerly
+   * during instantiation.
+   *
+   * @param enable true to enable lazy table initialization
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig tableLazyInit(final boolean enable) {
+    this.tableLazyInit = enable;
+    return this;
+  }
+
+  /**
+   * Returns the module version strategy used for precompiled module compatibility checks.
+   *
+   * @return the module version strategy
+   * @since 1.1.0
+   */
+  public ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy getModuleVersionStrategy() {
+    return moduleVersionStrategy;
+  }
+
+  /**
+   * Sets the module version strategy for precompiled module compatibility checks.
+   *
+   * <p>When set to {@link ModuleVersionStrategy#WASMTIME_VERSION} (the default), modules are
+   * validated against the Wasmtime version that compiled them. When set to {@link
+   * ModuleVersionStrategy#NONE}, version checks are skipped. When set to {@link
+   * ModuleVersionStrategy#CUSTOM}, a custom version string is used (set via {@link
+   * #moduleVersionCustom(String)}).
+   *
+   * @param strategy the module version strategy to use
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if strategy is null
+   * @since 1.1.0
+   */
+  public EngineConfig moduleVersionStrategy(
+      final ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy strategy) {
+    if (strategy == null) {
+      throw new IllegalArgumentException("strategy cannot be null");
+    }
+    this.moduleVersionStrategy = strategy;
+    return this;
+  }
+
+  /**
+   * Returns the custom module version string, or null if not set.
+   *
+   * @return the custom module version string, or null
+   * @since 1.1.0
+   */
+  public String getModuleVersionCustom() {
+    return moduleVersionCustom;
+  }
+
+  /**
+   * Sets a custom module version string for precompiled module compatibility checks.
+   *
+   * <p>This is only used when the module version strategy is set to {@link
+   * ModuleVersionStrategy#CUSTOM}. If set with a non-null value, the strategy is automatically
+   * changed to CUSTOM.
+   *
+   * @param version the custom version string
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig moduleVersionCustom(final String version) {
+    this.moduleVersionCustom = version;
+    if (version != null) {
+      this.moduleVersionStrategy =
+          ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy.CUSTOM;
+    }
+    return this;
   }
 }

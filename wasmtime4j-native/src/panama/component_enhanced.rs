@@ -258,6 +258,44 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_is_async(
     }
 }
 
+/// Deserialize a component from bytes using the enhanced component engine.
+///
+/// Returns a new component pointer through `component_ptr_out`.
+/// The engine pointer must be an `EnhancedComponentEngine`.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_component_deserialize(
+    engine_ptr: *mut c_void,
+    data_ptr: *const u8,
+    len: usize,
+    component_ptr_out: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let engine =
+            unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
+
+        if data_ptr.is_null() || len == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Serialized data pointer is null or length is zero".to_string(),
+            });
+        }
+
+        if component_ptr_out.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Component output pointer is null".to_string(),
+            });
+        }
+
+        let bytes = unsafe { std::slice::from_raw_parts(data_ptr, len) };
+        let component = Component::deserialize(engine.engine(), bytes)?;
+
+        unsafe {
+            *component_ptr_out = Box::into_raw(Box::new(component)) as *mut c_void;
+        }
+
+        Ok(())
+    })
+}
+
 /// Destroy an enhanced component engine
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_destroy(engine_ptr: *mut c_void) {

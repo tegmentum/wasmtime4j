@@ -13,8 +13,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
 use wasmtime::{
-    Extern, Func, FuncType, Global, Instance as WasmtimeInstance, Memory, SharedMemory, Table, Val,
-    ValType as WasmtimeValType,
+    Extern, Func, FuncType, Global, Instance as WasmtimeInstance, Memory, SharedMemory, Table, Tag,
+    Val, ValType as WasmtimeValType,
 };
 
 /// Extracts the full error chain from an anyhow::Error to capture nested error messages.
@@ -996,6 +996,18 @@ impl Instance {
         }
     }
 
+    /// Get exported tag by name
+    pub fn get_tag(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Tag>> {
+        let instance = self.inner.lock();
+
+        let mut store_guard = store.try_lock_store()?;
+        let export = instance.get_export(&mut *store_guard, name);
+        match export {
+            Some(Extern::Tag(tag)) => Ok(Some(tag)),
+            _ => Ok(None),
+        }
+    }
+
     /// Get element segment manager for table.init() operations
     pub fn get_element_segment_manager(&self) -> &Arc<ElementSegmentManager> {
         &self.element_segment_manager
@@ -1384,6 +1396,15 @@ pub mod core {
         name: &str,
     ) -> WasmtimeResult<Option<wasmtime::Table>> {
         instance.get_table(store, name)
+    }
+
+    /// Core function to get exported tag by name
+    pub fn get_exported_tag(
+        instance: &Instance,
+        store: &mut Store,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Tag>> {
+        instance.get_tag(store, name)
     }
 
     /// Core function to list all exports
@@ -2931,6 +2952,35 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_global_by_name(
     ) {
         (Ok(instance), Ok(store)) => match core::get_exported_global(instance, store, name_str) {
             Ok(Some(global)) => Box::into_raw(Box::new(global)) as *mut c_void,
+            _ => std::ptr::null_mut(),
+        },
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// Get exported tag by name
+/// Returns tag handle or null if not found
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_get_tag_by_name(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    name: *const c_char,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let name_str = match std::ffi::CStr::from_ptr(name).to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match (
+        core::get_instance_ref(instance_ptr),
+        crate::store::core::get_store_mut(store_ptr),
+    ) {
+        (Ok(instance), Ok(store)) => match core::get_exported_tag(instance, store, name_str) {
+            Ok(Some(tag)) => Box::into_raw(Box::new(tag)) as *mut c_void,
             _ => std::ptr::null_mut(),
         },
         _ => std::ptr::null_mut(),

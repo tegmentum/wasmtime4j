@@ -44,6 +44,18 @@ pub mod core {
         }
     }
 
+    /// Set fuel to a specific value for the caller
+    pub fn caller_set_fuel<T>(caller: &mut WasmtimeCaller<'_, T>, fuel: u64) -> WasmtimeResult<()>
+    where
+        T: Send + 'static,
+    {
+        caller
+            .set_fuel(fuel)
+            .map_err(|e| WasmtimeError::CallerContextError {
+                message: format!("Failed to set fuel: {}", e),
+            })
+    }
+
     /// Set epoch deadline for the caller
     pub fn caller_set_epoch_deadline<T>(
         caller: &mut WasmtimeCaller<'_, T>,

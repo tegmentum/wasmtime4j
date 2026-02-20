@@ -896,6 +896,48 @@ impl Component {
             .map(|import| import.name.clone())
             .collect()
     }
+
+    /// Serialize the component to bytes for later deserialization.
+    pub fn serialize(&self) -> WasmtimeResult<Vec<u8>> {
+        self.component
+            .serialize()
+            .map_err(|e| WasmtimeError::Internal {
+                message: format!("Component serialization failed: {}", e),
+            })
+    }
+
+    /// Deserialize a component from previously serialized bytes.
+    ///
+    /// # Safety
+    ///
+    /// The bytes must have been produced by a previous call to `serialize()` on
+    /// a component compiled with a compatible engine configuration.
+    pub fn deserialize(
+        engine: &wasmtime::Engine,
+        bytes: &[u8],
+    ) -> WasmtimeResult<Self> {
+        if bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Serialized component bytes cannot be empty".to_string(),
+            });
+        }
+
+        let component =
+            unsafe { WasmtimeComponent::deserialize(engine, bytes) }.map_err(|e| {
+                WasmtimeError::Internal {
+                    message: format!("Component deserialization failed: {}", e),
+                }
+            })?;
+
+        Ok(Component {
+            component,
+            metadata: ComponentMetadata {
+                imports: Vec::new(),
+                exports: Vec::new(),
+                size_bytes: bytes.len(),
+            },
+        })
+    }
 }
 
 impl Default for ComponentEngine {
@@ -1068,6 +1110,21 @@ pub mod core {
     pub fn get_import_count(component: &Component) -> usize {
         component.metadata().imports.len()
     }
+
+    /// Core function to serialize a component
+    pub fn serialize_component(component: &Component) -> WasmtimeResult<Vec<u8>> {
+        component.serialize()
+    }
+
+    /// Core function to deserialize a component
+    pub fn deserialize_component(
+        engine: &ComponentEngine,
+        bytes: &[u8],
+    ) -> WasmtimeResult<Box<Component>> {
+        validate_not_empty!(bytes, "serialized component bytes");
+        Component::deserialize(&engine.engine, bytes).map(Box::new)
+    }
+
 }
 
 // Component Model C API for FFI integration
@@ -1375,5 +1432,87 @@ pub unsafe extern "C" fn wasmtime4j_component_get_import_name(
 pub unsafe extern "C" fn wasmtime4j_component_free_string(str_ptr: *mut c_char) {
     if !str_ptr.is_null() {
         let _ = CString::from_raw(str_ptr);
+    }
+}
+
+/// Serialize a component to bytes
+///
+/// Returns serialized data through out-pointers. Caller must free data with
+/// wasmtime4j_component_free_serialized_data.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_serialize(
+    component_ptr: *mut c_void,
+    data_ptr: *mut *mut u8,
+    len_ptr: *mut usize,
+) -> c_int {
+    if component_ptr.is_null() || data_ptr.is_null() || len_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    match core::get_component_ref(component_ptr) {
+        Ok(component) => match core::serialize_component(component) {
+            Ok(mut bytes) => {
+                let len = bytes.len();
+                let ptr = bytes.as_mut_ptr();
+                *data_ptr = ptr;
+                *len_ptr = len;
+                // Leak the Vec - caller must free with wasmtime4j_component_free_serialized_data
+                std::mem::forget(bytes);
+                FFI_SUCCESS
+            }
+            Err(e) => {
+                log::error!("Failed to serialize component: {}", e);
+                FFI_ERROR
+            }
+        },
+        Err(e) => {
+            log::error!("Invalid component pointer: {}", e);
+            FFI_ERROR
+        }
+    }
+}
+
+/// Deserialize a component from bytes
+///
+/// Returns a new component pointer through out-pointer.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_deserialize(
+    engine_ptr: *mut c_void,
+    data_ptr: *const u8,
+    len: usize,
+    component_ptr_out: *mut *mut c_void,
+) -> c_int {
+    if engine_ptr.is_null() || data_ptr.is_null() || len == 0 || component_ptr_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let bytes = std::slice::from_raw_parts(data_ptr, len);
+
+    match core::get_component_engine_ref(engine_ptr) {
+        Ok(engine) => match core::deserialize_component(engine, bytes) {
+            Ok(component) => {
+                *component_ptr_out = Box::into_raw(component) as *mut c_void;
+                FFI_SUCCESS
+            }
+            Err(e) => {
+                log::error!("Failed to deserialize component: {}", e);
+                FFI_ERROR
+            }
+        },
+        Err(e) => {
+            log::error!("Invalid engine pointer: {}", e);
+            FFI_ERROR
+        }
+    }
+}
+
+/// Free serialized component data
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_free_serialized_data(
+    data_ptr: *mut u8,
+    len: usize,
+) {
+    if !data_ptr.is_null() && len > 0 {
+        let _ = Vec::from_raw_parts(data_ptr, len, len);
     }
 }

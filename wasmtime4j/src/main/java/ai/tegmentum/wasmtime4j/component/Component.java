@@ -122,6 +122,44 @@ public interface Component extends AutoCloseable {
   WitCompatibilityResult checkWitCompatibility(Component other) throws WasmException;
 
   /**
+   * Serializes this compiled component to a byte array for caching or distribution.
+   *
+   * <p>Serialized components can be stored to disk, sent over the network, or cached for faster
+   * startup times. The serialized data includes the compiled code and all necessary metadata for
+   * instantiation.
+   *
+   * @return the serialized component data
+   * @throws WasmException if serialization fails
+   * @since 1.0.0
+   */
+  byte[] serialize() throws WasmException;
+
+  /**
+   * Deserializes a component from previously serialized bytes.
+   *
+   * <p>This method can be used to quickly load a previously compiled component without going
+   * through the compilation process again. The bytes must have been created by a compatible version
+   * of the same engine.
+   *
+   * @param engine the component engine to use for deserialization
+   * @param bytes the serialized component data
+   * @return the deserialized Component
+   * @throws WasmException if deserialization fails or data is invalid
+   * @throws IllegalArgumentException if engine or bytes is null
+   * @since 1.0.0
+   */
+  static Component deserialize(final ComponentEngine engine, final byte[] bytes)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (bytes == null || bytes.length == 0) {
+      throw new IllegalArgumentException("bytes cannot be null or empty");
+    }
+    return engine.deserializeComponent(bytes);
+  }
+
+  /**
    * Checks if this component is still valid and usable.
    *
    * @return true if the component is valid, false otherwise

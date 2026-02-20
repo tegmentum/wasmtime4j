@@ -12,6 +12,7 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FuncType;
@@ -327,6 +328,26 @@ public final class PanamaInstance implements Instance {
     }
 
     return Optional.empty();
+  }
+
+  @Override
+  public Optional<Tag> getTag(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final Arena tagArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tagArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment tagPtr =
+          NATIVE_INSTANCE_BINDINGS.instanceGetTagByName(
+              nativeInstance, store.getNativeStore(), nameSegment);
+      if (tagPtr == null || tagPtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaTag(tagPtr, store.getNativeStore()));
+    }
   }
 
   @Override

@@ -240,6 +240,23 @@ public final class JniComponent {
   static native boolean nativeComponentValidate(long componentHandle, String witInterface);
 
   /**
+   * Serializes a component to a byte array.
+   *
+   * @param componentHandle the native component handle
+   * @return the serialized component bytes, or null on failure
+   */
+  static native byte[] nativeSerializeComponent(long componentHandle);
+
+  /**
+   * Deserializes a component from previously serialized bytes.
+   *
+   * @param engineHandle the native component engine handle
+   * @param serializedData the serialized component data
+   * @return native component handle or 0 on failure
+   */
+  static native long nativeDeserializeComponent(long engineHandle, byte[] serializedData);
+
+  /**
    * Cleanups unused component instances in the engine.
    *
    * @param engineHandle the native component engine handle

@@ -41,6 +41,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetGl
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeGetTag
+ * Signature: (JJLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTag
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeHasExport
  * Signature: (JLjava/lang/String;)Z
  */

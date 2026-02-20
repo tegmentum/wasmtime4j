@@ -67,6 +67,16 @@ public interface WasiContext {
   WasiContext inheritEnv();
 
   /**
+   * Configures the WASI module to inherit the host's command-line arguments.
+   *
+   * <p>This makes the host process's command-line arguments available to the WebAssembly module.
+   *
+   * @return this WasiContext for method chaining
+   * @since 1.0.0
+   */
+  WasiContext inheritArgs();
+
+  /**
    * Configures the WASI module to inherit the host's standard I/O streams.
    *
    * <p>This connects the WebAssembly module's stdin, stdout, and stderr to the host process's

@@ -407,6 +407,23 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
     // Profiling and debug
     profiling_strategy: c_int,
     native_unwind_info: c_int,
+    // Extended config options
+    cranelift_debug_verifier: c_int,
+    async_stack_size: i64,
+    memory_may_move: c_int,
+    guard_before_linear_memory: c_int,
+    parallel_compilation: c_int,
+    pooling_allocator: c_int,
+    table_lazy_init: c_int,
+    relaxed_simd_deterministic: c_int,
+    memory_init_cow: c_int,
+    async_stack_zeroing: c_int,
+    gc_support: c_int,
+    // Cranelift flags (JSON string, nullable)
+    cranelift_flags_json: *const c_char,
+    // Module version: 0=WasmtimeVersion, 1=None, 2=Custom
+    module_version_strategy: c_int,
+    module_version_custom: *const c_char,
 ) -> *mut c_void {
     let strategy_opt = parameter_conversion::convert_strategy(strategy);
     let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
@@ -427,6 +444,32 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
     };
     let memory_reservation_for_growth_opt = if memory_reservation_for_growth > 0 {
         Some(memory_reservation_for_growth as u64)
+    } else {
+        None
+    };
+
+    let async_stack_size_opt = if async_stack_size > 0 {
+        Some(async_stack_size as usize)
+    } else {
+        None
+    };
+
+    // Parse cranelift flags from JSON string
+    let cranelift_flags_vec: Vec<(String, String)> = if !cranelift_flags_json.is_null() {
+        let json_str = unsafe { std::ffi::CStr::from_ptr(cranelift_flags_json) }
+            .to_str()
+            .unwrap_or("");
+        parse_cranelift_flags_json(json_str)
+    } else {
+        Vec::new()
+    };
+
+    // Parse module version custom string
+    let module_version_custom_str: Option<String> = if !module_version_custom.is_null() {
+        unsafe { std::ffi::CStr::from_ptr(module_version_custom) }
+            .to_str()
+            .ok()
+            .map(|s| s.to_string())
     } else {
         None
     };
@@ -469,6 +512,23 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
         // Profiling and debug
         parameter_conversion::convert_profiling_strategy(profiling_strategy),
         parameter_conversion::convert_int_to_bool(native_unwind_info),
+        // Extended config
+        parameter_conversion::convert_int_to_bool(cranelift_debug_verifier),
+        async_stack_size_opt,
+        parameter_conversion::convert_int_to_bool(memory_may_move),
+        parameter_conversion::convert_int_to_bool(guard_before_linear_memory),
+        parameter_conversion::convert_int_to_bool(parallel_compilation),
+        parameter_conversion::convert_int_to_bool(pooling_allocator),
+        parameter_conversion::convert_int_to_bool(table_lazy_init),
+        parameter_conversion::convert_int_to_bool(relaxed_simd_deterministic),
+        parameter_conversion::convert_int_to_bool(memory_init_cow),
+        parameter_conversion::convert_int_to_bool(async_stack_zeroing),
+        parameter_conversion::convert_int_to_bool(gc_support),
+        // Cranelift flags
+        &cranelift_flags_vec,
+        // Module version
+        module_version_strategy,
+        module_version_custom_str.as_deref(),
     ) {
         Ok(engine) => Box::into_raw(engine) as *mut c_void,
         Err(e) => {
@@ -568,4 +628,39 @@ pub extern "C" fn wasmtime4j_panama_engine_detect_host_feature(
     } else {
         0
     }
+}
+
+/// Parse cranelift flags from a simple JSON-like string format.
+///
+/// Expected format: `{"key1":"value1","key2":"value2"}`
+/// Falls back to empty vec on parse errors.
+fn parse_cranelift_flags_json(json_str: &str) -> Vec<(String, String)> {
+    let trimmed = json_str.trim();
+    if trimmed.is_empty() || trimmed == "{}" {
+        return Vec::new();
+    }
+
+    // Simple JSON object parser for string key-value pairs
+    let inner = trimmed
+        .strip_prefix('{')
+        .and_then(|s| s.strip_suffix('}'))
+        .unwrap_or("");
+
+    if inner.is_empty() {
+        return Vec::new();
+    }
+
+    let mut flags = Vec::new();
+    for pair in inner.split(',') {
+        let pair = pair.trim();
+        if let Some((key, value)) = pair.split_once(':') {
+            let key = key.trim().trim_matches('"');
+            let value = value.trim().trim_matches('"');
+            if !key.is_empty() {
+                flags.push((key.to_string(), value.to_string()));
+            }
+        }
+    }
+
+    flags
 }

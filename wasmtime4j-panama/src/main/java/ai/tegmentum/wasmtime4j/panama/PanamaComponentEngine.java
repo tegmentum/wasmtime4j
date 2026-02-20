@@ -368,6 +368,40 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
+  public Component deserializeComponent(final byte[] bytes) throws WasmException {
+    Objects.requireNonNull(bytes, "bytes cannot be null");
+    if (bytes.length == 0) {
+      throw new IllegalArgumentException("bytes cannot be empty");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, bytes);
+      final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
+
+      final int errorCode =
+          NATIVE_BINDINGS.panamaComponentDeserialize(
+              enhancedEngineHandle, bytesSegment, bytes.length, componentOut);
+
+      if (errorCode != 0) {
+        throw new WasmException(
+            "Failed to deserialize component: native error code " + errorCode);
+      }
+
+      final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
+      if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to deserialize component: null component returned");
+      }
+
+      final String componentId = generateComponentId();
+      final PanamaComponentImpl component =
+          new PanamaComponentImpl(componentHandle, componentId, this);
+      loadedComponents.put(componentId, component);
+      return component;
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.Precompiled detectPrecompiled(final byte[] bytes) {
     if (bytes == null) {
       throw new IllegalArgumentException("bytes cannot be null");

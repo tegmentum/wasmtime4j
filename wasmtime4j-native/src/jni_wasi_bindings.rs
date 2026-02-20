@@ -600,6 +600,18 @@ pub mod jni_wasi {
     }
 
     #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeInheritArgs(
+        _env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) -> jint {
+        if context_handle == 0 {
+            return -1;
+        }
+        unsafe { wasi::wasmtime4j_wasi_context_inherit_args(context_handle as *mut c_void) }
+    }
+
+    #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeInheritStdio(
         _env: JNIEnv,
         _class: JClass,

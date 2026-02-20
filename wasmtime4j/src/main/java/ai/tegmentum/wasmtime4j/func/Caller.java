@@ -136,6 +136,19 @@ public interface Caller<T> {
   void addFuel(long fuel) throws WasmException;
 
   /**
+   * Sets the fuel level to a specific value.
+   *
+   * <p>This replaces the current fuel amount rather than adding to it. The fuel value becomes
+   * immediately effective for continued execution.
+   *
+   * @param fuel the fuel level to set
+   * @throws WasmException if fuel metering is not enabled or if setting fuel fails
+   * @throws IllegalArgumentException if fuel is negative
+   * @since 1.0.0
+   */
+  void setFuel(long fuel) throws WasmException;
+
+  /**
    * Checks if an epoch deadline has been set for the current execution.
    *
    * <p>Epoch-based interruption provides another mechanism for limiting execution time and ensuring

@@ -157,6 +157,17 @@ public final class PanamaWasiContext implements WasiContext {
   }
 
   @Override
+  public WasiContext inheritArgs() {
+    ensureNotClosed();
+
+    final int result = NATIVE_BINDINGS.wasiContextInheritArgs(contextHandle);
+    if (result != 0) {
+      throw new RuntimeException("Failed to inherit command-line arguments");
+    }
+    return this;
+  }
+
+  @Override
   public WasiContext inheritStdio() {
     ensureNotClosed();
 

@@ -528,3 +528,66 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         Ok(unsafe { jni::objects::JObject::from_raw(result_array.as_raw()) })
     })
 }
+
+/// Serialize a component to bytes
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeSerializeComponent(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+) -> jbyteArray {
+    if component_ptr == 0 {
+        log::error!("Component pointer is null");
+        return std::ptr::null_mut();
+    }
+
+    let component = unsafe { &*(component_ptr as *const Component) };
+    match component.serialize() {
+        Ok(bytes) => match env.byte_array_from_slice(&bytes) {
+            Ok(arr) => arr.into_raw(),
+            Err(e) => {
+                log::error!("Failed to create Java byte array: {:?}", e);
+                std::ptr::null_mut()
+            }
+        },
+        Err(e) => {
+            log::error!("Failed to serialize component: {:?}", e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Deserialize a component from bytes
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDeserializeComponent(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    serialized_data: jbyteArray,
+) -> jlong {
+    let data_result = env
+        .convert_byte_array(unsafe { JByteArray::from_raw(serialized_data) })
+        .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+            message: format!("Failed to convert Java byte array: {}", e),
+        });
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let data = data_result?;
+        if data.is_empty() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Serialized data cannot be empty".to_string(),
+            });
+        }
+
+        // Engine pointer is a ComponentEngine (from nativeCreateComponentEngine which creates
+        // EnhancedComponentEngine, but we need the wasmtime Engine from it)
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        let component = Component::deserialize(engine.engine(), &data)?;
+        Ok(Box::into_raw(Box::new(component)) as jlong)
+    })
+}

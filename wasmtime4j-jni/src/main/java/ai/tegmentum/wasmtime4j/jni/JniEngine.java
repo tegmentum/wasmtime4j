@@ -10,6 +10,7 @@ import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 /**
  * JNI implementation of the Engine interface.
@@ -375,7 +376,7 @@ public class JniEngine extends JniResource implements Engine {
 
     final long handle =
         nativeCreateEngineWithExtendedConfig(
-            0, // strategy (0 = auto/cranelift)
+            config.getStrategy().ordinal(),
             optLevel,
             config.isDebugInfo(),
             config.isWasmThreads(),
@@ -385,7 +386,7 @@ public class JniEngine extends JniResource implements Engine {
             config.isWasmMultiValue(),
             config.isConsumeFuel(),
             maxMemoryPages,
-            (int) config.getMaxWasmStack(),
+            config.getMaxWasmStack() > 0 ? (int) config.getMaxWasmStack() : 0,
             config.isEpochInterruption(),
             config.getInstancePoolSize(),
             config.isAsyncSupport(),
@@ -403,7 +404,7 @@ public class JniEngine extends JniResource implements Engine {
             config.isWasmMultiMemory(),
             config.isWasmMemory64(),
             config.isWasmExtendedConstExpressions(),
-            false, // wasmComponentModel - handled separately
+            config.isWasmComponentModel(),
             config.isCoredumpOnTrap(),
             config.isCraneliftNanCanonicalization(),
             // Experimental features
@@ -411,7 +412,24 @@ public class JniEngine extends JniResource implements Engine {
             config.isWasmWideArithmetic(),
             // Profiling and debug
             config.getProfilingStrategy().ordinal(),
-            config.isNativeUnwindInfo());
+            config.isNativeUnwindInfo(),
+            // Extended config
+            config.isCraneliftDebugVerifier(),
+            config.getAsyncStackSize(),
+            config.isMemoryMayMove(),
+            config.isGuardBeforeLinearMemory(),
+            config.isParallelCompilation(),
+            config.isPoolingAllocatorEnabled(),
+            config.isTableLazyInit(),
+            config.isRelaxedSimdDeterministic(),
+            config.isMemoryInitCow(),
+            config.isAsyncStackZeroing(),
+            config.isGcSupport(),
+            // Cranelift flags as JSON string
+            craneliftSettingsToJson(config.getCraneliftSettings()),
+            // Module version strategy: 0=WasmtimeVersion, 1=None, 2=Custom
+            config.getModuleVersionStrategy().ordinal(),
+            config.getModuleVersionCustom());
 
     if (handle == 0) {
       throw new WasmException("Failed to create engine with configuration");
@@ -452,7 +470,21 @@ public class JniEngine extends JniResource implements Engine {
       boolean wasmCustomPageSizes,
       boolean wasmWideArithmetic,
       int profilingStrategy,
-      boolean nativeUnwindInfo);
+      boolean nativeUnwindInfo,
+      boolean craneliftDebugVerifier,
+      long asyncStackSize,
+      boolean memoryMayMove,
+      boolean guardBeforeLinearMemory,
+      boolean parallelCompilation,
+      boolean poolingAllocator,
+      boolean tableLazyInit,
+      boolean relaxedSimdDeterministic,
+      boolean memoryInitCow,
+      boolean asyncStackZeroing,
+      boolean gcSupport,
+      String craneliftFlagsJson,
+      int moduleVersionStrategy,
+      String moduleVersionCustom);
 
   /**
    * Clears the native handle registries used for memory and store validation.
@@ -471,4 +503,27 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   private static native int nativeClearHandleRegistries();
+
+  /**
+   * Converts a cranelift settings map to a simple JSON object string.
+   *
+   * @param settings the cranelift settings map (may be null or empty)
+   * @return a JSON string like {"key":"value"}, or null if empty
+   */
+  private static String craneliftSettingsToJson(final Map<String, String> settings) {
+    if (settings == null || settings.isEmpty()) {
+      return null;
+    }
+    final StringBuilder sb = new StringBuilder("{");
+    boolean first = true;
+    for (final Map.Entry<String, String> entry : settings.entrySet()) {
+      if (!first) {
+        sb.append(',');
+      }
+      sb.append('"').append(entry.getKey()).append("\":\"").append(entry.getValue()).append('"');
+      first = false;
+    }
+    sb.append('}');
+    return sb.toString();
+  }
 }

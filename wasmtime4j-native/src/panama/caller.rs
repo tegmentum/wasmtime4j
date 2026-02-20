@@ -51,6 +51,23 @@ pub extern "C" fn wasmtime4j_panama_caller_add_fuel(
     })
 }
 
+/// Set fuel to a specific value for the caller (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_set_fuel(
+    caller_ptr: *mut c_void,
+    fuel: c_ulong,
+) -> c_int {
+    if caller_ptr.is_null() {
+        return -1; // Error: null pointer
+    }
+
+    ffi_utils::ffi_try_code(|| {
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        core::caller_set_fuel(caller, fuel)?;
+        Ok(()) // Success
+    })
+}
+
 /// Set epoch deadline for the caller (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_caller_set_epoch_deadline(

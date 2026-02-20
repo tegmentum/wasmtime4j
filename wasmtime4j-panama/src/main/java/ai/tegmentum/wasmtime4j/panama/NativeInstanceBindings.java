@@ -631,6 +631,23 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * Gets a tag export by name from an instance.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the tag export
+   * @return tag segment pointer or null if not found
+   */
+  public MemorySegment instanceGetTagByName(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_instance_get_tag_by_name", MemorySegment.class, instancePtr, storePtr, name);
+  }
+
+  /**
    * Gets a global export by name from an instance, wrapped for linker use.
    *
    * <p>Unlike {@link #instanceGetGlobalByName}, this returns a properly wrapped Global struct that
@@ -682,6 +699,18 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   public int callerAddFuel(final MemorySegment callerPtr, final long fuel) {
     validatePointer(callerPtr, "callerPtr");
     return callNativeFunction("wasmtime4j_panama_caller_add_fuel", Integer.class, callerPtr, fuel);
+  }
+
+  /**
+   * Sets the fuel level to a specific value for the caller.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param fuel the fuel level to set
+   * @return 0 on success, negative error code on failure
+   */
+  public int callerSetFuel(final MemorySegment callerPtr, final long fuel) {
+    validatePointer(callerPtr, "callerPtr");
+    return callNativeFunction("wasmtime4j_panama_caller_set_fuel", Integer.class, callerPtr, fuel);
   }
 
   /**

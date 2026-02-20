@@ -161,6 +161,22 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeC
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeSerializeComponent
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeSerializeComponent
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeDeserializeComponent
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDeserializeComponent
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
  * Method:    nativeComponentEngineCleanupInstances
  * Signature: (J)I
  */

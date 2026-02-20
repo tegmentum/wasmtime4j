@@ -764,8 +764,7 @@ impl EngineBuilder {
 
     /// Set maximum stack size in bytes
     pub fn max_stack_size(mut self, size: usize) -> Self {
-        // Note: Wasmtime doesn't expose direct stack size configuration
-        // This is tracked for validation in the wrapper layer
+        self.config.max_wasm_stack(size);
         self.max_stack_size = Some(size);
         self
     }
@@ -911,6 +910,22 @@ impl EngineBuilder {
     pub fn cranelift_regalloc_algorithm(mut self, algorithm: RegallocAlgorithm) -> Self {
         self.config.cranelift_regalloc_algorithm(algorithm.clone());
         self.cranelift_regalloc_algorithm = Some(algorithm);
+        self
+    }
+
+    /// Set an arbitrary Cranelift compiler flag
+    ///
+    /// This allows setting any Cranelift flag by name and value string.
+    /// For example: `cranelift_flag_set("opt_level", "speed_and_size")`.
+    ///
+    /// # Arguments
+    /// * `name` - The flag name
+    /// * `value` - The flag value
+    pub fn cranelift_flag_set(mut self, name: &str, value: &str) -> Self {
+        // Safety: name and value are valid string references
+        unsafe {
+            self.config.cranelift_flag_set(name, value);
+        }
         self
     }
 

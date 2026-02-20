@@ -133,7 +133,21 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT, // wasm_custom_page_sizes
             ValueLayout.JAVA_INT, // wasm_wide_arithmetic
             ValueLayout.JAVA_INT, // profiling_strategy
-            ValueLayout.JAVA_INT)); // native_unwind_info
+            ValueLayout.JAVA_INT, // native_unwind_info
+            ValueLayout.JAVA_INT, // cranelift_debug_verifier
+            ValueLayout.JAVA_LONG, // async_stack_size
+            ValueLayout.JAVA_INT, // memory_may_move
+            ValueLayout.JAVA_INT, // guard_before_linear_memory
+            ValueLayout.JAVA_INT, // parallel_compilation
+            ValueLayout.JAVA_INT, // pooling_allocator
+            ValueLayout.JAVA_INT, // table_lazy_init
+            ValueLayout.JAVA_INT, // relaxed_simd_deterministic
+            ValueLayout.JAVA_INT, // memory_init_cow
+            ValueLayout.JAVA_INT, // async_stack_zeroing
+            ValueLayout.JAVA_INT, // gc_support
+            ValueLayout.ADDRESS, // cranelift_flags_json (nullable C string)
+            ValueLayout.JAVA_INT, // module_version_strategy
+            ValueLayout.ADDRESS)); // module_version_custom (nullable C string)
 
     addFunctionBinding("wasmtime4j_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
@@ -527,8 +541,21 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         return null;
       }
 
-      int strategy = 0; // default Cranelift
-      int optLevel = 2; // default Speed
+      int strategy = config.getStrategy().ordinal();
+      int optLevel;
+      switch (config.getOptimizationLevel()) {
+        case NONE:
+          optLevel = 0;
+          break;
+        case SPEED:
+          optLevel = 1;
+          break;
+        case SPEED_AND_SIZE:
+          optLevel = 2;
+          break;
+        default:
+          optLevel = 1;
+      }
       int debugInfo = config.isDebugInfo() ? 1 : 0;
       int wasmThreads = config.isWasmThreads() ? 1 : 0;
       int wasmSimd = config.isWasmSimd() ? 1 : 0;
@@ -536,10 +563,11 @@ public final class NativeEngineBindings extends NativeBindingsBase {
       int wasmBulkMemory = config.isWasmBulkMemory() ? 1 : 0;
       int wasmMultiValue = config.isWasmMultiValue() ? 1 : 0;
       int fuelEnabled = config.isConsumeFuel() ? 1 : 0;
-      int maxMemoryPages = 0; // use default
-      int maxStackSize = 0; // use default
+      long maxMemoryBytes = config.getMaxMemoryPerInstance();
+      int maxMemoryPages = maxMemoryBytes > 0 ? (int) (maxMemoryBytes / 65536L) : 0;
+      int maxStackSize = config.getMaxWasmStack() > 0 ? (int) config.getMaxWasmStack() : 0;
       int epochInterruption = config.isEpochInterruption() ? 1 : 0;
-      int maxInstances = 0; // use default
+      int maxInstances = config.getInstancePoolSize();
       int asyncSupport = config.isAsyncSupport() ? 1 : 0;
       int wasmGc = config.isWasmGc() ? 1 : 0;
       int wasmFunctionReferences = config.isWasmFunctionReferences() ? 1 : 0;
@@ -552,62 +580,124 @@ public final class NativeEngineBindings extends NativeBindingsBase {
       int wasmMultiMemory = config.isWasmMultiMemory() ? 1 : 0;
       int wasmMemory64 = config.isWasmMemory64() ? 1 : 0;
       int wasmExtendedConst = config.isWasmExtendedConstExpressions() ? 1 : 0;
-      int wasmComponentModel = 0; // Component model handled separately
+      int wasmComponentModel = config.isWasmComponentModel() ? 1 : 0;
       int coredumpOnTrap = config.isCoredumpOnTrap() ? 1 : 0;
       int craneliftNanCanonicalization = config.isCraneliftNanCanonicalization() ? 1 : 0;
       int wasmCustomPageSizes = config.isWasmCustomPageSizes() ? 1 : 0;
       int wasmWideArithmetic = config.isWasmWideArithmetic() ? 1 : 0;
       int profilingStrategy = config.getProfilingStrategy().ordinal();
       int nativeUnwindInfo = config.isNativeUnwindInfo() ? 1 : 0;
+      int craneliftDebugVerifier = config.isCraneliftDebugVerifier() ? 1 : 0;
+      long asyncStackSize = config.getAsyncStackSize();
+      int memoryMayMove = config.isMemoryMayMove() ? 1 : 0;
+      int guardBeforeLinearMemory = config.isGuardBeforeLinearMemory() ? 1 : 0;
+      int parallelCompilation = config.isParallelCompilation() ? 1 : 0;
+      int poolingAllocator = config.isPoolingAllocatorEnabled() ? 1 : 0;
+      int tableLazyInit = config.isTableLazyInit() ? 1 : 0;
+      int relaxedSimdDeterministic = config.isRelaxedSimdDeterministic() ? 1 : 0;
+      int memoryInitCow = config.isMemoryInitCow() ? 1 : 0;
+      int asyncStackZeroing = config.isAsyncStackZeroing() ? 1 : 0;
+      int gcSupportVal = config.isGcSupport() ? 1 : 0;
 
-      MemorySegment result =
-          callNativeFunction(
-              "wasmtime4j_panama_engine_create_with_extended_config",
-              MemorySegment.class,
-              strategy,
-              optLevel,
-              debugInfo,
-              wasmThreads,
-              wasmSimd,
-              wasmReferenceTypes,
-              wasmBulkMemory,
-              wasmMultiValue,
-              fuelEnabled,
-              maxMemoryPages,
-              maxStackSize,
-              epochInterruption,
-              maxInstances,
-              asyncSupport,
-              wasmGc,
-              wasmFunctionReferences,
-              wasmExceptions,
-              memoryReservation,
-              memoryGuardSize,
-              memoryReservationForGrowth,
-              wasmTailCall,
-              wasmRelaxedSimd,
-              wasmMultiMemory,
-              wasmMemory64,
-              wasmExtendedConst,
-              wasmComponentModel,
-              coredumpOnTrap,
-              craneliftNanCanonicalization,
-              wasmCustomPageSizes,
-              wasmWideArithmetic,
-              profilingStrategy,
-              nativeUnwindInfo);
+      // Cranelift flags as JSON string and module version strategy
+      String craneliftFlagsJson = craneliftSettingsToJson(config.getCraneliftSettings());
+      int moduleVersionStrategyVal = config.getModuleVersionStrategy().ordinal();
+      String moduleVersionCustom = config.getModuleVersionCustom();
 
-      if (result == null || result.equals(MemorySegment.NULL)) {
-        LOGGER.warning(
-            "Engine creation with config returned null - this may indicate symbol lookup failure");
-      } else {
-        LOGGER.fine("Engine created with config successfully: " + result);
+      try (Arena arena = Arena.ofConfined()) {
+        MemorySegment craneliftFlagsSeg = (craneliftFlagsJson != null)
+            ? arena.allocateFrom(craneliftFlagsJson) : MemorySegment.NULL;
+        MemorySegment moduleVersionCustomSeg = (moduleVersionCustom != null)
+            ? arena.allocateFrom(moduleVersionCustom) : MemorySegment.NULL;
+
+        MemorySegment result =
+            callNativeFunction(
+                "wasmtime4j_panama_engine_create_with_extended_config",
+                MemorySegment.class,
+                strategy,
+                optLevel,
+                debugInfo,
+                wasmThreads,
+                wasmSimd,
+                wasmReferenceTypes,
+                wasmBulkMemory,
+                wasmMultiValue,
+                fuelEnabled,
+                maxMemoryPages,
+                maxStackSize,
+                epochInterruption,
+                maxInstances,
+                asyncSupport,
+                wasmGc,
+                wasmFunctionReferences,
+                wasmExceptions,
+                memoryReservation,
+                memoryGuardSize,
+                memoryReservationForGrowth,
+                wasmTailCall,
+                wasmRelaxedSimd,
+                wasmMultiMemory,
+                wasmMemory64,
+                wasmExtendedConst,
+                wasmComponentModel,
+                coredumpOnTrap,
+                craneliftNanCanonicalization,
+                wasmCustomPageSizes,
+                wasmWideArithmetic,
+                profilingStrategy,
+                nativeUnwindInfo,
+                craneliftDebugVerifier,
+                asyncStackSize,
+                memoryMayMove,
+                guardBeforeLinearMemory,
+                parallelCompilation,
+                poolingAllocator,
+                tableLazyInit,
+                relaxedSimdDeterministic,
+                memoryInitCow,
+                asyncStackZeroing,
+                gcSupportVal,
+                craneliftFlagsSeg,
+                moduleVersionStrategyVal,
+                moduleVersionCustomSeg);
+
+        if (result == null || result.equals(MemorySegment.NULL)) {
+          LOGGER.warning(
+              "Engine creation with config returned null"
+                  + " - this may indicate symbol lookup failure");
+        } else {
+          LOGGER.fine("Engine created with config successfully: " + result);
+        }
+        return result;
       }
-      return result;
     } catch (Exception e) {
       LOGGER.severe("Exception during engine creation with config: " + e.getMessage());
       return null;
     }
+  }
+
+  /**
+   * Converts a cranelift settings map to a simple JSON object string.
+   *
+   * @param settings the cranelift settings map (may be null or empty)
+   * @return a JSON string like {"key":"value"}, or null if empty
+   */
+  private static String craneliftSettingsToJson(
+      final java.util.Map<String, String> settings) {
+    if (settings == null || settings.isEmpty()) {
+      return null;
+    }
+    final StringBuilder sb = new StringBuilder("{");
+    boolean first = true;
+    for (final java.util.Map.Entry<String, String> entry : settings.entrySet()) {
+      if (!first) {
+        sb.append(',');
+      }
+      sb.append('"').append(entry.getKey()).append("\":\"").append(entry.getValue()).append('"');
+      first = false;
+    }
+    sb.append('}');
+    return sb.toString();
   }
 
   /**

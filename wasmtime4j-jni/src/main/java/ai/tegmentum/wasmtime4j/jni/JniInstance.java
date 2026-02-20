@@ -11,6 +11,7 @@ import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
@@ -378,6 +379,25 @@ public final class JniInstance extends JniResource implements Instance {
     } catch (final RuntimeException e) {
       LOGGER.warning("Failed to get global by index " + index + ": " + e.getMessage());
       return Optional.empty();
+    }
+  }
+
+  @Override
+  public Optional<Tag> getTag(final String name) {
+    Validation.requireNonBlank(name, "name");
+    ensureNotClosed();
+
+    try {
+      final long tagHandle =
+          nativeGetTag(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
+      if (tagHandle == 0) {
+        return Optional.empty();
+      }
+      return Optional.of(new JniTag(tagHandle, ((JniStore) store).getNativeHandle()));
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting tag: " + name, e);
     }
   }
 
@@ -794,6 +814,8 @@ public final class JniInstance extends JniResource implements Instance {
    * @return native global handle or 0 if not found
    */
   private static native long nativeGetGlobal(long instanceHandle, long storeHandle, String name);
+
+  private static native long nativeGetTag(long instanceHandle, long storeHandle, String name);
 
   /**
    * Checks if an instance has an export with the given name.

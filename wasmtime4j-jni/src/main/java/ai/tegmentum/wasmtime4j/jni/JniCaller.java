@@ -233,6 +233,19 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
+  public void setFuel(final long fuel) throws WasmException {
+    if (fuel < 0) {
+      throw new IllegalArgumentException("Fuel amount cannot be negative");
+    }
+
+    try {
+      nativeSetFuel(callerHandle, fuel);
+    } catch (Exception e) {
+      throw new WasmException("Failed to set fuel: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public boolean hasEpochDeadline() {
     try {
       return nativeHasEpochDeadline(callerHandle);
@@ -358,6 +371,8 @@ final class JniCaller<T> implements Caller<T> {
    * @param fuel the amount of fuel to add
    */
   private static native void nativeAddFuel(long callerHandle, long fuel);
+
+  private static native void nativeSetFuel(long callerHandle, long fuel);
 
   /**
    * Checks if an epoch deadline is set.

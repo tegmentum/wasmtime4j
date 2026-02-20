@@ -183,6 +183,24 @@ public final class JniComponentImpl implements Component {
   }
 
   @Override
+  public byte[] serialize() throws WasmException {
+    ensureValid();
+
+    try {
+      final byte[] serialized =
+          JniComponent.nativeSerializeComponent(nativeComponent.getNativeHandle());
+      if (serialized == null) {
+        throw new WasmException("Failed to serialize component: native call returned null");
+      }
+      return serialized;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to serialize component", e);
+    }
+  }
+
+  @Override
   public boolean isValid() {
     return !nativeComponent.isClosed() && nativeComponent.isValid();
   }

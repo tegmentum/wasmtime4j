@@ -769,6 +769,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTab
     })
 }
 
+/// Get a tag export from the instance
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTag(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_handle: jlong,
+    store_handle: jlong,
+    name: JString,
+) -> jlong {
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+        // Get the tag export
+        let tag_opt = instance.get_tag(store, &name_str)?;
+
+        match tag_opt {
+            Some(tag) => Ok(Box::into_raw(Box::new(tag)) as jlong),
+            None => Ok(0), // Return 0 for not found
+        }
+    })
+}
+
 /// Check if an instance has a specific export
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeHasExport(

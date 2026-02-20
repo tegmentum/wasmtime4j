@@ -83,7 +83,73 @@ public interface Instance extends Closeable {
    * @since 1.1.0
    */
   default Optional<TypedFunc> getTypedFunc(final String name, final WasmValueType... paramTypes) {
-    return Optional.empty();
+    if (name == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    if (paramTypes == null) {
+      throw new IllegalArgumentException("Parameter types cannot be null");
+    }
+
+    final Optional<WasmFunction> funcOpt = getFunction(name);
+    if (funcOpt.isEmpty()) {
+      return Optional.empty();
+    }
+
+    final WasmFunction func = funcOpt.get();
+    final ai.tegmentum.wasmtime4j.type.FunctionType funcType = func.getFunctionType();
+    final WasmValueType[] actualParams = funcType.getParamTypes();
+
+    // Validate parameter count and types match
+    if (actualParams.length != paramTypes.length) {
+      return Optional.empty();
+    }
+    for (int i = 0; i < actualParams.length; i++) {
+      if (actualParams[i] != paramTypes[i]) {
+        return Optional.empty();
+      }
+    }
+
+    // Build signature string: params->results (e.g., "ii->i")
+    final StringBuilder sig = new StringBuilder();
+    for (final WasmValueType pt : actualParams) {
+      sig.append(wasmTypeToSignatureChar(pt));
+    }
+    sig.append("->");
+    final WasmValueType[] resultTypes = funcType.getReturnTypes();
+    if (resultTypes.length == 0) {
+      sig.append("v");
+    } else {
+      for (final WasmValueType rt : resultTypes) {
+        sig.append(wasmTypeToSignatureChar(rt));
+      }
+    }
+
+    if (!(func instanceof TypedFunc.TypedFunctionSupport)) {
+      return Optional.empty();
+    }
+
+    return Optional.of(TypedFunc.create(func, sig.toString()));
+  }
+
+  /**
+   * Converts a WasmValueType to its signature character representation.
+   *
+   * @param type the value type
+   * @return the signature character
+   */
+  private static char wasmTypeToSignatureChar(final WasmValueType type) {
+    switch (type) {
+      case I32:
+        return 'i';
+      case I64:
+        return 'I';
+      case F32:
+        return 'f';
+      case F64:
+        return 'F';
+      default:
+        throw new IllegalArgumentException("Unsupported type for typed functions: " + type);
+    }
   }
 
   /**

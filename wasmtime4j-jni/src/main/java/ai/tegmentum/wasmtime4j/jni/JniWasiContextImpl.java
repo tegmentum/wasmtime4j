@@ -115,6 +115,24 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   }
 
   @Override
+  public WasiContext inheritArgs() {
+    ensureNotClosed();
+
+    try {
+      final int result = nativeInheritArgs(nativeHandle);
+      if (result != 0) {
+        throw new RuntimeException("Failed to inherit command-line arguments");
+      }
+      return this;
+    } catch (Exception e) {
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      }
+      throw new RuntimeException("Failed to inherit command-line arguments", e);
+    }
+  }
+
+  @Override
   public WasiContext inheritStdio() {
     ensureNotClosed();
 
@@ -503,6 +521,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   private static native int nativeSetEnv(long contextHandle, String key, String value);
 
   private static native int nativeInheritEnv(long contextHandle);
+
+  private static native int nativeInheritArgs(long contextHandle);
 
   private static native int nativeInheritStdio(long contextHandle);
 

@@ -20,7 +20,7 @@ use tokio::time::timeout;
 use wasmtime::component::{Component, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
+use wasmtime_wasi::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use crate::async_runtime::get_runtime_handle;
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -115,6 +115,14 @@ pub struct WasiPreview2Config {
     pub capture_stderr: bool,
     /// Stdin bytes to provide to component
     pub stdin_bytes: Option<Vec<u8>>,
+    /// Command-line arguments
+    pub arguments: Vec<String>,
+    /// Environment variables
+    pub environment: Vec<(String, String)>,
+    /// Whether to inherit environment from host
+    pub inherit_env: bool,
+    /// Preopened directories (host_path, guest_path)
+    pub preopened_dirs: Vec<(String, String)>,
 }
 
 /// WASI stream for async I/O
@@ -437,6 +445,10 @@ impl Default for WasiPreview2Config {
             capture_stdout: false,
             capture_stderr: false,
             stdin_bytes: None,
+            arguments: Vec::new(),
+            environment: Vec::new(),
+            inherit_env: false,
+            preopened_dirs: Vec::new(),
         }
     }
 }
@@ -545,6 +557,41 @@ impl WasiPreview2Context {
         builder.allow_tcp(self.config.enable_tcp);
         builder.allow_udp(self.config.enable_udp);
         builder.allow_ip_name_lookup(self.config.enable_ip_name_lookup);
+
+        // Configure arguments
+        if !self.config.arguments.is_empty() {
+            builder.args(&self.config.arguments);
+        }
+
+        // Configure environment variables
+        if self.config.inherit_env {
+            builder.inherit_env();
+        } else if !self.config.environment.is_empty() {
+            let env_pairs: Vec<(&str, &str)> = self
+                .config
+                .environment
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_str()))
+                .collect();
+            builder.envs(&env_pairs);
+        }
+
+        // Configure preopened directories
+        for (host_path, guest_path) in &self.config.preopened_dirs {
+            builder
+                .preopened_dir(
+                    host_path,
+                    guest_path,
+                    DirPerms::all(),
+                    FilePerms::all(),
+                )
+                .map_err(|e| WasmtimeError::Wasi {
+                    message: format!(
+                        "Failed to preopen directory '{}' as '{}': {}",
+                        host_path, guest_path, e
+                    ),
+                })?;
+        }
 
         let wasi_ctx = builder.build();
         let resource_table = ResourceTable::new();

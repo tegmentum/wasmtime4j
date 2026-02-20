@@ -146,10 +146,10 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIncremen
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeCreateEngineWithExtendedConfig
- * Signature: (IIZZZZZZZIIZIZZZZJJJZZZZZZZZZZIZ)J
+ * Signature: (IIZZZZZZZIIZIZZZZJJJZZZZZZZZZZIZZJZZZZZZZZZLjava/lang/String;ILjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithExtendedConfig
-  (JNIEnv *, jclass, jint, jint, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jint, jboolean, jint, jboolean, jboolean, jboolean, jboolean, jlong, jlong, jlong, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jboolean);
+  (JNIEnv *, jclass, jint, jint, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jint, jboolean, jint, jboolean, jboolean, jboolean, jboolean, jlong, jlong, jlong, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jboolean, jboolean, jlong, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jboolean, jstring, jint, jstring);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine

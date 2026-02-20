@@ -228,6 +228,17 @@ public final class NativeWasiBindings extends NativeBindingsBase {
     return callNativeFunction("wasmtime4j_wasi_context_inherit_env", Integer.class, contextHandle);
   }
 
+  /**
+   * Inherits host command-line arguments.
+   *
+   * @param contextHandle the WASI context handle
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextInheritArgs(final MemorySegment contextHandle) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction("wasmtime4j_wasi_context_inherit_args", Integer.class, contextHandle);
+  }
+
   // ===== WASI Context Stdio =====
 
   /**

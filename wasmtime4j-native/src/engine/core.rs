@@ -111,6 +111,23 @@ pub fn create_engine_with_extended_config(
     // Profiling and debug
     profiling_strategy: Option<wasmtime::ProfilingStrategy>,
     native_unwind_info: bool,
+    // Extended config options
+    cranelift_debug_verifier: bool,
+    async_stack_size: Option<usize>,
+    memory_may_move: bool,
+    guard_before_linear_memory: bool,
+    parallel_compilation: bool,
+    pooling_allocator: bool,
+    table_lazy_init: bool,
+    relaxed_simd_deterministic: bool,
+    memory_init_cow: bool,
+    async_stack_zeroing: bool,
+    gc_support: bool,
+    // Cranelift flags (key=value pairs)
+    cranelift_flags: &[(String, String)],
+    // Module version strategy: 0=WasmtimeVersion, 1=None, 2=Custom
+    module_version_strategy: i32,
+    module_version_custom: Option<&str>,
 ) -> WasmtimeResult<Box<Engine>> {
     let mut builder = Engine::builder();
 
@@ -147,7 +164,17 @@ pub fn create_engine_with_extended_config(
         .cranelift_nan_canonicalization(cranelift_nan_canonicalization)
         // Experimental features
         .wasm_custom_page_sizes(wasm_custom_page_sizes)
-        .wasm_wide_arithmetic(wasm_wide_arithmetic);
+        .wasm_wide_arithmetic(wasm_wide_arithmetic)
+        // Extended config
+        .cranelift_debug_verifier(cranelift_debug_verifier)
+        .memory_may_move(memory_may_move)
+        .guard_before_linear_memory(guard_before_linear_memory)
+        .parallel_compilation(parallel_compilation)
+        .table_lazy_init(table_lazy_init)
+        .relaxed_simd_deterministic(relaxed_simd_deterministic)
+        .memory_init_cow(memory_init_cow)
+        .async_stack_zeroing(async_stack_zeroing)
+        .gc_support(gc_support);
 
     if let Some(pages) = max_memory_pages {
         builder = builder.max_memory_pages(pages);
@@ -180,6 +207,41 @@ pub fn create_engine_with_extended_config(
     }
 
     builder = builder.native_unwind_info(native_unwind_info);
+
+    // Async stack size
+    if let Some(async_size) = async_stack_size {
+        builder = builder.async_stack_size(async_size);
+    }
+
+    // Pooling allocator
+    if pooling_allocator {
+        builder = builder.allocation_strategy(
+            wasmtime::InstanceAllocationStrategy::Pooling(Default::default()),
+        );
+    }
+
+    // Cranelift flags
+    for (key, value) in cranelift_flags {
+        builder = builder.cranelift_flag_set(key, value);
+    }
+
+    // Module version strategy
+    match module_version_strategy {
+        1 => {
+            builder = builder
+                .module_version_strategy(wasmtime::ModuleVersionStrategy::None);
+        }
+        2 => {
+            if let Some(custom) = module_version_custom {
+                builder = builder.module_version_strategy(
+                    wasmtime::ModuleVersionStrategy::Custom(custom.to_string()),
+                );
+            }
+        }
+        _ => {
+            // 0 or default: WasmtimeVersion (the default, no action needed)
+        }
+    }
 
     builder.build().map(Box::new)
 }

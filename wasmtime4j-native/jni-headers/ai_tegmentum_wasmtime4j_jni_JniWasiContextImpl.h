@@ -33,6 +33,14 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeInheritArgs
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeInheritArgs
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
  * Method:    nativeInheritStdio
  * Signature: (J)I
  */
