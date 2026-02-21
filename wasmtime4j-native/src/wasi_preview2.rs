@@ -117,6 +117,8 @@ pub struct WasiPreview2Config {
     pub stdin_bytes: Option<Vec<u8>>,
     /// Command-line arguments
     pub arguments: Vec<String>,
+    /// Whether to inherit arguments from host
+    pub inherit_args: bool,
     /// Environment variables
     pub environment: Vec<(String, String)>,
     /// Whether to inherit environment from host
@@ -468,6 +470,7 @@ impl Default for WasiPreview2Config {
             capture_stderr: false,
             stdin_bytes: None,
             arguments: Vec::new(),
+            inherit_args: false,
             environment: Vec::new(),
             inherit_env: false,
             inherit_stdio: false,
@@ -647,7 +650,9 @@ impl WasiPreview2Context {
         }
 
         // Configure arguments
-        if !self.config.arguments.is_empty() {
+        if self.config.inherit_args {
+            builder.inherit_args();
+        } else if !self.config.arguments.is_empty() {
             builder.args(&self.config.arguments);
         }
 

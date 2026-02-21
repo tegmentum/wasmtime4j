@@ -104,6 +104,16 @@ public final class EngineConfig {
   private boolean wasmComponentModelGc = false;
   private boolean wasmComponentModelThreading = false;
 
+  // Platform-specific configuration
+  private boolean macosUseMachPorts = true;
+
+  // Backtrace and debugging configuration
+  private boolean wasmBacktrace = true;
+  private boolean generateAddressMap = true;
+
+  // Shared memory (independent of wasm threads)
+  private boolean sharedMemory = false;
+
   // Cranelift proof-carrying code validation
   private boolean craneliftPcc = false;
 
@@ -1714,6 +1724,115 @@ public final class EngineConfig {
   }
 
   /**
+   * Configures whether to use Mach ports for trap handling on macOS.
+   *
+   * <p>When enabled, Wasmtime uses Mach exception ports instead of signal handlers for catching
+   * out-of-bounds memory accesses and similar traps on macOS. This is generally more reliable.
+   *
+   * <p>Default: {@code true}
+   *
+   * @param enable true to use Mach ports on macOS
+   * @return this config for chaining
+   * @since 1.1.0
+   */
+  public EngineConfig macosUseMachPorts(final boolean enable) {
+    this.macosUseMachPorts = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether Mach ports are used for trap handling on macOS.
+   *
+   * @return true if Mach ports are enabled
+   * @since 1.1.0
+   */
+  public boolean isMacosUseMachPorts() {
+    return macosUseMachPorts;
+  }
+
+  /**
+   * Configures whether WebAssembly backtraces are collected on traps and errors.
+   *
+   * <p>When enabled, Wasmtime collects stack trace information when a trap occurs.
+   * This is separate from {@link #backtraceDetails} which controls the level of detail.
+   *
+   * <p>Default: {@code true}
+   *
+   * @param enable true to enable backtrace collection
+   * @return this config for chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmBacktrace(final boolean enable) {
+    this.wasmBacktrace = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether WebAssembly backtrace collection is enabled.
+   *
+   * @return true if backtrace collection is enabled
+   * @since 1.1.0
+   */
+  public boolean isWasmBacktrace() {
+    return wasmBacktrace;
+  }
+
+  /**
+   * Configures whether to generate address map information for compiled code.
+   *
+   * <p>Address maps provide mapping from native code addresses back to WebAssembly bytecode
+   * offsets, which is useful for debugging and profiling. Disabling this can reduce compiled
+   * module size.
+   *
+   * <p>Default: {@code true}
+   *
+   * @param enable true to generate address maps
+   * @return this config for chaining
+   * @since 1.1.0
+   */
+  public EngineConfig generateAddressMap(final boolean enable) {
+    this.generateAddressMap = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether address map generation is enabled.
+   *
+   * @return true if address maps are generated
+   * @since 1.1.0
+   */
+  public boolean isGenerateAddressMap() {
+    return generateAddressMap;
+  }
+
+  /**
+   * Configures whether shared memory is enabled.
+   *
+   * <p>This is independent of {@link #wasmThreads} and controls whether the {@code shared}
+   * attribute is allowed on memory definitions. Shared memory enables atomic operations.
+   *
+   * <p>Default: {@code false}
+   *
+   * @param enable true to enable shared memory
+   * @return this config for chaining
+   * @since 1.1.0
+   */
+  public EngineConfig sharedMemory(final boolean enable) {
+    this.sharedMemory = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether shared memory is enabled.
+   *
+   * @return true if shared memory is enabled
+   * @since 1.1.0
+   */
+  public boolean isSharedMemory() {
+    return sharedMemory;
+  }
+
+  /**
    * Sets the GC collector implementation.
    *
    * <p>Valid values are "auto", "deferred_reference_counting", "null".
@@ -1854,6 +1973,10 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "craneliftDebugVerifier", craneliftDebugVerifier);
     first = appendJsonBool(sb, first, "craneliftNanCanonicalization", craneliftNanCanonicalization);
     first = appendJsonBool(sb, first, "craneliftPcc", craneliftPcc);
+    first = appendJsonBool(sb, first, "macosUseMachPorts", macosUseMachPorts);
+    first = appendJsonBool(sb, first, "wasmBacktrace", wasmBacktrace);
+    first = appendJsonBool(sb, first, "generateAddressMap", generateAddressMap);
+    first = appendJsonBool(sb, first, "sharedMemory", sharedMemory);
     if (regallocAlgorithm != null) {
       first = appendJsonField(sb, first, "craneliftRegallocAlgorithm",
           regallocAlgorithm == ai.tegmentum.wasmtime4j.config.RegallocAlgorithm.SINGLE_PASS
@@ -1975,10 +2098,14 @@ public final class EngineConfig {
     }
   }
 
+  @SuppressWarnings("deprecation")
   private static String strategyToString(final CompilationStrategy strategy) {
     switch (strategy) {
+      case CRANELIFT:
       case PERFORMANCE:
         return "cranelift";
+      case WINCH:
+        return "winch";
       default:
         return "auto";
     }

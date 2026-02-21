@@ -237,6 +237,25 @@ public interface ComponentLinker<T> extends Closeable {
   ComponentInstancePre instantiatePre(Component component) throws WasmException;
 
   /**
+   * Asynchronously instantiates a component with all defined imports resolved.
+   *
+   * <p>This is the async variant of {@link #instantiate(Store, Component)}. It requires the engine
+   * to have been created with async support enabled.
+   *
+   * @param store the store for the new instance
+   * @param component the compiled component to instantiate
+   * @return a CompletableFuture that completes with a new ComponentInstance
+   * @throws WasmException if async support is not enabled
+   * @throws IllegalArgumentException if store or component is null
+   * @since 1.1.0
+   */
+  default java.util.concurrent.CompletableFuture<ComponentInstance> instantiateAsync(
+      final Store store, final Component component) throws WasmException {
+    throw new UnsupportedOperationException(
+        "Async instantiation requires async engine support and FFI bridging");
+  }
+
+  /**
    * Enables WASI Preview 2 support for components instantiated through this linker.
    *
    * <p>This automatically defines all WASI Preview 2 interfaces that components can import,

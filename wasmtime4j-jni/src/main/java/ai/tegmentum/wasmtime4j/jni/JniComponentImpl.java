@@ -261,6 +261,11 @@ public final class JniComponentImpl implements Component {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.component.ComponentEngine getComponentEngine() {
+    return engine;
+  }
+
+  @Override
   public boolean isValid() {
     return !nativeComponent.isClosed() && nativeComponent.isValid();
   }

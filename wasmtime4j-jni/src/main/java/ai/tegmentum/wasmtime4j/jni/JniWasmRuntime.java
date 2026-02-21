@@ -469,6 +469,25 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmFunction funcFromRawRef(
+      final ai.tegmentum.wasmtime4j.Store store, final long raw)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore for JNI runtime");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    final long funcHandle = JniFunction.nativeFuncFromRaw(jniStore.getNativeHandle(), raw);
+    if (funcHandle == 0) {
+      return null;
+    }
+    return new JniFunction(funcHandle, "<from-raw>", 0, jniStore);
+  }
+
+  @Override
   public Module deserializeModule(final Engine engine, final byte[] serializedBytes)
       throws WasmException {
     if (engine == null) {

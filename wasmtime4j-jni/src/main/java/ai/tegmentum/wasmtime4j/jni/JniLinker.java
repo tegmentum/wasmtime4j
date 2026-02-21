@@ -285,8 +285,11 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   }
 
   @Override
-  public void defineInstance(final String moduleName, final Instance instance)
-      throws WasmException {
+  public void defineInstance(
+      final Store store, final String moduleName, final Instance instance) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
     }
@@ -298,15 +301,13 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (!(instance instanceof JniInstance)) {
       throw new IllegalArgumentException("Instance must be a JniInstance for JNI linker");
     }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+    }
 
     final JniInstance jniInstance = (JniInstance) instance;
     final long instanceHandle = jniInstance.getNativeHandle();
 
-    // Get the store from the instance
-    final Store store = jniInstance.getStore();
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
-    }
     final JniStore jniStore = (JniStore) store;
     final long storeHandle = jniStore.getNativeHandle();
 
@@ -385,6 +386,33 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
         throw e;
       }
       throw new WasmException("Failed to create alias", e);
+    }
+  }
+
+  @Override
+  public void aliasModule(final String module, final String asModule) throws WasmException {
+    if (module == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (asModule == null) {
+      throw new IllegalArgumentException("Alias module name cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!isNativeHandleReasonable()) {
+      return;
+    }
+
+    try {
+      final boolean success = nativeAliasModule(nativeHandle, module, asModule);
+      if (!success) {
+        throw new WasmException("Failed to alias module '" + module + "' as '" + asModule + "'");
+      }
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error aliasing module: " + module, e);
     }
   }
 
@@ -1323,6 +1351,17 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    */
   private native void nativeAlias(
       long linkerHandle, String fromModule, String fromName, String toModule, String toName);
+
+  /**
+   * Aliases all definitions from one module name to another.
+   *
+   * @param linkerHandle the linker handle
+   * @param moduleName the source module name
+   * @param asModuleName the destination module name
+   * @return true on success
+   */
+  private native boolean nativeAliasModule(
+      long linkerHandle, String moduleName, String asModuleName);
 
   /**
    * Enables WASI for the linker.

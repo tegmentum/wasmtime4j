@@ -450,6 +450,8 @@ unsafe impl Sync for CallbackSocketAddrCheck {}
 pub struct WasiP2Config {
     /// Command-line arguments
     pub args: Vec<String>,
+    /// Whether to inherit arguments from host
+    pub inherit_args: bool,
     /// Environment variables
     pub env: HashMap<String, String>,
     /// Whether to inherit environment from host
@@ -496,6 +498,7 @@ impl Default for WasiP2Config {
     fn default() -> Self {
         Self {
             args: Vec::new(),
+            inherit_args: false,
             env: HashMap::new(),
             inherit_env: false,
             inherit_stdio: false,
@@ -529,7 +532,9 @@ impl WasiP2Config {
         let mut builder = WasiCtxBuilder::new();
 
         // Set args
-        if !self.args.is_empty() {
+        if self.inherit_args {
+            builder.inherit_args();
+        } else if !self.args.is_empty() {
             let args_refs: Vec<&str> = self.args.iter().map(|s| s.as_str()).collect();
             builder.args(&args_refs);
         }
@@ -742,6 +747,11 @@ impl ComponentLinker {
     /// Configure WASI Preview 2 environment variables
     pub fn set_wasi_env(&mut self, env: HashMap<String, String>) {
         self.wasi_p2_config.env = env;
+    }
+
+    /// Set whether to inherit arguments from host
+    pub fn set_wasi_inherit_args(&mut self, inherit: bool) {
+        self.wasi_p2_config.inherit_args = inherit;
     }
 
     /// Set whether to inherit environment from host
@@ -2206,6 +2216,21 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_add_wasi_env(
     };
 
     linker.wasi_p2_config.env.insert(key_str, value_str);
+    FFI_SUCCESS
+}
+
+/// Set whether to inherit arguments from host
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_inherit_args(
+    linker_ptr: *mut c_void,
+    inherit: c_int,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    linker.set_wasi_inherit_args(inherit != 0);
     FFI_SUCCESS
 }
 

@@ -65,6 +65,21 @@ public interface Module extends Closeable {
   List<ExportType> getExports();
 
   /**
+   * Gets a specific export by name.
+   *
+   * @param name the export name to look up
+   * @return the export type if found, or empty if no export with this name exists
+   * @throws IllegalArgumentException if name is null
+   * @since 1.1.0
+   */
+  default java.util.Optional<ExportType> getExport(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("Export name cannot be null");
+    }
+    return getExports().stream().filter(e -> name.equals(e.getName())).findFirst();
+  }
+
+  /**
    * Gets the list of imports required by this module.
    *
    * <p>Imports represent functions, globals, memories, and tables that this module expects to be

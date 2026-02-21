@@ -1287,6 +1287,26 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * Aliases all definitions from one module name to another.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param modulePtr source module name (C string)
+   * @param asModulePtr destination module name (C string)
+   * @return 0 on success, non-zero error code on failure
+   */
+  public int panamaLinkerAliasModule(
+      final MemorySegment linkerPtr,
+      final MemorySegment modulePtr,
+      final MemorySegment asModulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(asModulePtr, "asModulePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_alias_module", Integer.class, linkerPtr, modulePtr, asModulePtr);
+  }
+
+  /**
    * Destroys a Panama linker.
    *
    * @param linkerPtr pointer to the linker to destroy
@@ -2007,6 +2027,14 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_alias_module",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS));

@@ -68,6 +68,30 @@ public interface ComponentInstancePre extends Closeable {
   Engine getEngine();
 
   /**
+   * Gets the component that this pre-instantiated instance was created from.
+   *
+   * @return the source Component
+   * @since 1.1.0
+   */
+  Component getComponent();
+
+  /**
+   * Asynchronously creates a new component instance from this pre-instantiated component.
+   *
+   * <p>This is the async variant of {@link #instantiate()}. It requires the engine to have been
+   * created with async support enabled.
+   *
+   * @return a CompletableFuture that completes with a new ComponentInstance
+   * @throws WasmException if async support is not enabled
+   * @since 1.1.0
+   */
+  default java.util.concurrent.CompletableFuture<ComponentInstance> instantiateAsync()
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "Async instantiation requires async engine support and FFI bridging");
+  }
+
+  /**
    * Checks if this pre-instantiated component is still valid and usable.
    *
    * @return true if the component is valid, false otherwise

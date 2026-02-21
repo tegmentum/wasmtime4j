@@ -374,6 +374,18 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmFunction funcFromRawRef(
+      final ai.tegmentum.wasmtime4j.Store store, final long raw)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    throw new UnsupportedOperationException(
+        "funcFromRawRef is not supported in Panama runtime: "
+            + "PanamaFunction requires an instance context");
+  }
+
+  @Override
   public Module deserializeModule(final Engine engine, final byte[] serializedBytes)
       throws WasmException {
     Validation.requireNonNull(engine, "engine");

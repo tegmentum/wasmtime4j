@@ -279,6 +279,47 @@ pub extern "C" fn wasmtime4j_panama_linker_alias(
     })
 }
 
+/// Alias all definitions from one module name to another (Panama FFI version)
+///
+/// # Arguments
+/// * `linker_ptr` - Pointer to the linker
+/// * `module_name` - Source module name (C string)
+/// * `as_module_name` - Destination module name (C string)
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_alias_module(
+    linker_ptr: *mut c_void,
+    module_name: *const c_char,
+    as_module_name: *const c_char,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        unsafe {
+            if linker_ptr.is_null() || module_name.is_null() || as_module_name.is_null() {
+                return Err(crate::error::WasmtimeError::Linker {
+                    message: "Null pointer in linker alias_module parameters".to_string(),
+                });
+            }
+
+            let module_str = CStr::from_ptr(module_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+            let as_module_str = CStr::from_ptr(as_module_name).to_str().map_err(|e| {
+                crate::error::WasmtimeError::Utf8Error {
+                    message: e.to_string(),
+                }
+            })?;
+
+            let linker = &mut *(linker_ptr as *mut crate::linker::Linker);
+            linker_core::alias_module(linker, module_str, as_module_str)?;
+            Ok(())
+        }
+    })
+}
+
 /// Define unknown imports as traps (Panama FFI version)
 ///
 /// Implements any function imports of the module that are not already defined

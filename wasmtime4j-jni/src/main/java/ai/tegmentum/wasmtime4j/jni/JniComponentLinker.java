@@ -500,6 +500,11 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
       nativeSetWasiInheritEnv(nativeHandle, true);
     }
 
+    // Apply inherit args
+    if (config.isInheritArgs()) {
+      nativeSetWasiInheritArgs(nativeHandle, true);
+    }
+
     // Apply args
     if (config.getArgs() != null && !config.getArgs().isEmpty()) {
       nativeSetWasiArgs(nativeHandle, config.getArgs().toArray(new String[0]));
@@ -795,6 +800,8 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   private static native void nativeSetWasiInheritStderr(long linkerHandle, boolean inherit);
 
   private static native void nativeSetWasiInheritEnv(long linkerHandle, boolean inherit);
+
+  private static native void nativeSetWasiInheritArgs(long linkerHandle, boolean inherit);
 
   private static native void nativeSetWasiArgs(long linkerHandle, String[] args);
 

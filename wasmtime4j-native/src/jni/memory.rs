@@ -1646,3 +1646,103 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeIsShared
         Ok(if is_shared { 1u8 } else { 0u8 })
     })
 }
+
+// Atomic bitwise operations (i32)
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicAndInt(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jint,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_and_i32(memory, store, offset as usize, value)
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicOrInt(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jint,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_or_i32(memory, store, offset as usize, value)
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicXorInt(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jint,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_xor_i32(memory, store, offset as usize, value)
+    })
+}
+
+// Atomic bitwise operations (i64)
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicAndLong(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_and_i64(memory, store, offset as usize, value)
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicOrLong(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_or_i64(memory, store, offset as usize, value)
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicXorLong(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_xor_i64(memory, store, offset as usize, value)
+    })
+}

@@ -998,6 +998,84 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
+  public long atomicAndLong(final int offset, final long value) {
+    if (offset < 0 || offset % 8 != 0) {
+      throw new IllegalArgumentException("Offset must be non-negative and 8-byte aligned");
+    }
+    ensureNotClosed();
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicAndI64(memPtr, storePtr, offset, value, resultOut);
+
+    if (errorCode != 0) {
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
+    }
+
+    return resultOut.get(ValueLayout.JAVA_LONG, 0);
+  }
+
+  @Override
+  public long atomicOrLong(final int offset, final long value) {
+    if (offset < 0 || offset % 8 != 0) {
+      throw new IllegalArgumentException("Offset must be non-negative and 8-byte aligned");
+    }
+    ensureNotClosed();
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicOrI64(memPtr, storePtr, offset, value, resultOut);
+
+    if (errorCode != 0) {
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
+    }
+
+    return resultOut.get(ValueLayout.JAVA_LONG, 0);
+  }
+
+  @Override
+  public long atomicXorLong(final int offset, final long value) {
+    if (offset < 0 || offset % 8 != 0) {
+      throw new IllegalArgumentException("Offset must be non-negative and 8-byte aligned");
+    }
+    ensureNotClosed();
+
+    final PanamaStore actualStore = getPanamaStore();
+    final MemorySegment storePtr = actualStore.getNativeStore();
+    final MemorySegment memPtr = getMemoryPointer();
+
+    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Memory pointer is null");
+    }
+
+    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+    final int errorCode =
+        NATIVE_BINDINGS.memoryAtomicXorI64(memPtr, storePtr, offset, value, resultOut);
+
+    if (errorCode != 0) {
+      throwAtomicOperationError(errorCode, "Atomic operation failed");
+    }
+
+    return resultOut.get(ValueLayout.JAVA_LONG, 0);
+  }
+
+  @Override
   public void readBytes64(
       final long offset, final byte[] dest, final int destOffset, final int length) {
     if (offset < 0) {

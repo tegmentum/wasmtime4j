@@ -223,6 +223,14 @@ public interface Component extends AutoCloseable {
   }
 
   /**
+   * Gets the engine that was used to compile this component.
+   *
+   * @return the ComponentEngine used for compilation
+   * @since 1.1.0
+   */
+  ComponentEngine getComponentEngine();
+
+  /**
    * Checks if this component is still valid and usable.
    *
    * @return true if the component is valid, false otherwise

@@ -497,6 +497,23 @@ class JniComponentLinkerTest {
     }
 
     @Override
+    public ai.tegmentum.wasmtime4j.component.ComponentEngine getComponentEngine() {
+      return null;
+    }
+
+    @Override
+    public java.util.Optional<ai.tegmentum.wasmtime4j.component.ComponentExportIndex> exportIndex(
+        final ai.tegmentum.wasmtime4j.component.ComponentExportIndex instanceIndex,
+        final String name) {
+      return java.util.Optional.empty();
+    }
+
+    @Override
+    public java.util.Optional<ai.tegmentum.wasmtime4j.ResourcesRequired> resourcesRequired() {
+      return java.util.Optional.empty();
+    }
+
+    @Override
     public boolean isValid() {
       return true;
     }

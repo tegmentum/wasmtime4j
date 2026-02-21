@@ -126,6 +126,12 @@ pub struct EngineConfigSummary {
     pub parallel_compilation: bool,
     /// Whether Mach ports are used instead of Unix signals on macOS
     pub macos_use_mach_ports: bool,
+    /// Whether WebAssembly backtraces are collected on traps
+    pub wasm_backtrace: bool,
+    /// Whether address map generation is enabled for debugging
+    pub generate_address_map: bool,
+    /// Whether shared memory is enabled (independent of wasm threads)
+    pub shared_memory: bool,
     /// Module version strategy for serialization compatibility (e.g., "WasmtimeVersion", "None", "Custom")
     pub module_version_strategy: String,
     /// Instance allocation strategy (e.g., "OnDemand", "Pooling")
@@ -189,6 +195,9 @@ impl Default for EngineConfigSummary {
             async_stack_size: None,
             parallel_compilation: true,
             macos_use_mach_ports: true,
+            wasm_backtrace: true,
+            generate_address_map: true,
+            shared_memory: false,
             module_version_strategy: "WasmtimeVersion".to_string(),
             allocation_strategy: "OnDemand".to_string(),
         }
@@ -255,6 +264,9 @@ impl EngineConfigSummary {
             async_stack_size: None,                // Async stack size - use default
             parallel_compilation: true,            // Parallel compilation - on by default
             macos_use_mach_ports: true,            // Mach ports on macOS - on by default
+            wasm_backtrace: true,                  // Backtrace collection on by default
+            generate_address_map: true,            // Address map generation on by default
+            shared_memory: false,                  // Shared memory off by default
             module_version_strategy: "WasmtimeVersion".to_string(), // Use wasmtime version
             allocation_strategy: "OnDemand".to_string(), // On-demand allocation by default
         }
@@ -355,6 +367,9 @@ impl EngineConfigSummary {
             async_stack_size: builder.async_stack_size,
             parallel_compilation: builder.parallel_compilation,
             macos_use_mach_ports: builder.macos_use_mach_ports,
+            wasm_backtrace: builder.wasm_backtrace,
+            generate_address_map: builder.generate_address_map,
+            shared_memory: builder.shared_memory,
             module_version_strategy: builder
                 .module_version_strategy
                 .as_ref()
@@ -453,6 +468,12 @@ pub struct EngineBuilder {
     pub(crate) parallel_compilation: bool,
     // Use Mach ports on macOS
     pub(crate) macos_use_mach_ports: bool,
+    // WebAssembly backtrace collection
+    pub(crate) wasm_backtrace: bool,
+    // Address map generation for debugging
+    pub(crate) generate_address_map: bool,
+    // Shared memory support (independent of wasm threads)
+    pub(crate) shared_memory: bool,
     // Module version strategy
     pub(crate) module_version_strategy: Option<wasmtime::ModuleVersionStrategy>,
     // Instance allocation strategy
@@ -553,6 +574,9 @@ impl EngineBuilder {
             async_stack_size: None, // Async stack size - use wasmtime default
             parallel_compilation: true, // Parallel compilation - on by default
             macos_use_mach_ports: true, // Mach ports on macOS - on by default
+            wasm_backtrace: true, // Backtrace collection - on by default
+            generate_address_map: true, // Address map generation - on by default
+            shared_memory: false, // Shared memory - off by default
             module_version_strategy: None, // Module version - use wasmtime default
             allocation_strategy: None, // Allocation strategy - use wasmtime default (OnDemand)
             profiling_strategy: wasmtime::ProfilingStrategy::None, // No profiling by default
@@ -1116,6 +1140,44 @@ impl EngineBuilder {
     pub fn macos_use_mach_ports(mut self, enable: bool) -> Self {
         self.config.macos_use_mach_ports(enable);
         self.macos_use_mach_ports = enable;
+        self
+    }
+
+    /// Configure WebAssembly backtrace collection on traps
+    ///
+    /// When enabled, Wasmtime collects stack trace information when a trap occurs.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to collect backtraces (default: true)
+    pub fn wasm_backtrace(mut self, enable: bool) -> Self {
+        self.config.wasm_backtrace(enable);
+        self.wasm_backtrace = enable;
+        self
+    }
+
+    /// Configure address map generation for compiled code
+    ///
+    /// Address maps provide mapping from native code addresses back to WebAssembly
+    /// bytecode offsets, useful for debugging and profiling.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to generate address maps (default: true)
+    pub fn generate_address_map(mut self, enable: bool) -> Self {
+        self.config.generate_address_map(enable);
+        self.generate_address_map = enable;
+        self
+    }
+
+    /// Configure shared memory support (independent of wasm threads)
+    ///
+    /// When enabled, the `shared` attribute is allowed on memory definitions,
+    /// enabling atomic operations on shared memory.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable shared memory (default: false)
+    pub fn shared_memory(mut self, enable: bool) -> Self {
+        self.config.shared_memory(enable);
+        self.shared_memory = enable;
         self
     }
 

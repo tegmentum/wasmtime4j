@@ -24,7 +24,7 @@ use crate::validate_ptr_not_null;
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct EngineConfigFfi {
-    // Compilation strategy: "cranelift", "auto"
+    // Compilation strategy: "cranelift", "winch", "auto"
     pub strategy: Option<String>,
     // Optimization level: "none", "speed", "speed_and_size"
     pub opt_level: Option<String>,
@@ -118,6 +118,13 @@ pub struct EngineConfigFfi {
     #[cfg(target_os = "macos")]
     pub macos_use_mach_ports: Option<bool>,
 
+    // Backtrace and debugging
+    pub wasm_backtrace: Option<bool>,
+    pub generate_address_map: Option<bool>,
+
+    // Shared memory (independent of wasm threads)
+    pub shared_memory: Option<bool>,
+
     // Target triple for cross-compilation
     pub target: Option<String>,
 
@@ -148,6 +155,7 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
     if let Some(ref strategy) = config.strategy {
         builder = builder.strategy(match strategy.as_str() {
             "cranelift" => Strategy::Cranelift,
+            "winch" => Strategy::Winch,
             _ => Strategy::Auto,
         });
     }
@@ -313,6 +321,19 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
     #[cfg(target_os = "macos")]
     if let Some(v) = config.macos_use_mach_ports {
         builder = builder.macos_use_mach_ports(v);
+    }
+
+    // Backtrace and debugging
+    if let Some(v) = config.wasm_backtrace {
+        builder = builder.wasm_backtrace(v);
+    }
+    if let Some(v) = config.generate_address_map {
+        builder = builder.generate_address_map(v);
+    }
+
+    // Shared memory (independent of wasm threads)
+    if let Some(v) = config.shared_memory {
+        builder = builder.shared_memory(v);
     }
 
     // Target triple for cross-compilation

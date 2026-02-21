@@ -909,6 +909,36 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAlias(
     });
 }
 
+/// Alias all definitions from one module name to another
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAliasModule(
+    mut env: JNIEnv,
+    _obj: jobject,
+    linker_handle: jlong,
+    module_name: JString,
+    as_module_name: JString,
+) -> jboolean {
+    if module_name.is_null() || as_module_name.is_null() {
+        return 0;
+    }
+
+    let module_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    let as_module_str: String = match env.get_string(&as_module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+        linker_core::alias_module(linker, &module_str, &as_module_str)?;
+        Ok(1) // JNI_TRUE
+    })
+}
+
 /// Define a host function in the linker with JNI callback support
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunction(

@@ -75,6 +75,11 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.component.Component getComponent() {
+    return component;
+  }
+
+  @Override
   public boolean isValid() {
     if (closed || nativeHandle == 0) {
       return false;

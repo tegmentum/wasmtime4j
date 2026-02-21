@@ -416,6 +416,57 @@ public interface WasmMemory {
   int atomicXorInt(final int offset, final int value);
 
   /**
+   * Performs an atomic bitwise AND operation on a 64-bit value.
+   *
+   * <p>This operation atomically performs a bitwise AND operation between the value at the offset
+   * and the specified value, storing the result and returning the original value. This is only
+   * supported for shared memory.
+   *
+   * @param offset the byte offset (must be 8-byte aligned)
+   * @param value the value to AND with
+   * @return the original value before the operation
+   * @throws IllegalStateException if this memory is not shared
+   * @throws IllegalArgumentException if offset is not 8-byte aligned
+   * @throws IndexOutOfBoundsException if offset is out of bounds
+   * @since 1.1.0
+   */
+  long atomicAndLong(final int offset, final long value);
+
+  /**
+   * Performs an atomic bitwise OR operation on a 64-bit value.
+   *
+   * <p>This operation atomically performs a bitwise OR operation between the value at the offset
+   * and the specified value, storing the result and returning the original value. This is only
+   * supported for shared memory.
+   *
+   * @param offset the byte offset (must be 8-byte aligned)
+   * @param value the value to OR with
+   * @return the original value before the operation
+   * @throws IllegalStateException if this memory is not shared
+   * @throws IllegalArgumentException if offset is not 8-byte aligned
+   * @throws IndexOutOfBoundsException if offset is out of bounds
+   * @since 1.1.0
+   */
+  long atomicOrLong(final int offset, final long value);
+
+  /**
+   * Performs an atomic bitwise XOR operation on a 64-bit value.
+   *
+   * <p>This operation atomically performs a bitwise XOR operation between the value at the offset
+   * and the specified value, storing the result and returning the original value. This is only
+   * supported for shared memory.
+   *
+   * @param offset the byte offset (must be 8-byte aligned)
+   * @param value the value to XOR with
+   * @return the original value before the operation
+   * @throws IllegalStateException if this memory is not shared
+   * @throws IllegalArgumentException if offset is not 8-byte aligned
+   * @throws IndexOutOfBoundsException if offset is out of bounds
+   * @since 1.1.0
+   */
+  long atomicXorLong(final int offset, final long value);
+
+  /**
    * Performs an atomic memory fence operation.
    *
    * <p>This operation ensures that all memory operations before the fence are visible to other

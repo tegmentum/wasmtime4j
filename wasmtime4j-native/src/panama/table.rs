@@ -861,6 +861,93 @@ pub extern "C" fn wasmtime4j_panama_memory_atomic_xor_i32(
     })
 }
 
+/// Atomic AND on 64-bit value (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_memory_atomic_and_i64(
+    memory_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    offset: usize,
+    value: i64,
+    result_out: *mut i64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *const c_void)? };
+        let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+        if result_out.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Result output pointer cannot be null".to_string(),
+            });
+        }
+
+        let result = crate::memory::core::atomic_and_i64(memory, store, offset, value)?;
+
+        unsafe {
+            *result_out = result;
+        }
+
+        Ok(())
+    })
+}
+
+/// Atomic OR on 64-bit value (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_memory_atomic_or_i64(
+    memory_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    offset: usize,
+    value: i64,
+    result_out: *mut i64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *const c_void)? };
+        let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+        if result_out.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Result output pointer cannot be null".to_string(),
+            });
+        }
+
+        let result = crate::memory::core::atomic_or_i64(memory, store, offset, value)?;
+
+        unsafe {
+            *result_out = result;
+        }
+
+        Ok(())
+    })
+}
+
+/// Atomic XOR on 64-bit value (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_memory_atomic_xor_i64(
+    memory_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    offset: usize,
+    value: i64,
+    result_out: *mut i64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr as *const c_void)? };
+        let store = unsafe { ffi_utils::deref_ptr_mut::<crate::store::Store>(store_ptr, "store")? };
+
+        if result_out.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Result output pointer cannot be null".to_string(),
+            });
+        }
+
+        let result = crate::memory::core::atomic_xor_i64(memory, store, offset, value)?;
+
+        unsafe {
+            *result_out = result;
+        }
+
+        Ok(())
+    })
+}
+
 /// Atomic memory fence (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_memory_atomic_fence(

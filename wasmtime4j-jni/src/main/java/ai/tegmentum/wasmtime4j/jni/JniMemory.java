@@ -1046,6 +1046,63 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
+  public long atomicAndLong(final int offset, final long value) {
+    ensureUsable();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
+    checkAligned(offset, 8);
+    validateOffset(offset, 8);
+    checkSharedMemory();
+
+    try {
+      return nativeAtomicAndLong(getNativeHandle(), store.getNativeHandle(), offset, value);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Atomic AND i64 failed", e);
+    }
+  }
+
+  @Override
+  public long atomicOrLong(final int offset, final long value) {
+    ensureUsable();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
+    checkAligned(offset, 8);
+    validateOffset(offset, 8);
+    checkSharedMemory();
+
+    try {
+      return nativeAtomicOrLong(getNativeHandle(), store.getNativeHandle(), offset, value);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Atomic OR i64 failed", e);
+    }
+  }
+
+  @Override
+  public long atomicXorLong(final int offset, final long value) {
+    ensureUsable();
+    if (offset < 0) {
+      throw new IllegalArgumentException("Offset must be non-negative");
+    }
+    checkAligned(offset, 8);
+    validateOffset(offset, 8);
+    checkSharedMemory();
+
+    try {
+      return nativeAtomicXorLong(getNativeHandle(), store.getNativeHandle(), offset, value);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Atomic XOR i64 failed", e);
+    }
+  }
+
+  @Override
   public void atomicFence() {
     ensureUsable();
     checkSharedMemory();
@@ -1274,6 +1331,42 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   private static native int nativeAtomicXorInt(
       long memoryHandle, long storeHandle, int offset, int value);
+
+  /**
+   * Performs atomic AND on a 64-bit value.
+   *
+   * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
+   * @param offset the byte offset
+   * @param value the value to AND with
+   * @return the original value
+   */
+  private static native long nativeAtomicAndLong(
+      long memoryHandle, long storeHandle, int offset, long value);
+
+  /**
+   * Performs atomic OR on a 64-bit value.
+   *
+   * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
+   * @param offset the byte offset
+   * @param value the value to OR with
+   * @return the original value
+   */
+  private static native long nativeAtomicOrLong(
+      long memoryHandle, long storeHandle, int offset, long value);
+
+  /**
+   * Performs atomic XOR on a 64-bit value.
+   *
+   * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
+   * @param offset the byte offset
+   * @param value the value to XOR with
+   * @return the original value
+   */
+  private static native long nativeAtomicXorLong(
+      long memoryHandle, long storeHandle, int offset, long value);
 
   /**
    * Performs atomic memory fence.

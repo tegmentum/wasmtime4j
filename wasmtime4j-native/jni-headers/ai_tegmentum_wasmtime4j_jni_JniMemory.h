@@ -205,6 +205,30 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicXo
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
+ * Method:    nativeAtomicAndLong
+ * Signature: (JJIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicAndLong
+  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
+ * Method:    nativeAtomicOrLong
+ * Signature: (JJIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicOrLong
+  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
+ * Method:    nativeAtomicXorLong
+ * Signature: (JJIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicXorLong
+  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeAtomicFence
  * Signature: (JJ)V
  */

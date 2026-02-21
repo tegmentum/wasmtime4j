@@ -384,6 +384,36 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // result_out
 
     addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_and_i64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_or_i64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_memory_atomic_xor_i64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // offset
+            ValueLayout.JAVA_LONG, // value
+            ValueLayout.ADDRESS)); // result_out
+
+    addFunctionBinding(
         "wasmtime4j_panama_memory_atomic_fence",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return error code
@@ -1540,6 +1570,93 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
     validatePointer(resultOut, "resultOut");
     return callNativeFunction(
         "wasmtime4j_panama_memory_atomic_xor_i32",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value,
+        resultOut);
+  }
+
+  /**
+   * Atomic AND on 64-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to AND
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicAndI64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long value,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_and_i64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value,
+        resultOut);
+  }
+
+  /**
+   * Atomic OR on 64-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to OR
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicOrI64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long value,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_or_i64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        offset,
+        value,
+        resultOut);
+  }
+
+  /**
+   * Atomic XOR on 64-bit value.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param offset byte offset in memory
+   * @param value value to XOR
+   * @param resultOut pointer to store the old value
+   * @return 0 on success, error code otherwise
+   */
+  public int memoryAtomicXorI64(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long offset,
+      final long value,
+      final MemorySegment resultOut) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(resultOut, "resultOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_atomic_xor_i64",
         Integer.class,
         memoryPtr,
         storePtr,

@@ -458,6 +458,21 @@ public interface WasmRuntime extends Closeable {
   boolean isNnAvailable();
 
   /**
+   * Reconstructs a WebAssembly function from a raw funcref pointer value.
+   *
+   * <p>The raw value must have been previously obtained via {@link WasmFunction#toRawFuncRef()} and
+   * must be used within the same store context.
+   *
+   * @param store the store context the raw funcref belongs to
+   * @param raw the raw funcref pointer value
+   * @return the reconstructed WasmFunction, or null if the raw value is invalid
+   * @throws WasmException if reconstruction fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  WasmFunction funcFromRawRef(Store store, long raw) throws WasmException;
+
+  /**
    * Deserializes a module from a file containing serialized module data.
    *
    * @param engine the engine to use for deserialization

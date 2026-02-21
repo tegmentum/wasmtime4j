@@ -655,7 +655,7 @@ impl ModuleMetadata {
         let custom_sections = extract_custom_sections(wasm_bytes);
 
         Ok(ModuleMetadata {
-            name: None, // Not easily extractable from Wasmtime
+            name: module.name().map(|s| s.to_string()),
             size_bytes,
             imports,
             exports,

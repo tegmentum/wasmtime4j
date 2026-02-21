@@ -129,6 +129,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiInheritArgs
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritArgs
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
  * Method:    nativeSetWasiArgs
  * Signature: (J[Ljava/lang/String;)V
  */

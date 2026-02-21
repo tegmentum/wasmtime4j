@@ -552,6 +552,13 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT)); // inherit flag
 
     addFunctionBinding(
+        "wasmtime4j_component_linker_set_wasi_inherit_args",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.JAVA_INT)); // inherit flag
+
+    addFunctionBinding(
         "wasmtime4j_component_linker_set_wasi_inherit_stdio",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns result code
@@ -1932,6 +1939,19 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     validatePointer(linkerPtr, "linkerPtr");
     return callNativeFunction(
         "wasmtime4j_component_linker_set_wasi_inherit_env", Integer.class, linkerPtr, inherit);
+  }
+
+  /**
+   * Sets whether to inherit arguments from host in WASI Preview 2.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param inherit 1 to inherit, 0 to not inherit
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiInheritArgs(final MemorySegment linkerPtr, final int inherit) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_inherit_args", Integer.class, linkerPtr, inherit);
   }
 
   /**

@@ -485,5 +485,5 @@ public final class JniFunction extends JniResource
    * @param raw the raw funcref value
    * @return the native function handle, or 0 if invalid
    */
-  private static native long nativeFuncFromRaw(long storeHandle, long raw);
+  static native long nativeFuncFromRaw(long storeHandle, long raw);
 }

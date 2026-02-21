@@ -1547,6 +1547,30 @@ pub mod core {
         Ok(result)
     }
 
+    /// Alias all definitions from one module name to another.
+    ///
+    /// This copies all linker definitions under `module` to also be available under `as_module`.
+    ///
+    /// # Arguments
+    /// * `linker` - The linker to modify
+    /// * `module` - The source module name
+    /// * `as_module` - The destination module name
+    pub fn alias_module(
+        linker: &mut Linker,
+        module: &str,
+        as_module: &str,
+    ) -> WasmtimeResult<()> {
+        let mut linker_guard = linker.inner()?;
+        linker_guard
+            .alias_module(module, as_module)
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Failed to alias module '{}' as '{}': {}",
+                    module, as_module, e
+                ),
+            })
+    }
+
     /// Convert a wasmtime::Extern to a type code.
     /// Type codes: 0=Func, 1=Table, 2=Memory, 3=Global, -1=Unknown
     pub fn extern_type_code(extern_item: &wasmtime::Extern) -> i32 {

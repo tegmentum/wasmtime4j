@@ -109,12 +109,35 @@ public interface Linker<T> extends Closeable {
    * <p>All exports from the instance will be available to any module instantiated through this
    * linker that imports from the specified module name.
    *
+   * @param store the store context (required for wasmtime's type system)
    * @param moduleName the module name for the import
    * @param instance the WebAssembly instance whose exports should be provided
    * @throws WasmException if the instance cannot be defined
    * @throws IllegalArgumentException if any parameter is null
    */
-  void defineInstance(final String moduleName, final Instance instance) throws WasmException;
+  void defineInstance(final Store store, final String moduleName, final Instance instance)
+      throws WasmException;
+
+  /**
+   * Defines an instance that can be imported by WebAssembly modules.
+   *
+   * <p>This is a convenience overload that extracts the store from the instance. Prefer
+   * {@link #defineInstance(Store, String, Instance)} for explicit store context.
+   *
+   * @param moduleName the module name for the import
+   * @param instance the WebAssembly instance whose exports should be provided
+   * @throws WasmException if the instance cannot be defined
+   * @throws IllegalArgumentException if any parameter is null
+   * @deprecated Use {@link #defineInstance(Store, String, Instance)} instead
+   */
+  @Deprecated
+  default void defineInstance(final String moduleName, final Instance instance)
+      throws WasmException {
+    if (instance == null) {
+      throw new IllegalArgumentException("Instance cannot be null");
+    }
+    defineInstance(instance.getStore(), moduleName, instance);
+  }
 
   /**
    * Creates an alias for an export from one module to another.
@@ -131,6 +154,20 @@ public interface Linker<T> extends Closeable {
   void alias(
       final String fromModule, final String fromName, final String toModule, final String toName)
       throws WasmException;
+
+  /**
+   * Aliases all definitions from one module name to another.
+   *
+   * <p>This copies all linker definitions under {@code module} to also be available under
+   * {@code asModule}. This is useful for providing the same module under multiple names.
+   *
+   * @param module the source module name
+   * @param asModule the destination module name to alias to
+   * @throws WasmException if the alias cannot be created
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  void aliasModule(final String module, final String asModule) throws WasmException;
 
   /**
    * Instantiates a WebAssembly module using this linker to resolve imports.

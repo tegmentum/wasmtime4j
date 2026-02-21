@@ -392,8 +392,11 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   }
 
   @Override
-  public void defineInstance(final String moduleName, final Instance instance)
-      throws WasmException {
+  public void defineInstance(
+      final Store store, final String moduleName, final Instance instance) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
     }
@@ -406,14 +409,11 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (!(instance instanceof PanamaInstance)) {
       throw new IllegalArgumentException("Instance must be a PanamaInstance");
     }
-
-    final PanamaInstance panamaInstance = (PanamaInstance) instance;
-
-    // Get the store from the instance
-    final Store store = panamaInstance.getStore();
     if (!(store instanceof PanamaStore)) {
       throw new IllegalArgumentException("Store must be a PanamaStore");
     }
+
+    final PanamaInstance panamaInstance = (PanamaInstance) instance;
     final PanamaStore panamaStore = (PanamaStore) store;
 
     // Allocate C string for module name
@@ -479,6 +479,30 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     LOGGER.fine(
         "Created alias from " + fromModule + "::" + fromName + " to " + toModule + "::" + toName);
+  }
+
+  @Override
+  public void aliasModule(final String module, final String asModule) throws WasmException {
+    if (module == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (asModule == null) {
+      throw new IllegalArgumentException("Alias module name cannot be null");
+    }
+    ensureNotClosed();
+
+    final MemorySegment modulePtr = arena.allocateFrom(module);
+    final MemorySegment asModulePtr = arena.allocateFrom(asModule);
+
+    final int result =
+        NATIVE_INSTANCE_BINDINGS.panamaLinkerAliasModule(nativeLinker, modulePtr, asModulePtr);
+
+    if (result != 0) {
+      throw PanamaErrorMapper.mapNativeError(
+          result, "Failed to alias module '" + module + "' as '" + asModule + "'");
+    }
+
+    LOGGER.fine("Aliased module '" + module + "' as '" + asModule + "'");
   }
 
   @Override
@@ -564,7 +588,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     // Define the instance in the linker under the specified module name
     // This allows other modules to import from this instance
-    defineInstance(moduleName, instance);
+    defineInstance(store, moduleName, instance);
 
     LOGGER.fine("Instantiated and registered module: " + moduleName);
 

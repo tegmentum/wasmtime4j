@@ -120,6 +120,11 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.component.Component getComponent() {
+    return component;
+  }
+
+  @Override
   public boolean isValid() {
     if (resourceHandle.isClosed()) {
       return false;

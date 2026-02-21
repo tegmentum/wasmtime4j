@@ -548,6 +548,16 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
               + PanamaErrorMapper.getErrorDescription(inheritEnvResult));
     }
 
+    // Apply inherit args flag
+    final int inheritArgsResult =
+        NATIVE_BINDINGS.componentLinkerSetWasiInheritArgs(
+            nativeLinker, config.isInheritArgs() ? 1 : 0);
+    if (inheritArgsResult != 0) {
+      LOGGER.warning(
+          "Failed to set WASI inherit args flag: "
+              + PanamaErrorMapper.getErrorDescription(inheritArgsResult));
+    }
+
     // Apply inherit stdio flag
     final int inheritStdioResult =
         NATIVE_BINDINGS.componentLinkerSetWasiInheritStdio(

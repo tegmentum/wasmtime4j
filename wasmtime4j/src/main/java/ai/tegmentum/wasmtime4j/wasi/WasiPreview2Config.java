@@ -59,6 +59,7 @@ import java.util.Map;
 public final class WasiPreview2Config {
 
   private final List<String> args;
+  private final boolean inheritArgs;
   private final Map<String, String> env;
   private final boolean inheritEnv;
   private final boolean inheritStdio;
@@ -83,6 +84,7 @@ public final class WasiPreview2Config {
 
   private WasiPreview2Config(final Builder builder) {
     this.args = List.copyOf(builder.args);
+    this.inheritArgs = builder.inheritArgs;
     this.env = Map.copyOf(builder.env);
     this.inheritEnv = builder.inheritEnv;
     this.inheritStdio = builder.inheritStdio;
@@ -113,6 +115,16 @@ public final class WasiPreview2Config {
    */
   public List<String> getArgs() {
     return args;
+  }
+
+  /**
+   * Checks if arguments should be inherited from the host process.
+   *
+   * @return true if inheriting arguments
+   * @since 1.1.0
+   */
+  public boolean isInheritArgs() {
+    return inheritArgs;
   }
 
   /**
@@ -333,7 +345,13 @@ public final class WasiPreview2Config {
    * @return a config with inherited stdio and env
    */
   public static WasiPreview2Config inherited() {
-    return builder().inheritStdio().inheritEnv().allowClock(true).allowRandom(true).build();
+    return builder()
+        .inheritStdio()
+        .inheritArgs()
+        .inheritEnv()
+        .allowClock(true)
+        .allowRandom(true)
+        .build();
   }
 
   /** Represents a preopened directory mapping. */
@@ -428,6 +446,7 @@ public final class WasiPreview2Config {
   /** Builder for WasiPreview2Config. */
   public static final class Builder {
     private final List<String> args = new ArrayList<>();
+    private boolean inheritArgs = false;
     private final Map<String, String> env = new HashMap<>();
     private boolean inheritEnv = false;
     private boolean inheritStdio = false;
@@ -472,6 +491,19 @@ public final class WasiPreview2Config {
      */
     public Builder addArgs(final String... args) {
       this.args.addAll(List.of(args));
+      return this;
+    }
+
+    /**
+     * Inherits command-line arguments from the host process.
+     *
+     * <p>When enabled, the host process's command-line arguments are passed to the WASI component.
+     *
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder inheritArgs() {
+      this.inheritArgs = true;
       return this;
     }
 

@@ -650,6 +650,10 @@ jni_wasi_bool_setter!(
     set_wasi_inherit_env
 );
 jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritArgs,
+    set_wasi_inherit_args
+);
+jni_wasi_bool_setter!(
     Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowNetwork,
     set_wasi_allow_network
 );

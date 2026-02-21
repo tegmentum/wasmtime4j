@@ -366,9 +366,9 @@ public interface WasmFunction {
   /**
    * Converts this function to its raw funcref pointer value.
    *
-   * <p>The returned value can be used to reconstruct the function via {@link #fromRawFuncRef}.
-   * This is useful for low-level table operations and passing function references through
-   * raw integer handles.
+   * <p>The returned value can be used to reconstruct the function via
+   * {@link #fromRawFuncRef(Store, long)}. This is useful for low-level table operations and
+   * passing function references through raw integer handles.
    *
    * <p><b>Warning:</b> The raw value is only valid within the same store context. Using it
    * with a different store will produce undefined behavior.
@@ -378,4 +378,26 @@ public interface WasmFunction {
    * @since 1.1.0
    */
   long toRawFuncRef() throws WasmException;
+
+  /**
+   * Reconstructs a WebAssembly function from a raw funcref pointer value.
+   *
+   * <p>The raw value must have been previously obtained via {@link #toRawFuncRef()} and must be
+   * used within the same store context that produced it.
+   *
+   * <p><b>Warning:</b> Using a raw value from a different store produces undefined behavior.
+   *
+   * @param store the store context the raw funcref belongs to
+   * @param raw the raw funcref pointer value
+   * @return the reconstructed WasmFunction, or null if the raw value is invalid
+   * @throws WasmException if reconstruction fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  static WasmFunction fromRawFuncRef(final Store store, final long raw) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    return store.getEngine().getRuntime().funcFromRawRef(store, raw);
+  }
 }
