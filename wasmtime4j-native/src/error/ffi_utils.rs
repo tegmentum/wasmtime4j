@@ -518,7 +518,7 @@ pub fn cleanup_test_state() -> (usize, usize, usize) {
 /// cleanup happens even if the test panics.
 ///
 /// # Example
-/// ```ignore
+/// ```text
 /// #[test]
 /// fn my_test() {
 ///     let _guard = TestCleanupGuard::new();
@@ -601,7 +601,7 @@ pub fn string_to_c_char(s: String) -> WasmtimeResult<*mut c_char> {
 /// Panics are caught and converted to error code -5 (RuntimeError).
 ///
 /// # Example
-/// ```ignore
+/// ```text
 /// #[no_mangle]
 /// pub extern "C" fn my_ffi_function(arg: i32) -> i32 {
 ///     ffi_boundary_i32!({
@@ -675,7 +675,7 @@ macro_rules! ffi_boundary_isize {
 /// Panics are caught and converted to null pointer.
 ///
 /// # Example
-/// ```ignore
+/// ```text
 /// #[no_mangle]
 /// pub extern "C" fn create_something() -> *mut c_void {
 ///     ffi_boundary_ptr!({
@@ -764,7 +764,7 @@ macro_rules! ffi_boundary_bool {
 /// Converts to default value on error or panic, and stores error in last_error.
 ///
 /// # Example
-/// ```ignore
+/// ```text
 /// #[no_mangle]
 /// pub extern "C" fn get_value(handle: *mut c_void) -> i64 {
 ///     ffi_boundary_result!(0i64, {

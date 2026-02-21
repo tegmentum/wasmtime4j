@@ -16,7 +16,7 @@
 //!
 //! # Example
 //!
-//! ```rust,ignore
+//! ```text
 //! use wasmtime4j_native::wasi_http::{WasiHttpContext, WasiHttpConfig};
 //!
 //! let config = WasiHttpConfig::builder()

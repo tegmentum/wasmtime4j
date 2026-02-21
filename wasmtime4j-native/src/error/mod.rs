@@ -801,7 +801,7 @@ macro_rules! validate_handle {
 /// Returns the specified default value on validation failure.
 ///
 /// # Usage
-/// ```ignore
+/// ```text
 /// jni_validate_handle!(env, context_handle, "context", 0);
 /// ```
 #[macro_export]
@@ -830,7 +830,7 @@ macro_rules! jni_validate_handle {
 /// Validates multiple JNI handles at once, throwing IllegalArgumentException if any are null/zero.
 ///
 /// # Usage
-/// ```ignore
+/// ```text
 /// jni_validate_handles!(env, 0, context_handle => "context", stream_id => "stream");
 /// ```
 #[macro_export]
@@ -852,7 +852,7 @@ macro_rules! jni_validate_handles {
 /// Validates that a value is non-negative, throwing IllegalArgumentException if negative.
 ///
 /// # Usage
-/// ```ignore
+/// ```text
 /// jni_validate_non_negative!(env, offset, "Offset", 0);
 /// ```
 #[macro_export]
@@ -882,7 +882,7 @@ macro_rules! jni_validate_non_negative {
 /// Returns the dereferenced value on success.
 ///
 /// # Usage
-/// ```ignore
+/// ```text
 /// let context = jni_deref_ptr!(env, context_handle, WasiContext, "Context", 0);
 /// ```
 ///
@@ -941,7 +941,7 @@ macro_rules! jni_deref_ptr {
 /// Combines jni_validate_handle and jni_deref_ptr for convenience.
 ///
 /// # Usage
-/// ```ignore
+/// ```text
 /// let context = jni_get_ref!(env, context_handle, WasiContext, "context", 0);
 /// ```
 ///
@@ -991,7 +991,7 @@ macro_rules! jni_get_ref {
 /// Handles a Result by throwing a JNI exception on error and returning a default value.
 ///
 /// # Usage
-/// ```ignore
+/// ```text
 /// let value = jni_try!(env, some_operation(), 0);
 /// ```
 #[macro_export]

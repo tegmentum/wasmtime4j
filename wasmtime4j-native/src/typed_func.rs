@@ -28,7 +28,7 @@ use wasmtime::*;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```text
 /// // For a function: (i32, i32) -> i64
 /// let typed_func = TypedFunc::<(i32, i32), i64>::new(store, func)?;
 /// let result = typed_func.call(store, (10, 20))?;
@@ -62,7 +62,7 @@ where
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```text
     /// let func = instance.get_func(&mut store, "add")?;
     /// let typed = TypedFunc::<(i32, i32), i32>::new(&mut store, &func)?;
     /// ```
@@ -102,7 +102,7 @@ where
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```text
     /// let result = typed_func.call(&mut store, (5, 10))?;
     /// assert_eq!(result, 15);
     /// ```
@@ -139,7 +139,7 @@ where
     ///
     /// # Example
     ///
-    /// ```ignore
+    /// ```text
     /// let result = typed_func.call_async(&mut store, (5, 10)).await?;
     /// assert_eq!(result, 15);
     /// ```

@@ -376,7 +376,7 @@ static MANAGED_ENGINE_COUNTER: AtomicU64 = AtomicU64::new(0);
 /// out-of-order deallocation.
 ///
 /// # Example
-/// ```rust,ignore
+/// ```text
 /// use wasmtime4j::engine::ManagedEngine;
 ///
 /// let managed = ManagedEngine::new()?;
