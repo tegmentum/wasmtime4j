@@ -219,6 +219,27 @@ public interface ComponentVal {
    */
   boolean isResource();
 
+  /**
+   * Checks if this value is a future handle (component-model-async).
+   *
+   * @return true if this is a future handle
+   */
+  boolean isFuture();
+
+  /**
+   * Checks if this value is a stream handle (component-model-async).
+   *
+   * @return true if this is a stream handle
+   */
+  boolean isStream();
+
+  /**
+   * Checks if this value is an error context handle (component-model-async).
+   *
+   * @return true if this is an error context handle
+   */
+  boolean isErrorContext();
+
   // ========== Value extraction methods ==========
 
   /**
@@ -399,6 +420,40 @@ public interface ComponentVal {
    * @throws IllegalStateException if this is not a resource handle
    */
   ComponentResourceHandle asResource();
+
+  /**
+   * Gets this value as a future handle.
+   *
+   * <p>Future handles are opaque identifiers for in-flight async operations in the
+   * Component Model async extension. They can be passed back to component functions
+   * that expect future parameters.
+   *
+   * @return the opaque future handle ID
+   * @throws IllegalStateException if this is not a future value
+   */
+  long asFutureHandle();
+
+  /**
+   * Gets this value as a stream handle.
+   *
+   * <p>Stream handles are opaque identifiers for async data streams in the
+   * Component Model async extension.
+   *
+   * @return the opaque stream handle ID
+   * @throws IllegalStateException if this is not a stream value
+   */
+  long asStreamHandle();
+
+  /**
+   * Gets this value as an error context handle.
+   *
+   * <p>Error context handles are opaque identifiers for error information in the
+   * Component Model async extension.
+   *
+   * @return the opaque error context handle ID
+   * @throws IllegalStateException if this is not an error context value
+   */
+  long asErrorContextHandle();
 
   // ========== Factory methods for primitive types ==========
 
@@ -692,5 +747,35 @@ public interface ComponentVal {
   static ComponentVal flags(final String... enabledFlags) {
     return ComponentValFactory.INSTANCE.createFlags(
         new java.util.HashSet<>(java.util.Arrays.asList(enabledFlags)));
+  }
+
+  /**
+   * Creates a future handle component value.
+   *
+   * @param handle the opaque future handle ID
+   * @return a new ComponentVal
+   */
+  static ComponentVal future(final long handle) {
+    return ComponentValFactory.INSTANCE.createFuture(handle);
+  }
+
+  /**
+   * Creates a stream handle component value.
+   *
+   * @param handle the opaque stream handle ID
+   * @return a new ComponentVal
+   */
+  static ComponentVal stream(final long handle) {
+    return ComponentValFactory.INSTANCE.createStream(handle);
+  }
+
+  /**
+   * Creates an error context handle component value.
+   *
+   * @param handle the opaque error context handle ID
+   * @return a new ComponentVal
+   */
+  static ComponentVal errorContext(final long handle) {
+    return ComponentValFactory.INSTANCE.createErrorContext(handle);
   }
 }

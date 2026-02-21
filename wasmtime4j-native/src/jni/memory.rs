@@ -234,6 +234,43 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrow(
     })
 }
 
+/// Grow memory asynchronously (JNI version)
+///
+/// Requires engine with `async_support(true)`. Uses the async resource limiter.
+#[no_mangle]
+#[cfg(feature = "async")]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrowAsync(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    pages: jlong,
+) -> jlong {
+    jni_utils::jni_try_default(&env, -1, || {
+        if memory_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Memory handle cannot be null".to_string(),
+            });
+        }
+        if store_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+        }
+        if pages < 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Page count cannot be negative: {}", pages),
+            });
+        }
+
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+
+        let previous_pages = core::grow_memory_async(memory, store, pages as u64)?;
+        Ok(previous_pages as jlong)
+    })
+}
+
 /// Read a single byte from memory (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte(

@@ -1,5 +1,17 @@
 /*
- * Copyright (c) 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package ai.tegmentum.wasmtime4j.jni.pool;
@@ -9,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig;
-import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,6 +34,36 @@ import org.junit.jupiter.api.Test;
 @DisplayName("JNI Pool Package Tests")
 class JniPoolPackageTest {
 
+  /** Creates a metrics array matching the Wasmtime PoolingAllocatorMetrics field order. */
+  private static long[] createMetrics(
+      final long coreInstances,
+      final long componentInstances,
+      final long memories,
+      final long tables,
+      final long stacks,
+      final long gcHeaps,
+      final long unusedWarmMemories,
+      final long unusedMemoryBytesResident,
+      final long unusedWarmTables,
+      final long unusedTableBytesResident,
+      final long unusedWarmStacks,
+      final long unusedStackBytesResident) {
+    return new long[] {
+      coreInstances,
+      componentInstances,
+      memories,
+      tables,
+      stacks,
+      gcHeaps,
+      unusedWarmMemories,
+      unusedMemoryBytesResident,
+      unusedWarmTables,
+      unusedTableBytesResident,
+      unusedWarmStacks,
+      unusedStackBytesResident
+    };
+  }
+
   // ========================================================================
   // JniPoolStatistics Tests
   // ========================================================================
@@ -34,134 +75,79 @@ class JniPoolPackageTest {
     @Test
     @DisplayName("JniPoolStatistics default constructor should create empty statistics")
     void jniPoolStatisticsDefaultConstructorShouldCreateEmptyStats() {
-      JniPoolStatistics stats = new JniPoolStatistics();
+      final JniPoolStatistics stats = new JniPoolStatistics();
 
       assertNotNull(stats, "JniPoolStatistics should be created");
-      assertEquals(0, stats.getInstancesAllocated(), "Instances allocated should be 0");
-      assertEquals(0, stats.getInstancesReused(), "Instances reused should be 0");
-      assertEquals(0, stats.getInstancesCreated(), "Instances created should be 0");
-      assertEquals(0, stats.getMemoryPoolsAllocated(), "Memory pools allocated should be 0");
-      assertEquals(0, stats.getMemoryPoolsReused(), "Memory pools reused should be 0");
-      assertEquals(0, stats.getStackPoolsAllocated(), "Stack pools allocated should be 0");
-      assertEquals(0, stats.getStackPoolsReused(), "Stack pools reused should be 0");
-      assertEquals(0, stats.getTablePoolsAllocated(), "Table pools allocated should be 0");
-      assertEquals(0, stats.getTablePoolsReused(), "Table pools reused should be 0");
-      assertEquals(0, stats.getPeakMemoryUsage(), "Peak memory usage should be 0");
-      assertEquals(0, stats.getCurrentMemoryUsage(), "Current memory usage should be 0");
-      assertEquals(0, stats.getAllocationFailures(), "Allocation failures should be 0");
+      assertEquals(0, stats.getCoreInstances(), "coreInstances should be 0");
+      assertEquals(0, stats.getComponentInstances(), "componentInstances should be 0");
+      assertEquals(0, stats.getMemories(), "memories should be 0");
+      assertEquals(0, stats.getTables(), "tables should be 0");
+      assertEquals(0, stats.getStacks(), "stacks should be 0");
+      assertEquals(0, stats.getGcHeaps(), "gcHeaps should be 0");
+      assertEquals(0, stats.getUnusedWarmMemories(), "unusedWarmMemories should be 0");
+      assertEquals(0, stats.getUnusedMemoryBytesResident(), "unusedMemoryBytesResident should be 0");
+      assertEquals(0, stats.getUnusedWarmTables(), "unusedWarmTables should be 0");
+      assertEquals(0, stats.getUnusedTableBytesResident(), "unusedTableBytesResident should be 0");
+      assertEquals(0, stats.getUnusedWarmStacks(), "unusedWarmStacks should be 0");
+      assertEquals(0, stats.getUnusedStackBytesResident(), "unusedStackBytesResident should be 0");
+      assertEquals(0, stats.getTotalInstances(), "totalInstances should be 0");
     }
 
     @Test
-    @DisplayName("JniPoolStatistics full constructor should set all values")
-    void jniPoolStatisticsFullConstructorShouldSetAllValues() {
-      JniPoolStatistics stats =
-          new JniPoolStatistics(
-              100, // instancesAllocated
-              50, // instancesReused
-              50, // instancesCreated
-              200, // memoryPoolsAllocated
-              100, // memoryPoolsReused
-              300, // stackPoolsAllocated
-              150, // stackPoolsReused
-              400, // tablePoolsAllocated
-              200, // tablePoolsReused
-              1000000, // peakMemoryUsage
-              500000, // currentMemoryUsage
-              5, // allocationFailures
-              1000000000, // poolWarmingTimeNanos (1 second)
-              1000000 // averageAllocationTimeNanos (1 millisecond)
-              );
+    @DisplayName("JniPoolStatistics array constructor should set all values")
+    void jniPoolStatisticsArrayConstructorShouldSetAllValues() {
+      final long[] metrics = createMetrics(10, 5, 20, 15, 8, 3, 4, 4096, 2, 2048, 1, 1024);
+      final JniPoolStatistics stats = new JniPoolStatistics(metrics);
 
-      assertEquals(100, stats.getInstancesAllocated(), "Instances allocated should match");
-      assertEquals(50, stats.getInstancesReused(), "Instances reused should match");
-      assertEquals(50, stats.getInstancesCreated(), "Instances created should match");
-      assertEquals(200, stats.getMemoryPoolsAllocated(), "Memory pools allocated should match");
-      assertEquals(100, stats.getMemoryPoolsReused(), "Memory pools reused should match");
-      assertEquals(300, stats.getStackPoolsAllocated(), "Stack pools allocated should match");
-      assertEquals(150, stats.getStackPoolsReused(), "Stack pools reused should match");
-      assertEquals(400, stats.getTablePoolsAllocated(), "Table pools allocated should match");
-      assertEquals(200, stats.getTablePoolsReused(), "Table pools reused should match");
-      assertEquals(1000000, stats.getPeakMemoryUsage(), "Peak memory usage should match");
-      assertEquals(500000, stats.getCurrentMemoryUsage(), "Current memory usage should match");
-      assertEquals(5, stats.getAllocationFailures(), "Allocation failures should match");
+      assertEquals(10, stats.getCoreInstances(), "coreInstances should match");
+      assertEquals(5, stats.getComponentInstances(), "componentInstances should match");
+      assertEquals(20, stats.getMemories(), "memories should match");
+      assertEquals(15, stats.getTables(), "tables should match");
+      assertEquals(8, stats.getStacks(), "stacks should match");
+      assertEquals(3, stats.getGcHeaps(), "gcHeaps should match");
+      assertEquals(4, stats.getUnusedWarmMemories(), "unusedWarmMemories should match");
+      assertEquals(4096, stats.getUnusedMemoryBytesResident(),
+          "unusedMemoryBytesResident should match");
+      assertEquals(2, stats.getUnusedWarmTables(), "unusedWarmTables should match");
+      assertEquals(2048, stats.getUnusedTableBytesResident(),
+          "unusedTableBytesResident should match");
+      assertEquals(1, stats.getUnusedWarmStacks(), "unusedWarmStacks should match");
+      assertEquals(1024, stats.getUnusedStackBytesResident(),
+          "unusedStackBytesResident should match");
     }
 
     @Test
-    @DisplayName("JniPoolStatistics getPoolWarmingTime should return Duration")
-    void jniPoolStatisticsGetPoolWarmingTimeShouldReturnDuration() {
-      JniPoolStatistics stats =
-          new JniPoolStatistics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000000000, 0);
+    @DisplayName("JniPoolStatistics getTotalInstances should sum core and component")
+    void jniPoolStatisticsGetTotalInstancesShouldSumCoreAndComponent() {
+      final long[] metrics = createMetrics(100, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      final JniPoolStatistics stats = new JniPoolStatistics(metrics);
 
-      Duration warmingTime = stats.getPoolWarmingTime();
-      assertNotNull(warmingTime, "Pool warming time should not be null");
-      assertEquals(Duration.ofSeconds(1), warmingTime, "Pool warming time should be 1 second");
+      assertEquals(150, stats.getTotalInstances(),
+          "totalInstances should be core + component = 150");
     }
 
     @Test
-    @DisplayName("JniPoolStatistics getAverageAllocationTime should return Duration")
-    void jniPoolStatisticsGetAverageAllocationTimeShouldReturnDuration() {
-      JniPoolStatistics stats =
-          new JniPoolStatistics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1000000);
+    @DisplayName("JniPoolStatistics unusedStackBytesResident -1 indicates unavailable")
+    void jniPoolStatisticsUnusedStackBytesResidentNegativeOne() {
+      final long[] metrics = createMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1);
+      final JniPoolStatistics stats = new JniPoolStatistics(metrics);
 
-      Duration avgTime = stats.getAverageAllocationTime();
-      assertNotNull(avgTime, "Average allocation time should not be null");
-      assertEquals(
-          Duration.ofMillis(1), avgTime, "Average allocation time should be 1 millisecond");
-    }
-
-    @Test
-    @DisplayName("JniPoolStatistics getReuseRatio should calculate correctly")
-    void jniPoolStatisticsGetReuseRatioShouldCalculateCorrectly() {
-      // Formula: reused / (allocated + reused) = 100 / (100 + 100) = 0.5
-      JniPoolStatistics stats =
-          new JniPoolStatistics(100, 100, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-      double reuseRatio = stats.getReuseRatio();
-      assertEquals(0.5, reuseRatio, 0.001, "Reuse ratio should be 0.5 (100/200)");
-    }
-
-    @Test
-    @DisplayName("JniPoolStatistics getReuseRatio should handle zero allocations")
-    void jniPoolStatisticsGetReuseRatioShouldHandleZeroAllocations() {
-      JniPoolStatistics stats = new JniPoolStatistics();
-
-      double reuseRatio = stats.getReuseRatio();
-      assertEquals(0.0, reuseRatio, "Reuse ratio should be 0 when no allocations");
-    }
-
-    @Test
-    @DisplayName("JniPoolStatistics getMemoryUtilization should calculate correctly")
-    void jniPoolStatisticsGetMemoryUtilizationShouldCalculateCorrectly() {
-      JniPoolStatistics stats =
-          new JniPoolStatistics(0, 0, 0, 0, 0, 0, 0, 0, 0, 1000000, 500000, 0, 0, 0);
-
-      double utilization = stats.getMemoryUtilization();
-      assertEquals(0.5, utilization, 0.001, "Memory utilization should be 0.5 (500000/1000000)");
-    }
-
-    @Test
-    @DisplayName("JniPoolStatistics getMemoryUtilization should handle zero peak")
-    void jniPoolStatisticsGetMemoryUtilizationShouldHandleZeroPeak() {
-      JniPoolStatistics stats = new JniPoolStatistics();
-
-      double utilization = stats.getMemoryUtilization();
-      assertEquals(0.0, utilization, "Memory utilization should be 0 when no peak usage");
+      assertEquals(-1, stats.getUnusedStackBytesResident(),
+          "unusedStackBytesResident should be -1 when unavailable");
     }
 
     @Test
     @DisplayName("JniPoolStatistics toString should contain relevant info")
     void jniPoolStatisticsToStringShouldContainRelevantInfo() {
-      JniPoolStatistics stats =
-          new JniPoolStatistics(
-              100, 50, 50, 200, 100, 300, 150, 400, 200, 1000000, 500000, 5, 0, 0);
+      final long[] metrics = createMetrics(10, 5, 20, 15, 8, 3, 4, 4096, 2, 2048, 1, 1024);
+      final JniPoolStatistics stats = new JniPoolStatistics(metrics);
 
-      String str = stats.toString();
+      final String str = stats.toString();
       assertNotNull(str, "toString should not return null");
       assertTrue(str.contains("JniPoolStatistics"), "Should contain class name");
-      assertTrue(str.contains("instancesAllocated"), "Should contain instancesAllocated");
-      assertTrue(str.contains("instancesReused"), "Should contain instancesReused");
-      assertTrue(str.contains("reuseRatio"), "Should contain reuseRatio");
-      assertTrue(str.contains("memoryUtilization"), "Should contain memoryUtilization");
+      assertTrue(str.contains("coreInstances=10"), "Should contain coreInstances");
+      assertTrue(str.contains("componentInstances=5"), "Should contain componentInstances");
+      assertTrue(str.contains("totalInstances=15"), "Should contain totalInstances");
     }
   }
 

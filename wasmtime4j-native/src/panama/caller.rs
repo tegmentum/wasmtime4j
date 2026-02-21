@@ -100,6 +100,23 @@ pub extern "C" fn wasmtime4j_panama_caller_has_epoch_deadline(caller_ptr: *mut c
     }
 }
 
+/// Set fuel async yield interval for the caller's store (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_set_fuel_async_yield_interval(
+    caller_ptr: *mut c_void,
+    interval: c_ulong,
+) -> c_int {
+    if caller_ptr.is_null() {
+        return -1; // Error: null pointer
+    }
+
+    ffi_utils::ffi_try_code(|| {
+        let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+        core::caller_set_fuel_async_yield_interval(caller, interval)?;
+        Ok(())
+    })
+}
+
 /// Check if caller has an export with the given name (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_caller_has_export(

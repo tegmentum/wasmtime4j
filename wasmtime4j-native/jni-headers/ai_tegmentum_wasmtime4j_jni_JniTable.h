@@ -111,6 +111,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableInit
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeElemDrop
   (JNIEnv *, jclass, jlong, jint);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
+ * Method:    nativeTableGrowAsync
+ * Signature: (JJIJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrowAsync
+  (JNIEnv *, jclass, jlong, jlong, jint, jlong);
+
 #ifdef __cplusplus
 }
 #endif

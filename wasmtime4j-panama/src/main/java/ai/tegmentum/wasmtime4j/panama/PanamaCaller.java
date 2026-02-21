@@ -345,6 +345,17 @@ final class PanamaCaller<T> implements Caller<T> {
     }
   }
 
+  @Override
+  public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
+    if (interval < 0) {
+      throw new IllegalArgumentException("interval cannot be negative");
+    }
+    final int result = bindings.callerSetFuelAsyncYieldInterval(callerPtr, interval);
+    if (result != 0) {
+      throw new WasmException("Failed to set fuel async yield interval");
+    }
+  }
+
   /**
    * Gets the native caller handle.
    *

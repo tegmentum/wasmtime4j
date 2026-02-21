@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Represents a typed function exported by a WebAssembly component.
@@ -118,6 +119,46 @@ public interface ComponentFunc {
    */
   default List<ComponentVal> call() throws WasmException {
     return call(List.of());
+  }
+
+  /**
+   * Asynchronously calls the function with the given arguments.
+   *
+   * <p>The call is executed on the default ForkJoinPool. The returned future completes with the
+   * function results, or completes exceptionally if the call fails.
+   *
+   * @param args the function arguments
+   * @return a CompletableFuture that will contain the function results
+   */
+  default CompletableFuture<List<ComponentVal>> callAsync(final ComponentVal... args) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return call(args);
+          } catch (final WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  /**
+   * Asynchronously calls the function with a list of arguments.
+   *
+   * <p>The call is executed on the default ForkJoinPool. The returned future completes with the
+   * function results, or completes exceptionally if the call fails.
+   *
+   * @param args the function arguments
+   * @return a CompletableFuture that will contain the function results
+   */
+  default CompletableFuture<List<ComponentVal>> callAsync(final List<ComponentVal> args) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return call(args);
+          } catch (final WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   /**

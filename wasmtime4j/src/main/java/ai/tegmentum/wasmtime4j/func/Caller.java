@@ -205,4 +205,18 @@ public interface Caller<T> {
    */
   void gc() throws WasmException;
 
+  /**
+   * Configures the fuel-based async yield interval for this caller's store.
+   *
+   * <p>When both fuel consumption and async support are enabled, this controls how frequently the
+   * WebAssembly execution yields back to the async executor. A value of 0 disables automatic
+   * yielding.
+   *
+   * @param interval the fuel interval between yields, or 0 to disable
+   * @throws WasmException if the configuration fails
+   * @throws IllegalArgumentException if interval is negative
+   * @since 1.0.0
+   */
+  void setFuelAsyncYieldInterval(long interval) throws WasmException;
+
 }

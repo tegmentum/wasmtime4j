@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.type.TableType;
 
 /**
@@ -308,4 +309,19 @@ public interface WasmTable {
     }
     init((int) destOffset, elementSegmentIndex, (int) srcOffset, (int) length);
   }
+
+  /**
+   * Grows the table asynchronously by the specified number of elements.
+   *
+   * <p>This method requires the engine to be configured with {@code asyncSupport(true)}.
+   * It goes through the async resource limiter if one is set on the store, allowing
+   * the limiter to asynchronously decide whether to permit the growth.
+   *
+   * @param elements the number of elements to add
+   * @param initValue the initial value for new elements
+   * @return the previous size, or -1 if growth failed
+   * @throws WasmException if growth fails or async support is not enabled
+   * @since 1.1.0
+   */
+  int growAsync(int elements, Object initValue) throws WasmException;
 }

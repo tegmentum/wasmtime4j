@@ -17,6 +17,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeIn
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstancePre
+ * Method:    nativeInstantiateAsync
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeInstantiateAsync
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstancePre
  * Method:    nativeIsValid
  * Signature: (J)I
  */

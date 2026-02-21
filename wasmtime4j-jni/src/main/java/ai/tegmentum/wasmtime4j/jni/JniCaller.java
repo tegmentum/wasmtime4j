@@ -286,6 +286,14 @@ final class JniCaller<T> implements Caller<T> {
     }
   }
 
+  @Override
+  public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
+    if (interval < 0) {
+      throw new IllegalArgumentException("interval cannot be negative");
+    }
+    nativeSetFuelAsyncYieldInterval(callerHandle, interval);
+  }
+
   /**
    * Gets the native caller handle.
    *
@@ -389,4 +397,12 @@ final class JniCaller<T> implements Caller<T> {
    * @param deadline the epoch deadline to set
    */
   private static native void nativeSetEpochDeadline(long callerHandle, long deadline);
+
+  /**
+   * Sets the fuel async yield interval for the caller's store.
+   *
+   * @param callerHandle the native caller handle
+   * @param interval the yield interval, or 0 to disable
+   */
+  private static native void nativeSetFuelAsyncYieldInterval(long callerHandle, long interval);
 }

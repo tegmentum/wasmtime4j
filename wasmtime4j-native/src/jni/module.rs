@@ -604,6 +604,80 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyI
     // For now, do nothing - proper ImportMap implementation would be needed
 }
 
+/// Compile a WebAssembly module from a file path
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeCompileFromFile(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    path: JString,
+) -> jlong {
+    // Convert JString path to Rust string before moving env
+    let path_str = match env.get_string(&path) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return 0 as jlong,
+    };
+
+    jni_utils::jni_try_ptr(&mut env, || {
+        let engine = unsafe {
+            crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)?
+        };
+        core::compile_module_from_file(engine, std::path::Path::new(&path_str))
+    }) as jlong
+}
+
+/// Check if two modules are the same underlying compiled module
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeModuleSame(
+    _env: JNIEnv,
+    _class: JClass,
+    module_ptr1: jlong,
+    module_ptr2: jlong,
+) -> jboolean {
+    if module_ptr1 == 0 || module_ptr2 == 0 {
+        return jni::sys::JNI_FALSE;
+    }
+    match unsafe {
+        core::modules_same(
+            module_ptr1 as *const std::os::raw::c_void,
+            module_ptr2 as *const std::os::raw::c_void,
+        )
+    } {
+        Ok(same) => {
+            if same {
+                jni::sys::JNI_TRUE
+            } else {
+                jni::sys::JNI_FALSE
+            }
+        }
+        Err(_) => jni::sys::JNI_FALSE,
+    }
+}
+
+/// Get the index of an export by name
+/// Returns -1 if the export is not found
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExportIndex(
+    mut env: JNIEnv,
+    _class: JClass,
+    module_ptr: jlong,
+    export_name: JString,
+) -> jlong {
+    if module_ptr == 0 {
+        return -1;
+    }
+
+    let name = match env.get_string(&export_name) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return -1,
+    };
+
+    match unsafe { core::get_export_index(module_ptr as *const std::os::raw::c_void, &name) } {
+        Ok(idx) => idx as jlong,
+        Err(_) => -1,
+    }
+}
+
 /// Destroy a module
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModule(

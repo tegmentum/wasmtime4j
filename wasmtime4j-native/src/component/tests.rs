@@ -583,7 +583,7 @@ fn test_component_linker_wasi_preopen_dir() {
     let wasmtime_engine = wasmtime::Engine::new(&config).unwrap();
     let mut linker = ComponentLinker::new(&wasmtime_engine).expect("Failed to create linker");
 
-    linker.add_wasi_preopen_dir("/tmp".to_string(), "/sandbox".to_string(), true);
+    linker.add_wasi_preopen_dir("/tmp".to_string(), "/sandbox".to_string(), 0x1, 0x1);
 
     let wasi_config = linker.wasi_p2_config();
     assert_eq!(

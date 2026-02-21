@@ -404,6 +404,32 @@ public interface Module extends Closeable {
   }
 
   /**
+   * Checks if this module and another module share the same underlying compiled code.
+   *
+   * <p>Two modules are considered the "same" if they were cloned from the same original compilation.
+   * This is a pointer identity check on the underlying native module allocation.
+   *
+   * @param other the other module to compare against
+   * @return true if both modules share the same underlying compiled code
+   * @throws IllegalArgumentException if other is null
+   * @since 1.1.0
+   */
+  boolean same(final Module other);
+
+  /**
+   * Gets the index of an export by name.
+   *
+   * <p>Returns the zero-based index of the export in the module's export list. This index
+   * corresponds to the ordering of exports as returned by {@link #getExports()}.
+   *
+   * @param name the name of the export to find
+   * @return the zero-based index, or -1 if no export with this name exists
+   * @throws IllegalArgumentException if name is null
+   * @since 1.1.0
+   */
+  int getExportIndex(final String name);
+
+  /**
    * Serializes this compiled module to a byte array for caching or distribution.
    *
    * <p>Serialized modules can be stored to disk, sent over the network, or cached for faster

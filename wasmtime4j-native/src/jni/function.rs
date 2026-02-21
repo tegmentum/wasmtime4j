@@ -807,6 +807,83 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallDo
     0.0
 }
 
+/// Convert a Func to its raw funcref pointer (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncToRaw(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+) -> jlong {
+    use std::os::raw::c_void;
+
+    let result = (|| -> WasmtimeResult<jlong> {
+        if function_ptr == 0 {
+            return Err(WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+        }
+        if store_handle == 0 {
+            return Err(WasmtimeError::invalid_parameter("store_handle cannot be null"));
+        }
+
+        let func_handle = unsafe { &*(function_ptr as *const FunctionHandle) };
+        let func = func_handle.get_func();
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+        let raw_ptr = crate::hostfunc::core::func_to_raw(func, store)?;
+        Ok(raw_ptr as jlong)
+    })();
+
+    match result {
+        Ok(raw) => raw,
+        Err(error) => {
+            jni_utils::throw_jni_exception(&mut env, &error);
+            0
+        }
+    }
+}
+
+/// Reconstruct a Func from a raw funcref pointer (JNI version)
+///
+/// Returns 0 if the raw value is null (no function at that reference)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncFromRaw(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    raw: jlong,
+) -> jlong {
+    use std::os::raw::c_void;
+
+    let result = (|| -> WasmtimeResult<jlong> {
+        if store_handle == 0 {
+            return Err(WasmtimeError::invalid_parameter("store_handle cannot be null"));
+        }
+
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        let func_opt = crate::hostfunc::core::func_from_raw(store, raw as *mut c_void)?;
+
+        match func_opt {
+            Some(func) => {
+                let handle = Box::new(FunctionHandle::new(
+                    func,
+                    "from_raw".to_string(),
+                    store,
+                ));
+                Ok(Box::into_raw(handle) as jlong)
+            }
+            None => Ok(0),
+        }
+    })();
+
+    match result {
+        Ok(ptr) => ptr,
+        Err(error) => {
+            jni_utils::throw_jni_exception(&mut env, &error);
+            0
+        }
+    }
+}
+
 /// Destroy a function (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeDestroyFunction(

@@ -33,11 +33,35 @@ JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePr
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativePrecompileComponent
+ * Signature: (J[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompileComponent
+  (JNIEnv *, jobject, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeGetPoolingAllocatorMetrics
+ * Signature: (J)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetPoolingAllocatorMetrics
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeCreateStore
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateStore
   (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCreateSharedMemory
+ * Signature: (JII)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateSharedMemory
+  (JNIEnv *, jobject, jlong, jint, jint);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
@@ -142,6 +166,22 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsAs
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIncrementEpoch
   (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCreateWeakEngine
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateWeakEngine
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCreateEngineFromJsonConfig
+ * Signature: ([B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineFromJsonConfig
+  (JNIEnv *, jclass, jbyteArray);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine

@@ -17,6 +17,23 @@ pub extern "C" fn wasmtime4j_panama_instance_pre_instantiate(
     unsafe { crate::linker::wasmtime4j_instance_pre_instantiate(instance_pre_ptr, store_ptr) }
 }
 
+/// Asynchronously instantiate from an InstancePre (Panama FFI)
+///
+/// Requires the engine to be configured with `async_support(true)`.
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_pre_instantiate_async(
+    instance_pre_ptr: *const c_void,
+    store_ptr: *mut c_void,
+) -> *mut c_void {
+    if instance_pre_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    unsafe {
+        crate::linker::wasmtime4j_instance_pre_instantiate_async(instance_pre_ptr, store_ptr)
+    }
+}
+
 /// Check if InstancePre is valid (Panama FFI)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_instance_pre_is_valid(

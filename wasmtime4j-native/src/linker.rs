@@ -1255,6 +1255,21 @@ impl Drop for Linker {
 
 use std::os::raw::{c_int, c_void};
 
+/// Convert a wasmtime::Extern to the internal ImportType.
+///
+/// Note: For Func type, we store a placeholder function type since
+/// we don't have access to the engine here and the import registry
+/// is only used for tracking, not for type checking.
+fn extern_to_import_type(extern_item: &wasmtime::Extern) -> ImportType {
+    match extern_item {
+        wasmtime::Extern::Func(_) => ImportType::Instance, // Use Instance as placeholder for funcs without type info
+        wasmtime::Extern::Table(_) => ImportType::Table,
+        wasmtime::Extern::Memory(_) => ImportType::Memory,
+        wasmtime::Extern::Global(_) => ImportType::Global,
+        _ => ImportType::Instance,
+    }
+}
+
 /// Linker core functions for interface implementations
 pub mod core {
     use super::*;
@@ -1396,6 +1411,151 @@ pub mod core {
         match linker_guard.get_default(&mut *store_guard, module_name) {
             Ok(func) => Ok(Some(func)),
             Err(_) => Ok(None),
+        }
+    }
+
+    /// Core function to look up a previously defined value in the linker.
+    ///
+    /// Returns the `Extern` for the given module name and item name,
+    /// or `None` if not found.
+    ///
+    /// # Arguments
+    /// * `linker` - The linker to query
+    /// * `store` - The store context
+    /// * `module_name` - The module name
+    /// * `name` - The item name
+    ///
+    /// # Returns
+    /// `Ok(Some(extern))` if found, `Ok(None)` if not defined
+    pub fn get_extern(
+        linker: &Linker,
+        store: &mut crate::store::Store,
+        module_name: &str,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Extern>> {
+        let linker_guard = linker.inner()?;
+        let mut store_guard = store.try_lock_store()?;
+        Ok(linker_guard.get(&mut *store_guard, module_name, name))
+    }
+
+    /// Core function to define an extern with a module and item name.
+    ///
+    /// # Arguments
+    /// * `linker` - The linker to modify
+    /// * `store` - The store context
+    /// * `module_name` - The module name
+    /// * `name` - The item name
+    /// * `extern_item` - The extern to define
+    pub fn define_extern(
+        linker: &mut Linker,
+        store: &mut crate::store::Store,
+        module_name: &str,
+        name: &str,
+        extern_item: wasmtime::Extern,
+    ) -> WasmtimeResult<()> {
+        // Capture type before extern_item is moved
+        let import_type = super::extern_to_import_type(&extern_item);
+        let mut linker_guard = linker.inner()?;
+        let store_guard = store.try_lock_store()?;
+        linker_guard
+            .define(&*store_guard, module_name, name, extern_item)
+            .map_err(|e| crate::error::WasmtimeError::Linker {
+                message: format!(
+                    "Failed to define '{}::{}': {}",
+                    module_name, name, e
+                ),
+            })?;
+        drop(linker_guard);
+        drop(store_guard);
+        // Track in the import registry
+        linker.imports_registry.insert(
+            format!("{}::{}", module_name, name),
+            ImportDefinition {
+                module_name: module_name.to_string(),
+                import_name: name.to_string(),
+                import_type,
+                defined_at: std::time::Instant::now(),
+            },
+        );
+        linker.metadata.import_count = linker.imports_registry.len();
+        Ok(())
+    }
+
+    /// Core function to define an extern with just a name (no module).
+    ///
+    /// # Arguments
+    /// * `linker` - The linker to modify
+    /// * `store` - The store context
+    /// * `name` - The item name
+    /// * `extern_item` - The extern to define
+    pub fn define_name(
+        linker: &mut Linker,
+        store: &mut crate::store::Store,
+        name: &str,
+        extern_item: wasmtime::Extern,
+    ) -> WasmtimeResult<()> {
+        // Capture type before extern_item is moved
+        let import_type = super::extern_to_import_type(&extern_item);
+        let mut linker_guard = linker.inner()?;
+        let store_guard = store.try_lock_store()?;
+        linker_guard
+            .define_name(&*store_guard, name, extern_item)
+            .map_err(|e| crate::error::WasmtimeError::Linker {
+                message: format!("Failed to define name '{}': {}", name, e),
+            })?;
+        drop(linker_guard);
+        drop(store_guard);
+        // Track in the import registry under empty module
+        linker.imports_registry.insert(
+            format!("::{}", name),
+            ImportDefinition {
+                module_name: String::new(),
+                import_name: name.to_string(),
+                import_type,
+                defined_at: std::time::Instant::now(),
+            },
+        );
+        linker.metadata.import_count = linker.imports_registry.len();
+        Ok(())
+    }
+
+    /// Core function to iterate all definitions in the linker.
+    ///
+    /// Returns a vector of (module_name, item_name, extern_type_code) tuples.
+    /// Type codes: 0=Func, 1=Table, 2=Memory, 3=Global, -1=Unknown
+    ///
+    /// # Arguments
+    /// * `linker` - The linker to query
+    /// * `store` - The store context
+    pub fn iter_definitions(
+        linker: &Linker,
+        store: &mut crate::store::Store,
+    ) -> WasmtimeResult<Vec<(String, String, i32)>> {
+        let linker_guard = linker.inner()?;
+        let mut store_guard = store.try_lock_store()?;
+        let mut result = Vec::new();
+        for (module, name, extern_item) in linker_guard.iter(&mut *store_guard) {
+            let type_code = match extern_item {
+                wasmtime::Extern::Func(_) => 0,
+                wasmtime::Extern::Table(_) => 1,
+                wasmtime::Extern::Memory(_) => 2,
+                wasmtime::Extern::Global(_) => 3,
+                _ => -1,
+            };
+            result.push((module.to_string(), name.to_string(), type_code));
+        }
+        Ok(result)
+    }
+
+    /// Convert a wasmtime::Extern to a type code.
+    /// Type codes: 0=Func, 1=Table, 2=Memory, 3=Global, -1=Unknown
+    pub fn extern_type_code(extern_item: &wasmtime::Extern) -> i32 {
+        match extern_item {
+            wasmtime::Extern::Func(_) => 0,
+            wasmtime::Extern::Table(_) => 1,
+            wasmtime::Extern::Memory(_) => 2,
+            wasmtime::Extern::Global(_) => 3,
+            _ => -1,
         }
     }
 }
@@ -1553,6 +1713,41 @@ impl InstancePreWrapper {
     pub fn created_at_micros(&self) -> u64 {
         self.created_at.elapsed().as_micros() as u64
     }
+
+    /// Instantiate asynchronously with the given store.
+    ///
+    /// Requires the engine to be configured with `async_support(true)`.
+    /// Uses the Tokio runtime to bridge the async call.
+    #[cfg(feature = "async")]
+    pub fn instantiate_async(
+        &self,
+        store: &mut crate::store::Store,
+    ) -> WasmtimeResult<Instance> {
+        let start = Instant::now();
+
+        let handle = crate::async_runtime::get_runtime_handle();
+        let mut store_guard = store.try_lock_store()?;
+
+        let result = handle.block_on(async {
+            self.inner.instantiate_async(&mut *store_guard).await
+        });
+
+        drop(store_guard);
+
+        let duration = start.elapsed().as_nanos() as u64;
+        self.instance_count.fetch_add(1, Ordering::Relaxed);
+        self.total_instantiation_time_ns
+            .fetch_add(duration, Ordering::Relaxed);
+
+        match result {
+            Ok(wasmtime_instance) => {
+                Instance::from_wasmtime_instance(wasmtime_instance, store, &self.module)
+            }
+            Err(e) => Err(WasmtimeError::Instance {
+                message: format!("Failed to async instantiate from InstancePre: {}", e),
+            }),
+        }
+    }
 }
 
 /// Create an InstancePre from a linker and module
@@ -1620,6 +1815,39 @@ pub unsafe extern "C" fn wasmtime4j_instance_pre_instantiate(
             Err(_) => std::ptr::null_mut(),
         },
         Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Asynchronously instantiate from an InstancePre
+///
+/// Requires the engine to be configured with `async_support(true)`.
+///
+/// # Safety
+///
+/// instance_pre_ptr and store_ptr must be valid pointers
+#[cfg(feature = "async")]
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_instance_pre_instantiate_async(
+    instance_pre_ptr: *const c_void,
+    store_ptr: *mut c_void,
+) -> *mut c_void {
+    if instance_pre_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let wrapper = &*(instance_pre_ptr as *const InstancePreWrapper);
+    match crate::store::core::get_store_mut(store_ptr) {
+        Ok(store) => match wrapper.instantiate_async(store) {
+            Ok(instance) => Box::into_raw(Box::new(instance)) as *mut c_void,
+            Err(e) => {
+                log::error!("Failed to async instantiate from InstancePre: {:?}", e);
+                std::ptr::null_mut()
+            }
+        },
+        Err(e) => {
+            log::error!("Failed to get store for async instantiation: {:?}", e);
+            std::ptr::null_mut()
+        }
     }
 }
 

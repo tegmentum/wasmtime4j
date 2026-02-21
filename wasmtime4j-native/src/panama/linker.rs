@@ -955,6 +955,233 @@ pub extern "C" fn wasmtime4j_panama_linker_get_default(
     })
 }
 
+/// Panama FFI: Look up a defined extern in the linker by module and item name.
+///
+/// Returns a boxed `wasmtime::Extern` pointer, or null if not found.
+/// The caller must use `wasmtime4j_panama_linker_get_extern_type` to determine
+/// the type and must free the pointer with `wasmtime4j_panama_extern_destroy`.
+///
+/// # Safety
+/// All pointers must be valid.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_get_by_import(
+    linker_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    module_name: *const c_char,
+    item_name: *const c_char,
+) -> *mut c_void {
+    if linker_ptr.is_null() || store_ptr.is_null() || module_name.is_null() || item_name.is_null()
+    {
+        return std::ptr::null_mut();
+    }
+
+    ffi_utils::ffi_try_ptr(|| {
+        let linker = unsafe { linker_core::get_linker_ref(linker_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let mod_str = unsafe { CStr::from_ptr(module_name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+        let name_str = unsafe { CStr::from_ptr(item_name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+
+        match linker_core::get_extern(linker, store, mod_str, name_str)? {
+            Some(extern_item) => Ok(Box::new(extern_item)),
+            None => Err(crate::error::WasmtimeError::Runtime {
+                message: format!("No extern found for '{}::{}'", mod_str, name_str),
+                backtrace: None,
+            }),
+        }
+    })
+}
+
+/// Panama FFI: Get the type code of a boxed wasmtime::Extern.
+///
+/// Type codes: 0=Func, 1=Table, 2=Memory, 3=Global, -1=Unknown/error
+///
+/// # Safety
+/// extern_ptr must be a valid pointer to a boxed wasmtime::Extern.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_get_extern_type(extern_ptr: *const c_void) -> c_int {
+    if extern_ptr.is_null() {
+        return -1;
+    }
+    let extern_item = unsafe { &*(extern_ptr as *const wasmtime::Extern) };
+    linker_core::extern_type_code(extern_item)
+}
+
+/// Panama FFI: Destroy a boxed wasmtime::Extern returned from get_by_import.
+///
+/// # Safety
+/// extern_ptr must be a valid pointer returned from wasmtime4j_panama_linker_get_by_import.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_extern_destroy(extern_ptr: *mut c_void) {
+    if !extern_ptr.is_null() {
+        unsafe {
+            drop(Box::from_raw(extern_ptr as *mut wasmtime::Extern));
+        }
+    }
+}
+
+/// Panama FFI: Define an extern in the linker with just a name (no module).
+///
+/// # Safety
+/// All pointers must be valid.
+///
+/// # Returns
+/// 0 on success, non-zero on failure.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_define_name(
+    linker_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    name: *const c_char,
+    extern_ptr: *const c_void,
+) -> c_int {
+    if linker_ptr.is_null() || store_ptr.is_null() || name.is_null() || extern_ptr.is_null() {
+        return -1;
+    }
+
+    ffi_utils::ffi_try_code(|| {
+        let linker = unsafe { linker_core::get_linker_mut(linker_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let name_str = unsafe { CStr::from_ptr(name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+        let extern_item = unsafe { &*(extern_ptr as *const wasmtime::Extern) };
+        let cloned = extern_item.clone();
+
+        linker_core::define_name(linker, store, name_str, cloned)
+    })
+}
+
+/// Panama FFI: Iterate all definitions in the linker.
+///
+/// Returns the count of definitions found. For each definition, the module name,
+/// item name, and type code are written to the provided output arrays.
+///
+/// If the output arrays are null, only the count is returned (for sizing).
+///
+/// # Safety
+/// All non-null pointers must be valid. Output arrays must have sufficient capacity.
+///
+/// # Returns
+/// The number of definitions, or -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_iter(
+    linker_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    out_count: *mut c_int,
+) -> c_int {
+    if linker_ptr.is_null() || store_ptr.is_null() {
+        return -1;
+    }
+
+    ffi_utils::ffi_try_code(|| {
+        let linker = unsafe { linker_core::get_linker_ref(linker_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+        let definitions = linker_core::iter_definitions(linker, store)?;
+        let count = definitions.len() as c_int;
+
+        if !out_count.is_null() {
+            unsafe {
+                *out_count = count;
+            }
+        }
+
+        // Store definitions in thread-local for subsequent retrieval
+        ITER_RESULT.with(|cell| {
+            *cell.borrow_mut() = Some(definitions);
+        });
+
+        Ok(())
+    })
+}
+
+/// Panama FFI: Get a specific definition from the last iter() call.
+///
+/// Must be called after wasmtime4j_panama_linker_iter. Returns the module name,
+/// item name, and type code for the definition at the given index.
+///
+/// # Safety
+/// All pointers must be valid. Index must be < count from iter().
+///
+/// # Returns
+/// 0 on success, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_iter_get(
+    index: c_int,
+    out_module_name: *mut c_char,
+    module_name_capacity: c_int,
+    out_item_name: *mut c_char,
+    item_name_capacity: c_int,
+    out_type_code: *mut c_int,
+) -> c_int {
+    ITER_RESULT.with(|cell| {
+        let borrow = cell.borrow();
+        let definitions = match borrow.as_ref() {
+            Some(d) => d,
+            None => return -1,
+        };
+
+        let idx = index as usize;
+        if idx >= definitions.len() {
+            return -1;
+        }
+
+        let (ref mod_name, ref item_name, type_code) = definitions[idx];
+
+        // Write module name
+        if !out_module_name.is_null() && module_name_capacity > 0 {
+            let bytes = mod_name.as_bytes();
+            let copy_len = std::cmp::min(bytes.len(), (module_name_capacity - 1) as usize);
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    bytes.as_ptr(),
+                    out_module_name as *mut u8,
+                    copy_len,
+                );
+                *out_module_name.add(copy_len) = 0; // null terminate
+            }
+        }
+
+        // Write item name
+        if !out_item_name.is_null() && item_name_capacity > 0 {
+            let bytes = item_name.as_bytes();
+            let copy_len = std::cmp::min(bytes.len(), (item_name_capacity - 1) as usize);
+            unsafe {
+                std::ptr::copy_nonoverlapping(
+                    bytes.as_ptr(),
+                    out_item_name as *mut u8,
+                    copy_len,
+                );
+                *out_item_name.add(copy_len) = 0; // null terminate
+            }
+        }
+
+        // Write type code
+        if !out_type_code.is_null() {
+            unsafe {
+                *out_type_code = type_code;
+            }
+        }
+
+        0
+    })
+}
+
+thread_local! {
+    /// Thread-local storage for iter() results, to avoid complex FFI for returning arrays of strings.
+    static ITER_RESULT: std::cell::RefCell<Option<Vec<(String, String, i32)>>> =
+        std::cell::RefCell::new(None);
+}
+
 /// Helper: Convert int to ValType
 fn int_to_valtype(val: c_int) -> crate::WasmtimeResult<ValType> {
     crate::ffi_common::valtype_conversion::int_to_valtype(val)

@@ -58,6 +58,46 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCreateTab
     }) as jlong
 }
 
+/// Create a new 64-bit WebAssembly table (JNI version)
+///
+/// This creates a table with 64-bit indices as part of the Memory64 proposal.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTable64(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+    element_type: jint,
+    initial_size: jlong,
+    has_maximum: jint,
+    maximum_size: jlong,
+) -> jlong {
+    jni_utils::jni_try_ptr(&mut env, || {
+        let store = unsafe {
+            ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
+        };
+
+        let val_type = match element_type {
+            5 => ValType::Ref(RefType::FUNCREF),
+            6 => ValType::Ref(RefType::EXTERNREF),
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
+        };
+
+        let max_size = if has_maximum != 0 {
+            Some(maximum_size as u64)
+        } else {
+            None
+        };
+
+        let table = core::create_table64(store, val_type, initial_size as u64, max_size, None)?;
+
+        Ok(table)
+    }) as jlong
+}
+
 /// Get table size (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetSize(
@@ -203,7 +243,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroy(
 }
 
 /// Get table type information directly from the table (JNI version)
-/// Returns array: [elementTypeCode, minimum, maximum(-1 if unlimited)]
+/// Returns array: [elementTypeCode, minimum, maximum(-1 if unlimited), is64(0 or 1)]
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableTypeInfo<'a>(
     mut env: JNIEnv<'a>,
@@ -219,13 +259,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableT
 
         let minimum = metadata.initial_size as i64;
         let maximum = metadata.maximum_size.map(|m| m as i64).unwrap_or(-1);
+        let is_64 = if metadata.is_64 { 1i64 } else { 0i64 };
 
-        // Create long array with [elementTypeCode, minimum, maximum]
-        let result_array = env.new_long_array(3).map_err(|e| WasmtimeError::Memory {
+        // Create long array with [elementTypeCode, minimum, maximum, is64]
+        let result_array = env.new_long_array(4).map_err(|e| WasmtimeError::Memory {
             message: format!("Failed to create long array: {}", e),
         })?;
 
-        let values = vec![type_code as i64, minimum, maximum];
+        let values = vec![type_code as i64, minimum, maximum, is_64];
         env.set_long_array_region(&result_array, 0, &values)
             .map_err(|e| WasmtimeError::Memory {
                 message: format!("Failed to set long array region: {}", e),
@@ -298,6 +339,65 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrow
         };
 
         let prev_size = core::grow_table(table, store, delta as u32, init_element)?;
+        Ok(prev_size as jlong)
+    })
+}
+
+/// Grow table asynchronously (JNI version)
+///
+/// Requires engine with `async_support(true)`. Uses the async resource limiter.
+#[no_mangle]
+#[cfg(feature = "async")]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrowAsync(
+    mut env: JNIEnv,
+    _class: JClass,
+    table_ptr: jlong,
+    store_ptr: jlong,
+    delta: jint,
+    init_value: jlong,
+) -> jlong {
+    jni_utils::jni_try_default(&env, -1, || {
+        use std::os::raw::c_void;
+
+        let table = unsafe { core::get_table_ref(table_ptr as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_ref(store_ptr as *const c_void)? };
+
+        let metadata = core::get_table_metadata(table);
+        let init_element = match &metadata.element_type {
+            ValType::Ref(ref_type) => match ref_type.heap_type() {
+                wasmtime::HeapType::Func => {
+                    if init_value == 0 {
+                        TableElement::FuncRef(None)
+                    } else {
+                        TableElement::FuncRef(Some(init_value as u64))
+                    }
+                }
+                wasmtime::HeapType::Extern => {
+                    if init_value == 0 {
+                        TableElement::ExternRef(None)
+                    } else {
+                        TableElement::ExternRef(Some(init_value as u64))
+                    }
+                }
+                _ => {
+                    if init_value == 0 {
+                        TableElement::AnyRef(None)
+                    } else {
+                        TableElement::AnyRef(Some(init_value as u64))
+                    }
+                }
+            },
+            _ => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Table has non-reference element type: {:?}",
+                        metadata.element_type
+                    ),
+                });
+            }
+        };
+
+        let prev_size = core::grow_table_async(table, store, delta as u32, init_element)?;
         Ok(prev_size as jlong)
     })
 }

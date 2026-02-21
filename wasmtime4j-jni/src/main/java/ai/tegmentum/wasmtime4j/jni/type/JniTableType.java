@@ -22,6 +22,7 @@ public final class JniTableType implements TableType {
   private final WasmValueType elementType;
   private final long minimum;
   private final Optional<Long> maximum;
+  private final boolean is64;
 
   /**
    * Creates a new JniTableType instance.
@@ -31,6 +32,22 @@ public final class JniTableType implements TableType {
    * @param maximum the maximum number of elements (null if unlimited)
    */
   public JniTableType(final WasmValueType elementType, final long minimum, final Long maximum) {
+    this(elementType, minimum, maximum, false);
+  }
+
+  /**
+   * Creates a new JniTableType instance with 64-bit index support.
+   *
+   * @param elementType the element type stored in the table
+   * @param minimum the minimum number of elements
+   * @param maximum the maximum number of elements (null if unlimited)
+   * @param is64 true if this table uses 64-bit indices
+   */
+  public JniTableType(
+      final WasmValueType elementType,
+      final long minimum,
+      final Long maximum,
+      final boolean is64) {
     Validation.requireNonNull(elementType, "elementType");
     if (minimum < 0) {
       throw new IllegalArgumentException("Minimum element count cannot be negative: " + minimum);
@@ -47,10 +64,12 @@ public final class JniTableType implements TableType {
     this.elementType = elementType;
     this.minimum = minimum;
     this.maximum = Optional.ofNullable(maximum);
+    this.is64 = is64;
 
     LOGGER.fine(
         String.format(
-            "Created JniTableType: element=%s, min=%d, max=%s", elementType, minimum, maximum));
+            "Created JniTableType: element=%s, min=%d, max=%s, is64=%s",
+            elementType, minimum, maximum, is64));
   }
 
   /**
@@ -64,15 +83,16 @@ public final class JniTableType implements TableType {
     Validation.requireValidHandle(nativeHandle, "nativeHandle");
 
     final long[] typeInfo = nativeGetTableTypeInfo(nativeHandle);
-    if (typeInfo.length < 3) {
+    if (typeInfo.length < 4) {
       throw new IllegalStateException("Invalid table type info from native");
     }
 
     final WasmValueType elementType = WasmValueType.fromNativeTypeCode((int) typeInfo[0]);
     final long minimum = typeInfo[1];
     final Long maximum = typeInfo[2] == -1 ? null : typeInfo[2];
+    final boolean is64 = typeInfo[3] != 0;
 
-    return new JniTableType(elementType, minimum, maximum);
+    return new JniTableType(elementType, minimum, maximum, is64);
   }
 
   @Override
@@ -88,6 +108,11 @@ public final class JniTableType implements TableType {
   @Override
   public Optional<Long> getMaximum() {
     return maximum;
+  }
+
+  @Override
+  public boolean is64Bit() {
+    return is64;
   }
 
   @Override

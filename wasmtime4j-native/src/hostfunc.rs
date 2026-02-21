@@ -738,6 +738,28 @@ pub mod core {
 
         Ok((count, next_id))
     }
+
+    /// Convert a Func to its raw funcref pointer for low-level handle passing
+    pub fn func_to_raw(
+        func: &Func,
+        store: &mut crate::store::Store,
+    ) -> WasmtimeResult<*mut std::os::raw::c_void> {
+        let mut store_guard = store.try_lock_store()?;
+        Ok(func.to_raw(&mut *store_guard))
+    }
+
+    /// Reconstruct a Func from a raw funcref pointer
+    ///
+    /// Returns None if the raw value is null
+    pub fn func_from_raw(
+        store: &mut crate::store::Store,
+        raw: *mut std::os::raw::c_void,
+    ) -> WasmtimeResult<Option<Func>> {
+        let mut store_guard = store.try_lock_store()?;
+        // Safety: The raw value must have been obtained from func_to_raw
+        // on the same store. Invalid values may cause undefined behavior.
+        Ok(unsafe { Func::from_raw(&mut *store_guard, raw) })
+    }
 }
 
 /// Create an optimized caller context based on usage patterns

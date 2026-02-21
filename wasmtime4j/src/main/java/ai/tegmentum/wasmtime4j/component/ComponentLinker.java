@@ -109,6 +109,44 @@ public interface ComponentLinker<T> extends Closeable {
   void defineFunction(String witPath, ComponentHostFunction implementation) throws WasmException;
 
   /**
+   * Defines an async host function that implements a WIT interface function.
+   *
+   * <p>This is the async variant of {@link #defineFunction(String, String, String,
+   * ComponentHostFunction)}. It registers the function using {@code func_new_async} instead of
+   * {@code func_new}, allowing it to be called from async contexts.
+   *
+   * <p>Requires the engine to have been created with async support enabled.
+   *
+   * @param interfaceNamespace the WIT interface namespace (e.g., "wasi:cli")
+   * @param interfaceName the WIT interface name (e.g., "stdout")
+   * @param functionName the function name within the interface (e.g., "print")
+   * @param implementation the Java implementation of the function
+   * @throws WasmException if the function cannot be defined or async support is not enabled
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  void defineFunctionAsync(
+      String interfaceNamespace,
+      String interfaceName,
+      String functionName,
+      ComponentHostFunction implementation)
+      throws WasmException;
+
+  /**
+   * Defines an async host function using the full WIT-style function path.
+   *
+   * <p>This is the async variant of {@link #defineFunction(String, ComponentHostFunction)}.
+   *
+   * <p>Requires the engine to have been created with async support enabled.
+   *
+   * @param witPath the full WIT path to the function
+   * @param implementation the Java implementation of the function
+   * @throws WasmException if the function cannot be defined or async support is not enabled
+   * @throws IllegalArgumentException if witPath is null or malformed
+   */
+  void defineFunctionAsync(String witPath, ComponentHostFunction implementation)
+      throws WasmException;
+
+  /**
    * Defines an entire WIT interface implementation.
    *
    * <p>The implementation map should contain all functions defined in the interface. Missing
@@ -183,6 +221,20 @@ public interface ComponentLinker<T> extends Closeable {
    * @throws IllegalArgumentException if store or component is null
    */
   ComponentInstance instantiate(Store store, Component component) throws WasmException;
+
+  /**
+   * Pre-instantiates a component for fast repeated instantiation.
+   *
+   * <p>This performs the expensive type-checking and import resolution work once, allowing
+   * subsequent instantiations via {@link ComponentInstancePre#instantiate()} to be significantly
+   * faster.
+   *
+   * @param component the compiled component to pre-instantiate
+   * @return a ComponentInstancePre that can be used for fast repeated instantiation
+   * @throws WasmException if pre-instantiation fails or imports cannot be satisfied
+   * @throws IllegalArgumentException if component is null
+   */
+  ComponentInstancePre instantiatePre(Component component) throws WasmException;
 
   /**
    * Enables WASI Preview 2 support for components instantiated through this linker.
@@ -270,6 +322,27 @@ public interface ComponentLinker<T> extends Closeable {
   void aliasInterface(
       String fromNamespace, String fromInterface, String toNamespace, String toInterface)
       throws WasmException;
+
+  /**
+   * Allows or disallows shadowing of previously defined names.
+   *
+   * <p>When enabled, new definitions can override existing ones without error.
+   *
+   * @param allow true to allow shadowing, false to disallow
+   */
+  void allowShadowing(boolean allow);
+
+  /**
+   * Defines all unknown imports of the given component as traps.
+   *
+   * <p>This is useful for partially-defined components where some imports should trap at runtime
+   * rather than failing at instantiation time.
+   *
+   * @param component the component whose unknown imports should be trapped
+   * @throws WasmException if the operation fails
+   * @throws IllegalArgumentException if component is null
+   */
+  void defineUnknownImportsAsTraps(Component component) throws WasmException;
 
   /**
    * Closes the linker and releases associated resources.

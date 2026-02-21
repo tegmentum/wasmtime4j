@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.ResourcesRequired;
 import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -10,6 +12,7 @@ import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -194,6 +197,43 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
+  public Optional<ComponentExportIndex> exportIndex(
+      final ComponentExportIndex instanceIndex, final String name) throws WasmException {
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("name cannot be null or empty");
+    }
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(name);
+      final MemorySegment indexOut = arena.allocate(ValueLayout.ADDRESS);
+
+      // Pass parent index if provided, otherwise NULL
+      final MemorySegment parentPtr =
+          instanceIndex != null
+              ? MemorySegment.ofAddress(instanceIndex.getNativeHandle())
+              : MemorySegment.NULL;
+
+      final int result =
+          NATIVE_BINDINGS.componentGetExportIndex(componentHandle, parentPtr, nameSegment, indexOut);
+
+      if (result != 0) {
+        // 1 = not found, -1 = error
+        return Optional.empty();
+      }
+
+      final MemorySegment indexPtr = indexOut.get(ValueLayout.ADDRESS, 0);
+      if (indexPtr == null || indexPtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+
+      return Optional.of(new PanamaComponentExportIndex(indexPtr));
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get export index for '" + name + "'", e);
+    }
+  }
+
+  @Override
   public byte[] serialize() throws WasmException {
     ensureNotClosed();
 
@@ -220,6 +260,48 @@ final class PanamaComponentImpl implements Component {
       } finally {
         NATIVE_BINDINGS.componentFreeSerializedData(dataPtr, len);
       }
+    }
+  }
+
+  @Override
+  public Optional<ResourcesRequired> resourcesRequired() throws WasmException {
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment numMemoriesOut = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maxMemoryOut = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment numTablesOut = arena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment maxTableOut = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int errorCode = NATIVE_BINDINGS.panamaComponentResourcesRequired(
+          componentHandle, numMemoriesOut, maxMemoryOut, numTablesOut, maxTableOut);
+
+      if (errorCode != 0) {
+        throw new WasmException(
+            "Failed to get component resources required: native error code " + errorCode);
+      }
+
+      final int numMemories = numMemoriesOut.get(ValueLayout.JAVA_INT, 0);
+
+      // -2 sentinel means resources_required() returned None
+      if (numMemories == -2) {
+        return Optional.empty();
+      }
+
+      final long maxMemory = maxMemoryOut.get(ValueLayout.JAVA_LONG, 0);
+      final int numTables = numTablesOut.get(ValueLayout.JAVA_INT, 0);
+      final long maxTable = maxTableOut.get(ValueLayout.JAVA_LONG, 0);
+
+      return Optional.of(
+          new ResourcesRequired(
+              0L, // minimumMemoryBytes - not available for components
+              maxMemory, // maximumMemoryBytes (-1 if unbounded)
+              0, // minimumTableElements - not available for components
+              maxTable > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxTable,
+              numMemories,
+              numTables,
+              0, // numGlobals - not available for components
+              0)); // numFunctions - not available for components
     }
   }
 

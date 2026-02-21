@@ -223,6 +223,22 @@ public interface Instance extends Closeable {
   Optional<WasmMemory> getDefaultMemory();
 
   /**
+   * Gets an exported shared memory by name.
+   *
+   * <p>Shared memories are memories that can be accessed concurrently from multiple threads. They
+   * are distinct from regular memories in that they use the {@code shared} attribute in their memory
+   * type definition.
+   *
+   * <p>Requires that the engine was configured with {@code wasmThreads(true)}.
+   *
+   * @param name the name of the exported shared memory
+   * @return the exported shared memory, or empty if not found or not a shared memory
+   * @throws IllegalArgumentException if name is null
+   * @since 1.0.0
+   */
+  Optional<WasmMemory> getSharedMemory(final String name);
+
+  /**
    * Gets all export names from this instance.
    *
    * @return an array of export names
@@ -278,6 +294,19 @@ public interface Instance extends Closeable {
    * @since 1.0.0
    */
   boolean hasExport(final String name);
+
+  /**
+   * Gets an exported item by name from this instance.
+   *
+   * <p>This method provides a unified accessor for any export type (function, memory, table, or
+   * global). Use the returned {@link Extern} to determine the type and access the value.
+   *
+   * @param name the name of the export to retrieve
+   * @return the export if it exists, empty otherwise
+   * @throws IllegalArgumentException if name is null
+   * @since 1.1.0
+   */
+  Optional<Extern> getExport(final String name);
 
   /**
    * Gets the module that this instance was created from.

@@ -48,10 +48,10 @@ class ComponentTypeTest {
     }
 
     @Test
-    @DisplayName("should have exactly 23 values")
+    @DisplayName("should have exactly 26 values")
     void shouldHaveExactValueCount() {
       assertEquals(
-          23, ComponentType.values().length, "ComponentType should have exactly 23 values");
+          26, ComponentType.values().length, "ComponentType should have exactly 26 values");
     }
   }
 
@@ -85,6 +85,9 @@ class ComponentTypeTest {
       assertNotNull(ComponentType.FLAGS, "FLAGS constant should exist");
       assertNotNull(ComponentType.OWN, "OWN constant should exist");
       assertNotNull(ComponentType.BORROW, "BORROW constant should exist");
+      assertNotNull(ComponentType.FUTURE, "FUTURE constant should exist");
+      assertNotNull(ComponentType.STREAM, "STREAM constant should exist");
+      assertNotNull(ComponentType.ERROR_CONTEXT, "ERROR_CONTEXT constant should exist");
     }
   }
 
@@ -310,6 +313,63 @@ class ComponentTypeTest {
   }
 
   @Nested
+  @DisplayName("IsAsync Tests")
+  class IsAsyncTests {
+
+    @Test
+    @DisplayName("FUTURE should be async")
+    void futureShouldBeAsync() {
+      assertTrue(ComponentType.FUTURE.isAsync(), "FUTURE should be async");
+    }
+
+    @Test
+    @DisplayName("STREAM should be async")
+    void streamShouldBeAsync() {
+      assertTrue(ComponentType.STREAM.isAsync(), "STREAM should be async");
+    }
+
+    @Test
+    @DisplayName("ERROR_CONTEXT should be async")
+    void errorContextShouldBeAsync() {
+      assertTrue(ComponentType.ERROR_CONTEXT.isAsync(), "ERROR_CONTEXT should be async");
+    }
+
+    @Test
+    @DisplayName("non-async types should not be async")
+    void nonAsyncTypesShouldNotBeAsync() {
+      assertFalse(ComponentType.BOOL.isAsync(), "BOOL should not be async");
+      assertFalse(ComponentType.S32.isAsync(), "S32 should not be async");
+      assertFalse(ComponentType.LIST.isAsync(), "LIST should not be async");
+      assertFalse(ComponentType.OWN.isAsync(), "OWN should not be async");
+      assertFalse(ComponentType.STRING.isAsync(), "STRING should not be async");
+    }
+
+    @Test
+    @DisplayName("async types should not be primitive")
+    void asyncTypesShouldNotBePrimitive() {
+      assertFalse(ComponentType.FUTURE.isPrimitive(), "FUTURE should not be primitive");
+      assertFalse(ComponentType.STREAM.isPrimitive(), "STREAM should not be primitive");
+      assertFalse(ComponentType.ERROR_CONTEXT.isPrimitive(), "ERROR_CONTEXT should not be primitive");
+    }
+
+    @Test
+    @DisplayName("async types should not be compound")
+    void asyncTypesShouldNotBeCompound() {
+      assertFalse(ComponentType.FUTURE.isCompound(), "FUTURE should not be compound");
+      assertFalse(ComponentType.STREAM.isCompound(), "STREAM should not be compound");
+      assertFalse(ComponentType.ERROR_CONTEXT.isCompound(), "ERROR_CONTEXT should not be compound");
+    }
+
+    @Test
+    @DisplayName("async types should not be resource")
+    void asyncTypesShouldNotBeResource() {
+      assertFalse(ComponentType.FUTURE.isResource(), "FUTURE should not be resource");
+      assertFalse(ComponentType.STREAM.isResource(), "STREAM should not be resource");
+      assertFalse(ComponentType.ERROR_CONTEXT.isResource(), "ERROR_CONTEXT should not be resource");
+    }
+  }
+
+  @Nested
   @DisplayName("Category Exclusivity Tests")
   class CategoryExclusivityTests {
 
@@ -327,12 +387,15 @@ class ComponentTypeTest {
         if (type.isResource()) {
           categoryCount++;
         }
+        if (type.isAsync()) {
+          categoryCount++;
+        }
         assertEquals(
             1,
             categoryCount,
             type.name()
                 + " should belong to exactly one top-level category "
-                + "(primitive/compound/resource)");
+                + "(primitive/compound/resource/async)");
       }
     }
 

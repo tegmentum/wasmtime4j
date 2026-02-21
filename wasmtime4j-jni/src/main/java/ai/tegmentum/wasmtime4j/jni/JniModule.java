@@ -316,6 +316,44 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  public boolean same(final ai.tegmentum.wasmtime4j.Module other) {
+    if (other == null) {
+      throw new IllegalArgumentException("other cannot be null");
+    }
+    if (isClosed()) {
+      return false;
+    }
+    if (!(other instanceof JniModule)) {
+      return false;
+    }
+    final JniModule otherModule = (JniModule) other;
+    if (otherModule.isClosed()) {
+      return false;
+    }
+    try {
+      return nativeModuleSame(nativeHandle, otherModule.nativeHandle);
+    } catch (final Throwable t) {
+      return false;
+    }
+  }
+
+  @Override
+  public int getExportIndex(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    ensureNotClosed();
+    if (!isNativeHandleReasonable()) {
+      return -1;
+    }
+    try {
+      return (int) nativeGetExportIndex(nativeHandle, name);
+    } catch (final Throwable t) {
+      return -1;
+    }
+  }
+
+  @Override
   public boolean validateImports(final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {
       throw new IllegalArgumentException("imports cannot be null");
@@ -678,4 +716,31 @@ public class JniModule extends JniResource implements Module {
    * @return map of custom section names to their binary data
    */
   private native Map<String, byte[]> nativeGetCustomSections(long moduleHandle);
+
+  /**
+   * Native method to compile a module from a file path.
+   *
+   * @param engineHandle the native engine handle
+   * @param path the file path to compile from
+   * @return the native module handle, or 0 on failure
+   */
+  static native long nativeCompileFromFile(long engineHandle, String path);
+
+  /**
+   * Native method to check if two modules share the same underlying compiled code.
+   *
+   * @param moduleHandle1 the first native module handle
+   * @param moduleHandle2 the second native module handle
+   * @return true if the modules are the same
+   */
+  private static native boolean nativeModuleSame(long moduleHandle1, long moduleHandle2);
+
+  /**
+   * Native method to get the index of an export by name.
+   *
+   * @param moduleHandle the native module handle
+   * @param exportName the name of the export
+   * @return the zero-based index, or -1 if not found
+   */
+  private native long nativeGetExportIndex(long moduleHandle, String exportName);
 }

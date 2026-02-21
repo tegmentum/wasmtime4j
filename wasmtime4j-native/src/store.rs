@@ -91,6 +91,10 @@ pub struct StoreData {
     pub wasi_nn_ctx: Option<WasiNnCtx>,
     /// Optional callback-based resource limiter for dynamic resource limiting
     pub callback_resource_limiter: Option<CallbackResourceLimiter>,
+    /// Optional async callback-based resource limiter for dynamic resource limiting
+    pub callback_resource_limiter_async: Option<CallbackResourceLimiterAsync>,
+    /// Whether the engine has epoch interruption enabled (cached for caller access)
+    pub epoch_interruption_enabled: bool,
 }
 
 impl StoreData {
@@ -112,6 +116,8 @@ impl StoreData {
             #[cfg(feature = "wasi-nn")]
             wasi_nn_ctx: None,
             callback_resource_limiter: None,
+            callback_resource_limiter_async: None,
+            epoch_interruption_enabled: false,
         }
     }
 }
@@ -173,6 +179,13 @@ impl std::fmt::Debug for StoreData {
                 .as_ref()
                 .map(|_| "<CallbackResourceLimiter>"),
         );
+        debug.field(
+            "callback_resource_limiter_async",
+            &self
+                .callback_resource_limiter_async
+                .as_ref()
+                .map(|_| "<CallbackResourceLimiterAsync>"),
+        );
         debug.finish()
     }
 }
@@ -195,6 +208,8 @@ impl Clone for StoreData {
             #[cfg(feature = "wasi-nn")]
             wasi_nn_ctx: None, // WasiNnCtx is store-specific
             callback_resource_limiter: None, // Limiter is store-specific, must be re-registered
+            callback_resource_limiter_async: None, // Async limiter is store-specific
+            epoch_interruption_enabled: self.epoch_interruption_enabled,
         }
     }
 }
@@ -263,6 +278,83 @@ impl wasmtime::ResourceLimiter for CallbackResourceLimiter {
     }
 
     fn table_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> anyhow::Result<bool> {
+        let max_val = maximum.map(|m| m as u32).unwrap_or(u32::MAX);
+        let result = (self.table_growing_fn)(
+            self.callback_id,
+            current as u32,
+            desired as u32,
+            max_val,
+        );
+        Ok(result != 0)
+    }
+
+    fn memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+        if let Some(callback) = self.memory_grow_failed_fn {
+            if let Ok(c_msg) = CString::new(error.to_string()) {
+                callback(self.callback_id, c_msg.as_ptr());
+            }
+        }
+        Ok(())
+    }
+
+    fn table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+        if let Some(callback) = self.table_grow_failed_fn {
+            if let Ok(c_msg) = CString::new(error.to_string()) {
+                callback(self.callback_id, c_msg.as_ptr());
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Async resource limiter backed by C function pointer callbacks.
+///
+/// Implements wasmtime's `ResourceLimiterAsync` trait by delegating to the same extern "C"
+/// function pointer pattern as `CallbackResourceLimiter`, but wrapped in async futures.
+///
+/// The callbacks are synchronous from Rust's perspective - they call into Java which can
+/// resolve the CompletableFuture immediately. The async wrapping allows wasmtime to treat
+/// these as async operations in the async execution context.
+///
+/// This is the Rust-side counterpart to the Java `ResourceLimiterAsync` interface.
+#[derive(Clone, Copy)]
+pub struct CallbackResourceLimiterAsync {
+    /// Callback invoked when linear memory is about to grow.
+    /// Parameters: callback_id, current_bytes, desired_bytes, maximum_bytes
+    /// Returns: non-zero to allow, zero to deny
+    memory_growing_fn: extern "C" fn(i64, u64, u64, u64) -> i32,
+    /// Callback invoked when a table is about to grow.
+    /// Parameters: callback_id, current_elements, desired_elements, maximum_elements
+    /// Returns: non-zero to allow, zero to deny
+    table_growing_fn: extern "C" fn(i64, u32, u32, u32) -> i32,
+    /// Optional callback invoked when a memory grow operation fails after being allowed.
+    memory_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+    /// Optional callback invoked when a table grow operation fails after being allowed.
+    table_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+    /// Identifier passed back to callbacks for Java-side dispatch.
+    callback_id: i64,
+}
+
+#[async_trait::async_trait]
+impl wasmtime::ResourceLimiterAsync for CallbackResourceLimiterAsync {
+    async fn memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> anyhow::Result<bool> {
+        let max_val = maximum.map(|m| m as u64).unwrap_or(u64::MAX);
+        let result =
+            (self.memory_growing_fn)(self.callback_id, current as u64, desired as u64, max_val);
+        Ok(result != 0)
+    }
+
+    async fn table_growing(
         &mut self,
         current: usize,
         desired: usize,
@@ -749,6 +841,11 @@ impl Store {
                 // Continue execution with the returned delta
                 log::trace!("Continuing execution with delta={}", result);
                 Ok(wasmtime::UpdateDeadline::Continue(result as u64))
+            } else if result < 0 {
+                // Yield execution with the negated value as delta ticks
+                let delta = (-result) as u64;
+                log::trace!("Yielding execution with delta={}", delta);
+                Ok(wasmtime::UpdateDeadline::Yield(delta))
             } else {
                 // Return an error to trap execution
                 log::trace!("Trapping execution");
@@ -997,6 +1094,48 @@ impl Store {
         Ok(())
     }
 
+    /// Sets an async resource limiter on this store.
+    ///
+    /// Requires the engine to be configured with `async_support(true)`.
+    /// Uses `Store::limiter_async()` instead of `Store::limiter()`.
+    ///
+    /// # Arguments
+    /// Same as `set_resource_limiter` but registers with the async limiter path.
+    pub fn set_resource_limiter_async(
+        &self,
+        memory_growing_fn: extern "C" fn(i64, u64, u64, u64) -> i32,
+        table_growing_fn: extern "C" fn(i64, u32, u32, u32) -> i32,
+        memory_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+        table_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+        callback_id: i64,
+    ) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+
+        log::debug!(
+            "Setting async resource limiter on store {}: callback_id={}",
+            self.id,
+            callback_id
+        );
+
+        store.data_mut().callback_resource_limiter_async =
+            Some(CallbackResourceLimiterAsync {
+                memory_growing_fn,
+                table_growing_fn,
+                memory_grow_failed_fn,
+                table_grow_failed_fn,
+                callback_id,
+            });
+
+        store.limiter_async(|data| {
+            data.callback_resource_limiter_async
+                .as_mut()
+                .expect("CallbackResourceLimiterAsync was set but is missing")
+        });
+
+        Ok(())
+    }
+
     /// Set a call hook on the store.
     ///
     /// This installs a no-op call hook on the underlying wasmtime Store,
@@ -1168,7 +1307,8 @@ impl StoreBuilder {
             id
         };
 
-        let store_data = StoreData::new(store_id, self.resource_limits);
+        let mut store_data = StoreData::new(store_id, self.resource_limits);
+        store_data.epoch_interruption_enabled = engine.epoch_interruption_enabled();
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
 
         // Configure fuel if specified OR if Engine requires it
@@ -1229,7 +1369,8 @@ impl StoreBuilder {
             id
         };
 
-        let store_data = StoreData::new(store_id, self.resource_limits);
+        let mut store_data = StoreData::new(store_id, self.resource_limits);
+        store_data.epoch_interruption_enabled = module.engine().epoch_interruption_enabled();
 
         // CRITICAL: Use the wasmtime Engine from the Module's internal wasmtime::Module
         // This ensures the Store's internal Arc matches the Module's internal Arc
@@ -1492,6 +1633,24 @@ pub mod core {
         table_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
     ) -> WasmtimeResult<()> {
         store.set_resource_limiter(
+            memory_growing_fn,
+            table_growing_fn,
+            memory_grow_failed_fn,
+            table_grow_failed_fn,
+            callback_id,
+        )
+    }
+
+    /// Core function to set an async callback-based resource limiter on a store
+    pub fn set_resource_limiter_async(
+        store: &Store,
+        callback_id: i64,
+        memory_growing_fn: extern "C" fn(i64, u64, u64, u64) -> i32,
+        table_growing_fn: extern "C" fn(i64, u32, u32, u32) -> i32,
+        memory_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+        table_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
+    ) -> WasmtimeResult<()> {
+        store.set_resource_limiter_async(
             memory_growing_fn,
             table_growing_fn,
             memory_grow_failed_fn,

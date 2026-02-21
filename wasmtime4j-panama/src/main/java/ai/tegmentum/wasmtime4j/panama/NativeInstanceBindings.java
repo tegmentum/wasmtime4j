@@ -299,6 +299,27 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * Gets a shared memory export by name from an instance (only shared memories).
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name name of the shared memory export
+   * @return memory segment pointer or null if not found
+   */
+  public MemorySegment instanceGetSharedMemoryByName(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final MemorySegment name) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_get_shared_memory_by_name",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        name);
+  }
+
+  /**
    * Checks if an instance has a memory export with the given name.
    *
    * @param instancePtr pointer to the instance
@@ -818,6 +839,23 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         "wasmtime4j_panama_caller_get_table", Integer.class, callerPtr, name, tableOut);
   }
 
+  /**
+   * Sets the fuel async yield interval for the caller's store.
+   *
+   * @param callerPtr pointer to the caller
+   * @param interval the yield interval, or 0 to disable
+   * @return 0 on success, non-zero on error
+   */
+  public int callerSetFuelAsyncYieldInterval(
+      final MemorySegment callerPtr, final long interval) {
+    validatePointer(callerPtr, "callerPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_set_fuel_async_yield_interval",
+        Integer.class,
+        callerPtr,
+        interval);
+  }
+
   // =============================================================================
   // Panama Function FFI Operations
   // =============================================================================
@@ -887,6 +925,60 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     if (funcTypePtr != null && !funcTypePtr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasmtime4j_panama_func_type_destroy", Void.class, funcTypePtr);
     }
+  }
+
+  /**
+   * Gets a function export from an instance by name.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param name function name (native string)
+   * @param funcPtrOut output pointer for the function handle
+   * @return 0 on success, non-zero on failure
+   */
+  public int funcGet(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment name,
+      final MemorySegment funcPtrOut) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(name, "name");
+    validatePointer(funcPtrOut, "funcPtrOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_get",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        name,
+        funcPtrOut);
+  }
+
+  /**
+   * Converts a function to its raw funcref pointer value.
+   *
+   * @param funcPtr pointer to the function
+   * @param storePtr pointer to the store
+   * @return the raw funcref value (i64)
+   */
+  public long funcToRaw(final MemorySegment funcPtr, final MemorySegment storePtr) {
+    validatePointer(funcPtr, "funcPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_to_raw", Long.class, funcPtr, storePtr);
+  }
+
+  /**
+   * Reconstructs a function from a raw funcref pointer.
+   *
+   * @param storePtr pointer to the store
+   * @param raw the raw funcref value
+   * @return pointer to the reconstructed function, or NULL if invalid
+   */
+  public MemorySegment funcFromRaw(final MemorySegment storePtr, final long raw) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_from_raw", MemorySegment.class, storePtr, raw);
   }
 
   /**
@@ -1303,7 +1395,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(linkerPtr, "linkerPtr");
     validatePointer(storePtr, "storePtr");
     return callNativeFunction(
-        "wasmtime4j_panama_linker_get",
+        "wasmtime4j_panama_linker_get_by_import",
         MemorySegment.class,
         linkerPtr,
         storePtr,
@@ -1373,6 +1465,26 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    * @param instancePrePtr pointer to the InstancePre
    * @return 1 if valid, 0 otherwise
    */
+  /**
+   * Asynchronously instantiates from an InstancePre.
+   *
+   * <p>Requires async support enabled in the engine.
+   *
+   * @param instancePrePtr pointer to the InstancePre
+   * @param storePtr pointer to the store
+   * @return pointer to the created instance, or NULL on failure
+   */
+  public MemorySegment instancePreInstantiateAsync(
+      final MemorySegment instancePrePtr, final MemorySegment storePtr) {
+    validatePointer(instancePrePtr, "instancePrePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_pre_instantiate_async",
+        MemorySegment.class,
+        instancePrePtr,
+        storePtr);
+  }
+
   public int instancePreIsValid(final MemorySegment instancePrePtr) {
     validatePointer(instancePrePtr, "instancePrePtr");
     return callNativeFunction("wasmtime4j_instance_pre_is_valid", Integer.class, instancePrePtr);
@@ -1502,7 +1614,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    */
   public int externGetType(final MemorySegment externPtr) {
     validatePointer(externPtr, "externPtr");
-    return callNativeFunction("wasmtime4j_panama_extern_type", Integer.class, externPtr);
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_get_extern_type", Integer.class, externPtr);
   }
 
   // =============================================================================
@@ -1588,6 +1701,11 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
 
     addFunctionBinding(
         "wasmtime4j_instance_get_memory_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_get_shared_memory_by_name",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
@@ -1716,6 +1834,10 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
     addFunctionBinding(
+        "wasmtime4j_panama_caller_set_fuel",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
         "wasmtime4j_panama_caller_set_epoch_deadline",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
 
@@ -1746,6 +1868,10 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         "wasmtime4j_panama_caller_get_table",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_set_fuel_async_yield_interval",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
   }
 
   private void initializeFunctionBindings() {
@@ -1781,6 +1907,29 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_func_get",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // instance_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // name (c_char*)
+            ValueLayout.ADDRESS)); // func_ptr out
+
+    addFunctionBinding(
+        "wasmtime4j_panama_func_to_raw",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // raw funcref value (i64)
+            ValueLayout.ADDRESS, // func_ptr
+            ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_func_from_raw",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // func_ptr out
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // raw funcref value (i64)
   }
 
   private void initializeLinkerBindings() {
@@ -1893,7 +2042,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
-        "wasmtime4j_panama_linker_get",
+        "wasmtime4j_panama_linker_get_by_import",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
@@ -1905,6 +2054,38 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         "wasmtime4j_panama_linker_get_default",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_get_extern_type",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_extern_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_name",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_iter",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_iter_get",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
   }
 
   private void initializeInstancePreBindings() {
@@ -1935,9 +2116,17 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_instance_pre_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+    addFunctionBinding(
+        "wasmtime4j_instance_pre_instantiate_async",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
     // Panama-prefixed variants
     addFunctionBinding(
         "wasmtime4j_panama_instance_pre_instantiate",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_pre_instantiate_async",
         FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
@@ -1989,7 +2178,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
 
   private void initializeExternAndCallHookBindings() {
     addFunctionBinding(
-        "wasmtime4j_panama_extern_type",
+        "wasmtime4j_panama_linker_get_extern_type",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
     addFunctionBinding(

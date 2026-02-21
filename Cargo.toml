@@ -25,6 +25,7 @@ jni = "0.21.1"
 # Async runtime for WASI and other async operations
 tokio = { version = "1.35", features = ["full"] }
 futures = "0.3"
+async-trait = "0.1.89"
 
 # Serialization support for complex data structures
 serde = { version = "1.0", features = ["derive"] }
@@ -49,6 +50,9 @@ base64 = "0.22"
 
 # Unix-specific
 libc = "0.2"
+
+# RNG core traits (for custom WASI RNG implementations)
+rand_core = "0.6"
 
 # Dev dependencies
 tempfile = "3.8"

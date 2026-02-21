@@ -33,6 +33,19 @@ public interface TableType extends WasmType {
    */
   java.util.Optional<Long> getMaximum();
 
+  /**
+   * Checks if this table uses 64-bit indices.
+   *
+   * <p>64-bit tables are part of the WebAssembly Memory64 proposal, allowing tables with more than
+   * 2^32 elements using 64-bit indices.
+   *
+   * @return true if this table uses 64-bit indices, false if 32-bit
+   * @since 1.1.0
+   */
+  default boolean is64Bit() {
+    return false;
+  }
+
   @Override
   default WasmTypeKind getKind() {
     return WasmTypeKind.TABLE;

@@ -402,6 +402,43 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
+  public Component deserializeComponentFile(final String path) throws WasmException {
+    Objects.requireNonNull(path, "path cannot be null");
+    if (path.isEmpty()) {
+      throw new IllegalArgumentException("path cannot be empty");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final byte[] pathBytes = path.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+      final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
+
+      final int errorCode =
+          NATIVE_BINDINGS.panamaComponentDeserializeFile(
+              enhancedEngineHandle, pathSegment, pathBytes.length, componentOut);
+
+      if (errorCode != 0) {
+        throw new WasmException(
+            "Failed to deserialize component from file: " + path + " (error code " + errorCode
+                + ")");
+      }
+
+      final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
+      if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
+        throw new WasmException(
+            "Failed to deserialize component from file: null component returned");
+      }
+
+      final String componentId = generateComponentId();
+      final PanamaComponentImpl component =
+          new PanamaComponentImpl(componentHandle, componentId, this);
+      loadedComponents.put(componentId, component);
+      return component;
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.Precompiled detectPrecompiled(final byte[] bytes) {
     if (bytes == null) {
       throw new IllegalArgumentException("bytes cannot be null");

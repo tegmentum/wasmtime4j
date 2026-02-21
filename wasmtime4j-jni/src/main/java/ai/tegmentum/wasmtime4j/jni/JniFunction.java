@@ -344,6 +344,22 @@ public final class JniFunction extends JniResource
     return new JniTypedFunc(this.store, this, signature);
   }
 
+  @Override
+  public long toRawFuncRef() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureUsable();
+    if (store == null) {
+      throw new IllegalStateException("Function store reference is null");
+    }
+    try {
+      return nativeFuncToRaw(getNativeHandle(), store.getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to convert function to raw funcref", e);
+    }
+  }
+
   /**
    * Gets the resource type name for logging and error messages.
    *
@@ -452,4 +468,22 @@ public final class JniFunction extends JniResource
    * @return the return value as a double
    */
   private static native double nativeCallDouble(long functionHandle, double[] parameters);
+
+  /**
+   * Converts this function to its raw funcref pointer value.
+   *
+   * @param functionHandle the native function handle
+   * @param storeHandle the native store handle
+   * @return the raw funcref value
+   */
+  static native long nativeFuncToRaw(long functionHandle, long storeHandle);
+
+  /**
+   * Reconstructs a function from a raw funcref pointer.
+   *
+   * @param storeHandle the native store handle
+   * @param raw the raw funcref value
+   * @return the native function handle, or 0 if invalid
+   */
+  private static native long nativeFuncFromRaw(long storeHandle, long raw);
 }

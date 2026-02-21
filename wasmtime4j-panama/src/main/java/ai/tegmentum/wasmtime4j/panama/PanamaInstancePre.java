@@ -29,6 +29,7 @@ import java.lang.foreign.MemorySegment;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 /**
@@ -104,6 +105,37 @@ public final class PanamaInstancePre implements InstancePre {
     }
 
     return new PanamaInstance(instancePtr, (PanamaModule) module, panamaStore);
+  }
+
+  @Override
+  public CompletableFuture<Instance> instantiateAsync(final Store store) {
+    Objects.requireNonNull(store, "store cannot be null");
+    return CompletableFuture.supplyAsync(() -> {
+      ensureNotClosed();
+
+      if (!(store instanceof PanamaStore)) {
+        throw new java.util.concurrent.CompletionException(
+            new IllegalArgumentException(
+                "Store must be a PanamaStore instance for Panama InstancePre"));
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final MemorySegment instancePtr =
+          NATIVE_BINDINGS.instancePreInstantiateAsync(
+              nativeInstancePre, panamaStore.getNativeStore());
+
+      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        throw new java.util.concurrent.CompletionException(
+            new WasmException("Failed to async instantiate from InstancePre"));
+      }
+
+      if (!(module instanceof PanamaModule)) {
+        throw new java.util.concurrent.CompletionException(
+            new WasmException("Module must be a PanamaModule for Panama InstancePre"));
+      }
+
+      return new PanamaInstance(instancePtr, (PanamaModule) module, panamaStore);
+    });
   }
 
   @Override

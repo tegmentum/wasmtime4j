@@ -53,6 +53,47 @@ pub extern "C" fn wasmtime4j_panama_instance_get_memory_by_name(
     }
 }
 
+/// Get exported shared memory by name (Panama FFI)
+///
+/// Unlike `wasmtime4j_panama_instance_get_memory_by_name` which returns regular or shared memory,
+/// this ONLY returns shared memory exports.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_get_shared_memory_by_name(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    name: *const c_char,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() || name.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let name_str = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let result = (|| -> Result<*mut c_void, crate::error::WasmtimeError> {
+        let instance =
+            unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store =
+            unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+        match instance.get_shared_memory(store, name_str)? {
+            Some(shared_memory) => {
+                let memory_wrapper = crate::memory::Memory::from_shared_memory(shared_memory);
+                let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                Ok(validated_ptr as *mut c_void)
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    })();
+
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
 /// Get exported table by name (Panama FFI)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_instance_get_table_by_name(

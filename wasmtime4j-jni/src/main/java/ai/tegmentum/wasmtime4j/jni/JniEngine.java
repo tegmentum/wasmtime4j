@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -89,6 +90,29 @@ public class JniEngine extends JniResource implements Engine {
     final Store store = createStore();
     store.setData(data);
     return store;
+  }
+
+  @Override
+  public WasmMemory createSharedMemory(final int initialPages, final int maxPages)
+      throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
+    }
+    if (maxPages < 1) {
+      throw new IllegalArgumentException(
+          "Shared memory requires a positive maximum page count");
+    }
+    if (maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
+    ensureNotClosed();
+
+    final long memoryHandle = nativeCreateSharedMemory(nativeHandle, initialPages, maxPages);
+    if (memoryHandle == 0) {
+      throw new WasmException("Failed to create shared memory");
+    }
+    return new JniMemory(memoryHandle, null);
   }
 
   @Override
@@ -222,11 +246,58 @@ public class JniEngine extends JniResource implements Engine {
     return compileModule(wasmBytes);
   }
 
+  @Override
+  public Module compileFromFile(final java.nio.file.Path path) throws WasmException {
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    ensureNotClosed();
+
+    final long moduleHandle = JniModule.nativeCompileFromFile(nativeHandle, path.toString());
+    if (moduleHandle == 0) {
+      throw new WasmException("Failed to compile module from file: " + path);
+    }
+    return new JniModule(moduleHandle, this);
+  }
+
+  @Override
+  public byte[] precompileComponent(final byte[] wasmBytes) throws WasmException {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    if (wasmBytes.length == 0) {
+      throw new IllegalArgumentException("wasmBytes cannot be empty");
+    }
+    ensureNotClosed();
+
+    final byte[] precompiled = nativePrecompileComponent(nativeHandle, wasmBytes);
+    if (precompiled == null || precompiled.length == 0) {
+      throw new WasmException("Failed to precompile component");
+    }
+    return precompiled;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.pool.PoolStatistics getPoolingAllocatorMetrics() {
+    if (isClosed()) {
+      return null;
+    }
+    final long[] metrics = nativeGetPoolingAllocatorMetrics(nativeHandle);
+    if (metrics == null) {
+      return null;
+    }
+    return new ai.tegmentum.wasmtime4j.jni.pool.JniPoolStatistics(metrics);
+  }
+
   private native long nativeCompileModule(long engineHandle, byte[] wasmBytes);
 
   private native long nativeCompileWat(long engineHandle, String wat);
 
   private native byte[] nativePrecompileModule(long engineHandle, byte[] wasmBytes);
+
+  private native byte[] nativePrecompileComponent(long engineHandle, byte[] wasmBytes);
+
+  private native long[] nativeGetPoolingAllocatorMetrics(long engineHandle);
 
   @Override
   public EngineConfig getConfig() {
@@ -246,6 +317,8 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   private native long nativeCreateStore(long engineHandle);
+
+  private native long nativeCreateSharedMemory(long engineHandle, int initialPages, int maxPages);
 
   private native void nativeDestroyEngine(long handle);
 
@@ -333,11 +406,44 @@ public class JniEngine extends JniResource implements Engine {
     return nativeIsAsync(nativeHandle);
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.debug.GuestProfiler createGuestProfiler(
+      final String moduleName,
+      final java.time.Duration interval,
+      final java.util.Map<String, ai.tegmentum.wasmtime4j.Module> modules)
+      throws WasmException {
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("moduleName cannot be null or empty");
+    }
+    if (interval == null) {
+      throw new IllegalArgumentException("interval cannot be null");
+    }
+    if (modules == null || modules.isEmpty()) {
+      throw new IllegalArgumentException("modules cannot be null or empty");
+    }
+    ensureNotClosed();
+
+    return new JniGuestProfiler(nativeHandle, moduleName, interval.toNanos(), modules);
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WeakEngine weak() {
+    ensureNotClosed();
+    final long weakHandle = nativeCreateWeakEngine(nativeHandle);
+    if (weakHandle == 0) {
+      throw new ai.tegmentum.wasmtime4j.jni.exception.JniResourceException(
+          "Failed to create weak engine reference");
+    }
+    return new JniWeakEngine(weakHandle, this);
+  }
+
   private native boolean nativeEngineSame(long handle1, long handle2);
 
   private native boolean nativeIsAsync(long engineHandle);
 
   private native void nativeIncrementEpoch(long engineHandle);
+
+  private static native long nativeCreateWeakEngine(long engineHandle);
 
   /**
    * Creates a new engine with the specified configuration.
@@ -353,83 +459,8 @@ public class JniEngine extends JniResource implements Engine {
       throw new IllegalArgumentException("config cannot be null");
     }
 
-    // Map optimization level to native value
-    final int optLevel;
-    switch (config.getOptimizationLevel()) {
-      case NONE:
-        optLevel = 0;
-        break;
-      case SPEED:
-        optLevel = 1;
-        break;
-      case SPEED_AND_SIZE:
-        optLevel = 2;
-        break;
-      default:
-        optLevel = 1; // Default to SPEED
-    }
-
-    // Convert max memory from bytes to pages (1 page = 64KB)
-    // Use 0 to indicate default if not explicitly configured
-    final long maxMemoryBytes = config.getMaxMemoryPerInstance();
-    final int maxMemoryPages = maxMemoryBytes > 0 ? (int) (maxMemoryBytes / 65536L) : 0;
-
-    final long handle =
-        nativeCreateEngineWithExtendedConfig(
-            config.getStrategy().ordinal(),
-            optLevel,
-            config.isDebugInfo(),
-            config.isWasmThreads(),
-            config.isWasmSimd(),
-            config.isWasmReferenceTypes(),
-            config.isWasmBulkMemory(),
-            config.isWasmMultiValue(),
-            config.isConsumeFuel(),
-            maxMemoryPages,
-            config.getMaxWasmStack() > 0 ? (int) config.getMaxWasmStack() : 0,
-            config.isEpochInterruption(),
-            config.getInstancePoolSize(),
-            config.isAsyncSupport(),
-            // GC configuration
-            config.isWasmGc(),
-            config.isWasmFunctionReferences(),
-            config.isWasmExceptions(),
-            // Memory configuration
-            config.getMemoryReservation(),
-            config.getMemoryGuardSize(),
-            config.getMemoryReservationForGrowth(),
-            // Additional features
-            config.isWasmTailCall(),
-            config.isWasmRelaxedSimd(),
-            config.isWasmMultiMemory(),
-            config.isWasmMemory64(),
-            config.isWasmExtendedConstExpressions(),
-            config.isWasmComponentModel(),
-            config.isCoredumpOnTrap(),
-            config.isCraneliftNanCanonicalization(),
-            // Experimental features
-            config.isWasmCustomPageSizes(),
-            config.isWasmWideArithmetic(),
-            // Profiling and debug
-            config.getProfilingStrategy().ordinal(),
-            config.isNativeUnwindInfo(),
-            // Extended config
-            config.isCraneliftDebugVerifier(),
-            config.getAsyncStackSize(),
-            config.isMemoryMayMove(),
-            config.isGuardBeforeLinearMemory(),
-            config.isParallelCompilation(),
-            config.isPoolingAllocatorEnabled(),
-            config.isTableLazyInit(),
-            config.isRelaxedSimdDeterministic(),
-            config.isMemoryInitCow(),
-            config.isAsyncStackZeroing(),
-            config.isGcSupport(),
-            // Cranelift flags as JSON string
-            craneliftSettingsToJson(config.getCraneliftSettings()),
-            // Module version strategy: 0=WasmtimeVersion, 1=None, 2=Custom
-            config.getModuleVersionStrategy().ordinal(),
-            config.getModuleVersionCustom());
+    final byte[] jsonBytes = config.toJson();
+    final long handle = nativeCreateEngineFromJsonConfig(jsonBytes);
 
     if (handle == 0) {
       throw new WasmException("Failed to create engine with configuration");
@@ -437,6 +468,8 @@ public class JniEngine extends JniResource implements Engine {
 
     return new JniEngine(handle, runtime, config);
   }
+
+  private static native long nativeCreateEngineFromJsonConfig(byte[] jsonConfig);
 
   private static native long nativeCreateEngineWithExtendedConfig(
       int strategy,

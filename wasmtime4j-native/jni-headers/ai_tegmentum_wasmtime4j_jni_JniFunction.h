@@ -71,6 +71,22 @@ JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall
 JNIEXPORT jdouble JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallDouble
   (JNIEnv *, jclass, jlong, jdoubleArray);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeFuncToRaw
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncToRaw
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeFuncFromRaw
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncFromRaw
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

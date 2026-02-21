@@ -620,6 +620,25 @@ public final class JniTable extends JniResource implements WasmTable {
    * @since 1.1.0
    */
   @Override
+  public int growAsync(final int elements, final Object initValue)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    Validation.requireNonNegative(elements, "elements");
+    ensureUsable();
+
+    try {
+      final long tableHandle = getNativeHandle();
+      final long storeHandle = store.getNativeHandle();
+      final long initRef = objectToRefHandle(initValue);
+      return nativeTableGrowAsync(tableHandle, storeHandle, elements, initRef);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Async table growth failed", e);
+    }
+  }
+
+  @Override
   public boolean supports64BitAddressing() {
     if (store.isClosed()) {
       return false;
@@ -668,4 +687,16 @@ public final class JniTable extends JniResource implements WasmTable {
    * @param segmentIndex the element segment index to drop
    */
   private static native void nativeElemDrop(long instanceHandle, int segmentIndex);
+
+  /**
+   * Grows a table asynchronously through the async resource limiter.
+   *
+   * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
+   * @param delta the number of elements to add
+   * @param initValue the initial value handle for new elements (0 for null)
+   * @return the previous size or -1 on failure
+   */
+  private static native int nativeTableGrowAsync(
+      long tableHandle, long storeHandle, int delta, long initValue);
 }

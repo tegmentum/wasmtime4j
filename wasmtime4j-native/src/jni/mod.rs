@@ -27,6 +27,8 @@ pub mod function;
 pub mod functionref;
 #[cfg(feature = "jni-bindings")]
 pub mod global;
+#[cfg(all(feature = "jni-bindings", feature = "profiling"))]
+pub mod guest_profiler;
 #[cfg(feature = "jni-bindings")]
 pub mod hostfunc;
 #[cfg(feature = "jni-bindings")]

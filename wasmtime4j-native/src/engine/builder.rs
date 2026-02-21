@@ -1172,6 +1172,31 @@ impl EngineBuilder {
         self
     }
 
+    /// Set the compilation target triple for cross-compilation
+    ///
+    /// This configures the target architecture for code generation, allowing
+    /// cross-compilation of WebAssembly modules for different platforms.
+    ///
+    /// # Arguments
+    /// * `triple` - The target triple string (e.g., "x86_64-unknown-linux-gnu")
+    pub fn target(mut self, triple: &str) -> Self {
+        let _ = self.config.target(triple);
+        self
+    }
+
+    /// Set the guaranteed dense image size for linear memories
+    ///
+    /// This configures the size of the dense image used for memory initialization.
+    /// Modules with data segments that fit within this size will use a dense
+    /// memory initialization strategy, which is faster.
+    ///
+    /// # Arguments
+    /// * `size` - The guaranteed dense image size in bytes
+    pub fn memory_guaranteed_dense_image_size(mut self, size: u64) -> Self {
+        self.config.memory_guaranteed_dense_image_size(size);
+        self
+    }
+
     /// Build engine with current configuration
     pub fn build(self) -> WasmtimeResult<Engine> {
         let summary = EngineConfigSummary::from_builder(&self);

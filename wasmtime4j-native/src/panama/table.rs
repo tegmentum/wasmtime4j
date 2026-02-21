@@ -193,6 +193,53 @@ pub extern "C" fn wasmtime4j_panama_table_grow(
     })
 }
 
+/// Grow table asynchronously (Panama FFI version)
+///
+/// Requires engine with `async_support(true)`. Uses the async resource limiter.
+#[no_mangle]
+#[cfg(feature = "async")]
+pub extern "C" fn wasmtime4j_panama_table_grow_async(
+    table_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    delta: c_uint,
+    element_type: c_int,
+    ref_id_present: c_int,
+    ref_id: c_ulong,
+    old_size: *mut c_uint,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let table = unsafe { core::get_table_ref(table_ptr)? };
+        let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+
+        let val_type = match element_type {
+            5 => ValType::Ref(RefType::FUNCREF),
+            6 => ValType::Ref(RefType::EXTERNREF),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
+        };
+
+        let ref_id_opt = if ref_id_present != 0 {
+            Some(ref_id)
+        } else {
+            None
+        };
+        let init_value = core::create_table_element(val_type, ref_id_opt)?;
+
+        let previous_size = core::grow_table_async(table, store, delta, init_value)?;
+
+        unsafe {
+            if !old_size.is_null() {
+                *old_size = previous_size;
+            }
+        }
+
+        Ok(())
+    })
+}
+
 /// Fill table range (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_table_fill(

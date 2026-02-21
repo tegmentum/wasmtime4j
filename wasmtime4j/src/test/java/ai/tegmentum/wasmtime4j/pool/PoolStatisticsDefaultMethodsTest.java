@@ -18,215 +18,120 @@ package ai.tegmentum.wasmtime4j.pool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
  * Test suite for the default methods in PoolStatistics interface.
  *
- * <p>Tests the getReuseRatio and getMemoryUtilization default method implementations.
+ * <p>Tests the getTotalInstances default method implementation.
  */
 @DisplayName("PoolStatistics Default Methods Tests")
 class PoolStatisticsDefaultMethodsTest {
 
   /** Test implementation of PoolStatistics for testing default methods. */
   private static class TestPoolStatistics implements PoolStatistics {
-    private final long instancesAllocated;
-    private final long instancesReused;
-    private final long currentMemoryUsage;
-    private final long peakMemoryUsage;
+    private final long coreInstances;
+    private final long componentInstances;
 
-    TestPoolStatistics(
-        final long instancesAllocated,
-        final long instancesReused,
-        final long currentMemoryUsage,
-        final long peakMemoryUsage) {
-      this.instancesAllocated = instancesAllocated;
-      this.instancesReused = instancesReused;
-      this.currentMemoryUsage = currentMemoryUsage;
-      this.peakMemoryUsage = peakMemoryUsage;
+    TestPoolStatistics(final long coreInstances, final long componentInstances) {
+      this.coreInstances = coreInstances;
+      this.componentInstances = componentInstances;
     }
 
     @Override
-    public long getInstancesAllocated() {
-      return instancesAllocated;
+    public long getCoreInstances() {
+      return coreInstances;
     }
 
     @Override
-    public long getInstancesReused() {
-      return instancesReused;
+    public long getComponentInstances() {
+      return componentInstances;
     }
 
     @Override
-    public long getInstancesCreated() {
+    public long getMemories() {
       return 0;
     }
 
     @Override
-    public long getMemoryPoolsAllocated() {
+    public long getTables() {
       return 0;
     }
 
     @Override
-    public long getMemoryPoolsReused() {
+    public long getStacks() {
       return 0;
     }
 
     @Override
-    public long getStackPoolsAllocated() {
+    public long getGcHeaps() {
       return 0;
     }
 
     @Override
-    public long getStackPoolsReused() {
+    public long getUnusedWarmMemories() {
       return 0;
     }
 
     @Override
-    public long getTablePoolsAllocated() {
+    public long getUnusedMemoryBytesResident() {
       return 0;
     }
 
     @Override
-    public long getTablePoolsReused() {
+    public long getUnusedWarmTables() {
       return 0;
     }
 
     @Override
-    public long getPeakMemoryUsage() {
-      return peakMemoryUsage;
-    }
-
-    @Override
-    public long getCurrentMemoryUsage() {
-      return currentMemoryUsage;
-    }
-
-    @Override
-    public long getAllocationFailures() {
+    public long getUnusedTableBytesResident() {
       return 0;
     }
 
     @Override
-    public Duration getPoolWarmingTime() {
-      return Duration.ZERO;
+    public long getUnusedWarmStacks() {
+      return 0;
     }
 
     @Override
-    public Duration getAverageAllocationTime() {
-      return Duration.ZERO;
+    public long getUnusedStackBytesResident() {
+      return 0;
     }
   }
 
-  // ========================================================================
-  // getReuseRatio Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("getReuseRatio Tests")
-  class GetReuseRatioTests {
-
-    @Test
-    @DisplayName("should return 0.0 when no allocations or reuses")
-    void shouldReturnZeroWhenNoAllocationsOrReuses() {
-      PoolStatistics stats = new TestPoolStatistics(0, 0, 0, 0);
-      assertEquals(0.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.0");
-    }
-
-    @Test
-    @DisplayName("should return 0.0 when no reuses")
-    void shouldReturnZeroWhenNoReuses() {
-      PoolStatistics stats = new TestPoolStatistics(10, 0, 0, 0);
-      assertEquals(0.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.0");
-    }
-
-    @Test
-    @DisplayName("should return 1.0 when all reuses")
-    void shouldReturnOneWhenAllReuses() {
-      PoolStatistics stats = new TestPoolStatistics(0, 10, 0, 0);
-      assertEquals(1.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 1.0");
-    }
-
-    @Test
-    @DisplayName("should return 0.5 when half reused")
-    void shouldReturnHalfWhenHalfReused() {
-      PoolStatistics stats = new TestPoolStatistics(5, 5, 0, 0);
-      assertEquals(0.5, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.5");
-    }
-
-    @Test
-    @DisplayName("should calculate correct ratio for various values")
-    void shouldCalculateCorrectRatioForVariousValues() {
-      PoolStatistics stats = new TestPoolStatistics(30, 70, 0, 0);
-      assertEquals(0.7, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.7");
-    }
-
-    @Test
-    @DisplayName("should handle large numbers")
-    void shouldHandleLargeNumbers() {
-      PoolStatistics stats = new TestPoolStatistics(1000000, 9000000, 0, 0);
-      assertEquals(0.9, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.9");
-    }
+  @Test
+  @DisplayName("should return 0 when no instances allocated")
+  void shouldReturnZeroWhenNoInstances() {
+    final PoolStatistics stats = new TestPoolStatistics(0, 0);
+    assertEquals(0, stats.getTotalInstances(), "Total instances should be 0");
   }
 
-  // ========================================================================
-  // getMemoryUtilization Tests
-  // ========================================================================
+  @Test
+  @DisplayName("should return sum of core and component instances")
+  void shouldReturnSumOfInstances() {
+    final PoolStatistics stats = new TestPoolStatistics(5, 3);
+    assertEquals(8, stats.getTotalInstances(), "Total instances should be 8 (5 core + 3 component)");
+  }
 
-  @Nested
-  @DisplayName("getMemoryUtilization Tests")
-  class GetMemoryUtilizationTests {
+  @Test
+  @DisplayName("should handle only core instances")
+  void shouldHandleOnlyCoreInstances() {
+    final PoolStatistics stats = new TestPoolStatistics(10, 0);
+    assertEquals(10, stats.getTotalInstances(), "Total instances should be 10 (core only)");
+  }
 
-    @Test
-    @DisplayName("should return 0.0 when peak is zero")
-    void shouldReturnZeroWhenPeakIsZero() {
-      PoolStatistics stats = new TestPoolStatistics(0, 0, 100, 0);
-      assertEquals(0.0, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 0.0");
-    }
+  @Test
+  @DisplayName("should handle only component instances")
+  void shouldHandleOnlyComponentInstances() {
+    final PoolStatistics stats = new TestPoolStatistics(0, 7);
+    assertEquals(7, stats.getTotalInstances(), "Total instances should be 7 (component only)");
+  }
 
-    @Test
-    @DisplayName("should return 0.0 when current is zero")
-    void shouldReturnZeroWhenCurrentIsZero() {
-      PoolStatistics stats = new TestPoolStatistics(0, 0, 0, 100);
-      assertEquals(0.0, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 0.0");
-    }
-
-    @Test
-    @DisplayName("should return 1.0 when current equals peak")
-    void shouldReturnOneWhenCurrentEqualsPeak() {
-      PoolStatistics stats = new TestPoolStatistics(0, 0, 100, 100);
-      assertEquals(1.0, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 1.0");
-    }
-
-    @Test
-    @DisplayName("should return 0.5 when current is half of peak")
-    void shouldReturnHalfWhenCurrentIsHalfOfPeak() {
-      PoolStatistics stats = new TestPoolStatistics(0, 0, 50, 100);
-      assertEquals(0.5, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 0.5");
-    }
-
-    @Test
-    @DisplayName("should calculate correct utilization for various values")
-    void shouldCalculateCorrectUtilizationForVariousValues() {
-      PoolStatistics stats = new TestPoolStatistics(0, 0, 75, 100);
-      assertEquals(0.75, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 0.75");
-    }
-
-    @Test
-    @DisplayName("should handle large numbers")
-    void shouldHandleLargeNumbers() {
-      PoolStatistics stats = new TestPoolStatistics(0, 0, 500000000L, 1000000000L);
-      assertEquals(0.5, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 0.5");
-    }
-
-    @Test
-    @DisplayName("should handle current greater than peak")
-    void shouldHandleCurrentGreaterThanPeak() {
-      // This scenario shouldn't happen in practice but the implementation should handle it
-      PoolStatistics stats = new TestPoolStatistics(0, 0, 200, 100);
-      assertEquals(2.0, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 2.0");
-    }
+  @Test
+  @DisplayName("should handle large numbers")
+  void shouldHandleLargeNumbers() {
+    final PoolStatistics stats = new TestPoolStatistics(1000000L, 9000000L);
+    assertEquals(10000000L, stats.getTotalInstances(), "Total instances should be 10000000");
   }
 }

@@ -33,6 +33,22 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeDefineHostFunctionAsync
+ * Signature: (JLjava/lang/String;J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDefineHostFunctionAsync
+  (JNIEnv *, jobject, jlong, jstring, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetAsyncSupport
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetAsyncSupport
+  (JNIEnv *, jobject, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
  * Method:    nativeDefineResource
  * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JJ)J
  */
@@ -46,6 +62,198 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nati
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeInstantiateWithLinker
   (JNIEnv *, jobject, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeInstantiatePre
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeInstantiatePre
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeAllowShadowing
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeAllowShadowing
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeDefineUnknownImportsAsTraps
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDefineUnknownImportsAsTraps
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiInheritStdio
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStdio
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiInheritStdin
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStdin
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiInheritStdout
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStdout
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiInheritStderr
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStderr
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiInheritEnv
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritEnv
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiArgs
+ * Signature: (J[Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiArgs
+  (JNIEnv *, jclass, jlong, jobjectArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeAddWasiEnv
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeAddWasiEnv
+  (JNIEnv *, jclass, jlong, jstring, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeAddWasiPreopenDir
+ * Signature: (JLjava/lang/String;Ljava/lang/String;II)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeAddWasiPreopenDir
+  (JNIEnv *, jclass, jlong, jstring, jstring, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiAllowNetwork
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowNetwork
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiAllowTcp
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowTcp
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiAllowUdp
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowUdp
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiAllowIpNameLookup
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowIpNameLookup
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiAllowClock
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowClock
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiAllowRandom
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowRandom
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiAllowBlockingCurrentThread
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowBlockingCurrentThread
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiInsecureRandomSeed
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInsecureRandomSeed
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiWallClock
+ * Signature: (JLjava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiWallClock
+  (JNIEnv *, jclass, jlong, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiMonotonicClock
+ * Signature: (JLjava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiMonotonicClock
+  (JNIEnv *, jclass, jlong, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiSecureRandom
+ * Signature: (JLjava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiSecureRandom
+  (JNIEnv *, jclass, jlong, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiInsecureRandom
+ * Signature: (JLjava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInsecureRandom
+  (JNIEnv *, jclass, jlong, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiSocketAddrCheck
+ * Signature: (JLjava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiSocketAddrCheck
+  (JNIEnv *, jclass, jlong, jobject);
 
 #ifdef __cplusplus
 }

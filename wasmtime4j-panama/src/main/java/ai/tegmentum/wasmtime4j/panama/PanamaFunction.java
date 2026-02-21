@@ -138,6 +138,12 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
     return instance.callToI32Fast(name);
   }
 
+  @Override
+  public long toRawFuncRef() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    return instance.funcToRaw(name);
+  }
+
   /** Closes the function and releases resources. */
   public void close() {
     resourceHandle.close();

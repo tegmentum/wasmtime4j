@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstanceState;
 import ai.tegmentum.wasmtime4j.Module;
@@ -412,6 +413,27 @@ public final class JniInstance extends JniResource implements Instance {
     return getMemory("memory");
   }
 
+  @Override
+  public Optional<WasmMemory> getSharedMemory(final String name) {
+    Validation.requireNonBlank(name, "name");
+    ensureNotClosed();
+
+    try {
+      final long memoryHandle =
+          nativeGetSharedMemory(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
+      if (memoryHandle == 0) {
+        return Optional.empty();
+      }
+      final JniMemory memory = new JniMemory(memoryHandle, (JniStore) store);
+      memory.setInstanceHandle(getNativeHandle());
+      return Optional.of(memory);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error getting shared memory: " + name, e);
+    }
+  }
+
   /**
    * Checks if this instance has an export with the given name.
    *
@@ -429,6 +451,50 @@ public final class JniInstance extends JniResource implements Instance {
     } catch (final Exception e) {
       LOGGER.warning("Error checking export existence: " + e.getMessage());
       return false;
+    }
+  }
+
+  @Override
+  public Optional<Extern> getExport(final String name) {
+    Validation.requireNonBlank(name, "name");
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalStateException("Store must be a JniStore instance");
+    }
+
+    try {
+      final JniStore jniStore = (JniStore) store;
+      final long storeHandle = jniStore.getNativeHandle();
+
+      // Try function
+      final long funcHandle = nativeGetFunction(getNativeHandle(), storeHandle, name);
+      if (funcHandle != 0) {
+        return Optional.of(new JniExternFunc(funcHandle, jniStore));
+      }
+
+      // Try memory
+      final long memHandle = nativeGetMemory(getNativeHandle(), storeHandle, name);
+      if (memHandle != 0) {
+        return Optional.of(new JniExternMemory(memHandle, jniStore));
+      }
+
+      // Try table
+      final long tableHandle = nativeGetTable(getNativeHandle(), storeHandle, name);
+      if (tableHandle != 0) {
+        return Optional.of(new JniExternTable(tableHandle, jniStore));
+      }
+
+      // Try global
+      final long globalHandle = nativeGetGlobal(getNativeHandle(), storeHandle, name);
+      if (globalHandle != 0) {
+        return Optional.of(new JniExternGlobal(globalHandle, jniStore));
+      }
+
+      return Optional.empty();
+    } catch (final Exception e) {
+      LOGGER.warning("Error getting export: " + name + " - " + e.getMessage());
+      return Optional.empty();
     }
   }
 
@@ -796,6 +862,17 @@ public final class JniInstance extends JniResource implements Instance {
    * @return native memory handle or 0 if not found
    */
   private static native long nativeGetMemory(long instanceHandle, long storeHandle, String name);
+
+  /**
+   * Gets a shared memory export from an instance (only shared memories).
+   *
+   * @param instanceHandle the native instance handle
+   * @param storeHandle the native store handle
+   * @param name the shared memory name
+   * @return native memory handle or 0 if not found
+   */
+  private static native long nativeGetSharedMemory(
+      long instanceHandle, long storeHandle, String name);
 
   /**
    * Gets a table export from an instance.

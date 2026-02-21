@@ -406,6 +406,83 @@ pub extern "C" fn wasmtime4j_panama_module_get_custom_sections(
     }
 }
 
+/// Compile a WebAssembly module from a file path (Panama FFI version)
+///
+/// The file can contain either binary WebAssembly (.wasm) or WebAssembly Text (.wat).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_compile_from_file(
+    engine_ptr: *mut c_void,
+    path_ptr: *const c_char,
+    module_ptr: *mut *mut c_void,
+) -> c_int {
+    if path_ptr.is_null() || module_ptr.is_null() {
+        return crate::shared_ffi::FFI_ERROR;
+    }
+
+    let path_cstr = unsafe { std::ffi::CStr::from_ptr(path_ptr) };
+    let path_str = match path_cstr.to_str() {
+        Ok(s) => s,
+        Err(_) => return crate::shared_ffi::FFI_ERROR,
+    };
+
+    ffi_utils::ffi_try_code(|| {
+        let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+        let module =
+            crate::module::core::compile_module_from_file(engine, std::path::Path::new(path_str))?;
+        unsafe {
+            *module_ptr = Box::into_raw(module) as *mut c_void;
+        }
+        Ok(())
+    })
+}
+
+/// Check if two modules are the same underlying compiled module (Panama FFI version)
+///
+/// Returns 1 if the modules are the same, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_same(
+    module_ptr1: *mut c_void,
+    module_ptr2: *mut c_void,
+) -> c_int {
+    if module_ptr1.is_null() || module_ptr2.is_null() {
+        return 0;
+    }
+    match unsafe { crate::module::core::modules_same(module_ptr1, module_ptr2) } {
+        Ok(same) => {
+            if same {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => 0,
+    }
+}
+
+/// Get the index of an export by name (Panama FFI version)
+///
+/// Returns the zero-based index of the export, or -1 if not found.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_get_export_index(
+    module_ptr: *mut c_void,
+    name: *const c_char,
+) -> c_int {
+    if module_ptr.is_null() || name.is_null() {
+        return -1;
+    }
+
+    let name_cstr = unsafe { std::ffi::CStr::from_ptr(name) };
+    let name_str = match name_cstr.to_str() {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+
+    match unsafe { crate::module::core::get_export_index(module_ptr, name_str) } {
+        Ok(idx) => idx,
+        Err(_) => -1,
+    }
+}
+
 /// Destroy a WebAssembly module (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_module_destroy(module_ptr: *mut c_void) {

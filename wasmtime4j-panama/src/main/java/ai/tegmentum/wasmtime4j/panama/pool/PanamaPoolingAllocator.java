@@ -160,10 +160,8 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
     ensureNotClosed();
 
     try (Arena localArena = Arena.ofConfined()) {
-      // Allocate space for statistics struct (14 fields)
-      // Layout: 12 x u64 + 2 x Duration (each Duration = 2 x u64 for secs and nanos)
-      // Simplified: 14 x long = 112 bytes
-      final MemorySegment statsOut = localArena.allocate(112);
+      // Allocate space for 12 i64 values (12 * 8 = 96 bytes)
+      final MemorySegment statsOut = localArena.allocate(ValueLayout.JAVA_LONG, 12);
 
       final boolean success =
           NATIVE_BINDINGS.poolingAllocatorGetStatistics(nativeAllocator, statsOut);
@@ -173,37 +171,13 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
         return new PanamaPoolStatistics();
       }
 
-      // Read statistics from native struct
-      final long instancesAllocated = statsOut.get(ValueLayout.JAVA_LONG, 0);
-      final long instancesReused = statsOut.get(ValueLayout.JAVA_LONG, 8);
-      final long instancesCreated = statsOut.get(ValueLayout.JAVA_LONG, 16);
-      final long memoryPoolsAllocated = statsOut.get(ValueLayout.JAVA_LONG, 24);
-      final long memoryPoolsReused = statsOut.get(ValueLayout.JAVA_LONG, 32);
-      final long stackPoolsAllocated = statsOut.get(ValueLayout.JAVA_LONG, 40);
-      final long stackPoolsReused = statsOut.get(ValueLayout.JAVA_LONG, 48);
-      final long tablePoolsAllocated = statsOut.get(ValueLayout.JAVA_LONG, 56);
-      final long tablePoolsReused = statsOut.get(ValueLayout.JAVA_LONG, 64);
-      final long peakMemoryUsage = statsOut.get(ValueLayout.JAVA_LONG, 72);
-      final long currentMemoryUsage = statsOut.get(ValueLayout.JAVA_LONG, 80);
-      final long allocationFailures = statsOut.get(ValueLayout.JAVA_LONG, 88);
-      final long poolWarmingTimeNanos = statsOut.get(ValueLayout.JAVA_LONG, 96);
-      final long averageAllocationTimeNanos = statsOut.get(ValueLayout.JAVA_LONG, 104);
+      // Read the 12 metrics values
+      final long[] metrics = new long[12];
+      for (int i = 0; i < 12; i++) {
+        metrics[i] = statsOut.getAtIndex(ValueLayout.JAVA_LONG, i);
+      }
 
-      return new PanamaPoolStatistics(
-          instancesAllocated,
-          instancesReused,
-          instancesCreated,
-          memoryPoolsAllocated,
-          memoryPoolsReused,
-          stackPoolsAllocated,
-          stackPoolsReused,
-          tablePoolsAllocated,
-          tablePoolsReused,
-          peakMemoryUsage,
-          currentMemoryUsage,
-          allocationFailures,
-          poolWarmingTimeNanos,
-          averageAllocationTimeNanos);
+      return new PanamaPoolStatistics(metrics);
     }
   }
 

@@ -121,31 +121,14 @@ public final class JniPoolingAllocator implements PoolingAllocator {
   public PoolStatistics getStatistics() {
     ensureNotClosed();
 
-    // Statistics returned as array: [instancesAllocated, instancesReused, instancesCreated,
-    // memoryPoolsAllocated, memoryPoolsReused, stackPoolsAllocated, stackPoolsReused,
-    // tablePoolsAllocated, tablePoolsReused, peakMemoryUsage, currentMemoryUsage,
-    // allocationFailures, poolWarmingTimeNanos, averageAllocationTimeNanos]
+    // Statistics returned as a 12-element array matching PoolingAllocatorMetrics fields
     final long[] stats = nativeGetStatistics(nativeHandle);
-    if (stats == null || stats.length < 14) {
+    if (stats == null || stats.length < 12) {
       LOGGER.warning("Failed to get pool statistics, returning empty statistics");
       return new JniPoolStatistics();
     }
 
-    return new JniPoolStatistics(
-        stats[0], // instancesAllocated
-        stats[1], // instancesReused
-        stats[2], // instancesCreated
-        stats[3], // memoryPoolsAllocated
-        stats[4], // memoryPoolsReused
-        stats[5], // stackPoolsAllocated
-        stats[6], // stackPoolsReused
-        stats[7], // tablePoolsAllocated
-        stats[8], // tablePoolsReused
-        stats[9], // peakMemoryUsage
-        stats[10], // currentMemoryUsage
-        stats[11], // allocationFailures
-        stats[12], // poolWarmingTimeNanos
-        stats[13]); // averageAllocationTimeNanos
+    return new JniPoolStatistics(stats);
   }
 
   @Override

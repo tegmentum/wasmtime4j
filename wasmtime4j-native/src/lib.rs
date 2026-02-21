@@ -131,6 +131,10 @@ pub mod component;
 #[cfg(feature = "component-model")]
 pub mod component_core;
 
+// Guest profiler for sampling-based performance profiling
+#[cfg(feature = "profiling")]
+pub mod guest_profiler;
+
 // WebAssembly GC implementation
 pub mod gc;
 pub mod gc_heap;

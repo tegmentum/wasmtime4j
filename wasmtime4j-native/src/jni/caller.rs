@@ -202,6 +202,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetGloba
     }) as jlong
 }
 
+/// Set fuel async yield interval for the caller's store (JNI version)
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetFuelAsyncYieldInterval(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    interval: jlong,
+) {
+    if caller_handle == 0 {
+        return;
+    }
+
+    jni_utils::jni_try_void(&mut env, || {
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        core::caller_set_fuel_async_yield_interval(caller, interval as u64)
+    });
+}
+
 /// Get table export from caller by name (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetTable(

@@ -328,6 +328,18 @@ impl Engine {
         }
     }
 
+    /// Create a weak reference to this engine.
+    ///
+    /// The returned `WeakEngine` does not prevent the underlying Wasmtime engine
+    /// from being dropped. Use `WeakEngine::upgrade()` to attempt to obtain a
+    /// strong reference.
+    pub fn weak(&self) -> WeakEngine {
+        WeakEngine {
+            inner: Arc::downgrade(&self.inner),
+            config_summary: self.config_summary.clone(),
+        }
+    }
+
     /// Increment the epoch counter
     ///
     /// This method is signal-safe and performs only an atomic increment operation.
@@ -435,6 +447,42 @@ impl Default for Engine {
     }
 }
 
+/// Weak reference to an Engine that does not prevent the underlying
+/// WasmtimeEngine from being dropped.
+///
+/// Use `upgrade()` to attempt to obtain a strong `Engine` reference.
+/// Returns `None` if all strong references have been dropped.
+pub struct WeakEngine {
+    inner: std::sync::Weak<WasmtimeEngine>,
+    config_summary: EngineConfigSummary,
+}
+
+impl WeakEngine {
+    /// Attempt to upgrade this weak reference to a strong `Engine`.
+    ///
+    /// Returns `Some(Engine)` if at least one strong reference still exists,
+    /// or `None` if the engine has been dropped.
+    pub fn upgrade(&self) -> Option<Engine> {
+        let inner = self.inner.upgrade()?;
+        Some(Engine {
+            inner,
+            config_summary: self.config_summary.clone(),
+            concurrent_ops_lock: Arc::new(RwLock::new(())),
+            is_closed: Arc::new(AtomicBool::new(false)),
+        })
+    }
+}
+
+impl std::fmt::Debug for WeakEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WeakEngine")
+            .field("strong_count", &self.inner.strong_count())
+            .finish()
+    }
+}
+
 // Thread safety: Engine wraps Arc<WasmtimeEngine> which is thread-safe
 unsafe impl Send for Engine {}
 unsafe impl Sync for Engine {}
+unsafe impl Send for WeakEngine {}
+unsafe impl Sync for WeakEngine {}

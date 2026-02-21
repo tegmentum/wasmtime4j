@@ -146,6 +146,51 @@ public final class PanamaModule implements Module {
     LOGGER.fine("Created Panama module from native pointer");
   }
 
+  /**
+   * Creates a PanamaModule from a native module pointer without an associated PanamaEngine.
+   *
+   * <p>This constructor is used for modules extracted from component instances via {@link
+   * ai.tegmentum.wasmtime4j.component.ComponentInstance#getModule(String)}. The extracted module is
+   * owned by the native component engine and will be cleaned up when the module is closed.
+   *
+   * <p>Note: {@link #getEngine()} will return {@code null} for modules created with this
+   * constructor.
+   *
+   * @param nativeModulePtr the native module pointer
+   * @throws WasmException if the module pointer is null
+   */
+  PanamaModule(final MemorySegment nativeModulePtr) throws WasmException {
+    if (nativeModulePtr == null || nativeModulePtr.equals(MemorySegment.NULL)) {
+      throw new WasmException("Native module pointer is null");
+    }
+
+    this.engine = null;
+    this.wasmBytes = null;
+    this.arena = Arena.ofShared();
+    this.nativeModule = nativeModulePtr;
+
+    final MemorySegment moduleHandle = this.nativeModule;
+    final Arena moduleArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaModule",
+            () -> {
+              if (nativeModule != null && !nativeModule.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.moduleDestroy(nativeModule);
+              }
+              arena.close();
+            },
+            this,
+            () -> {
+              if (moduleHandle != null && !moduleHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.moduleDestroy(moduleHandle);
+              }
+              moduleArena.close();
+            });
+
+    LOGGER.fine("Created Panama module from component instance export");
+  }
+
   @Override
   public Instance instantiate(final Store store) throws WasmException {
     if (store == null) {
@@ -314,6 +359,36 @@ public final class PanamaModule implements Module {
       }
     }
     return false;
+  }
+
+  @Override
+  public boolean same(final ai.tegmentum.wasmtime4j.Module other) {
+    if (other == null) {
+      throw new IllegalArgumentException("other cannot be null");
+    }
+    if (resourceHandle.isClosed()) {
+      return false;
+    }
+    if (!(other instanceof PanamaModule)) {
+      return false;
+    }
+    final PanamaModule otherModule = (PanamaModule) other;
+    if (otherModule.resourceHandle.isClosed()) {
+      return false;
+    }
+    return NATIVE_BINDINGS.moduleSame(this.nativeModule, otherModule.nativeModule);
+  }
+
+  @Override
+  public int getExportIndex(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    ensureNotClosed();
+    try (final java.lang.foreign.Arena localArena = java.lang.foreign.Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment nameSegment = localArena.allocateFrom(name);
+      return NATIVE_BINDINGS.moduleGetExportIndex(nativeModule, nameSegment);
+    }
   }
 
   @Override

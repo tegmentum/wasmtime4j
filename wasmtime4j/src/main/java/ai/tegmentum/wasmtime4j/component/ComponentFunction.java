@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Represents a WebAssembly Component Model function that can be invoked.
@@ -69,6 +70,26 @@ public interface ComponentFunction {
    * @throws WasmException if function invocation fails or arguments are invalid
    */
   Object call(Object... args) throws WasmException;
+
+  /**
+   * Asynchronously invokes this function with the provided arguments.
+   *
+   * <p>The call is executed on the default ForkJoinPool. The returned future completes with the
+   * function result, or completes exceptionally if the call fails.
+   *
+   * @param args the arguments to pass to the function
+   * @return a CompletableFuture that will contain the function result, or null for void functions
+   */
+  default CompletableFuture<Object> callAsync(final Object... args) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return call(args);
+          } catch (final WasmException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
 
   /**
    * Checks if this function is still valid and can be called.

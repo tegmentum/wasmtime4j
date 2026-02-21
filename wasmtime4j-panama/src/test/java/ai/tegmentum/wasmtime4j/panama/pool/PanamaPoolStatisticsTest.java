@@ -17,11 +17,10 @@
 package ai.tegmentum.wasmtime4j.panama.pool;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
-import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,6 +28,36 @@ import org.junit.jupiter.api.Test;
 /** Comprehensive tests for {@link PanamaPoolStatistics}. */
 @DisplayName("PanamaPoolStatistics Tests")
 class PanamaPoolStatisticsTest {
+
+  /** Creates a metrics array matching the Wasmtime PoolingAllocatorMetrics field order. */
+  private static long[] createMetrics(
+      final long coreInstances,
+      final long componentInstances,
+      final long memories,
+      final long tables,
+      final long stacks,
+      final long gcHeaps,
+      final long unusedWarmMemories,
+      final long unusedMemoryBytesResident,
+      final long unusedWarmTables,
+      final long unusedTableBytesResident,
+      final long unusedWarmStacks,
+      final long unusedStackBytesResident) {
+    return new long[] {
+      coreInstances,
+      componentInstances,
+      memories,
+      tables,
+      stacks,
+      gcHeaps,
+      unusedWarmMemories,
+      unusedMemoryBytesResident,
+      unusedWarmTables,
+      unusedTableBytesResident,
+      unusedWarmStacks,
+      unusedStackBytesResident
+    };
+  }
 
   @Nested
   @DisplayName("Class Structure Tests")
@@ -60,204 +89,94 @@ class PanamaPoolStatisticsTest {
     void defaultConstructorShouldCreateStatisticsWithZeroValues() {
       final PanamaPoolStatistics stats = new PanamaPoolStatistics();
 
-      assertEquals(0, stats.getInstancesAllocated(), "instancesAllocated should be 0");
-      assertEquals(0, stats.getInstancesReused(), "instancesReused should be 0");
-      assertEquals(0, stats.getInstancesCreated(), "instancesCreated should be 0");
-      assertEquals(0, stats.getMemoryPoolsAllocated(), "memoryPoolsAllocated should be 0");
-      assertEquals(0, stats.getMemoryPoolsReused(), "memoryPoolsReused should be 0");
-      assertEquals(0, stats.getStackPoolsAllocated(), "stackPoolsAllocated should be 0");
-      assertEquals(0, stats.getStackPoolsReused(), "stackPoolsReused should be 0");
-      assertEquals(0, stats.getTablePoolsAllocated(), "tablePoolsAllocated should be 0");
-      assertEquals(0, stats.getTablePoolsReused(), "tablePoolsReused should be 0");
-      assertEquals(0, stats.getPeakMemoryUsage(), "peakMemoryUsage should be 0");
-      assertEquals(0, stats.getCurrentMemoryUsage(), "currentMemoryUsage should be 0");
-      assertEquals(0, stats.getAllocationFailures(), "allocationFailures should be 0");
-    }
-
-    @Test
-    @DisplayName("Default constructor should create zero durations")
-    void defaultConstructorShouldCreateZeroDurations() {
-      final PanamaPoolStatistics stats = new PanamaPoolStatistics();
-
-      assertEquals(Duration.ZERO, stats.getPoolWarmingTime(), "poolWarmingTime should be zero");
-      assertEquals(
-          Duration.ZERO, stats.getAverageAllocationTime(), "averageAllocationTime should be zero");
+      assertEquals(0, stats.getCoreInstances(), "coreInstances should be 0");
+      assertEquals(0, stats.getComponentInstances(), "componentInstances should be 0");
+      assertEquals(0, stats.getMemories(), "memories should be 0");
+      assertEquals(0, stats.getTables(), "tables should be 0");
+      assertEquals(0, stats.getStacks(), "stacks should be 0");
+      assertEquals(0, stats.getGcHeaps(), "gcHeaps should be 0");
+      assertEquals(0, stats.getUnusedWarmMemories(), "unusedWarmMemories should be 0");
+      assertEquals(0, stats.getUnusedMemoryBytesResident(), "unusedMemoryBytesResident should be 0");
+      assertEquals(0, stats.getUnusedWarmTables(), "unusedWarmTables should be 0");
+      assertEquals(0, stats.getUnusedTableBytesResident(), "unusedTableBytesResident should be 0");
+      assertEquals(0, stats.getUnusedWarmStacks(), "unusedWarmStacks should be 0");
+      assertEquals(0, stats.getUnusedStackBytesResident(), "unusedStackBytesResident should be 0");
+      assertEquals(0, stats.getTotalInstances(), "totalInstances should be 0");
     }
   }
 
   @Nested
-  @DisplayName("Full Constructor Tests")
-  class FullConstructorTests {
+  @DisplayName("Array Constructor Tests")
+  class ArrayConstructorTests {
 
     @Test
-    @DisplayName("Full constructor should set all values correctly")
-    void fullConstructorShouldSetAllValuesCorrectly() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(
-              100L, // instancesAllocated
-              80L, // instancesReused
-              20L, // instancesCreated
-              50L, // memoryPoolsAllocated
-              40L, // memoryPoolsReused
-              30L, // stackPoolsAllocated
-              25L, // stackPoolsReused
-              15L, // tablePoolsAllocated
-              10L, // tablePoolsReused
-              1024L * 1024 * 100, // peakMemoryUsage (100MB)
-              1024L * 1024 * 50, // currentMemoryUsage (50MB)
-              5L, // allocationFailures
-              1_000_000_000L, // poolWarmingTimeNanos (1 second)
-              100_000L // averageAllocationTimeNanos (100 microseconds)
-              );
+    @DisplayName("Array constructor should set all values correctly")
+    void arrayConstructorShouldSetAllValuesCorrectly() {
+      final long[] metrics = createMetrics(10, 5, 20, 15, 8, 3, 4, 4096, 2, 2048, 1, 1024);
+      final PanamaPoolStatistics stats = new PanamaPoolStatistics(metrics);
 
-      assertEquals(100L, stats.getInstancesAllocated(), "instancesAllocated should match");
-      assertEquals(80L, stats.getInstancesReused(), "instancesReused should match");
-      assertEquals(20L, stats.getInstancesCreated(), "instancesCreated should match");
-      assertEquals(50L, stats.getMemoryPoolsAllocated(), "memoryPoolsAllocated should match");
-      assertEquals(40L, stats.getMemoryPoolsReused(), "memoryPoolsReused should match");
-      assertEquals(30L, stats.getStackPoolsAllocated(), "stackPoolsAllocated should match");
-      assertEquals(25L, stats.getStackPoolsReused(), "stackPoolsReused should match");
-      assertEquals(15L, stats.getTablePoolsAllocated(), "tablePoolsAllocated should match");
-      assertEquals(10L, stats.getTablePoolsReused(), "tablePoolsReused should match");
-      assertEquals(1024L * 1024 * 100, stats.getPeakMemoryUsage(), "peakMemoryUsage should match");
-      assertEquals(
-          1024L * 1024 * 50, stats.getCurrentMemoryUsage(), "currentMemoryUsage should match");
-      assertEquals(5L, stats.getAllocationFailures(), "allocationFailures should match");
+      assertEquals(10, stats.getCoreInstances(), "coreInstances should match");
+      assertEquals(5, stats.getComponentInstances(), "componentInstances should match");
+      assertEquals(20, stats.getMemories(), "memories should match");
+      assertEquals(15, stats.getTables(), "tables should match");
+      assertEquals(8, stats.getStacks(), "stacks should match");
+      assertEquals(3, stats.getGcHeaps(), "gcHeaps should match");
+      assertEquals(4, stats.getUnusedWarmMemories(), "unusedWarmMemories should match");
+      assertEquals(4096, stats.getUnusedMemoryBytesResident(),
+          "unusedMemoryBytesResident should match");
+      assertEquals(2, stats.getUnusedWarmTables(), "unusedWarmTables should match");
+      assertEquals(2048, stats.getUnusedTableBytesResident(),
+          "unusedTableBytesResident should match");
+      assertEquals(1, stats.getUnusedWarmStacks(), "unusedWarmStacks should match");
+      assertEquals(1024, stats.getUnusedStackBytesResident(),
+          "unusedStackBytesResident should match");
     }
 
     @Test
-    @DisplayName("Full constructor should convert nanoseconds to Duration")
-    void fullConstructorShouldConvertNanosecondsToDuration() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              2_500_000_000L, // 2.5 seconds
-              500_000L // 0.5 milliseconds
-              );
+    @DisplayName("Array constructor should reject null array")
+    void arrayConstructorShouldRejectNullArray() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new PanamaPoolStatistics(null),
+          "Should reject null metrics array");
+    }
 
-      assertEquals(
-          Duration.ofNanos(2_500_000_000L),
-          stats.getPoolWarmingTime(),
-          "poolWarmingTime should be 2.5 seconds");
-      assertEquals(
-          Duration.ofNanos(500_000L),
-          stats.getAverageAllocationTime(),
-          "averageAllocationTime should be 500 microseconds");
+    @Test
+    @DisplayName("Array constructor should reject wrong-size array")
+    void arrayConstructorShouldRejectWrongSizeArray() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new PanamaPoolStatistics(new long[10]),
+          "Should reject array with wrong length");
     }
   }
 
   @Nested
-  @DisplayName("Reuse Ratio Tests")
-  class ReuseRatioTests {
+  @DisplayName("Total Instances Tests")
+  class TotalInstancesTests {
 
     @Test
-    @DisplayName("getReuseRatio should return correct ratio")
-    void getReuseRatioShouldReturnCorrectRatio() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(100L, 80L, 20L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    @DisplayName("getTotalInstances should sum core and component instances")
+    void getTotalInstancesShouldSumCoreAndComponent() {
+      final long[] metrics = createMetrics(10, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      final PanamaPoolStatistics stats = new PanamaPoolStatistics(metrics);
 
-      // Reuse ratio = instancesReused / (instancesAllocated + instancesReused) = 80/180 ≈ 0.444
-      assertEquals(
-          0.4444444444444444, stats.getReuseRatio(), 0.001, "Reuse ratio should be 80/180");
-    }
-
-    @Test
-    @DisplayName("getReuseRatio should return 0.0 when no allocations")
-    void getReuseRatioShouldReturnZeroWhenNoAllocations() {
-      final PanamaPoolStatistics stats = new PanamaPoolStatistics();
-
-      // When instancesAllocated is 0, ratio should be 0.0
-      assertEquals(
-          0.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.0 when no allocations");
-    }
-
-    @Test
-    @DisplayName("getReuseRatio should return 0.5 when equal allocated and reused")
-    void getReuseRatioShouldReturnHalfWhenEqualAllocatedAndReused() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(100L, 100L, 0L, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-      // Reuse ratio = instancesReused / (instancesAllocated + instancesReused) = 100/200 = 0.5
-      assertEquals(0.5, stats.getReuseRatio(), 0.001, "Reuse ratio should be 100/200 = 0.5");
+      assertEquals(15, stats.getTotalInstances(), "totalInstances = core + component = 15");
     }
   }
 
   @Nested
-  @DisplayName("Memory Utilization Tests")
-  class MemoryUtilizationTests {
+  @DisplayName("Unused Stack Bytes Resident Tests")
+  class UnusedStackBytesResidentTests {
 
     @Test
-    @DisplayName("getMemoryUtilization should return correct ratio")
-    void getMemoryUtilizationShouldReturnCorrectRatio() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              1024L * 1024 * 100, // peak 100MB
-              1024L * 1024 * 50, // current 50MB
-              0,
-              0,
-              0);
+    @DisplayName("unusedStackBytesResident -1 indicates unavailable")
+    void unusedStackBytesResidentNegativeOneIndicatesUnavailable() {
+      final long[] metrics = createMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1);
+      final PanamaPoolStatistics stats = new PanamaPoolStatistics(metrics);
 
-      // Memory utilization = current / peak = 50MB / 100MB = 0.5
-      assertEquals(0.5, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 0.5");
-    }
-
-    @Test
-    @DisplayName("getMemoryUtilization should return 0.0 when no peak memory")
-    void getMemoryUtilizationShouldReturnZeroWhenNoPeakMemory() {
-      final PanamaPoolStatistics stats = new PanamaPoolStatistics();
-
-      assertEquals(
-          0.0,
-          stats.getMemoryUtilization(),
-          0.001,
-          "Memory utilization should be 0.0 when no peak memory");
-    }
-
-    @Test
-    @DisplayName("getMemoryUtilization should return 1.0 when at peak")
-    void getMemoryUtilizationShouldReturnOneWhenAtPeak() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              0,
-              1024L * 1024 * 100, // peak 100MB
-              1024L * 1024 * 100, // current 100MB
-              0,
-              0,
-              0);
-
-      assertEquals(
-          1.0,
-          stats.getMemoryUtilization(),
-          0.001,
-          "Memory utilization should be 1.0 when at peak");
+      assertEquals(-1, stats.getUnusedStackBytesResident(),
+          "unusedStackBytesResident should be -1 when unavailable");
     }
   }
 
@@ -266,39 +185,21 @@ class PanamaPoolStatisticsTest {
   class ToStringTests {
 
     @Test
-    @DisplayName("toString should include all statistics")
-    void toStringShouldIncludeAllStatistics() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(
-              100L,
-              80L,
-              20L,
-              50L,
-              40L,
-              30L,
-              25L,
-              15L,
-              10L,
-              1024L * 1024 * 100,
-              1024L * 1024 * 50,
-              5L,
-              1_000_000_000L,
-              100_000L);
+    @DisplayName("toString should include all field names")
+    void toStringShouldIncludeAllFieldNames() {
+      final long[] metrics = createMetrics(10, 5, 20, 15, 8, 3, 4, 4096, 2, 2048, 1, 1024);
+      final PanamaPoolStatistics stats = new PanamaPoolStatistics(metrics);
 
       final String str = stats.toString();
 
-      assertTrue(str.contains("instancesAllocated=100"), "Should contain instancesAllocated");
-      assertTrue(str.contains("instancesReused=80"), "Should contain instancesReused");
-      assertTrue(str.contains("instancesCreated=20"), "Should contain instancesCreated");
-      assertTrue(str.contains("memoryPoolsAllocated=50"), "Should contain memoryPoolsAllocated");
-      assertTrue(str.contains("memoryPoolsReused=40"), "Should contain memoryPoolsReused");
-      assertTrue(str.contains("stackPoolsAllocated=30"), "Should contain stackPoolsAllocated");
-      assertTrue(str.contains("stackPoolsReused=25"), "Should contain stackPoolsReused");
-      assertTrue(str.contains("tablePoolsAllocated=15"), "Should contain tablePoolsAllocated");
-      assertTrue(str.contains("tablePoolsReused=10"), "Should contain tablePoolsReused");
-      assertTrue(str.contains("allocationFailures=5"), "Should contain allocationFailures");
-      assertTrue(str.contains("reuseRatio="), "Should contain reuseRatio");
-      assertTrue(str.contains("memoryUtilization="), "Should contain memoryUtilization");
+      assertTrue(str.contains("coreInstances=10"), "Should contain coreInstances");
+      assertTrue(str.contains("componentInstances=5"), "Should contain componentInstances");
+      assertTrue(str.contains("memories=20"), "Should contain memories");
+      assertTrue(str.contains("tables=15"), "Should contain tables");
+      assertTrue(str.contains("stacks=8"), "Should contain stacks");
+      assertTrue(str.contains("gcHeaps=3"), "Should contain gcHeaps");
+      assertTrue(str.contains("totalInstances=15"), "Should contain totalInstances");
+      assertTrue(str.startsWith("PanamaPoolStatistics{"), "Should start with class name");
     }
   }
 
@@ -309,51 +210,21 @@ class PanamaPoolStatisticsTest {
     @Test
     @DisplayName("Should handle maximum long values")
     void shouldHandleMaximumLongValues() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE,
-              Long.MAX_VALUE);
+      final long[] metrics = new long[12];
+      java.util.Arrays.fill(metrics, Long.MAX_VALUE);
+      final PanamaPoolStatistics stats = new PanamaPoolStatistics(metrics);
 
-      assertEquals(
-          Long.MAX_VALUE,
-          stats.getInstancesAllocated(),
-          "Should handle max long for instancesAllocated");
-      assertNotNull(stats.getPoolWarmingTime(), "poolWarmingTime should not be null");
+      assertEquals(Long.MAX_VALUE, stats.getCoreInstances(),
+          "Should handle max long for coreInstances");
     }
 
     @Test
     @DisplayName("Should handle zero values in all fields")
     void shouldHandleZeroValuesInAllFields() {
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L);
+      final PanamaPoolStatistics stats = new PanamaPoolStatistics(new long[12]);
 
-      assertEquals(0L, stats.getInstancesAllocated(), "Should handle zero");
-      assertEquals(Duration.ZERO, stats.getPoolWarmingTime(), "Should handle zero duration");
-      assertEquals(0.0, stats.getReuseRatio(), 0.001, "Reuse ratio should be 0.0");
-      assertEquals(0.0, stats.getMemoryUtilization(), 0.001, "Memory utilization should be 0.0");
-    }
-
-    @Test
-    @DisplayName("Should handle negative nanosecond values")
-    void shouldHandleNegativeNanosecondValues() {
-      // Negative values would result in negative Duration, which is valid
-      final PanamaPoolStatistics stats =
-          new PanamaPoolStatistics(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L, -1000L, -1000L);
-
-      assertNotNull(stats.getPoolWarmingTime(), "Should handle negative nanoseconds");
-      assertTrue(stats.getPoolWarmingTime().isNegative(), "Duration should be negative");
+      assertEquals(0, stats.getCoreInstances(), "Should handle zero");
+      assertEquals(0, stats.getTotalInstances(), "totalInstances should be 0");
     }
   }
 }

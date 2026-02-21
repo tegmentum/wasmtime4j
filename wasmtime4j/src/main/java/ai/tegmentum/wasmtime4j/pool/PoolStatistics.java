@@ -16,140 +16,117 @@
 
 package ai.tegmentum.wasmtime4j.pool;
 
-import java.time.Duration;
-
 /**
  * Statistics for monitoring pooling allocator usage and performance.
  *
- * <p>PoolStatistics provides real-time metrics about pool utilization, including allocation counts,
- * reuse rates, memory usage, and timing information. These statistics are useful for monitoring
- * pool health and tuning configuration parameters.
+ * <p>PoolStatistics provides real-time metrics about pool utilization, including slot counts for
+ * instances, memories, tables, stacks, and GC heaps, as well as warm/unused resource tracking.
+ *
+ * <p>These statistics correspond directly to Wasmtime's {@code PoolingAllocatorMetrics} API.
  *
  * @since 1.0.0
  */
 public interface PoolStatistics {
 
   /**
-   * Gets the total number of instances allocated from the pool.
+   * Gets the number of core module instances currently allocated.
    *
-   * @return the total instances allocated
+   * @return the number of active core module instance slots
    */
-  long getInstancesAllocated();
+  long getCoreInstances();
 
   /**
-   * Gets the number of instances that were reused from the pool.
+   * Gets the number of component instances currently allocated.
    *
-   * @return the instances reused count
+   * @return the number of active component instance slots
    */
-  long getInstancesReused();
+  long getComponentInstances();
 
   /**
-   * Gets the total number of new instances created.
+   * Gets the total number of linear memory slots in use.
    *
-   * @return the instances created count
+   * @return the number of memory slots
    */
-  long getInstancesCreated();
+  long getMemories();
 
   /**
-   * Gets the number of memory pools allocated.
+   * Gets the total number of table slots in use.
    *
-   * @return the memory pools allocated count
+   * @return the number of table slots
    */
-  long getMemoryPoolsAllocated();
+  long getTables();
 
   /**
-   * Gets the number of memory pools reused.
+   * Gets the total number of stack slots in use.
    *
-   * @return the memory pools reused count
+   * @return the number of stack slots
    */
-  long getMemoryPoolsReused();
+  long getStacks();
 
   /**
-   * Gets the number of stack pools allocated.
+   * Gets the total number of GC heap slots in use.
    *
-   * @return the stack pools allocated count
+   * @return the number of GC heap slots
    */
-  long getStackPoolsAllocated();
+  long getGcHeaps();
 
   /**
-   * Gets the number of stack pools reused.
+   * Gets the number of unused warm memory slots.
    *
-   * @return the stack pools reused count
+   * <p>These are memory slots that have been allocated and warmed (made resident) but are not
+   * currently in use by any instance.
+   *
+   * @return the number of unused warm memory slots
    */
-  long getStackPoolsReused();
+  long getUnusedWarmMemories();
 
   /**
-   * Gets the number of table pools allocated.
+   * Gets the total resident bytes of unused warm memory slots.
    *
-   * @return the table pools allocated count
+   * @return the number of resident bytes across all unused warm memory slots
    */
-  long getTablePoolsAllocated();
+  long getUnusedMemoryBytesResident();
 
   /**
-   * Gets the number of table pools reused.
+   * Gets the number of unused warm table slots.
    *
-   * @return the table pools reused count
+   * <p>These are table slots that have been allocated and warmed but are not currently in use.
+   *
+   * @return the number of unused warm table slots
    */
-  long getTablePoolsReused();
+  long getUnusedWarmTables();
 
   /**
-   * Gets the peak memory usage in bytes.
+   * Gets the total resident bytes of unused warm table slots.
    *
-   * @return the peak memory usage
+   * @return the number of resident bytes across all unused warm table slots
    */
-  long getPeakMemoryUsage();
+  long getUnusedTableBytesResident();
 
   /**
-   * Gets the current memory usage in bytes.
+   * Gets the number of unused warm stack slots.
    *
-   * @return the current memory usage
+   * <p>These are stack slots that have been allocated and warmed but are not currently in use.
+   *
+   * @return the number of unused warm stack slots
    */
-  long getCurrentMemoryUsage();
+  long getUnusedWarmStacks();
 
   /**
-   * Gets the number of allocation failures.
+   * Gets the total resident bytes of unused warm stack slots, if available.
    *
-   * @return the allocation failures count
+   * <p>This metric may not be available on all platforms. Returns -1 if not available.
+   *
+   * @return the number of resident bytes across all unused warm stack slots, or -1 if unavailable
    */
-  long getAllocationFailures();
+  long getUnusedStackBytesResident();
 
   /**
-   * Gets the time spent warming the pools during initialization.
+   * Gets the total number of instance slots (core + component).
    *
-   * @return the pool warming duration
+   * @return the total number of instance slots
    */
-  Duration getPoolWarmingTime();
-
-  /**
-   * Gets the average time for an allocation operation.
-   *
-   * @return the average allocation duration
-   */
-  Duration getAverageAllocationTime();
-
-  /**
-   * Calculates the reuse ratio (reused / total allocations).
-   *
-   * @return the reuse ratio between 0.0 and 1.0
-   */
-  default double getReuseRatio() {
-    final long total = getInstancesAllocated() + getInstancesReused();
-    if (total == 0) {
-      return 0.0;
-    }
-    return (double) getInstancesReused() / total;
-  }
-
-  /**
-   * Calculates the memory utilization ratio (current / peak).
-   *
-   * @return the memory utilization ratio between 0.0 and 1.0
-   */
-  default double getMemoryUtilization() {
-    final long peak = getPeakMemoryUsage();
-    if (peak == 0) {
-      return 0.0;
-    }
-    return (double) getCurrentMemoryUsage() / peak;
+  default long getTotalInstances() {
+    return getCoreInstances() + getComponentInstances();
   }
 }

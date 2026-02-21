@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -151,6 +152,65 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     }
 
     LOGGER.fine("Defined component function: " + witPath);
+  }
+
+  @Override
+  public void defineFunctionAsync(
+      final String interfaceNamespace,
+      final String interfaceName,
+      final String functionName,
+      final ComponentHostFunction implementation)
+      throws WasmException {
+    if (interfaceNamespace == null) {
+      throw new IllegalArgumentException("Interface namespace cannot be null");
+    }
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("Interface name cannot be null");
+    }
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    final String witPath =
+        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
+    defineFunctionAsync(witPath, implementation);
+  }
+
+  @Override
+  public void defineFunctionAsync(
+      final String witPath, final ComponentHostFunction implementation) throws WasmException {
+    if (witPath == null) {
+      throw new IllegalArgumentException("WIT path cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    final long callbackId = registerHostFunctionCallback(implementation);
+    hostFunctions.put(witPath, callbackId);
+
+    // Wire to native component linker if handle is valid
+    if (isNativeHandleReasonable()) {
+      try {
+        nativeDefineHostFunctionAsync(nativeHandle, witPath, callbackId);
+      } catch (final Exception e) {
+        // Remove from local tracking if native call fails
+        hostFunctions.remove(witPath);
+        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        registeredCallbackIds.remove(callbackId);
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Failed to define async host function: " + e.getMessage(), e);
+      }
+    }
+
+    LOGGER.fine("Defined async component function: " + witPath);
   }
 
   @Override
@@ -305,6 +365,33 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
+  public ComponentInstancePre instantiatePre(final Component component) throws WasmException {
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(component instanceof JniComponentImpl)) {
+      throw new WasmException(
+          "Component must be a JniComponentImpl for JNI ComponentLinker pre-instantiation");
+    }
+
+    final JniComponentImpl jniComponent = (JniComponentImpl) component;
+    final long componentHandle = jniComponent.getNativeHandle();
+
+    if (!isNativeHandleReasonable()) {
+      throw new WasmException("ComponentLinker has an invalid native handle");
+    }
+
+    final long preHandle = nativeInstantiatePre(nativeHandle, componentHandle);
+    if (preHandle == 0) {
+      throw new WasmException("Failed to pre-instantiate component");
+    }
+
+    return new JniComponentInstancePre(preHandle, engine, jniComponent);
+  }
+
+  @Override
   public ComponentInstance instantiate(final Store store, final Component component)
       throws WasmException {
     if (store == null) {
@@ -380,8 +467,105 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
-    // For now, use default enablement - config support can be added later
+    ensureNotClosed();
+
+    if (!isNativeHandleReasonable()) {
+      return;
+    }
+
+    // Apply config settings before enabling WASI
+    applyWasiConfig(config);
+
+    // Enable WASI Preview 2
     enableWasiPreview2();
+  }
+
+  private void applyWasiConfig(final WasiPreview2Config config) {
+    // Apply inherit stdio
+    if (config.isInheritStdio()) {
+      nativeSetWasiInheritStdio(nativeHandle, true);
+    }
+    if (config.isInheritStdin()) {
+      nativeSetWasiInheritStdin(nativeHandle, true);
+    }
+    if (config.isInheritStdout()) {
+      nativeSetWasiInheritStdout(nativeHandle, true);
+    }
+    if (config.isInheritStderr()) {
+      nativeSetWasiInheritStderr(nativeHandle, true);
+    }
+
+    // Apply inherit env
+    if (config.isInheritEnv()) {
+      nativeSetWasiInheritEnv(nativeHandle, true);
+    }
+
+    // Apply args
+    if (config.getArgs() != null && !config.getArgs().isEmpty()) {
+      nativeSetWasiArgs(nativeHandle, config.getArgs().toArray(new String[0]));
+    }
+
+    // Apply env vars
+    if (config.getEnv() != null && !config.getEnv().isEmpty()) {
+      for (final java.util.Map.Entry<String, String> entry : config.getEnv().entrySet()) {
+        nativeAddWasiEnv(nativeHandle, entry.getKey(), entry.getValue());
+      }
+    }
+
+    // Apply preopened dirs
+    if (config.getPreopenDirs() != null) {
+      for (final WasiPreview2Config.PreopenDir dir : config.getPreopenDirs()) {
+        nativeAddWasiPreopenDir(
+            nativeHandle,
+            dir.getHostPath().toAbsolutePath().toString(),
+            dir.getGuestPath(),
+            dir.getDirPerms().getBits(),
+            dir.getFilePerms().getBits());
+      }
+    }
+
+    // Apply network controls
+    nativeSetWasiAllowNetwork(nativeHandle, config.isAllowNetwork());
+    nativeSetWasiAllowTcp(nativeHandle, config.isAllowTcp());
+    nativeSetWasiAllowUdp(nativeHandle, config.isAllowUdp());
+    nativeSetWasiAllowIpNameLookup(nativeHandle, config.isAllowIpNameLookup());
+
+    // Apply clock and random
+    nativeSetWasiAllowClock(nativeHandle, config.isAllowClock());
+    nativeSetWasiAllowRandom(nativeHandle, config.isAllowRandom());
+
+    // Apply blocking current thread
+    nativeSetWasiAllowBlockingCurrentThread(nativeHandle, config.isAllowBlockingCurrentThread());
+
+    // Apply insecure random seed
+    if (config.hasInsecureRandomSeed()) {
+      nativeSetWasiInsecureRandomSeed(nativeHandle, config.getInsecureRandomSeed());
+    }
+
+    // Apply custom wall clock
+    if (config.getWallClock() != null) {
+      nativeSetWasiWallClock(nativeHandle, config.getWallClock());
+    }
+
+    // Apply custom monotonic clock
+    if (config.getMonotonicClock() != null) {
+      nativeSetWasiMonotonicClock(nativeHandle, config.getMonotonicClock());
+    }
+
+    // Apply custom secure random
+    if (config.getSecureRandom() != null) {
+      nativeSetWasiSecureRandom(nativeHandle, config.getSecureRandom());
+    }
+
+    // Apply custom insecure random
+    if (config.getInsecureRandom() != null) {
+      nativeSetWasiInsecureRandom(nativeHandle, config.getInsecureRandom());
+    }
+
+    // Apply socket address check
+    if (config.getSocketAddrCheck() != null) {
+      nativeSetWasiSocketAddrCheck(nativeHandle, config.getSocketAddrCheck());
+    }
   }
 
   @Override
@@ -474,6 +658,40 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
+  public void allowShadowing(final boolean allow) {
+    ensureNotClosed();
+    if (!isNativeHandleReasonable()) {
+      return;
+    }
+    nativeAllowShadowing(nativeHandle, allow);
+  }
+
+  @Override
+  public void defineUnknownImportsAsTraps(final Component component) throws WasmException {
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(component instanceof JniComponentImpl)) {
+      throw new WasmException(
+          "Component must be a JniComponentImpl for JNI ComponentLinker");
+    }
+
+    final JniComponentImpl jniComponent = (JniComponentImpl) component;
+    final long componentHandle = jniComponent.getNativeHandle();
+
+    if (!isNativeHandleReasonable()) {
+      throw new WasmException("ComponentLinker has an invalid native handle");
+    }
+
+    final int result = nativeDefineUnknownImportsAsTraps(nativeHandle, componentHandle);
+    if (result != 0) {
+      throw new WasmException("Failed to define unknown imports as traps");
+    }
+  }
+
+  @Override
   public void close() {
     if (!closed) {
       closed = true;
@@ -544,6 +762,11 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
 
   private native void nativeDefineHostFunction(long linkerHandle, String witPath, long callbackId);
 
+  private native void nativeDefineHostFunctionAsync(
+      long linkerHandle, String witPath, long callbackId);
+
+  private native void nativeSetAsyncSupport(long linkerHandle, boolean enabled);
+
   private native long nativeDefineResource(
       long linkerHandle,
       String interfaceNamespace,
@@ -554,4 +777,56 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
 
   private native long nativeInstantiateWithLinker(
       long linkerHandle, long storeHandle, long componentHandle);
+
+  private native long nativeInstantiatePre(long linkerHandle, long componentHandle);
+
+  private static native void nativeAllowShadowing(long linkerHandle, boolean allow);
+
+  private static native int nativeDefineUnknownImportsAsTraps(
+      long linkerHandle, long componentHandle);
+
+  // WASI config native methods
+  private static native void nativeSetWasiInheritStdio(long linkerHandle, boolean inherit);
+
+  private static native void nativeSetWasiInheritStdin(long linkerHandle, boolean inherit);
+
+  private static native void nativeSetWasiInheritStdout(long linkerHandle, boolean inherit);
+
+  private static native void nativeSetWasiInheritStderr(long linkerHandle, boolean inherit);
+
+  private static native void nativeSetWasiInheritEnv(long linkerHandle, boolean inherit);
+
+  private static native void nativeSetWasiArgs(long linkerHandle, String[] args);
+
+  private static native void nativeAddWasiEnv(long linkerHandle, String key, String value);
+
+  private static native void nativeAddWasiPreopenDir(
+      long linkerHandle, String hostPath, String guestPath, int dirPermsBits, int filePermsBits);
+
+  private static native void nativeSetWasiAllowNetwork(long linkerHandle, boolean allow);
+
+  private static native void nativeSetWasiAllowTcp(long linkerHandle, boolean allow);
+
+  private static native void nativeSetWasiAllowUdp(long linkerHandle, boolean allow);
+
+  private static native void nativeSetWasiAllowIpNameLookup(long linkerHandle, boolean allow);
+
+  private static native void nativeSetWasiAllowClock(long linkerHandle, boolean allow);
+
+  private static native void nativeSetWasiAllowRandom(long linkerHandle, boolean allow);
+
+  private static native void nativeSetWasiAllowBlockingCurrentThread(
+      long linkerHandle, boolean allow);
+
+  private static native void nativeSetWasiInsecureRandomSeed(long linkerHandle, long seed);
+
+  private static native void nativeSetWasiWallClock(long linkerHandle, Object wallClock);
+
+  private static native void nativeSetWasiMonotonicClock(long linkerHandle, Object monotonicClock);
+
+  private static native void nativeSetWasiSecureRandom(long linkerHandle, Object randomSource);
+
+  private static native void nativeSetWasiInsecureRandom(long linkerHandle, Object randomSource);
+
+  private static native void nativeSetWasiSocketAddrCheck(long linkerHandle, Object addrCheck);
 }

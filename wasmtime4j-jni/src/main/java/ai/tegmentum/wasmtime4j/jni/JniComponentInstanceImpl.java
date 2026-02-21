@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
@@ -137,9 +139,19 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
     if (functionName == null || functionName.isEmpty()) {
       return false;
     }
-    // Check with the component's exported functions
-    // For now, return false and let invoke handle the error if function doesn't exist
-    return false;
+    if (!isValid()) {
+      return false;
+    }
+    try {
+      return JniComponent.nativeComponentInstanceHasFunc(
+              component.getEngine().getNativeHandle(),
+              nativeInstance.getNativeHandle(),
+              functionName)
+          != 0;
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to check function existence: " + e.getMessage());
+      return false;
+    }
   }
 
   @Override
@@ -152,6 +164,33 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
     }
     // Return a JniComponentFunc that supports both ComponentFunc and TypedComponentFunctionSupport
     return Optional.of(new JniComponentFunc(functionName, this, component));
+  }
+
+  @Override
+  public Optional<ComponentFunction> getFunc(final ComponentExportIndex exportIndex)
+      throws WasmException {
+    if (exportIndex == null) {
+      throw new IllegalArgumentException("exportIndex cannot be null");
+    }
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+    try {
+      final int found =
+          JniComponent.nativeComponentInstanceHasFuncByIndex(
+              component.getEngine().getNativeHandle(),
+              nativeInstance.getNativeHandle(),
+              exportIndex.getNativeHandle());
+      if (found == 0) {
+        return Optional.empty();
+      }
+      // The export index confirms a function exists - wrap it in a ComponentFunc
+      // Since we don't have the name from the index, use a placeholder
+      // that will use the index path for invocation
+      return Optional.of(new JniComponentFunc("__indexed_export__", this, component));
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get function by export index", e);
+    }
   }
 
   @Override
@@ -214,6 +253,48 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
       throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     } catch (final Exception e) {
       throw new WasmException("Function invocation failed: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public boolean hasResource(final String resourceName) throws WasmException {
+    if (resourceName == null || resourceName.isEmpty()) {
+      return false;
+    }
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+    try {
+      return JniComponent.nativeComponentInstanceHasResource(
+              component.getEngine().getNativeHandle(),
+              nativeInstance.getNativeHandle(),
+              resourceName)
+          != 0;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to check resource: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public Optional<Module> getModule(final String moduleName) throws WasmException {
+    Validation.requireNonEmpty(moduleName, "moduleName");
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+    try {
+      final long moduleHandle =
+          JniComponent.nativeComponentInstanceGetModule(
+              component.getEngine().getNativeHandle(),
+              nativeInstance.getNativeHandle(),
+              moduleName);
+      if (moduleHandle == 0) {
+        return Optional.empty();
+      }
+      // Module extracted from a component instance has no regular Engine reference.
+      // getEngine() on the returned module will return null.
+      return Optional.of(new JniModule(moduleHandle, null));
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get module '" + moduleName + "': " + e.getMessage(), e);
     }
   }
 

@@ -465,6 +465,26 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   }
 
   @Override
+  public Component deserializeComponentFile(final String path) throws WasmException {
+    Validation.requireNonEmpty(path, "path");
+    ensureNotClosed();
+
+    try {
+      final long componentHandle =
+          JniComponent.nativeDeserializeComponentFile(getNativeHandle(), path);
+      Validation.requireValidHandle(componentHandle, "componentHandle");
+      final JniComponent.JniComponentHandle handle =
+          new JniComponent.JniComponentHandle(componentHandle);
+      final String componentId = generateComponentId();
+      final Component component = new JniComponentImpl(handle, this);
+      loadedComponents.put(componentId, component);
+      return component;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to deserialize component from file: " + path, e);
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.Precompiled detectPrecompiled(final byte[] bytes) {
     if (bytes == null) {
       throw new IllegalArgumentException("bytes cannot be null");

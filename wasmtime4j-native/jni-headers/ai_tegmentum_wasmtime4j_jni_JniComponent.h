@@ -177,6 +177,22 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDese
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeDeserializeComponentFile
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDeserializeComponentFile
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeGetComponentResourcesRequired
+ * Signature: (J)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentResourcesRequired
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
  * Method:    nativeComponentEngineCleanupInstances
  * Signature: (J)I
  */
@@ -238,6 +254,54 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeW
  */
 JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInvokeFunction
   (JNIEnv *, jclass, jlong, jlong, jstring, jintArray, jobjectArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeComponentInstanceHasFunc
+ * Signature: (JJLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceHasFunc
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeComponentInstanceGetModule
+ * Signature: (JJLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceGetModule
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeComponentInstanceHasResource
+ * Signature: (JJLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceHasResource
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeGetExportIndex
+ * Signature: (JJLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetExportIndex
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeDestroyExportIndex
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyExportIndex
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeComponentInstanceHasFuncByIndex
+ * Signature: (JJJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceHasFuncByIndex
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 #ifdef __cplusplus
 }

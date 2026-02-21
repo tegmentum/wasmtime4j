@@ -121,8 +121,30 @@ pub struct WasiPreview2Config {
     pub environment: Vec<(String, String)>,
     /// Whether to inherit environment from host
     pub inherit_env: bool,
-    /// Preopened directories (host_path, guest_path)
-    pub preopened_dirs: Vec<(String, String)>,
+    /// Whether to inherit all stdio from host
+    pub inherit_stdio: bool,
+    /// Whether to inherit stdin individually
+    pub inherit_stdin: bool,
+    /// Whether to inherit stdout individually
+    pub inherit_stdout: bool,
+    /// Whether to inherit stderr individually
+    pub inherit_stderr: bool,
+    /// Preopened directories (host_path, guest_path, dir_perms_bits, file_perms_bits)
+    pub preopened_dirs: Vec<(String, String, u32, u32)>,
+    /// Allow blocking the current thread
+    pub allow_blocking_current_thread: bool,
+    /// Insecure random seed (if set)
+    pub insecure_random_seed: Option<u64>,
+    /// Custom wall clock callback (if set)
+    pub wall_clock: Option<crate::component::CallbackWallClock>,
+    /// Custom monotonic clock callback (if set)
+    pub monotonic_clock: Option<crate::component::CallbackMonotonicClock>,
+    /// Custom secure random callback (if set)
+    pub secure_random: Option<crate::component::CallbackRng>,
+    /// Custom insecure random callback (if set)
+    pub insecure_random: Option<crate::component::CallbackRng>,
+    /// Custom socket address check callback (if set)
+    pub socket_addr_check: Option<crate::component::CallbackSocketAddrCheck>,
 }
 
 /// WASI stream for async I/O
@@ -448,7 +470,18 @@ impl Default for WasiPreview2Config {
             arguments: Vec::new(),
             environment: Vec::new(),
             inherit_env: false,
+            inherit_stdio: false,
+            inherit_stdin: false,
+            inherit_stdout: false,
+            inherit_stderr: false,
             preopened_dirs: Vec::new(),
+            allow_blocking_current_thread: false,
+            insecure_random_seed: None,
+            wall_clock: None,
+            monotonic_clock: None,
+            secure_random: None,
+            insecure_random: None,
+            socket_addr_check: None,
         }
     }
 }
@@ -525,7 +558,7 @@ impl WasiPreview2Context {
         if let Some(ref stdin_bytes) = self.config.stdin_bytes {
             let pipe = MemoryInputPipe::new(stdin_bytes.clone());
             builder.stdin(pipe);
-        } else {
+        } else if self.config.inherit_stdio || self.config.inherit_stdin {
             builder.inherit_stdin();
         }
 
@@ -534,7 +567,7 @@ impl WasiPreview2Context {
             let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
             builder.stdout(pipe.clone());
             stdout_pipe = Some(pipe);
-        } else {
+        } else if self.config.inherit_stdio || self.config.inherit_stdout {
             builder.inherit_stdout();
         }
 
@@ -543,7 +576,7 @@ impl WasiPreview2Context {
             let pipe = MemoryOutputPipe::new(DEFAULT_BUFFER_CAPACITY);
             builder.stderr(pipe.clone());
             stderr_pipe = Some(pipe);
-        } else {
+        } else if self.config.inherit_stdio || self.config.inherit_stderr {
             builder.inherit_stderr();
         }
 
@@ -557,6 +590,61 @@ impl WasiPreview2Context {
         builder.allow_tcp(self.config.enable_tcp);
         builder.allow_udp(self.config.enable_udp);
         builder.allow_ip_name_lookup(self.config.enable_ip_name_lookup);
+
+        // Allow blocking current thread
+        builder.allow_blocking_current_thread(self.config.allow_blocking_current_thread);
+
+        // Insecure random seed
+        if let Some(seed) = self.config.insecure_random_seed {
+            builder.insecure_random_seed(seed as u128);
+        }
+
+        // Custom wall clock
+        if let Some(clock) = self.config.wall_clock {
+            builder.wall_clock(clock);
+        }
+
+        // Custom monotonic clock
+        if let Some(clock) = self.config.monotonic_clock {
+            builder.monotonic_clock(clock);
+        }
+
+        // Custom secure random
+        if let Some(rng) = self.config.secure_random {
+            builder.secure_random(rng);
+        }
+
+        // Custom insecure random
+        if let Some(rng) = self.config.insecure_random {
+            builder.insecure_random(rng);
+        }
+
+        // Socket address check callback
+        if let Some(check) = self.config.socket_addr_check {
+            builder.socket_addr_check(move |addr, reason| {
+                use std::net::SocketAddr;
+                let (ip_version, ip_bytes, port) = match addr {
+                    SocketAddr::V4(v4) => (4i32, v4.ip().octets().to_vec(), v4.port()),
+                    SocketAddr::V6(v6) => (6i32, v6.ip().octets().to_vec(), v6.port()),
+                };
+                let use_type = match reason {
+                    wasmtime_wasi::sockets::SocketAddrUse::TcpBind => 0i32,
+                    wasmtime_wasi::sockets::SocketAddrUse::TcpConnect => 1,
+                    wasmtime_wasi::sockets::SocketAddrUse::UdpBind => 2,
+                    wasmtime_wasi::sockets::SocketAddrUse::UdpConnect => 3,
+                    wasmtime_wasi::sockets::SocketAddrUse::UdpOutgoingDatagram => 4,
+                };
+                let result = (check.check_fn)(
+                    check.callback_id,
+                    ip_version,
+                    ip_bytes.as_ptr(),
+                    ip_bytes.len(),
+                    port,
+                    use_type,
+                );
+                Box::pin(async move { result != 0 })
+            });
+        }
 
         // Configure arguments
         if !self.config.arguments.is_empty() {
@@ -576,15 +664,25 @@ impl WasiPreview2Context {
             builder.envs(&env_pairs);
         }
 
-        // Configure preopened directories
-        for (host_path, guest_path) in &self.config.preopened_dirs {
+        // Configure preopened directories with granular permissions
+        for (host_path, guest_path, dir_bits, file_bits) in &self.config.preopened_dirs {
+            let mut dir_perms = DirPerms::empty();
+            if *dir_bits & 0x1 != 0 {
+                dir_perms |= DirPerms::READ;
+            }
+            if *dir_bits & 0x2 != 0 {
+                dir_perms |= DirPerms::MUTATE;
+            }
+            let mut file_perms = FilePerms::empty();
+            if *file_bits & 0x1 != 0 {
+                file_perms |= FilePerms::READ;
+            }
+            if *file_bits & 0x2 != 0 {
+                file_perms |= FilePerms::WRITE;
+            }
+
             builder
-                .preopened_dir(
-                    host_path,
-                    guest_path,
-                    DirPerms::all(),
-                    FilePerms::all(),
-                )
+                .preopened_dir(host_path, guest_path, dir_perms, file_perms)
                 .map_err(|e| WasmtimeError::Wasi {
                     message: format!(
                         "Failed to preopen directory '{}' as '{}': {}",
@@ -1561,6 +1659,17 @@ mod tests {
         assert!(!config.capture_stdout);
         assert!(!config.capture_stderr);
         assert!(config.stdin_bytes.is_none());
+        assert!(!config.inherit_stdio);
+        assert!(!config.inherit_stdin);
+        assert!(!config.inherit_stdout);
+        assert!(!config.inherit_stderr);
+        assert!(!config.allow_blocking_current_thread);
+        assert!(config.insecure_random_seed.is_none());
+        assert!(config.wall_clock.is_none());
+        assert!(config.monotonic_clock.is_none());
+        assert!(config.secure_random.is_none());
+        assert!(config.insecure_random.is_none());
+        assert!(config.socket_addr_check.is_none());
     }
 
     #[test]

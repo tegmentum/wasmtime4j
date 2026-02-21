@@ -142,6 +142,15 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // previous_pages_out
 
     addFunctionBinding(
+        "wasmtime4j_panama_memory_grow_async",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // additional_pages (u64)
+            ValueLayout.ADDRESS)); // previous_pages_out
+
+    addFunctionBinding(
         "wasmtime4j_panama_memory_read_bytes",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
@@ -686,6 +695,18 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // old_size out param
 
     addFunctionBinding(
+        "wasmtime4j_panama_table_grow_async",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // table_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // delta
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // ref_id_present
+            ValueLayout.JAVA_LONG, // ref_id
+            ValueLayout.ADDRESS)); // old_size out param
+
+    addFunctionBinding(
         "wasmtime4j_panama_table_fill",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
@@ -888,6 +909,35 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
 
     return callNativeFunction(
         "wasmtime4j_panama_memory_grow64",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        additionalPages,
+        previousPagesOutPtr);
+  }
+
+  /**
+   * Grows memory asynchronously through the async resource limiter (Panama FFI version).
+   *
+   * <p>Requires engine with {@code asyncSupport(true)}.
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param additionalPages number of pages to grow
+   * @param previousPagesOutPtr pointer to store the previous size in pages
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryGrowAsync(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final long additionalPages,
+      final MemorySegment previousPagesOutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(previousPagesOutPtr, "previousPagesOutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_grow_async",
         Integer.class,
         memoryPtr,
         storePtr,
@@ -2242,6 +2292,44 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
   }
 
   /**
+   * Grows a table asynchronously through the async resource limiter (Panama FFI version).
+   *
+   * <p>Requires engine with {@code asyncSupport(true)}.
+   *
+   * @param tablePtr pointer to the table
+   * @param storePtr pointer to the store
+   * @param delta number of elements to add
+   * @param elementType element type code (5=FUNCREF, 6=EXTERNREF)
+   * @param refIdPresent whether a reference ID is provided (0=no, 1=yes)
+   * @param refId the reference ID for the init value
+   * @param oldSizeOut pointer to store the previous size
+   * @return 0 on success, non-zero on failure
+   */
+  public int panamaTableGrowAsync(
+      final MemorySegment tablePtr,
+      final MemorySegment storePtr,
+      final int delta,
+      final int elementType,
+      final int refIdPresent,
+      final long refId,
+      final MemorySegment oldSizeOut) {
+    validatePointer(tablePtr, "tablePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(oldSizeOut, "oldSizeOut");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_table_grow_async",
+        Integer.class,
+        tablePtr,
+        storePtr,
+        delta,
+        elementType,
+        refIdPresent,
+        refId,
+        oldSizeOut);
+  }
+
+  /**
    * Gets the method handle for Panama FFI table metadata retrieval.
    *
    * @return the method handle, or null if not available
@@ -2337,6 +2425,15 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
    */
   public MethodHandle getPanamaTableCreate() {
     return getMethodHandleByName("wasmtime4j_panama_table_create").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for Panama FFI 64-bit table creation.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableCreate64() {
+    return getMethodHandleByName("wasmtime4j_panama_table_create64").orElse(null);
   }
 
   /**

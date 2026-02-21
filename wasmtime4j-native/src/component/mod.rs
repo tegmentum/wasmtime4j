@@ -39,8 +39,9 @@ pub use wit::{
 
 pub use linker::{
     component_linker_core, get_component_host_function_registry, parse_wit_path,
-    ComponentHostCallback, ComponentHostFunctionEntry, ComponentLinker, ComponentValue,
-    WasiP2Config, NEXT_COMPONENT_HOST_FUNCTION_ID,
+    CallbackMonotonicClock, CallbackRng, CallbackSocketAddrCheck, CallbackWallClock,
+    ComponentHostCallback, ComponentHostFunctionEntry, ComponentInstancePreWrapper, ComponentLinker,
+    ComponentValue, ResourceDestructorCallback, WasiP2Config, NEXT_COMPONENT_HOST_FUNCTION_ID,
 };
 
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -938,6 +939,58 @@ impl Component {
             },
         })
     }
+
+    /// Deserialize a component from a previously serialized file.
+    ///
+    /// This is more efficient than reading the file and then calling `deserialize()`
+    /// because it uses memory-mapped I/O to avoid copying the file contents into memory.
+    ///
+    /// # Safety
+    ///
+    /// The file's contents must have been previously created by `serialize()` from
+    /// a component compiled with a compatible engine configuration.
+    pub fn deserialize_file(
+        engine: &wasmtime::Engine,
+        path: impl AsRef<std::path::Path>,
+    ) -> WasmtimeResult<Self> {
+        let path = path.as_ref();
+
+        if !path.exists() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("File does not exist: {}", path.display()),
+            });
+        }
+
+        let component =
+            unsafe { WasmtimeComponent::deserialize_file(engine, path) }.map_err(|e| {
+                WasmtimeError::Internal {
+                    message: format!("Component deserialization from file failed: {}", e),
+                }
+            })?;
+
+        Ok(Component {
+            component,
+            metadata: ComponentMetadata {
+                imports: Vec::new(),
+                exports: Vec::new(),
+                size_bytes: 0,
+            },
+        })
+    }
+
+    /// Get the resources required by this component.
+    ///
+    /// Returns `None` if the component imports other modules or components
+    /// whose resource requirements cannot be statically determined.
+    ///
+    /// The returned struct contains:
+    /// - `num_memories` - Number of linear memories
+    /// - `max_initial_memory_size` - Maximum initial memory size in bytes (None if unbounded)
+    /// - `num_tables` - Number of tables
+    /// - `max_initial_table_size` - Maximum initial table size (None if unbounded)
+    pub fn resources_required(&self) -> Option<wasmtime::ResourcesRequired> {
+        self.component.resources_required()
+    }
 }
 
 impl Default for ComponentEngine {
@@ -1123,6 +1176,73 @@ pub mod core {
     ) -> WasmtimeResult<Box<Component>> {
         validate_not_empty!(bytes, "serialized component bytes");
         Component::deserialize(&engine.engine, bytes).map(Box::new)
+    }
+
+    /// Core function to deserialize a component from a file
+    pub fn deserialize_component_file(
+        engine: &wasmtime::Engine,
+        path: &str,
+    ) -> WasmtimeResult<Box<Component>> {
+        if path.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "File path cannot be empty".to_string(),
+            });
+        }
+
+        let path_ref = std::path::Path::new(path);
+        if !path_ref.exists() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("File does not exist: {}", path),
+            });
+        }
+
+        Component::deserialize_file(engine, path_ref).map(Box::new)
+    }
+
+    /// Core function to get a component export index for efficient repeated lookups.
+    ///
+    /// Returns a boxed `ComponentExportIndex` as a raw pointer, or null if not found.
+    /// The `instance` parameter is an optional parent instance export index for nested lookups.
+    /// Pass null for root-level exports.
+    pub fn get_export_index(
+        component: &Component,
+        instance: Option<&wasmtime::component::ComponentExportIndex>,
+        name: &str,
+    ) -> Option<Box<wasmtime::component::ComponentExportIndex>> {
+        component
+            .component
+            .get_export_index(instance, name)
+            .map(Box::new)
+    }
+
+    /// Core function to destroy a boxed ComponentExportIndex.
+    pub unsafe fn destroy_export_index(ptr: *mut c_void) {
+        if !ptr.is_null() {
+            let _ = Box::from_raw(ptr as *mut wasmtime::component::ComponentExportIndex);
+        }
+    }
+
+    /// Core function to get component resources required
+    ///
+    /// Returns resource information as (num_memories, max_initial_memory_size, num_tables, max_initial_table_size).
+    /// max values are -1 if unbounded, -2 if resources_required() returns None.
+    pub fn get_component_resources_required(
+        component: &Component,
+    ) -> (i32, i64, i32, i64) {
+        match component.resources_required() {
+            Some(req) => {
+                let max_mem = req
+                    .max_initial_memory_size
+                    .map(|s| s as i64)
+                    .unwrap_or(-1);
+                let max_table = req
+                    .max_initial_table_size
+                    .map(|s| s as i64)
+                    .unwrap_or(-1);
+                (req.num_memories as i32, max_mem, req.num_tables as i32, max_table)
+            }
+            None => (-2, -2, -2, -2),
+        }
     }
 
 }
@@ -1515,4 +1635,52 @@ pub unsafe extern "C" fn wasmtime4j_component_free_serialized_data(
     if !data_ptr.is_null() && len > 0 {
         let _ = Vec::from_raw_parts(data_ptr, len, len);
     }
+}
+
+/// Get a component export index for efficient repeated lookups.
+///
+/// The `instance_index_ptr` is an optional parent instance export index for nested lookups.
+/// Pass null for root-level export lookups.
+///
+/// Returns a boxed `ComponentExportIndex` pointer via `index_out`, or null if not found.
+/// The caller must free the returned pointer with `wasmtime4j_component_export_index_destroy`.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_get_export_index(
+    component_ptr: *const c_void,
+    instance_index_ptr: *const c_void,
+    name: *const c_char,
+    index_out: *mut *mut c_void,
+) -> c_int {
+    if component_ptr.is_null() || name.is_null() || index_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    let name_str = match CStr::from_ptr(name).to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    let instance = if instance_index_ptr.is_null() {
+        None
+    } else {
+        Some(&*(instance_index_ptr as *const wasmtime::component::ComponentExportIndex))
+    };
+
+    match core::get_export_index(component, instance, name_str) {
+        Some(boxed_index) => {
+            *index_out = Box::into_raw(boxed_index) as *mut c_void;
+            FFI_SUCCESS
+        }
+        None => {
+            *index_out = std::ptr::null_mut();
+            FFI_SUCCESS // Not an error - export just wasn't found
+        }
+    }
+}
+
+/// Destroy a component export index.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_export_index_destroy(index_ptr: *mut c_void) {
+    core::destroy_export_index(index_ptr);
 }

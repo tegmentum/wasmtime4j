@@ -224,6 +224,13 @@ public final class PanamaHostFunction implements WasmFunction {
   }
 
   @Override
+  public long toRawFuncRef() throws WasmException {
+    throw new UnsupportedOperationException(
+        "Host functions do not support toRawFuncRef(). "
+            + "Use exported function references from an instance instead.");
+  }
+
+  @Override
   public java.util.concurrent.CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
     // Host functions are called FROM WebAssembly, not TO WebAssembly
     // This method shouldn't be used directly for host functions

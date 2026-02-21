@@ -31,6 +31,7 @@ jni = { workspace = true, optional = true }
 
 # Async runtime for WASI and other async operations
 tokio.workspace = true
+async-trait.workspace = true
 
 # Serialization support for complex data structures
 serde.workspace = true
@@ -53,6 +54,9 @@ parking_lot.workspace = true
 # Encoding
 base64.workspace = true
 
+# RNG core traits for custom WASI RNG implementations
+rand_core = { workspace = true, optional = true }
+
 # Unix-specific dependencies for process operations
 [target.'cfg(unix)'.dependencies]
 libc.workspace = true
@@ -66,7 +70,7 @@ libc.workspace = true
 tempfile.workspace = true
 
 [features]
-default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http"]
+default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "async", "profiling"]
 
 # JNI bindings for Java 8-22
 jni-bindings = ["jni"]
@@ -75,7 +79,7 @@ jni-bindings = ["jni"]
 panama-ffi = []
 
 # WASI support (using wasmtime-wasi crate)
-wasi = ["wasmtime-wasi"]
+wasi = ["wasmtime-wasi", "rand_core"]
 
 # WASI HTTP support (using wasmtime-wasi-http crate)
 wasi-http = ["wasmtime-wasi-http", "wasi"]

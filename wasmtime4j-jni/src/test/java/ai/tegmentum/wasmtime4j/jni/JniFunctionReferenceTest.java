@@ -168,6 +168,11 @@ class JniFunctionReferenceTest {
               }
             });
       }
+
+      @Override
+      public long toRawFuncRef() {
+        return 0L;
+      }
     };
   }
 }

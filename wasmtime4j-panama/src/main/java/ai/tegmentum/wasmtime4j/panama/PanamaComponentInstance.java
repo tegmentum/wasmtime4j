@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
@@ -295,11 +297,48 @@ final class PanamaComponentInstance implements ComponentInstance {
   public boolean hasFunction(final String functionName) {
     Objects.requireNonNull(functionName, "functionName cannot be null");
     ensureNotClosed();
-    // Check if the function name is in the list of exported interfaces
-    try {
-      return component.getExportedInterfaces().contains(functionName);
-    } catch (final WasmException e) {
-      return false;
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(functionName);
+      final int result =
+          NATIVE_BINDINGS.enhancedComponentInstanceHasFunc(
+              enhancedEngineHandle, instanceId, nameSegment);
+      return result == 1;
+    }
+  }
+
+  @Override
+  public boolean hasResource(final String resourceName) throws WasmException {
+    Objects.requireNonNull(resourceName, "resourceName cannot be null");
+    ensureNotClosed();
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(resourceName);
+      final int result =
+          NATIVE_BINDINGS.enhancedComponentInstanceHasResource(
+              enhancedEngineHandle, instanceId, nameSegment);
+      return result == 1;
+    }
+  }
+
+  @Override
+  public Optional<Module> getModule(final String moduleName) throws WasmException {
+    Objects.requireNonNull(moduleName, "moduleName cannot be null");
+    ensureNotClosed();
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(moduleName);
+      final MemorySegment moduleOut = arena.allocate(ValueLayout.ADDRESS);
+      final int result =
+          NATIVE_BINDINGS.enhancedComponentInstanceGetModule(
+              enhancedEngineHandle, instanceId, nameSegment, moduleOut);
+      if (result != 0) {
+        return Optional.empty();
+      }
+      final MemorySegment modulePtr = moduleOut.get(ValueLayout.ADDRESS, 0);
+      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaModule(modulePtr));
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get module '" + moduleName + "': " + e.getMessage(), e);
     }
   }
 
@@ -315,6 +354,29 @@ final class PanamaComponentInstance implements ComponentInstance {
     }
 
     return Optional.empty();
+  }
+
+  @Override
+  public Optional<ComponentFunction> getFunc(final ComponentExportIndex exportIndex)
+      throws WasmException {
+    if (exportIndex == null) {
+      throw new IllegalArgumentException("exportIndex cannot be null");
+    }
+    ensureNotClosed();
+
+    try {
+      final MemorySegment indexPtr =
+          MemorySegment.ofAddress(exportIndex.getNativeHandle());
+      final int found =
+          NATIVE_BINDINGS.enhancedComponentInstanceHasFuncByIndex(
+              enhancedEngineHandle, instanceId, indexPtr);
+      if (found != 1) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaComponentFunction("__indexed_export__", this));
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get function by export index", e);
+    }
   }
 
   @Override

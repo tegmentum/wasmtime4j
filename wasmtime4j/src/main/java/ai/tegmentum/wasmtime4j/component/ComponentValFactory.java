@@ -119,6 +119,15 @@ public abstract class ComponentValFactory {
   /** Creates a flags component value. */
   public abstract ComponentVal createFlags(Set<String> enabledFlags);
 
+  /** Creates a future handle component value. */
+  public abstract ComponentVal createFuture(long handle);
+
+  /** Creates a stream handle component value. */
+  public abstract ComponentVal createStream(long handle);
+
+  /** Creates an error context handle component value. */
+  public abstract ComponentVal createErrorContext(long handle);
+
   /** Default implementation of ComponentValFactory using simple Java objects. */
   static final class DefaultImpl extends ComponentValFactory {
 
@@ -269,6 +278,21 @@ public abstract class ComponentValFactory {
       }
       return new SimpleVal(ComponentType.FLAGS, Set.copyOf(enabledFlags));
     }
+
+    @Override
+    public ComponentVal createFuture(final long handle) {
+      return new SimpleVal(ComponentType.FUTURE, handle);
+    }
+
+    @Override
+    public ComponentVal createStream(final long handle) {
+      return new SimpleVal(ComponentType.STREAM, handle);
+    }
+
+    @Override
+    public ComponentVal createErrorContext(final long handle) {
+      return new SimpleVal(ComponentType.ERROR_CONTEXT, handle);
+    }
   }
 
   /** Simple implementation of ComponentVal for the default factory. */
@@ -395,6 +419,21 @@ public abstract class ComponentValFactory {
     @Override
     public boolean isResource() {
       return type == ComponentType.OWN || type == ComponentType.BORROW;
+    }
+
+    @Override
+    public boolean isFuture() {
+      return type == ComponentType.FUTURE;
+    }
+
+    @Override
+    public boolean isStream() {
+      return type == ComponentType.STREAM;
+    }
+
+    @Override
+    public boolean isErrorContext() {
+      return type == ComponentType.ERROR_CONTEXT;
     }
 
     @Override
@@ -529,6 +568,24 @@ public abstract class ComponentValFactory {
         throw new IllegalStateException("Not a resource type: " + type);
       }
       return (ComponentResourceHandle) value;
+    }
+
+    @Override
+    public long asFutureHandle() {
+      checkType(ComponentType.FUTURE);
+      return (Long) value;
+    }
+
+    @Override
+    public long asStreamHandle() {
+      checkType(ComponentType.STREAM);
+      return (Long) value;
+    }
+
+    @Override
+    public long asErrorContextHandle() {
+      checkType(ComponentType.ERROR_CONTEXT);
+      return (Long) value;
     }
 
     private void checkType(final ComponentType expected) {

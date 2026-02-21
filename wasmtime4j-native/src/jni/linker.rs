@@ -1234,3 +1234,252 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetDefau
         }
     })
 }
+
+/// JNI function for Linker.getByImport - look up a defined extern by module and name.
+///
+/// Returns a raw extern handle (boxed wasmtime::Extern), or 0 if not found.
+/// The caller must then call nativeGetExternType to determine the type.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetByImport(
+    mut env: JNIEnv,
+    _obj: jobject,
+    linker_handle: jlong,
+    store_handle: jlong,
+    module_name: JString,
+    item_name: JString,
+) -> jlong {
+    let mod_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let name_str: String = match env.get_string(&item_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+        match linker_core::get_extern(linker, store, &mod_str, &name_str)? {
+            Some(extern_item) => Ok(Box::into_raw(Box::new(extern_item)) as jlong),
+            None => Ok(0),
+        }
+    })
+}
+
+/// JNI function to get the type code of a boxed wasmtime::Extern.
+///
+/// Type codes: 0=Func, 1=Table, 2=Memory, 3=Global, -1=Unknown
+///
+/// # Safety
+/// The extern_handle must be a valid pointer to a boxed wasmtime::Extern
+/// returned from nativeGetByImport. This function does NOT consume the handle.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetExternType(
+    mut env: JNIEnv,
+    _obj: jobject,
+    extern_handle: jlong,
+) -> jni::sys::jint {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        if extern_handle == 0 {
+            return Ok(-1);
+        }
+        let extern_item = unsafe { &*(extern_handle as *const wasmtime::Extern) };
+        Ok(linker_core::extern_type_code(extern_item))
+    })
+}
+
+/// JNI function for Linker.defineName - define an extern with just a name (no module).
+///
+/// # Parameters
+/// - linker_handle: native linker pointer
+/// - store_handle: native store pointer
+/// - name: the item name
+/// - extern_handle: the extern to define (boxed wasmtime::Extern from nativeGetByImport or instance export)
+/// - extern_type_code: type code (0=Func, 1=Table, 2=Memory, 3=Global)
+///
+/// # Returns
+/// true on success, false on failure
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineName(
+    mut env: JNIEnv,
+    _obj: jobject,
+    linker_handle: jlong,
+    store_handle: jlong,
+    name: JString,
+    extern_handle: jlong,
+    _extern_type_code: jni::sys::jint,
+) -> jboolean {
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0u8, || {
+        let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+        if extern_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "extern_handle is null".to_string(),
+            });
+        }
+
+        // Clone the extern (we don't consume the handle)
+        let extern_item = unsafe { &*(extern_handle as *const wasmtime::Extern) };
+        let cloned = extern_item.clone();
+
+        linker_core::define_name(linker, store, &name_str, cloned)?;
+        Ok(1u8)
+    })
+}
+
+// ===========================================================================
+// JniInstancePre native methods
+// ===========================================================================
+
+/// JNI binding for JniInstancePre.nativeInstantiate
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeInstantiate(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_pre_handle: jlong,
+    store_handle: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0i64, || {
+        if instance_pre_handle == 0 || store_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "instance_pre_handle and store_handle cannot be null".to_string(),
+            });
+        }
+        let ptr = unsafe {
+            crate::linker::wasmtime4j_instance_pre_instantiate(
+                instance_pre_handle as *const c_void,
+                store_handle as *mut c_void,
+            )
+        };
+        if ptr.is_null() {
+            Err(WasmtimeError::Instance {
+                message: "Failed to instantiate from InstancePre".to_string(),
+            })
+        } else {
+            Ok(ptr as jlong)
+        }
+    })
+}
+
+/// JNI binding for JniInstancePre.nativeInstantiateAsync
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeInstantiateAsync(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_pre_handle: jlong,
+    store_handle: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0i64, || {
+        if instance_pre_handle == 0 || store_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "instance_pre_handle and store_handle cannot be null".to_string(),
+            });
+        }
+        let ptr = unsafe {
+            crate::linker::wasmtime4j_instance_pre_instantiate_async(
+                instance_pre_handle as *const c_void,
+                store_handle as *mut c_void,
+            )
+        };
+        if ptr.is_null() {
+            Err(WasmtimeError::Instance {
+                message: "Failed to async instantiate from InstancePre".to_string(),
+            })
+        } else {
+            Ok(ptr as jlong)
+        }
+    })
+}
+
+/// JNI binding for JniInstancePre.nativeIsValid
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeIsValid(
+    _env: JNIEnv,
+    _class: JClass,
+    instance_pre_handle: jlong,
+) -> jni::sys::jint {
+    if instance_pre_handle == 0 {
+        return 0;
+    }
+    unsafe {
+        crate::linker::wasmtime4j_instance_pre_is_valid(
+            instance_pre_handle as *const c_void,
+        )
+    }
+}
+
+/// JNI binding for JniInstancePre.nativeGetInstanceCount
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGetInstanceCount(
+    _env: JNIEnv,
+    _class: JClass,
+    instance_pre_handle: jlong,
+) -> jlong {
+    if instance_pre_handle == 0 {
+        return 0;
+    }
+    unsafe {
+        crate::linker::wasmtime4j_instance_pre_instance_count(
+            instance_pre_handle as *const c_void,
+        ) as jlong
+    }
+}
+
+/// JNI binding for JniInstancePre.nativeGetPreparationTimeNs
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGetPreparationTimeNs(
+    _env: JNIEnv,
+    _class: JClass,
+    instance_pre_handle: jlong,
+) -> jlong {
+    if instance_pre_handle == 0 {
+        return 0;
+    }
+    unsafe {
+        crate::linker::wasmtime4j_instance_pre_preparation_time_ns(
+            instance_pre_handle as *const c_void,
+        ) as jlong
+    }
+}
+
+/// JNI binding for JniInstancePre.nativeGetAvgInstantiationTimeNs
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGetAvgInstantiationTimeNs(
+    _env: JNIEnv,
+    _class: JClass,
+    instance_pre_handle: jlong,
+) -> jlong {
+    if instance_pre_handle == 0 {
+        return 0;
+    }
+    unsafe {
+        crate::linker::wasmtime4j_instance_pre_avg_instantiation_time_ns(
+            instance_pre_handle as *const c_void,
+        ) as jlong
+    }
+}
+
+/// JNI binding for JniInstancePre.nativeDestroy
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeDestroy(
+    _env: JNIEnv,
+    _class: JClass,
+    instance_pre_handle: jlong,
+) {
+    if instance_pre_handle != 0 {
+        unsafe {
+            crate::linker::wasmtime4j_instance_pre_destroy(
+                instance_pre_handle as *mut c_void,
+            );
+        }
+    }
+}

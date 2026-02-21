@@ -179,6 +179,31 @@ pub extern "C" fn wasmtime4j_panama_memory_grow64(
     })
 }
 
+/// Grow memory asynchronously (Panama FFI version)
+///
+/// Requires engine with `async_support(true)`. Uses the async resource limiter.
+#[no_mangle]
+#[cfg(feature = "async")]
+pub extern "C" fn wasmtime4j_panama_memory_grow_async(
+    memory_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    additional_pages: u64,
+    previous_pages_out: *mut u64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+        let previous_pages = crate::memory::core::grow_memory_async(memory, store, additional_pages)?;
+
+        unsafe {
+            *previous_pages_out = previous_pages;
+        }
+
+        Ok(())
+    })
+}
+
 /// Get whether memory uses 64-bit addressing (Memory64 proposal)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_memory_is_64bit(

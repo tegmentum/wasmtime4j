@@ -99,6 +99,24 @@ public interface Engine extends Closeable {
   byte[] precompileModule(final byte[] wasmBytes) throws WasmException;
 
   /**
+   * Precompiles a WebAssembly component into a serialized form for ahead-of-time (AOT) usage.
+   *
+   * <p>This method compiles a WebAssembly component binary into a serialized form that can be later
+   * loaded without needing to recompile. This is useful for caching compiled components to disk or
+   * distributing pre-compiled components.
+   *
+   * <p>The input must be a valid WebAssembly component (not a core module). For precompiling core
+   * modules, use {@link #precompileModule(byte[])}.
+   *
+   * @param wasmBytes the WebAssembly component bytecode to precompile
+   * @return the precompiled serialized component bytes
+   * @throws WasmException if precompilation fails due to invalid bytecode or engine issues
+   * @throws IllegalArgumentException if wasmBytes is null or empty
+   * @since 1.1.0
+   */
+  byte[] precompileComponent(final byte[] wasmBytes) throws WasmException;
+
+  /**
    * Compiles WebAssembly bytecode from an input stream into a module using this engine.
    *
    * <p>This method reads the entire stream contents and then compiles the WebAssembly bytecode. The
@@ -116,6 +134,20 @@ public interface Engine extends Closeable {
    * @since 1.0.0
    */
   Module compileFromStream(final InputStream stream) throws WasmException, IOException;
+
+  /**
+   * Compiles a WebAssembly module from a file path.
+   *
+   * <p>The file can contain either binary WebAssembly (.wasm) or WebAssembly Text (.wat) format. The
+   * format is auto-detected based on file contents.
+   *
+   * @param path the path to the WebAssembly file
+   * @return a compiled Module
+   * @throws WasmException if compilation fails due to invalid bytecode or engine issues
+   * @throws IllegalArgumentException if path is null
+   * @since 1.1.0
+   */
+  Module compileFromFile(final java.nio.file.Path path) throws WasmException;
 
   /**
    * Increments the epoch counter.
@@ -346,6 +378,58 @@ public interface Engine extends Closeable {
     }
     return detectPrecompiled(header);
   }
+
+  /**
+   * Creates a new standalone shared WebAssembly linear memory.
+   *
+   * <p>Shared memory can be accessed by multiple threads simultaneously and supports atomic
+   * operations. Unlike regular memory, shared memory does not require a Store context for creation
+   * - only an Engine is needed.
+   *
+   * <p>The engine must be configured with threads support enabled ({@code wasmThreads(true)} in
+   * {@link EngineConfig}).
+   *
+   * @param initialPages the initial number of 64KB pages
+   * @param maxPages the maximum number of 64KB pages (required for shared memory)
+   * @return a new shared WasmMemory instance
+   * @throws WasmException if shared memory creation fails
+   * @throws IllegalArgumentException if initialPages or maxPages is invalid
+   * @since 1.1.0
+   */
+  WasmMemory createSharedMemory(int initialPages, int maxPages) throws WasmException;
+
+  /**
+   * Creates a weak reference to this engine.
+   *
+   * <p>The returned {@link WeakEngine} does not prevent this engine from being garbage collected or
+   * closed. Use {@link WeakEngine#upgrade()} to attempt to obtain a strong reference.
+   *
+   * <p>This is useful for caches and other data structures that want to reference an engine without
+   * preventing it from being cleaned up.
+   *
+   * @return a weak reference to this engine
+   * @since 1.1.0
+   */
+  WeakEngine weak();
+
+  /**
+   * Creates a guest profiler for sampling-based WebAssembly performance profiling.
+   *
+   * <p>The profiler collects stack samples and produces profiles in the Firefox Processed Profile
+   * Format (JSON), viewable at <a href="https://profiler.firefox.com/">profiler.firefox.com</a>.
+   *
+   * @param moduleName a label for the profile
+   * @param interval the expected sampling interval (used as a hint by the profile format)
+   * @param modules a map of module names to modules to include in the profile
+   * @return a new GuestProfiler instance
+   * @throws WasmException if profiler creation fails (e.g., guest debugging is enabled)
+   * @since 1.1.0
+   */
+  ai.tegmentum.wasmtime4j.debug.GuestProfiler createGuestProfiler(
+      String moduleName,
+      java.time.Duration interval,
+      java.util.Map<String, Module> modules)
+      throws WasmException;
 
   /**
    * Closes the engine and releases associated resources.

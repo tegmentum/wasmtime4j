@@ -272,6 +272,60 @@ impl Module {
         Self::compile(engine, &wasm_bytes)
     }
 
+    /// Compile WebAssembly module from a file path
+    ///
+    /// This reads the file contents and compiles the module. The file can
+    /// contain either binary WebAssembly (.wasm) or WebAssembly Text (.wat).
+    pub fn from_file(engine: &Engine, path: &std::path::Path) -> WasmtimeResult<Self> {
+        if !path.exists() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("File does not exist: {}", path.display()),
+            });
+        }
+
+        let wasm_bytes = std::fs::read(path).map_err(|e| WasmtimeError::InvalidParameter {
+            message: format!("Failed to read file '{}': {}", path.display(), e),
+        })?;
+
+        if wasm_bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("File is empty: {}", path.display()),
+            });
+        }
+
+        // Check if this is WAT (text format) by looking at the first byte
+        // WAT files start with '(' while WASM files start with '\0'
+        if wasm_bytes[0] == b'(' {
+            let wat_str = std::str::from_utf8(&wasm_bytes).map_err(|e| {
+                WasmtimeError::InvalidParameter {
+                    message: format!("Invalid UTF-8 in WAT file '{}': {}", path.display(), e),
+                }
+            })?;
+            Self::compile_wat(engine, wat_str)
+        } else {
+            Self::compile(engine, &wasm_bytes)
+        }
+    }
+
+    /// Check if two modules are the same (share the same underlying compiled module)
+    ///
+    /// Two modules are considered the same if they share the same underlying
+    /// Wasmtime module allocation (i.e., they were cloned from the same original).
+    pub fn same(a: &Module, b: &Module) -> bool {
+        Arc::ptr_eq(&a.inner, &b.inner)
+    }
+
+    /// Get the index of an export by name
+    ///
+    /// Returns the zero-based index of the export in the module's export list,
+    /// or None if no export with the given name exists.
+    pub fn get_export_index(&self, name: &str) -> Option<usize> {
+        self.metadata
+            .exports
+            .iter()
+            .position(|e| e.name == name)
+    }
+
     /// Validate WebAssembly bytecode without compiling (static validation)
     pub fn validate_bytes(wasm_bytes: &[u8]) -> WasmtimeResult<()> {
         // Defensive validation
@@ -833,6 +887,41 @@ pub mod core {
     pub fn compile_module_wat(engine: &Engine, wat: &str) -> WasmtimeResult<Box<Module>> {
         validate_not_empty!(wat.as_bytes(), "WAT string");
         Module::compile_wat(engine, wat).map(Box::new)
+    }
+
+    /// Core function to compile a WebAssembly module from a file path
+    pub fn compile_module_from_file(
+        engine: &Engine,
+        path: &std::path::Path,
+    ) -> WasmtimeResult<Box<Module>> {
+        Module::from_file(engine, path).map(Box::new)
+    }
+
+    /// Core function to check if two modules are the same
+    pub unsafe fn modules_same(
+        module_ptr1: *const c_void,
+        module_ptr2: *const c_void,
+    ) -> WasmtimeResult<bool> {
+        validate_ptr_not_null!(module_ptr1, "module1");
+        validate_ptr_not_null!(module_ptr2, "module2");
+        let module1 = &*(module_ptr1 as *const Module);
+        let module2 = &*(module_ptr2 as *const Module);
+        Ok(Module::same(module1, module2))
+    }
+
+    /// Core function to get the index of an export by name
+    ///
+    /// Returns -1 if the export is not found, otherwise the zero-based index.
+    pub unsafe fn get_export_index(
+        module_ptr: *const c_void,
+        name: &str,
+    ) -> WasmtimeResult<i32> {
+        validate_ptr_not_null!(module_ptr, "module");
+        let module = &*(module_ptr as *const Module);
+        Ok(module
+            .get_export_index(name)
+            .map(|idx| idx as i32)
+            .unwrap_or(-1))
     }
 
     /// Core function to validate WebAssembly bytes without compilation

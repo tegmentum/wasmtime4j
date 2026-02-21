@@ -172,6 +172,62 @@ pub extern "C" fn wasmtime4j_panama_func_free_types_array(types_ptr: *mut c_int,
     }
 }
 
+/// Convert a Func to its raw funcref pointer (Panama FFI version)
+///
+/// Returns the raw funcref value as a long. Returns 0 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_func_to_raw(
+    func_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+) -> i64 {
+    if func_ptr.is_null() || store_ptr.is_null() {
+        return 0;
+    }
+
+    let result = (|| -> crate::error::WasmtimeResult<i64> {
+        let func = unsafe { &*(func_ptr as *const wasmtime::Func) };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let raw_ptr = crate::hostfunc::core::func_to_raw(func, store)?;
+        Ok(raw_ptr as i64)
+    })();
+
+    match result {
+        Ok(raw) => raw,
+        Err(_) => 0,
+    }
+}
+
+/// Reconstruct a Func from a raw funcref pointer (Panama FFI version)
+///
+/// Returns a new Func pointer, or null if the raw value doesn't correspond to a function.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_func_from_raw(
+    store_ptr: *mut c_void,
+    raw: i64,
+) -> *mut c_void {
+    if store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let result = (|| -> crate::error::WasmtimeResult<*mut c_void> {
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let func_opt = crate::hostfunc::core::func_from_raw(store, raw as *mut c_void)?;
+
+        match func_opt {
+            Some(func) => {
+                let boxed = Box::new(func);
+                Ok(Box::into_raw(boxed) as *mut c_void)
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    })();
+
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
 /// Destroy a function handle (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_func_destroy(func_ptr: *mut c_void) {

@@ -149,6 +149,13 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT, // module_version_strategy
             ValueLayout.ADDRESS)); // module_version_custom (nullable C string)
 
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_create_from_json_config",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return engine_ptr
+            ValueLayout.ADDRESS, // json_ptr
+            ValueLayout.JAVA_LONG)); // json_len
+
     addFunctionBinding("wasmtime4j_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     addFunctionBinding(
@@ -267,6 +274,98 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // engine_ptr
             ValueLayout.ADDRESS, // bytes_ptr
             ValueLayout.JAVA_LONG)); // bytes_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_precompile_component",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // wasm_bytes
+            ValueLayout.JAVA_LONG, // wasm_size
+            ValueLayout.ADDRESS, // out_data_ptr
+            ValueLayout.ADDRESS)); // out_len_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_pooling_allocator_metrics",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 1=available, 0=not available, -1=error
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS)); // out_metrics (pointer to 12 i64 values)
+
+    // ==================== SharedMemory Functions ====================
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_create_shared_memory",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return: memory_ptr
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_INT, // initial_pages
+            ValueLayout.JAVA_INT)); // max_pages
+
+    // ==================== WeakEngine Functions ====================
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_create_weak",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return: weak_engine_ptr
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_weak_engine_upgrade",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return: engine_ptr or null
+            ValueLayout.ADDRESS)); // weak_engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_weak_engine_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // weak_engine_ptr
+
+    // ==================== GuestProfiler Functions ====================
+
+    addFunctionBinding(
+        "wasmtime4j_guest_profiler_new",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return: profiler_ptr (or NULL)
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // module_name (C string)
+            ValueLayout.JAVA_LONG, // interval_nanos
+            ValueLayout.ADDRESS, // module_ptrs (array of pointers)
+            ValueLayout.ADDRESS, // module_names (array of C strings)
+            ValueLayout.JAVA_INT)); // module_count
+
+    addFunctionBinding(
+        "wasmtime4j_guest_profiler_sample",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 0=ok, -1=error, -2=finished
+            ValueLayout.ADDRESS, // profiler_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // delta_nanos
+
+    addFunctionBinding(
+        "wasmtime4j_guest_profiler_call_hook",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 0=ok, -1=error, -2=finished
+            ValueLayout.ADDRESS, // profiler_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT)); // hook_kind (0-3)
+
+    addFunctionBinding(
+        "wasmtime4j_guest_profiler_finish",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 0=ok, -1=error, -2=finished
+            ValueLayout.ADDRESS, // profiler_ptr
+            ValueLayout.ADDRESS, // data_out (*mut *mut u8)
+            ValueLayout.ADDRESS)); // len_out (*mut c_ulong)
+
+    addFunctionBinding(
+        "wasmtime4j_guest_profiler_free_data",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // data
+            ValueLayout.JAVA_LONG)); // len
+
+    addFunctionBinding(
+        "wasmtime4j_guest_profiler_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // profiler_ptr
 
     // ==================== Module Functions ====================
 
@@ -490,6 +589,29 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         "wasmtime4j_module_cache_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // cache_ptr
 
+    // Module from_file, same, get_export_index
+    addFunctionBinding(
+        "wasmtime4j_panama_module_compile_from_file",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // path (null-terminated string)
+            ValueLayout.ADDRESS)); // module_ptr_ptr (output)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_same",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 1 if same, 0 if not
+            ValueLayout.ADDRESS, // module_ptr1
+            ValueLayout.ADDRESS)); // module_ptr2
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_get_export_index",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return index or -1
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS)); // name (null-terminated string)
+
   }
 
   // ===========================================================================================
@@ -541,137 +663,30 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         return null;
       }
 
-      int strategy = config.getStrategy().ordinal();
-      int optLevel;
-      switch (config.getOptimizationLevel()) {
-        case NONE:
-          optLevel = 0;
-          break;
-        case SPEED:
-          optLevel = 1;
-          break;
-        case SPEED_AND_SIZE:
-          optLevel = 2;
-          break;
-        default:
-          optLevel = 1;
-      }
-      int debugInfo = config.isDebugInfo() ? 1 : 0;
-      int wasmThreads = config.isWasmThreads() ? 1 : 0;
-      int wasmSimd = config.isWasmSimd() ? 1 : 0;
-      int wasmReferenceTypes = config.isWasmReferenceTypes() ? 1 : 0;
-      int wasmBulkMemory = config.isWasmBulkMemory() ? 1 : 0;
-      int wasmMultiValue = config.isWasmMultiValue() ? 1 : 0;
-      int fuelEnabled = config.isConsumeFuel() ? 1 : 0;
-      long maxMemoryBytes = config.getMaxMemoryPerInstance();
-      int maxMemoryPages = maxMemoryBytes > 0 ? (int) (maxMemoryBytes / 65536L) : 0;
-      int maxStackSize = config.getMaxWasmStack() > 0 ? (int) config.getMaxWasmStack() : 0;
-      int epochInterruption = config.isEpochInterruption() ? 1 : 0;
-      int maxInstances = config.getInstancePoolSize();
-      int asyncSupport = config.isAsyncSupport() ? 1 : 0;
-      int wasmGc = config.isWasmGc() ? 1 : 0;
-      int wasmFunctionReferences = config.isWasmFunctionReferences() ? 1 : 0;
-      int wasmExceptions = config.isWasmExceptions() ? 1 : 0;
-      long memoryReservation = config.getMemoryReservation();
-      long memoryGuardSize = config.getMemoryGuardSize();
-      long memoryReservationForGrowth = config.getMemoryReservationForGrowth();
-      int wasmTailCall = config.isWasmTailCall() ? 1 : 0;
-      int wasmRelaxedSimd = config.isWasmRelaxedSimd() ? 1 : 0;
-      int wasmMultiMemory = config.isWasmMultiMemory() ? 1 : 0;
-      int wasmMemory64 = config.isWasmMemory64() ? 1 : 0;
-      int wasmExtendedConst = config.isWasmExtendedConstExpressions() ? 1 : 0;
-      int wasmComponentModel = config.isWasmComponentModel() ? 1 : 0;
-      int coredumpOnTrap = config.isCoredumpOnTrap() ? 1 : 0;
-      int craneliftNanCanonicalization = config.isCraneliftNanCanonicalization() ? 1 : 0;
-      int wasmCustomPageSizes = config.isWasmCustomPageSizes() ? 1 : 0;
-      int wasmWideArithmetic = config.isWasmWideArithmetic() ? 1 : 0;
-      int profilingStrategy = config.getProfilingStrategy().ordinal();
-      int nativeUnwindInfo = config.isNativeUnwindInfo() ? 1 : 0;
-      int craneliftDebugVerifier = config.isCraneliftDebugVerifier() ? 1 : 0;
-      long asyncStackSize = config.getAsyncStackSize();
-      int memoryMayMove = config.isMemoryMayMove() ? 1 : 0;
-      int guardBeforeLinearMemory = config.isGuardBeforeLinearMemory() ? 1 : 0;
-      int parallelCompilation = config.isParallelCompilation() ? 1 : 0;
-      int poolingAllocator = config.isPoolingAllocatorEnabled() ? 1 : 0;
-      int tableLazyInit = config.isTableLazyInit() ? 1 : 0;
-      int relaxedSimdDeterministic = config.isRelaxedSimdDeterministic() ? 1 : 0;
-      int memoryInitCow = config.isMemoryInitCow() ? 1 : 0;
-      int asyncStackZeroing = config.isAsyncStackZeroing() ? 1 : 0;
-      int gcSupportVal = config.isGcSupport() ? 1 : 0;
-
-      // Cranelift flags as JSON string and module version strategy
-      String craneliftFlagsJson = craneliftSettingsToJson(config.getCraneliftSettings());
-      int moduleVersionStrategyVal = config.getModuleVersionStrategy().ordinal();
-      String moduleVersionCustom = config.getModuleVersionCustom();
+      byte[] jsonBytes = config.toJson();
 
       try (Arena arena = Arena.ofConfined()) {
-        MemorySegment craneliftFlagsSeg = (craneliftFlagsJson != null)
-            ? arena.allocateFrom(craneliftFlagsJson) : MemorySegment.NULL;
-        MemorySegment moduleVersionCustomSeg = (moduleVersionCustom != null)
-            ? arena.allocateFrom(moduleVersionCustom) : MemorySegment.NULL;
+        MemorySegment jsonSeg = arena.allocate(jsonBytes.length);
+        jsonSeg.copyFrom(MemorySegment.ofArray(jsonBytes));
 
         MemorySegment result =
             callNativeFunction(
-                "wasmtime4j_panama_engine_create_with_extended_config",
+                "wasmtime4j_panama_engine_create_from_json_config",
                 MemorySegment.class,
-                strategy,
-                optLevel,
-                debugInfo,
-                wasmThreads,
-                wasmSimd,
-                wasmReferenceTypes,
-                wasmBulkMemory,
-                wasmMultiValue,
-                fuelEnabled,
-                maxMemoryPages,
-                maxStackSize,
-                epochInterruption,
-                maxInstances,
-                asyncSupport,
-                wasmGc,
-                wasmFunctionReferences,
-                wasmExceptions,
-                memoryReservation,
-                memoryGuardSize,
-                memoryReservationForGrowth,
-                wasmTailCall,
-                wasmRelaxedSimd,
-                wasmMultiMemory,
-                wasmMemory64,
-                wasmExtendedConst,
-                wasmComponentModel,
-                coredumpOnTrap,
-                craneliftNanCanonicalization,
-                wasmCustomPageSizes,
-                wasmWideArithmetic,
-                profilingStrategy,
-                nativeUnwindInfo,
-                craneliftDebugVerifier,
-                asyncStackSize,
-                memoryMayMove,
-                guardBeforeLinearMemory,
-                parallelCompilation,
-                poolingAllocator,
-                tableLazyInit,
-                relaxedSimdDeterministic,
-                memoryInitCow,
-                asyncStackZeroing,
-                gcSupportVal,
-                craneliftFlagsSeg,
-                moduleVersionStrategyVal,
-                moduleVersionCustomSeg);
+                jsonSeg,
+                (long) jsonBytes.length);
 
         if (result == null || result.equals(MemorySegment.NULL)) {
           LOGGER.warning(
-              "Engine creation with config returned null"
-                  + " - this may indicate symbol lookup failure");
+              "Engine creation with JSON config returned null"
+                  + " - this may indicate a configuration error");
         } else {
-          LOGGER.fine("Engine created with config successfully: " + result);
+          LOGGER.fine("Engine created with JSON config successfully: " + result);
         }
         return result;
       }
     } catch (Exception e) {
-      LOGGER.severe("Exception during engine creation with config: " + e.getMessage());
+      LOGGER.severe("Exception during engine creation with JSON config: " + e.getMessage());
       return null;
     }
   }
@@ -1064,6 +1079,156 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         bytesLen);
   }
 
+  /**
+   * Precompiles a WebAssembly component for AOT usage.
+   *
+   * @param enginePtr pointer to the engine
+   * @param wasmBytes the WebAssembly component bytecode to precompile
+   * @return the precompiled serialized component bytes
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if precompilation fails
+   */
+  public byte[] enginePrecompileComponent(final MemorySegment enginePtr, final byte[] wasmBytes)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(enginePtr, "enginePtr");
+    if (wasmBytes == null || wasmBytes.length == 0) {
+      throw new IllegalArgumentException("wasmBytes cannot be null or empty");
+    }
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment wasmBytesSegment =
+          tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
+
+      final MemorySegment outDataPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outLenPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_engine_precompile_component",
+              Integer.class,
+              enginePtr,
+              wasmBytesSegment,
+              (long) wasmBytes.length,
+              outDataPtr,
+              outLenPtr);
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to precompile component");
+      }
+
+      final MemorySegment dataPtr = outDataPtr.get(ValueLayout.ADDRESS, 0);
+      final long dataLen = outLenPtr.get(ValueLayout.JAVA_LONG, 0);
+
+      if (dataPtr.equals(MemorySegment.NULL) || dataLen <= 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Precompilation returned invalid data");
+      }
+
+      final MemorySegment dataSegment = dataPtr.reinterpret(dataLen);
+      final byte[] precompiledBytes = dataSegment.toArray(ValueLayout.JAVA_BYTE);
+
+      // Free the native memory
+      serializerFreeBuffer(dataPtr, dataLen);
+
+      return precompiledBytes;
+    }
+  }
+
+  /**
+   * Gets pooling allocator metrics from the engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @return a 12-element long array with metrics, or null if pooling is not enabled
+   */
+  public long[] enginePoolingAllocatorMetrics(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      // Allocate buffer for 12 i64 values
+      final MemorySegment outMetrics =
+          tempArena.allocate(ValueLayout.JAVA_LONG, 12);
+
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_engine_pooling_allocator_metrics",
+              Integer.class,
+              enginePtr,
+              outMetrics);
+
+      if (result <= 0) {
+        // 0 = pooling not enabled, -1 = error
+        return null;
+      }
+
+      // Read the 12 long values
+      final long[] metrics = new long[12];
+      for (int i = 0; i < 12; i++) {
+        metrics[i] = outMetrics.getAtIndex(ValueLayout.JAVA_LONG, i);
+      }
+      return metrics;
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get pooling allocator metrics: " + e.getMessage());
+      return null;
+    }
+  }
+
+  // ===========================================================================================
+  // WeakEngine Operations
+  // ===========================================================================================
+
+  /**
+   * Creates a weak reference to an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @return pointer to the weak engine, or NULL if creation failed
+   */
+  /**
+   * Creates a standalone shared memory from an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @param initialPages initial number of 64KB pages
+   * @param maxPages maximum number of 64KB pages
+   * @return pointer to the created shared memory, or NULL on failure
+   */
+  public MemorySegment engineCreateSharedMemory(
+      final MemorySegment enginePtr, final int initialPages, final int maxPages) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_engine_create_shared_memory",
+        MemorySegment.class,
+        enginePtr,
+        initialPages,
+        maxPages);
+  }
+
+  public MemorySegment engineCreateWeak(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_engine_create_weak", MemorySegment.class, enginePtr);
+  }
+
+  /**
+   * Upgrades a weak engine reference to a strong engine.
+   *
+   * @param weakPtr pointer to the weak engine
+   * @return pointer to the engine, or NULL if the engine has been dropped
+   */
+  public MemorySegment weakEngineUpgrade(final MemorySegment weakPtr) {
+    validatePointer(weakPtr, "weakPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_weak_engine_upgrade", MemorySegment.class, weakPtr);
+  }
+
+  /**
+   * Destroys a weak engine reference.
+   *
+   * @param weakPtr pointer to the weak engine to destroy
+   */
+  public void weakEngineDestroy(final MemorySegment weakPtr) {
+    if (weakPtr != null && !weakPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_weak_engine_destroy", Void.class, weakPtr);
+    }
+  }
+
   // ===========================================================================================
   // Module Operations
   // ===========================================================================================
@@ -1174,6 +1339,62 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   public void moduleDestroy(final MemorySegment modulePtr) {
     validatePointer(modulePtr, "modulePtr");
     callNativeFunction("wasmtime4j_module_destroy", Void.class, modulePtr);
+  }
+
+  /**
+   * Compiles a WebAssembly module from a file path.
+   *
+   * @param enginePtr pointer to the engine
+   * @param pathPtr pointer to the file path (null-terminated string)
+   * @param modulePtrPtr pointer to store the compiled module pointer
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleCompileFromFile(
+      final MemorySegment enginePtr,
+      final MemorySegment pathPtr,
+      final MemorySegment modulePtrPtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(pathPtr, "pathPtr");
+    validatePointer(modulePtrPtr, "modulePtrPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_compile_from_file",
+        Integer.class,
+        enginePtr,
+        pathPtr,
+        modulePtrPtr);
+  }
+
+  /**
+   * Checks if two modules share the same underlying compiled code.
+   *
+   * @param modulePtr1 pointer to the first module
+   * @param modulePtr2 pointer to the second module
+   * @return 1 if the modules are the same, 0 if not
+   */
+  public boolean moduleSame(final MemorySegment modulePtr1, final MemorySegment modulePtr2) {
+    validatePointer(modulePtr1, "modulePtr1");
+    validatePointer(modulePtr2, "modulePtr2");
+
+    final int result =
+        callNativeFunction(
+            "wasmtime4j_panama_module_same", Integer.class, modulePtr1, modulePtr2);
+    return result == 1;
+  }
+
+  /**
+   * Gets the index of an export by name.
+   *
+   * @param modulePtr pointer to the module
+   * @param namePtr pointer to the export name (null-terminated string)
+   * @return the zero-based index, or -1 if not found
+   */
+  public int moduleGetExportIndex(final MemorySegment modulePtr, final MemorySegment namePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(namePtr, "namePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_get_export_index", Integer.class, modulePtr, namePtr);
   }
 
   /**
@@ -1595,6 +1816,113 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   public void moduleCacheDestroy(final MemorySegment cachePtr) {
     if (cachePtr != null && !cachePtr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasmtime4j_module_cache_destroy", Void.class, cachePtr);
+    }
+  }
+
+  // ===========================================================================================
+  // GuestProfiler Operations
+  // ===========================================================================================
+
+  /**
+   * Creates a new guest profiler.
+   *
+   * @param enginePtr pointer to the engine
+   * @param moduleNamePtr pointer to module name C string
+   * @param intervalNanos sampling interval in nanoseconds
+   * @param modulePtrs pointer to array of module pointers
+   * @param moduleNamePtrs pointer to array of module name C strings
+   * @param moduleCount number of modules
+   * @return pointer to the profiler, or NULL on failure
+   */
+  public MemorySegment guestProfilerNew(
+      final MemorySegment enginePtr,
+      final MemorySegment moduleNamePtr,
+      final long intervalNanos,
+      final MemorySegment modulePtrs,
+      final MemorySegment moduleNamePtrs,
+      final int moduleCount) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    return callNativeFunction(
+        "wasmtime4j_guest_profiler_new",
+        MemorySegment.class,
+        enginePtr,
+        moduleNamePtr,
+        intervalNanos,
+        modulePtrs,
+        moduleNamePtrs,
+        moduleCount);
+  }
+
+  /**
+   * Collects a stack sample.
+   *
+   * @param profilerPtr pointer to the profiler
+   * @param storePtr pointer to the store
+   * @param deltaNanos CPU time since previous sample in nanoseconds
+   * @return 0 on success, -1 on error, -2 if already finished
+   */
+  public int guestProfilerSample(
+      final MemorySegment profilerPtr, final MemorySegment storePtr, final long deltaNanos) {
+    validatePointer(profilerPtr, "profilerPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_guest_profiler_sample", Integer.class, profilerPtr, storePtr, deltaNanos);
+  }
+
+  /**
+   * Records a call hook transition.
+   *
+   * @param profilerPtr pointer to the profiler
+   * @param storePtr pointer to the store
+   * @param hookKind 0=CallingWasm, 1=ReturningFromWasm, 2=CallingHost, 3=ReturningFromHost
+   * @return 0 on success, -1 on error, -2 if already finished
+   */
+  public int guestProfilerCallHook(
+      final MemorySegment profilerPtr, final MemorySegment storePtr, final int hookKind) {
+    validatePointer(profilerPtr, "profilerPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_guest_profiler_call_hook", Integer.class, profilerPtr, storePtr, hookKind);
+  }
+
+  /**
+   * Finishes profiling and returns the profile data.
+   *
+   * @param profilerPtr pointer to the profiler
+   * @param dataOut pointer to receive the data pointer
+   * @param lenOut pointer to receive the data length
+   * @return 0 on success, -1 on error, -2 if already finished
+   */
+  public int guestProfilerFinish(
+      final MemorySegment profilerPtr, final MemorySegment dataOut, final MemorySegment lenOut) {
+    validatePointer(profilerPtr, "profilerPtr");
+    validatePointer(dataOut, "dataOut");
+    validatePointer(lenOut, "lenOut");
+    return callNativeFunction(
+        "wasmtime4j_guest_profiler_finish", Integer.class, profilerPtr, dataOut, lenOut);
+  }
+
+  /**
+   * Frees profile data returned by finish.
+   *
+   * @param dataPtr pointer to the data
+   * @param len length of the data
+   */
+  public void guestProfilerFreeData(final MemorySegment dataPtr, final long len) {
+    if (dataPtr != null && !dataPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_guest_profiler_free_data", Void.class, dataPtr, len);
+    }
+  }
+
+  /**
+   * Destroys a guest profiler.
+   *
+   * @param profilerPtr pointer to the profiler to destroy
+   */
+  public void guestProfilerDestroy(final MemorySegment profilerPtr) {
+    if (profilerPtr != null && !profilerPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_guest_profiler_destroy", Void.class, profilerPtr);
     }
   }
 

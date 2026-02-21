@@ -16,6 +16,10 @@
 
 package ai.tegmentum.wasmtime4j.wasi;
 
+import ai.tegmentum.wasmtime4j.wasi.clocks.WasiMonotonicClock;
+import ai.tegmentum.wasmtime4j.wasi.clocks.WasiWallClock;
+import ai.tegmentum.wasmtime4j.wasi.random.WasiRandomSource;
+import ai.tegmentum.wasmtime4j.wasi.sockets.SocketAddrCheck;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,20 +62,48 @@ public final class WasiPreview2Config {
   private final Map<String, String> env;
   private final boolean inheritEnv;
   private final boolean inheritStdio;
+  private final boolean inheritStdin;
+  private final boolean inheritStdout;
+  private final boolean inheritStderr;
   private final List<PreopenDir> preopenDirs;
   private final boolean allowNetwork;
+  private final boolean allowTcp;
+  private final boolean allowUdp;
+  private final boolean allowIpNameLookup;
   private final boolean allowClock;
   private final boolean allowRandom;
+  private final boolean allowBlockingCurrentThread;
+  private final long insecureRandomSeed;
+  private final boolean hasInsecureRandomSeed;
+  private final WasiWallClock wallClock;
+  private final WasiMonotonicClock monotonicClock;
+  private final WasiRandomSource secureRandom;
+  private final WasiRandomSource insecureRandom;
+  private final SocketAddrCheck socketAddrCheck;
 
   private WasiPreview2Config(final Builder builder) {
     this.args = List.copyOf(builder.args);
     this.env = Map.copyOf(builder.env);
     this.inheritEnv = builder.inheritEnv;
     this.inheritStdio = builder.inheritStdio;
+    this.inheritStdin = builder.inheritStdin;
+    this.inheritStdout = builder.inheritStdout;
+    this.inheritStderr = builder.inheritStderr;
     this.preopenDirs = List.copyOf(builder.preopenDirs);
     this.allowNetwork = builder.allowNetwork;
+    this.allowTcp = builder.allowTcp;
+    this.allowUdp = builder.allowUdp;
+    this.allowIpNameLookup = builder.allowIpNameLookup;
     this.allowClock = builder.allowClock;
     this.allowRandom = builder.allowRandom;
+    this.allowBlockingCurrentThread = builder.allowBlockingCurrentThread;
+    this.insecureRandomSeed = builder.insecureRandomSeed;
+    this.hasInsecureRandomSeed = builder.hasInsecureRandomSeed;
+    this.wallClock = builder.wallClock;
+    this.monotonicClock = builder.monotonicClock;
+    this.secureRandom = builder.secureRandom;
+    this.insecureRandom = builder.insecureRandom;
+    this.socketAddrCheck = builder.socketAddrCheck;
   }
 
   /**
@@ -111,6 +143,33 @@ public final class WasiPreview2Config {
   }
 
   /**
+   * Checks if stdin should be inherited from the host individually.
+   *
+   * @return true if inheriting stdin
+   */
+  public boolean isInheritStdin() {
+    return inheritStdin;
+  }
+
+  /**
+   * Checks if stdout should be inherited from the host individually.
+   *
+   * @return true if inheriting stdout
+   */
+  public boolean isInheritStdout() {
+    return inheritStdout;
+  }
+
+  /**
+   * Checks if stderr should be inherited from the host individually.
+   *
+   * @return true if inheriting stderr
+   */
+  public boolean isInheritStderr() {
+    return inheritStderr;
+  }
+
+  /**
    * Gets the preopened directories.
    *
    * @return the preopened directories
@@ -129,6 +188,33 @@ public final class WasiPreview2Config {
   }
 
   /**
+   * Checks if TCP socket access is allowed.
+   *
+   * @return true if TCP is allowed
+   */
+  public boolean isAllowTcp() {
+    return allowTcp;
+  }
+
+  /**
+   * Checks if UDP socket access is allowed.
+   *
+   * @return true if UDP is allowed
+   */
+  public boolean isAllowUdp() {
+    return allowUdp;
+  }
+
+  /**
+   * Checks if IP name lookup (DNS) is allowed.
+   *
+   * @return true if IP name lookup is allowed
+   */
+  public boolean isAllowIpNameLookup() {
+    return allowIpNameLookup;
+  }
+
+  /**
    * Checks if clock access is allowed.
    *
    * @return true if clock is allowed
@@ -144,6 +230,83 @@ public final class WasiPreview2Config {
    */
   public boolean isAllowRandom() {
     return allowRandom;
+  }
+
+  /**
+   * Checks if blocking the current thread is allowed.
+   *
+   * <p>When true, WASI operations may block the current thread for I/O.
+   *
+   * @return true if blocking the current thread is allowed
+   */
+  public boolean isAllowBlockingCurrentThread() {
+    return allowBlockingCurrentThread;
+  }
+
+  /**
+   * Gets the insecure random seed value.
+   *
+   * <p>This provides a deterministic seed for insecure random number generation,
+   * useful for testing and reproducibility.
+   *
+   * @return the insecure random seed
+   */
+  public long getInsecureRandomSeed() {
+    return insecureRandomSeed;
+  }
+
+  /**
+   * Checks if an insecure random seed has been explicitly set.
+   *
+   * @return true if an insecure random seed has been set
+   */
+  public boolean hasInsecureRandomSeed() {
+    return hasInsecureRandomSeed;
+  }
+
+  /**
+   * Gets the custom wall clock, if set.
+   *
+   * @return the custom wall clock, or null if using the default
+   */
+  public WasiWallClock getWallClock() {
+    return wallClock;
+  }
+
+  /**
+   * Gets the custom monotonic clock, if set.
+   *
+   * @return the custom monotonic clock, or null if using the default
+   */
+  public WasiMonotonicClock getMonotonicClock() {
+    return monotonicClock;
+  }
+
+  /**
+   * Gets the custom secure random source, if set.
+   *
+   * @return the custom secure random source, or null if using the default
+   */
+  public WasiRandomSource getSecureRandom() {
+    return secureRandom;
+  }
+
+  /**
+   * Gets the custom insecure random source, if set.
+   *
+   * @return the custom insecure random source, or null if using the default
+   */
+  public WasiRandomSource getInsecureRandom() {
+    return insecureRandom;
+  }
+
+  /**
+   * Gets the socket address check callback, if set.
+   *
+   * @return the socket address check callback, or null if no check is configured
+   */
+  public SocketAddrCheck getSocketAddrCheck() {
+    return socketAddrCheck;
   }
 
   /**
@@ -178,9 +341,11 @@ public final class WasiPreview2Config {
     private final Path hostPath;
     private final String guestPath;
     private final boolean readOnly;
+    private final DirPerms dirPerms;
+    private final FilePerms filePerms;
 
     /**
-     * Creates a preopened directory mapping.
+     * Creates a preopened directory mapping with simple read-only flag.
      *
      * @param hostPath the path on the host filesystem
      * @param guestPath the path as seen by the guest
@@ -190,18 +355,73 @@ public final class WasiPreview2Config {
       this.hostPath = hostPath;
       this.guestPath = guestPath;
       this.readOnly = readOnly;
+      this.dirPerms = readOnly ? DirPerms.readOnly() : DirPerms.all();
+      this.filePerms = readOnly ? FilePerms.readOnly() : FilePerms.all();
     }
 
+    /**
+     * Creates a preopened directory mapping with granular permissions.
+     *
+     * @param hostPath the path on the host filesystem
+     * @param guestPath the path as seen by the guest
+     * @param dirPerms the directory permissions
+     * @param filePerms the file permissions
+     */
+    public PreopenDir(
+        final Path hostPath,
+        final String guestPath,
+        final DirPerms dirPerms,
+        final FilePerms filePerms) {
+      this.hostPath = hostPath;
+      this.guestPath = guestPath;
+      this.dirPerms = dirPerms;
+      this.filePerms = filePerms;
+      this.readOnly = !dirPerms.canMutate() && !filePerms.canWrite();
+    }
+
+    /**
+     * Gets the host path.
+     *
+     * @return the host path
+     */
     public Path getHostPath() {
       return hostPath;
     }
 
+    /**
+     * Gets the guest path.
+     *
+     * @return the guest path
+     */
     public String getGuestPath() {
       return guestPath;
     }
 
+    /**
+     * Checks if the directory is read-only.
+     *
+     * @return true if read-only
+     */
     public boolean isReadOnly() {
       return readOnly;
+    }
+
+    /**
+     * Gets the directory permissions.
+     *
+     * @return the directory permissions
+     */
+    public DirPerms getDirPerms() {
+      return dirPerms;
+    }
+
+    /**
+     * Gets the file permissions.
+     *
+     * @return the file permissions
+     */
+    public FilePerms getFilePerms() {
+      return filePerms;
     }
   }
 
@@ -211,10 +431,24 @@ public final class WasiPreview2Config {
     private final Map<String, String> env = new HashMap<>();
     private boolean inheritEnv = false;
     private boolean inheritStdio = false;
+    private boolean inheritStdin = false;
+    private boolean inheritStdout = false;
+    private boolean inheritStderr = false;
     private final List<PreopenDir> preopenDirs = new ArrayList<>();
     private boolean allowNetwork = false;
+    private boolean allowTcp = true;
+    private boolean allowUdp = true;
+    private boolean allowIpNameLookup = true;
     private boolean allowClock = false;
     private boolean allowRandom = false;
+    private boolean allowBlockingCurrentThread = false;
+    private long insecureRandomSeed = 0;
+    private boolean hasInsecureRandomSeed = false;
+    private WasiWallClock wallClock = null;
+    private WasiMonotonicClock monotonicClock = null;
+    private WasiRandomSource secureRandom = null;
+    private WasiRandomSource insecureRandom = null;
+    private SocketAddrCheck socketAddrCheck = null;
 
     Builder() {}
 
@@ -285,6 +519,36 @@ public final class WasiPreview2Config {
     }
 
     /**
+     * Inherits only stdin from the host process.
+     *
+     * @return this builder
+     */
+    public Builder inheritStdin() {
+      this.inheritStdin = true;
+      return this;
+    }
+
+    /**
+     * Inherits only stdout from the host process.
+     *
+     * @return this builder
+     */
+    public Builder inheritStdout() {
+      this.inheritStdout = true;
+      return this;
+    }
+
+    /**
+     * Inherits only stderr from the host process.
+     *
+     * @return this builder
+     */
+    public Builder inheritStderr() {
+      this.inheritStderr = true;
+      return this;
+    }
+
+    /**
      * Preopens a directory with read-write access.
      *
      * @param hostPath the path on the host filesystem
@@ -321,6 +585,41 @@ public final class WasiPreview2Config {
     }
 
     /**
+     * Preopens a directory with granular permissions.
+     *
+     * @param hostPath the path on the host filesystem
+     * @param guestPath the path as seen by the guest
+     * @param dirPerms the directory permissions
+     * @param filePerms the file permissions
+     * @return this builder
+     */
+    public Builder preopenDir(
+        final Path hostPath,
+        final String guestPath,
+        final DirPerms dirPerms,
+        final FilePerms filePerms) {
+      this.preopenDirs.add(new PreopenDir(hostPath, guestPath, dirPerms, filePerms));
+      return this;
+    }
+
+    /**
+     * Preopens a directory with granular permissions using string path.
+     *
+     * @param hostPath the path on the host filesystem
+     * @param guestPath the path as seen by the guest
+     * @param dirPerms the directory permissions
+     * @param filePerms the file permissions
+     * @return this builder
+     */
+    public Builder preopenDir(
+        final String hostPath,
+        final String guestPath,
+        final DirPerms dirPerms,
+        final FilePerms filePerms) {
+      return preopenDir(Path.of(hostPath), guestPath, dirPerms, filePerms);
+    }
+
+    /**
      * Sets whether network access is allowed.
      *
      * @param allow true to allow network
@@ -328,6 +627,45 @@ public final class WasiPreview2Config {
      */
     public Builder allowNetwork(final boolean allow) {
       this.allowNetwork = allow;
+      return this;
+    }
+
+    /**
+     * Sets whether TCP socket access is allowed.
+     *
+     * <p>Defaults to true. When set to false, TCP socket operations will be denied.
+     *
+     * @param allow true to allow TCP
+     * @return this builder
+     */
+    public Builder allowTcp(final boolean allow) {
+      this.allowTcp = allow;
+      return this;
+    }
+
+    /**
+     * Sets whether UDP socket access is allowed.
+     *
+     * <p>Defaults to true. When set to false, UDP socket operations will be denied.
+     *
+     * @param allow true to allow UDP
+     * @return this builder
+     */
+    public Builder allowUdp(final boolean allow) {
+      this.allowUdp = allow;
+      return this;
+    }
+
+    /**
+     * Sets whether IP name lookup (DNS) is allowed.
+     *
+     * <p>Defaults to true. When set to false, DNS lookup operations will be denied.
+     *
+     * @param allow true to allow IP name lookup
+     * @return this builder
+     */
+    public Builder allowIpNameLookup(final boolean allow) {
+      this.allowIpNameLookup = allow;
       return this;
     }
 
@@ -350,6 +688,105 @@ public final class WasiPreview2Config {
      */
     public Builder allowRandom(final boolean allow) {
       this.allowRandom = allow;
+      return this;
+    }
+
+    /**
+     * Sets whether blocking the current thread is allowed for WASI operations.
+     *
+     * <p>When true, WASI I/O operations may block the calling thread. When false (default),
+     * blocking operations will return an error.
+     *
+     * @param allow true to allow blocking
+     * @return this builder
+     */
+    public Builder allowBlockingCurrentThread(final boolean allow) {
+      this.allowBlockingCurrentThread = allow;
+      return this;
+    }
+
+    /**
+     * Sets a deterministic seed for insecure random number generation.
+     *
+     * <p>This is useful for testing and reproducibility. The seed is a 64-bit value
+     * that will be used as the low bits of the 128-bit WASI insecure random seed.
+     *
+     * @param seed the insecure random seed
+     * @return this builder
+     */
+    public Builder insecureRandomSeed(final long seed) {
+      this.insecureRandomSeed = seed;
+      this.hasInsecureRandomSeed = true;
+      return this;
+    }
+
+    /**
+     * Sets a custom wall clock implementation.
+     *
+     * <p>By default, the host's wall clock is used. This allows overriding with a
+     * custom implementation for testing or deterministic behavior.
+     *
+     * @param clock the custom wall clock implementation
+     * @return this builder
+     */
+    public Builder wallClock(final WasiWallClock clock) {
+      this.wallClock = clock;
+      return this;
+    }
+
+    /**
+     * Sets a custom monotonic clock implementation.
+     *
+     * <p>By default, the host's monotonic clock is used. This allows overriding with a
+     * custom implementation for testing or deterministic behavior.
+     *
+     * @param clock the custom monotonic clock implementation
+     * @return this builder
+     */
+    public Builder monotonicClock(final WasiMonotonicClock clock) {
+      this.monotonicClock = clock;
+      return this;
+    }
+
+    /**
+     * Sets a custom secure random source.
+     *
+     * <p>By default, the host's secure random source is used. The provided source must
+     * generate cryptographically secure random data.
+     *
+     * @param random the custom secure random source
+     * @return this builder
+     */
+    public Builder secureRandom(final WasiRandomSource random) {
+      this.secureRandom = random;
+      return this;
+    }
+
+    /**
+     * Sets a custom insecure random source.
+     *
+     * <p>By default, the host's insecure random source is used. This is useful for
+     * deterministic testing.
+     *
+     * @param random the custom insecure random source
+     * @return this builder
+     */
+    public Builder insecureRandom(final WasiRandomSource random) {
+      this.insecureRandom = random;
+      return this;
+    }
+
+    /**
+     * Sets a socket address check callback.
+     *
+     * <p>This callback is invoked for each socket operation to determine whether it should
+     * be permitted. Returning {@code true} allows the operation, {@code false} denies it.
+     *
+     * @param check the socket address check callback
+     * @return this builder
+     */
+    public Builder socketAddrCheck(final SocketAddrCheck check) {
+      this.socketAddrCheck = check;
       return this;
     }
 

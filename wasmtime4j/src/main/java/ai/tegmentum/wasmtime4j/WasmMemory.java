@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
 import java.nio.ByteBuffer;
 
@@ -918,4 +919,18 @@ public interface WasmMemory {
     MemoryType memType = getMemoryType();
     return memType != null ? (int) memType.getMinimum() : 0;
   }
+
+  /**
+   * Grows memory asynchronously by the specified number of pages.
+   *
+   * <p>This method requires the engine to be configured with {@code asyncSupport(true)}.
+   * It goes through the async resource limiter if one is set on the store, allowing
+   * the limiter to asynchronously decide whether to permit the growth.
+   *
+   * @param pages the number of additional pages to allocate
+   * @return the previous number of pages before growth
+   * @throws WasmException if growth fails or async support is not enabled
+   * @since 1.1.0
+   */
+  long growAsync(long pages) throws WasmException;
 }

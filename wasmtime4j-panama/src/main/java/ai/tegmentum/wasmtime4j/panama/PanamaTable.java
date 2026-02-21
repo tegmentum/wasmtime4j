@@ -232,9 +232,10 @@ public final class PanamaTable implements WasmTable {
       final int hasMaximum = hasMaximumSegment.get(ValueLayout.JAVA_INT, 0);
       final Long maximum =
           hasMaximum != 0 ? Long.valueOf(maximumSizeSegment.get(ValueLayout.JAVA_LONG, 0)) : null;
+      final boolean is64 = is64Segment.get(ValueLayout.JAVA_INT, 0) != 0;
 
       return new ai.tegmentum.wasmtime4j.panama.type.PanamaTableType(
-          element, minimum, maximum, arena, nativeTable);
+          element, minimum, maximum, is64, arena, nativeTable);
     } catch (final Throwable e) {
       throw new IllegalStateException("Error getting table type: " + e.getMessage(), e);
     }
@@ -800,6 +801,61 @@ public final class PanamaTable implements WasmTable {
       throw new IllegalStateException("Store is not a PanamaStore");
     }
     return ((PanamaStore) instance.getStore()).getNativeStore();
+  }
+
+  @Override
+  public int growAsync(final int elements, final Object initValue)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (elements < 0) {
+      throw new IllegalArgumentException("Elements cannot be negative");
+    }
+    ensureNotClosed();
+
+    try {
+      // Determine element type based on table's element type
+      final int elementTypeCode;
+      if (elementType == WasmValueType.FUNCREF) {
+        elementTypeCode = 5; // FUNCREF
+      } else if (elementType == WasmValueType.EXTERNREF) {
+        elementTypeCode = 6; // EXTERNREF
+      } else {
+        throw new IllegalArgumentException("Unsupported element type: " + elementType);
+      }
+
+      // Handle init value
+      final int refIdPresent;
+      final long refId;
+      if (initValue == null) {
+        refIdPresent = 0;
+        refId = 0L;
+      } else if (initValue instanceof Long) {
+        refIdPresent = 1;
+        refId = ((Long) initValue).longValue();
+      } else {
+        throw new IllegalArgumentException("Unsupported init value type: " + initValue.getClass());
+      }
+
+      final MemorySegment oldSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
+
+      final int result =
+          NATIVE_BINDINGS.panamaTableGrowAsync(
+              nativeTable,
+              getNativeStorePointer(),
+              elements,
+              elementTypeCode,
+              refIdPresent,
+              refId,
+              oldSizeSegment);
+
+      if (result != 0) {
+        return -1; // Growth failed
+      }
+
+      return oldSizeSegment.get(ValueLayout.JAVA_INT, 0);
+    } catch (final Throwable e) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Async table growth failed: " + e.getMessage(), e);
+    }
   }
 
   @Override

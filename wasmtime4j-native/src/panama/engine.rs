@@ -310,17 +310,89 @@ pub extern "C" fn wasmtime4j_panama_engine_precompile_module(
     }
 }
 
+/// Precompile a WebAssembly component for AOT usage (Panama FFI version)
+///
+/// Returns 0 on success, non-zero on failure.
+/// The caller is responsible for freeing the output data with wasmtime4j_panama_free_bytes.
+#[cfg(feature = "component-model")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_precompile_component(
+    engine_ptr: *mut c_void,
+    wasm_bytes: *const u8,
+    wasm_len: usize,
+    out_data: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    if engine_ptr.is_null() || wasm_bytes.is_null() || out_data.is_null() || out_len.is_null() {
+        return -1;
+    }
+
+    match unsafe { core::get_engine_ref(engine_ptr) } {
+        Ok(engine) => {
+            let bytes = unsafe { std::slice::from_raw_parts(wasm_bytes, wasm_len) };
+            match core::precompile_component(engine, bytes) {
+                Ok(precompiled) => {
+                    let len = precompiled.len();
+                    let data = Box::into_raw(precompiled.into_boxed_slice()) as *mut u8;
+                    unsafe {
+                        *out_data = data;
+                        *out_len = len;
+                    }
+                    0 // Success
+                }
+                Err(e) => {
+                    log::error!("Failed to precompile component: {:?}", e);
+                    -1
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Invalid engine pointer: {:?}", e);
+            -1
+        }
+    }
+}
+
+/// Get pooling allocator metrics (Panama FFI version)
+///
+/// Writes 12 i64 values to the out_metrics buffer.
+/// Returns 1 if metrics are available (pooling allocator is enabled),
+/// 0 if not available (pooling not enabled), -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_pooling_allocator_metrics(
+    engine_ptr: *mut c_void,
+    out_metrics: *mut i64,
+) -> c_int {
+    if engine_ptr.is_null() || out_metrics.is_null() {
+        return -1;
+    }
+
+    match unsafe { core::get_engine_ref(engine_ptr) } {
+        Ok(engine) => {
+            match core::pooling_allocator_metrics(engine) {
+                Some(metrics) => {
+                    unsafe {
+                        for (i, &val) in metrics.iter().enumerate() {
+                            *out_metrics.add(i) = val;
+                        }
+                    }
+                    1 // Metrics available
+                }
+                None => 0, // Pooling not enabled
+            }
+        }
+        Err(_) => -1,
+    }
+}
+
 /// Check if the engine is using Pulley interpreter (Panama FFI version)
 ///
 /// Returns 1 if using Pulley, 0 if not, -1 on error.
-/// Note: Pulley is only available in wasmtime >= 40.0.0. In 39.0.1, always returns 0.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_engine_is_pulley(engine_ptr: *mut c_void) -> c_int {
     match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(_engine) => {
-            // Pulley is not available in wasmtime 39.0.1
-            // Return 0 (not using Pulley) - this is the correct behavior for pre-Pulley versions
-            0
+        Ok(engine) => {
+            if engine.inner().is_pulley() { 1 } else { 0 }
         }
         Err(_) => -1,
     }
@@ -561,6 +633,74 @@ pub extern "C" fn wasmtime4j_panama_engine_detect_precompiled(
     }
 }
 
+/// Create a new engine from JSON configuration (Panama FFI version)
+///
+/// This is the preferred engine creation method that accepts all configuration
+/// options as a JSON byte array, avoiding the positional parameter approach.
+///
+/// Returns engine pointer on success, null on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_create_from_json_config(
+    json_ptr: *const u8,
+    json_len: u64,
+) -> *mut c_void {
+    if json_ptr.is_null() || json_len == 0 {
+        return std::ptr::null_mut();
+    }
+
+    let json_bytes = unsafe { std::slice::from_raw_parts(json_ptr, json_len as usize) };
+    match core::create_engine_from_json_config(json_bytes) {
+        Ok(engine) => Box::into_raw(engine) as *mut c_void,
+        Err(e) => {
+            log::error!("Failed to create engine from JSON config: {}", e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Create a weak reference to an engine (Panama FFI version)
+///
+/// Returns a pointer to a WeakEngine, or null on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_create_weak(engine_ptr: *mut c_void) -> *mut c_void {
+    if engine_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    match unsafe { core::create_weak_engine(engine_ptr) } {
+        Ok(weak) => Box::into_raw(weak) as *mut c_void,
+        Err(e) => {
+            log::error!("Failed to create weak engine: {:?}", e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Upgrade a weak engine reference to a strong engine (Panama FFI version)
+///
+/// Returns a pointer to a new Engine, or null if the engine has been dropped.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_weak_engine_upgrade(weak_ptr: *mut c_void) -> *mut c_void {
+    if weak_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    match unsafe { core::upgrade_weak_engine(weak_ptr) } {
+        Ok(Some(engine)) => Box::into_raw(engine) as *mut c_void,
+        Ok(None) => std::ptr::null_mut(),
+        Err(e) => {
+            log::error!("Failed to upgrade weak engine: {:?}", e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Destroy a weak engine reference (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_weak_engine_destroy(weak_ptr: *mut c_void) {
+    unsafe {
+        core::destroy_weak_engine(weak_ptr);
+    }
+}
+
 /// Check if two engines are the same (share the same underlying Wasmtime engine) (Panama FFI version)
 ///
 /// Returns 1 if same, 0 if different, -1 on error.
@@ -627,6 +767,45 @@ pub extern "C" fn wasmtime4j_panama_engine_detect_host_feature(
         1
     } else {
         0
+    }
+}
+
+/// Create a standalone shared memory from an engine (Panama FFI version)
+///
+/// Shared memory does not require a Store, only an Engine with threads support enabled.
+///
+/// # Returns
+/// A pointer to ValidatedMemory on success, null on failure.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_create_shared_memory(
+    engine_ptr: *mut c_void,
+    initial_pages: c_int,
+    max_pages: c_int,
+) -> *mut c_void {
+    if engine_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let result = std::panic::catch_unwind(|| {
+        let engine = unsafe { core::get_engine_ref(engine_ptr) };
+        match engine {
+            Ok(engine) => {
+                core::create_shared_memory(engine, initial_pages as u64, max_pages as u64)
+            }
+            Err(e) => Err(e),
+        }
+    });
+
+    match result {
+        Ok(Ok(ptr)) => ptr as *mut c_void,
+        Ok(Err(e)) => {
+            log::error!("Failed to create shared memory: {:?}", e);
+            std::ptr::null_mut()
+        }
+        Err(_) => {
+            log::error!("Panic in create_shared_memory");
+            std::ptr::null_mut()
+        }
     }
 }
 

@@ -4,7 +4,7 @@
 //! including component creation, instantiation, and function invocation.
 
 use jni::objects::{JByteArray, JClass, JObject, JString};
-use jni::sys::{jboolean, jbyteArray, jint, jintArray, jlong, jobjectArray, jstring};
+use jni::sys::{jboolean, jbyteArray, jint, jintArray, jlong, jlongArray, jobjectArray, jstring};
 use jni::JNIEnv;
 
 use crate::component::Component;
@@ -589,5 +589,280 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDeser
 
         let component = Component::deserialize(engine.engine(), &data)?;
         Ok(Box::into_raw(Box::new(component)) as jlong)
+    })
+}
+
+/// Deserialize a component from a file
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDeserializeComponentFile(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    file_path: JString,
+) -> jlong {
+    let path_result = env
+        .get_string(&file_path)
+        .map(|s| s.to_string_lossy().into_owned())
+        .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+            message: format!("Failed to convert Java string: {}", e),
+        });
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let path = path_result?;
+        if path.is_empty() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "File path cannot be empty".to_string(),
+            });
+        }
+
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        let component =
+            crate::component::core::deserialize_component_file(engine.engine(), &path)?;
+        Ok(Box::into_raw(component) as jlong)
+    })
+}
+
+/// Get component resources required
+///
+/// Returns a long array with 4 elements:
+/// [num_memories, max_initial_memory_size, num_tables, max_initial_table_size]
+/// -2 means unavailable (resources_required returned None), -1 means unbounded
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentResourcesRequired(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+) -> jlongArray {
+    // Get the resource data outside the JNI env closure
+    let data = (|| -> Result<[i64; 4], crate::error::WasmtimeError> {
+        let component = unsafe {
+            crate::component::core::get_component_ref(
+                component_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        let (num_mem, max_mem, num_tab, max_tab) =
+            crate::component::core::get_component_resources_required(component);
+
+        Ok([num_mem as i64, max_mem, num_tab as i64, max_tab])
+    })();
+
+    match data {
+        Ok(result) => {
+            match env.new_long_array(4) {
+                Ok(arr) => {
+                    if env.set_long_array_region(&arr, 0, &result).is_ok() {
+                        arr.into_raw()
+                    } else {
+                        jni_utils::throw_jni_exception(
+                            &mut env,
+                            &crate::error::WasmtimeError::Internal {
+                                message: "Failed to set long array region".to_string(),
+                            },
+                        );
+                        std::ptr::null_mut()
+                    }
+                }
+                Err(_) => {
+                    jni_utils::throw_jni_exception(
+                        &mut env,
+                        &crate::error::WasmtimeError::Internal {
+                            message: "Failed to create long array".to_string(),
+                        },
+                    );
+                    std::ptr::null_mut()
+                }
+            }
+        }
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Check if a component instance has a specific function export
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceHasFunc(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    function_name: jstring,
+) -> jboolean {
+    // Extract function name string before entering closure
+    let name = match unsafe { env.get_string_unchecked(&JString::from_raw(function_name)) } {
+        Ok(s) => String::from(s),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, move || {
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+        Ok(if engine.has_component_instance_func(instance_id as u64, &name)? {
+            1
+        } else {
+            0
+        })
+    })
+}
+
+/// Look up a core module exported by a component instance
+///
+/// Returns a pointer to the module (as jlong), or 0 if not found
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceGetModule(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    module_name: jstring,
+) -> jlong {
+    // Extract module name string before entering closure
+    let name = match unsafe { env.get_string_unchecked(&JString::from_raw(module_name)) } {
+        Ok(s) => String::from(s),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, move || {
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+        match engine.get_component_instance_module(instance_id as u64, &name)? {
+            Some(module) => {
+                let boxed = Box::new(module);
+                Ok(Box::into_raw(boxed) as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}
+
+/// Check if a resource type is exported by a component instance
+///
+/// Returns 1 if found, 0 if not found
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceHasResource(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    resource_name: jstring,
+) -> jboolean {
+    // Extract resource name string before entering closure
+    let name = match unsafe { env.get_string_unchecked(&JString::from_raw(resource_name)) } {
+        Ok(s) => String::from(s),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, move || {
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+        Ok(
+            if engine.get_component_instance_resource(instance_id as u64, &name)? {
+                1
+            } else {
+                0
+            },
+        )
+    })
+}
+
+/// Get a component export index for efficient repeated lookups.
+///
+/// Returns a boxed ComponentExportIndex pointer as jlong, or 0 if not found.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetExportIndex(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+    instance_index_ptr: jlong,
+    name: jstring,
+) -> jlong {
+    let name_str = match unsafe { env.get_string_unchecked(&JString::from_raw(name)) } {
+        Ok(s) => String::from(s),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, move || {
+        let component = unsafe {
+            crate::component::core::get_component_ref(
+                component_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        let instance = if instance_index_ptr == 0 {
+            None
+        } else {
+            Some(unsafe {
+                &*(instance_index_ptr as *const wasmtime::component::ComponentExportIndex)
+            })
+        };
+
+        match crate::component::core::get_export_index(component, instance, &name_str) {
+            Some(boxed_index) => Ok(Box::into_raw(boxed_index) as jlong),
+            None => Ok(0),
+        }
+    })
+}
+
+/// Destroy a component export index.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyExportIndex(
+    _env: JNIEnv,
+    _class: JClass,
+    index_ptr: jlong,
+) {
+    if index_ptr != 0 {
+        unsafe {
+            crate::component::core::destroy_export_index(
+                index_ptr as *mut std::os::raw::c_void,
+            );
+        }
+    }
+}
+
+/// Check if a component instance has a function at the given export index.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceHasFuncByIndex(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    index_ptr: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, move || {
+        if index_ptr == 0 {
+            return Ok(0);
+        }
+
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        let export_index = unsafe {
+            &*(index_ptr as *const wasmtime::component::ComponentExportIndex)
+        };
+
+        match engine.has_component_instance_func_by_index(instance_id as u64, export_index) {
+            Ok(true) => Ok(1),
+            Ok(false) => Ok(0),
+            Err(_) => Ok(0),
+        }
     })
 }

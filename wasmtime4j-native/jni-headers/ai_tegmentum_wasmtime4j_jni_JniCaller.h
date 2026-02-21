@@ -87,6 +87,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeHasE
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetEpochDeadline
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
+ * Method:    nativeSetFuelAsyncYieldInterval
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetFuelAsyncYieldInterval
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

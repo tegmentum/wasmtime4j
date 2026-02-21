@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -102,6 +103,49 @@ public final class PanamaEngine implements Engine {
     LOGGER.fine("Created Panama engine");
   }
 
+  /**
+   * Creates a Panama engine wrapping an existing native engine pointer.
+   *
+   * <p>This constructor is package-private and intended for use by {@link PanamaWeakEngine} when
+   * upgrading a weak reference to a strong engine.
+   *
+   * @param config the engine configuration
+   * @param runtime the runtime that owns this engine
+   * @param existingNativeEngine an already-created native engine pointer (ownership transferred)
+   */
+  PanamaEngine(
+      final EngineConfig config, final WasmRuntime runtime, final MemorySegment existingNativeEngine)
+      throws WasmException {
+    if (existingNativeEngine == null || existingNativeEngine.equals(MemorySegment.NULL)) {
+      throw new WasmException("existingNativeEngine cannot be null");
+    }
+    this.config = config != null ? config : new EngineConfig();
+    this.runtime = runtime;
+    this.arena = Arena.ofShared();
+    this.nativeEngine = existingNativeEngine;
+
+    final MemorySegment engineHandle = this.nativeEngine;
+    final Arena engineArena = this.arena;
+    this.resourceHandle =
+        new NativeResourceHandle(
+            "PanamaEngine",
+            () -> {
+              if (nativeEngine != null && !nativeEngine.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.engineDestroy(nativeEngine);
+              }
+              arena.close();
+            },
+            this,
+            () -> {
+              if (engineHandle != null && !engineHandle.equals(MemorySegment.NULL)) {
+                NATIVE_BINDINGS.engineDestroy(engineHandle);
+              }
+              engineArena.close();
+            });
+
+    LOGGER.fine("Created Panama engine from existing native pointer");
+  }
+
   @Override
   public Store createStore() throws WasmException {
     ensureNotClosed();
@@ -180,6 +224,31 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public byte[] precompileComponent(final byte[] wasmBytes) throws WasmException {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    if (wasmBytes.length == 0) {
+      throw new IllegalArgumentException("wasmBytes cannot be empty");
+    }
+    ensureNotClosed();
+
+    return NATIVE_BINDINGS.enginePrecompileComponent(nativeEngine, wasmBytes);
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.pool.PoolStatistics getPoolingAllocatorMetrics() {
+    if (resourceHandle.isClosed()) {
+      return null;
+    }
+    final long[] metrics = NATIVE_BINDINGS.enginePoolingAllocatorMetrics(nativeEngine);
+    if (metrics == null) {
+      return null;
+    }
+    return new ai.tegmentum.wasmtime4j.panama.pool.PanamaPoolStatistics(metrics);
+  }
+
+  @Override
   public Module compileFromStream(final InputStream stream) throws WasmException, IOException {
     if (stream == null) {
       throw new IllegalArgumentException("stream cannot be null");
@@ -197,6 +266,40 @@ public final class PanamaEngine implements Engine {
     return compileModule(wasmBytes);
   }
 
+  @Override
+  public Module compileFromFile(final java.nio.file.Path path) throws WasmException {
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    ensureNotClosed();
+
+    // Allocate C string for file path
+    final MemorySegment pathSegment = arena.allocateFrom(path.toString());
+
+    // Allocate pointer for output module
+    final MemorySegment modulePtr = arena.allocate(ValueLayout.ADDRESS);
+
+    // Call native function
+    final int result = NATIVE_BINDINGS.moduleCompileFromFile(nativeEngine, pathSegment, modulePtr);
+
+    if (result != 0) {
+      final String nativeError =
+          ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
+      if (nativeError != null && !nativeError.isEmpty()) {
+        throw new WasmException("Failed to compile module from file: " + nativeError);
+      }
+      throw new WasmException("Failed to compile module from file: " + path);
+    }
+
+    // Get the module pointer
+    final MemorySegment nativeModulePtr = modulePtr.get(ValueLayout.ADDRESS, 0);
+
+    if (nativeModulePtr == null || nativeModulePtr.equals(MemorySegment.NULL)) {
+      throw new WasmException("Native file compilation returned null module pointer");
+    }
+
+    return new PanamaModule(this, nativeModulePtr);
+  }
 
   @Override
   public EngineConfig getConfig() {
@@ -364,5 +467,59 @@ public final class PanamaEngine implements Engine {
       return false;
     }
     return NATIVE_BINDINGS.engineIsAsync(nativeEngine);
+  }
+
+  @Override
+  public WasmMemory createSharedMemory(final int initialPages, final int maxPages)
+      throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
+    }
+    if (maxPages < 1) {
+      throw new IllegalArgumentException(
+          "Shared memory requires a positive maximum page count");
+    }
+    if (maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
+    ensureNotClosed();
+
+    final MemorySegment memoryPtr = NATIVE_BINDINGS.engineCreateSharedMemory(
+        nativeEngine, initialPages, maxPages);
+    if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+      throw new WasmException("Failed to create shared memory");
+    }
+    return new PanamaMemory(memoryPtr);
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.debug.GuestProfiler createGuestProfiler(
+      final String moduleName,
+      final java.time.Duration interval,
+      final java.util.Map<String, ai.tegmentum.wasmtime4j.Module> modules)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (moduleName == null || moduleName.isEmpty()) {
+      throw new IllegalArgumentException("moduleName cannot be null or empty");
+    }
+    if (interval == null) {
+      throw new IllegalArgumentException("interval cannot be null");
+    }
+    if (modules == null || modules.isEmpty()) {
+      throw new IllegalArgumentException("modules cannot be null or empty");
+    }
+    ensureNotClosed();
+
+    return new PanamaGuestProfiler(nativeEngine, moduleName, interval.toNanos(), modules);
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WeakEngine weak() {
+    ensureNotClosed();
+    final MemorySegment weakPtr = NATIVE_BINDINGS.engineCreateWeak(nativeEngine);
+    if (weakPtr == null || weakPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalStateException("Failed to create weak engine reference");
+    }
+    return new PanamaWeakEngine(weakPtr, this);
   }
 }

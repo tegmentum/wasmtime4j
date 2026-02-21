@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.ResourcesRequired;
 import ai.tegmentum.wasmtime4j.component.Component;
+import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -8,6 +10,7 @@ import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -183,6 +186,27 @@ public final class JniComponentImpl implements Component {
   }
 
   @Override
+  public Optional<ComponentExportIndex> exportIndex(
+      final ComponentExportIndex instanceIndex, final String name) throws WasmException {
+    Validation.requireNonEmpty(name, "name");
+    ensureValid();
+
+    try {
+      final long parentPtr =
+          instanceIndex != null ? instanceIndex.getNativeHandle() : 0;
+      final long indexPtr =
+          JniComponent.nativeGetExportIndex(
+              nativeComponent.getNativeHandle(), parentPtr, name);
+      if (indexPtr == 0) {
+        return Optional.empty();
+      }
+      return Optional.of(new JniComponentExportIndex(indexPtr));
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get export index for '" + name + "'", e);
+    }
+  }
+
+  @Override
   public byte[] serialize() throws WasmException {
     ensureValid();
 
@@ -197,6 +221,42 @@ public final class JniComponentImpl implements Component {
       throw e;
     } catch (final Exception e) {
       throw new WasmException("Failed to serialize component", e);
+    }
+  }
+
+  @Override
+  public Optional<ResourcesRequired> resourcesRequired() throws WasmException {
+    ensureValid();
+
+    try {
+      final long[] data =
+          JniComponent.nativeGetComponentResourcesRequired(nativeComponent.getNativeHandle());
+      if (data == null || data.length < 4) {
+        return Optional.empty();
+      }
+
+      // -2 sentinel means resources_required() returned None
+      if (data[0] == -2) {
+        return Optional.empty();
+      }
+
+      final int numMemories = (int) data[0];
+      final long maxMemory = data[1]; // -1 means unbounded
+      final int numTables = (int) data[2];
+      final long maxTable = data[3]; // -1 means unbounded
+
+      return Optional.of(
+          new ResourcesRequired(
+              0L, // minimumMemoryBytes - not available for components
+              maxMemory, // maximumMemoryBytes (-1 if unbounded)
+              0, // minimumTableElements - not available for components
+              maxTable > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxTable,
+              numMemories,
+              numTables,
+              0, // numGlobals - not available for components
+              0)); // numFunctions - not available for components
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get component resources required", e);
     }
   }
 

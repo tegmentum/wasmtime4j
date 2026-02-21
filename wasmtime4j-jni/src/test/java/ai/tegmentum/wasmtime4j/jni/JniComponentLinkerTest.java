@@ -492,6 +492,11 @@ class JniComponentLinkerTest {
     }
 
     @Override
+    public byte[] serialize() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+      return new byte[0];
+    }
+
+    @Override
     public boolean isValid() {
       return true;
     }

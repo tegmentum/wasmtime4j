@@ -736,6 +736,38 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMem
     })
 }
 
+/// Get a shared memory export from the instance by name
+///
+/// Unlike nativeGetMemory, this ONLY returns shared memory exports (not regular memories).
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetSharedMemory(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_handle: jlong,
+    store_handle: jlong,
+    name: JString,
+) -> jlong {
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+        match instance.get_shared_memory(store, &name_str)? {
+            Some(shared_memory) => {
+                let memory_wrapper = crate::memory::Memory::from_shared_memory(shared_memory);
+                let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                Ok(validated_ptr as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}
+
 /// Get a table export from the instance
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTable(

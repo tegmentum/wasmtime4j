@@ -213,6 +213,12 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
   }
 
   @Override
+  public long toRawFuncRef() throws WasmException {
+    ensureNotClosed();
+    return bindings.funcToRaw(funcHandle, store.getNativeStore());
+  }
+
+  @Override
   public String getName() {
     return name;
   }

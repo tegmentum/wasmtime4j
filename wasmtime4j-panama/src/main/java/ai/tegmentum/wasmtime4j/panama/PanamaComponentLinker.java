@@ -21,19 +21,33 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentHostFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
+import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
+import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
+import ai.tegmentum.wasmtime4j.wasi.clocks.WasiMonotonicClock;
+import ai.tegmentum.wasmtime4j.wasi.clocks.WasiWallClock;
+import ai.tegmentum.wasmtime4j.wasi.random.WasiRandomSource;
+import ai.tegmentum.wasmtime4j.wasi.sockets.SocketAddrCheck;
+import ai.tegmentum.wasmtime4j.wasi.sockets.SocketAddrUse;
 import java.lang.foreign.Arena;
+import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -53,7 +67,9 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
       NativeComponentBindings.getInstance();
   private static final ConcurrentHashMap<Long, ComponentHostFunctionWrapper> HOST_CALLBACKS =
       new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<Long, Object> WASI_CALLBACKS = new ConcurrentHashMap<>();
   private static final AtomicLong NEXT_CALLBACK_ID = new AtomicLong(1);
+  private static final AtomicInteger RESOURCE_ID_COUNTER = new AtomicInteger(0);
 
   private final PanamaEngine engine;
   private final Arena arena;
@@ -181,6 +197,63 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
+  public void defineFunctionAsync(
+      final String interfaceNamespace,
+      final String interfaceName,
+      final String functionName,
+      final ComponentHostFunction implementation)
+      throws WasmException {
+    if (interfaceNamespace == null) {
+      throw new IllegalArgumentException("Interface namespace cannot be null");
+    }
+    if (interfaceName == null) {
+      throw new IllegalArgumentException("Interface name cannot be null");
+    }
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    // Register the callback
+    final long callbackId = registerHostFunctionCallback(implementation);
+
+    // Build WIT path key
+    final String witPath =
+        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
+    hostFunctions.put(witPath, callbackId);
+
+    // Track in defined interfaces
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
+
+    LOGGER.fine(
+        "Defined async component host function: "
+            + witPath
+            + " (callback ID: "
+            + callbackId
+            + ")");
+  }
+
+  @Override
+  public void defineFunctionAsync(
+      final String witPath, final ComponentHostFunction implementation) throws WasmException {
+    if (witPath == null || witPath.isEmpty()) {
+      throw new IllegalArgumentException("WIT path cannot be null or empty");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("Implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    // Parse WIT path to extract components
+    final String[] pathParts = parseWitPath(witPath);
+    defineFunctionAsync(pathParts[0], pathParts[1], pathParts[2], implementation);
+  }
+
+  @Override
   public void defineInterface(
       final String interfaceNamespace,
       final String interfaceName,
@@ -223,25 +296,53 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
+    // Build the interface path in WIT format: "ns:pkg/iface"
+    final String interfacePath = interfaceNamespace + ":" + interfaceName;
+
+    // Assign a unique resource ID
+    final int resourceId = RESOURCE_ID_COUNTER.incrementAndGet();
+
+    // Call native define_resource
+    try (Arena tempArena = Arena.ofConfined()) {
+      final byte[] pathBytes = interfacePath.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment pathSegment =
+          tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+
+      final byte[] nameBytes = resourceName.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+
+      final int errorCode = NATIVE_BINDINGS.componentLinkerDefineResource(
+          nativeLinker,
+          pathSegment,
+          pathBytes.length,
+          nameSegment,
+          nameBytes.length,
+          resourceId,
+          MemorySegment.NULL, // No destructor function pointer for now
+          0L);
+
+      if (errorCode != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            errorCode, "Failed to define resource: " + resourceName);
+      }
+    }
+
     // Track resource in defined interfaces (use same key format as defineFunction)
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final String interfaceKey =
+        interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
     definedInterfaces
         .computeIfAbsent(interfaceKey, k -> ConcurrentHashMap.newKeySet())
         .add("[resource]" + resourceName);
 
-    // Note: Full resource support requires additional native infrastructure for:
-    // - Resource table management
-    // - Constructor/destructor callbacks
-    // - Method dispatch
-    // The resource definition is tracked but not fully wired to native code yet.
-
     LOGGER.fine(
         "Defined component resource: "
-            + interfaceNamespace
-            + ":"
-            + interfaceName
+            + interfacePath
             + "/"
-            + resourceName);
+            + resourceName
+            + " (id="
+            + resourceId
+            + ")");
   }
 
   @Override
@@ -285,6 +386,32 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     final ComponentInstance instance = instantiate(store, component);
     linkInstance(instance);
     return instance;
+  }
+
+  @Override
+  public ComponentInstancePre instantiatePre(final Component component) throws WasmException {
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(component instanceof PanamaComponentImpl)) {
+      throw new IllegalArgumentException("Component must be a Panama implementation");
+    }
+
+    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
+
+    final MemorySegment preHandle =
+        NATIVE_BINDINGS.componentLinkerInstantiatePre(
+            nativeLinker, panamaComponent.getNativeHandle());
+
+    if (preHandle == null || preHandle.equals(MemorySegment.NULL)) {
+      throw new WasmException("Failed to pre-instantiate component through linker");
+    }
+
+    LOGGER.fine("Successfully pre-instantiated component through linker");
+
+    return new PanamaComponentInstancePre(preHandle, engine, panamaComponent);
   }
 
   @Override
@@ -440,7 +567,11 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
           final MemorySegment guestPathPtr = tempArena.allocateFrom(dir.getGuestPath());
           final int result =
               NATIVE_BINDINGS.componentLinkerAddWasiPreopenDir(
-                  nativeLinker, hostPathPtr, guestPathPtr, dir.isReadOnly() ? 1 : 0);
+                  nativeLinker,
+                  hostPathPtr,
+                  guestPathPtr,
+                  dir.getDirPerms().getBits(),
+                  dir.getFilePerms().getBits());
           if (result != 0) {
             LOGGER.warning(
                 "Failed to add preopened dir '"
@@ -481,6 +612,311 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
           "Failed to set WASI allow random flag: "
               + PanamaErrorMapper.getErrorDescription(allowRandomResult));
     }
+
+    // Apply individual stdio inherit flags
+    if (config.isInheritStdin()) {
+      NATIVE_BINDINGS.componentLinkerSetWasiInheritStdin(nativeLinker, 1);
+    }
+    if (config.isInheritStdout()) {
+      NATIVE_BINDINGS.componentLinkerSetWasiInheritStdout(nativeLinker, 1);
+    }
+    if (config.isInheritStderr()) {
+      NATIVE_BINDINGS.componentLinkerSetWasiInheritStderr(nativeLinker, 1);
+    }
+
+    // Apply granular network controls
+    NATIVE_BINDINGS.componentLinkerSetWasiAllowTcp(
+        nativeLinker, config.isAllowTcp() ? 1 : 0);
+    NATIVE_BINDINGS.componentLinkerSetWasiAllowUdp(
+        nativeLinker, config.isAllowUdp() ? 1 : 0);
+    NATIVE_BINDINGS.componentLinkerSetWasiAllowIpNameLookup(
+        nativeLinker, config.isAllowIpNameLookup() ? 1 : 0);
+
+    // Apply allow blocking current thread
+    NATIVE_BINDINGS.componentLinkerSetWasiAllowBlockingCurrentThread(
+        nativeLinker, config.isAllowBlockingCurrentThread() ? 1 : 0);
+
+    // Apply insecure random seed if set
+    if (config.hasInsecureRandomSeed()) {
+      NATIVE_BINDINGS.componentLinkerSetWasiInsecureRandomSeed(
+          nativeLinker, config.getInsecureRandomSeed());
+    }
+
+    // Apply custom wall clock
+    if (config.getWallClock() != null) {
+      applyWasiWallClock(config.getWallClock());
+    }
+
+    // Apply custom monotonic clock
+    if (config.getMonotonicClock() != null) {
+      applyWasiMonotonicClock(config.getMonotonicClock());
+    }
+
+    // Apply custom secure random
+    if (config.getSecureRandom() != null) {
+      applyWasiRandomSource(config.getSecureRandom(), true);
+    }
+
+    // Apply custom insecure random
+    if (config.getInsecureRandom() != null) {
+      applyWasiRandomSource(config.getInsecureRandom(), false);
+    }
+
+    // Apply socket address check
+    if (config.getSocketAddrCheck() != null) {
+      applyWasiSocketAddrCheck(config.getSocketAddrCheck());
+    }
+  }
+
+  /**
+   * Creates an upcall stub for a wall clock and registers it with native code.
+   *
+   * @param clock the wall clock implementation
+   */
+  private void applyWasiWallClock(final WasiWallClock clock) {
+    final long callbackId = NEXT_CALLBACK_ID.getAndIncrement();
+    WASI_CALLBACKS.put(callbackId, clock);
+
+    try {
+      // Wall clock now/resolution: (callback_id: long, seconds_out: ptr, nanos_out: ptr) -> void
+      final MethodHandle nowHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaComponentLinker.class,
+                  "wallClockNowCallback",
+                  MethodType.methodType(
+                      void.class, long.class, MemorySegment.class, MemorySegment.class));
+      final MemorySegment nowStub =
+          java.lang.foreign.Linker.nativeLinker()
+              .upcallStub(
+                  nowHandle,
+                  FunctionDescriptor.ofVoid(
+                      ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+                  arena);
+
+      final MethodHandle resHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaComponentLinker.class,
+                  "wallClockResolutionCallback",
+                  MethodType.methodType(
+                      void.class, long.class, MemorySegment.class, MemorySegment.class));
+      final MemorySegment resStub =
+          java.lang.foreign.Linker.nativeLinker()
+              .upcallStub(
+                  resHandle,
+                  FunctionDescriptor.ofVoid(
+                      ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+                  arena);
+
+      NATIVE_BINDINGS.componentLinkerSetWasiWallClock(nativeLinker, nowStub, resStub, callbackId);
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.warning("Failed to set WASI wall clock: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Creates an upcall stub for a monotonic clock and registers it with native code.
+   *
+   * @param clock the monotonic clock implementation
+   */
+  private void applyWasiMonotonicClock(final WasiMonotonicClock clock) {
+    final long callbackId = NEXT_CALLBACK_ID.getAndIncrement();
+    WASI_CALLBACKS.put(callbackId, clock);
+
+    try {
+      // Monotonic clock now/resolution: (callback_id: long) -> long (nanoseconds)
+      final MethodHandle nowHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaComponentLinker.class,
+                  "monotonicClockNowCallback",
+                  MethodType.methodType(long.class, long.class));
+      final MemorySegment nowStub =
+          java.lang.foreign.Linker.nativeLinker()
+              .upcallStub(
+                  nowHandle,
+                  FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+                  arena);
+
+      final MethodHandle resHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaComponentLinker.class,
+                  "monotonicClockResolutionCallback",
+                  MethodType.methodType(long.class, long.class));
+      final MemorySegment resStub =
+          java.lang.foreign.Linker.nativeLinker()
+              .upcallStub(
+                  resHandle,
+                  FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+                  arena);
+
+      NATIVE_BINDINGS.componentLinkerSetWasiMonotonicClock(
+          nativeLinker, nowStub, resStub, callbackId);
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.warning("Failed to set WASI monotonic clock: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Creates an upcall stub for a random source and registers it with native code.
+   *
+   * @param source the random source implementation
+   * @param secure true for secure random, false for insecure
+   */
+  private void applyWasiRandomSource(final WasiRandomSource source, final boolean secure) {
+    final long callbackId = NEXT_CALLBACK_ID.getAndIncrement();
+    WASI_CALLBACKS.put(callbackId, source);
+
+    try {
+      // fill_bytes: (callback_id: long, buf_ptr: ptr, buf_len: long) -> void
+      final MethodHandle fillHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaComponentLinker.class,
+                  "randomFillBytesCallback",
+                  MethodType.methodType(
+                      void.class, long.class, MemorySegment.class, long.class));
+      final MemorySegment fillStub =
+          java.lang.foreign.Linker.nativeLinker()
+              .upcallStub(
+                  fillHandle,
+                  FunctionDescriptor.ofVoid(
+                      ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+                  arena);
+
+      if (secure) {
+        NATIVE_BINDINGS.componentLinkerSetWasiSecureRandom(nativeLinker, fillStub, callbackId);
+      } else {
+        NATIVE_BINDINGS.componentLinkerSetWasiInsecureRandom(nativeLinker, fillStub, callbackId);
+      }
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.warning("Failed to set WASI random source: " + e.getMessage());
+    }
+  }
+
+  /**
+   * Creates an upcall stub for socket address check and registers it with native code.
+   *
+   * @param check the socket address check callback
+   */
+  private void applyWasiSocketAddrCheck(final SocketAddrCheck check) {
+    final long callbackId = NEXT_CALLBACK_ID.getAndIncrement();
+    WASI_CALLBACKS.put(callbackId, check);
+
+    try {
+      // check: (callback_id, ip_version, ip_bytes_ptr, ip_bytes_len, port, use_type) -> int
+      final MethodHandle checkHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaComponentLinker.class,
+                  "socketAddrCheckCallback",
+                  MethodType.methodType(
+                      int.class,
+                      long.class,
+                      int.class,
+                      MemorySegment.class,
+                      long.class,
+                      short.class,
+                      int.class));
+      final MemorySegment checkStub =
+          java.lang.foreign.Linker.nativeLinker()
+              .upcallStub(
+                  checkHandle,
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_INT,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_INT,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_SHORT,
+                      ValueLayout.JAVA_INT),
+                  arena);
+
+      NATIVE_BINDINGS.componentLinkerSetWasiSocketAddrCheck(nativeLinker, checkStub, callbackId);
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.warning("Failed to set WASI socket addr check: " + e.getMessage());
+    }
+  }
+
+  // --- Static upcall target methods for WASI callbacks ---
+
+  @SuppressWarnings("unused")
+  static void wallClockNowCallback(
+      final long callbackId, final MemorySegment secondsOut, final MemorySegment nanosOut) {
+    final Object obj = WASI_CALLBACKS.get(callbackId);
+    if (obj instanceof WasiWallClock) {
+      final DateTime dt = ((WasiWallClock) obj).now();
+      secondsOut.set(ValueLayout.JAVA_LONG, 0, dt.getSeconds());
+      nanosOut.set(ValueLayout.JAVA_INT, 0, dt.getNanoseconds());
+    }
+  }
+
+  @SuppressWarnings("unused")
+  static void wallClockResolutionCallback(
+      final long callbackId, final MemorySegment secondsOut, final MemorySegment nanosOut) {
+    final Object obj = WASI_CALLBACKS.get(callbackId);
+    if (obj instanceof WasiWallClock) {
+      final DateTime dt = ((WasiWallClock) obj).resolution();
+      secondsOut.set(ValueLayout.JAVA_LONG, 0, dt.getSeconds());
+      nanosOut.set(ValueLayout.JAVA_INT, 0, dt.getNanoseconds());
+    }
+  }
+
+  @SuppressWarnings("unused")
+  static long monotonicClockNowCallback(final long callbackId) {
+    final Object obj = WASI_CALLBACKS.get(callbackId);
+    if (obj instanceof WasiMonotonicClock) {
+      return ((WasiMonotonicClock) obj).now();
+    }
+    return 0L;
+  }
+
+  @SuppressWarnings("unused")
+  static long monotonicClockResolutionCallback(final long callbackId) {
+    final Object obj = WASI_CALLBACKS.get(callbackId);
+    if (obj instanceof WasiMonotonicClock) {
+      return ((WasiMonotonicClock) obj).resolution();
+    }
+    return 1L; // 1 nanosecond default resolution
+  }
+
+  @SuppressWarnings("unused")
+  static void randomFillBytesCallback(
+      final long callbackId, final MemorySegment bufPtr, final long bufLen) {
+    final Object obj = WASI_CALLBACKS.get(callbackId);
+    if (obj instanceof WasiRandomSource && bufLen > 0) {
+      final byte[] bytes = new byte[(int) bufLen];
+      ((WasiRandomSource) obj).fillBytes(bytes);
+      MemorySegment.copy(bytes, 0, bufPtr, ValueLayout.JAVA_BYTE, 0, (int) bufLen);
+    }
+  }
+
+  @SuppressWarnings("unused")
+  static int socketAddrCheckCallback(
+      final long callbackId,
+      final int ipVersion,
+      final MemorySegment ipBytesPtr,
+      final long ipBytesLen,
+      final short port,
+      final int useType) {
+    final Object obj = WASI_CALLBACKS.get(callbackId);
+    if (obj instanceof SocketAddrCheck) {
+      try {
+        final byte[] ipBytes = new byte[(int) ipBytesLen];
+        MemorySegment.copy(ipBytesPtr, ValueLayout.JAVA_BYTE, 0, ipBytes, 0, (int) ipBytesLen);
+        final InetAddress addr = InetAddress.getByAddress(ipBytes);
+        final InetSocketAddress socketAddr =
+            new InetSocketAddress(addr, Short.toUnsignedInt(port));
+        final SocketAddrUse addrUse = SocketAddrUse.fromValue(useType);
+        return ((SocketAddrCheck) obj).check(socketAddr, addrUse) ? 1 : 0;
+      } catch (final Exception e) {
+        LOGGER.warning("Socket addr check callback failed: " + e.getMessage());
+        return 0; // Deny on error
+      }
+    }
+    return 1; // Allow by default if callback not found
   }
 
   /**
@@ -651,6 +1087,33 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
 
     LOGGER.fine("Created interface alias from " + fromKey + " to " + toKey);
+  }
+
+  @Override
+  public void allowShadowing(final boolean allow) {
+    ensureNotClosed();
+    NATIVE_BINDINGS.componentLinkerAllowShadowing(nativeLinker, allow ? 1 : 0);
+  }
+
+  @Override
+  public void defineUnknownImportsAsTraps(final Component component) throws WasmException {
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(component instanceof PanamaComponentImpl)) {
+      throw new IllegalArgumentException("Component must be a Panama implementation");
+    }
+
+    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
+
+    final int result =
+        NATIVE_BINDINGS.componentLinkerDefineUnknownImportsAsTraps(
+            nativeLinker, panamaComponent.getNativeHandle());
+    if (result != 0) {
+      throw new WasmException("Failed to define unknown imports as traps");
+    }
   }
 
   @Override

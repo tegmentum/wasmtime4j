@@ -103,6 +103,29 @@ public final class PanamaMemory implements WasmMemory {
     LOGGER.fine("Created memory from store");
   }
 
+  /**
+   * Package-private constructor for standalone shared memories created from an Engine.
+   *
+   * <p>Standalone shared memory does not require a Store or Instance. Operations that need
+   * a Store context (read, write, grow) will throw {@link IllegalStateException}.
+   * Store-independent operations (getSize, getMemoryType, isShared) will work.
+   *
+   * @param nativeMemory the native memory pointer from Wasmtime
+   */
+  PanamaMemory(final MemorySegment nativeMemory) {
+    if (nativeMemory == null || nativeMemory.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("Native memory pointer cannot be null");
+    }
+    this.arena = Arena.ofShared();
+    this.bufferArena = Arena.ofShared();
+    this.nativeMemory = nativeMemory;
+    this.memoryName = null;
+    this.instance = null;
+    this.store = null;
+    this.resourceHandle = createResourceHandle();
+    LOGGER.fine("Created standalone shared memory");
+  }
+
   @Override
   public int getSize() {
     ensureNotClosed();
@@ -1268,6 +1291,30 @@ public final class PanamaMemory implements WasmMemory {
     }
 
     return resultOut.get(ValueLayout.JAVA_INT, 0);
+  }
+
+  @Override
+  public long growAsync(final long pages) throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (pages < 0) {
+      throw new IllegalArgumentException("Pages cannot be negative");
+    }
+    ensureNotClosed();
+
+    if (instance != null) {
+      return instance.growMemoryAsync(this, pages);
+    } else if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment previousPagesOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final int growResult =
+            NATIVE_BINDINGS.panamaMemoryGrowAsync(
+                nativeMemory, store.getNativeStore(), pages, previousPagesOutPtr);
+        if (growResult == 0) {
+          return previousPagesOutPtr.get(ValueLayout.JAVA_LONG, 0);
+        }
+        return -1L; // Grow failed
+      }
+    }
+    throw new IllegalStateException("Cannot grow async: memory not associated with an instance");
   }
 
   /** Closes the memory and releases resources. */

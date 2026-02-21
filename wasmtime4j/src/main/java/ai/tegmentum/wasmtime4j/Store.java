@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
+import ai.tegmentum.wasmtime4j.config.ResourceLimiterAsync;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -8,6 +9,8 @@ import ai.tegmentum.wasmtime4j.func.CallHook;
 import ai.tegmentum.wasmtime4j.func.CallHookHandler;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.io.Closeable;
@@ -224,6 +227,36 @@ public interface Store extends Closeable {
   WasmMemory createSharedMemory(int initialPages, int maxPages) throws WasmException;
 
   /**
+   * Creates a new WebAssembly linear memory from a memory type descriptor.
+   *
+   * <p>This method creates a memory with full type information, supporting features like 64-bit
+   * addressing and shared memory in a single call. The memory type encodes minimum and maximum page
+   * counts, whether the memory is shared, and whether it uses 64-bit addressing.
+   *
+   * @param memoryType the memory type descriptor specifying all memory attributes
+   * @return a new WasmMemory matching the specified type
+   * @throws WasmException if memory creation fails
+   * @throws IllegalArgumentException if memoryType is null
+   * @since 1.1.0
+   */
+  WasmMemory createMemory(MemoryType memoryType) throws WasmException;
+
+  /**
+   * Creates a new WebAssembly table from a table type descriptor.
+   *
+   * <p>This method creates a table with full type information, supporting features like 64-bit
+   * indices (Memory64 proposal) in a single call. The table type encodes the element type, minimum
+   * and maximum sizes, and whether the table uses 64-bit indexing.
+   *
+   * @param tableType the table type descriptor specifying all table attributes
+   * @return a new WasmTable matching the specified type
+   * @throws WasmException if table creation fails
+   * @throws IllegalArgumentException if tableType is null
+   * @since 1.1.0
+   */
+  WasmTable createTable(TableType tableType) throws WasmException;
+
+  /**
    * Creates a function reference from a host function.
    *
    * <p>Function references enable dynamic function dispatch and callbacks in WebAssembly programs.
@@ -425,10 +458,13 @@ public interface Store extends Closeable {
    */
   final class EpochDeadlineAction {
     private final boolean shouldContinue;
+    private final boolean shouldYield;
     private final long deltaTicks;
 
-    private EpochDeadlineAction(final boolean shouldContinue, final long deltaTicks) {
+    private EpochDeadlineAction(
+        final boolean shouldContinue, final boolean shouldYield, final long deltaTicks) {
       this.shouldContinue = shouldContinue;
+      this.shouldYield = shouldYield;
       this.deltaTicks = deltaTicks;
     }
 
@@ -439,7 +475,7 @@ public interface Store extends Closeable {
      * @return the continue action
      */
     public static EpochDeadlineAction continueWith(final long deltaTicks) {
-      return new EpochDeadlineAction(true, deltaTicks);
+      return new EpochDeadlineAction(true, false, deltaTicks);
     }
 
     /**
@@ -448,22 +484,44 @@ public interface Store extends Closeable {
      * @return the trap action
      */
     public static EpochDeadlineAction trap() {
-      return new EpochDeadlineAction(false, 0);
+      return new EpochDeadlineAction(false, false, 0);
+    }
+
+    /**
+     * Creates an action to yield execution and resume later with a new deadline.
+     *
+     * <p>This is used with async-enabled stores to cooperatively yield back to the async
+     * executor when the epoch deadline is reached, then resume with the specified delta.
+     *
+     * @param deltaTicks the ticks to add for the new deadline after resuming
+     * @return the yield action
+     */
+    public static EpochDeadlineAction yield(final long deltaTicks) {
+      return new EpochDeadlineAction(false, true, deltaTicks);
     }
 
     /**
      * Returns whether execution should continue.
      *
-     * @return true to continue, false to trap
+     * @return true to continue, false to trap or yield
      */
     public boolean shouldContinue() {
       return shouldContinue;
     }
 
     /**
+     * Returns whether execution should yield.
+     *
+     * @return true to yield, false to continue or trap
+     */
+    public boolean shouldYield() {
+      return shouldYield;
+    }
+
+    /**
      * Gets the delta ticks for the new deadline.
      *
-     * @return the delta ticks (only valid if shouldContinue is true)
+     * @return the delta ticks (only valid if shouldContinue or shouldYield is true)
      */
     public long getDeltaTicks() {
       return deltaTicks;
@@ -614,6 +672,23 @@ public interface Store extends Closeable {
    * @since 1.0.0
    */
   void setResourceLimiter(ResourceLimiter limiter) throws WasmException;
+
+  /**
+   * Sets an asynchronous resource limiter for this store.
+   *
+   * <p>This is the async counterpart to {@link #setResourceLimiter(ResourceLimiter)}. The limiter's
+   * callbacks return {@link java.util.concurrent.CompletableFuture} to allow non-blocking decisions.
+   *
+   * <p>Requires the engine to be configured with {@code asyncSupport(true)}. Only one limiter
+   * (sync or async) can be active at a time. Setting a new limiter replaces any previously set
+   * limiter.
+   *
+   * @param limiter the async resource limiter to set
+   * @throws WasmException if setting the limiter fails
+   * @throws IllegalArgumentException if limiter is null
+   * @since 1.1.0
+   */
+  void setResourceLimiterAsync(ResourceLimiterAsync limiter) throws WasmException;
 
   /**
    * Closes the store and releases associated resources.

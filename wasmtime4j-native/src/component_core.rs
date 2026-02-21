@@ -402,6 +402,149 @@ impl EnhancedComponentEngine {
         self.call_component_function(handle, function_name, params)
     }
 
+    /// Look up a core module exported by a component instance
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance
+    /// * `name` - The name of the module export to look up
+    ///
+    /// # Returns
+    ///
+    /// Returns the core module if found, or None.
+    pub fn get_component_instance_module(
+        &self,
+        instance_id: u64,
+        name: &str,
+    ) -> WasmtimeResult<Option<wasmtime::Module>> {
+        let mut instances = self
+            .instances
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
+            })?;
+
+        let handle =
+            instances
+                .get_mut(&instance_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                })?;
+
+        handle.last_accessed = Instant::now();
+        Ok(handle.instance.get_module(&mut handle.store, name))
+    }
+
+    /// Look up a resource type exported by a component instance
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance
+    /// * `name` - The name of the resource export to look up
+    ///
+    /// # Returns
+    ///
+    /// Returns 1 if found, 0 if not found. Resource type info is written to out params.
+    pub fn get_component_instance_resource(
+        &self,
+        instance_id: u64,
+        name: &str,
+    ) -> WasmtimeResult<bool> {
+        let mut instances = self
+            .instances
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
+            })?;
+
+        let handle =
+            instances
+                .get_mut(&instance_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                })?;
+
+        handle.last_accessed = Instant::now();
+        Ok(handle
+            .instance
+            .get_resource(&mut handle.store, name)
+            .is_some())
+    }
+
+    /// Check if a component instance has a specific function export
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance
+    /// * `name` - The name of the function to check
+    ///
+    /// # Returns
+    ///
+    /// Returns true if the function exists, false otherwise.
+    pub fn has_component_instance_func(
+        &self,
+        instance_id: u64,
+        name: &str,
+    ) -> WasmtimeResult<bool> {
+        let mut instances = self
+            .instances
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
+            })?;
+
+        let handle =
+            instances
+                .get_mut(&instance_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                })?;
+
+        handle.last_accessed = Instant::now();
+        Ok(handle
+            .instance
+            .get_func(&mut handle.store, name)
+            .is_some())
+    }
+
+    /// Check if a component instance has a function at the given export index.
+    ///
+    /// This uses `ComponentExportIndex` for O(1) lookup instead of string-based O(n) lookup.
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance
+    /// * `export_index` - The pre-computed export index
+    ///
+    /// # Returns
+    ///
+    /// Returns true if the function exists at the index, false otherwise.
+    pub fn has_component_instance_func_by_index(
+        &self,
+        instance_id: u64,
+        export_index: &wasmtime::component::ComponentExportIndex,
+    ) -> WasmtimeResult<bool> {
+        let mut instances = self
+            .instances
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
+            })?;
+
+        let handle =
+            instances
+                .get_mut(&instance_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                })?;
+
+        handle.last_accessed = Instant::now();
+        Ok(handle
+            .instance
+            .get_func(&mut handle.store, export_index)
+            .is_some())
+    }
+
     /// Remove a component instance by ID
     ///
     /// This properly removes the instance from the engine's internal HashMap,

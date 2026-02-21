@@ -70,7 +70,13 @@ public enum ComponentType {
   /** Owned resource handle. */
   OWN,
   /** Borrowed resource handle. */
-  BORROW;
+  BORROW,
+  /** Future handle (component-model-async). */
+  FUTURE,
+  /** Stream handle (component-model-async). */
+  STREAM,
+  /** Error context handle (component-model-async). */
+  ERROR_CONTEXT;
 
   /**
    * Checks if this type is a primitive type.
@@ -159,5 +165,14 @@ public enum ComponentType {
    */
   public boolean isResource() {
     return this == OWN || this == BORROW;
+  }
+
+  /**
+   * Checks if this type is an async handle type (component-model-async).
+   *
+   * @return true if this is a future, stream, or error context type
+   */
+  public boolean isAsync() {
+    return this == FUTURE || this == STREAM || this == ERROR_CONTEXT;
   }
 }

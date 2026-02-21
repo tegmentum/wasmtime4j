@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.InstanceState;
@@ -444,6 +445,26 @@ public final class PanamaInstance implements Instance {
   }
 
   @Override
+  public Optional<WasmMemory> getSharedMemory(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final Arena arena = Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment nameSegment =
+          arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      final java.lang.foreign.MemorySegment result =
+          NATIVE_INSTANCE_BINDINGS.instanceGetSharedMemoryByName(
+              nativeInstance, store.getNativeStore(), nameSegment);
+      if (result == null || result.equals(java.lang.foreign.MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaMemory(name, this));
+    }
+  }
+
+  @Override
   public Optional<WasmMemory> getDefaultMemory() {
     ensureNotClosed();
 
@@ -560,6 +581,38 @@ public final class PanamaInstance implements Instance {
               checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
       // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
       return exportKind > 0;
+    }
+  }
+
+  @Override
+  public Optional<Extern> getExport(final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final Arena checkArena = Arena.ofConfined()) {
+      final int exportKind =
+          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
+              module.getNativeModule(),
+              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+
+      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+      switch (exportKind) {
+        case 1: // Function
+          return getFunction(name).map(f -> new PanamaExternFunc(MemorySegment.NULL, store));
+        case 2: // Global
+          return getGlobal(name).map(g -> new PanamaExternGlobal(MemorySegment.NULL, store));
+        case 3: // Memory
+          return getMemory(name).map(m -> new PanamaExternMemory(MemorySegment.NULL, store));
+        case 4: // Table
+          return getTable(name).map(t -> new PanamaExternTable(MemorySegment.NULL, store));
+        default:
+          return Optional.empty();
+      }
+    } catch (final Exception e) {
+      LOGGER.warning("Error getting export: " + name + " - " + e.getMessage());
+      return Optional.empty();
     }
   }
 
@@ -1488,6 +1541,71 @@ public final class PanamaInstance implements Instance {
       }
 
       return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
+    }
+  }
+
+  /**
+   * Grows memory asynchronously through the async resource limiter.
+   *
+   * @param memory the memory to grow
+   * @param pages the number of pages to grow by
+   * @return the previous size in pages, or -1 if growth failed
+   */
+  long growMemoryAsync(final PanamaMemory memory, final long pages) {
+    ensureNotClosed();
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+
+      // Get the native memory ptr from the instance export
+      final MemorySegment memPtr = NATIVE_INSTANCE_BINDINGS.instanceGetMemoryByName(
+          nativeInstance, store.getNativeStore(), nameSegment);
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        return -1L;
+      }
+
+      final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+      final NativeMemoryBindings memBindings = NativeMemoryBindings.getInstance();
+      final int result = memBindings.panamaMemoryGrowAsync(
+          memPtr, store.getNativeStore(), pages, previousPagesOut);
+
+      if (result != 0) {
+        return -1L;
+      }
+      return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
+    }
+  }
+
+  /**
+   * Converts a named function export to its raw funcref pointer value.
+   *
+   * @param functionName the name of the function export
+   * @return the raw funcref value
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if conversion fails
+   */
+  long funcToRaw(final String functionName) throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment nameSegment =
+          tempArena.allocateFrom(functionName, java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment funcPtrOut = tempArena.allocate(ValueLayout.ADDRESS);
+
+      // Get the func ptr from instance export
+      final int getResult = NATIVE_INSTANCE_BINDINGS.funcGet(
+          nativeInstance, store.getNativeStore(), nameSegment, funcPtrOut);
+      if (getResult != 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to get function pointer for: " + functionName);
+      }
+      final MemorySegment funcPtr = funcPtrOut.get(ValueLayout.ADDRESS, 0);
+
+      try {
+        // Convert to raw funcref
+        return NATIVE_INSTANCE_BINDINGS.funcToRaw(funcPtr, store.getNativeStore());
+      } finally {
+        // Clean up the function handle
+        NATIVE_INSTANCE_BINDINGS.funcDestroy(funcPtr);
+      }
     }
   }
 

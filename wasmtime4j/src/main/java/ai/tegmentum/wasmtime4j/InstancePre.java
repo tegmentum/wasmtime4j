@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A pre-instantiated WebAssembly module optimized for fast instantiation.
@@ -42,6 +43,32 @@ public interface InstancePre extends Closeable {
    * @throws IllegalArgumentException if store or imports is null
    */
   Instance instantiate(Store store, ImportMap imports) throws WasmException;
+
+  /**
+   * Asynchronously creates a new instance from this pre-instantiated module.
+   *
+   * <p>Requires the engine to be configured with {@code asyncSupport(true)}.
+   * This method uses the native async instantiation API which allows for cooperative
+   * yielding during instantiation.
+   *
+   * <p>The default implementation wraps the synchronous {@link #instantiate(Store)} method
+   * in a {@link CompletableFuture}. Implementations should override this to use
+   * native async instantiation when available.
+   *
+   * @param store the store to create the instance in
+   * @return a CompletableFuture that completes with the new Instance
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  default CompletableFuture<Instance> instantiateAsync(final Store store) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return instantiate(store);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
 
   /**
    * Gets the module associated with this pre-instantiated module.

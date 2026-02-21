@@ -16,8 +16,6 @@
 
 package ai.tegmentum.wasmtime4j.pool;
 
-import java.time.Duration;
-
 /**
  * Shared base class for {@link PoolStatistics} implementations.
  *
@@ -29,182 +27,139 @@ import java.time.Duration;
  */
 public abstract class AbstractPoolStatistics implements PoolStatistics {
 
-  private final long instancesAllocated;
-  private final long instancesReused;
-  private final long instancesCreated;
-  private final long memoryPoolsAllocated;
-  private final long memoryPoolsReused;
-  private final long stackPoolsAllocated;
-  private final long stackPoolsReused;
-  private final long tablePoolsAllocated;
-  private final long tablePoolsReused;
-  private final long peakMemoryUsage;
-  private final long currentMemoryUsage;
-  private final long allocationFailures;
-  private final Duration poolWarmingTime;
-  private final Duration averageAllocationTime;
+  private final long coreInstances;
+  private final long componentInstances;
+  private final long memories;
+  private final long tables;
+  private final long stacks;
+  private final long gcHeaps;
+  private final long unusedWarmMemories;
+  private final long unusedMemoryBytesResident;
+  private final long unusedWarmTables;
+  private final long unusedTableBytesResident;
+  private final long unusedWarmStacks;
+  private final long unusedStackBytesResident;
 
   /**
-   * Creates a new AbstractPoolStatistics instance.
+   * Creates a new AbstractPoolStatistics from a metrics array.
    *
-   * @param instancesAllocated total instances allocated
-   * @param instancesReused instances reused from pool
-   * @param instancesCreated new instances created
-   * @param memoryPoolsAllocated memory pools allocated
-   * @param memoryPoolsReused memory pools reused
-   * @param stackPoolsAllocated stack pools allocated
-   * @param stackPoolsReused stack pools reused
-   * @param tablePoolsAllocated table pools allocated
-   * @param tablePoolsReused table pools reused
-   * @param peakMemoryUsage peak memory usage in bytes
-   * @param currentMemoryUsage current memory usage in bytes
-   * @param allocationFailures number of allocation failures
-   * @param poolWarmingTimeNanos pool warming time in nanoseconds
-   * @param averageAllocationTimeNanos average allocation time in nanoseconds
+   * <p>The array must contain exactly 12 elements in the order defined by the native FFI.
+   *
+   * @param metrics the 12-element metrics array from native code
    */
-  @SuppressWarnings("checkstyle:ParameterNumber")
-  protected AbstractPoolStatistics(
-      final long instancesAllocated,
-      final long instancesReused,
-      final long instancesCreated,
-      final long memoryPoolsAllocated,
-      final long memoryPoolsReused,
-      final long stackPoolsAllocated,
-      final long stackPoolsReused,
-      final long tablePoolsAllocated,
-      final long tablePoolsReused,
-      final long peakMemoryUsage,
-      final long currentMemoryUsage,
-      final long allocationFailures,
-      final long poolWarmingTimeNanos,
-      final long averageAllocationTimeNanos) {
-    this.instancesAllocated = instancesAllocated;
-    this.instancesReused = instancesReused;
-    this.instancesCreated = instancesCreated;
-    this.memoryPoolsAllocated = memoryPoolsAllocated;
-    this.memoryPoolsReused = memoryPoolsReused;
-    this.stackPoolsAllocated = stackPoolsAllocated;
-    this.stackPoolsReused = stackPoolsReused;
-    this.tablePoolsAllocated = tablePoolsAllocated;
-    this.tablePoolsReused = tablePoolsReused;
-    this.peakMemoryUsage = peakMemoryUsage;
-    this.currentMemoryUsage = currentMemoryUsage;
-    this.allocationFailures = allocationFailures;
-    this.poolWarmingTime = Duration.ofNanos(poolWarmingTimeNanos);
-    this.averageAllocationTime = Duration.ofNanos(averageAllocationTimeNanos);
+  protected AbstractPoolStatistics(final long[] metrics) {
+    if (metrics == null || metrics.length != 12) {
+      throw new IllegalArgumentException("metrics array must have exactly 12 elements");
+    }
+    this.coreInstances = metrics[0];
+    this.componentInstances = metrics[1];
+    this.memories = metrics[2];
+    this.tables = metrics[3];
+    this.stacks = metrics[4];
+    this.gcHeaps = metrics[5];
+    this.unusedWarmMemories = metrics[6];
+    this.unusedMemoryBytesResident = metrics[7];
+    this.unusedWarmTables = metrics[8];
+    this.unusedTableBytesResident = metrics[9];
+    this.unusedWarmStacks = metrics[10];
+    this.unusedStackBytesResident = metrics[11];
   }
 
   /** Creates empty statistics with all values set to zero. */
   protected AbstractPoolStatistics() {
-    this(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    this(new long[12]);
   }
 
   @Override
-  public long getInstancesAllocated() {
-    return instancesAllocated;
+  public long getCoreInstances() {
+    return coreInstances;
   }
 
   @Override
-  public long getInstancesReused() {
-    return instancesReused;
+  public long getComponentInstances() {
+    return componentInstances;
   }
 
   @Override
-  public long getInstancesCreated() {
-    return instancesCreated;
+  public long getMemories() {
+    return memories;
   }
 
   @Override
-  public long getMemoryPoolsAllocated() {
-    return memoryPoolsAllocated;
+  public long getTables() {
+    return tables;
   }
 
   @Override
-  public long getMemoryPoolsReused() {
-    return memoryPoolsReused;
+  public long getStacks() {
+    return stacks;
   }
 
   @Override
-  public long getStackPoolsAllocated() {
-    return stackPoolsAllocated;
+  public long getGcHeaps() {
+    return gcHeaps;
   }
 
   @Override
-  public long getStackPoolsReused() {
-    return stackPoolsReused;
+  public long getUnusedWarmMemories() {
+    return unusedWarmMemories;
   }
 
   @Override
-  public long getTablePoolsAllocated() {
-    return tablePoolsAllocated;
+  public long getUnusedMemoryBytesResident() {
+    return unusedMemoryBytesResident;
   }
 
   @Override
-  public long getTablePoolsReused() {
-    return tablePoolsReused;
+  public long getUnusedWarmTables() {
+    return unusedWarmTables;
   }
 
   @Override
-  public long getPeakMemoryUsage() {
-    return peakMemoryUsage;
+  public long getUnusedTableBytesResident() {
+    return unusedTableBytesResident;
   }
 
   @Override
-  public long getCurrentMemoryUsage() {
-    return currentMemoryUsage;
+  public long getUnusedWarmStacks() {
+    return unusedWarmStacks;
   }
 
   @Override
-  public long getAllocationFailures() {
-    return allocationFailures;
-  }
-
-  @Override
-  public Duration getPoolWarmingTime() {
-    return poolWarmingTime;
-  }
-
-  @Override
-  public Duration getAverageAllocationTime() {
-    return averageAllocationTime;
+  public long getUnusedStackBytesResident() {
+    return unusedStackBytesResident;
   }
 
   @Override
   public String toString() {
     return getClass().getSimpleName()
         + "{"
-        + "instancesAllocated="
-        + instancesAllocated
-        + ", instancesReused="
-        + instancesReused
-        + ", instancesCreated="
-        + instancesCreated
-        + ", memoryPoolsAllocated="
-        + memoryPoolsAllocated
-        + ", memoryPoolsReused="
-        + memoryPoolsReused
-        + ", stackPoolsAllocated="
-        + stackPoolsAllocated
-        + ", stackPoolsReused="
-        + stackPoolsReused
-        + ", tablePoolsAllocated="
-        + tablePoolsAllocated
-        + ", tablePoolsReused="
-        + tablePoolsReused
-        + ", peakMemoryUsage="
-        + peakMemoryUsage
-        + ", currentMemoryUsage="
-        + currentMemoryUsage
-        + ", allocationFailures="
-        + allocationFailures
-        + ", poolWarmingTime="
-        + poolWarmingTime
-        + ", averageAllocationTime="
-        + averageAllocationTime
-        + ", reuseRatio="
-        + getReuseRatio()
-        + ", memoryUtilization="
-        + getMemoryUtilization()
+        + "coreInstances="
+        + coreInstances
+        + ", componentInstances="
+        + componentInstances
+        + ", memories="
+        + memories
+        + ", tables="
+        + tables
+        + ", stacks="
+        + stacks
+        + ", gcHeaps="
+        + gcHeaps
+        + ", unusedWarmMemories="
+        + unusedWarmMemories
+        + ", unusedMemoryBytesResident="
+        + unusedMemoryBytesResident
+        + ", unusedWarmTables="
+        + unusedWarmTables
+        + ", unusedTableBytesResident="
+        + unusedTableBytesResident
+        + ", unusedWarmStacks="
+        + unusedWarmStacks
+        + ", unusedStackBytesResident="
+        + unusedStackBytesResident
+        + ", totalInstances="
+        + getTotalInstances()
         + '}';
   }
 }

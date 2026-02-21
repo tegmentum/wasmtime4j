@@ -173,6 +173,20 @@ public interface ComponentEngine extends Closeable {
   Component deserializeComponent(byte[] bytes) throws WasmException;
 
   /**
+   * Deserializes a component from a previously serialized file.
+   *
+   * <p>This is more efficient than reading the file into memory and then calling {@link
+   * #deserializeComponent(byte[])} because it uses memory-mapped I/O.
+   *
+   * @param path the path to the serialized component file
+   * @return the deserialized Component
+   * @throws WasmException if deserialization fails or the file is invalid
+   * @throws IllegalArgumentException if path is null or empty
+   * @since 1.0.0
+   */
+  Component deserializeComponentFile(String path) throws WasmException;
+
+  /**
    * Detects if bytes contain a precompiled module or component.
    *
    * @param bytes the bytes to check

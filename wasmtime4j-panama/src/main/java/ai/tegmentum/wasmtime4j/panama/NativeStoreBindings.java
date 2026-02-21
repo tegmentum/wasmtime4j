@@ -197,6 +197,17 @@ public final class NativeStoreBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // table_grow_failed_fn (nullable)
 
     addFunctionBinding(
+        "wasmtime4j_panama_store_set_resource_limiter_async",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // callback_id
+            ValueLayout.ADDRESS, // memory_growing_fn
+            ValueLayout.ADDRESS, // table_growing_fn
+            ValueLayout.ADDRESS, // memory_grow_failed_fn (nullable)
+            ValueLayout.ADDRESS)); // table_grow_failed_fn (nullable)
+
+    addFunctionBinding(
         "wasmtime4j_panama_store_get_execution_stats",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
@@ -575,6 +586,42 @@ public final class NativeStoreBindings extends NativeBindingsBase {
     validatePointer(tableGrowingFn, "tableGrowingFn");
     return callNativeFunction(
         "wasmtime4j_panama_store_set_resource_limiter",
+        Integer.class,
+        storePtr,
+        callbackId,
+        memoryGrowingFn,
+        tableGrowingFn,
+        memoryGrowFailedFn,
+        tableGrowFailedFn);
+  }
+
+  /**
+   * Sets a dynamic async resource limiter on the store with callback function pointers.
+   *
+   * <p>This is the async counterpart to {@link #storeSetResourceLimiter}. It uses the same callback
+   * signatures but registers via the async limiter path in Wasmtime. Requires the engine to be
+   * configured with async support.
+   *
+   * @param storePtr pointer to the store
+   * @param callbackId identifier passed to callbacks for Java-side dispatch
+   * @param memoryGrowingFn function pointer for memory grow decisions
+   * @param tableGrowingFn function pointer for table grow decisions
+   * @param memoryGrowFailedFn function pointer for memory grow failure notifications (nullable)
+   * @param tableGrowFailedFn function pointer for table grow failure notifications (nullable)
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeSetResourceLimiterAsync(
+      final MemorySegment storePtr,
+      final long callbackId,
+      final MemorySegment memoryGrowingFn,
+      final MemorySegment tableGrowingFn,
+      final MemorySegment memoryGrowFailedFn,
+      final MemorySegment tableGrowFailedFn) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(memoryGrowingFn, "memoryGrowingFn");
+    validatePointer(tableGrowingFn, "tableGrowingFn");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_set_resource_limiter_async",
         Integer.class,
         storePtr,
         callbackId,

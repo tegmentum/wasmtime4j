@@ -362,4 +362,20 @@ public interface WasmFunction {
   default long getNativeHandle() {
     return 0L;
   }
+
+  /**
+   * Converts this function to its raw funcref pointer value.
+   *
+   * <p>The returned value can be used to reconstruct the function via {@link #fromRawFuncRef}.
+   * This is useful for low-level table operations and passing function references through
+   * raw integer handles.
+   *
+   * <p><b>Warning:</b> The raw value is only valid within the same store context. Using it
+   * with a different store will produce undefined behavior.
+   *
+   * @return the raw funcref pointer value
+   * @throws WasmException if the conversion fails
+   * @since 1.1.0
+   */
+  long toRawFuncRef() throws WasmException;
 }

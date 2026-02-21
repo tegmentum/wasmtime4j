@@ -133,6 +133,11 @@ class JniTypedFuncTest {
             final WasmValue... params) {
           return java.util.concurrent.CompletableFuture.completedFuture(new WasmValue[0]);
         }
+
+        @Override
+        public long toRawFuncRef() {
+          return 0L;
+        }
       };
     }
   }
@@ -375,6 +380,11 @@ class JniTypedFuncTest {
             public java.util.concurrent.CompletableFuture<WasmValue[]> callAsync(
                 final WasmValue... params) {
               return java.util.concurrent.CompletableFuture.completedFuture(new WasmValue[0]);
+            }
+
+            @Override
+            public long toRawFuncRef() {
+              return 0L;
             }
           };
 

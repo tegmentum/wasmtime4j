@@ -1028,6 +1028,39 @@ pub mod core {
         table.grow(store, delta, init_value).map(|s| s as u32)
     }
 
+    /// Core function to grow table asynchronously
+    ///
+    /// Requires engine with `async_support(true)`. Uses the tokio runtime to bridge
+    /// the sync FFI call to wasmtime's async table growth which goes through the
+    /// async resource limiter.
+    #[cfg(feature = "async")]
+    pub fn grow_table_async(
+        table: &Table,
+        store: &Store,
+        delta: u32,
+        init_value: TableElement,
+    ) -> WasmtimeResult<u32> {
+        Table::validate_element_matches_type(&init_value, &table.metadata.element_type)?;
+
+        let wasmtime_table = table.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire table lock: {}", e),
+        })?;
+
+        let wasmtime_init_value = Table::table_element_to_wasmtime_ref(init_value)?;
+        let wt = *wasmtime_table;
+        let handle = crate::async_runtime::get_runtime_handle();
+
+        store.with_context(|mut ctx| {
+            handle
+                .block_on(async { wt.grow_async(&mut ctx, delta as u64, wasmtime_init_value).await })
+                .map(|s| s as u32)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Async table growth failed: {}", e),
+                    backtrace: None,
+                })
+        })
+    }
+
     /// Core function to fill table range
     pub fn fill_table(
         table: &Table,

@@ -819,6 +819,36 @@ pub extern "C" fn wasmtime4j_panama_store_set_resource_limiter(
     })
 }
 
+/// Set an async resource limiter on a store (Panama FFI version).
+///
+/// Same signature as `set_resource_limiter` but registers with the async limiter path.
+/// Requires the engine to be configured with `async_support(true)`.
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_set_resource_limiter_async(
+    store_ptr: *mut c_void,
+    callback_id: i64,
+    memory_growing_fn: PanamaMemoryGrowingCallbackFn,
+    table_growing_fn: PanamaTableGrowingCallbackFn,
+    memory_grow_failed_fn: Option<PanamaGrowFailedCallbackFn>,
+    table_grow_failed_fn: Option<PanamaGrowFailedCallbackFn>,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        core::set_resource_limiter_async(
+            store,
+            callback_id,
+            memory_growing_fn,
+            table_growing_fn,
+            memory_grow_failed_fn,
+            table_grow_failed_fn,
+        )?;
+        Ok(())
+    })
+}
+
 /// C-compatible function pointer type for call hook callbacks.
 ///
 /// # Arguments

@@ -16,9 +16,12 @@
 
 package ai.tegmentum.wasmtime4j.component;
 
+import ai.tegmentum.wasmtime4j.ResourcesRequired;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -122,6 +125,23 @@ public interface Component extends AutoCloseable {
   WitCompatibilityResult checkWitCompatibility(Component other) throws WasmException;
 
   /**
+   * Gets a pre-computed export index for efficient repeated lookups.
+   *
+   * <p>The returned index can be passed to {@link ComponentInstance#getFunc(ComponentExportIndex)}
+   * for O(1) function lookup instead of string-based O(n) lookup.
+   *
+   * @param instanceIndex an optional parent instance export index for nested lookups, or null for
+   *     root-level exports
+   * @param name the name of the export to look up
+   * @return an Optional containing the export index if found, or empty if not found
+   * @throws WasmException if the lookup fails due to an error
+   * @throws IllegalArgumentException if name is null or empty
+   * @since 1.0.0
+   */
+  Optional<ComponentExportIndex> exportIndex(ComponentExportIndex instanceIndex, String name)
+      throws WasmException;
+
+  /**
    * Serializes this compiled component to a byte array for caching or distribution.
    *
    * <p>Serialized components can be stored to disk, sent over the network, or cached for faster
@@ -157,6 +177,49 @@ public interface Component extends AutoCloseable {
       throw new IllegalArgumentException("bytes cannot be null or empty");
     }
     return engine.deserializeComponent(bytes);
+  }
+
+  /**
+   * Gets the resources required to instantiate this component.
+   *
+   * <p>Returns information about the memory and table resources the component needs. This can be
+   * used for resource planning and validation before attempting instantiation.
+   *
+   * <p>Returns empty if the component imports other modules or components whose resource
+   * requirements cannot be statically determined.
+   *
+   * @return an Optional containing ResourcesRequired if available, empty otherwise
+   * @throws WasmException if the operation fails
+   * @since 1.0.0
+   */
+  Optional<ResourcesRequired> resourcesRequired() throws WasmException;
+
+  /**
+   * Deserializes a component from a previously serialized file.
+   *
+   * <p>This is more efficient than reading the file into memory and then calling {@link
+   * #deserialize(ComponentEngine, byte[])} because it uses memory-mapped I/O to avoid copying the
+   * file contents into memory.
+   *
+   * <p>The file must have been created by a previous call to {@link #serialize()} on a component
+   * compiled with a compatible engine configuration.
+   *
+   * @param engine the component engine to use for deserialization
+   * @param path the path to the serialized component file
+   * @return the deserialized Component
+   * @throws WasmException if deserialization fails or the file is invalid
+   * @throws IllegalArgumentException if engine or path is null
+   * @since 1.0.0
+   */
+  static Component deserializeFile(final ComponentEngine engine, final Path path)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    return engine.deserializeComponentFile(path.toString());
   }
 
   /**

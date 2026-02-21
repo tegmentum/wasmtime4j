@@ -25,6 +25,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMe
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
+ * Method:    nativeGetSharedMemory
+ * Signature: (JJLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetSharedMemory
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
  * Method:    nativeGetTable
  * Signature: (JJLjava/lang/String;)J
  */

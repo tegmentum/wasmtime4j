@@ -29,53 +29,12 @@ import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 public final class JniPoolStatistics extends AbstractPoolStatistics {
 
   /**
-   * Creates a new JniPoolStatistics instance.
+   * Creates a new JniPoolStatistics from a metrics array returned by native code.
    *
-   * @param instancesAllocated total instances allocated
-   * @param instancesReused instances reused from pool
-   * @param instancesCreated new instances created
-   * @param memoryPoolsAllocated memory pools allocated
-   * @param memoryPoolsReused memory pools reused
-   * @param stackPoolsAllocated stack pools allocated
-   * @param stackPoolsReused stack pools reused
-   * @param tablePoolsAllocated table pools allocated
-   * @param tablePoolsReused table pools reused
-   * @param peakMemoryUsage peak memory usage in bytes
-   * @param currentMemoryUsage current memory usage in bytes
-   * @param allocationFailures number of allocation failures
-   * @param poolWarmingTimeNanos pool warming time in nanoseconds
-   * @param averageAllocationTimeNanos average allocation time in nanoseconds
+   * @param metrics the 12-element metrics array from the JNI native call
    */
-  public JniPoolStatistics(
-      final long instancesAllocated,
-      final long instancesReused,
-      final long instancesCreated,
-      final long memoryPoolsAllocated,
-      final long memoryPoolsReused,
-      final long stackPoolsAllocated,
-      final long stackPoolsReused,
-      final long tablePoolsAllocated,
-      final long tablePoolsReused,
-      final long peakMemoryUsage,
-      final long currentMemoryUsage,
-      final long allocationFailures,
-      final long poolWarmingTimeNanos,
-      final long averageAllocationTimeNanos) {
-    super(
-        instancesAllocated,
-        instancesReused,
-        instancesCreated,
-        memoryPoolsAllocated,
-        memoryPoolsReused,
-        stackPoolsAllocated,
-        stackPoolsReused,
-        tablePoolsAllocated,
-        tablePoolsReused,
-        peakMemoryUsage,
-        currentMemoryUsage,
-        allocationFailures,
-        poolWarmingTimeNanos,
-        averageAllocationTimeNanos);
+  public JniPoolStatistics(final long[] metrics) {
+    super(metrics);
   }
 
   /** Creates empty statistics with all values set to zero. */

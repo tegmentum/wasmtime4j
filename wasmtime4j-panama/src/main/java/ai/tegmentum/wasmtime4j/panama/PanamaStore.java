@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
+import ai.tegmentum.wasmtime4j.config.ResourceLimiterAsync;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
@@ -79,26 +80,30 @@ public final class PanamaStore implements Store {
     final EpochDeadlineCallback callback = EPOCH_CALLBACKS.get(callbackId);
     if (callback == null) {
       LOGGER.warning("Epoch callback not found for ID: " + callbackId);
-      return -1; // Trap - callback not found
+      return 0; // Trap - callback not found
     }
 
     try {
       final EpochDeadlineAction action = callback.onEpochDeadline(epoch);
       if (action == null) {
         LOGGER.fine("Epoch callback returned null action - trapping");
-        return -1; // Trap on null action
+        return 0; // Trap on null action
       }
       if (action.shouldContinue()) {
         final long delta = action.getDeltaTicks();
         LOGGER.fine("Epoch callback returning continue with delta=" + delta);
-        return delta; // Continue with this delta
-      } else {
-        LOGGER.fine("Epoch callback returning trap");
-        return -1; // Trap
+        return delta; // Positive = continue with this delta
       }
+      if (action.shouldYield()) {
+        final long delta = action.getDeltaTicks();
+        LOGGER.fine("Epoch callback returning yield with delta=" + delta);
+        return -delta; // Negative = yield with this delta
+      }
+      LOGGER.fine("Epoch callback returning trap");
+      return 0; // Trap
     } catch (final Exception e) {
       LOGGER.warning("Epoch callback threw exception: " + e.getMessage());
-      return -1; // Trap on exception
+      return 0; // Trap on exception
     }
   }
 
@@ -163,6 +168,8 @@ public final class PanamaStore implements Store {
   // Resource limiter callback infrastructure
   private static final AtomicLong LIMITER_CALLBACK_ID_COUNTER = new AtomicLong(1);
   private static final ConcurrentHashMap<Long, ResourceLimiter> RESOURCE_LIMITERS =
+      new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<Long, ResourceLimiterAsync> RESOURCE_LIMITERS_ASYNC =
       new ConcurrentHashMap<>();
   private static final MemorySegment MEMORY_GROWING_STUB;
   private static final MemorySegment TABLE_GROWING_STUB;
@@ -249,16 +256,25 @@ public final class PanamaStore implements Store {
       final long desiredBytes,
       final long maximumBytes) {
     final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
-    if (limiter == null) {
-      LOGGER.warning("Resource limiter not found for ID: " + callbackId);
-      return 0; // Deny if limiter not found
+    if (limiter != null) {
+      try {
+        return limiter.memoryGrowing(currentBytes, desiredBytes, maximumBytes) ? 1 : 0;
+      } catch (final Exception e) {
+        LOGGER.warning("memoryGrowing callback threw exception: " + e.getMessage());
+        return 0;
+      }
     }
-    try {
-      return limiter.memoryGrowing(currentBytes, desiredBytes, maximumBytes) ? 1 : 0;
-    } catch (final Exception e) {
-      LOGGER.warning("memoryGrowing callback threw exception: " + e.getMessage());
-      return 0; // Deny on exception
+    final ResourceLimiterAsync asyncLimiter = RESOURCE_LIMITERS_ASYNC.get(callbackId);
+    if (asyncLimiter != null) {
+      try {
+        return asyncLimiter.memoryGrowing(currentBytes, desiredBytes, maximumBytes).join() ? 1 : 0;
+      } catch (final Exception e) {
+        LOGGER.warning("Async memoryGrowing callback threw exception: " + e.getMessage());
+        return 0;
+      }
     }
+    LOGGER.warning("Resource limiter not found for ID: " + callbackId);
+    return 0;
   }
 
   private static int tableGrowingStub(
@@ -267,45 +283,64 @@ public final class PanamaStore implements Store {
       final int desiredElements,
       final int maximumElements) {
     final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
-    if (limiter == null) {
-      LOGGER.warning("Resource limiter not found for ID: " + callbackId);
-      return 0; // Deny if limiter not found
+    if (limiter != null) {
+      try {
+        return limiter.tableGrowing(currentElements, desiredElements, maximumElements) ? 1 : 0;
+      } catch (final Exception e) {
+        LOGGER.warning("tableGrowing callback threw exception: " + e.getMessage());
+        return 0;
+      }
     }
-    try {
-      return limiter.tableGrowing(currentElements, desiredElements, maximumElements) ? 1 : 0;
-    } catch (final Exception e) {
-      LOGGER.warning("tableGrowing callback threw exception: " + e.getMessage());
-      return 0; // Deny on exception
+    final ResourceLimiterAsync asyncLimiter = RESOURCE_LIMITERS_ASYNC.get(callbackId);
+    if (asyncLimiter != null) {
+      try {
+        return asyncLimiter.tableGrowing(currentElements, desiredElements, maximumElements).join()
+            ? 1
+            : 0;
+      } catch (final Exception e) {
+        LOGGER.warning("Async tableGrowing callback threw exception: " + e.getMessage());
+        return 0;
+      }
     }
+    LOGGER.warning("Resource limiter not found for ID: " + callbackId);
+    return 0;
   }
 
   private static void memoryGrowFailedStub(final long callbackId, final MemorySegment errorMsg) {
-    final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
-    if (limiter == null) {
-      return;
-    }
     try {
       final String error =
           (errorMsg != null && !errorMsg.equals(MemorySegment.NULL))
               ? errorMsg.reinterpret(Long.MAX_VALUE).getString(0)
               : "unknown error";
-      limiter.memoryGrowFailed(error);
+      final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
+      if (limiter != null) {
+        limiter.memoryGrowFailed(error);
+        return;
+      }
+      final ResourceLimiterAsync asyncLimiter = RESOURCE_LIMITERS_ASYNC.get(callbackId);
+      if (asyncLimiter != null) {
+        asyncLimiter.memoryGrowFailed(error);
+      }
     } catch (final Exception e) {
       LOGGER.warning("memoryGrowFailed callback threw exception: " + e.getMessage());
     }
   }
 
   private static void tableGrowFailedStub(final long callbackId, final MemorySegment errorMsg) {
-    final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
-    if (limiter == null) {
-      return;
-    }
     try {
       final String error =
           (errorMsg != null && !errorMsg.equals(MemorySegment.NULL))
               ? errorMsg.reinterpret(Long.MAX_VALUE).getString(0)
               : "unknown error";
-      limiter.tableGrowFailed(error);
+      final ResourceLimiter limiter = RESOURCE_LIMITERS.get(callbackId);
+      if (limiter != null) {
+        limiter.tableGrowFailed(error);
+        return;
+      }
+      final ResourceLimiterAsync asyncLimiter = RESOURCE_LIMITERS_ASYNC.get(callbackId);
+      if (asyncLimiter != null) {
+        asyncLimiter.tableGrowFailed(error);
+      }
     } catch (final Exception e) {
       LOGGER.warning("tableGrowFailed callback threw exception: " + e.getMessage());
     }
@@ -617,6 +652,46 @@ public final class PanamaStore implements Store {
       RESOURCE_LIMITERS.remove(newCallbackId);
       limiterCallbackId.set(0);
       throw PanamaErrorMapper.mapNativeError(result, "Failed to configure resource limiter");
+    }
+  }
+
+  @Override
+  public void setResourceLimiterAsync(final ResourceLimiterAsync limiter) throws WasmException {
+    if (limiter == null) {
+      throw new IllegalArgumentException("ResourceLimiterAsync cannot be null");
+    }
+    ensureNotClosed();
+
+    // Remove any previously registered sync limiter
+    final long oldLimiterId = limiterCallbackId.get();
+    if (oldLimiterId != 0) {
+      RESOURCE_LIMITERS.remove(oldLimiterId);
+      RESOURCE_LIMITERS_ASYNC.remove(oldLimiterId);
+      limiterCallbackId.set(0);
+    }
+
+    // Check if upcall stubs were created successfully
+    if (MEMORY_GROWING_STUB == null || TABLE_GROWING_STUB == null) {
+      throw new WasmException("Resource limiter callback infrastructure not initialized");
+    }
+
+    final long newCallbackId = LIMITER_CALLBACK_ID_COUNTER.getAndIncrement();
+    RESOURCE_LIMITERS_ASYNC.put(newCallbackId, limiter);
+    limiterCallbackId.set(newCallbackId);
+
+    final int result =
+        NATIVE_BINDINGS.storeSetResourceLimiterAsync(
+            nativeStore,
+            newCallbackId,
+            MEMORY_GROWING_STUB,
+            TABLE_GROWING_STUB,
+            MEMORY_GROW_FAILED_STUB != null ? MEMORY_GROW_FAILED_STUB : MemorySegment.NULL,
+            TABLE_GROW_FAILED_STUB != null ? TABLE_GROW_FAILED_STUB : MemorySegment.NULL);
+
+    if (result != 0) {
+      RESOURCE_LIMITERS_ASYNC.remove(newCallbackId);
+      limiterCallbackId.set(0);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure async resource limiter");
     }
   }
 
@@ -1105,6 +1180,163 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(
+      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
+    if (memoryType == null) {
+      throw new IllegalArgumentException("Memory type cannot be null");
+    }
+    final long minPages = memoryType.getMinimum();
+    final long maxPages = memoryType.getMaximum().orElse(-1L);
+    if (minPages < 0) {
+      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+    }
+    if (maxPages != -1 && maxPages < minPages) {
+      throw new IllegalArgumentException(
+          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
+    }
+    if (memoryType.isShared() && maxPages < 1) {
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+    }
+    ensureNotClosed();
+
+    try {
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
+      if (createHandle == null) {
+        throw new WasmException("Panama memory creation function not available");
+      }
+
+      final long maximumPages = (maxPages == -1) ? 0L : maxPages;
+      final int isShared = memoryType.isShared() ? 1 : 0;
+      final int is64 = memoryType.is64Bit() ? 1 : 0;
+      final int memoryIndex = 0;
+
+      final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  minPages,
+                  maximumPages,
+                  isShared,
+                  is64,
+                  memoryIndex,
+                  MemorySegment.NULL, // name = null
+                  memoryPtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create memory from type");
+      }
+
+      final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created memory pointer is null");
+      }
+
+      return new PanamaMemory(nativeMemoryPtr, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating memory from type: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmTable createTable(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
+    if (tableType == null) {
+      throw new IllegalArgumentException("Table type cannot be null");
+    }
+    final ai.tegmentum.wasmtime4j.WasmValueType elementType = tableType.getElementType();
+    final long minSize = tableType.getMinimum();
+    final long maxSize = tableType.getMaximum().orElse(-1L);
+    final boolean is64 = tableType.is64Bit();
+
+    if (elementType != ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF
+        && elementType != ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+    if (minSize < 0) {
+      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
+    }
+    if (maxSize != -1 && maxSize < minSize) {
+      throw new IllegalArgumentException(
+          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
+    }
+    ensureNotClosed();
+
+    try {
+      final int elementTypeCode;
+      if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
+        elementTypeCode = 5;
+      } else {
+        elementTypeCode = 6;
+      }
+
+      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+      final int result;
+
+      if (is64) {
+        final MethodHandle create64Handle = MEMORY_BINDINGS.getPanamaTableCreate64();
+        if (create64Handle == null) {
+          throw new WasmException("Panama 64-bit table creation function not available");
+        }
+
+        final int hasMaximum = (maxSize == -1) ? 0 : 1;
+        final long maximumSize = (maxSize == -1) ? 0L : maxSize;
+
+        result =
+            (int)
+                create64Handle.invoke(
+                    nativeStore,
+                    elementTypeCode,
+                    minSize,
+                    hasMaximum,
+                    maximumSize,
+                    MemorySegment.NULL, // name = null
+                    tablePtr);
+      } else {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreate();
+        if (createHandle == null) {
+          throw new WasmException("Panama table creation function not available");
+        }
+
+        final int hasMaximum = (maxSize == -1) ? 0 : 1;
+        final int maximumSize = (maxSize == -1) ? 0 : (int) maxSize;
+
+        result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    elementTypeCode,
+                    (int) minSize,
+                    hasMaximum,
+                    maximumSize,
+                    MemorySegment.NULL, // name = null
+                    tablePtr);
+      }
+
+      if (result != 0) {
+        throw new WasmException("Failed to create table from type");
+      }
+
+      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeTablePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created table pointer is null");
+      }
+
+      return new PanamaTable(nativeTablePtr, elementType, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating table from type: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.func.FunctionReference createFunctionReference(
       final ai.tegmentum.wasmtime4j.func.HostFunction implementation,
       final ai.tegmentum.wasmtime4j.type.FunctionType functionType)
@@ -1583,6 +1815,7 @@ public final class PanamaStore implements Store {
           final long limiterVal = limiterCallbackId.getAndSet(0);
           if (limiterVal != 0) {
             RESOURCE_LIMITERS.remove(limiterVal);
+            RESOURCE_LIMITERS_ASYNC.remove(limiterVal);
           }
 
           // Close callback registry first (cleans up function references)
@@ -1620,6 +1853,7 @@ public final class PanamaStore implements Store {
           final long limiterVal = limiterId.getAndSet(0);
           if (limiterVal != 0) {
             RESOURCE_LIMITERS.remove(limiterVal);
+            RESOURCE_LIMITERS_ASYNC.remove(limiterVal);
           }
           if (storeHandle != null && !storeHandle.equals(MemorySegment.NULL)) {
             NATIVE_BINDINGS.storeDestroy(storeHandle);

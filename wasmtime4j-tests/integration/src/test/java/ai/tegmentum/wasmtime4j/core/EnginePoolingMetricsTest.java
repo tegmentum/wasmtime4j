@@ -84,17 +84,20 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
       try (Engine engine = Engine.create(config)) {
         final PoolStatistics metrics = engine.getPoolingAllocatorMetrics();
 
-        // Metrics may be null if the default impl is not overridden
         if (metrics != null) {
           LOGGER.info(
               "["
                   + runtime
-                  + "] Pooling metrics: allocated="
-                  + metrics.getInstancesAllocated()
-                  + " reused="
-                  + metrics.getInstancesReused()
-                  + " created="
-                  + metrics.getInstancesCreated());
+                  + "] Pooling metrics: coreInstances="
+                  + metrics.getCoreInstances()
+                  + " componentInstances="
+                  + metrics.getComponentInstances()
+                  + " memories="
+                  + metrics.getMemories()
+                  + " tables="
+                  + metrics.getTables()
+                  + " stacks="
+                  + metrics.getStacks());
         } else {
           LOGGER.info(
               "["
@@ -132,20 +135,20 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
 
         if (metrics != null) {
           assertTrue(
-              metrics.getInstancesAllocated() >= 0, "Instances allocated should be non-negative");
-          assertTrue(metrics.getInstancesReused() >= 0, "Instances reused should be non-negative");
+              metrics.getCoreInstances() >= 0, "Core instances should be non-negative");
           assertTrue(
-              metrics.getInstancesCreated() >= 0, "Instances created should be non-negative");
+              metrics.getComponentInstances() >= 0,
+              "Component instances should be non-negative");
+          assertTrue(metrics.getMemories() >= 0, "Memories should be non-negative");
+          assertTrue(metrics.getTables() >= 0, "Tables should be non-negative");
+          assertTrue(metrics.getStacks() >= 0, "Stacks should be non-negative");
+          assertTrue(metrics.getGcHeaps() >= 0, "GC heaps should be non-negative");
           assertTrue(
-              metrics.getMemoryPoolsAllocated() >= 0,
-              "Memory pools allocated should be non-negative");
+              metrics.getUnusedWarmMemories() >= 0,
+              "Unused warm memories should be non-negative");
           assertTrue(
-              metrics.getStackPoolsAllocated() >= 0,
-              "Stack pools allocated should be non-negative");
-          assertTrue(
-              metrics.getAllocationFailures() >= 0, "Allocation failures should be non-negative");
-          assertTrue(
-              metrics.getCurrentMemoryUsage() >= 0, "Current memory usage should be non-negative");
+              metrics.getUnusedMemoryBytesResident() >= 0,
+              "Unused memory bytes resident should be non-negative");
           LOGGER.info("[" + runtime + "] All pool statistics are non-negative");
         } else {
           LOGGER.info("[" + runtime + "] Pool metrics returned null despite pooling config");
@@ -180,7 +183,7 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
 
         // Check metrics before
         final PoolStatistics before = engine.getPoolingAllocatorMetrics();
-        final long allocatedBefore = before != null ? before.getInstancesAllocated() : -1;
+        final long coreInstancesBefore = before != null ? before.getCoreInstances() : -1;
 
         // Create and destroy an instance
         try (Store store = engine.createStore()) {
@@ -195,15 +198,15 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
           LOGGER.info(
               "["
                   + runtime
-                  + "] Pool metrics before: allocated="
-                  + allocatedBefore
-                  + ", after: allocated="
-                  + after.getInstancesAllocated()
-                  + " created="
-                  + after.getInstancesCreated());
+                  + "] Pool metrics before: coreInstances="
+                  + coreInstancesBefore
+                  + ", after: coreInstances="
+                  + after.getCoreInstances()
+                  + " totalInstances="
+                  + after.getTotalInstances());
           assertTrue(
-              after.getInstancesCreated() >= 0,
-              "Instances created should be non-negative after instantiation");
+              after.getCoreInstances() >= 0,
+              "Core instances should be non-negative after instantiation");
         } else {
           LOGGER.info("[" + runtime + "] Pool metrics unavailable for comparison");
         }

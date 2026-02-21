@@ -97,6 +97,22 @@ public final class EngineConfig {
   private ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails backtraceDetails =
       ai.tegmentum.wasmtime4j.config.WasmBacktraceDetails.ENABLE;
 
+  // Component model extensions (wasmtime 41.0.3)
+  private boolean wasmComponentModelAsync = false;
+  private boolean wasmComponentModelAsyncStackful = false;
+  private boolean wasmComponentModelErrorContext = false;
+  private boolean wasmComponentModelGc = false;
+  private boolean wasmComponentModelThreading = false;
+
+  // Cranelift proof-carrying code validation
+  private boolean craneliftPcc = false;
+
+  // GC collector: "auto", "deferred_reference_counting", "null"
+  private String collector = "auto";
+
+  // Memory guaranteed dense image size in bytes
+  private long memoryGuaranteedDenseImageSize = 0;
+
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
     // Default configuration
@@ -1561,5 +1577,447 @@ public final class EngineConfig {
           ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy.CUSTOM;
     }
     return this;
+  }
+
+  // ===== Component Model Extension Configuration (wasmtime 41.0.3) =====
+
+  /**
+   * Enables or disables the component model async proposal.
+   *
+   * @param enable true to enable component model async
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelAsync(final boolean enable) {
+    this.wasmComponentModelAsync = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether component model async is enabled.
+   *
+   * @return true if component model async is enabled
+   * @since 1.0.0
+   */
+  public boolean isWasmComponentModelAsync() {
+    return wasmComponentModelAsync;
+  }
+
+  /**
+   * Enables or disables the component model async stackful proposal.
+   *
+   * @param enable true to enable component model async stackful
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelAsyncStackful(final boolean enable) {
+    this.wasmComponentModelAsyncStackful = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether component model async stackful is enabled.
+   *
+   * @return true if component model async stackful is enabled
+   * @since 1.0.0
+   */
+  public boolean isWasmComponentModelAsyncStackful() {
+    return wasmComponentModelAsyncStackful;
+  }
+
+  /**
+   * Enables or disables the component model error context proposal.
+   *
+   * @param enable true to enable component model error context
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelErrorContext(final boolean enable) {
+    this.wasmComponentModelErrorContext = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether component model error context is enabled.
+   *
+   * @return true if component model error context is enabled
+   * @since 1.0.0
+   */
+  public boolean isWasmComponentModelErrorContext() {
+    return wasmComponentModelErrorContext;
+  }
+
+  /**
+   * Enables or disables the component model GC proposal.
+   *
+   * @param enable true to enable component model GC
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelGc(final boolean enable) {
+    this.wasmComponentModelGc = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether component model GC is enabled.
+   *
+   * @return true if component model GC is enabled
+   * @since 1.0.0
+   */
+  public boolean isWasmComponentModelGc() {
+    return wasmComponentModelGc;
+  }
+
+  /**
+   * Enables or disables the component model threading proposal.
+   *
+   * @param enable true to enable component model threading
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelThreading(final boolean enable) {
+    this.wasmComponentModelThreading = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether component model threading is enabled.
+   *
+   * @return true if component model threading is enabled
+   * @since 1.0.0
+   */
+  public boolean isWasmComponentModelThreading() {
+    return wasmComponentModelThreading;
+  }
+
+  /**
+   * Enables or disables Cranelift proof-carrying code validation.
+   *
+   * @param enable true to enable PCC validation
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig craneliftPcc(final boolean enable) {
+    this.craneliftPcc = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether Cranelift PCC validation is enabled.
+   *
+   * @return true if PCC validation is enabled
+   * @since 1.0.0
+   */
+  public boolean isCraneliftPcc() {
+    return craneliftPcc;
+  }
+
+  /**
+   * Sets the GC collector implementation.
+   *
+   * <p>Valid values are "auto", "deferred_reference_counting", "null".
+   *
+   * @param collector the collector name
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig collector(final String collector) {
+    this.collector = collector;
+    return this;
+  }
+
+  /**
+   * Returns the GC collector implementation name.
+   *
+   * @return the collector name
+   * @since 1.0.0
+   */
+  public String getCollector() {
+    return collector;
+  }
+
+  /**
+   * Sets the guaranteed dense image size for linear memory initialization.
+   *
+   * @param bytes the size in bytes (0 for default)
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig memoryGuaranteedDenseImageSize(final long bytes) {
+    this.memoryGuaranteedDenseImageSize = bytes;
+    return this;
+  }
+
+  /**
+   * Returns the guaranteed dense image size.
+   *
+   * @return the size in bytes (0 for default)
+   * @since 1.0.0
+   */
+  public long getMemoryGuaranteedDenseImageSize() {
+    return memoryGuaranteedDenseImageSize;
+  }
+
+  // ===== JSON Serialization =====
+
+  /**
+   * Serializes this configuration to JSON bytes for native FFI.
+   *
+   * <p>The JSON format matches the Rust EngineConfigFfi struct with camelCase field names.
+   * Only non-default values are included to minimize payload size.
+   *
+   * @return UTF-8 encoded JSON bytes
+   * @since 1.0.0
+   */
+  public byte[] toJson() {
+    StringBuilder sb = new StringBuilder(512);
+    sb.append('{');
+    boolean first = true;
+
+    // Strategy
+    if (strategy != CompilationStrategy.AUTO) {
+      first = appendJsonField(sb, first, "strategy", strategyToString(strategy));
+    }
+
+    // Optimization level
+    first = appendJsonField(sb, first, "optLevel", optLevelToString(optimizationLevel));
+
+    // Core boolean settings
+    first = appendJsonBool(sb, first, "debugInfo", debugInfo);
+    first = appendJsonBool(sb, first, "fuelEnabled", consumeFuel);
+    first = appendJsonBool(sb, first, "epochInterruption", epochInterruption);
+    first = appendJsonBool(sb, first, "asyncSupport", asyncSupport);
+    first = appendJsonBool(sb, first, "coredumpOnTrap", coredumpOnTrap);
+    first = appendJsonBool(sb, first, "parallelCompilation", parallelCompilation);
+    first = appendJsonBool(sb, first, "nativeUnwindInfo", nativeUnwindInfo);
+    first = appendJsonBool(sb, first, "guestDebug", guestDebug);
+
+    // Stack configuration
+    if (maxWasmStack > 0) {
+      first = appendJsonLong(sb, first, "maxStackSize", maxWasmStack);
+    }
+    if (asyncStackSize > 0) {
+      first = appendJsonLong(sb, first, "asyncStackSize", asyncStackSize);
+    }
+    first = appendJsonBool(sb, first, "asyncStackZeroing", asyncStackZeroing);
+
+    // Memory configuration
+    if (memoryReservation > 0) {
+      first = appendJsonLong(sb, first, "memoryReservation", memoryReservation);
+    }
+    if (memoryGuardSize > 0) {
+      first = appendJsonLong(sb, first, "memoryGuardSize", memoryGuardSize);
+    }
+    if (memoryReservationForGrowth > 0) {
+      first = appendJsonLong(sb, first, "memoryReservationForGrowth", memoryReservationForGrowth);
+    }
+    first = appendJsonBool(sb, first, "memoryMayMove", memoryMayMove);
+    first = appendJsonBool(sb, first, "guardBeforeLinearMemory", guardBeforeLinearMemory);
+    first = appendJsonBool(sb, first, "memoryInitCow", memoryInitCow);
+    if (memoryGuaranteedDenseImageSize > 0) {
+      first = appendJsonLong(sb, first, "memoryGuaranteedDenseImageSize",
+          memoryGuaranteedDenseImageSize);
+    }
+
+    // WASM features
+    first = appendJsonBool(sb, first, "wasmThreads", wasmThreads);
+    first = appendJsonBool(sb, first, "wasmReferenceTypes", wasmReferenceTypes);
+    first = appendJsonBool(sb, first, "wasmSimd", wasmSimd);
+    first = appendJsonBool(sb, first, "wasmBulkMemory", wasmBulkMemory);
+    first = appendJsonBool(sb, first, "wasmMultiValue", wasmMultiValue);
+    first = appendJsonBool(sb, first, "wasmMultiMemory", wasmMultiMemory);
+    first = appendJsonBool(sb, first, "wasmTailCall", wasmTailCall);
+    first = appendJsonBool(sb, first, "wasmRelaxedSimd", wasmRelaxedSimd);
+    first = appendJsonBool(sb, first, "wasmFunctionReferences", wasmFunctionReferences);
+    first = appendJsonBool(sb, first, "wasmGc", wasmGc);
+    first = appendJsonBool(sb, first, "wasmExceptions", wasmExceptions);
+    first = appendJsonBool(sb, first, "wasmMemory64", wasmMemory64);
+    first = appendJsonBool(sb, first, "wasmExtendedConst", wasmExtendedConstExpressions);
+    first = appendJsonBool(sb, first, "wasmCustomPageSizes", wasmCustomPageSizes);
+    first = appendJsonBool(sb, first, "wasmWideArithmetic", wasmWideArithmetic);
+    first = appendJsonBool(sb, first, "wasmStackSwitching", wasmStackSwitching);
+    first = appendJsonBool(sb, first, "wasmSharedEverythingThreads", wasmSharedEverythingThreads);
+
+    // Component model extensions
+    first = appendJsonBool(sb, first, "wasmComponentModelAsync", wasmComponentModelAsync);
+    first = appendJsonBool(sb, first, "wasmComponentModelAsyncBuiltins",
+        wasmComponentModelAsyncBuiltins);
+    first = appendJsonBool(sb, first, "wasmComponentModelAsyncStackful",
+        wasmComponentModelAsyncStackful);
+    first = appendJsonBool(sb, first, "wasmComponentModelErrorContext",
+        wasmComponentModelErrorContext);
+    first = appendJsonBool(sb, first, "wasmComponentModelGc", wasmComponentModelGc);
+    first = appendJsonBool(sb, first, "wasmComponentModelThreading", wasmComponentModelThreading);
+
+    // Cranelift settings
+    first = appendJsonBool(sb, first, "craneliftDebugVerifier", craneliftDebugVerifier);
+    first = appendJsonBool(sb, first, "craneliftNanCanonicalization", craneliftNanCanonicalization);
+    first = appendJsonBool(sb, first, "craneliftPcc", craneliftPcc);
+    if (regallocAlgorithm != null) {
+      first = appendJsonField(sb, first, "craneliftRegallocAlgorithm",
+          regallocAlgorithm == ai.tegmentum.wasmtime4j.config.RegallocAlgorithm.SINGLE_PASS
+              ? "single_pass" : "backtracking");
+    }
+
+    // Cranelift flags
+    if (!craneliftSettings.isEmpty()) {
+      if (!first) {
+        sb.append(',');
+      }
+      first = false;
+      sb.append("\"craneliftFlags\":[");
+      boolean flagFirst = true;
+      for (java.util.Map.Entry<String, String> entry : craneliftSettings.entrySet()) {
+        if (!flagFirst) {
+          sb.append(',');
+        }
+        flagFirst = false;
+        sb.append("{\"name\":\"");
+        appendJsonEscaped(sb, entry.getKey());
+        sb.append("\",\"value\":\"");
+        appendJsonEscaped(sb, entry.getValue());
+        sb.append("\"}");
+      }
+      sb.append(']');
+    }
+
+    // GC settings
+    first = appendJsonBool(sb, first, "gcSupport", gcSupport);
+    if (collector != null && !"auto".equals(collector)) {
+      first = appendJsonField(sb, first, "collector", collector);
+    }
+
+    // Table
+    first = appendJsonBool(sb, first, "tableLazyInit", tableLazyInit);
+
+    // SIMD determinism
+    first = appendJsonBool(sb, first, "relaxedSimdDeterministic", relaxedSimdDeterministic);
+
+    // Allocation strategy
+    if (poolingAllocatorEnabled || allocationStrategy == InstanceAllocationStrategy.POOLING) {
+      first = appendJsonField(sb, first, "allocationStrategy", "pooling");
+    }
+
+    // Profiling
+    if (profilingStrategy != ProfilingStrategy.NONE) {
+      first = appendJsonField(sb, first, "profilingStrategy",
+          profilingStrategyToString(profilingStrategy));
+    }
+
+    // Module version strategy
+    if (moduleVersionStrategy != ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy
+        .WASMTIME_VERSION) {
+      first = appendJsonField(sb, first, "moduleVersionStrategy",
+          moduleVersionStrategyToString(moduleVersionStrategy));
+      if (moduleVersionCustom != null) {
+        first = appendJsonField(sb, first, "moduleVersionCustom", moduleVersionCustom);
+      }
+    }
+
+    // Target
+    if (target != null) {
+      first = appendJsonField(sb, first, "target", target);
+    }
+
+    // Component model (from features set)
+    if (wasmFeatures.contains(WasmFeature.COMPONENT_MODEL)) {
+      appendJsonBool(sb, first, "wasmComponentModel", true);
+    }
+
+    sb.append('}');
+    return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+  }
+
+  private static boolean appendJsonBool(
+      final StringBuilder sb, final boolean first, final String key, final boolean value) {
+    if (!first) {
+      sb.append(',');
+    }
+    sb.append('"').append(key).append("\":").append(value);
+    return false;
+  }
+
+  private static boolean appendJsonLong(
+      final StringBuilder sb, final boolean first, final String key, final long value) {
+    if (!first) {
+      sb.append(',');
+    }
+    sb.append('"').append(key).append("\":").append(value);
+    return false;
+  }
+
+  private static boolean appendJsonField(
+      final StringBuilder sb, final boolean first, final String key, final String value) {
+    if (!first) {
+      sb.append(',');
+    }
+    sb.append('"').append(key).append("\":\"");
+    appendJsonEscaped(sb, value);
+    sb.append('"');
+    return false;
+  }
+
+  private static void appendJsonEscaped(final StringBuilder sb, final String value) {
+    for (int i = 0; i < value.length(); i++) {
+      char c = value.charAt(i);
+      switch (c) {
+        case '"':
+          sb.append("\\\"");
+          break;
+        case '\\':
+          sb.append("\\\\");
+          break;
+        default:
+          sb.append(c);
+          break;
+      }
+    }
+  }
+
+  private static String strategyToString(final CompilationStrategy strategy) {
+    switch (strategy) {
+      case PERFORMANCE:
+        return "cranelift";
+      default:
+        return "auto";
+    }
+  }
+
+  private static String optLevelToString(final OptimizationLevel level) {
+    switch (level) {
+      case NONE:
+        return "none";
+      case SIZE:
+        return "speed_and_size";
+      case SPEED:
+      default:
+        return "speed";
+    }
+  }
+
+  private static String profilingStrategyToString(final ProfilingStrategy strategy) {
+    switch (strategy) {
+      case JIT_DUMP:
+        return "jitdump";
+      case VTUNE:
+        return "vtune";
+      case PERF_MAP:
+        return "perfmap";
+      default:
+        return "none";
+    }
+  }
+
+  private static String moduleVersionStrategyToString(
+      final ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy strategy) {
+    switch (strategy) {
+      case NONE:
+        return "none";
+      case CUSTOM:
+        return "custom";
+      default:
+        return "wasmtime_version";
+    }
   }
 }

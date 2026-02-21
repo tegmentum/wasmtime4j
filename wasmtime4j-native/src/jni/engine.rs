@@ -1,7 +1,7 @@
 //! JNI bindings for Engine operations
 
 use jni::objects::{JByteArray, JClass, JString};
-use jni::sys::{jboolean, jbyteArray, jint, jlong};
+use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray};
 use jni::JNIEnv;
 
 use crate::engine::core;
@@ -270,6 +270,27 @@ fn parse_cranelift_flags_json(json_str: &str) -> Vec<(String, String)> {
     }
 
     flags
+}
+
+/// Create a new engine from JSON configuration (JNI version)
+///
+/// This is the preferred engine creation method that accepts all configuration
+/// options as a JSON byte array, avoiding the 44-parameter positional approach.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineFromJsonConfig(
+    mut env: JNIEnv,
+    _class: JClass,
+    json_bytes: jni::objects::JByteArray,
+) -> jlong {
+    // Convert byte array before the closure to avoid borrow conflict
+    let bytes = match env.convert_byte_array(&json_bytes) {
+        Ok(b) => b,
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_ptr(&mut env, || {
+        core::create_engine_from_json_config(&bytes)
+    }) as jlong
 }
 
 /// Detect if a host CPU feature is available
@@ -591,6 +612,66 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompi
     }
 }
 
+/// Precompile a WebAssembly component for AOT usage (JNI)
+#[cfg(feature = "component-model")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompileComponent(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    wasm_bytes: JByteArray,
+) -> jbyteArray {
+    let bytes = match env.convert_byte_array(&wasm_bytes) {
+        Ok(bytes) => bytes,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let engine = match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+        Ok(engine) => engine,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let precompiled = match core::precompile_component(engine, &bytes) {
+        Ok(data) => data,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match env.byte_array_from_slice(&precompiled) {
+        Ok(array) => array.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Get pooling allocator metrics (JNI)
+///
+/// Returns a long[12] array with metrics, or null if pooling is not enabled.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetPoolingAllocatorMetrics(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+) -> jlongArray {
+    let engine = match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
+        Ok(engine) => engine,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match core::pooling_allocator_metrics(engine) {
+        Some(metrics) => {
+            match env.new_long_array(12) {
+                Ok(array) => {
+                    if env.set_long_array_region(&array, 0, &metrics).is_err() {
+                        return std::ptr::null_mut();
+                    }
+                    array.into_raw()
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        None => std::ptr::null_mut(),
+    }
+}
+
 /// Create a new store
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateStore(
@@ -656,8 +737,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsDebugI
 }
 
 /// Check if the engine is using Pulley interpreter (JNI version)
-///
-/// Note: Pulley is only available in wasmtime >= 40.0.0. In 39.0.1, always returns false.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsPulley(
     _env: JNIEnv,
@@ -665,10 +744,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsPulley
     engine_ptr: jlong,
 ) -> jboolean {
     match unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void) } {
-        Ok(_engine) => {
-            // Pulley is not available in wasmtime 39.0.1
-            // Return 0 (false/not using Pulley) - correct behavior for pre-Pulley versions
-            0
+        Ok(engine) => {
+            if engine.inner().is_pulley() { 1 } else { 0 }
         }
         Err(_) => 0,
     }
@@ -713,6 +790,51 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompi
     }
 }
 
+/// Create a weak reference to an engine (JNI version)
+///
+/// Returns a pointer to a WeakEngine, or 0 on error.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateWeakEngine(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+) -> jlong {
+    jni_utils::jni_try_ptr(&mut env, || unsafe {
+        core::create_weak_engine(engine_ptr as *const std::os::raw::c_void)
+    }) as jlong
+}
+
+/// Upgrade a weak engine reference to a strong engine (JNI version)
+///
+/// Returns a pointer to a new Engine, or 0 if the engine has been dropped.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWeakEngine_nativeUpgrade(
+    mut env: JNIEnv,
+    _class: JClass,
+    weak_ptr: jlong,
+) -> jlong {
+    let result = jni_utils::jni_try(&mut env, || unsafe {
+        let opt = core::upgrade_weak_engine(weak_ptr as *const std::os::raw::c_void)?;
+        match opt {
+            Some(engine) => Ok(Box::into_raw(engine) as jlong),
+            None => Ok(0 as jlong),
+        }
+    });
+    result.1
+}
+
+/// Destroy a weak engine reference (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWeakEngine_nativeDestroyWeakEngine(
+    _env: JNIEnv,
+    _class: JClass,
+    weak_ptr: jlong,
+) {
+    unsafe {
+        core::destroy_weak_engine(weak_ptr as *mut std::os::raw::c_void);
+    }
+}
+
 /// Detect if bytes are a precompiled WebAssembly module or component
 ///
 /// Returns:
@@ -749,4 +871,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDetectPr
             -2 // Error indicator
         }
     }
+}
+
+/// Create a standalone shared memory from an engine (JNI version)
+///
+/// Shared memory does not require a Store, only an Engine with threads support enabled.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateSharedMemory(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    initial_pages: jint,
+    max_pages: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        let validated_ptr =
+            core::create_shared_memory(engine, initial_pages as u64, max_pages as u64)?;
+        Ok(validated_ptr as jlong)
+    })
 }

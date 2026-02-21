@@ -733,6 +733,49 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMem
     })
 }
 
+/// Create a new WebAssembly linear memory with full type parameters
+///
+/// Supports Memory64 (is_64=1) and shared memory (is_shared=1) in a single call.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMemoryWithType(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    initial_pages: jlong,
+    max_pages: jlong,
+    is_shared: jint,
+    is_64: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        // Extract store from handle
+        let store = unsafe { core::get_store_mut(store_handle as *mut c_void)? };
+
+        // Convert max_pages (-1 means unlimited)
+        let max_pages_opt = if max_pages == -1 {
+            None
+        } else {
+            Some(max_pages as u64)
+        };
+
+        // Create memory using MemoryConfig with all type parameters
+        let memory_config = crate::memory::MemoryConfig {
+            initial_pages: initial_pages as u64,
+            maximum_pages: max_pages_opt,
+            is_shared: is_shared != 0,
+            is_64: is_64 != 0,
+            memory_index: 0,
+            name: None,
+        };
+
+        // Create the memory
+        let memory = crate::memory::Memory::new_with_config(store, memory_config)?;
+
+        // Register the memory handle for validation and return the pointer
+        let validated_ptr = crate::memory::core::create_validated_memory(memory)?;
+        Ok(validated_ptr as jlong)
+    })
+}
+
 /// Create a new shared WebAssembly linear memory with the specified page size
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSharedMemory(
@@ -841,6 +884,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroySt
     }
 }
 
+#[no_mangle]
 #[allow(non_snake_case)]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptureBacktrace<'local>(
     mut env: JNIEnv<'local>,
@@ -860,6 +904,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptureBa
     }
 }
 
+#[no_mangle]
 #[allow(non_snake_case)]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCaptureBacktrace<
     'local,
@@ -882,27 +927,17 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCapt
 }
 
 /// JNI binding for Store.gc() - triggers garbage collection
+#[no_mangle]
 #[allow(non_snake_case)]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGc(
     mut env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
 ) {
-    let result = (|| -> Result<(), crate::error::WasmtimeError> {
-        let store_ref = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
-        let mut store = store_ref.inner.lock();
-        // Wasmtime's gc() method takes Option<&GcHeapOutOfMemory<()>>
-        // Passing None means we're not in an OOM recovery scenario
-        store.gc(None);
-        Ok(())
-    })();
-
-    if let Err(e) = result {
-        let _ = env.throw_new(
-            "ai/tegmentum/wasmtime4j/exception/WasmException",
-            format!("GC failed: {:?}", e),
-        );
-    }
+    jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        core::garbage_collect(store)
+    });
 }
 
 fn create_backtrace_object<'local>(
@@ -1383,6 +1418,89 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearReso
     store_ptr: jlong,
 ) {
     unregister_jni_resource_limiter(store_ptr);
+}
+
+/// Set async resource limiter with JNI callback support
+///
+/// Same as nativeSetResourceLimiter but uses the async limiter path.
+/// Requires the engine to be configured with async_support(true).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResourceLimiterAsync(
+    mut env: JNIEnv,
+    jni_store_obj: JObject,
+    store_ptr: jlong,
+) {
+    // Get JavaVM reference
+    let jvm = match env.get_java_vm() {
+        Ok(vm) => std::sync::Arc::new(vm),
+        Err(e) => {
+            log::error!("Failed to get JavaVM for async resource limiter: {}", e);
+            return;
+        }
+    };
+
+    // Create global reference to prevent GC
+    let jni_store_global = match env.new_global_ref(&jni_store_obj) {
+        Ok(global) => global,
+        Err(e) => {
+            log::error!(
+                "Failed to create global reference for async resource limiter: {}",
+                e
+            );
+            return;
+        }
+    };
+
+    let callback_id = store_ptr;
+    register_jni_resource_limiter(callback_id, jvm, jni_store_global);
+
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+
+        // Reuse the same trampolines as the sync version since the callbacks
+        // are synchronous from Rust's perspective
+        extern "C" fn memory_growing_trampoline(
+            callback_id: i64,
+            current: u64,
+            desired: u64,
+            maximum: u64,
+        ) -> i32 {
+            jni_memory_growing_dispatch(callback_id, current, desired, maximum)
+        }
+
+        extern "C" fn table_growing_trampoline(
+            callback_id: i64,
+            current: u32,
+            desired: u32,
+            maximum: u32,
+        ) -> i32 {
+            jni_table_growing_dispatch(callback_id, current, desired, maximum)
+        }
+
+        extern "C" fn memory_grow_failed_trampoline(
+            callback_id: i64,
+            error: *const std::os::raw::c_char,
+        ) {
+            jni_memory_grow_failed_dispatch(callback_id, error)
+        }
+
+        extern "C" fn table_grow_failed_trampoline(
+            callback_id: i64,
+            error: *const std::os::raw::c_char,
+        ) {
+            jni_table_grow_failed_dispatch(callback_id, error)
+        }
+
+        core::set_resource_limiter_async(
+            store,
+            callback_id,
+            memory_growing_trampoline,
+            table_growing_trampoline,
+            Some(memory_grow_failed_trampoline),
+            Some(table_grow_failed_trampoline),
+        )?;
+        Ok(())
+    });
 }
 
 // ============================================================================

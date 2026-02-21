@@ -257,6 +257,25 @@ public final class JniComponent {
   static native long nativeDeserializeComponent(long engineHandle, byte[] serializedData);
 
   /**
+   * Deserializes a component from a previously serialized file.
+   *
+   * @param engineHandle the native component engine handle
+   * @param filePath the path to the serialized component file
+   * @return native component handle or 0 on failure
+   */
+  static native long nativeDeserializeComponentFile(long engineHandle, String filePath);
+
+  /**
+   * Gets the resources required by a component.
+   *
+   * @param componentHandle the native component handle
+   * @return long array with [numMemories, maxMemorySize, numTables, maxTableSize], or null on
+   *     failure. Values of -2 indicate resources_required() returned None. Values of -1 indicate
+   *     unbounded.
+   */
+  static native long[] nativeGetComponentResourcesRequired(long componentHandle);
+
+  /**
    * Cleanups unused component instances in the engine.
    *
    * @param engineHandle the native component engine handle
@@ -337,6 +356,68 @@ public final class JniComponent {
       String functionName,
       int[] paramTypeDiscriminators,
       byte[][] paramData);
+
+  /**
+   * Checks if a component instance has a specific function export.
+   *
+   * @param engineHandle the engine handle
+   * @param instanceId the instance ID
+   * @param functionName the function name to check
+   * @return 1 if found, 0 if not found
+   */
+  static native int nativeComponentInstanceHasFunc(
+      long engineHandle, long instanceId, String functionName);
+
+  /**
+   * Looks up a core module exported by a component instance.
+   *
+   * @param engineHandle the engine handle
+   * @param instanceId the instance ID
+   * @param moduleName the module name to look up
+   * @return the module handle pointer, or 0 if not found
+   */
+  static native long nativeComponentInstanceGetModule(
+      long engineHandle, long instanceId, String moduleName);
+
+  /**
+   * Checks if a resource type is exported by a component instance.
+   *
+   * @param engineHandle the engine handle
+   * @param instanceId the instance ID
+   * @param resourceName the resource name to check
+   * @return 1 if found, 0 if not found
+   */
+  static native int nativeComponentInstanceHasResource(
+      long engineHandle, long instanceId, String resourceName);
+
+  /**
+   * Gets a pre-computed export index for efficient repeated lookups.
+   *
+   * @param componentHandle the component handle
+   * @param instanceIndexPtr optional parent instance export index pointer (0 for root-level)
+   * @param name the export name
+   * @return the export index pointer, or 0 if not found
+   */
+  static native long nativeGetExportIndex(
+      long componentHandle, long instanceIndexPtr, String name);
+
+  /**
+   * Destroys a component export index.
+   *
+   * @param indexPtr the export index pointer
+   */
+  static native void nativeDestroyExportIndex(long indexPtr);
+
+  /**
+   * Checks if a component instance has a function at the given export index.
+   *
+   * @param engineHandle the engine handle
+   * @param instanceId the instance ID
+   * @param indexPtr the export index pointer
+   * @return 1 if found, 0 if not found
+   */
+  static native int nativeComponentInstanceHasFuncByIndex(
+      long engineHandle, long instanceId, long indexPtr);
 
   /**
    * JNI wrapper for component engine operations.

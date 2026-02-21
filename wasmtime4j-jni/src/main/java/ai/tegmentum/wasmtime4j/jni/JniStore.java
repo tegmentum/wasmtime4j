@@ -9,6 +9,7 @@ import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
+import ai.tegmentum.wasmtime4j.config.ResourceLimiterAsync;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
@@ -218,6 +219,20 @@ public final class JniStore extends JniResource implements Store {
     this.resourceLimiter = limiter;
     nativeSetResourceLimiter(getNativeHandle());
     LOGGER.fine("Set resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+  }
+
+  @Override
+  public void setResourceLimiterAsync(final ResourceLimiterAsync limiter) throws WasmException {
+    if (limiter == null) {
+      throw new IllegalArgumentException("ResourceLimiterAsync cannot be null");
+    }
+    ensureNotClosed();
+
+    // Clear any sync limiter since only one can be active
+    this.resourceLimiter = null;
+    this.resourceLimiterAsync = limiter;
+    nativeSetResourceLimiterAsync(getNativeHandle());
+    LOGGER.fine("Set async resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
   }
 
   @Override
@@ -490,6 +505,128 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(
+      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
+    Validation.requireNonNull(memoryType, "memoryType");
+    ensureNotClosed();
+
+    final long minPages = memoryType.getMinimum();
+    final long maxPages = memoryType.getMaximum().orElse(-1L);
+    final int isShared = memoryType.isShared() ? 1 : 0;
+    final int is64 = memoryType.is64Bit() ? 1 : 0;
+
+    if (minPages < 0) {
+      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+    }
+    if (maxPages != -1 && maxPages < minPages) {
+      throw new IllegalArgumentException(
+          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
+    }
+    if (memoryType.isShared() && maxPages < 1) {
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+    }
+
+    try {
+      final long memoryHandle =
+          nativeCreateMemoryWithType(getNativeHandle(), minPages, maxPages, isShared, is64);
+
+      if (memoryHandle == 0) {
+        throw new JniException("Native memory creation with type returned null handle");
+      }
+
+      final JniMemory memory = new JniMemory(memoryHandle, this);
+      LOGGER.fine(
+          "Created memory from type: min="
+              + minPages
+              + ", max="
+              + maxPages
+              + ", shared="
+              + memoryType.isShared()
+              + ", 64bit="
+              + memoryType.is64Bit()
+              + ", handle=0x"
+              + Long.toHexString(memoryHandle));
+      return memory;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create memory from type", e);
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmTable createTable(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
+    Validation.requireNonNull(tableType, "tableType");
+    ensureNotClosed();
+
+    final WasmValueType elementType = tableType.getElementType();
+    final long minSize = tableType.getMinimum();
+    final long maxSize = tableType.getMaximum().orElse(-1L);
+    final boolean is64 = tableType.is64Bit();
+
+    if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+    if (minSize < 0) {
+      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
+    }
+    if (maxSize != -1 && maxSize < minSize) {
+      throw new IllegalArgumentException(
+          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
+    }
+
+    try {
+      final long tableHandle;
+      if (is64) {
+        final int hasMaximum = (maxSize == -1) ? 0 : 1;
+        final long maximumSize = (maxSize == -1) ? 0 : maxSize;
+        tableHandle =
+            nativeCreateTable64(
+                getNativeHandle(),
+                elementType.toNativeTypeCode(),
+                minSize,
+                hasMaximum,
+                maximumSize);
+      } else {
+        tableHandle =
+            nativeCreateTable(
+                getNativeHandle(),
+                elementType.toNativeTypeCode(),
+                (int) minSize,
+                maxSize == -1 ? -1 : (int) maxSize);
+      }
+
+      if (tableHandle == 0) {
+        throw new JniException("Native table creation with type returned null handle");
+      }
+
+      final JniTable table = new JniTable(tableHandle, this);
+      LOGGER.fine(
+          "Created table from type: elementType="
+              + elementType
+              + ", min="
+              + minSize
+              + ", max="
+              + maxSize
+              + ", 64bit="
+              + is64
+              + ", handle=0x"
+              + Long.toHexString(tableHandle));
+      return table;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create table from type", e);
+    }
+  }
+
+  @Override
   public FunctionReference createFunctionReference(
       final HostFunction implementation, final FunctionType functionType) throws WasmException {
     Objects.requireNonNull(implementation, "Host function implementation cannot be null");
@@ -579,13 +716,14 @@ public final class JniStore extends JniResource implements Store {
     }
 
     // Clean up resource limiter callback
-    if (resourceLimiter != null && nativeHandle != 0) {
+    if ((resourceLimiter != null || resourceLimiterAsync != null) && nativeHandle != 0) {
       try {
         nativeClearResourceLimiter(nativeHandle);
       } catch (Exception e) {
         LOGGER.warning("Error clearing resource limiter: " + e.getMessage());
       }
       resourceLimiter = null;
+      resourceLimiterAsync = null;
     }
 
     if (nativeHandle != 0) {
@@ -792,6 +930,32 @@ public final class JniStore extends JniResource implements Store {
       long storeHandle, int initialPages, int maxPages);
 
   /**
+   * Creates a native memory with full type parameters (shared, 64-bit).
+   *
+   * @param storeHandle the native store handle
+   * @param initialPages the initial number of pages
+   * @param maxPages the maximum number of pages (-1 for unlimited)
+   * @param isShared 1 if shared, 0 if not
+   * @param is64 1 if 64-bit addressing, 0 if 32-bit
+   * @return the native memory handle, or 0 on failure
+   */
+  private static native long nativeCreateMemoryWithType(
+      long storeHandle, long initialPages, long maxPages, int isShared, int is64);
+
+  /**
+   * Creates a native 64-bit table.
+   *
+   * @param storeHandle the native store handle
+   * @param elementType the element type code
+   * @param initialSize the initial number of elements
+   * @param hasMaximum 1 if maximum is specified, 0 if unlimited
+   * @param maximumSize the maximum number of elements
+   * @return the native table handle, or 0 on failure
+   */
+  private static native long nativeCreateTable64(
+      long storeHandle, int elementType, long initialSize, int hasMaximum, long maximumSize);
+
+  /**
    * Destroys a native store and releases all associated resources.
    *
    * @param storeHandle the native store handle
@@ -949,6 +1113,9 @@ public final class JniStore extends JniResource implements Store {
   /** Resource limiter callback holder to prevent garbage collection. */
   private ResourceLimiter resourceLimiter;
 
+  /** Async resource limiter callback holder to prevent garbage collection. */
+  private ResourceLimiterAsync resourceLimiterAsync;
+
   // Called from native code when epoch deadline is reached
   @SuppressWarnings("unused")
   @SuppressFBWarnings(
@@ -956,14 +1123,17 @@ public final class JniStore extends JniResource implements Store {
       justification = "Called from native JNI code")
   private long onEpochDeadlineReached(final long currentEpoch) {
     if (epochDeadlineCallback == null) {
-      return -1; // Signal trap
+      return 0; // Signal trap
     }
     final ai.tegmentum.wasmtime4j.Store.EpochDeadlineAction action =
         epochDeadlineCallback.onEpochDeadline(currentEpoch);
     if (action.shouldContinue()) {
-      return action.getDeltaTicks();
+      return action.getDeltaTicks(); // Positive = continue
     }
-    return -1; // Signal trap
+    if (action.shouldYield()) {
+      return -action.getDeltaTicks(); // Negative = yield
+    }
+    return 0; // Signal trap
   }
 
   // Called from native code when memory growth is requested
@@ -973,10 +1143,18 @@ public final class JniStore extends JniResource implements Store {
       justification = "Called from native JNI code")
   private boolean onMemoryGrowing(
       final long currentBytes, final long desiredBytes, final long maximumBytes) {
-    if (resourceLimiter == null) {
-      return true; // Allow by default
+    if (resourceLimiter != null) {
+      return resourceLimiter.memoryGrowing(currentBytes, desiredBytes, maximumBytes);
     }
-    return resourceLimiter.memoryGrowing(currentBytes, desiredBytes, maximumBytes);
+    if (resourceLimiterAsync != null) {
+      try {
+        return resourceLimiterAsync.memoryGrowing(currentBytes, desiredBytes, maximumBytes).join();
+      } catch (final Exception e) {
+        LOGGER.warning("Async memoryGrowing callback failed: " + e.getMessage());
+        return false;
+      }
+    }
+    return true; // Allow by default
   }
 
   // Called from native code when table growth is requested
@@ -986,10 +1164,20 @@ public final class JniStore extends JniResource implements Store {
       justification = "Called from native JNI code")
   private boolean onTableGrowing(
       final int currentElements, final int desiredElements, final int maximumElements) {
-    if (resourceLimiter == null) {
-      return true; // Allow by default
+    if (resourceLimiter != null) {
+      return resourceLimiter.tableGrowing(currentElements, desiredElements, maximumElements);
     }
-    return resourceLimiter.tableGrowing(currentElements, desiredElements, maximumElements);
+    if (resourceLimiterAsync != null) {
+      try {
+        return resourceLimiterAsync
+            .tableGrowing(currentElements, desiredElements, maximumElements)
+            .join();
+      } catch (final Exception e) {
+        LOGGER.warning("Async tableGrowing callback failed: " + e.getMessage());
+        return false;
+      }
+    }
+    return true; // Allow by default
   }
 
   // Called from native code when memory growth fails
@@ -1000,6 +1188,8 @@ public final class JniStore extends JniResource implements Store {
   private void onMemoryGrowFailed(final String error) {
     if (resourceLimiter != null) {
       resourceLimiter.memoryGrowFailed(error);
+    } else if (resourceLimiterAsync != null) {
+      resourceLimiterAsync.memoryGrowFailed(error);
     }
   }
 
@@ -1011,6 +1201,8 @@ public final class JniStore extends JniResource implements Store {
   private void onTableGrowFailed(final String error) {
     if (resourceLimiter != null) {
       resourceLimiter.tableGrowFailed(error);
+    } else if (resourceLimiterAsync != null) {
+      resourceLimiterAsync.tableGrowFailed(error);
     }
   }
 
@@ -1112,6 +1304,16 @@ public final class JniStore extends JniResource implements Store {
    * @param storeHandle the native store handle
    */
   private native void nativeClearResourceLimiter(long storeHandle);
+
+  /**
+   * Sets the async resource limiter on the native store with callback support.
+   *
+   * <p>This uses the same callback methods as the sync limiter but registers via the async limiter
+   * path in Wasmtime. Requires the engine to be configured with async support.
+   *
+   * @param storeHandle the native store handle
+   */
+  private native void nativeSetResourceLimiterAsync(long storeHandle);
 
   // ===== Fuel Async Methods =====
 

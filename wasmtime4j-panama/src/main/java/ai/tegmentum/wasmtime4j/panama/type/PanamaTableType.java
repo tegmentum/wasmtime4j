@@ -25,6 +25,7 @@ public final class PanamaTableType implements TableType {
   private final WasmValueType elementType;
   private final long minimum;
   private final Optional<Long> maximum;
+  private final boolean is64;
   private final Arena arena;
   private final MemorySegment nativeHandle;
 
@@ -41,6 +42,26 @@ public final class PanamaTableType implements TableType {
       final WasmValueType elementType,
       final long minimum,
       final Long maximum,
+      final Arena arena,
+      final MemorySegment nativeHandle) {
+    this(elementType, minimum, maximum, false, arena, nativeHandle);
+  }
+
+  /**
+   * Creates a new PanamaTableType instance with 64-bit index support.
+   *
+   * @param elementType the element type stored in the table
+   * @param minimum the minimum number of elements
+   * @param maximum the maximum number of elements (null if unlimited)
+   * @param is64 true if this table uses 64-bit indices
+   * @param arena the memory arena for resource management
+   * @param nativeHandle the native handle to the table type
+   */
+  public PanamaTableType(
+      final WasmValueType elementType,
+      final long minimum,
+      final Long maximum,
+      final boolean is64,
       final Arena arena,
       final MemorySegment nativeHandle) {
     Validation.requireNonNull(elementType, "elementType");
@@ -61,12 +82,14 @@ public final class PanamaTableType implements TableType {
     this.elementType = elementType;
     this.minimum = minimum;
     this.maximum = Optional.ofNullable(maximum);
+    this.is64 = is64;
     this.arena = arena;
     this.nativeHandle = nativeHandle;
 
     LOGGER.fine(
         String.format(
-            "Created PanamaTableType: element=%s, min=%d, max=%s", elementType, minimum, maximum));
+            "Created PanamaTableType: element=%s, min=%d, max=%s, is64=%s",
+            elementType, minimum, maximum, is64));
   }
 
   /**
@@ -94,7 +117,7 @@ public final class PanamaTableType implements TableType {
       throw new IllegalArgumentException(
           "Table element type must be a reference type: " + elementType);
     }
-    return new PanamaTableType(elementType, minimum, maximum);
+    return new PanamaTableType(elementType, minimum, maximum, false);
   }
 
   /**
@@ -104,10 +127,15 @@ public final class PanamaTableType implements TableType {
    * @param minimum the minimum number of elements
    * @param maximum the maximum number of elements (null if unlimited)
    */
-  private PanamaTableType(final WasmValueType elementType, final long minimum, final Long maximum) {
+  private PanamaTableType(
+      final WasmValueType elementType,
+      final long minimum,
+      final Long maximum,
+      final boolean is64) {
     this.elementType = elementType;
     this.minimum = minimum;
     this.maximum = Optional.ofNullable(maximum);
+    this.is64 = is64;
     this.arena = null;
     this.nativeHandle = MemorySegment.NULL;
 
@@ -130,7 +158,7 @@ public final class PanamaTableType implements TableType {
     Validation.requireNonNull(arena, "arena");
 
     // Allocate memory for the type info result
-    final MemorySegment typeInfoSegment = arena.allocate(24); // 3 longs * 8 bytes
+    final MemorySegment typeInfoSegment = arena.allocate(32); // 4 longs * 8 bytes
 
     // Call native function to get table type info
     nativeGetTableTypeInfo(nativeHandle, typeInfoSegment);
@@ -141,8 +169,10 @@ public final class PanamaTableType implements TableType {
     final long minimum = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 8);
     final long maxValue = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 16);
     final Long maximum = maxValue == -1 ? null : maxValue;
+    final boolean is64 =
+        typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 24) != 0;
 
-    return new PanamaTableType(elementType, minimum, maximum, arena, nativeHandle);
+    return new PanamaTableType(elementType, minimum, maximum, is64, arena, nativeHandle);
   }
 
   @Override
@@ -158,6 +188,11 @@ public final class PanamaTableType implements TableType {
   @Override
   public Optional<Long> getMaximum() {
     return maximum;
+  }
+
+  @Override
+  public boolean is64Bit() {
+    return is64;
   }
 
   @Override

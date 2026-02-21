@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.component;
 
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import java.util.Map;
@@ -96,6 +97,21 @@ public interface ComponentInstance extends AutoCloseable {
   Optional<ComponentFunction> getFunc(String functionName) throws WasmException;
 
   /**
+   * Gets a component function by pre-computed export index.
+   *
+   * <p>This method provides O(1) function lookup using a {@link ComponentExportIndex} obtained from
+   * {@link Component#exportIndex(ComponentExportIndex, String)}. This is more efficient than
+   * string-based lookup when the same function is accessed repeatedly.
+   *
+   * @param exportIndex the pre-computed export index
+   * @return an Optional containing the function if found, or empty if not found
+   * @throws WasmException if function retrieval fails due to an error
+   * @throws IllegalArgumentException if exportIndex is null
+   * @since 1.0.0
+   */
+  Optional<ComponentFunction> getFunc(ComponentExportIndex exportIndex) throws WasmException;
+
+  /**
    * Gets all exported function names from this component instance.
    *
    * @return set of exported function names
@@ -118,6 +134,29 @@ public interface ComponentInstance extends AutoCloseable {
    * @throws WasmException if binding fails
    */
   void bindInterface(String interfaceName, Object implementation) throws WasmException;
+
+  /**
+   * Checks if this component instance exports a specific resource type.
+   *
+   * @param resourceName the resource name to check
+   * @return true if the resource is exported, false otherwise
+   * @throws WasmException if the lookup fails
+   */
+  boolean hasResource(String resourceName) throws WasmException;
+
+  /**
+   * Looks up a core module exported by this component instance.
+   *
+   * <p>Some components export core WebAssembly modules that can be instantiated separately.
+   * This method retrieves such a module by name.
+   *
+   * @param moduleName the name of the exported module
+   * @return an Optional containing the module if found, or empty if not exported
+   * @throws WasmException if the lookup fails
+   * @throws IllegalArgumentException if moduleName is null or empty
+   * @since 1.0.0
+   */
+  Optional<Module> getModule(String moduleName) throws WasmException;
 
   /**
    * Gets the configuration used to create this instance.

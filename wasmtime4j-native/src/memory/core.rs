@@ -295,6 +295,31 @@ pub fn grow_memory(memory: &Memory, store: &mut Store, pages: u64) -> WasmtimeRe
     memory.grow(store, pages)
 }
 
+/// Core function to grow memory asynchronously
+///
+/// Requires engine with `async_support(true)`. Uses the tokio runtime to bridge
+/// the sync FFI call to wasmtime's async memory growth which goes through the
+/// async resource limiter.
+#[cfg(feature = "async")]
+pub fn grow_memory_async(memory: &Memory, store: &mut Store, pages: u64) -> WasmtimeResult<u64> {
+    let wasmtime_mem = match &memory.inner {
+        super::types::MemoryVariant::Regular(mem) => mem,
+        super::types::MemoryVariant::Shared(_) => {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Async growth not supported for shared memory".to_string(),
+            });
+        }
+    };
+    let mem = *wasmtime_mem;
+    let handle = crate::async_runtime::get_runtime_handle();
+    let mut store_guard = store.try_lock_store()?;
+    handle
+        .block_on(async { mem.grow_async(&mut *store_guard, pages).await })
+        .map_err(|e| WasmtimeError::Memory {
+            message: format!("Async memory growth failed: {}", e),
+        })
+}
+
 /// Core function to get memory page count
 pub fn get_memory_page_count(memory: &Memory, store: &Store) -> WasmtimeResult<u64> {
     memory.size_pages(store)

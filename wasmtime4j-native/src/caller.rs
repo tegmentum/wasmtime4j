@@ -69,16 +69,13 @@ pub mod core {
     }
 
     /// Check if the caller has an active epoch deadline
-    /// Note: We can't directly check if epoch deadline is set, so we return true
-    /// if epoch interruption is enabled in the engine (which is a prerequisite)
-    pub fn caller_has_epoch_deadline<T>(_caller: &mut WasmtimeCaller<'_, T>) -> WasmtimeResult<bool>
-    where
-        T: Send + 'static,
-    {
-        // Wasmtime doesn't provide a direct way to check if epoch deadline is set
-        // The caller can always set an epoch deadline if epoch interruption is enabled
-        // We return false by default since we can't determine this without engine access
-        Ok(false)
+    ///
+    /// Returns true if epoch interruption is enabled on the engine that created
+    /// this store, which means an epoch deadline is always active (defaults to 0 ticks).
+    pub fn caller_has_epoch_deadline(
+        caller: &mut WasmtimeCaller<'_, crate::store::StoreData>,
+    ) -> WasmtimeResult<bool> {
+        Ok(caller.data().epoch_interruption_enabled)
     }
 
     /// Get export from caller by name
@@ -150,6 +147,27 @@ pub mod core {
             Some(_) => Ok(None), // Export exists but is not a table
             None => Ok(None),    // Export does not exist
         }
+    }
+
+    /// Set fuel async yield interval for the caller's store
+    pub fn caller_set_fuel_async_yield_interval<T>(
+        caller: &mut WasmtimeCaller<'_, T>,
+        interval: u64,
+    ) -> WasmtimeResult<()>
+    where
+        T: Send + 'static,
+    {
+        let interval_opt = if interval == 0 {
+            None
+        } else {
+            Some(interval)
+        };
+        caller
+            .as_context_mut()
+            .fuel_async_yield_interval(interval_opt)
+            .map_err(|e| WasmtimeError::CallerContextError {
+                message: format!("Failed to set fuel async yield interval: {}", e),
+            })
     }
 
     /// Check if caller has an export with the given name

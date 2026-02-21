@@ -258,6 +258,25 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   }
 
   @Override
+  public long toRawFuncRef() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (isClosed() || getNativeHandle() == 0) {
+      throw new IllegalStateException("Host function is not valid");
+    }
+    final java.lang.ref.WeakReference<JniStore> storeRef = this.storeRef;
+    if (storeRef == null || storeRef.get() == null) {
+      throw new IllegalStateException("Store reference is null or garbage collected");
+    }
+    try {
+      return JniFunction.nativeFuncToRaw(getNativeHandle(), storeRef.get().getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to convert host function to raw funcref", e);
+    }
+  }
+
+  @Override
   public java.util.concurrent.CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
     // Host functions are called FROM WebAssembly, not TO WebAssembly
     // This method shouldn't be used directly for host functions

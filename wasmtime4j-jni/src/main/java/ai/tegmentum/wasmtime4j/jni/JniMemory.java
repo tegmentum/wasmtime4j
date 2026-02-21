@@ -61,11 +61,14 @@ public final class JniMemory extends JniResource implements WasmMemory {
   /**
    * Ensures this memory and its owning store are still usable.
    *
+   * <p>For standalone shared memory (created from Engine without a Store), only the memory handle
+   * is validated. For store-backed memory, both the memory handle and store are validated.
+   *
    * @throws JniResourceException if this memory or its store has been closed
    */
   private void ensureUsable() {
     ensureNotClosed();
-    if (store.isClosed()) {
+    if (store != null && store.isClosed()) {
       throw new JniResourceException("Store is closed");
     }
   }
@@ -1634,6 +1637,35 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
   }
 
+  @Override
+  public long growAsync(final long pages) throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    Validation.requireNonNegative(pages, "pages");
+    ensureUsable();
+
+    if (store == null) {
+      throw new IllegalStateException("Memory store reference is null");
+    }
+
+    final long memHandle = getNativeHandle();
+    final long storeHandle = store.getNativeHandle();
+    LOGGER.fine(
+        "growAsync: memHandle=0x"
+            + Long.toHexString(memHandle)
+            + ", storeHandle=0x"
+            + Long.toHexString(storeHandle)
+            + ", pages="
+            + pages);
+
+    try {
+      return nativeGrowAsync(memHandle, storeHandle, pages);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Async memory growth failed", e);
+    }
+  }
+
   // Native method declarations for 64-bit memory operations
 
   /**
@@ -1691,4 +1723,14 @@ public final class JniMemory extends JniResource implements WasmMemory {
       int dataSegmentIndex,
       long srcOffset,
       long length);
+
+  /**
+   * Grows memory asynchronously through the async resource limiter.
+   *
+   * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
+   * @param pages the number of pages to grow by
+   * @return the previous size in pages, or -1 if growth failed
+   */
+  private static native long nativeGrowAsync(long memoryHandle, long storeHandle, long pages);
 }

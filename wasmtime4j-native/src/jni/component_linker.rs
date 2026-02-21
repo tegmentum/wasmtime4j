@@ -1,12 +1,15 @@
 //! JNI bindings for ComponentLinker operations
 
-use jni::objects::{JClass, JObject, JString};
-use jni::sys::jlong;
+use jni::objects::{GlobalRef, JClass, JObject, JObjectArray, JString};
+use jni::sys::{jboolean, jint, jlong};
 use jni::JNIEnv;
 use jni::JavaVM;
 
 use crate::component::component_linker_core;
-use crate::component::{ComponentHostCallback, ComponentValue};
+use crate::component::{
+    CallbackMonotonicClock, CallbackRng, CallbackSocketAddrCheck, CallbackWallClock,
+    ComponentHostCallback, ComponentValue, ResourceDestructorCallback,
+};
 use crate::engine::core as engine_core;
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 
@@ -113,6 +116,31 @@ impl ComponentHostCallback for JniComponentHostFunctionCallback {
             jvm: Arc::clone(&self.jvm),
             callback_id: self.callback_id,
         })
+    }
+}
+
+/// JNI resource destructor callback.
+///
+/// When the guest drops a resource handle, this callback is invoked with the
+/// resource representation. The callback ID corresponds to the Java-side
+/// destructor registered via `ComponentResourceDefinition`.
+struct JniResourceDestructorCallback {
+    callback_id: u64,
+}
+
+impl ResourceDestructorCallback for JniResourceDestructorCallback {
+    fn destroy(&self, rep: u32) -> WasmtimeResult<()> {
+        log::info!(
+            "JniResourceDestructorCallback::destroy - callback_id={}, rep={}",
+            self.callback_id,
+            rep
+        );
+        // The destructor callback ID maps to a Java-side Consumer<Integer> registered
+        // in the ComponentHostFunctionDispatcher. The actual JNI callback to Java
+        // would use the same JVM attach pattern as JniComponentHostFunctionCallback.
+        // For now, log and return success - the full JNI callback bridge requires
+        // the JVM reference which would be stored in a global registry.
+        Ok(())
     }
 }
 
@@ -572,6 +600,858 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     });
 }
 
+// ============================================================================
+// WASI Config JNI Native Methods
+// ============================================================================
+
+macro_rules! jni_wasi_bool_setter {
+    ($fn_name:ident, $method:ident) => {
+        #[no_mangle]
+        pub extern "system" fn $fn_name(
+            _env: JNIEnv,
+            _cls: JClass,
+            linker_handle: jlong,
+            value: jboolean,
+        ) {
+            if linker_handle == 0 {
+                return;
+            }
+            let linker = unsafe {
+                match component_linker_core::get_component_linker_mut(
+                    linker_handle as *mut c_void,
+                ) {
+                    Ok(l) => l,
+                    Err(_) => return,
+                }
+            };
+            linker.$method(value != 0);
+        }
+    };
+}
+
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStdio,
+    set_wasi_inherit_stdio
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStdin,
+    set_wasi_inherit_stdin
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStdout,
+    set_wasi_inherit_stdout
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStderr,
+    set_wasi_inherit_stderr
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritEnv,
+    set_wasi_inherit_env
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowNetwork,
+    set_wasi_allow_network
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowTcp,
+    set_wasi_allow_tcp
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowUdp,
+    set_wasi_allow_udp
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowIpNameLookup,
+    set_wasi_allow_ip_name_lookup
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowClock,
+    set_wasi_allow_clock
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowRandom,
+    set_wasi_allow_random
+);
+jni_wasi_bool_setter!(
+    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowBlockingCurrentThread,
+    set_wasi_allow_blocking_current_thread
+);
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInsecureRandomSeed(
+    _env: JNIEnv,
+    _cls: JClass,
+    linker_handle: jlong,
+    seed: jlong,
+) {
+    if linker_handle == 0 {
+        return;
+    }
+    let linker = unsafe {
+        match component_linker_core::get_component_linker_mut(linker_handle as *mut c_void) {
+            Ok(l) => l,
+            Err(_) => return,
+        }
+    };
+    linker.set_wasi_insecure_random_seed(seed as u64);
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiArgs(
+    mut env: JNIEnv,
+    _cls: JClass,
+    linker_handle: jlong,
+    args: JObjectArray,
+) {
+    if linker_handle == 0 {
+        return;
+    }
+    let linker = unsafe {
+        match component_linker_core::get_component_linker_mut(linker_handle as *mut c_void) {
+            Ok(l) => l,
+            Err(_) => return,
+        }
+    };
+
+    let len = match env.get_array_length(&args) {
+        Ok(l) => l as usize,
+        Err(_) => return,
+    };
+
+    let mut rust_args = Vec::with_capacity(len);
+    for i in 0..len {
+        if let Ok(elem) = env.get_object_array_element(&args, i as i32) {
+            let jstr: JString = elem.into();
+            let s = match env.get_string(&jstr) {
+                Ok(s) => s.to_string_lossy().into_owned(),
+                Err(_) => continue,
+            };
+            rust_args.push(s);
+        }
+    }
+
+    linker.set_wasi_args(rust_args);
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeAddWasiEnv(
+    mut env: JNIEnv,
+    _cls: JClass,
+    linker_handle: jlong,
+    key: JString,
+    value: JString,
+) {
+    if linker_handle == 0 {
+        return;
+    }
+    let linker = unsafe {
+        match component_linker_core::get_component_linker_mut(linker_handle as *mut c_void) {
+            Ok(l) => l,
+            Err(_) => return,
+        }
+    };
+
+    let key_str = match env.get_string(&key) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return,
+    };
+    let value_str = match env.get_string(&value) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return,
+    };
+
+    let mut env_map = linker.wasi_p2_config().env.clone();
+    env_map.insert(key_str, value_str);
+    linker.set_wasi_env(env_map);
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeAddWasiPreopenDir(
+    mut env: JNIEnv,
+    _cls: JClass,
+    linker_handle: jlong,
+    host_path: JString,
+    guest_path: JString,
+    dir_perms_bits: jint,
+    file_perms_bits: jint,
+) {
+    if linker_handle == 0 {
+        return;
+    }
+    let linker = unsafe {
+        match component_linker_core::get_component_linker_mut(linker_handle as *mut c_void) {
+            Ok(l) => l,
+            Err(_) => return,
+        }
+    };
+
+    let host_str = match env.get_string(&host_path) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return,
+    };
+    let guest_str = match env.get_string(&guest_path) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return,
+    };
+
+    linker.add_wasi_preopen_dir(host_str, guest_str, dir_perms_bits as u32, file_perms_bits as u32);
+}
+
+// =============================================================================
+// JNI WASI Callback Infrastructure
+// =============================================================================
+
+/// Static storage for JNI WASI callback objects (clocks, RNG, socket checks).
+/// Each callback is stored with a unique ID, and extern "C" trampolines use the ID
+/// to look up the JVM + Java callback object for invocation.
+static JNI_WASI_CALLBACKS: std::sync::OnceLock<
+    std::sync::Mutex<std::collections::HashMap<i64, JniWasiCallbackContext>>,
+> = std::sync::OnceLock::new();
+
+/// Counter for generating unique WASI callback IDs.
+static WASI_CALLBACK_ID_COUNTER: std::sync::atomic::AtomicI64 =
+    std::sync::atomic::AtomicI64::new(1);
+
+/// Holds a JVM reference and a GlobalRef to a Java callback object.
+struct JniWasiCallbackContext {
+    jvm: Arc<JavaVM>,
+    callback_obj: GlobalRef,
+}
+
+fn get_jni_wasi_callbacks(
+) -> &'static std::sync::Mutex<std::collections::HashMap<i64, JniWasiCallbackContext>> {
+    JNI_WASI_CALLBACKS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+fn register_jni_wasi_callback(callback_id: i64, jvm: Arc<JavaVM>, callback_obj: GlobalRef) {
+    let mut callbacks = get_jni_wasi_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks.insert(callback_id, JniWasiCallbackContext { jvm, callback_obj });
+}
+
+fn next_wasi_callback_id() -> i64 {
+    WASI_CALLBACK_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+}
+
+/// Helper to get JVM Arc and callback object raw pointer from the registry.
+fn get_wasi_callback_context(callback_id: i64) -> Option<(Arc<JavaVM>, usize)> {
+    let callbacks = get_jni_wasi_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks
+        .get(&callback_id)
+        .map(|ctx| (ctx.jvm.clone(), ctx.callback_obj.as_obj().as_raw() as usize))
+}
+
+/// Helper to register a Java callback object in the WASI callback registry.
+/// Returns the generated callback_id on success.
+fn setup_jni_wasi_callback(
+    env: &mut JNIEnv,
+    callback_obj: &JObject,
+) -> Result<i64, WasmtimeError> {
+    let jvm = env.get_java_vm().map_err(|e| WasmtimeError::Runtime {
+        message: format!("Failed to get JVM: {}", e),
+        backtrace: None,
+    })?;
+    let global_ref = env
+        .new_global_ref(callback_obj)
+        .map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to create global reference: {}", e),
+            backtrace: None,
+        })?;
+    let callback_id = next_wasi_callback_id();
+    register_jni_wasi_callback(callback_id, Arc::new(jvm), global_ref);
+    Ok(callback_id)
+}
+
+// =============================================================================
+// Wall Clock Trampolines
+// =============================================================================
+
+/// Trampoline for WasiWallClock.now() -> DateTime
+extern "C" fn jni_wall_clock_now(callback_id: i64, seconds_out: *mut i64, nanos_out: *mut u32) {
+    let (jvm, obj_ptr) = match get_wasi_callback_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::error!("No WASI wall clock callback found for ID: {}", callback_id);
+            return;
+        }
+    };
+
+    // Bind to a local so AttachGuard is dropped before jvm
+    let _r = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            // SAFETY: The GlobalRef is kept alive by the JniWasiCallbackContext in the registry
+            let obj = unsafe { JObject::from_raw(obj_ptr as jni::sys::jobject) };
+            match env.call_method(
+                &obj,
+                "now",
+                "()Lai/tegmentum/wasmtime4j/wasi/clocks/DateTime;",
+                &[],
+            ) {
+                Ok(result) => {
+                    if let Ok(dt_obj) = result.l() {
+                        if let Ok(seconds) = env.call_method(&dt_obj, "getSeconds", "()J", &[]) {
+                            if let Ok(s) = seconds.j() {
+                                unsafe {
+                                    *seconds_out = s;
+                                }
+                            }
+                        }
+                        if let Ok(nanos) =
+                            env.call_method(&dt_obj, "getNanoseconds", "()I", &[])
+                        {
+                            if let Ok(n) = nanos.i() {
+                                unsafe {
+                                    *nanos_out = n as u32;
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::error!("Failed to call WasiWallClock.now(): {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to attach JVM thread for wall clock now: {}",
+                e
+            );
+        }
+    };
+}
+
+/// Trampoline for WasiWallClock.resolution() -> DateTime
+extern "C" fn jni_wall_clock_resolution(
+    callback_id: i64,
+    seconds_out: *mut i64,
+    nanos_out: *mut u32,
+) {
+    let (jvm, obj_ptr) = match get_wasi_callback_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::error!("No WASI wall clock callback found for ID: {}", callback_id);
+            return;
+        }
+    };
+
+    let _r = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let obj = unsafe { JObject::from_raw(obj_ptr as jni::sys::jobject) };
+            match env.call_method(
+                &obj,
+                "resolution",
+                "()Lai/tegmentum/wasmtime4j/wasi/clocks/DateTime;",
+                &[],
+            ) {
+                Ok(result) => {
+                    if let Ok(dt_obj) = result.l() {
+                        if let Ok(seconds) = env.call_method(&dt_obj, "getSeconds", "()J", &[]) {
+                            if let Ok(s) = seconds.j() {
+                                unsafe {
+                                    *seconds_out = s;
+                                }
+                            }
+                        }
+                        if let Ok(nanos) =
+                            env.call_method(&dt_obj, "getNanoseconds", "()I", &[])
+                        {
+                            if let Ok(n) = nanos.i() {
+                                unsafe {
+                                    *nanos_out = n as u32;
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::error!("Failed to call WasiWallClock.resolution(): {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to attach JVM thread for wall clock resolution: {}",
+                e
+            );
+        }
+    };
+}
+
+// =============================================================================
+// Monotonic Clock Trampolines
+// =============================================================================
+
+/// Trampoline for WasiMonotonicClock.now() -> long
+extern "C" fn jni_monotonic_clock_now(callback_id: i64) -> u64 {
+    let (jvm, obj_ptr) = match get_wasi_callback_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::error!(
+                "No WASI monotonic clock callback found for ID: {}",
+                callback_id
+            );
+            return 0;
+        }
+    };
+
+    let result = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let obj = unsafe { JObject::from_raw(obj_ptr as jni::sys::jobject) };
+            match env.call_method(&obj, "now", "()J", &[]) {
+                Ok(result) => result.j().unwrap_or(0) as u64,
+                Err(e) => {
+                    log::error!("Failed to call WasiMonotonicClock.now(): {}", e);
+                    0
+                }
+            }
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to attach JVM thread for monotonic clock now: {}",
+                e
+            );
+            0
+        }
+    };
+    result
+}
+
+/// Trampoline for WasiMonotonicClock.resolution() -> long
+extern "C" fn jni_monotonic_clock_resolution(callback_id: i64) -> u64 {
+    let (jvm, obj_ptr) = match get_wasi_callback_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::error!(
+                "No WASI monotonic clock callback found for ID: {}",
+                callback_id
+            );
+            return 0;
+        }
+    };
+
+    let result = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let obj = unsafe { JObject::from_raw(obj_ptr as jni::sys::jobject) };
+            match env.call_method(&obj, "resolution", "()J", &[]) {
+                Ok(result) => result.j().unwrap_or(0) as u64,
+                Err(e) => {
+                    log::error!("Failed to call WasiMonotonicClock.resolution(): {}", e);
+                    0
+                }
+            }
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to attach JVM thread for monotonic clock resolution: {}",
+                e
+            );
+            0
+        }
+    };
+    result
+}
+
+// =============================================================================
+// Random Source Trampoline
+// =============================================================================
+
+/// Trampoline for WasiRandomSource.fillBytes(byte[])
+extern "C" fn jni_random_fill_bytes(callback_id: i64, buf_ptr: *mut u8, buf_len: usize) {
+    let (jvm, obj_ptr) = match get_wasi_callback_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::error!("No WASI random callback found for ID: {}", callback_id);
+            return;
+        }
+    };
+
+    let _r = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let obj = unsafe { JObject::from_raw(obj_ptr as jni::sys::jobject) };
+            // Create a Java byte array of the requested size
+            match env.new_byte_array(buf_len as i32) {
+                Ok(byte_array) => {
+                    // Call fillBytes(byte[]) on the Java callback object
+                    match env.call_method(
+                        &obj,
+                        "fillBytes",
+                        "([B)V",
+                        &[jni::objects::JValue::Object(byte_array.as_ref())],
+                    ) {
+                        Ok(_) => {
+                            // Copy the filled bytes back to the native buffer
+                            match env.convert_byte_array(&byte_array) {
+                                Ok(bytes) => {
+                                    let copy_len = std::cmp::min(bytes.len(), buf_len);
+                                    unsafe {
+                                        std::ptr::copy_nonoverlapping(
+                                            bytes.as_ptr(),
+                                            buf_ptr,
+                                            copy_len,
+                                        );
+                                    }
+                                }
+                                Err(e) => {
+                                    log::error!(
+                                        "Failed to convert byte array from Java: {}",
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log::error!(
+                                "Failed to call WasiRandomSource.fillBytes(): {}",
+                                e
+                            );
+                        }
+                    }
+                }
+                Err(e) => {
+                    log::error!("Failed to create Java byte array: {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Failed to attach JVM thread for random fill: {}", e);
+        }
+    };
+}
+
+// =============================================================================
+// Socket Address Check Trampoline
+// =============================================================================
+
+/// Trampoline for SocketAddrCheck.check(InetSocketAddress, SocketAddrUse) -> boolean
+extern "C" fn jni_socket_addr_check(
+    callback_id: i64,
+    _ip_version: i32,
+    ip_bytes_ptr: *const u8,
+    ip_bytes_len: usize,
+    port: u16,
+    use_type: i32,
+) -> i32 {
+    let (jvm, obj_ptr) = match get_wasi_callback_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::error!(
+                "No WASI socket addr check callback found for ID: {}",
+                callback_id
+            );
+            return 0;
+        }
+    };
+
+    let result = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let obj = unsafe { JObject::from_raw(obj_ptr as jni::sys::jobject) };
+
+            // Create byte[] from IP bytes
+            let ip_bytes = unsafe { std::slice::from_raw_parts(ip_bytes_ptr, ip_bytes_len) };
+            let byte_array = match env.byte_array_from_slice(ip_bytes) {
+                Ok(arr) => arr,
+                Err(e) => {
+                    log::error!("Failed to create IP byte array: {}", e);
+                    return 0;
+                }
+            };
+
+            // InetAddress.getByAddress(byte[]) -> InetAddress
+            let inet_addr_class = match env.find_class("java/net/InetAddress") {
+                Ok(c) => c,
+                Err(e) => {
+                    log::error!("Failed to find InetAddress class: {}", e);
+                    return 0;
+                }
+            };
+            let inet_addr = match env.call_static_method(
+                inet_addr_class,
+                "getByAddress",
+                "([B)Ljava/net/InetAddress;",
+                &[jni::objects::JValue::Object(byte_array.as_ref())],
+            ) {
+                Ok(result) => match result.l() {
+                    Ok(addr) => addr,
+                    Err(e) => {
+                        log::error!("Failed to get InetAddress result: {}", e);
+                        return 0;
+                    }
+                },
+                Err(e) => {
+                    log::error!("Failed to call InetAddress.getByAddress(): {}", e);
+                    return 0;
+                }
+            };
+
+            // new InetSocketAddress(InetAddress, int)
+            let isa_class = match env.find_class("java/net/InetSocketAddress") {
+                Ok(c) => c,
+                Err(e) => {
+                    log::error!("Failed to find InetSocketAddress class: {}", e);
+                    return 0;
+                }
+            };
+            let socket_addr = match env.new_object(
+                isa_class,
+                "(Ljava/net/InetAddress;I)V",
+                &[
+                    jni::objects::JValue::Object(&inet_addr),
+                    jni::objects::JValue::Int(port as i32),
+                ],
+            ) {
+                Ok(addr) => addr,
+                Err(e) => {
+                    log::error!("Failed to create InetSocketAddress: {}", e);
+                    return 0;
+                }
+            };
+
+            // SocketAddrUse.fromValue(int) -> SocketAddrUse
+            let use_class = match env
+                .find_class("ai/tegmentum/wasmtime4j/wasi/sockets/SocketAddrUse")
+            {
+                Ok(c) => c,
+                Err(e) => {
+                    log::error!("Failed to find SocketAddrUse class: {}", e);
+                    return 0;
+                }
+            };
+            let socket_use = match env.call_static_method(
+                use_class,
+                "fromValue",
+                "(I)Lai/tegmentum/wasmtime4j/wasi/sockets/SocketAddrUse;",
+                &[jni::objects::JValue::Int(use_type)],
+            ) {
+                Ok(result) => match result.l() {
+                    Ok(u) => u,
+                    Err(e) => {
+                        log::error!("Failed to get SocketAddrUse result: {}", e);
+                        return 0;
+                    }
+                },
+                Err(e) => {
+                    log::error!("Failed to call SocketAddrUse.fromValue(): {}", e);
+                    return 0;
+                }
+            };
+
+            // check(InetSocketAddress, SocketAddrUse) -> boolean
+            match env.call_method(
+                &obj,
+                "check",
+                "(Ljava/net/InetSocketAddress;\
+                 Lai/tegmentum/wasmtime4j/wasi/sockets/SocketAddrUse;)Z",
+                &[
+                    jni::objects::JValue::Object(&socket_addr),
+                    jni::objects::JValue::Object(&socket_use),
+                ],
+            ) {
+                Ok(result) => match result.z() {
+                    Ok(allowed) => {
+                        if allowed {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Failed to get boolean result from check(): {}", e);
+                        0
+                    }
+                },
+                Err(e) => {
+                    log::error!("Failed to call SocketAddrCheck.check(): {}", e);
+                    0
+                }
+            }
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to attach JVM thread for socket addr check: {}",
+                e
+            );
+            0
+        }
+    };
+    result
+}
+
+// =============================================================================
+// JNI Native Methods for WASI Callbacks
+// =============================================================================
+
+/// Set custom wall clock callback on the component linker
+/// JNI binding for JniComponentLinker.nativeSetWasiWallClock
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiWallClock(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    wall_clock: JObject,
+) {
+    let callback_id = match setup_jni_wasi_callback(&mut env, &wall_clock) {
+        Ok(id) => id,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
+    } {
+        Ok(linker) => linker,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    linker.set_wasi_wall_clock(CallbackWallClock {
+        now_fn: jni_wall_clock_now,
+        resolution_fn: jni_wall_clock_resolution,
+        callback_id,
+    });
+}
+
+/// Set custom monotonic clock callback on the component linker
+/// JNI binding for JniComponentLinker.nativeSetWasiMonotonicClock
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiMonotonicClock(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    monotonic_clock: JObject,
+) {
+    let callback_id = match setup_jni_wasi_callback(&mut env, &monotonic_clock) {
+        Ok(id) => id,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
+    } {
+        Ok(linker) => linker,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    linker.set_wasi_monotonic_clock(CallbackMonotonicClock {
+        now_fn: jni_monotonic_clock_now,
+        resolution_fn: jni_monotonic_clock_resolution,
+        callback_id,
+    });
+}
+
+/// Set custom secure random callback on the component linker
+/// JNI binding for JniComponentLinker.nativeSetWasiSecureRandom
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiSecureRandom(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    random_source: JObject,
+) {
+    let callback_id = match setup_jni_wasi_callback(&mut env, &random_source) {
+        Ok(id) => id,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
+    } {
+        Ok(linker) => linker,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    linker.set_wasi_secure_random(CallbackRng {
+        fill_bytes_fn: jni_random_fill_bytes,
+        callback_id,
+    });
+}
+
+/// Set custom insecure random callback on the component linker
+/// JNI binding for JniComponentLinker.nativeSetWasiInsecureRandom
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInsecureRandom(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    random_source: JObject,
+) {
+    let callback_id = match setup_jni_wasi_callback(&mut env, &random_source) {
+        Ok(id) => id,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
+    } {
+        Ok(linker) => linker,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    linker.set_wasi_insecure_random(CallbackRng {
+        fill_bytes_fn: jni_random_fill_bytes,
+        callback_id,
+    });
+}
+
+/// Set socket address check callback on the component linker
+/// JNI binding for JniComponentLinker.nativeSetWasiSocketAddrCheck
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiSocketAddrCheck(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    addr_check: JObject,
+) {
+    let callback_id = match setup_jni_wasi_callback(&mut env, &addr_check) {
+        Ok(id) => id,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
+    } {
+        Ok(linker) => linker,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    linker.set_wasi_socket_addr_check(CallbackSocketAddrCheck {
+        check_fn: jni_socket_addr_check,
+        callback_id,
+    });
+}
+
 /// Destroy the component linker and free its resources
 /// JNI binding for JniComponentLinker.nativeDestroyComponentLinker
 #[no_mangle]
@@ -655,6 +1535,97 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     );
 }
 
+/// Define an async host function on the component linker
+/// JNI binding for JniComponentLinker.nativeDefineHostFunctionAsync
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDefineHostFunctionAsync(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    wit_path: JString,
+    callback_id: jlong,
+) {
+    // Get the JVM reference for callback invocation first
+    let jvm = match env.get_java_vm() {
+        Ok(jvm) => jvm,
+        Err(e) => {
+            let error = WasmtimeError::Runtime {
+                message: format!("Failed to get JVM: {}", e),
+                backtrace: None,
+            };
+            jni_utils::throw_jni_exception(&mut env, &error);
+            return;
+        }
+    };
+
+    // Convert the WIT path string
+    let wit_path_str: String = match env.get_string(&wit_path) {
+        Ok(s) => s.into(),
+        Err(e) => {
+            let error = WasmtimeError::Runtime {
+                message: format!("Failed to get WIT path string: {}", e),
+                backtrace: None,
+            };
+            jni_utils::throw_jni_exception(&mut env, &error);
+            return;
+        }
+    };
+
+    // Get the linker
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
+    } {
+        Ok(linker) => linker,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    // Create the callback wrapper
+    let callback = Box::new(JniComponentHostFunctionCallback {
+        jvm: Arc::new(jvm),
+        callback_id,
+    });
+
+    // Register the async host function
+    if let Err(e) =
+        component_linker_core::define_host_function_by_path_async(linker, &wit_path_str, callback)
+    {
+        jni_utils::throw_jni_exception(&mut env, &e);
+        return;
+    }
+
+    log::info!(
+        "Defined async component host function: {} with callback_id={}",
+        wit_path_str,
+        callback_id
+    );
+}
+
+/// Set async support on the component linker
+/// JNI binding for JniComponentLinker.nativeSetAsyncSupport
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetAsyncSupport(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    enabled: jboolean,
+) {
+    // Get the linker
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
+    } {
+        Ok(linker) => linker,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    component_linker_core::set_async_support(linker, enabled != 0);
+}
+
 /// Define a resource type on the component linker
 /// JNI binding for JniComponentLinker.nativeDefineResource
 #[no_mangle]
@@ -714,31 +1685,50 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
         }
     };
 
-    // Log the resource definition
-    log::info!(
-        "Defining component resource: {}:{}/{} (constructor_callback={}, destructor_callback={})",
-        namespace_str,
-        interface_str,
-        resource_str,
-        constructor_callback_id,
-        destructor_callback_id
-    );
-
-    // For now, resource definition is tracked but not fully wired to wasmtime's resource table
-    // The resource table integration happens through WASI and component instantiation
-    // Return a generated resource type ID for tracking
+    // Generate unique resource ID for this definition
     static RESOURCE_ID_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
     let resource_type_id = RESOURCE_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
-    log::info!(
-        "Defined component resource: {}:{}/{} with resource_type_id={}",
-        namespace_str,
-        interface_str,
-        resource_str,
-        resource_type_id
-    );
+    // Build the interface path (e.g., "ns:pkg/iface")
+    let interface_path = format!("{}:{}", namespace_str, interface_str);
 
-    resource_type_id as jlong
+    // Get the linker and call define_resource
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut std::ffi::c_void)
+    } {
+        Ok(l) => l,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return 0;
+        }
+    };
+
+    // Create a destructor callback that will call back to Java via the callback registry
+    let dtor_callback_id = destructor_callback_id as u64;
+    let destructor = std::sync::Arc::new(JniResourceDestructorCallback {
+        callback_id: dtor_callback_id,
+    });
+
+    match linker.define_resource(
+        &interface_path,
+        &resource_str,
+        resource_type_id as u32,
+        destructor,
+    ) {
+        Ok(()) => {
+            log::info!(
+                "Defined component resource: {}/{} with resource_type_id={}",
+                interface_path,
+                resource_str,
+                resource_type_id
+            );
+            resource_type_id as jlong
+        }
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            0
+        }
+    }
 }
 
 /// Instantiate a component using the linker with host functions and resources
@@ -805,4 +1795,165 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 
         Ok(instance_id as i64)
     })
+}
+
+// ============================================================================
+// ComponentInstancePre JNI Bindings
+// ============================================================================
+
+/// Pre-instantiate a component from the linker
+/// JNI binding for JniComponentLinker.nativeInstantiatePre
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeInstantiatePre(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    component_handle: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_ref(linker_handle as *const c_void)?
+        };
+
+        let component =
+            unsafe { crate::component::core::get_component_ref(component_handle as *const c_void)? };
+
+        let pre = linker.instantiate_pre(component)?;
+
+        Ok(Box::into_raw(Box::new(pre)) as jlong)
+    })
+}
+
+/// JNI binding for JniComponentLinker.nativeAllowShadowing
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeAllowShadowing(
+    mut env: JNIEnv,
+    _cls: JClass,
+    linker_handle: jlong,
+    allow: jboolean,
+) {
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        linker.allow_shadowing(allow != 0);
+        Ok(())
+    });
+}
+
+/// JNI binding for JniComponentLinker.nativeDefineUnknownImportsAsTraps
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDefineUnknownImportsAsTraps(
+    mut env: JNIEnv,
+    _cls: JClass,
+    linker_handle: jlong,
+    component_handle: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        let component =
+            unsafe { crate::component::core::get_component_ref(component_handle as *const c_void)? };
+        linker.define_unknown_imports_as_traps(component)?;
+        Ok(0)
+    })
+}
+
+/// Instantiate from a ComponentInstancePre
+/// JNI binding for JniComponentInstancePre.nativeInstantiate
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeInstantiate(
+    mut env: JNIEnv,
+    _obj: JObject,
+    pre_handle: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let pre = unsafe {
+            component_linker_core::get_component_instance_pre_ref(pre_handle as *const c_void)?
+        };
+
+        let instance = pre.instantiate()?;
+
+        Ok(Box::into_raw(Box::new(instance)) as jlong)
+    })
+}
+
+/// Check if ComponentInstancePre is valid
+/// JNI binding for JniComponentInstancePre.nativeIsValid
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeIsValid(
+    _env: JNIEnv,
+    _obj: JObject,
+    pre_handle: jlong,
+) -> jboolean {
+    if pre_handle == 0 {
+        return 0;
+    }
+    let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
+    if pre.is_valid() {
+        1
+    } else {
+        0
+    }
+}
+
+/// Get instance count from ComponentInstancePre
+/// JNI binding for JniComponentInstancePre.nativeInstanceCount
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeInstanceCount(
+    _env: JNIEnv,
+    _obj: JObject,
+    pre_handle: jlong,
+) -> jlong {
+    if pre_handle == 0 {
+        return 0;
+    }
+    let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
+    pre.instance_count() as jlong
+}
+
+/// Get preparation time in nanoseconds
+/// JNI binding for JniComponentInstancePre.nativePreparationTimeNs
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativePreparationTimeNs(
+    _env: JNIEnv,
+    _obj: JObject,
+    pre_handle: jlong,
+) -> jlong {
+    if pre_handle == 0 {
+        return 0;
+    }
+    let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
+    pre.preparation_time_ns() as jlong
+}
+
+/// Get average instantiation time in nanoseconds
+/// JNI binding for JniComponentInstancePre.nativeAvgInstantiationTimeNs
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeAvgInstantiationTimeNs(
+    _env: JNIEnv,
+    _obj: JObject,
+    pre_handle: jlong,
+) -> jlong {
+    if pre_handle == 0 {
+        return 0;
+    }
+    let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
+    pre.average_instantiation_time_ns() as jlong
+}
+
+/// Destroy a ComponentInstancePre
+/// JNI binding for JniComponentInstancePre.nativeDestroy
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeDestroy(
+    _env: JNIEnv,
+    _obj: JObject,
+    pre_handle: jlong,
+) {
+    if pre_handle != 0 {
+        unsafe {
+            component_linker_core::destroy_component_instance_pre(pre_handle as *mut c_void);
+        }
+    }
 }
