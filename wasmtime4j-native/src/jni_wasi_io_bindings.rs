@@ -769,13 +769,3 @@ fn close_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_placeholder() {
-        // Placeholder test to ensure module compiles
-        assert!(true);
-    }
-}

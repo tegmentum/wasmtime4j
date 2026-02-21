@@ -45,18 +45,16 @@ import java.util.logging.Logger;
  * @param <T> the type of user data associated with stores
  * @since 1.0.0
  */
-public final class JniComponentLinker<T> implements ComponentLinker<T> {
+public final class JniComponentLinker<T> extends JniResource implements ComponentLinker<T> {
   private static final Logger LOGGER = Logger.getLogger(JniComponentLinker.class.getName());
   private static final ConcurrentHashMap<Long, ComponentHostFunctionWrapper>
       HOST_FUNCTION_CALLBACKS = new ConcurrentHashMap<>();
   private static final AtomicLong CALLBACK_ID_GENERATOR = new AtomicLong(1);
 
-  private final long nativeHandle;
   private final Engine engine;
   private final Map<String, Long> hostFunctions = new ConcurrentHashMap<>();
   private final Map<String, Set<String>> definedInterfaces = new ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = Collections.synchronizedSet(new HashSet<Long>());
-  private volatile boolean closed = false;
 
   /**
    * Creates a new JNI component linker with the given native handle.
@@ -65,17 +63,8 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
    * @param engine the engine
    */
   public JniComponentLinker(final long nativeHandle, final Engine engine) {
-    this.nativeHandle = nativeHandle;
+    super(nativeHandle);
     this.engine = engine;
-  }
-
-  /**
-   * Gets the native handle.
-   *
-   * @return the native handle
-   */
-  public long getNativeHandle() {
-    return nativeHandle;
   }
 
   @Override
@@ -136,7 +125,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     hostFunctions.put(witPath, callbackId);
 
     // Wire to native component linker if handle is valid
-    if (isNativeHandleReasonable()) {
+    if (isNativeHandleReasonable(nativeHandle)) {
       try {
         nativeDefineHostFunction(nativeHandle, witPath, callbackId);
       } catch (final Exception e) {
@@ -195,7 +184,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     hostFunctions.put(witPath, callbackId);
 
     // Wire to native component linker if handle is valid
-    if (isNativeHandleReasonable()) {
+    if (isNativeHandleReasonable(nativeHandle)) {
       try {
         nativeDefineHostFunctionAsync(nativeHandle, witPath, callbackId);
       } catch (final Exception e) {
@@ -272,7 +261,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     }
 
     // Wire to native component linker if handle is valid
-    if (isNativeHandleReasonable()) {
+    if (isNativeHandleReasonable(nativeHandle)) {
       try {
         nativeDefineResource(
             nativeHandle,
@@ -379,7 +368,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     final JniComponentImpl jniComponent = (JniComponentImpl) component;
     final long componentHandle = jniComponent.getNativeHandle();
 
-    if (!isNativeHandleReasonable()) {
+    if (!isNativeHandleReasonable(nativeHandle)) {
       throw new WasmException("ComponentLinker has an invalid native handle");
     }
 
@@ -412,7 +401,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     final long componentHandle = jniComponent.getNativeHandle();
 
     // Wire to native linker instantiation if handle is valid
-    if (isNativeHandleReasonable()) {
+    if (isNativeHandleReasonable(nativeHandle)) {
       try {
         final long instanceHandle =
             nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
@@ -448,7 +437,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   public void enableWasiPreview2() throws WasmException {
     ensureNotClosed();
 
-    if (!isNativeHandleReasonable()) {
+    if (!isNativeHandleReasonable(nativeHandle)) {
       return;
     }
 
@@ -469,7 +458,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    if (!isNativeHandleReasonable()) {
+    if (!isNativeHandleReasonable(nativeHandle)) {
       return;
     }
 
@@ -575,7 +564,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
 
   @Override
   public boolean isValid() {
-    return !closed && nativeHandle != 0;
+    return !isClosed() && nativeHandle != 0;
   }
 
   @Override
@@ -665,7 +654,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   @Override
   public void allowShadowing(final boolean allow) {
     ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
+    if (!isNativeHandleReasonable(nativeHandle)) {
       return;
     }
     nativeAllowShadowing(nativeHandle, allow);
@@ -686,7 +675,7 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
     final JniComponentImpl jniComponent = (JniComponentImpl) component;
     final long componentHandle = jniComponent.getNativeHandle();
 
-    if (!isNativeHandleReasonable()) {
+    if (!isNativeHandleReasonable(nativeHandle)) {
       throw new WasmException("ComponentLinker has an invalid native handle");
     }
 
@@ -697,31 +686,14 @@ public final class JniComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
-  public void close() {
-    if (!closed) {
-      closed = true;
-      cleanupHostFunctionCallbacks();
-
-      if (nativeHandle == 0 || !isNativeHandleReasonable()) {
-        return;
-      }
-
-      try {
-        nativeDestroyComponentLinker(nativeHandle);
-      } catch (final Exception e) {
-        LOGGER.warning("Error destroying component linker: " + e.getMessage());
-      }
-    }
+  protected void doClose() throws Exception {
+    cleanupHostFunctionCallbacks();
+    nativeDestroyComponentLinker(nativeHandle);
   }
 
-  private void ensureNotClosed() {
-    if (closed) {
-      throw new IllegalStateException("ComponentLinker has been closed");
-    }
-  }
-
-  private boolean isNativeHandleReasonable() {
-    return JniResource.isNativeHandleReasonable(nativeHandle);
+  @Override
+  protected String getResourceType() {
+    return "ComponentLinker";
   }
 
   private long registerHostFunctionCallback(final ComponentHostFunction implementation) {

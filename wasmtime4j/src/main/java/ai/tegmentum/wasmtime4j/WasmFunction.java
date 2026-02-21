@@ -184,13 +184,14 @@ public interface WasmFunction {
   }
 
   // ===== Typed Fast-Path Methods =====
-  // These methods bypass WasmValue boxing/unboxing for maximum performance.
-  // Implementations should override these with optimized native calls.
+  // Default implementations delegate to call() with WasmValue boxing.
+  // Implementations should override these with optimized native calls
+  // that bypass WasmValue boxing/unboxing for maximum performance.
 
   /**
-   * Fast-path call for functions with no parameters and no return value.
+   * Convenience call for functions with no parameters and no return value.
    *
-   * <p>This method bypasses WasmValue boxing for maximum performance on void functions.
+   * <p>Implementations may override for zero-boxing performance.
    *
    * @throws WasmException if function execution fails or the function signature doesn't match
    * @since 1.1.0
@@ -203,9 +204,9 @@ public interface WasmFunction {
   }
 
   /**
-   * Fast-path call for functions with one i32 parameter returning i32.
+   * Convenience call for functions with one i32 parameter returning i32.
    *
-   * <p>This method bypasses WasmValue boxing for maximum performance.
+   * <p>Implementations may override for zero-boxing performance.
    *
    * @param arg the i32 argument
    * @return the i32 result
@@ -225,9 +226,9 @@ public interface WasmFunction {
   }
 
   /**
-   * Fast-path call for functions with two i32 parameters returning i32.
+   * Convenience call for functions with two i32 parameters returning i32.
    *
-   * <p>This method bypasses WasmValue boxing for maximum performance.
+   * <p>Implementations may override for zero-boxing performance.
    *
    * @param arg1 the first i32 argument
    * @param arg2 the second i32 argument
@@ -248,9 +249,9 @@ public interface WasmFunction {
   }
 
   /**
-   * Fast-path call for functions with one i64 parameter returning i64.
+   * Convenience call for functions with one i64 parameter returning i64.
    *
-   * <p>This method bypasses WasmValue boxing for maximum performance.
+   * <p>Implementations may override for zero-boxing performance.
    *
    * @param arg the i64 argument
    * @return the i64 result
@@ -270,9 +271,9 @@ public interface WasmFunction {
   }
 
   /**
-   * Fast-path call for functions with one f64 parameter returning f64.
+   * Convenience call for functions with one f64 parameter returning f64.
    *
-   * <p>This method bypasses WasmValue boxing for maximum performance.
+   * <p>Implementations may override for zero-boxing performance.
    *
    * @param arg the f64 argument
    * @return the f64 result
@@ -292,9 +293,9 @@ public interface WasmFunction {
   }
 
   /**
-   * Fast-path call for functions with no parameters returning i32.
+   * Convenience call for functions with no parameters returning i32.
    *
-   * <p>This method bypasses WasmValue boxing for maximum performance.
+   * <p>Implementations may override for zero-boxing performance.
    *
    * @return the i32 result
    * @throws WasmException if function execution fails or the function signature doesn't match

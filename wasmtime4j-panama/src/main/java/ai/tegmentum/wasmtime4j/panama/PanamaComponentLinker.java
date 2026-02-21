@@ -173,7 +173,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     hostFunctions.put(witPath, callbackId);
 
     // Track in defined interfaces
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
     definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
 
     LOGGER.fine(
@@ -226,7 +226,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     hostFunctions.put(witPath, callbackId);
 
     // Track in defined interfaces
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
     definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
 
     LOGGER.fine(
@@ -329,8 +329,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
 
     // Track resource in defined interfaces (use same key format as defineFunction)
-    final String interfaceKey =
-        interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
     definedInterfaces
         .computeIfAbsent(interfaceKey, k -> ConcurrentHashMap.newKeySet())
         .add("[resource]" + resourceName);
@@ -999,7 +998,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     ensureNotClosed();
 
     // Use Java-side tracking since defineFunction tracks here, not in native
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
     return definedInterfaces.containsKey(interfaceKey);
   }
 
@@ -1018,7 +1017,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     ensureNotClosed();
 
     // Use Java-side tracking since defineFunction tracks here, not in native
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
     final Set<String> functions = definedInterfaces.get(interfaceKey);
     return functions != null && functions.contains(functionName);
   }
@@ -1026,18 +1025,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
   @Override
   public Set<String> getDefinedInterfaces() {
     ensureNotClosed();
-    // Convert internal key format (namespace:name/name) to user-friendly format (namespace:name)
-    final Set<String> result = new HashSet<>();
-    for (final String key : definedInterfaces.keySet()) {
-      // Key format is "namespace:interfaceName/interfaceName", strip the trailing "/interfaceName"
-      final int slashIdx = key.lastIndexOf('/');
-      if (slashIdx > 0) {
-        result.add(key.substring(0, slashIdx));
-      } else {
-        result.add(key);
-      }
-    }
-    return result;
+    return new HashSet<>(definedInterfaces.keySet());
   }
 
   @Override
@@ -1051,7 +1039,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    final String key = interfaceNamespace + ":" + interfaceName + "/" + interfaceName;
+    final String key = interfaceNamespace + ":" + interfaceName;
     final Set<String> functions = definedInterfaces.get(key);
     return functions != null ? new HashSet<>(functions) : Set.of();
   }
@@ -1078,17 +1066,19 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     ensureNotClosed();
 
     // Copy all functions from source interface to target interface
-    final String fromKey = fromNamespace + ":" + fromInterface + "/" + fromInterface;
-    final String toKey = toNamespace + ":" + toInterface + "/" + toInterface;
+    final String fromKey = fromNamespace + ":" + fromInterface;
+    final String toKey = toNamespace + ":" + toInterface;
 
     final Set<String> sourceFunctions = definedInterfaces.get(fromKey);
     if (sourceFunctions != null) {
       definedInterfaces.computeIfAbsent(toKey, k -> new HashSet<>()).addAll(sourceFunctions);
 
-      // Also copy the host function registrations
+      // Also copy the host function registrations (witPath format: ns:iface/iface#func)
       for (final String function : sourceFunctions) {
-        final String fromPath = fromKey + "#" + function;
-        final String toPath = toKey + "#" + function;
+        final String fromPath =
+            fromNamespace + ":" + fromInterface + "/" + fromInterface + "#" + function;
+        final String toPath =
+            toNamespace + ":" + toInterface + "/" + toInterface + "#" + function;
         final Long callbackId = hostFunctions.get(fromPath);
         if (callbackId != null) {
           hostFunctions.put(toPath, callbackId);

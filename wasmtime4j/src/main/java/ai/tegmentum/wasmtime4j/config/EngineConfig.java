@@ -129,6 +129,20 @@ public final class EngineConfig {
   }
 
   /**
+   * Synchronizes an individual feature boolean with the wasmFeatures Set.
+   *
+   * @param feature the WasmFeature enum value
+   * @param enabled true to add, false to remove from the Set
+   */
+  private void syncFeatureToSet(final WasmFeature feature, final boolean enabled) {
+    if (enabled) {
+      this.wasmFeatures.add(feature);
+    } else {
+      this.wasmFeatures.remove(feature);
+    }
+  }
+
+  /**
    * Enables or disables debug information generation.
    *
    * @param debugInfo true to enable debug information
@@ -212,7 +226,9 @@ public final class EngineConfig {
    * @param level the optimization level
    * @return this configuration for method chaining
    * @throws IllegalArgumentException if level is null
+   * @deprecated Use {@link #optimizationLevel(OptimizationLevel)} instead.
    */
+  @Deprecated
   public EngineConfig setOptimizationLevel(final OptimizationLevel level) {
     return optimizationLevel(level);
   }
@@ -366,7 +382,7 @@ public final class EngineConfig {
     this.wasmFeatures.clear();
     this.wasmFeatures.addAll(features);
 
-    // Update individual feature flags based on the set
+    // Update all individual feature flags based on the set
     this.wasmReferenceTypes = features.contains(WasmFeature.REFERENCE_TYPES);
     this.wasmSimd = features.contains(WasmFeature.SIMD);
     this.wasmRelaxedSimd = features.contains(WasmFeature.RELAXED_SIMD);
@@ -376,12 +392,26 @@ public final class EngineConfig {
     this.wasmTailCall = features.contains(WasmFeature.TAIL_CALL);
     this.wasmMultiMemory = features.contains(WasmFeature.MULTI_MEMORY);
     this.wasmMemory64 = features.contains(WasmFeature.MEMORY64);
+    this.wasmGc = features.contains(WasmFeature.GC);
+    this.wasmExceptions = features.contains(WasmFeature.EXCEPTIONS);
+    this.wasmFunctionReferences = features.contains(WasmFeature.TYPED_FUNCTION_REFERENCES);
+    this.wasmWideArithmetic = features.contains(WasmFeature.WIDE_ARITHMETIC);
 
     // Update experimental feature flags
     this.wasmStackSwitching = features.contains(WasmFeature.STACK_SWITCHING);
     this.wasmExtendedConstExpressions = features.contains(WasmFeature.EXTENDED_CONST_EXPRESSIONS);
     this.wasmCustomPageSizes = features.contains(WasmFeature.CUSTOM_PAGE_SIZES);
     this.wasmSharedEverythingThreads = features.contains(WasmFeature.SHARED_EVERYTHING_THREADS);
+
+    // Update component model extension flags
+    this.wasmComponentModelAsync = features.contains(WasmFeature.COMPONENT_MODEL_ASYNC);
+    this.wasmComponentModelAsyncBuiltins =
+        features.contains(WasmFeature.COMPONENT_MODEL_ASYNC_BUILTINS);
+    this.wasmComponentModelAsyncStackful =
+        features.contains(WasmFeature.COMPONENT_MODEL_ASYNC_STACKFUL);
+    this.wasmComponentModelErrorContext =
+        features.contains(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT);
+    this.wasmComponentModelGc = features.contains(WasmFeature.COMPONENT_MODEL_GC);
 
     return this;
   }
@@ -432,10 +462,13 @@ public final class EngineConfig {
         // Component Model is handled at the runtime level
         break;
       case GC:
-        // GC is handled at the runtime level
+        this.wasmGc = true;
         break;
       case EXCEPTIONS:
-        // Exceptions are handled at the runtime level
+        this.wasmExceptions = true;
+        break;
+      case TYPED_FUNCTION_REFERENCES:
+        this.wasmFunctionReferences = true;
         break;
       case STACK_SWITCHING:
         this.wasmStackSwitching = true;
@@ -452,6 +485,21 @@ public final class EngineConfig {
       case WIDE_ARITHMETIC:
         this.wasmWideArithmetic = true;
         break;
+      case COMPONENT_MODEL_ASYNC:
+        this.wasmComponentModelAsync = true;
+        break;
+      case COMPONENT_MODEL_ASYNC_BUILTINS:
+        this.wasmComponentModelAsyncBuiltins = true;
+        break;
+      case COMPONENT_MODEL_ASYNC_STACKFUL:
+        this.wasmComponentModelAsyncStackful = true;
+        break;
+      case COMPONENT_MODEL_ERROR_CONTEXT:
+        this.wasmComponentModelErrorContext = true;
+        break;
+      case COMPONENT_MODEL_GC:
+        this.wasmComponentModelGc = true;
+        break;
       default:
         // Unknown feature, just add to the set
         break;
@@ -465,7 +513,9 @@ public final class EngineConfig {
    *
    * @param enabled true to enable fuel consumption
    * @return this configuration for method chaining
+   * @deprecated Use {@link #consumeFuel(boolean)} instead.
    */
+  @Deprecated
   public EngineConfig setFuelConsumption(final boolean enabled) {
     return consumeFuel(enabled);
   }
@@ -476,9 +526,21 @@ public final class EngineConfig {
    * @param enabled true to enable epoch interruption
    * @return this configuration for method chaining
    */
-  public EngineConfig setEpochInterruption(final boolean enabled) {
+  public EngineConfig epochInterruption(final boolean enabled) {
     this.epochInterruption = enabled;
     return this;
+  }
+
+  /**
+   * Enables or disables epoch-based interruption.
+   *
+   * @param enabled true to enable epoch interruption
+   * @return this configuration for method chaining
+   * @deprecated Use {@link #epochInterruption(boolean)} instead.
+   */
+  @Deprecated
+  public EngineConfig setEpochInterruption(final boolean enabled) {
+    return epochInterruption(enabled);
   }
 
   /**
@@ -492,23 +554,22 @@ public final class EngineConfig {
    * @return this configuration for method chaining
    * @since 1.0.0
    */
-  public EngineConfig setCoredumpOnTrap(final boolean enabled) {
+  public EngineConfig coredumpOnTrap(final boolean enabled) {
     this.coredumpOnTrap = enabled;
     return this;
   }
 
   /**
-   * Convenience method for enabling coredump generation on trap.
-   *
-   * <p>This is an alias for {@link #setCoredumpOnTrap(boolean)}, providing a more fluent API for
-   * the builder pattern.
+   * Enables or disables coredump generation on trap.
    *
    * @param enabled true to enable coredump generation on trap
    * @return this configuration for method chaining
    * @since 1.0.0
+   * @deprecated Use {@link #coredumpOnTrap(boolean)} instead.
    */
-  public EngineConfig coredumpOnTrap(final boolean enabled) {
-    return setCoredumpOnTrap(enabled);
+  @Deprecated
+  public EngineConfig setCoredumpOnTrap(final boolean enabled) {
+    return coredumpOnTrap(enabled);
   }
 
   // Getters
@@ -772,19 +833,97 @@ public final class EngineConfig {
    * @return a new configuration with the same settings
    */
   public EngineConfig copy() {
-    return new EngineConfig()
-        .optimizationLevel(this.optimizationLevel)
-        .parallelCompilation(this.parallelCompilation)
-        .craneliftDebugVerifier(this.craneliftDebugVerifier)
-        .setGenerateDebugInfo(this.generateDebugInfo)
-        .setFuelConsumption(this.consumeFuel)
-        .setEpochInterruption(this.epochInterruption)
-        .setCoredumpOnTrap(this.coredumpOnTrap)
-        .setMaxWasmStack(this.maxWasmStack)
-        .setAsyncStackSize(this.asyncStackSize)
-        .asyncSupport(this.asyncSupport)
-        .setCraneliftSettings(new java.util.HashMap<>(this.craneliftSettings))
-        .setWasmFeatures(new java.util.HashSet<>(this.wasmFeatures));
+    final EngineConfig c = new EngineConfig();
+    // Core settings
+    c.debugInfo = this.debugInfo;
+    c.guestDebug = this.guestDebug;
+    c.consumeFuel = this.consumeFuel;
+    c.optimizationLevel = this.optimizationLevel;
+    c.parallelCompilation = this.parallelCompilation;
+    c.craneliftDebugVerifier = this.craneliftDebugVerifier;
+    c.wasmBacktraceDetails = this.wasmBacktraceDetails;
+    // Wasm feature flags
+    c.wasmReferenceTypes = this.wasmReferenceTypes;
+    c.wasmSimd = this.wasmSimd;
+    c.wasmRelaxedSimd = this.wasmRelaxedSimd;
+    c.wasmMultiValue = this.wasmMultiValue;
+    c.wasmBulkMemory = this.wasmBulkMemory;
+    c.wasmThreads = this.wasmThreads;
+    c.wasmTailCall = this.wasmTailCall;
+    c.wasmMultiMemory = this.wasmMultiMemory;
+    c.wasmMemory64 = this.wasmMemory64;
+    // Stack and async
+    c.maxWasmStack = this.maxWasmStack;
+    c.asyncStackSize = this.asyncStackSize;
+    c.asyncSupport = this.asyncSupport;
+    c.fuelAsyncYieldInterval = this.fuelAsyncYieldInterval;
+    c.generateDebugInfo = this.generateDebugInfo;
+    c.epochInterruption = this.epochInterruption;
+    c.coredumpOnTrap = this.coredumpOnTrap;
+    // Experimental features
+    c.wasmStackSwitching = this.wasmStackSwitching;
+    c.wasmExtendedConstExpressions = this.wasmExtendedConstExpressions;
+    c.wasmCustomPageSizes = this.wasmCustomPageSizes;
+    c.wasmSharedEverythingThreads = this.wasmSharedEverythingThreads;
+    // Maps and sets (defensive copy)
+    c.craneliftSettings = new java.util.HashMap<>(this.craneliftSettings);
+    c.wasmFeatures = new java.util.HashSet<>(this.wasmFeatures);
+    // Allocation strategy
+    c.allocationStrategy = this.allocationStrategy;
+    c.poolingAllocatorEnabled = this.poolingAllocatorEnabled;
+    // GC configuration
+    c.wasmGc = this.wasmGc;
+    c.gcSupport = this.gcSupport;
+    // Memory configuration
+    c.memoryReservation = this.memoryReservation;
+    c.memoryGuardSize = this.memoryGuardSize;
+    c.memoryReservationForGrowth = this.memoryReservationForGrowth;
+    c.memoryMayMove = this.memoryMayMove;
+    c.guardBeforeLinearMemory = this.guardBeforeLinearMemory;
+    c.instancePoolSize = this.instancePoolSize;
+    c.maxMemoryPerInstance = this.maxMemoryPerInstance;
+    // Additional feature flags
+    c.wasmWideArithmetic = this.wasmWideArithmetic;
+    c.wasmFunctionReferences = this.wasmFunctionReferences;
+    c.relaxedSimdDeterministic = this.relaxedSimdDeterministic;
+    c.strategy = this.strategy;
+    c.target = this.target;
+    // Profiling
+    c.profilingStrategy = this.profilingStrategy;
+    // Security and advanced config
+    c.asyncStackZeroing = this.asyncStackZeroing;
+    c.nativeUnwindInfo = this.nativeUnwindInfo;
+    c.craneliftNanCanonicalization = this.craneliftNanCanonicalization;
+    c.memoryInitCow = this.memoryInitCow;
+    c.wasmExceptions = this.wasmExceptions;
+    c.wasmComponentModelAsyncBuiltins = this.wasmComponentModelAsyncBuiltins;
+    c.tableLazyInit = this.tableLazyInit;
+    // Module version
+    c.moduleVersionStrategy = this.moduleVersionStrategy;
+    c.moduleVersionCustom = this.moduleVersionCustom;
+    // Register allocation and backtrace
+    c.regallocAlgorithm = this.regallocAlgorithm;
+    c.backtraceDetails = this.backtraceDetails;
+    // Component model extensions
+    c.wasmComponentModelAsync = this.wasmComponentModelAsync;
+    c.wasmComponentModelAsyncStackful = this.wasmComponentModelAsyncStackful;
+    c.wasmComponentModelErrorContext = this.wasmComponentModelErrorContext;
+    c.wasmComponentModelGc = this.wasmComponentModelGc;
+    c.wasmComponentModelThreading = this.wasmComponentModelThreading;
+    // Platform-specific
+    c.macosUseMachPorts = this.macosUseMachPorts;
+    // Backtrace and debugging
+    c.wasmBacktrace = this.wasmBacktrace;
+    c.generateAddressMap = this.generateAddressMap;
+    // Shared memory
+    c.sharedMemory = this.sharedMemory;
+    // Cranelift PCC
+    c.craneliftPcc = this.craneliftPcc;
+    // GC collector
+    c.collector = this.collector;
+    // Memory guaranteed dense image size
+    c.memoryGuaranteedDenseImageSize = this.memoryGuaranteedDenseImageSize;
+    return c;
   }
 
   // Note: Experimental features methods moved to advanced package
@@ -804,31 +943,29 @@ public final class EngineConfig {
   }
 
   /**
-   * Convenience method for enabling fuel consumption.
-   *
-   * <p>This is an alias for {@link #consumeFuel(boolean)} with {@code true} parameter, providing a
-   * more fluent API for the builder pattern.
+   * Enables fuel consumption.
    *
    * @param enabled true to enable fuel consumption
    * @return this configuration for method chaining
    * @since 1.0.0
+   * @deprecated Use {@link #consumeFuel(boolean)} instead.
    */
+  @Deprecated
   public EngineConfig withFuelEnabled(final boolean enabled) {
     return consumeFuel(enabled);
   }
 
   /**
-   * Convenience method for enabling epoch interruption.
-   *
-   * <p>This is an alias for {@link #setEpochInterruption(boolean)}, providing a more fluent API for
-   * the builder pattern.
+   * Enables epoch interruption.
    *
    * @param enabled true to enable epoch interruption
    * @return this configuration for method chaining
    * @since 1.0.0
+   * @deprecated Use {@link #epochInterruption(boolean)} instead.
    */
+  @Deprecated
   public EngineConfig withEpochInterruption(final boolean enabled) {
-    return setEpochInterruption(enabled);
+    return epochInterruption(enabled);
   }
 
   // GC configuration methods
@@ -848,6 +985,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmGc(final boolean enable) {
     this.wasmGc = enable;
+    syncFeatureToSet(WasmFeature.GC, enable);
     return this;
   }
 
@@ -1202,6 +1340,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmWideArithmetic(final boolean enable) {
     this.wasmWideArithmetic = enable;
+    syncFeatureToSet(WasmFeature.WIDE_ARITHMETIC, enable);
     return this;
   }
 
@@ -1226,6 +1365,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmFunctionReferences(final boolean enable) {
     this.wasmFunctionReferences = enable;
+    syncFeatureToSet(WasmFeature.TYPED_FUNCTION_REFERENCES, enable);
     return this;
   }
 
@@ -1445,6 +1585,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmExceptions(final boolean enable) {
     this.wasmExceptions = enable;
+    syncFeatureToSet(WasmFeature.EXCEPTIONS, enable);
     return this;
   }
 
@@ -1472,6 +1613,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelAsyncBuiltins(final boolean enable) {
     this.wasmComponentModelAsyncBuiltins = enable;
+    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_ASYNC_BUILTINS, enable);
     return this;
   }
 
@@ -1600,6 +1742,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelAsync(final boolean enable) {
     this.wasmComponentModelAsync = enable;
+    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_ASYNC, enable);
     return this;
   }
 
@@ -1622,6 +1765,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelAsyncStackful(final boolean enable) {
     this.wasmComponentModelAsyncStackful = enable;
+    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_ASYNC_STACKFUL, enable);
     return this;
   }
 
@@ -1644,6 +1788,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelErrorContext(final boolean enable) {
     this.wasmComponentModelErrorContext = enable;
+    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT, enable);
     return this;
   }
 
@@ -1666,6 +1811,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelGc(final boolean enable) {
     this.wasmComponentModelGc = enable;
+    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_GC, enable);
     return this;
   }
 

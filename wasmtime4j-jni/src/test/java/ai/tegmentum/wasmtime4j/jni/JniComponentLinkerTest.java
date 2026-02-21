@@ -28,6 +28,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,12 +72,10 @@ class JniComponentLinkerTest {
     }
 
     @Test
-    @DisplayName("Should have invalid state with zero handle")
+    @DisplayName("Should reject zero handle")
     void testConstructorWithZeroHandle() {
-      final JniComponentLinker<Object> linkerWithZero = new JniComponentLinker<>(0L, testEngine);
-
-      assertThat(linkerWithZero.getNativeHandle()).isEqualTo(0L);
-      assertFalse(linkerWithZero.isValid());
+      assertThrows(
+          IllegalArgumentException.class, () -> new JniComponentLinker<>(0L, testEngine));
     }
   }
 
@@ -424,7 +423,7 @@ class JniComponentLinkerTest {
       linker.close();
 
       assertThrows(
-          IllegalStateException.class,
+          JniResourceException.class,
           () -> linker.defineFunction("wasi", "cli", "print", params -> Collections.emptyList()));
     }
 

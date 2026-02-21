@@ -620,17 +620,37 @@ impl Table {
                         Ref::null(&HeapType::Func)
                     }
                     ElementItem::FuncIndex(func_idx) => {
-                        // Get the function from the instance by index
-                        // For now, we'll create a null reference as a placeholder
-                        // Full implementation would need to resolve the function reference
-                        // from the instance's exports or internal function table
-                        log::warn!("table.init with function index {} - creating null ref (function resolution not yet implemented)", func_idx);
-                        Ref::null(&HeapType::Func)
+                        // FuncIndex refers to the module-internal function index space
+                        // (imports + defined functions). Wasmtime's public API does not
+                        // expose get_func_by_index; function resolution requires mapping
+                        // module-internal indices to exported names, which is not available
+                        // through the element segment manager alone.
+                        //
+                        // Active element segments are handled by Wasmtime during
+                        // instantiation. Passive segments with function references
+                        // require the host to build the function index map.
+                        return Err(WasmtimeError::Runtime {
+                            message: format!(
+                                "table.init with function index {} is not supported: \
+                                 Wasmtime's public API does not expose function resolution \
+                                 by module-internal index. Use active element segments \
+                                 (handled automatically during instantiation) instead of \
+                                 passive segments with function references.",
+                                func_idx
+                            ),
+                            backtrace: None,
+                        });
                     }
-                    ElementItem::Expr(_) => {
-                        // Expression-based elements
-                        log::warn!("table.init with expression element - creating null ref (expression evaluation not yet implemented)");
-                        Ref::null(&HeapType::Func)
+                    ElementItem::Expr(_expr) => {
+                        // Expression-based element items (ref.null, ref.func const exprs)
+                        // cannot be evaluated without a const expression interpreter.
+                        return Err(WasmtimeError::Runtime {
+                            message: "table.init with expression-based element items \
+                                     is not supported: const expression evaluation \
+                                     is not available through Wasmtime's public API."
+                                .to_string(),
+                            backtrace: None,
+                        });
                     }
                 };
 

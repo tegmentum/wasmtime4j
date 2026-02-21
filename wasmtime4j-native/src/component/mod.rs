@@ -34,7 +34,7 @@ pub use resources::{
 
 pub use wit::{
     CaseType, ComponentTypeKind, ComponentValueType, FieldType, FunctionDefinition,
-    InterfaceDefinition, Parameter, ResourceDefinition, TypeDefinition, WitParser,
+    InterfaceDefinition, Parameter, ResourceDefinition, TypeDefinition,
 };
 
 pub use linker::{

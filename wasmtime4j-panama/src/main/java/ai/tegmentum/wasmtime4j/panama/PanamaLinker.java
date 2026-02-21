@@ -684,114 +684,14 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public boolean hasImport(final String moduleName, final String name) {
-    if (moduleName == null || moduleName.isEmpty()) {
-      throw new IllegalArgumentException("Module name cannot be null or empty");
-    }
-    if (name == null || name.isEmpty()) {
-      throw new IllegalArgumentException("Import name cannot be null or empty");
-    }
     ensureNotClosed();
-    return imports.contains(moduleName + "::" + name);
+    return ai.tegmentum.wasmtime4j.util.LinkerSupport.hasImport(imports, moduleName, name);
   }
 
   @Override
   public ImportValidation validateImports(final Module... modules) {
-    if (modules == null) {
-      throw new IllegalArgumentException("Modules cannot be null");
-    }
-    if (modules.length == 0) {
-      throw new IllegalArgumentException("At least one module must be provided");
-    }
     ensureNotClosed();
-
-    final long startTime = System.nanoTime();
-
-    final List<ImportIssue> issues = new ArrayList<>();
-    final List<ImportInfo> validatedImports = new ArrayList<>();
-
-    int totalImports = 0;
-    int validImports = 0;
-
-    // Validate each module's imports
-    for (final Module module : modules) {
-      final List<ai.tegmentum.wasmtime4j.type.ImportType> moduleImports = module.getImports();
-      totalImports += moduleImports.size();
-
-      for (final ai.tegmentum.wasmtime4j.type.ImportType importType : moduleImports) {
-        final String moduleName = importType.getModuleName();
-        final String importName = importType.getName();
-
-        // Check if import is defined in linker
-        final boolean isDefined = hasImport(moduleName, importName);
-
-        if (isDefined) {
-          validImports++;
-
-          // Create ImportInfo for valid import
-          final ImportInfo.ImportKind infoType = mapImportTypeToImportKind(importType);
-          final Optional<String> typeSignature = Optional.of(importType.getType().toString());
-
-          final ImportInfo info =
-              new ImportInfo(
-                  moduleName,
-                  importName,
-                  infoType,
-                  typeSignature,
-                  java.time.Instant.now(),
-                  true, // All imports in linker are host functions in this simplified
-                  // implementation
-                  Optional.of("Defined in linker"));
-
-          validatedImports.add(info);
-        } else {
-          // Create ImportIssue for missing import
-          final ImportIssue issue =
-              new ImportIssue(
-                  ImportIssue.Severity.ERROR,
-                  ImportIssue.Type.MISSING_IMPORT,
-                  moduleName,
-                  importName,
-                  "Import not defined in linker",
-                  importType.getType().toString(),
-                  null);
-
-          issues.add(issue);
-        }
-      }
-    }
-
-    final long endTime = System.nanoTime();
-    final Duration validationTime = Duration.ofNanos(endTime - startTime);
-
-    final boolean valid = issues.isEmpty();
-
-    return new ImportValidation(
-        valid, issues, validatedImports, totalImports, validImports, validationTime);
-  }
-
-  /**
-   * Maps ImportType to ImportInfo.ImportKind.
-   *
-   * @param importType the import type from module
-   * @return the corresponding ImportInfo.ImportKind
-   */
-  private ImportInfo.ImportKind mapImportTypeToImportKind(
-      final ai.tegmentum.wasmtime4j.type.ImportType importType) {
-    final WasmTypeKind kind = importType.getType().getKind();
-
-    switch (kind) {
-      case FUNCTION:
-        return ImportInfo.ImportKind.FUNCTION;
-      case MEMORY:
-        return ImportInfo.ImportKind.MEMORY;
-      case TABLE:
-        return ImportInfo.ImportKind.TABLE;
-      case GLOBAL:
-        return ImportInfo.ImportKind.GLOBAL;
-      default:
-        // Default to FUNCTION if we can't determine
-        return ImportInfo.ImportKind.FUNCTION;
-    }
+    return ai.tegmentum.wasmtime4j.util.LinkerSupport.validateImports(imports, modules);
   }
 
   @Override
@@ -909,18 +809,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final String name,
       final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind importKind,
       final String typeSignature) {
-    imports.add(moduleName + "::" + name);
-    final String key = moduleName + "::" + name;
-    final ai.tegmentum.wasmtime4j.validation.ImportInfo info =
-        new ai.tegmentum.wasmtime4j.validation.ImportInfo(
-            moduleName,
-            name,
-            importKind,
-            java.util.Optional.ofNullable(typeSignature),
-            java.time.Instant.now(),
-            true, // All imports registered via define* methods are host-provided
-            java.util.Optional.of("Host-provided import"));
-    importRegistry.put(key, info);
+    ai.tegmentum.wasmtime4j.util.LinkerSupport.addImportWithMetadata(
+        imports, importRegistry, moduleName, name, importKind, typeSignature);
   }
 
   /**
@@ -930,7 +820,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @param name the import name
    */
   void addImport(final String moduleName, final String name) {
-    imports.add(moduleName + "::" + name);
+    ai.tegmentum.wasmtime4j.util.LinkerSupport.addImport(imports, moduleName, name);
   }
 
   /**
@@ -1177,36 +1067,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   @Override
   public Iterable<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> iter() {
     ensureNotClosed();
-
-    final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
-        new java.util.ArrayList<>();
-
-    // Convert import registry to LinkerDefinition objects
-    for (final ImportInfo info : importRegistry.values()) {
-      final ai.tegmentum.wasmtime4j.type.ExternType externType;
-      switch (info.getImportKind()) {
-        case FUNCTION:
-          externType = ai.tegmentum.wasmtime4j.type.ExternType.FUNC;
-          break;
-        case MEMORY:
-          externType = ai.tegmentum.wasmtime4j.type.ExternType.MEMORY;
-          break;
-        case TABLE:
-          externType = ai.tegmentum.wasmtime4j.type.ExternType.TABLE;
-          break;
-        case GLOBAL:
-          externType = ai.tegmentum.wasmtime4j.type.ExternType.GLOBAL;
-          break;
-        default:
-          externType = ai.tegmentum.wasmtime4j.type.ExternType.FUNC;
-      }
-
-      definitions.add(
-          new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
-              info.getModuleName(), info.getImportName(), externType));
-    }
-
-    return definitions;
+    return ai.tegmentum.wasmtime4j.util.LinkerSupport.iterDefinitions(importRegistry);
   }
 
   @Override

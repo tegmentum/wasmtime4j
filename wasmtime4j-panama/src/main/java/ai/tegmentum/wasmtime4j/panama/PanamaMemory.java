@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -248,45 +249,33 @@ public final class PanamaMemory implements WasmMemory {
 
   @Override
   public byte readByte(final int offset) {
-    if (offset < 0) {
-      throw new IndexOutOfBoundsException("Offset cannot be negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     ensureNotClosed();
-    final ByteBuffer buffer = getBuffer();
-    if (offset >= buffer.limit()) {
+    final MemorySegment directMem = getDirectMemorySegment();
+    if (offset >= directMemorySize) {
       throw new IndexOutOfBoundsException("Offset " + offset + " is out of bounds");
     }
-    return buffer.get(offset);
+    return directMem.get(ValueLayout.JAVA_BYTE, offset);
   }
 
   @Override
   public void writeByte(final int offset, final byte value) {
-    if (offset < 0) {
-      throw new IndexOutOfBoundsException("Offset cannot be negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     ensureNotClosed();
-    final ByteBuffer buffer = getBuffer();
-    if (offset >= buffer.limit()) {
+    final MemorySegment directMem = getDirectMemorySegment();
+    if (offset >= directMemorySize) {
       throw new IndexOutOfBoundsException("Offset " + offset + " is out of bounds");
     }
-    buffer.put(offset, value);
+    directMem.set(ValueLayout.JAVA_BYTE, offset, value);
   }
 
   @Override
   public void readBytes(
       final int offset, final byte[] dest, final int destOffset, final int length) {
-    if (offset < 0) {
-      throw new IndexOutOfBoundsException("Offset cannot be negative");
-    }
-    if (dest == null) {
-      throw new IllegalArgumentException("Destination array cannot be null");
-    }
-    if (destOffset < 0) {
-      throw new IndexOutOfBoundsException("Destination offset cannot be negative");
-    }
-    if (length < 0) {
-      throw new IndexOutOfBoundsException("Length cannot be negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
+    Validation.requireNonNull(dest, "dest");
+    Validation.requireNonNegative(destOffset, "destOffset");
+    Validation.requireNonNegative(length, "length");
     if (destOffset + length > dest.length) {
       throw new IndexOutOfBoundsException(
           "Destination array bounds exceeded: destOffset="
@@ -325,18 +314,10 @@ public final class PanamaMemory implements WasmMemory {
   @Override
   public void writeBytes(
       final int offset, final byte[] src, final int srcOffset, final int length) {
-    if (offset < 0) {
-      throw new IndexOutOfBoundsException("Offset cannot be negative");
-    }
-    if (src == null) {
-      throw new IllegalArgumentException("Source array cannot be null");
-    }
-    if (srcOffset < 0) {
-      throw new IndexOutOfBoundsException("Source offset cannot be negative");
-    }
-    if (length < 0) {
-      throw new IndexOutOfBoundsException("Length cannot be negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
+    Validation.requireNonNull(src, "src");
+    Validation.requireNonNegative(srcOffset, "srcOffset");
+    Validation.requireNonNegative(length, "length");
     if (srcOffset + length > src.length) {
       throw new IndexOutOfBoundsException(
           "Source array bounds exceeded: srcOffset="
@@ -374,76 +355,52 @@ public final class PanamaMemory implements WasmMemory {
 
   @Override
   public void copy(final int destOffset, final int srcOffset, final int length) {
-    if (destOffset < 0) {
-      throw new IndexOutOfBoundsException("Destination offset cannot be negative");
-    }
-    if (srcOffset < 0) {
-      throw new IndexOutOfBoundsException("Source offset cannot be negative");
-    }
-    if (length < 0) {
-      throw new IndexOutOfBoundsException("Length cannot be negative");
-    }
+    Validation.requireNonNegative(destOffset, "destOffset");
+    Validation.requireNonNegative(srcOffset, "srcOffset");
+    Validation.requireNonNegative(length, "length");
     ensureNotClosed();
     if (length == 0) {
       return;
     }
-    final ByteBuffer buffer = getBuffer();
-    if (srcOffset + length > buffer.limit()) {
+    final MemorySegment directMem = getDirectMemorySegment();
+    if ((long) srcOffset + length > directMemorySize) {
       throw new IndexOutOfBoundsException(
           "Source range [" + srcOffset + ", " + (srcOffset + length) + ") is out of bounds");
     }
-    if (destOffset + length > buffer.limit()) {
+    if ((long) destOffset + length > directMemorySize) {
       throw new IndexOutOfBoundsException(
           "Destination range [" + destOffset + ", " + (destOffset + length) + ") is out of bounds");
     }
 
-    // Handle overlapping regions correctly using a temp buffer
+    // Handle overlapping regions correctly by reading into temp then writing back
     final byte[] temp = new byte[length];
-    for (int i = 0; i < length; i++) {
-      temp[i] = buffer.get(srcOffset + i);
-    }
-    for (int i = 0; i < length; i++) {
-      buffer.put(destOffset + i, temp[i]);
-    }
+    MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, srcOffset, temp, 0, length);
+    MemorySegment.copy(temp, 0, directMem, ValueLayout.JAVA_BYTE, destOffset, length);
   }
 
   @Override
   public void fill(final int offset, final byte value, final int length) {
-    if (offset < 0) {
-      throw new IndexOutOfBoundsException("Offset cannot be negative");
-    }
-    if (length < 0) {
-      throw new IndexOutOfBoundsException("Length cannot be negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
+    Validation.requireNonNegative(length, "length");
     ensureNotClosed();
     if (length == 0) {
       return;
     }
-    final ByteBuffer buffer = getBuffer();
-    if (offset + length > buffer.limit()) {
+    final MemorySegment directMem = getDirectMemorySegment();
+    if ((long) offset + length > directMemorySize) {
       throw new IndexOutOfBoundsException(
           "Range [" + offset + ", " + (offset + length) + ") is out of bounds");
     }
-    for (int i = 0; i < length; i++) {
-      buffer.put(offset + i, value);
-    }
+    directMem.asSlice(offset, length).fill(value);
   }
 
   @Override
   public void init(
       final int destOffset, final int dataSegmentIndex, final int srcOffset, final int length) {
-    if (destOffset < 0) {
-      throw new IndexOutOfBoundsException("Destination offset cannot be negative");
-    }
-    if (dataSegmentIndex < 0) {
-      throw new IllegalArgumentException("Data segment index cannot be negative");
-    }
-    if (srcOffset < 0) {
-      throw new IndexOutOfBoundsException("Source offset cannot be negative");
-    }
-    if (length < 0) {
-      throw new IndexOutOfBoundsException("Length cannot be negative");
-    }
+    Validation.requireNonNegative(destOffset, "destOffset");
+    Validation.requireNonNegative(dataSegmentIndex, "dataSegmentIndex");
+    Validation.requireNonNegative(srcOffset, "srcOffset");
+    Validation.requireNonNegative(length, "length");
     ensureNotClosed();
 
     if (length == 0) {
@@ -1078,18 +1035,10 @@ public final class PanamaMemory implements WasmMemory {
   @Override
   public void readBytes64(
       final long offset, final byte[] dest, final int destOffset, final int length) {
-    if (offset < 0) {
-      throw new IndexOutOfBoundsException("Offset cannot be negative");
-    }
-    if (dest == null) {
-      throw new IllegalArgumentException("Destination array cannot be null");
-    }
-    if (destOffset < 0) {
-      throw new IndexOutOfBoundsException("Destination offset cannot be negative");
-    }
-    if (length < 0) {
-      throw new IndexOutOfBoundsException("Length cannot be negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
+    Validation.requireNonNull(dest, "dest");
+    Validation.requireNonNegative(destOffset, "destOffset");
+    Validation.requireNonNegative(length, "length");
     if (destOffset + length > dest.length) {
       throw new IndexOutOfBoundsException(
           "Destination array bounds exceeded: destOffset="
@@ -1123,28 +1072,18 @@ public final class PanamaMemory implements WasmMemory {
             "Failed to read memory bytes: " + PanamaErrorMapper.getErrorDescription(result));
       }
 
-      // Copy from native buffer to destination array
-      for (int i = 0; i < length; i++) {
-        dest[destOffset + i] = buffer.get(ValueLayout.JAVA_BYTE, i);
-      }
+      // Bulk copy from native buffer to destination array
+      MemorySegment.copy(buffer, ValueLayout.JAVA_BYTE, 0, dest, destOffset, length);
     }
   }
 
   @Override
   public void writeBytes64(
       final long offset, final byte[] src, final int srcOffset, final int length) {
-    if (offset < 0) {
-      throw new IndexOutOfBoundsException("Offset cannot be negative");
-    }
-    if (src == null) {
-      throw new IllegalArgumentException("Source array cannot be null");
-    }
-    if (srcOffset < 0) {
-      throw new IndexOutOfBoundsException("Source offset cannot be negative");
-    }
-    if (length < 0) {
-      throw new IndexOutOfBoundsException("Length cannot be negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
+    Validation.requireNonNull(src, "src");
+    Validation.requireNonNegative(srcOffset, "srcOffset");
+    Validation.requireNonNegative(length, "length");
     if (srcOffset + length > src.length) {
       throw new IndexOutOfBoundsException(
           "Source array bounds exceeded: srcOffset="
@@ -1171,10 +1110,8 @@ public final class PanamaMemory implements WasmMemory {
     try (Arena localArena = Arena.ofConfined()) {
       final MemorySegment buffer = localArena.allocate(length);
 
-      // Copy from source array to native buffer
-      for (int i = 0; i < length; i++) {
-        buffer.set(ValueLayout.JAVA_BYTE, i, src[srcOffset + i]);
-      }
+      // Bulk copy from source array to native buffer
+      MemorySegment.copy(src, srcOffset, buffer, ValueLayout.JAVA_BYTE, 0, length);
 
       final int result =
           NATIVE_BINDINGS.panamaMemoryWriteBytes(memPtr, storePtr, offset, length, buffer);

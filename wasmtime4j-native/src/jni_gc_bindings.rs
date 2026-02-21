@@ -21,8 +21,6 @@ use crate::gc_heap::ObjectId;
 use crate::gc_types::{
     ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
 };
-use wasmtime::Engine;
-
 // FFI constants
 const FFI_SUCCESS: jint = 0;
 const FFI_ERROR: jint = -1;
@@ -489,12 +487,11 @@ fn create_gc_runtime_internal(engine_handle: jlong) -> WasmtimeResult<WasmGcRunt
         return Err(WasmtimeError::from_string("Invalid engine handle"));
     }
 
-    // For now, create with a default engine
-    // TODO: In the future, retrieve the actual engine from the handle
-    let safe_config = crate::engine::safe_wasmtime_config();
-    let engine = Engine::new(&safe_config)
-        .map_err(|e| WasmtimeError::from_string(format!("Failed to create engine: {}", e)))?;
-    WasmGcRuntime::new(engine)
+    // Retrieve the actual engine from the handle and extract the inner wasmtime::Engine
+    let engine = unsafe {
+        crate::engine::core::get_engine_ref(engine_handle as *const std::os::raw::c_void)?
+    };
+    WasmGcRuntime::new(engine.inner().clone())
 }
 
 fn register_struct_type_internal(

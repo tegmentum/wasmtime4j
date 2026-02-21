@@ -241,9 +241,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNull(buffer, "buffer");
     ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
     validateOffset(offset, buffer.length);
 
     if (store == null) {
@@ -307,9 +304,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNull(buffer, "buffer");
     ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
     validateOffset(offset, buffer.length);
 
     if (store == null) {

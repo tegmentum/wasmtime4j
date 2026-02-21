@@ -408,32 +408,6 @@ fn test_component_value_variants() {
 }
 
 #[test]
-fn test_wit_parser_creation() {
-    let parser = WitParser::new();
-    assert!(parser.is_ok(), "WitParser creation should succeed");
-}
-
-#[test]
-fn test_wit_parser_validate_simple_interface() {
-    let mut parser = WitParser::new().expect("Failed to create parser");
-
-    // Simple valid WIT syntax
-    let wit = r#"
-        interface my-interface {
-            my-func: func() -> string
-        }
-    "#;
-
-    let result = parser.validate_syntax(wit);
-    // Note: validation may fail if WIT parser is not fully implemented
-    // This test just ensures the method doesn't panic
-    match result {
-        Ok(valid) => println!("Validation result: {}", valid),
-        Err(e) => println!("Validation error (expected for incomplete impl): {:?}", e),
-    }
-}
-
-#[test]
 fn test_core_create_component_engine() {
     let engine = core::create_component_engine();
     assert!(

@@ -116,6 +116,9 @@ pub mod wasi_http;
 // Async runtime for async WebAssembly operations
 pub mod async_runtime;
 
+// Shared WASI configuration helpers (used by component::linker and wasi_preview2)
+pub mod wasi_common_config;
+
 // Enhanced WASI Preview 2 implementation
 pub mod wasi_preview2;
 
@@ -190,7 +193,7 @@ pub use component::{
     ComponentInstanceMetadata, ComponentInstanceState, ComponentInstanceWrapper, ComponentLinker,
     ComponentMetadata, ComponentStoreData, ComponentTypeKind, ComponentValue, ComponentValueType,
     FieldType, FunctionDefinition, HostInterface, InstanceInfo, InterfaceDefinition, Parameter,
-    ResourceDefinition, ResourceManager, TypeDefinition, WasiP2Config, WitParser,
+    ResourceDefinition, ResourceManager, TypeDefinition, WasiP2Config,
 };
 
 #[cfg(feature = "component-model")]

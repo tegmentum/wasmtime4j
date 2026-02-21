@@ -20,7 +20,7 @@ use tokio::time::timeout;
 use wasmtime::component::{Component, Linker, ResourceTable};
 use wasmtime::{Engine, Store};
 use wasmtime_wasi::p2::pipe::{MemoryInputPipe, MemoryOutputPipe};
-use wasmtime_wasi::{DirPerms, FilePerms, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
+use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use crate::async_runtime::get_runtime_handle;
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -583,71 +583,33 @@ impl WasiPreview2Context {
             builder.inherit_stderr();
         }
 
-        // Configure network access using wasmtime-wasi socket APIs
-        if self.config.enable_networking {
-            // Allow all network addresses when networking is enabled
-            builder.inherit_network();
-        }
-
-        // Configure specific socket types
-        builder.allow_tcp(self.config.enable_tcp);
-        builder.allow_udp(self.config.enable_udp);
-        builder.allow_ip_name_lookup(self.config.enable_ip_name_lookup);
+        // Configure network access
+        crate::wasi_common_config::apply_network_config(
+            &mut builder,
+            self.config.enable_networking,
+            self.config.enable_tcp,
+            self.config.enable_udp,
+            self.config.enable_ip_name_lookup,
+        );
 
         // Allow blocking current thread
         builder.allow_blocking_current_thread(self.config.allow_blocking_current_thread);
 
-        // Insecure random seed
-        if let Some(seed) = self.config.insecure_random_seed {
-            builder.insecure_random_seed(seed as u128);
-        }
-
-        // Custom wall clock
-        if let Some(clock) = self.config.wall_clock {
-            builder.wall_clock(clock);
-        }
-
-        // Custom monotonic clock
-        if let Some(clock) = self.config.monotonic_clock {
-            builder.monotonic_clock(clock);
-        }
-
-        // Custom secure random
-        if let Some(rng) = self.config.secure_random {
-            builder.secure_random(rng);
-        }
-
-        // Custom insecure random
-        if let Some(rng) = self.config.insecure_random {
-            builder.insecure_random(rng);
-        }
+        // Custom clocks and RNG
+        crate::wasi_common_config::apply_clock_and_rng_config(
+            &mut builder,
+            self.config.insecure_random_seed,
+            self.config.wall_clock,
+            self.config.monotonic_clock,
+            self.config.secure_random,
+            self.config.insecure_random,
+        );
 
         // Socket address check callback
-        if let Some(check) = self.config.socket_addr_check {
-            builder.socket_addr_check(move |addr, reason| {
-                use std::net::SocketAddr;
-                let (ip_version, ip_bytes, port) = match addr {
-                    SocketAddr::V4(v4) => (4i32, v4.ip().octets().to_vec(), v4.port()),
-                    SocketAddr::V6(v6) => (6i32, v6.ip().octets().to_vec(), v6.port()),
-                };
-                let use_type = match reason {
-                    wasmtime_wasi::sockets::SocketAddrUse::TcpBind => 0i32,
-                    wasmtime_wasi::sockets::SocketAddrUse::TcpConnect => 1,
-                    wasmtime_wasi::sockets::SocketAddrUse::UdpBind => 2,
-                    wasmtime_wasi::sockets::SocketAddrUse::UdpConnect => 3,
-                    wasmtime_wasi::sockets::SocketAddrUse::UdpOutgoingDatagram => 4,
-                };
-                let result = (check.check_fn)(
-                    check.callback_id,
-                    ip_version,
-                    ip_bytes.as_ptr(),
-                    ip_bytes.len(),
-                    port,
-                    use_type,
-                );
-                Box::pin(async move { result != 0 })
-            });
-        }
+        crate::wasi_common_config::apply_socket_addr_check(
+            &mut builder,
+            self.config.socket_addr_check,
+        );
 
         // Configure arguments
         if self.config.inherit_args {
@@ -671,21 +633,8 @@ impl WasiPreview2Context {
 
         // Configure preopened directories with granular permissions
         for (host_path, guest_path, dir_bits, file_bits) in &self.config.preopened_dirs {
-            let mut dir_perms = DirPerms::empty();
-            if *dir_bits & 0x1 != 0 {
-                dir_perms |= DirPerms::READ;
-            }
-            if *dir_bits & 0x2 != 0 {
-                dir_perms |= DirPerms::MUTATE;
-            }
-            let mut file_perms = FilePerms::empty();
-            if *file_bits & 0x1 != 0 {
-                file_perms |= FilePerms::READ;
-            }
-            if *file_bits & 0x2 != 0 {
-                file_perms |= FilePerms::WRITE;
-            }
-
+            let (dir_perms, file_perms) =
+                crate::wasi_common_config::decode_permissions(*dir_bits, *file_bits);
             builder
                 .preopened_dir(host_path, guest_path, dir_perms, file_perms)
                 .map_err(|e| WasmtimeError::Wasi {

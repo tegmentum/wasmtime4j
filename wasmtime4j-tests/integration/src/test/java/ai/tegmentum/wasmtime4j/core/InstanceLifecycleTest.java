@@ -118,32 +118,6 @@ public class InstanceLifecycleTest extends DualRuntimeTest {
     }
   }
 
-  @SuppressWarnings("deprecation")
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("cleanup returns true")
-  void cleanupReturnsTrue(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing cleanup() on instance");
-
-    try (Engine engine = Engine.create();
-        Store store = engine.createStore();
-        Module module = engine.compileWat(WAT);
-        Instance instance = module.instantiate(store)) {
-
-      assertNotNull(instance, "Instance must not be null");
-
-      final boolean result = instance.cleanup();
-      assertTrue(result, "cleanup() should return true");
-      LOGGER.info("[" + runtime + "] cleanup()=" + result);
-
-    } catch (final UnsupportedOperationException e) {
-      LOGGER.warning("[" + runtime + "] cleanup not supported: " + e.getMessage());
-    } catch (final UnsatisfiedLinkError e) {
-      LOGGER.warning("[" + runtime + "] Native link error: " + e.getMessage());
-    }
-  }
-
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("double dispose is handled gracefully")

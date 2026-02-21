@@ -7,6 +7,12 @@ package ai.tegmentum.wasmtime4j;
  * needed when instantiating a module. This can be used for resource planning and validation before
  * attempting instantiation.
  *
+ * <p><b>Upstream mapping:</b> The following fields correspond to Wasmtime's {@code
+ * ResourcesRequired} struct: {@link #getNumMemories()}, {@link #getMaximumMemoryBytes()}, {@link
+ * #getNumTables()}, {@link #getMaximumTableElements()}. The remaining fields ({@link
+ * #getMinimumMemoryBytes()}, {@link #getMinimumTableElements()}, {@link #getNumGlobals()}, {@link
+ * #getNumFunctions()}) are custom extensions derived from module analysis.
+ *
  * @since 1.1.0
  */
 public final class ResourcesRequired {

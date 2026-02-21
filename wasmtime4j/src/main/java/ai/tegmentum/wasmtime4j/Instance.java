@@ -358,17 +358,6 @@ public interface Instance extends Closeable {
    */
   InstanceState getState();
 
-  /**
-   * Performs comprehensive resource cleanup for this instance.
-   *
-   * @return true if cleanup was performed, false if already cleaned up
-   * @throws WasmException if cleanup fails
-   * @since 1.0.0
-   * @deprecated Use {@link #dispose()} or {@link #close()} instead. This method provides no
-   *     additional cleanup beyond dispose().
-   */
-  @Deprecated
-  boolean cleanup() throws WasmException;
 
   /**
    * Checks if the instance is still valid and usable.

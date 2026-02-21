@@ -19,7 +19,6 @@ import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
@@ -45,9 +44,6 @@ public final class JniInstance extends JniResource implements Instance {
       throw new ExceptionInInitializerError(e);
     }
   }
-
-  /** Flag to track if resources have been cleaned up. */
-  private final AtomicBoolean cleanedUp = new AtomicBoolean(false);
 
   /** Reference to the module used to create this instance. */
   private final Module module;
@@ -752,26 +748,6 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
-  @SuppressWarnings("deprecation")
-  @Override
-  public boolean cleanup() throws WasmException {
-    if (cleanedUp.get()) {
-      return false; // Already cleaned up
-    }
-
-    ensureNotClosed();
-
-    try {
-      final boolean result = nativeCleanupResources(getNativeHandle());
-      if (result) {
-        cleanedUp.set(true);
-        LOGGER.fine("Instance resources cleaned up successfully");
-      }
-      return result;
-    } catch (final RuntimeException e) {
-      throw new WasmException("Failed to cleanup instance resources", e);
-    }
-  }
 
   @Override
   public java.util.Map<String, Object> getAllExports() {
@@ -986,11 +962,4 @@ public final class JniInstance extends JniResource implements Instance {
    */
   private static native int nativeGetState(long instanceHandle);
 
-  /**
-   * Performs cleanup of native instance resources.
-   *
-   * @param instanceHandle the native instance handle
-   * @return true if cleanup was successful, false otherwise
-   */
-  private static native boolean nativeCleanupResources(long instanceHandle);
 }

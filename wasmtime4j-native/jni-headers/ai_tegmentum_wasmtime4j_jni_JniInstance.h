@@ -135,14 +135,6 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI3
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetState
   (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniInstance
- * Method:    nativeCleanupResources
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCleanupResources
-  (JNIEnv *, jclass, jlong);
-
 #ifdef __cplusplus
 }
 #endif

@@ -223,14 +223,14 @@ public class PanamaMemoryTest {
     final byte[] data = new byte[10];
 
     assertThrows(
-        IndexOutOfBoundsException.class,
+        IllegalArgumentException.class,
         () -> memory.writeBytes(-1, data, 0, data.length),
-        "Negative offset should throw");
+        "Negative offset should throw IllegalArgumentException");
 
     assertThrows(
-        IndexOutOfBoundsException.class,
+        IllegalArgumentException.class,
         () -> memory.readBytes(-1, data, 0, data.length),
-        "Negative offset should throw");
+        "Negative offset should throw IllegalArgumentException");
   }
 
   @Test
@@ -256,14 +256,14 @@ public class PanamaMemoryTest {
     final byte[] data = new byte[10];
 
     assertThrows(
-        IndexOutOfBoundsException.class,
+        IllegalArgumentException.class,
         () -> memory.writeBytes(0, data, -1, 5),
-        "Negative array offset should throw");
+        "Negative array offset should throw IllegalArgumentException");
 
     assertThrows(
-        IndexOutOfBoundsException.class,
+        IllegalArgumentException.class,
         () -> memory.readBytes(0, data, -1, 5),
-        "Negative array offset should throw");
+        "Negative array offset should throw IllegalArgumentException");
   }
 
   @Test
@@ -273,14 +273,14 @@ public class PanamaMemoryTest {
     final byte[] data = new byte[10];
 
     assertThrows(
-        IndexOutOfBoundsException.class,
+        IllegalArgumentException.class,
         () -> memory.writeBytes(0, data, 0, -1),
-        "Negative length should throw");
+        "Negative length should throw IllegalArgumentException");
 
     assertThrows(
-        IndexOutOfBoundsException.class,
+        IllegalArgumentException.class,
         () -> memory.readBytes(0, data, 0, -1),
-        "Negative length should throw");
+        "Negative length should throw IllegalArgumentException");
   }
 
   @Test
@@ -476,9 +476,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeOffset() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.readByte(-1),
-          "Negative offset should throw IndexOutOfBoundsException");
+          "Negative offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -512,9 +512,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeOffset() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.writeByte(-1, (byte) 0x42),
-          "Negative offset should throw IndexOutOfBoundsException");
+          "Negative offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -570,9 +570,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeDestOffset() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.copy(-1, 0, 5),
-          "Negative destination offset should throw");
+          "Negative destination offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -580,9 +580,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeSrcOffset() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.copy(0, -1, 5),
-          "Negative source offset should throw");
+          "Negative source offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -590,9 +590,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeLength() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.copy(0, 0, -1),
-          "Negative length should throw");
+          "Negative length should throw IllegalArgumentException");
     }
 
     @Test
@@ -641,9 +641,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeOffset() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.fill(-1, (byte) 0xFF, 10),
-          "Negative offset should throw");
+          "Negative offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -651,9 +651,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeLength() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.fill(0, (byte) 0xFF, -1),
-          "Negative length should throw");
+          "Negative length should throw IllegalArgumentException");
     }
 
     @Test
@@ -1214,9 +1214,9 @@ public class PanamaMemoryTest {
     public void shouldRejectNegativeOffset64Read() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.readBytes64(-1L, new byte[10], 0, 10),
-          "Negative offset should throw IndexOutOfBoundsException");
+          "Negative offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -1224,9 +1224,9 @@ public class PanamaMemoryTest {
     public void shouldRejectNegativeOffset64Write() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.writeBytes64(-1L, new byte[10], 0, 10),
-          "Negative offset should throw IndexOutOfBoundsException");
+          "Negative offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -1234,9 +1234,9 @@ public class PanamaMemoryTest {
     public void shouldRejectNegativeDestOffset64Read() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.readBytes64(0L, new byte[10], -1, 5),
-          "Negative dest offset should throw IndexOutOfBoundsException");
+          "Negative dest offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -1244,9 +1244,9 @@ public class PanamaMemoryTest {
     public void shouldRejectNegativeSrcOffset64Write() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.writeBytes64(0L, new byte[10], -1, 5),
-          "Negative src offset should throw IndexOutOfBoundsException");
+          "Negative src offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -1254,9 +1254,9 @@ public class PanamaMemoryTest {
     public void shouldRejectNegativeLength64Read() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.readBytes64(0L, new byte[10], 0, -1),
-          "Negative length should throw IndexOutOfBoundsException");
+          "Negative length should throw IllegalArgumentException");
     }
 
     @Test
@@ -1264,9 +1264,9 @@ public class PanamaMemoryTest {
     public void shouldRejectNegativeLength64Write() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.writeBytes64(0L, new byte[10], 0, -1),
-          "Negative length should throw IndexOutOfBoundsException");
+          "Negative length should throw IllegalArgumentException");
     }
 
     @Test
@@ -1299,9 +1299,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeDestOffset() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.init(-1, 0, 0, 10),
-          "Negative destination offset should throw");
+          "Negative destination offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -1319,9 +1319,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeSrcOffset() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.init(0, 0, -1, 10),
-          "Negative source offset should throw");
+          "Negative source offset should throw IllegalArgumentException");
     }
 
     @Test
@@ -1329,9 +1329,9 @@ public class PanamaMemoryTest {
     public void shouldThrowForNegativeLength() throws Exception {
       final WasmMemory memory = getMemory();
       assertThrows(
-          IndexOutOfBoundsException.class,
+          IllegalArgumentException.class,
           () -> memory.init(0, 0, 0, -1),
-          "Negative length should throw");
+          "Negative length should throw IllegalArgumentException");
     }
 
     @Test

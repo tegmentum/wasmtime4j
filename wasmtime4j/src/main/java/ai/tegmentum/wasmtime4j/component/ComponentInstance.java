@@ -129,10 +129,16 @@ public interface ComponentInstance extends AutoCloseable {
   /**
    * Binds an imported interface to this component instance.
    *
+   * <p><strong>Note:</strong> This method has no backing Wasmtime API. The Panama implementation
+   * throws {@link UnsupportedOperationException}.
+   *
    * @param interfaceName the name of the interface to bind
    * @param implementation the implementation to bind
    * @throws WasmException if binding fails
+   * @throws UnsupportedOperationException if the runtime does not support this operation
+   * @deprecated Inconsistent support across runtimes. Panama throws UnsupportedOperationException.
    */
+  @Deprecated
   void bindInterface(String interfaceName, Object implementation) throws WasmException;
 
   /**
