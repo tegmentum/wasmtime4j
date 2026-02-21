@@ -1,265 +1,300 @@
 package ai.tegmentum.wasmtime4j.jni.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link JniResource}. */
+/**
+ * Tests for {@link JniResource}.
+ *
+ * <p>Verifies constructor validation, close lifecycle idempotency, state after close, thread safety,
+ * and static utility methods. Uses a concrete test subclass with a tracked {@code doClose()} to test
+ * lifecycle without native calls.
+ */
+@DisplayName("JniResource Tests")
 class JniResourceTest {
 
-  /** Test implementation of JniResource for testing purposes. */
-  private static class TestResource extends JniResource {
-    private final AtomicBoolean cleanupCalled = new AtomicBoolean(false);
-    private final String resourceType;
-    private final boolean throwOnCleanup;
+  private static final long VALID_HANDLE = 0x12345678L;
 
-    TestResource(final long nativeHandle, final String resourceType) {
-      this(nativeHandle, resourceType, false);
-    }
+  /**
+   * Concrete test subclass of JniResource that tracks doClose() calls without requiring native
+   * resources.
+   */
+  private static final class TestJniResource extends JniResource {
+    private final AtomicInteger closeCount = new AtomicInteger(0);
+    private volatile RuntimeException closeException;
 
-    TestResource(final long nativeHandle, final String resourceType, final boolean throwOnCleanup) {
+    TestJniResource(final long nativeHandle) {
       super(nativeHandle);
-      this.resourceType = resourceType;
-      this.throwOnCleanup = throwOnCleanup;
     }
 
     @Override
-    protected void doClose() throws Exception {
-      cleanupCalled.set(true);
-      if (throwOnCleanup) {
-        throw new RuntimeException("Cleanup failed for testing");
+    protected void doClose() {
+      closeCount.incrementAndGet();
+      if (closeException != null) {
+        throw closeException;
       }
     }
 
     @Override
     protected String getResourceType() {
-      return resourceType;
+      return "TestResource";
     }
 
-    boolean isCleanupCalled() {
-      return cleanupCalled.get();
+    int getCloseCount() {
+      return closeCount.get();
+    }
+
+    void setCloseException(final RuntimeException exception) {
+      this.closeException = exception;
     }
   }
 
-  @Test
-  void testConstructorWithValidHandle() {
-    final long validHandle = 12345L;
-    final TestResource resource = new TestResource(validHandle, "Test");
+  @Nested
+  @DisplayName("Constructor Validation")
+  class ConstructorValidation {
 
-    assertThat(resource.getNativeHandle()).isEqualTo(validHandle);
-    assertThat(resource.getResourceType()).isEqualTo("Test");
-    assertFalse(resource.isClosed());
-    assertFalse(resource.isCleanupCalled());
-  }
-
-  @Test
-  void testConstructorWithInvalidHandle() {
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> new TestResource(0L, "Test"));
-
-    assertThat(exception.getMessage()).contains("nativeHandle");
-    assertThat(exception.getMessage()).contains("invalid native handle");
-  }
-
-  @Test
-  void testGetNativeHandleWhenOpen() {
-    final long handle = 12345L;
-    final TestResource resource = new TestResource(handle, "Test");
-
-    assertThat(resource.getNativeHandle()).isEqualTo(handle);
-  }
-
-  @Test
-  void testGetNativeHandleWhenClosed() {
-    final TestResource resource = new TestResource(12345L, "Test");
-    resource.close();
-
-    final JniResourceException exception =
-        assertThrows(JniResourceException.class, resource::getNativeHandle);
-
-    assertThat(exception.getMessage()).contains("Test resource has been closed");
-    assertThat(exception.getMessage()).contains("0x" + Long.toHexString(12345L));
-  }
-
-  @Test
-  void testIsClosedInitialState() {
-    final TestResource resource = new TestResource(12345L, "Test");
-    assertFalse(resource.isClosed());
-  }
-
-  @Test
-  void testIsClosedAfterClose() {
-    final TestResource resource = new TestResource(12345L, "Test");
-    resource.close();
-    assertTrue(resource.isClosed());
-  }
-
-  @Test
-  void testCloseCallsDoClose() {
-    final TestResource resource = new TestResource(12345L, "Test");
-    assertFalse(resource.isCleanupCalled());
-
-    resource.close();
-
-    assertTrue(resource.isCleanupCalled());
-    assertTrue(resource.isClosed());
-  }
-
-  @Test
-  void testCloseIsIdempotent() {
-    final TestResource resource = new TestResource(12345L, "Test");
-
-    resource.close();
-    assertTrue(resource.isCleanupCalled());
-    assertTrue(resource.isClosed());
-
-    // Reset cleanup flag to test idempotent behavior
-    resource.cleanupCalled.set(false);
-
-    resource.close(); // Second call should not call doClose again
-
-    assertFalse(resource.isCleanupCalled());
-    assertTrue(resource.isClosed());
-  }
-
-  @Test
-  void testCloseWithException() {
-    final TestResource resource = new TestResource(12345L, "Test", true);
-
-    // Should not throw exception even if doClose throws
-    assertDoesNotThrow(resource::close);
-
-    assertTrue(resource.isCleanupCalled());
-    assertTrue(resource.isClosed());
-  }
-
-  @Test
-  void testEnsureNotClosedWhenOpen() {
-    final TestResource resource = new TestResource(12345L, "Test");
-
-    assertDoesNotThrow(resource::ensureNotClosed);
-  }
-
-  @Test
-  void testEnsureNotClosedWhenClosed() {
-    final TestResource resource = new TestResource(12345L, "Test");
-    resource.close();
-
-    final JniResourceException exception =
-        assertThrows(JniResourceException.class, resource::ensureNotClosed);
-
-    assertThat(exception.getMessage()).contains("Test resource has been closed");
-  }
-
-  @Test
-  void testToString() {
-    final TestResource resource = new TestResource(0xABCDEFL, "TestResource");
-    final String toString = resource.toString();
-
-    assertThat(toString).contains("TestResource");
-    assertThat(toString).contains("handle=0xabcdef");
-    assertThat(toString).contains("closed=false");
-
-    resource.close();
-    final String toStringAfterClose = resource.toString();
-    assertThat(toStringAfterClose).contains("closed=true");
-  }
-
-  @Test
-  void testTryWithResourcesPattern() {
-    try (TestResource resource = new TestResource(12345L, "Test")) {
-      assertFalse(resource.isClosed());
-      assertThat(resource.getNativeHandle()).isEqualTo(12345L);
+    @Test
+    @DisplayName("Zero handle should be rejected as null pointer")
+    void zeroHandleShouldBeRejected() {
+      assertThatThrownBy(() -> new TestJniResource(0L))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("nativeHandle")
+          .hasMessageContaining("null pointer");
     }
 
-    // Should be automatically closed due to try-with-resources
-    // Note: We can't easily test this because we can't access the resource after the try block
-    // but the compiler ensures close() is called
-  }
-
-  @Test
-  void testMultipleResourcesWithTryWithResources() {
-    assertDoesNotThrow(
-        () -> {
-          try (TestResource resource1 = new TestResource(11111L, "Test1");
-              TestResource resource2 = new TestResource(22222L, "Test2")) {
-
-            assertFalse(resource1.isClosed());
-            assertFalse(resource2.isClosed());
-            assertThat(resource1.getNativeHandle()).isEqualTo(11111L);
-            assertThat(resource2.getNativeHandle()).isEqualTo(22222L);
-          }
-        });
-  }
-
-  @Test
-  void testResourceTypeInErrorMessages() {
-    final TestResource resource = new TestResource(12345L, "CustomType");
-    resource.close();
-
-    final JniResourceException exception =
-        assertThrows(JniResourceException.class, resource::getNativeHandle);
-
-    assertThat(exception.getMessage()).contains("CustomType resource has been closed");
-  }
-
-  @Test
-  void testNativeHandleFormatting() {
-    final TestResource resource = new TestResource(0x12345ABCL, "Test");
-    final String toString = resource.toString();
-
-    assertThat(toString).contains("handle=0x12345abc");
-  }
-
-  @Test
-  void testConcurrentClose() {
-    final TestResource resource = new TestResource(12345L, "Test");
-
-    // Test concurrent closing doesn't cause issues
-    final Thread[] threads = new Thread[5];
-    for (int i = 0; i < threads.length; i++) {
-      threads[i] = new Thread(resource::close);
+    @Test
+    @DisplayName("Negative handle should be rejected as invalid")
+    void negativeHandleShouldBeRejected() {
+      assertThatThrownBy(() -> new TestJniResource(-1L))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("nativeHandle")
+          .hasMessageContaining("negative value");
     }
 
-    for (Thread thread : threads) {
-      thread.start();
+    @Test
+    @DisplayName("Valid handle should create resource successfully")
+    void validHandleShouldCreateResource() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      assertThat(resource.getNativeHandle()).isEqualTo(VALID_HANDLE);
+      assertThat(resource.isClosed()).isFalse();
+      resource.markClosedForTesting();
     }
-
-    for (Thread thread : threads) {
-      assertDoesNotThrow(() -> thread.join());
-    }
-
-    assertTrue(resource.isClosed());
   }
 
-  @Test
-  void testResourceCreationWithDifferentHandleValues() {
-    // Test with valid positive handle values
-    final long[] validHandles = {1L, Long.MAX_VALUE, 0xDEADBEEFL};
+  @Nested
+  @DisplayName("Close Lifecycle")
+  class CloseLifecycle {
 
-    for (long handle : validHandles) {
-      final TestResource resource = new TestResource(handle, "Test");
-      assertThat(resource.getNativeHandle()).isEqualTo(handle);
-      assertFalse(resource.isClosed());
+    @Test
+    @DisplayName("close() should call doClose() exactly once")
+    void closeShouldCallDoCloseOnce() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      resource.close();
+      assertThat(resource.getCloseCount())
+          .as("doClose() should be called exactly once")
+          .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("close() should set isClosed() to true")
+    void closeShouldSetClosedFlag() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      assertThat(resource.isClosed()).isFalse();
+      resource.close();
+      assertThat(resource.isClosed()).isTrue();
+    }
+
+    @Test
+    @DisplayName("Double close should call doClose() only once (idempotent)")
+    void doubleCloseShouldBeIdempotent() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      resource.close();
+      resource.close();
+      resource.close();
+      assertThat(resource.getCloseCount())
+          .as("doClose() should still be called exactly once after multiple close() calls")
+          .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("close() should swallow doClose() exceptions")
+    void closeShouldSwallowExceptions() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      resource.setCloseException(new RuntimeException("Simulated cleanup failure"));
+
+      assertThatCode(resource::close)
+          .as("close() should not propagate exceptions from doClose()")
+          .doesNotThrowAnyException();
+      assertThat(resource.isClosed()).isTrue();
+    }
+
+    @Test
+    @DisplayName("markClosedForTesting() should set closed without calling doClose()")
+    void markClosedForTestingShouldNotCallDoClose() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      resource.markClosedForTesting();
+      assertThat(resource.isClosed()).isTrue();
+      assertThat(resource.getCloseCount())
+          .as("doClose() should not be called by markClosedForTesting()")
+          .isZero();
+    }
+  }
+
+  @Nested
+  @DisplayName("State After Close")
+  class StateAfterClose {
+
+    @Test
+    @DisplayName("getNativeHandle() should throw JniResourceException after close")
+    void getNativeHandleShouldThrowAfterClose() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      resource.close();
+
+      assertThatThrownBy(resource::getNativeHandle)
+          .isInstanceOf(JniResourceException.class)
+          .hasMessageContaining("TestResource")
+          .hasMessageContaining("closed")
+          .hasMessageContaining(String.format("0x%x", VALID_HANDLE));
+    }
+
+    @Test
+    @DisplayName("ensureNotClosed() should throw JniResourceException after close")
+    void ensureNotClosedShouldThrowAfterClose() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      resource.close();
+
+      assertThatThrownBy(resource::ensureNotClosed)
+          .isInstanceOf(JniResourceException.class)
+          .hasMessageContaining("TestResource")
+          .hasMessageContaining("closed");
+    }
+
+    @Test
+    @DisplayName("ensureNotClosed() should not throw when resource is open")
+    void ensureNotClosedShouldNotThrowWhenOpen() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+
+      assertThatCode(resource::ensureNotClosed)
+          .as("ensureNotClosed() should not throw for an open resource")
+          .doesNotThrowAnyException();
+
+      resource.markClosedForTesting();
+    }
+  }
+
+  @Nested
+  @DisplayName("Thread Safety")
+  class ThreadSafety {
+
+    @Test
+    @DisplayName("Concurrent close from multiple threads should call doClose() exactly once")
+    void concurrentCloseShouldCallDoCloseOnce() throws InterruptedException {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      final int threadCount = 8;
+      final CountDownLatch startLatch = new CountDownLatch(1);
+      final CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+      for (int i = 0; i < threadCount; i++) {
+        new Thread(
+                () -> {
+                  try {
+                    startLatch.await(5, TimeUnit.SECONDS);
+                    resource.close();
+                  } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                  } finally {
+                    doneLatch.countDown();
+                  }
+                })
+            .start();
+      }
+
+      startLatch.countDown();
+      assertThat(doneLatch.await(10, TimeUnit.SECONDS))
+          .as("All threads should complete within timeout")
+          .isTrue();
+      assertThat(resource.getCloseCount())
+          .as("doClose() should be called exactly once despite concurrent close()")
+          .isEqualTo(1);
+      assertThat(resource.isClosed()).isTrue();
+    }
+  }
+
+  @Nested
+  @DisplayName("Static Utility Methods")
+  class StaticUtilityMethods {
+
+    @Test
+    @DisplayName("isNativeHandleReasonable should return true at 4GB threshold")
+    void isReasonableAtThreshold() {
+      assertThat(JniResource.isNativeHandleReasonable(0x100000000L))
+          .as("Handle at 4GB threshold (0x100000000) should be considered reasonable")
+          .isTrue();
+    }
+
+    @Test
+    @DisplayName("isNativeHandleReasonable should return false below 4GB threshold")
+    void isNotReasonableBelowThreshold() {
+      assertThat(JniResource.isNativeHandleReasonable(0xFFFFFFFFL))
+          .as("Handle below 4GB threshold (0xFFFFFFFF) should not be considered reasonable")
+          .isFalse();
+    }
+
+    @Test
+    @DisplayName("isNativeHandleReasonable should return false for zero")
+    void isNotReasonableForZero() {
+      assertThat(JniResource.isNativeHandleReasonable(0L))
+          .as("Zero handle should not be considered reasonable")
+          .isFalse();
+    }
+
+    @Test
+    @DisplayName("isNativeHandleReasonable should return true for large handle")
+    void isReasonableForLargeHandle() {
+      assertThat(JniResource.isNativeHandleReasonable(0x7F00_0000_0000L))
+          .as("Large handle well above threshold should be considered reasonable")
+          .isTrue();
+    }
+
+    @Test
+    @DisplayName("isNativeHandleReasonable should return false for small test handles")
+    void isNotReasonableForSmallTestHandles() {
+      assertThat(JniResource.isNativeHandleReasonable(0x1111L))
+          .as("Small test handle 0x1111 should not be considered reasonable")
+          .isFalse();
+      assertThat(JniResource.isNativeHandleReasonable(0x12345678L))
+          .as("Test handle 0x12345678 should not be considered reasonable (below 4GB)")
+          .isFalse();
+    }
+  }
+
+  @Nested
+  @DisplayName("toString")
+  class ToStringTests {
+
+    @Test
+    @DisplayName("toString should include resource type, handle, and closed state")
+    void toStringShouldIncludeDetails() {
+      final TestJniResource resource = new TestJniResource(VALID_HANDLE);
+      final String str = resource.toString();
+
+      assertThat(str)
+          .contains("TestResource")
+          .contains(String.format("0x%x", VALID_HANDLE))
+          .contains("closed=false");
 
       resource.close();
-      assertTrue(resource.isClosed());
-    }
-
-    // Test that invalid handles (negative and zero) are properly rejected
-    final long[] invalidHandles = {0L, -1L, Long.MIN_VALUE};
-
-    for (long handle : invalidHandles) {
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> new TestResource(handle, "Test"),
-          "Should reject invalid handle: " + handle);
+      final String closedStr = resource.toString();
+      assertThat(closedStr).contains("closed=true");
     }
   }
 }

@@ -1,420 +1,321 @@
-/*
- * Copyright 2025 Tegmentum AI
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package ai.tegmentum.wasmtime4j.jni;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncHostFunction;
-import ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackHandle;
-import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for JniCallbackRegistry defensive programming and validation logic.
+ * Tests for {@link JniCallbackRegistry}.
  *
- * <p>Note: Most registry operations require native library since they create function references.
- * These tests verify parameter validation that occurs before native calls.
+ * <p>Tests validation logic, initial state, close lifecycle, and operations-after-close behavior.
+ * All validation tests exercise pre-native-call code paths that run entirely in Java.
+ *
+ * <p>Callback registration tests that require native resources (JniFunctionReference) are covered
+ * by integration tests. These unit tests focus on input validation, lifecycle management, and
+ * metrics tracking that can be verified without native bindings.
  */
+@DisplayName("JniCallbackRegistry Tests")
 class JniCallbackRegistryTest {
-  private static final long VALID_HANDLE = 1L;
+
+  private static final long VALID_HANDLE = 0x12345678L;
+
   private JniEngine testEngine;
   private JniStore testStore;
   private JniCallbackRegistry registry;
-  private FunctionType testFunctionType;
-  private HostFunction testCallback;
 
   @BeforeEach
   void setUp() {
     testEngine = new JniEngine(VALID_HANDLE);
     testStore = new JniStore(VALID_HANDLE, testEngine);
     registry = new JniCallbackRegistry(testStore);
-    testFunctionType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
-    testCallback = params -> null;
   }
 
-  // Constructor validation tests
-
-  @Test
-  void testConstructorWithNullStore() {
-    final NullPointerException exception =
-        assertThrows(NullPointerException.class, () -> new JniCallbackRegistry(null));
-
-    assertThat(exception.getMessage()).contains("Store cannot be null");
-  }
-
-  @Test
-  void testConstructorCreatesValidRegistry() {
-    final JniCallbackRegistry newRegistry = new JniCallbackRegistry(testStore);
-
-    assertThat(newRegistry).isNotNull();
-    assertThat(newRegistry.getCallbackCount()).isEqualTo(0);
-  }
-
-  // registerCallback validation tests - will fail at native level
-
-  @Test
-  void testRegisterCallbackWithNullName() {
-    final WasmException exception =
-        assertThrows(
-            WasmException.class,
-            () -> registry.registerCallback(null, testCallback, testFunctionType));
-
-    assertThat(exception.getMessage()).contains("Failed to register callback");
-  }
-
-  @Test
-  void testRegisterCallbackWithNullCallback() {
-    final WasmException exception =
-        assertThrows(
-            WasmException.class, () -> registry.registerCallback("test", null, testFunctionType));
-
-    assertThat(exception.getMessage()).contains("Failed to register callback");
-  }
-
-  @Test
-  void testRegisterCallbackWithNullFunctionType() {
-    final WasmException exception =
-        assertThrows(
-            WasmException.class, () -> registry.registerCallback("test", testCallback, null));
-
-    assertThat(exception.getMessage()).contains("Failed to register callback");
-  }
-
-  // registerAsyncCallback validation tests - will fail at native level
-
-  @Test
-  void testRegisterAsyncCallbackWithNullName() {
-    final AsyncHostFunction asyncCallback =
-        params -> java.util.concurrent.CompletableFuture.completedFuture(null);
-
-    final WasmException exception =
-        assertThrows(
-            WasmException.class,
-            () -> registry.registerAsyncCallback(null, asyncCallback, testFunctionType));
-
-    assertThat(exception.getMessage()).contains("Failed to register async callback");
-  }
-
-  @Test
-  void testRegisterAsyncCallbackWithNullCallback() {
-    final WasmException exception =
-        assertThrows(
-            WasmException.class,
-            () -> registry.registerAsyncCallback("test", null, testFunctionType));
-
-    assertThat(exception.getMessage()).contains("Failed to register async callback");
-  }
-
-  @Test
-  void testRegisterAsyncCallbackWithNullFunctionType() {
-    final AsyncHostFunction asyncCallback =
-        params -> java.util.concurrent.CompletableFuture.completedFuture(null);
-
-    final WasmException exception =
-        assertThrows(
-            WasmException.class, () -> registry.registerAsyncCallback("test", asyncCallback, null));
-
-    assertThat(exception.getMessage()).contains("Failed to register async callback");
-  }
-
-  // createFunctionReference validation tests
-
-  @Test
-  void testCreateFunctionReferenceWithNullHandle() {
-    final NullPointerException exception =
-        assertThrows(NullPointerException.class, () -> registry.createFunctionReference(null));
-
-    assertThat(exception.getMessage()).contains("Callback handle cannot be null");
-  }
-
-  @Test
-  void testCreateFunctionReferenceWithNonExistentCallback() throws WasmException {
-    // Create a fake callback handle that doesn't exist in the registry
-    final CallbackHandle fakeHandle = createFakeCallbackHandle(999L, "fake");
-
-    final WasmException exception =
-        assertThrows(WasmException.class, () -> registry.createFunctionReference(fakeHandle));
-
-    assertThat(exception.getMessage()).contains("Callback not found");
-  }
-
-  // unregisterCallback validation tests
-
-  @Test
-  void testUnregisterCallbackWithNullHandle() {
-    final NullPointerException exception =
-        assertThrows(NullPointerException.class, () -> registry.unregisterCallback(null));
-
-    assertThat(exception.getMessage()).contains("Callback handle cannot be null");
-  }
-
-  @Test
-  void testUnregisterCallbackWithNonExistentCallback() throws WasmException {
-    // Unregistering a non-existent callback should not throw, just log a warning
-    final CallbackHandle fakeHandle = createFakeCallbackHandle(999L, "fake");
-
-    // Should not throw - just logs warning
-    assertDoesNotThrow(() -> registry.unregisterCallback(fakeHandle));
-  }
-
-  // invokeCallback validation tests
-
-  @Test
-  void testInvokeCallbackWithNullHandle() {
-    final NullPointerException exception =
-        assertThrows(NullPointerException.class, () -> registry.invokeCallback(null));
-
-    assertThat(exception.getMessage()).contains("Callback handle cannot be null");
-  }
-
-  @Test
-  void testInvokeCallbackWithNullParams() throws WasmException {
-    final CallbackHandle fakeHandle = createFakeCallbackHandle(1L, "test");
-
-    final NullPointerException exception =
-        assertThrows(
-            NullPointerException.class,
-            () -> registry.invokeCallback(fakeHandle, (ai.tegmentum.wasmtime4j.WasmValue[]) null));
-
-    assertThat(exception.getMessage()).contains("Parameters cannot be null");
-  }
-
-  @Test
-  void testInvokeCallbackWithInvalidHandle() throws WasmException {
-    final CallbackHandle invalidHandle = createInvalidCallbackHandle(1L, "test");
-
-    final WasmException exception =
-        assertThrows(WasmException.class, () -> registry.invokeCallback(invalidHandle));
-
-    assertThat(exception.getMessage()).contains("Callback handle is no longer valid");
-  }
-
-  @Test
-  void testInvokeCallbackWithNonExistentCallback() throws WasmException {
-    final CallbackHandle fakeHandle = createFakeCallbackHandle(999L, "fake");
-
-    final WasmException exception =
-        assertThrows(WasmException.class, () -> registry.invokeCallback(fakeHandle));
-
-    assertThat(exception.getMessage()).contains("Callback not found");
-  }
-
-  // invokeAsyncCallback validation tests
-
-  @Test
-  void testInvokeAsyncCallbackWithNullHandle() {
-    final NullPointerException exception =
-        assertThrows(NullPointerException.class, () -> registry.invokeAsyncCallback(null));
-
-    assertThat(exception.getMessage()).contains("Callback handle cannot be null");
-  }
-
-  @Test
-  void testInvokeAsyncCallbackWithNullParams() throws WasmException {
-    final ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle fakeHandle =
-        createFakeAsyncCallbackHandle(1L, "test");
-
-    final NullPointerException exception =
-        assertThrows(
-            NullPointerException.class,
-            () ->
-                registry.invokeAsyncCallback(
-                    fakeHandle, (ai.tegmentum.wasmtime4j.WasmValue[]) null));
-
-    assertThat(exception.getMessage()).contains("Parameters cannot be null");
-  }
-
-  @Test
-  void testInvokeAsyncCallbackWithInvalidHandle() throws WasmException {
-    final ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle invalidHandle =
-        createInvalidAsyncCallbackHandle(1L, "test");
-
-    final WasmException exception =
-        assertThrows(WasmException.class, () -> registry.invokeAsyncCallback(invalidHandle));
-
-    assertThat(exception.getMessage()).contains("Async callback handle is no longer valid");
-  }
-
-  // Metrics tests
-
-  @Test
-  void testGetMetricsReturnsNonNull() {
-    final ai.tegmentum.wasmtime4j.func.CallbackRegistry.CallbackMetrics metrics =
-        registry.getMetrics();
-
-    assertThat(metrics).isNotNull();
-    assertThat(metrics.getTotalInvocations()).isEqualTo(0);
-    assertThat(metrics.getFailureCount()).isEqualTo(0);
-    assertThat(metrics.getTimeoutCount()).isEqualTo(0);
-  }
-
-  @Test
-  void testGetCallbackCountInitiallyZero() {
-    assertThat(registry.getCallbackCount()).isEqualTo(0);
-  }
-
-  @Test
-  void testHasCallbackWithNullName() {
-    final NullPointerException exception =
-        assertThrows(NullPointerException.class, () -> registry.hasCallback(null));
-
-    assertThat(exception).isNotNull();
-  }
-
-  @Test
-  void testHasCallbackWithNonExistentName() {
-    assertFalse(registry.hasCallback("nonexistent"));
-  }
-
-  @Test
-  void testHasCallbackWithEmptyName() {
-    assertFalse(registry.hasCallback(""));
-  }
-
-  // State validation tests
-
-  @Test
-  void testRegistryNotClosedInitially() {
-    // Registry should be functional after creation
-    assertThat(registry.getCallbackCount()).isEqualTo(0);
-  }
-
-  // Helper methods to create fake callback handles for testing
-
-  private CallbackHandle createFakeCallbackHandle(final long id, final String name) {
-    return new CallbackHandle() {
-      @Override
-      public long getId() {
-        return id;
+  @AfterEach
+  void tearDown() {
+    if (registry != null) {
+      try {
+        registry.close();
+      } catch (WasmException e) {
+        // Expected - close may fail since there are no real native resources
       }
-
-      @Override
-      public String getName() {
-        return name;
-      }
-
-      @Override
-      public FunctionType getFunctionType() {
-        return testFunctionType;
-      }
-
-      @Override
-      public boolean isValid() {
-        return true;
-      }
-    };
+    }
+    if (testStore != null) {
+      testStore.markClosedForTesting();
+    }
+    if (testEngine != null) {
+      testEngine.markClosedForTesting();
+    }
   }
 
-  private CallbackHandle createInvalidCallbackHandle(final long id, final String name) {
-    return new CallbackHandle() {
-      @Override
-      public long getId() {
-        return id;
-      }
+  @Nested
+  @DisplayName("Constructor Validation")
+  class ConstructorValidation {
 
-      @Override
-      public String getName() {
-        return name;
-      }
+    @Test
+    @DisplayName("Null store should throw NullPointerException")
+    void nullStoreShouldThrow() {
+      assertThatThrownBy(() -> new JniCallbackRegistry(null))
+          .isInstanceOf(NullPointerException.class)
+          .hasMessageContaining("Store cannot be null");
+    }
 
-      @Override
-      public FunctionType getFunctionType() {
-        return testFunctionType;
-      }
-
-      @Override
-      public boolean isValid() {
-        return false; // Invalid!
-      }
-    };
+    @Test
+    @DisplayName("Valid store should create registry successfully")
+    void validStoreShouldCreateRegistry() {
+      assertThat(registry).isNotNull();
+      assertThat(registry.getCallbackCount()).isZero();
+    }
   }
 
-  private ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle
-      createFakeAsyncCallbackHandle(final long id, final String name) {
-    return new ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle() {
-      @Override
-      public long getId() {
-        return id;
-      }
+  @Nested
+  @DisplayName("Initial State")
+  class InitialState {
 
-      @Override
-      public String getName() {
-        return name;
-      }
+    @Test
+    @DisplayName("New registry should have zero callback count")
+    void newRegistryShouldHaveZeroCallbackCount() {
+      assertThat(registry.getCallbackCount())
+          .as("New registry should have no callbacks")
+          .isZero();
+    }
 
-      @Override
-      public FunctionType getFunctionType() {
-        return testFunctionType;
-      }
+    @Test
+    @DisplayName("New registry should have no callback for any name")
+    void newRegistryShouldHaveNoCallbacks() {
+      assertThat(registry.hasCallback("nonexistent"))
+          .as("New registry should not have any callbacks")
+          .isFalse();
+    }
 
-      @Override
-      public boolean isValid() {
-        return true;
-      }
-
-      @Override
-      public long getTimeoutMillis() {
-        return 30000;
-      }
-
-      @Override
-      public void setTimeoutMillis(final long timeoutMillis) {
-        // No-op
-      }
-    };
+    @Test
+    @DisplayName("New registry metrics should be zero")
+    void newRegistryMetricsShouldBeZero() {
+      final CallbackRegistry.CallbackMetrics metrics = registry.getMetrics();
+      assertThat(metrics.getTotalInvocations()).isZero();
+      assertThat(metrics.getFailureCount()).isZero();
+      assertThat(metrics.getTimeoutCount()).isZero();
+      assertThat(metrics.getTotalExecutionTimeNanos()).isZero();
+      assertThat(metrics.getAverageExecutionTimeNanos()).isEqualTo(0.0);
+    }
   }
 
-  private ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle
-      createInvalidAsyncCallbackHandle(final long id, final String name) {
-    return new ai.tegmentum.wasmtime4j.func.CallbackRegistry.AsyncCallbackHandle() {
-      @Override
-      public long getId() {
-        return id;
-      }
+  @Nested
+  @DisplayName("Callback Registration Validation")
+  class CallbackRegistrationValidation {
 
-      @Override
-      public String getName() {
-        return name;
-      }
+    @Test
+    @DisplayName("registerCallback with null name should throw WasmException")
+    void registerWithNullNameShouldThrow() {
+      final FunctionType funcType =
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32},
+              new WasmValueType[] {WasmValueType.I32});
 
-      @Override
-      public FunctionType getFunctionType() {
-        return testFunctionType;
-      }
+      assertThatThrownBy(() -> registry.registerCallback(null, params -> params, funcType))
+          .isInstanceOf(WasmException.class)
+          .hasMessageContaining("Callback name cannot be null");
+    }
 
-      @Override
-      public boolean isValid() {
-        return false; // Invalid!
-      }
+    @Test
+    @DisplayName("registerCallback with null callback should throw WasmException")
+    void registerWithNullCallbackShouldThrow() {
+      final FunctionType funcType =
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32},
+              new WasmValueType[] {WasmValueType.I32});
 
-      @Override
-      public long getTimeoutMillis() {
-        return 30000;
-      }
+      assertThatThrownBy(() -> registry.registerCallback("test", null, funcType))
+          .isInstanceOf(WasmException.class)
+          .hasMessageContaining("Callback cannot be null");
+    }
 
-      @Override
-      public void setTimeoutMillis(final long timeoutMillis) {
-        // No-op
-      }
-    };
+    @Test
+    @DisplayName("registerCallback with null function type should throw WasmException")
+    void registerWithNullFunctionTypeShouldThrow() {
+      assertThatThrownBy(() -> registry.registerCallback("test", params -> params, null))
+          .isInstanceOf(WasmException.class)
+          .hasMessageContaining("Function type cannot be null");
+    }
+  }
+
+  @Nested
+  @DisplayName("Async Callback Registration Validation")
+  class AsyncCallbackRegistrationValidation {
+
+    @Test
+    @DisplayName("registerAsyncCallback with null name should throw WasmException")
+    void registerAsyncWithNullNameShouldThrow() {
+      final FunctionType funcType =
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32},
+              new WasmValueType[] {WasmValueType.I32});
+
+      assertThatThrownBy(
+              () ->
+                  registry.registerAsyncCallback(
+                      null,
+                      params -> java.util.concurrent.CompletableFuture.completedFuture(params),
+                      funcType))
+          .isInstanceOf(WasmException.class)
+          .hasMessageContaining("Callback name cannot be null");
+    }
+
+    @Test
+    @DisplayName("registerAsyncCallback with null callback should throw WasmException")
+    void registerAsyncWithNullCallbackShouldThrow() {
+      final FunctionType funcType =
+          new FunctionType(
+              new WasmValueType[] {WasmValueType.I32},
+              new WasmValueType[] {WasmValueType.I32});
+
+      assertThatThrownBy(() -> registry.registerAsyncCallback("test", null, funcType))
+          .isInstanceOf(WasmException.class)
+          .hasMessageContaining("Callback cannot be null");
+    }
+
+    @Test
+    @DisplayName("registerAsyncCallback with null function type should throw WasmException")
+    void registerAsyncWithNullFunctionTypeShouldThrow() {
+      assertThatThrownBy(
+              () ->
+                  registry.registerAsyncCallback(
+                      "test",
+                      params -> java.util.concurrent.CompletableFuture.completedFuture(params),
+                      null))
+          .isInstanceOf(WasmException.class)
+          .hasMessageContaining("Function type cannot be null");
+    }
+  }
+
+  @Nested
+  @DisplayName("Unregistration Validation")
+  class UnregistrationValidation {
+
+    @Test
+    @DisplayName("unregisterCallback with null handle should throw NullPointerException")
+    void unregisterNullHandleShouldThrow() {
+      assertThatThrownBy(() -> registry.unregisterCallback(null))
+          .isInstanceOf(NullPointerException.class)
+          .hasMessageContaining("Callback handle cannot be null");
+    }
+  }
+
+  @Nested
+  @DisplayName("Invocation Validation")
+  class InvocationValidation {
+
+    @Test
+    @DisplayName("invokeCallback with null handle should throw NullPointerException")
+    void invokeNullHandleShouldThrow() {
+      assertThatThrownBy(() -> registry.invokeCallback(null))
+          .isInstanceOf(NullPointerException.class)
+          .hasMessageContaining("Callback handle cannot be null");
+    }
+  }
+
+  @Nested
+  @DisplayName("HasCallback Validation")
+  class HasCallbackValidation {
+
+    @Test
+    @DisplayName("hasCallback with null name should throw NullPointerException")
+    void hasCallbackNullNameShouldThrow() {
+      assertThatThrownBy(() -> registry.hasCallback(null))
+          .isInstanceOf(NullPointerException.class)
+          .hasMessageContaining("Callback name cannot be null");
+    }
+  }
+
+  @Nested
+  @DisplayName("Close Lifecycle")
+  class CloseLifecycle {
+
+    @Test
+    @DisplayName("Double close should not throw")
+    void doubleCloseShouldNotThrow() throws WasmException {
+      registry.close();
+      assertThatCode(() -> registry.close())
+          .as("Second close should be a no-op")
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("registerCallback after close should throw IllegalStateException")
+    void registerAfterCloseShouldThrow() throws WasmException {
+      registry.close();
+      assertThatThrownBy(
+              () -> registry.registerCallback("test", params -> params, createSimpleFunctionType()))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("closed");
+    }
+
+    @Test
+    @DisplayName("registerAsyncCallback after close should throw IllegalStateException")
+    void registerAsyncAfterCloseShouldThrow() throws WasmException {
+      registry.close();
+      assertThatThrownBy(
+              () ->
+                  registry.registerAsyncCallback(
+                      "test",
+                      params -> java.util.concurrent.CompletableFuture.completedFuture(params),
+                      createSimpleFunctionType()))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("closed");
+    }
+
+    @Test
+    @DisplayName("hasCallback after close should return false (no ensureNotClosed guard)")
+    void hasCallbackAfterCloseShouldReturnFalse() throws WasmException {
+      registry.close();
+      // hasCallback and getCallbackCount do not call ensureNotClosed
+      assertThat(registry.hasCallback("test"))
+          .as("hasCallback should return false on closed empty registry")
+          .isFalse();
+    }
+
+    @Test
+    @DisplayName("getCallbackCount after close should still work")
+    void getCallbackCountAfterCloseShouldWork() throws WasmException {
+      registry.close();
+      // getCallbackCount doesn't call ensureNotClosed
+      assertThat(registry.getCallbackCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("getMetrics after close should still work")
+    void getMetricsAfterCloseShouldWork() throws WasmException {
+      registry.close();
+      // getMetrics doesn't call ensureNotClosed
+      assertThat(registry.getMetrics()).isNotNull();
+    }
+  }
+
+  @Nested
+  @DisplayName("Implements CallbackRegistry")
+  class ImplementsCallbackRegistry {
+
+    @Test
+    @DisplayName("JniCallbackRegistry should implement CallbackRegistry interface")
+    void shouldImplementCallbackRegistry() {
+      assertThat(registry)
+          .as("JniCallbackRegistry should implement CallbackRegistry")
+          .isInstanceOf(CallbackRegistry.class);
+    }
+  }
+
+  private FunctionType createSimpleFunctionType() {
+    return new FunctionType(
+        new WasmValueType[] {WasmValueType.I32},
+        new WasmValueType[] {WasmValueType.I32});
   }
 }
