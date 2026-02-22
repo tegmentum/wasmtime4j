@@ -21,7 +21,6 @@ public final class EngineConfig {
   private OptimizationLevel optimizationLevel = OptimizationLevel.SPEED;
   private boolean parallelCompilation = true;
   private boolean craneliftDebugVerifier = false;
-  private boolean wasmBacktraceDetails = true;
   private boolean wasmReferenceTypes = true;
   private boolean wasmSimd = true;
   private boolean wasmRelaxedSimd = false;
@@ -35,7 +34,6 @@ public final class EngineConfig {
   private long asyncStackSize = 0; // 0 means unlimited
   private boolean asyncSupport = false;
   private long fuelAsyncYieldInterval = 0; // 0 means disabled
-  private boolean generateDebugInfo = false;
   private boolean epochInterruption = false;
   private boolean coredumpOnTrap = false;
 
@@ -56,7 +54,7 @@ public final class EngineConfig {
 
   // GC configuration
   private boolean wasmGc = false;
-  private boolean gcSupport = false;
+  private boolean gcSupport = true;
 
   // Memory configuration (0 = use platform default)
   private long memoryReservation = 0;
@@ -221,19 +219,6 @@ public final class EngineConfig {
   }
 
   /**
-   * Sets the optimization level for compilation.
-   *
-   * @param level the optimization level
-   * @return this configuration for method chaining
-   * @throws IllegalArgumentException if level is null
-   * @deprecated Use {@link #optimizationLevel(OptimizationLevel)} instead.
-   */
-  @Deprecated
-  public EngineConfig setOptimizationLevel(final OptimizationLevel level) {
-    return optimizationLevel(level);
-  }
-
-  /**
    * Sets Cranelift-specific settings.
    *
    * @param settings map of Cranelift setting names to values
@@ -333,17 +318,6 @@ public final class EngineConfig {
   }
 
   /**
-   * Enables or disables generation of debug information.
-   *
-   * @param enabled true to enable debug information generation
-   * @return this configuration for method chaining
-   */
-  public EngineConfig setGenerateDebugInfo(final boolean enabled) {
-    this.generateDebugInfo = enabled;
-    return this;
-  }
-
-  /**
    * Sets the profiling strategy for execution.
    *
    * @param strategy the profiling strategy
@@ -412,6 +386,7 @@ public final class EngineConfig {
     this.wasmComponentModelErrorContext =
         features.contains(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT);
     this.wasmComponentModelGc = features.contains(WasmFeature.COMPONENT_MODEL_GC);
+    this.wasmComponentModelThreading = features.contains(WasmFeature.COMPONENT_MODEL_THREADING);
 
     return this;
   }
@@ -500,24 +475,15 @@ public final class EngineConfig {
       case COMPONENT_MODEL_GC:
         this.wasmComponentModelGc = true;
         break;
+      case COMPONENT_MODEL_THREADING:
+        this.wasmComponentModelThreading = true;
+        break;
       default:
         // Unknown feature, just add to the set
         break;
     }
 
     return this;
-  }
-
-  /**
-   * Enables or disables fuel consumption tracking.
-   *
-   * @param enabled true to enable fuel consumption
-   * @return this configuration for method chaining
-   * @deprecated Use {@link #consumeFuel(boolean)} instead.
-   */
-  @Deprecated
-  public EngineConfig setFuelConsumption(final boolean enabled) {
-    return consumeFuel(enabled);
   }
 
   /**
@@ -529,18 +495,6 @@ public final class EngineConfig {
   public EngineConfig epochInterruption(final boolean enabled) {
     this.epochInterruption = enabled;
     return this;
-  }
-
-  /**
-   * Enables or disables epoch-based interruption.
-   *
-   * @param enabled true to enable epoch interruption
-   * @return this configuration for method chaining
-   * @deprecated Use {@link #epochInterruption(boolean)} instead.
-   */
-  @Deprecated
-  public EngineConfig setEpochInterruption(final boolean enabled) {
-    return epochInterruption(enabled);
   }
 
   /**
@@ -557,19 +511,6 @@ public final class EngineConfig {
   public EngineConfig coredumpOnTrap(final boolean enabled) {
     this.coredumpOnTrap = enabled;
     return this;
-  }
-
-  /**
-   * Enables or disables coredump generation on trap.
-   *
-   * @param enabled true to enable coredump generation on trap
-   * @return this configuration for method chaining
-   * @since 1.0.0
-   * @deprecated Use {@link #coredumpOnTrap(boolean)} instead.
-   */
-  @Deprecated
-  public EngineConfig setCoredumpOnTrap(final boolean enabled) {
-    return coredumpOnTrap(enabled);
   }
 
   // Getters
@@ -596,10 +537,6 @@ public final class EngineConfig {
 
   public boolean isCraneliftDebugVerifier() {
     return craneliftDebugVerifier;
-  }
-
-  public boolean isWasmBacktraceDetails() {
-    return wasmBacktraceDetails;
   }
 
   public boolean isWasmReferenceTypes() {
@@ -648,10 +585,6 @@ public final class EngineConfig {
 
   public boolean isAsyncSupport() {
     return asyncSupport;
-  }
-
-  public boolean isGenerateDebugInfo() {
-    return generateDebugInfo;
   }
 
   public boolean isEpochInterruption() {
@@ -751,15 +684,6 @@ public final class EngineConfig {
   }
 
   /**
-   * Creates a new configuration with default settings optimized for speed.
-   *
-   * @return a new configuration optimized for speed
-   */
-  public static EngineConfig forSpeed() {
-    return new EngineConfig().optimizationLevel(OptimizationLevel.SPEED).parallelCompilation(true);
-  }
-
-  /**
    * Creates a new configuration with default settings optimized for size.
    *
    * @return a new configuration optimized for size
@@ -841,7 +765,6 @@ public final class EngineConfig {
     c.optimizationLevel = this.optimizationLevel;
     c.parallelCompilation = this.parallelCompilation;
     c.craneliftDebugVerifier = this.craneliftDebugVerifier;
-    c.wasmBacktraceDetails = this.wasmBacktraceDetails;
     // Wasm feature flags
     c.wasmReferenceTypes = this.wasmReferenceTypes;
     c.wasmSimd = this.wasmSimd;
@@ -857,7 +780,6 @@ public final class EngineConfig {
     c.asyncStackSize = this.asyncStackSize;
     c.asyncSupport = this.asyncSupport;
     c.fuelAsyncYieldInterval = this.fuelAsyncYieldInterval;
-    c.generateDebugInfo = this.generateDebugInfo;
     c.epochInterruption = this.epochInterruption;
     c.coredumpOnTrap = this.coredumpOnTrap;
     // Experimental features
@@ -942,32 +864,6 @@ public final class EngineConfig {
     return Engine.create(this);
   }
 
-  /**
-   * Enables fuel consumption.
-   *
-   * @param enabled true to enable fuel consumption
-   * @return this configuration for method chaining
-   * @since 1.0.0
-   * @deprecated Use {@link #consumeFuel(boolean)} instead.
-   */
-  @Deprecated
-  public EngineConfig withFuelEnabled(final boolean enabled) {
-    return consumeFuel(enabled);
-  }
-
-  /**
-   * Enables epoch interruption.
-   *
-   * @param enabled true to enable epoch interruption
-   * @return this configuration for method chaining
-   * @since 1.0.0
-   * @deprecated Use {@link #epochInterruption(boolean)} instead.
-   */
-  @Deprecated
-  public EngineConfig withEpochInterruption(final boolean enabled) {
-    return epochInterruption(enabled);
-  }
-
   // GC configuration methods
 
   /**
@@ -985,6 +881,9 @@ public final class EngineConfig {
    */
   public EngineConfig wasmGc(final boolean enable) {
     this.wasmGc = enable;
+    if (enable) {
+      this.gcSupport = true;
+    }
     syncFeatureToSet(WasmFeature.GC, enable);
     return this;
   }
@@ -1834,6 +1733,7 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelThreading(final boolean enable) {
     this.wasmComponentModelThreading = enable;
+    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_THREADING, enable);
     return this;
   }
 
@@ -2121,6 +2021,10 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "craneliftPcc", craneliftPcc);
     first = appendJsonBool(sb, first, "macosUseMachPorts", macosUseMachPorts);
     first = appendJsonBool(sb, first, "wasmBacktrace", wasmBacktrace);
+    if (backtraceDetails != null) {
+      first = appendJsonField(sb, first, "backtraceDetails",
+          backtraceDetails.name().toLowerCase());
+    }
     first = appendJsonBool(sb, first, "generateAddressMap", generateAddressMap);
     first = appendJsonBool(sb, first, "sharedMemory", sharedMemory);
     if (regallocAlgorithm != null) {

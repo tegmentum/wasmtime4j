@@ -202,21 +202,9 @@ public final class PanamaModule implements Module {
 
   @Override
   public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
-    if (store == null) {
-      throw new IllegalArgumentException("Store cannot be null");
-    }
-    if (imports == null) {
-      throw new IllegalArgumentException("Imports cannot be null");
-    }
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
-    }
-    ensureNotClosed();
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    // For now, use simple instantiation - proper ImportMap support can be added later
-    // This matches the JNI implementation which also doesn't fully utilize ImportMap yet
-    return new PanamaInstance(this, panamaStore);
+    throw new UnsupportedOperationException(
+        "ImportMap-based instantiation is not yet implemented."
+            + " Use Linker-based instantiation instead.");
   }
 
   @Override
@@ -422,286 +410,9 @@ public final class PanamaModule implements Module {
       throw new IllegalArgumentException("imports cannot be null");
     }
     ensureNotClosed();
-
-    final long startTime = System.nanoTime();
-    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues =
-        new java.util.ArrayList<>();
-    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> validatedImports =
-        new java.util.ArrayList<>();
-    final java.util.Map<String, java.util.Map<String, Object>> importsMap = imports.getImports();
-
-    final List<ImportType> importTypes = getImports();
-    int validCount = 0;
-
-    for (final ImportType importType : importTypes) {
-      final String moduleName = importType.getModuleName();
-      final String fieldName = importType.getName();
-      final ai.tegmentum.wasmtime4j.type.WasmType expectedType = importType.getType();
-
-      // Check if import exists
-      if (!imports.contains(moduleName, fieldName)) {
-        issues.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.MISSING_IMPORT,
-                moduleName,
-                fieldName,
-                "Required import is missing from ImportMap"));
-        continue;
-      }
-
-      // Get actual import object and validate type
-      final java.util.Map<String, Object> moduleMap = importsMap.get(moduleName);
-      if (moduleMap == null) {
-        issues.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.MODULE_NOT_FOUND,
-                moduleName,
-                fieldName,
-                "Module not found in ImportMap"));
-        continue;
-      }
-
-      final Object actualImport = moduleMap.get(fieldName);
-      if (actualImport == null) {
-        issues.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.EXPORT_NOT_FOUND,
-                moduleName,
-                fieldName,
-                "Import field not found in module"));
-        continue;
-      }
-
-      // Type check based on expected type kind
-      final ai.tegmentum.wasmtime4j.type.WasmTypeKind expectedKind = expectedType.getKind();
-      LOGGER.fine(
-          "Checking "
-              + moduleName
-              + "."
-              + fieldName
-              + ": expectedKind="
-              + expectedKind
-              + ", actualImport="
-              + actualImport.getClass().getName());
-      boolean typeMatches = true;
-      String expectedTypeStr = expectedKind.toString();
-      String actualTypeStr = actualImport.getClass().getSimpleName();
-
-      switch (expectedKind) {
-        case GLOBAL:
-          LOGGER.fine(
-              "GLOBAL case: actualImport instanceof WasmGlobal = "
-                  + (actualImport instanceof ai.tegmentum.wasmtime4j.WasmGlobal));
-          if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmGlobal) {
-            final ai.tegmentum.wasmtime4j.WasmGlobal global =
-                (ai.tegmentum.wasmtime4j.WasmGlobal) actualImport;
-            final ai.tegmentum.wasmtime4j.type.GlobalType actualGlobalType = global.getGlobalType();
-            final ai.tegmentum.wasmtime4j.type.GlobalType expectedGlobalType =
-                (ai.tegmentum.wasmtime4j.type.GlobalType) expectedType;
-            LOGGER.fine(
-                "expected: "
-                    + formatGlobalType(expectedGlobalType)
-                    + ", actual: "
-                    + formatGlobalType(actualGlobalType));
-
-            if (!typesMatch(expectedGlobalType, actualGlobalType)) {
-              typeMatches = false;
-              expectedTypeStr = formatGlobalType(expectedGlobalType);
-              actualTypeStr = formatGlobalType(actualGlobalType);
-            }
-          } else {
-            typeMatches = false;
-          }
-          break;
-
-        case TABLE:
-          LOGGER.fine(
-              "TABLE case: actualImport instanceof WasmTable = "
-                  + (actualImport instanceof ai.tegmentum.wasmtime4j.WasmTable));
-          if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmTable) {
-            final ai.tegmentum.wasmtime4j.WasmTable table =
-                (ai.tegmentum.wasmtime4j.WasmTable) actualImport;
-            final ai.tegmentum.wasmtime4j.type.TableType actualTableType = table.getTableType();
-            final ai.tegmentum.wasmtime4j.type.TableType expectedTableType =
-                (ai.tegmentum.wasmtime4j.type.TableType) expectedType;
-            LOGGER.fine(
-                "expected: "
-                    + formatTableType(expectedTableType)
-                    + ", actual: "
-                    + formatTableType(actualTableType));
-
-            if (!typesMatch(expectedTableType, actualTableType)) {
-              typeMatches = false;
-              expectedTypeStr = formatTableType(expectedTableType);
-              actualTypeStr = formatTableType(actualTableType);
-            }
-          } else {
-            typeMatches = false;
-          }
-          break;
-
-        case MEMORY:
-          LOGGER.fine(
-              "MEMORY case: actualImport instanceof WasmMemory = "
-                  + (actualImport instanceof ai.tegmentum.wasmtime4j.WasmMemory));
-          if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmMemory) {
-            final ai.tegmentum.wasmtime4j.WasmMemory memory =
-                (ai.tegmentum.wasmtime4j.WasmMemory) actualImport;
-            final ai.tegmentum.wasmtime4j.type.MemoryType actualMemoryType = memory.getMemoryType();
-            final ai.tegmentum.wasmtime4j.type.MemoryType expectedMemoryType =
-                (ai.tegmentum.wasmtime4j.type.MemoryType) expectedType;
-            LOGGER.fine(
-                "expected: "
-                    + formatMemoryType(expectedMemoryType)
-                    + ", actual: "
-                    + formatMemoryType(actualMemoryType));
-
-            if (!typesMatch(expectedMemoryType, actualMemoryType)) {
-              typeMatches = false;
-              expectedTypeStr = formatMemoryType(expectedMemoryType);
-              actualTypeStr = formatMemoryType(actualMemoryType);
-            }
-          } else {
-            typeMatches = false;
-          }
-          break;
-
-        case FUNCTION:
-          if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmFunction) {
-            // Function type checking would go here
-            // For now, accept any WasmFunction as matching
-            typeMatches = true;
-          } else {
-            typeMatches = false;
-          }
-          break;
-
-        default:
-          typeMatches = false;
-          expectedTypeStr = "Unknown type: " + expectedKind;
-      }
-
-      if (!typeMatches) {
-        issues.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.TYPE_MISMATCH,
-                moduleName,
-                fieldName,
-                "Import type does not match expected type",
-                expectedTypeStr,
-                actualTypeStr));
-      } else {
-        validCount++;
-        // Determine ImportInfo.ImportKind from WasmTypeKind
-        final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind infoType;
-        switch (expectedKind) {
-          case GLOBAL:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.GLOBAL;
-            break;
-          case TABLE:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.TABLE;
-            break;
-          case MEMORY:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.MEMORY;
-            break;
-          case FUNCTION:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
-            break;
-          default:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
-        }
-
-        validatedImports.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportInfo(
-                moduleName,
-                fieldName,
-                infoType,
-                java.util.Optional.of(actualTypeStr),
-                java.time.Instant.now(),
-                actualImport instanceof ai.tegmentum.wasmtime4j.WasmFunction,
-                java.util.Optional.of("Provided via ImportMap")));
-      }
-    }
-
-    final long endTime = System.nanoTime();
-    final java.time.Duration validationTime = java.time.Duration.ofNanos(endTime - startTime);
-
-    LOGGER.fine("Validation complete: validCount=" + validCount + ", issues=" + issues.size());
-    for (final ai.tegmentum.wasmtime4j.validation.ImportIssue issue : issues) {
-      LOGGER.fine(
-          "Issue: "
-              + issue.getModuleName()
-              + "."
-              + issue.getImportName()
-              + " type="
-              + issue.getType()
-              + " msg="
-              + issue.getMessage());
-    }
-
-    return new ai.tegmentum.wasmtime4j.validation.ImportValidation(
-        issues.isEmpty(),
-        issues,
-        validatedImports,
-        importTypes.size(),
-        validCount,
-        validationTime);
+    return ai.tegmentum.wasmtime4j.util.ModuleValidationSupport.validateImportsDetailed(
+        getImports(), imports);
   }
-
-  private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.type.GlobalType expected,
-      final ai.tegmentum.wasmtime4j.type.GlobalType actual) {
-    return expected.getValueType() == actual.getValueType()
-        && expected.isMutable() == actual.isMutable();
-  }
-
-  private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.type.TableType expected,
-      final ai.tegmentum.wasmtime4j.type.TableType actual) {
-    return expected.getElementType() == actual.getElementType()
-        && expected.getMinimum() <= actual.getMinimum()
-        && (!expected.getMaximum().isPresent()
-            || (actual.getMaximum().isPresent()
-                && expected.getMaximum().get() >= actual.getMaximum().get()));
-  }
-
-  private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.type.MemoryType expected,
-      final ai.tegmentum.wasmtime4j.type.MemoryType actual) {
-    return expected.getMinimum() <= actual.getMinimum()
-        && expected.is64Bit() == actual.is64Bit()
-        && expected.isShared() == actual.isShared()
-        && (!expected.getMaximum().isPresent()
-            || (actual.getMaximum().isPresent()
-                && expected.getMaximum().get() >= actual.getMaximum().get()));
-  }
-
-  private String formatGlobalType(final ai.tegmentum.wasmtime4j.type.GlobalType type) {
-    return String.format(
-        "Global(%s, %s)", type.getValueType(), type.isMutable() ? "mutable" : "immutable");
-  }
-
-  private String formatTableType(final ai.tegmentum.wasmtime4j.type.TableType type) {
-    return String.format(
-        "Table(%s, min=%d, max=%s)",
-        type.getElementType(),
-        type.getMinimum(),
-        type.getMaximum().map(String::valueOf).orElse("none"));
-  }
-
-  private String formatMemoryType(final ai.tegmentum.wasmtime4j.type.MemoryType type) {
-    return String.format(
-        "Memory(min=%d, max=%s, %s, %s)",
-        type.getMinimum(),
-        type.getMaximum().map(String::valueOf).orElse("none"),
-        type.is64Bit() ? "64-bit" : "32-bit",
-        type.isShared() ? "shared" : "not-shared");
-  }
-
 
   @Override
   public List<FuncType> getFunctionTypes() {
@@ -889,7 +600,7 @@ public final class PanamaModule implements Module {
       final String fieldName = importObj.get("name").getAsString();
       final com.google.gson.JsonObject importTypeObj = importObj.getAsJsonObject("import_type");
 
-      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseImportTypeJson(importTypeObj);
+      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseTypeJson(importTypeObj);
       imports.add(new ImportType(moduleName, fieldName, wasmType));
     }
 
@@ -914,7 +625,7 @@ public final class PanamaModule implements Module {
       final String name = exportObj.get("name").getAsString();
       final com.google.gson.JsonObject exportTypeObj = exportObj.getAsJsonObject("export_type");
 
-      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseExportTypeJson(exportTypeObj);
+      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseTypeJson(exportTypeObj);
       exports.add(new ExportType(name, wasmType));
     }
 
@@ -922,14 +633,13 @@ public final class PanamaModule implements Module {
   }
 
   /**
-   * Parses import type JSON object to WasmType.
+   * Parses a type JSON object (import or export) to WasmType.
    *
    * @param typeObj JSON object containing type information
    * @return WasmType instance
    */
-  private ai.tegmentum.wasmtime4j.type.WasmType parseImportTypeJson(
+  private ai.tegmentum.wasmtime4j.type.WasmType parseTypeJson(
       final com.google.gson.JsonObject typeObj) {
-    // The type object will have one key indicating the variant
     final String typeKind = typeObj.keySet().iterator().next();
 
     return switch (typeKind) {
@@ -937,27 +647,7 @@ public final class PanamaModule implements Module {
       case "Global" -> parseGlobalType(typeObj.getAsJsonArray("Global"));
       case "Memory" -> parseMemoryType(typeObj.getAsJsonArray("Memory"));
       case "Table" -> parseTableType(typeObj.getAsJsonArray("Table"));
-      default -> throw new IllegalArgumentException("Unknown import type: " + typeKind);
-    };
-  }
-
-  /**
-   * Parses export type JSON object to WasmType.
-   *
-   * @param typeObj JSON object containing type information
-   * @return WasmType instance
-   */
-  private ai.tegmentum.wasmtime4j.type.WasmType parseExportTypeJson(
-      final com.google.gson.JsonObject typeObj) {
-    // The type object will have one key indicating the variant
-    final String typeKind = typeObj.keySet().iterator().next();
-
-    return switch (typeKind) {
-      case "Function" -> parseFunctionType(typeObj.getAsJsonObject("Function"));
-      case "Global" -> parseGlobalType(typeObj.getAsJsonArray("Global"));
-      case "Memory" -> parseMemoryType(typeObj.getAsJsonArray("Memory"));
-      case "Table" -> parseTableType(typeObj.getAsJsonArray("Table"));
-      default -> throw new IllegalArgumentException("Unknown export type: " + typeKind);
+      default -> throw new IllegalArgumentException("Unknown type kind: " + typeKind);
     };
   }
 

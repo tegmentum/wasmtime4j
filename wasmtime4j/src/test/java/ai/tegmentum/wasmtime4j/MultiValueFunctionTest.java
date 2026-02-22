@@ -255,30 +255,29 @@ class MultiValueFunctionTest {
     }
 
     @Test
-    @DisplayName("Should match multi-value patterns correctly")
-    void testMultiValuePatternMatching() {
+    @DisplayName("Should match compatible types correctly")
+    void testIsCompatibleWith() {
       WasmValueType[] params = {WasmValueType.I32, WasmValueType.F64};
       WasmValueType[] returns = {WasmValueType.I32, WasmValueType.I64};
       FunctionType funcType = new FunctionType(params, returns);
 
       // Exact match
-      assertTrue(funcType.matchesMultiValuePattern(params, returns));
+      assertTrue(funcType.isCompatibleWith(FunctionType.of(params, returns)));
 
       // Different params
       WasmValueType[] differentParams = {WasmValueType.I64, WasmValueType.F64};
-      assertFalse(funcType.matchesMultiValuePattern(differentParams, returns));
+      assertFalse(funcType.isCompatibleWith(FunctionType.of(differentParams, returns)));
 
       // Different returns
       WasmValueType[] differentReturns = {WasmValueType.F32, WasmValueType.I64};
-      assertFalse(funcType.matchesMultiValuePattern(params, differentReturns));
+      assertFalse(funcType.isCompatibleWith(FunctionType.of(params, differentReturns)));
 
       // Different counts
       WasmValueType[] shorterParams = {WasmValueType.I32};
-      assertFalse(funcType.matchesMultiValuePattern(shorterParams, returns));
+      assertFalse(funcType.isCompatibleWith(FunctionType.of(shorterParams, returns)));
 
-      // Null inputs
-      assertFalse(funcType.matchesMultiValuePattern(null, returns));
-      assertFalse(funcType.matchesMultiValuePattern(params, null));
+      // Null input
+      assertFalse(funcType.isCompatibleWith(null));
     }
   }
 

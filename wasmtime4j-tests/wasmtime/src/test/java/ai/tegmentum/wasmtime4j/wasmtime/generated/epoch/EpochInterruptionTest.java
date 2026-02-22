@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * <p>This test validates that wasmtime4j epoch interruption produces the same behavior as the
  * upstream Wasmtime implementation.
  */
+@SuppressWarnings("deprecation")
 public final class EpochInterruptionTest extends DualRuntimeTest {
 
   @AfterEach
@@ -42,7 +43,7 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
   public void testBasicEpochDeadline(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+    final EngineConfig config = new EngineConfig().epochInterruption(true);
 
     final String wat =
         """
@@ -90,7 +91,7 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
   public void testEpochInterruptInfiniteLoop(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+    final EngineConfig config = new EngineConfig().epochInterruption(true);
 
     final String wat =
         """
@@ -158,7 +159,7 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
   public void testEpochDeadlineCallbackContinue(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+    final EngineConfig config = new EngineConfig().epochInterruption(true);
 
     final String wat =
         """
@@ -254,7 +255,7 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
   public void testEpochDeadlineCallbackTrap(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+    final EngineConfig config = new EngineConfig().epochInterruption(true);
 
     final String wat =
         """
@@ -325,7 +326,7 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
   public void testMultipleEpochIncrements(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+    final EngineConfig config = new EngineConfig().epochInterruption(true);
 
     try (final Engine engine = Engine.create(config)) {
       // Should be able to increment epoch many times without issue
@@ -344,7 +345,7 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
     setRuntime(runtime);
 
     // Engine without epoch interruption
-    final EngineConfig config = new EngineConfig().setEpochInterruption(false);
+    final EngineConfig config = new EngineConfig().epochInterruption(false);
 
     final String wat =
         """
@@ -378,7 +379,7 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
   public void testEpochAcrossNestedCalls(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+    final EngineConfig config = new EngineConfig().epochInterruption(true);
 
     // Module with nested function calls
     final String wat =

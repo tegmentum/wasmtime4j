@@ -1,16 +1,10 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
@@ -24,8 +18,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests for {@link PanamaStore} that exercise actual native store creation, lifecycle management,
- * user data, fuel management, resource creation, and epoch handling.
+ * Tests for {@link PanamaStore} that exercise Panama-specific constructors, factory methods,
+ * internal accessors, and callback registry type verification.
  */
 @DisplayName("PanamaStore Tests")
 class PanamaStoreTest {
@@ -182,135 +176,6 @@ class PanamaStoreTest {
     }
   }
 
-  // ===== User Data Tests =====
-
-  @Nested
-  @DisplayName("User Data Tests")
-  class UserDataTests {
-
-    @Test
-    @DisplayName("Should store and retrieve user data")
-    void shouldStoreAndRetrieveUserData() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertNull(store.getData(), "Initial user data should be null");
-
-      store.setData("test-data");
-      assertEquals("test-data", store.getData());
-
-      store.setData(42);
-      assertEquals(42, store.getData());
-
-      store.setData(null);
-      assertNull(store.getData(), "User data should be null after setting null");
-      LOGGER.info("User data storage and retrieval works correctly");
-    }
-  }
-
-  // ===== Lifecycle Tests =====
-
-  @Nested
-  @DisplayName("Lifecycle Tests")
-  class LifecycleTests {
-
-    @Test
-    @DisplayName("Store should be valid after creation")
-    void storeShouldBeValidAfterCreation() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertTrue(store.isValid(), "Store should be valid");
-      LOGGER.info("Store is valid after creation");
-    }
-
-    @Test
-    @DisplayName("Store should be invalid after close")
-    void storeShouldBeInvalidAfterClose() throws Exception {
-      final PanamaStore store = new PanamaStore(engine);
-
-      store.close();
-      assertFalse(store.isValid(), "Store should be invalid after close");
-      LOGGER.info("Store is invalid after close");
-    }
-
-    @Test
-    @DisplayName("Double close should not throw")
-    void doubleCloseShouldNotThrow() throws Exception {
-      final PanamaStore store = new PanamaStore(engine);
-
-      store.close();
-      assertDoesNotThrow(store::close, "Double close should not throw");
-      LOGGER.info("Double close succeeded without exception");
-    }
-
-    @Test
-    @DisplayName("Operations on closed store should throw")
-    void operationsOnClosedStoreShouldThrow() throws Exception {
-      final PanamaStore store = new PanamaStore(engine);
-      store.close();
-
-      assertThrows(IllegalStateException.class, () -> store.setFuel(100));
-      assertThrows(IllegalStateException.class, store::getFuel);
-      assertThrows(IllegalStateException.class, () -> store.addFuel(50));
-      assertThrows(IllegalStateException.class, () -> store.consumeFuel(10));
-      assertThrows(IllegalStateException.class, () -> store.setEpochDeadline(1));
-      assertThrows(IllegalStateException.class, store::getCallbackRegistry);
-      assertThrows(IllegalStateException.class, store::gc);
-      LOGGER.info("All operations correctly throw on closed store");
-    }
-
-    @Test
-    @DisplayName("Should return engine reference")
-    void shouldReturnEngineReference() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThat(store.getEngine()).isSameAs(engine);
-      LOGGER.info("Store returns correct engine reference");
-    }
-
-    @Test
-    @DisplayName("Should provide resource manager")
-    void shouldProvideResourceManager() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertNotNull(store.getResourceManager(), "Resource manager should not be null");
-      LOGGER.info("Resource manager is available");
-    }
-  }
-
-  // ===== Fuel Management Tests =====
-
-  @Nested
-  @DisplayName("Fuel Management Tests")
-  class FuelManagementTests {
-
-    @Test
-    @DisplayName("Should reject negative fuel for setFuel")
-    void shouldRejectNegativeFuelForSet() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.setFuel(-1));
-      LOGGER.info("Correctly rejected negative fuel for setFuel");
-    }
-
-    @Test
-    @DisplayName("Should reject negative fuel for addFuel")
-    void shouldRejectNegativeFuelForAdd() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.addFuel(-1));
-      LOGGER.info("Correctly rejected negative fuel for addFuel");
-    }
-
-    @Test
-    @DisplayName("Should reject negative fuel for consumeFuel")
-    void shouldRejectNegativeFuelForConsume() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.consumeFuel(-1));
-      LOGGER.info("Correctly rejected negative fuel for consumeFuel");
-    }
-  }
-
   // ===== Callback Registry Tests =====
 
   @Nested
@@ -340,287 +205,28 @@ class PanamaStoreTest {
     }
   }
 
-  // ===== Host Function Creation Tests =====
+  // ===== Lifecycle Tests =====
 
   @Nested
-  @DisplayName("Host Function Creation Tests")
-  class HostFunctionCreationTests {
+  @DisplayName("Lifecycle Tests")
+  class LifecycleTests {
 
     @Test
-    @DisplayName("Should reject null name for createHostFunction")
-    void shouldRejectNullName() throws Exception {
+    @DisplayName("Should return engine reference")
+    void shouldReturnEngineReference() throws Exception {
       final PanamaStore store = createStore();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              store.createHostFunction(
-                  null,
-                  ai.tegmentum.wasmtime4j.type.FunctionType.of(
-                      new WasmValueType[] {}, new WasmValueType[] {}),
-                  params -> new WasmValue[0]));
-      LOGGER.info("Correctly rejected null function name");
+      assertThat(store.getEngine()).isSameAs(engine);
+      LOGGER.info("Store returns correct engine reference");
     }
 
     @Test
-    @DisplayName("Should reject null function type")
-    void shouldRejectNullFunctionType() throws Exception {
+    @DisplayName("Should provide resource manager")
+    void shouldProvideResourceManager() throws Exception {
       final PanamaStore store = createStore();
 
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> store.createHostFunction("test", null, params -> new WasmValue[0]));
-      LOGGER.info("Correctly rejected null function type");
-    }
-
-    @Test
-    @DisplayName("Should reject null implementation")
-    void shouldRejectNullImplementation() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              store.createHostFunction(
-                  "test",
-                  ai.tegmentum.wasmtime4j.type.FunctionType.of(
-                      new WasmValueType[] {}, new WasmValueType[] {}),
-                  null));
-      LOGGER.info("Correctly rejected null implementation");
-    }
-
-    @Test
-    @DisplayName("Should create host function")
-    void shouldCreateHostFunction() throws Exception {
-      final PanamaStore store = createStore();
-
-      final ai.tegmentum.wasmtime4j.WasmFunction hostFunc =
-          store.createHostFunction(
-              "test_func",
-              ai.tegmentum.wasmtime4j.type.FunctionType.of(
-                  new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32}),
-              params -> new WasmValue[] {WasmValue.i32(params[0].asInt() * 2)});
-
-      assertNotNull(hostFunc, "Host function should not be null");
-      LOGGER.info("Created host function successfully");
-    }
-  }
-
-  // ===== Global Creation Tests =====
-
-  @Nested
-  @DisplayName("Global Creation Tests")
-  class GlobalCreationTests {
-
-    @Test
-    @DisplayName("Should reject null value type")
-    void shouldRejectNullValueType() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(
-          IllegalArgumentException.class, () -> store.createGlobal(null, true, WasmValue.i32(0)));
-      LOGGER.info("Correctly rejected null value type");
-    }
-
-    @Test
-    @DisplayName("Should reject null initial value")
-    void shouldRejectNullInitialValue() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(
-          IllegalArgumentException.class, () -> store.createGlobal(WasmValueType.I32, true, null));
-      LOGGER.info("Correctly rejected null initial value");
-    }
-
-    @Test
-    @DisplayName("Should reject mismatched value type")
-    void shouldRejectMismatchedValueType() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> store.createGlobal(WasmValueType.I64, true, WasmValue.i32(42)));
-      LOGGER.info("Correctly rejected mismatched value type");
-    }
-  }
-
-  // ===== Table Creation Tests =====
-
-  @Nested
-  @DisplayName("Table Creation Tests")
-  class TableCreationTests {
-
-    @Test
-    @DisplayName("Should reject null element type")
-    void shouldRejectNullElementType() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.createTable(null, 1, 10));
-      LOGGER.info("Correctly rejected null element type");
-    }
-
-    @Test
-    @DisplayName("Should reject negative initial size")
-    void shouldRejectNegativeInitialSize() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(
-          IllegalArgumentException.class, () -> store.createTable(WasmValueType.FUNCREF, -1, 10));
-      LOGGER.info("Correctly rejected negative initial size");
-    }
-
-    @Test
-    @DisplayName("Should reject invalid max size")
-    void shouldRejectInvalidMaxSize() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(
-          IllegalArgumentException.class, () -> store.createTable(WasmValueType.FUNCREF, 1, -2));
-      LOGGER.info("Correctly rejected invalid max size");
-    }
-  }
-
-  // ===== Memory Creation Tests =====
-
-  @Nested
-  @DisplayName("Memory Creation Tests")
-  class MemoryCreationTests {
-
-    @Test
-    @DisplayName("Should reject negative initial pages")
-    void shouldRejectNegativeInitialPages() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.createMemory(-1, 10));
-      LOGGER.info("Correctly rejected negative initial pages");
-    }
-
-    @Test
-    @DisplayName("Should reject invalid max pages")
-    void shouldRejectInvalidMaxPages() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.createMemory(1, -2));
-      LOGGER.info("Correctly rejected invalid max pages");
-    }
-
-    @Test
-    @DisplayName("Should reject invalid shared memory max pages")
-    void shouldRejectInvalidSharedMemoryMaxPages() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.createSharedMemory(1, 0));
-      assertThrows(IllegalArgumentException.class, () -> store.createSharedMemory(1, -1));
-      assertThrows(IllegalArgumentException.class, () -> store.createSharedMemory(-1, 10));
-      LOGGER.info("Correctly rejected invalid shared memory parameters");
-    }
-  }
-
-  // ===== Instance Creation Tests =====
-
-  @Nested
-  @DisplayName("Instance Creation Tests")
-  class InstanceCreationTests {
-
-    @Test
-    @DisplayName("Should reject null module for createInstance")
-    void shouldRejectNullModule() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(IllegalArgumentException.class, () -> store.createInstance(null));
-      LOGGER.info("Correctly rejected null module for createInstance");
-    }
-  }
-
-  // ===== Execution Stats Tests =====
-
-  @Nested
-  @DisplayName("Execution Stats Tests")
-  class ExecutionStatsTests {
-
-    @Test
-    @DisplayName("Execution count on closed store should return 0")
-    void executionCountOnClosedStoreShouldReturnZero() throws Exception {
-      final PanamaStore store = new PanamaStore(engine);
-      store.close();
-
-      assertEquals(0, store.getExecutionCount(), "Closed store execution count should be 0");
-      LOGGER.info("Closed store correctly returns 0 for execution count");
-    }
-
-    @Test
-    @DisplayName("Execution time on closed store should return 0")
-    void executionTimeOnClosedStoreShouldReturnZero() throws Exception {
-      final PanamaStore store = new PanamaStore(engine);
-      store.close();
-
-      assertEquals(
-          0, store.getTotalExecutionTimeMicros(), "Closed store execution time should be 0");
-      LOGGER.info("Closed store correctly returns 0 for execution time");
-    }
-
-    @Test
-    @DisplayName("Pending exception on closed store should return false")
-    void pendingExceptionOnClosedStoreShouldReturnFalse() throws Exception {
-      final PanamaStore store = new PanamaStore(engine);
-      store.close();
-
-      assertFalse(store.hasPendingException(), "Closed store should not have pending exception");
-      LOGGER.info("Closed store correctly returns false for hasPendingException");
-    }
-  }
-
-  // ===== Epoch Tests =====
-
-  @Nested
-  @DisplayName("Epoch Handling Tests")
-  class EpochHandlingTests {
-
-    @Test
-    @DisplayName("Should reject negative delta ticks for async yield")
-    void shouldRejectNegativeDeltaTicks() throws Exception {
-      final PanamaStore store = createStore();
-
-      assertThrows(
-          IllegalArgumentException.class, () -> store.epochDeadlineAsyncYieldAndUpdate(-1));
-      LOGGER.info("Correctly rejected negative delta ticks");
-    }
-  }
-
-  // ===== Fuel Async Yield Interval Tests =====
-
-  @Nested
-  @DisplayName("Fuel Async Yield Interval Tests")
-  class FuelAsyncYieldTests {
-
-    @Test
-    @DisplayName("Should default to zero")
-    void shouldDefaultToZero() throws Exception {
-      final PanamaStore store = createStore();
-      final long interval = store.getFuelAsyncYieldInterval();
-      assertEquals(0L, interval, "Fuel async yield interval should default to 0 (disabled)");
-      LOGGER.info("Default fuel async yield interval is " + interval);
-    }
-
-    @Test
-    @DisplayName("Should set and get fuel async yield interval")
-    void shouldSetAndGet() throws Exception {
-      final PanamaStore store = createStore();
-      store.setFuelAsyncYieldInterval(1000);
-      assertEquals(
-          1000L,
-          store.getFuelAsyncYieldInterval(),
-          "Fuel async yield interval should be 1000 after setting");
-      LOGGER.info("setFuelAsyncYieldInterval(1000) round-trip successful");
-    }
-
-    @Test
-    @DisplayName("Should reject negative interval")
-    void shouldRejectNegativeInterval() throws Exception {
-      final PanamaStore store = createStore();
-      assertThrows(
-          IllegalArgumentException.class, () -> store.setFuelAsyncYieldInterval(-1));
-      LOGGER.info("Correctly rejected negative interval");
+      assertNotNull(store.getResourceManager(), "Resource manager should not be null");
+      LOGGER.info("Resource manager is available");
     }
   }
 }

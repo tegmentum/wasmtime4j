@@ -1155,6 +1155,17 @@ impl EngineBuilder {
         self
     }
 
+    /// Configure the level of detail for WebAssembly backtrace information
+    ///
+    /// This controls whether symbolic names are included in backtraces.
+    ///
+    /// # Arguments
+    /// * `details` - The backtrace detail level
+    pub fn wasm_backtrace_details(mut self, details: wasmtime::WasmBacktraceDetails) -> Self {
+        self.config.wasm_backtrace_details(details);
+        self
+    }
+
     /// Configure address map generation for compiled code
     ///
     /// Address maps provide mapping from native code addresses back to WebAssembly

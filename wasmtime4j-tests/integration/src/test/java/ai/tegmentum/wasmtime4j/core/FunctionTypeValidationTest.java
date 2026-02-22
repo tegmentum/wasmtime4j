@@ -183,85 +183,85 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Threw as expected for null element: " + ex.getMessage());
   }
 
-  // ---------- matchesMultiValuePattern ----------
+  // ---------- isCompatibleWith ----------
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("matchesMultiValuePattern exact match returns true")
-  void matchesMultiValuePatternExactMatch(final RuntimeType runtime) {
+  @DisplayName("isCompatibleWith exact match returns true")
+  void isCompatibleWithExactMatch(final RuntimeType runtime) {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing matchesMultiValuePattern with exact match");
+    LOGGER.info("[" + runtime + "] Testing isCompatibleWith with exact match");
 
     final FunctionType funcType =
         new FunctionType(
             new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64});
 
     assertTrue(
-        funcType.matchesMultiValuePattern(
-            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64}),
+        funcType.isCompatibleWith(
+            FunctionType.of(
+                new WasmValueType[] {WasmValueType.I32},
+                new WasmValueType[] {WasmValueType.F64})),
         "Exact match should return true");
 
-    LOGGER.info("[" + runtime + "] matchesMultiValuePattern returned true for exact match");
+    LOGGER.info("[" + runtime + "] isCompatibleWith returned true for exact match");
   }
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("matchesMultiValuePattern param mismatch returns false")
-  void matchesMultiValuePatternParamMismatch(final RuntimeType runtime) {
+  @DisplayName("isCompatibleWith param mismatch returns false")
+  void isCompatibleWithParamMismatch(final RuntimeType runtime) {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing matchesMultiValuePattern with param mismatch");
+    LOGGER.info("[" + runtime + "] Testing isCompatibleWith with param mismatch");
 
     final FunctionType funcType =
         new FunctionType(
             new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64});
 
     assertFalse(
-        funcType.matchesMultiValuePattern(
-            new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.F64}),
+        funcType.isCompatibleWith(
+            FunctionType.of(
+                new WasmValueType[] {WasmValueType.I64},
+                new WasmValueType[] {WasmValueType.F64})),
         "Param type mismatch should return false");
 
-    LOGGER.info("[" + runtime + "] matchesMultiValuePattern returned false for param mismatch");
+    LOGGER.info("[" + runtime + "] isCompatibleWith returned false for param mismatch");
   }
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("matchesMultiValuePattern return mismatch returns false")
-  void matchesMultiValuePatternReturnMismatch(final RuntimeType runtime) {
+  @DisplayName("isCompatibleWith return mismatch returns false")
+  void isCompatibleWithReturnMismatch(final RuntimeType runtime) {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing matchesMultiValuePattern with return mismatch");
+    LOGGER.info("[" + runtime + "] Testing isCompatibleWith with return mismatch");
 
     final FunctionType funcType =
         new FunctionType(
             new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64});
 
     assertFalse(
-        funcType.matchesMultiValuePattern(
-            new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F32}),
+        funcType.isCompatibleWith(
+            FunctionType.of(
+                new WasmValueType[] {WasmValueType.I32},
+                new WasmValueType[] {WasmValueType.F32})),
         "Return type mismatch should return false");
 
-    LOGGER.info("[" + runtime + "] matchesMultiValuePattern returned false for return mismatch");
+    LOGGER.info("[" + runtime + "] isCompatibleWith returned false for return mismatch");
   }
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("matchesMultiValuePattern null args returns false")
-  void matchesMultiValuePatternNullArgs(final RuntimeType runtime) {
+  @DisplayName("isCompatibleWith null returns false")
+  void isCompatibleWithNull(final RuntimeType runtime) {
     setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing matchesMultiValuePattern with null arguments");
+    LOGGER.info("[" + runtime + "] Testing isCompatibleWith with null argument");
 
     final FunctionType funcType =
         new FunctionType(
             new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64});
 
-    assertFalse(
-        funcType.matchesMultiValuePattern(null, new WasmValueType[] {WasmValueType.F64}),
-        "Null params should return false");
+    assertFalse(funcType.isCompatibleWith(null), "Null should return false");
 
-    assertFalse(
-        funcType.matchesMultiValuePattern(new WasmValueType[] {WasmValueType.I32}, null),
-        "Null returns should return false");
-
-    LOGGER.info("[" + runtime + "] matchesMultiValuePattern returned false for null arguments");
+    LOGGER.info("[" + runtime + "] isCompatibleWith returned false for null argument");
   }
 
 }

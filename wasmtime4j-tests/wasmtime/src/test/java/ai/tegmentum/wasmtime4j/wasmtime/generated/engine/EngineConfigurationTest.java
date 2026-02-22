@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * <p>This test validates that wasmtime4j engine configuration produces the same behavior as the
  * upstream Wasmtime implementation.
  */
+@SuppressWarnings("deprecation")
 public final class EngineConfigurationTest extends DualRuntimeTest {
 
   @AfterEach
@@ -87,7 +88,7 @@ public final class EngineConfigurationTest extends DualRuntimeTest {
     setRuntime(runtime);
 
     // Create an engine with epoch interruption enabled
-    final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+    final EngineConfig config = new EngineConfig().epochInterruption(true);
 
     try (final Engine engine = Engine.create(config)) {
       assertNotNull(engine, "Engine with epoch interruption should be created");
@@ -108,7 +109,7 @@ public final class EngineConfigurationTest extends DualRuntimeTest {
     setRuntime(runtime);
 
     // Create an engine with epoch interruption enabled and test incrementing
-    final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+    final EngineConfig config = new EngineConfig().epochInterruption(true);
 
     try (final Engine engine = Engine.create(config)) {
       // Incrementing epoch should not throw

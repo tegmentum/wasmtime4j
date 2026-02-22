@@ -39,12 +39,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for {@link PanamaHostFunction}.
+ * Panama-specific tests for {@link PanamaHostFunction}.
  *
- * <p>Tests host function creation, upcall stub generation, lifecycle management, and callback
- * registration using real Panama FFI interactions.
+ * <p>Tests Panama-specific constructor validation, construction variants, MemorySegment handle
+ * access, upcall stub lifecycle, funcRef IDs, and Panama-specific call/async behavior. Generic host
+ * function API tests (type variations, linker integration, function interface accessors) are in
+ * {@code HostFunctionApiDualRuntimeTest}.
  */
-@DisplayName("PanamaHostFunction Integration Tests")
+@DisplayName("PanamaHostFunction Panama-Specific Tests")
 class PanamaHostFunctionTest {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaHostFunctionTest.class.getName());
@@ -231,25 +233,6 @@ class PanamaHostFunctionTest {
   class FunctionInterfaceTests {
 
     @Test
-    @DisplayName("Should return correct function type")
-    void shouldReturnCorrectFunctionType() throws Exception {
-      final FunctionType type = createI32ToI32Type();
-      final PanamaHostFunction func =
-          createTrackedHostFunction("typed", type, createDoubleCallback());
-      assertEquals(type, func.getFunctionType(), "Function type should match constructor param");
-      LOGGER.info("Function type: " + func.getFunctionType());
-    }
-
-    @Test
-    @DisplayName("Should return correct name")
-    void shouldReturnCorrectName() throws Exception {
-      final PanamaHostFunction func =
-          createTrackedHostFunction("myHostFunc", createI32ToI32Type(), createDoubleCallback());
-      assertEquals("myHostFunc", func.getName(), "Name should match constructor param");
-      LOGGER.info("Function name: " + func.getName());
-    }
-
-    @Test
     @DisplayName("Should throw ValidationException on direct call")
     void shouldThrowOnDirectCall() throws Exception {
       final PanamaHostFunction func =
@@ -343,107 +326,6 @@ class PanamaHostFunctionTest {
   }
 
   @Nested
-  @DisplayName("Upcall Stub Creation Tests")
-  class UpcallStubCreationTests {
-
-    @Test
-    @DisplayName("Should create stub for i32 -> i32 function")
-    void shouldCreateStubForI32ToI32() throws Exception {
-      final PanamaHostFunction func =
-          createTrackedHostFunction("i32toi32", createI32ToI32Type(), createDoubleCallback());
-      assertNotNull(func.getUpcallStub(), "i32->i32 stub should not be null");
-      LOGGER.info("Created i32->i32 upcall stub");
-    }
-
-    @Test
-    @DisplayName("Should create stub for void function")
-    void shouldCreateStubForVoidFunction() throws Exception {
-      final PanamaHostFunction func =
-          createTrackedHostFunction("void", createVoidType(), createVoidCallback());
-      assertNotNull(func.getUpcallStub(), "void stub should not be null");
-      LOGGER.info("Created void upcall stub");
-    }
-
-    @Test
-    @DisplayName("Should create stub for i64 -> i64 function")
-    void shouldCreateStubForI64ToI64() throws Exception {
-      final FunctionType type =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.I64});
-      final PanamaHostFunction.HostFunctionCallback callback =
-          params -> new WasmValue[] {WasmValue.i64(params[0].asLong() * 2)};
-
-      final PanamaHostFunction func = createTrackedHostFunction("i64toi64", type, callback);
-      assertNotNull(func.getUpcallStub(), "i64->i64 stub should not be null");
-      LOGGER.info("Created i64->i64 upcall stub");
-    }
-
-    @Test
-    @DisplayName("Should create stub for f32 -> f32 function")
-    void shouldCreateStubForF32ToF32() throws Exception {
-      final FunctionType type =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.F32}, new WasmValueType[] {WasmValueType.F32});
-      final PanamaHostFunction.HostFunctionCallback callback =
-          params -> new WasmValue[] {WasmValue.f32(params[0].asFloat() * 2.0f)};
-
-      final PanamaHostFunction func = createTrackedHostFunction("f32tof32", type, callback);
-      assertNotNull(func.getUpcallStub(), "f32->f32 stub should not be null");
-      LOGGER.info("Created f32->f32 upcall stub");
-    }
-
-    @Test
-    @DisplayName("Should create stub for f64 -> f64 function")
-    void shouldCreateStubForF64ToF64() throws Exception {
-      final FunctionType type =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.F64}, new WasmValueType[] {WasmValueType.F64});
-      final PanamaHostFunction.HostFunctionCallback callback =
-          params -> new WasmValue[] {WasmValue.f64(params[0].asDouble() * 2.0)};
-
-      final PanamaHostFunction func = createTrackedHostFunction("f64tof64", type, callback);
-      assertNotNull(func.getUpcallStub(), "f64->f64 stub should not be null");
-      LOGGER.info("Created f64->f64 upcall stub");
-    }
-
-    @Test
-    @DisplayName("Should create stub for multi-param function")
-    void shouldCreateStubForMultiParamFunction() throws Exception {
-      final FunctionType type =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I64, WasmValueType.F64},
-              new WasmValueType[] {WasmValueType.F64});
-      final PanamaHostFunction.HostFunctionCallback callback =
-          params ->
-              new WasmValue[] {
-                WasmValue.f64(params[0].asInt() + params[1].asLong() + params[2].asDouble())
-              };
-
-      final PanamaHostFunction func = createTrackedHostFunction("multiParam", type, callback);
-      assertNotNull(func.getUpcallStub(), "Multi-param stub should not be null");
-      LOGGER.info("Created multi-param upcall stub");
-    }
-
-    @Test
-    @DisplayName("Should create stub for multi-return function")
-    void shouldCreateStubForMultiReturnFunction() throws Exception {
-      final FunctionType type =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32});
-      final PanamaHostFunction.HostFunctionCallback callback =
-          params -> {
-            final int val = params[0].asInt();
-            return new WasmValue[] {WasmValue.i32(val), WasmValue.i32(val * 2)};
-          };
-
-      final PanamaHostFunction func = createTrackedHostFunction("multiReturn", type, callback);
-      assertNotNull(func.getUpcallStub(), "Multi-return stub should not be null");
-      LOGGER.info("Created multi-return upcall stub");
-    }
-  }
-
-  @Nested
   @DisplayName("Resource Management Tests")
   class ResourceManagementTests {
 
@@ -499,17 +381,6 @@ class PanamaHostFunctionTest {
   @Nested
   @DisplayName("String Representation Tests")
   class StringRepresentationTests {
-
-    @Test
-    @DisplayName("Should include name in toString")
-    void shouldIncludeNameInToString() throws Exception {
-      final PanamaHostFunction func =
-          createTrackedHostFunction("stringable", createI32ToI32Type(), createDoubleCallback());
-      final String str = func.toString();
-      assertNotNull(str, "toString should not be null");
-      assertTrue(str.contains("stringable"), "toString should contain function name, got: " + str);
-      LOGGER.info("toString: " + str);
-    }
 
     @Test
     @DisplayName("Should indicate closed in toString")

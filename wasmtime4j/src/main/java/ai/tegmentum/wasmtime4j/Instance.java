@@ -375,7 +375,10 @@ public interface Instance extends Closeable {
    * @return true if disposal was successful, false if already disposed
    * @throws WasmException if disposal fails
    * @since 1.0.0
+   * @deprecated Use {@link #close()} instead for consistent resource management via
+   *     try-with-resources.
    */
+  @Deprecated
   boolean dispose() throws WasmException;
 
   /**

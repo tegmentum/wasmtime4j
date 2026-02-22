@@ -492,10 +492,8 @@ fn serialize_resource(_resource: &ResourceAny) -> Result<Vec<u8>, WasmtimeError>
 
 // C-ABI exports for Java FFI
 
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 use std::os::raw::c_int;
-
-const FFI_SUCCESS: c_int = 0;
-const FFI_ERROR: c_int = -1;
 
 /// Serialize a WIT value to binary format.
 ///

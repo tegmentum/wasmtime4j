@@ -253,7 +253,7 @@ public class MultiValuePerformanceBenchmark {
 
   @Benchmark
   public FunctionType createMultiValueFunctionType(Blackhole bh) {
-    return FunctionType.multiValue(
+    return FunctionType.of(
         new WasmValueType[] {WasmValueType.I32, WasmValueType.F64},
         new WasmValueType[] {WasmValueType.I32, WasmValueType.I64, WasmValueType.F32});
   }
@@ -279,10 +279,11 @@ public class MultiValuePerformanceBenchmark {
   }
 
   @Benchmark
-  public boolean matchesMultiValuePattern(Blackhole bh) {
-    return multiValueFunctionType.matchesMultiValuePattern(
-        new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-        new WasmValueType[] {WasmValueType.I32, WasmValueType.I32, WasmValueType.I32});
+  public boolean isCompatibleWithPattern(Blackhole bh) {
+    return multiValueFunctionType.isCompatibleWith(
+        FunctionType.of(
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+            new WasmValueType[] {WasmValueType.I32, WasmValueType.I32, WasmValueType.I32}));
   }
 
   // =================== Host Function Execution Benchmarks ===================

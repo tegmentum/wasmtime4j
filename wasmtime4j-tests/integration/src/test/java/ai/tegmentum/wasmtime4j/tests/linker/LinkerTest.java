@@ -20,6 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /** Comprehensive tests for WebAssembly module linking. */
+@SuppressWarnings("deprecation")
 public class LinkerTest {
 
   private Engine engine;

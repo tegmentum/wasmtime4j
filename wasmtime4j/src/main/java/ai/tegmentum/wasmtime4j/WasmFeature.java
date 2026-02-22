@@ -78,5 +78,8 @@ public enum WasmFeature {
   COMPONENT_MODEL_ERROR_CONTEXT,
 
   /** WebAssembly Component Model GC support. */
-  COMPONENT_MODEL_GC
+  COMPONENT_MODEL_GC,
+
+  /** WebAssembly Component Model threading support. */
+  COMPONENT_MODEL_THREADING
 }

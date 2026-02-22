@@ -58,6 +58,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * @since 1.0.0
  */
 @DisplayName("Caller Epoch and Advanced Access Tests")
+@SuppressWarnings("deprecation")
 public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
 
   private static final Logger LOGGER =
@@ -139,7 +140,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
               return new WasmValue[] {WasmValue.i32(hasDeadline ? 1 : 0)};
             });
 
-    final EngineConfig config = Engine.builder().setEpochInterruption(true);
+    final EngineConfig config = Engine.builder().epochInterruption(true);
     try (Engine engine = Engine.create(config);
         Linker<Void> linker = Linker.create(engine);
         Store store = engine.createStore();
@@ -187,7 +188,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
               return new WasmValue[] {WasmValue.i32(42)};
             });
 
-    final EngineConfig config = Engine.builder().setEpochInterruption(true);
+    final EngineConfig config = Engine.builder().epochInterruption(true);
     try (Engine engine = Engine.create(config);
         Linker<Void> linker = Linker.create(engine);
         Store store = engine.createStore();

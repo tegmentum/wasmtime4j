@@ -92,6 +92,8 @@ public final class WastTestRunner implements AutoCloseable {
   private static EngineConfig createDefaultConfig() {
     return new EngineConfig()
         .wasmExceptions(true)
+        .gcSupport(true)
+        .sharedMemory(true)
         .addWasmFeature(WasmFeature.MEMORY64)
         .addWasmFeature(WasmFeature.MULTI_VALUE)
         .addWasmFeature(WasmFeature.BULK_MEMORY)
@@ -208,6 +210,7 @@ public final class WastTestRunner implements AutoCloseable {
    * @throws Exception if registration fails
    * @throws IllegalStateException if no current instance is available
    */
+  @SuppressWarnings("deprecation")
   public void registerModule(final String moduleName) throws Exception {
     Objects.requireNonNull(moduleName, "Module name cannot be null");
 
@@ -287,7 +290,7 @@ public final class WastTestRunner implements AutoCloseable {
       final WasmValue expected = expectedResults[i];
       final WasmValue actual = actualResults[i];
 
-      if (!valuesEqual(expected, actual)) {
+      if (!WasmValueComparator.valuesEqual(expected, actual)) {
         throw new AssertionError(
             String.format(
                 "Return value mismatch at index %d: expected %s but got %s", i, expected, actual));
@@ -323,7 +326,7 @@ public final class WastTestRunner implements AutoCloseable {
       final WasmValue expected = expectedResults[i];
       final WasmValue actual = actualResults[i];
 
-      if (!valuesEqual(expected, actual)) {
+      if (!WasmValueComparator.valuesEqual(expected, actual)) {
         throw new AssertionError(
             String.format(
                 "Return value mismatch at index %d: expected %s but got %s", i, expected, actual));
@@ -410,14 +413,6 @@ public final class WastTestRunner implements AutoCloseable {
     normalized = normalized.replace("integer overflow", "overflow");
     normalized = normalized.replace("call stack exhausted", "stack overflow");
 
-    // Wasmtime doesn't include specific trap reasons in error messages
-    if (normalized.contains("error while executing") || normalized.contains("wasm backtrace")) {
-      normalized =
-          normalized
-              + " unreachable out of bounds memory access undefined element divide by zero"
-              + " integer divide by zero";
-    }
-
     return normalized;
   }
 
@@ -503,36 +498,6 @@ public final class WastTestRunner implements AutoCloseable {
     }
   }
 
-  /**
-   * Compares two WasmValue instances for equality.
-   *
-   * @param expected the expected value
-   * @param actual the actual value
-   * @return true if the values are equal
-   */
-  private boolean valuesEqual(final WasmValue expected, final WasmValue actual) {
-    if (expected.getType() != actual.getType()) {
-      return false;
-    }
-
-    switch (expected.getType()) {
-      case I32:
-        return expected.asInt() == actual.asInt();
-      case I64:
-        return expected.asLong() == actual.asLong();
-      case F32:
-        return Float.compare(expected.asFloat(), actual.asFloat()) == 0;
-      case F64:
-        return Double.compare(expected.asDouble(), actual.asDouble()) == 0;
-      case EXTERNREF:
-      case FUNCREF:
-      case V128:
-        // Use WasmValue.equals() for reference types and vectors
-        return expected.equals(actual);
-      default:
-        return false;
-    }
-  }
 
   /**
    * Gets the current instance.

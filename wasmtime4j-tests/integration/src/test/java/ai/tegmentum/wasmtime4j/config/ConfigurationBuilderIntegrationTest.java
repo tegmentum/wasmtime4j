@@ -52,6 +52,7 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Configuration Builder Integration Tests")
+@SuppressWarnings("deprecation")
 public final class ConfigurationBuilderIntegrationTest {
 
   private static final Logger LOGGER =
@@ -640,19 +641,19 @@ public final class ConfigurationBuilderIntegrationTest {
 
         final EngineConfig config = new EngineConfig();
 
-        config.setOptimizationLevel(OptimizationLevel.SPEED);
+        config.optimizationLevel(OptimizationLevel.SPEED);
         assertEquals(
             OptimizationLevel.SPEED,
             config.getOptimizationLevel(),
             "Optimization level should be SPEED");
 
-        config.setOptimizationLevel(OptimizationLevel.SIZE);
+        config.optimizationLevel(OptimizationLevel.SIZE);
         assertEquals(
             OptimizationLevel.SIZE,
             config.getOptimizationLevel(),
             "Optimization level should be SIZE");
 
-        config.setOptimizationLevel(OptimizationLevel.NONE);
+        config.optimizationLevel(OptimizationLevel.NONE);
         assertEquals(
             OptimizationLevel.NONE,
             config.getOptimizationLevel(),
@@ -716,10 +717,10 @@ public final class ConfigurationBuilderIntegrationTest {
 
         final EngineConfig config = new EngineConfig();
 
-        config.setEpochInterruption(true);
+        config.epochInterruption(true);
         assertTrue(config.isEpochInterruption(), "Epoch interruption should be enabled");
 
-        config.setEpochInterruption(false);
+        config.epochInterruption(false);
         assertFalse(config.isEpochInterruption(), "Epoch interruption should be disabled");
 
         LOGGER.info("Epoch interruption setter works correctly");
@@ -758,7 +759,7 @@ public final class ConfigurationBuilderIntegrationTest {
         assertSame(config, config.consumeFuel(true), "consumeFuel should return same config");
         assertSame(
             config,
-            config.setEpochInterruption(true),
+            config.epochInterruption(true),
             "epochInterruption should return same config");
         assertSame(
             config,
@@ -782,7 +783,7 @@ public final class ConfigurationBuilderIntegrationTest {
                 .debugInfo(true)
                 .guestDebug(true)
                 .consumeFuel(true)
-                .setEpochInterruption(true)
+                .epochInterruption(true)
                 .parallelCompilation(true)
                 .optimizationLevel(OptimizationLevel.NONE);
 
@@ -803,22 +804,6 @@ public final class ConfigurationBuilderIntegrationTest {
     @Nested
     @DisplayName("Factory Method Tests")
     class FactoryMethodTests {
-
-      @Test
-      @DisplayName("forSpeed should configure for speed optimization")
-      void forSpeedShouldConfigureForSpeedOptimization(final TestInfo testInfo) {
-        LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-        final EngineConfig config = EngineConfig.forSpeed();
-
-        assertEquals(
-            OptimizationLevel.SPEED,
-            config.getOptimizationLevel(),
-            "forSpeed should set SPEED optimization");
-        assertTrue(config.isParallelCompilation(), "forSpeed should enable parallel compilation");
-
-        LOGGER.info("forSpeed configuration: opt=" + config.getOptimizationLevel());
-      }
 
       @Test
       @DisplayName("forSize should configure for size optimization")
@@ -921,7 +906,7 @@ public final class ConfigurationBuilderIntegrationTest {
           throws Exception {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+        final EngineConfig config = new EngineConfig().epochInterruption(true);
 
         final Engine engine = runtime.createEngine(config);
         resources.add(0, engine);
@@ -1095,7 +1080,7 @@ public final class ConfigurationBuilderIntegrationTest {
           throws Exception {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+        final EngineConfig config = new EngineConfig().epochInterruption(true);
         final Engine engine = runtime.createEngine(config);
         resources.add(0, engine);
 
@@ -1170,7 +1155,7 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldBuildStoreWithAllOptions(final TestInfo testInfo) throws Exception {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final EngineConfig config = new EngineConfig().consumeFuel(true).setEpochInterruption(true);
+        final EngineConfig config = new EngineConfig().consumeFuel(true).epochInterruption(true);
         final Engine engine = runtime.createEngine(config);
         resources.add(0, engine);
 

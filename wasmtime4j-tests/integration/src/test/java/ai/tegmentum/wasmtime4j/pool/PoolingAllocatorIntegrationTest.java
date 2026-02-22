@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -257,7 +256,7 @@ public final class PoolingAllocatorIntegrationTest {
 
       allocator = PoolingAllocator.create();
       final PoolStatistics initialStats = allocator.getStatistics();
-      final long initialAllocations = initialStats.getInstancesAllocated();
+      final long initialCoreInstances = initialStats.getCoreInstances();
 
       for (int i = 0; i < 5; i++) {
         allocator.allocateInstance();
@@ -265,14 +264,14 @@ public final class PoolingAllocatorIntegrationTest {
 
       final PoolStatistics finalStats = allocator.getStatistics();
       assertTrue(
-          finalStats.getInstancesAllocated() >= initialAllocations + 5,
-          "Allocation count should increase by at least 5");
+          finalStats.getCoreInstances() >= initialCoreInstances + 5,
+          "Core instance count should increase by at least 5");
 
       LOGGER.info(
-          "Allocation count increased from "
-              + initialAllocations
+          "Core instance count increased from "
+              + initialCoreInstances
               + " to "
-              + finalStats.getInstancesAllocated());
+              + finalStats.getCoreInstances());
     }
   }
 
@@ -290,20 +289,22 @@ public final class PoolingAllocatorIntegrationTest {
       final PoolStatistics stats = allocator.getStatistics();
 
       assertNotNull(stats, "Statistics should not be null");
-      assertTrue(stats.getInstancesAllocated() >= 0, "Instances allocated should be non-negative");
-      assertTrue(stats.getInstancesReused() >= 0, "Instances reused should be non-negative");
-      assertTrue(stats.getInstancesCreated() >= 0, "Instances created should be non-negative");
-      assertTrue(stats.getCurrentMemoryUsage() >= 0, "Current memory usage should be non-negative");
-      assertTrue(stats.getPeakMemoryUsage() >= 0, "Peak memory usage should be non-negative");
+      assertTrue(stats.getCoreInstances() >= 0, "Core instances should be non-negative");
+      assertTrue(stats.getComponentInstances() >= 0, "Component instances should be non-negative");
+      assertTrue(stats.getMemories() >= 0, "Memories should be non-negative");
+      assertTrue(stats.getTables() >= 0, "Tables should be non-negative");
+      assertTrue(stats.getStacks() >= 0, "Stacks should be non-negative");
+      assertTrue(stats.getGcHeaps() >= 0, "GC heaps should be non-negative");
 
       LOGGER.info(
-          "Statistics: allocated="
-              + stats.getInstancesAllocated()
-              + ", reused="
-              + stats.getInstancesReused()
-              + ", memory="
-              + stats.getCurrentMemoryUsage()
-              + " bytes");
+          "Statistics: coreInstances="
+              + stats.getCoreInstances()
+              + ", memories="
+              + stats.getMemories()
+              + ", tables="
+              + stats.getTables()
+              + ", stacks="
+              + stats.getStacks());
     }
 
     @Test
@@ -324,15 +325,15 @@ public final class PoolingAllocatorIntegrationTest {
       allocator.resetStatistics();
       final PoolStatistics stats = allocator.getStatistics();
 
-      assertEquals(0, stats.getInstancesAllocated(), "Allocated count should be reset to 0");
-      assertEquals(0, stats.getInstancesReused(), "Reused count should be reset to 0");
+      assertEquals(0, stats.getCoreInstances(), "Core instance count should be reset to 0");
+      assertEquals(0, stats.getMemories(), "Memory count should be reset to 0");
 
       LOGGER.info("Statistics reset successfully");
     }
 
     @Test
-    @DisplayName("should calculate reuse ratio correctly")
-    void shouldCalculateReuseRatioCorrectly(final TestInfo testInfo) throws Exception {
+    @DisplayName("should track unused warm slots after release")
+    void shouldTrackUnusedWarmSlotsAfterRelease(final TestInfo testInfo) throws Exception {
       assumePoolingAllocatorAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
@@ -345,22 +346,22 @@ public final class PoolingAllocatorIntegrationTest {
       allocator.reuseInstance(id1);
 
       final PoolStatistics stats = allocator.getStatistics();
-      final double reuseRatio = stats.getReuseRatio();
+      final long unusedWarmMemories = stats.getUnusedWarmMemories();
 
-      assertTrue(reuseRatio >= 0.0 && reuseRatio <= 1.0, "Reuse ratio should be between 0 and 1");
+      assertTrue(unusedWarmMemories >= 0, "Unused warm memories should be non-negative");
 
-      LOGGER.info("Reuse ratio: " + reuseRatio);
+      LOGGER.info("Unused warm memories: " + unusedWarmMemories);
     }
 
     @Test
-    @DisplayName("should track memory usage")
-    void shouldTrackMemoryUsage(final TestInfo testInfo) throws Exception {
+    @DisplayName("should track memory slot usage")
+    void shouldTrackMemorySlotUsage(final TestInfo testInfo) throws Exception {
       assumePoolingAllocatorAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       allocator = PoolingAllocator.create();
       final PoolStatistics initialStats = allocator.getStatistics();
-      final long initialMemory = initialStats.getCurrentMemoryUsage();
+      final long initialMemories = initialStats.getMemories();
 
       // Allocate several instances
       final List<Long> instanceIds = new ArrayList<>();
@@ -370,39 +371,43 @@ public final class PoolingAllocatorIntegrationTest {
 
       final PoolStatistics finalStats = allocator.getStatistics();
       assertTrue(
-          finalStats.getPeakMemoryUsage() >= initialMemory,
-          "Peak memory should be >= initial memory");
+          finalStats.getMemories() >= initialMemories,
+          "Memory slot count should be >= initial count");
 
-      LOGGER.info("Memory: initial=" + initialMemory + ", peak=" + finalStats.getPeakMemoryUsage());
+      LOGGER.info(
+          "Memory slots: initial=" + initialMemories + ", final=" + finalStats.getMemories());
     }
 
     @Test
-    @DisplayName("should track allocation failures")
-    void shouldTrackAllocationFailures(final TestInfo testInfo) throws Exception {
+    @DisplayName("should track stack and table slots")
+    void shouldTrackStackAndTableSlots(final TestInfo testInfo) throws Exception {
       assumePoolingAllocatorAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      // Create allocator with very small pool
-      final PoolingAllocatorConfig config =
-          PoolingAllocatorConfig.builder().instancePoolSize(2).build();
+      allocator = PoolingAllocator.create();
 
-      allocator = PoolingAllocator.create(config);
-
-      // Allocate all available instances
+      // Allocate some instances
       final List<Long> instanceIds = new ArrayList<>();
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < 3; i++) {
         instanceIds.add(allocator.allocateInstance());
       }
 
-      // Try to allocate one more (should fail or throw)
-      try {
-        allocator.allocateInstance();
-      } catch (final WasmException e) {
-        LOGGER.info("Allocation failed as expected: " + e.getMessage());
-      }
-
       final PoolStatistics stats = allocator.getStatistics();
-      LOGGER.info("Allocation failures: " + stats.getAllocationFailures());
+      assertTrue(stats.getStacks() >= 0, "Stacks should be non-negative");
+      assertTrue(stats.getTables() >= 0, "Tables should be non-negative");
+      assertTrue(stats.getGcHeaps() >= 0, "GC heaps should be non-negative");
+      assertTrue(
+          stats.getUnusedWarmStacks() >= 0, "Unused warm stacks should be non-negative");
+      assertTrue(
+          stats.getUnusedWarmTables() >= 0, "Unused warm tables should be non-negative");
+
+      LOGGER.info(
+          "Stacks="
+              + stats.getStacks()
+              + ", tables="
+              + stats.getTables()
+              + ", gcHeaps="
+              + stats.getGcHeaps());
     }
   }
 
@@ -425,10 +430,20 @@ public final class PoolingAllocatorIntegrationTest {
 
       allocator = PoolingAllocator.create(config);
       final PoolStatistics stats = allocator.getStatistics();
-      final Duration warmingTime = stats.getPoolWarmingTime();
 
-      assertNotNull(warmingTime, "Pool warming time should not be null");
-      LOGGER.info("Pool warming time: " + warmingTime.toMillis() + "ms");
+      // After warming, we should see unused warm memory slots available
+      assertTrue(
+          stats.getUnusedWarmMemories() >= 0,
+          "Unused warm memories should be non-negative after warming");
+      assertTrue(
+          stats.getUnusedMemoryBytesResident() >= 0,
+          "Unused memory bytes resident should be non-negative after warming");
+
+      LOGGER.info(
+          "After warming: unusedWarmMemories="
+              + stats.getUnusedWarmMemories()
+              + ", unusedMemoryBytesResident="
+              + stats.getUnusedMemoryBytesResident());
     }
 
     @Test

@@ -6,8 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.InstanceState;
-import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.lang.foreign.MemorySegment;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,86 +58,6 @@ class PanamaInstanceTest {
       assertThatThrownBy(() -> new PanamaInstancePre(MemorySegment.NULL, null, null))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("Native InstancePre cannot be null");
-    }
-  }
-
-  @Nested
-  @DisplayName("Instance State Tests")
-  class InstanceStateTests {
-
-    @Test
-    @DisplayName("InstanceState enum should have CREATED value")
-    void instanceStateShouldHaveCreatedValue() {
-      assertThat(InstanceState.CREATED).isNotNull();
-    }
-
-    @Test
-    @DisplayName("InstanceState enum should have DISPOSED value")
-    void instanceStateShouldHaveDisposedValue() {
-      assertThat(InstanceState.DISPOSED).isNotNull();
-    }
-
-    @Test
-    @DisplayName("InstanceState values should be distinct")
-    void instanceStateValuesShouldBeDistinct() {
-      assertThat(InstanceState.CREATED).isNotEqualTo(InstanceState.DISPOSED);
-    }
-  }
-
-  @Nested
-  @DisplayName("WasmValueType Coverage Tests")
-  class WasmValueTypeCoverageTests {
-
-    @Test
-    @DisplayName("WasmValueType should have I32 value")
-    void wasmValueTypeShouldHaveI32Value() {
-      assertThat(WasmValueType.I32).isNotNull();
-    }
-
-    @Test
-    @DisplayName("WasmValueType should have I64 value")
-    void wasmValueTypeShouldHaveI64Value() {
-      assertThat(WasmValueType.I64).isNotNull();
-    }
-
-    @Test
-    @DisplayName("WasmValueType should have F32 value")
-    void wasmValueTypeShouldHaveF32Value() {
-      assertThat(WasmValueType.F32).isNotNull();
-    }
-
-    @Test
-    @DisplayName("WasmValueType should have F64 value")
-    void wasmValueTypeShouldHaveF64Value() {
-      assertThat(WasmValueType.F64).isNotNull();
-    }
-
-    @Test
-    @DisplayName("WasmValueType should have V128 value")
-    void wasmValueTypeShouldHaveV128Value() {
-      assertThat(WasmValueType.V128).isNotNull();
-    }
-
-    @Test
-    @DisplayName("WasmValueType should have FUNCREF value")
-    void wasmValueTypeShouldHaveFuncrefValue() {
-      assertThat(WasmValueType.FUNCREF).isNotNull();
-    }
-
-    @Test
-    @DisplayName("WasmValueType should have EXTERNREF value")
-    void wasmValueTypeShouldHaveExternrefValue() {
-      assertThat(WasmValueType.EXTERNREF).isNotNull();
-    }
-
-    @Test
-    @DisplayName("WasmValueType toNativeTypeCode should return correct codes")
-    void wasmValueTypeToNativeTypeCodeShouldWork() {
-      // Verify the method exists and works
-      assertThat(WasmValueType.I32.toNativeTypeCode()).isGreaterThanOrEqualTo(0);
-      assertThat(WasmValueType.I64.toNativeTypeCode()).isGreaterThanOrEqualTo(0);
-      assertThat(WasmValueType.F32.toNativeTypeCode()).isGreaterThanOrEqualTo(0);
-      assertThat(WasmValueType.F64.toNativeTypeCode()).isGreaterThanOrEqualTo(0);
     }
   }
 

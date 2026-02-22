@@ -11,7 +11,6 @@ import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.util.StreamUtils;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 
 /**
  * JNI implementation of the Engine interface.
@@ -471,54 +470,6 @@ public class JniEngine extends JniResource implements Engine {
 
   private static native long nativeCreateEngineFromJsonConfig(byte[] jsonConfig);
 
-  private static native long nativeCreateEngineWithExtendedConfig(
-      int strategy,
-      int optLevel,
-      boolean debugInfo,
-      boolean wasmThreads,
-      boolean wasmSimd,
-      boolean wasmReferenceTypes,
-      boolean wasmBulkMemory,
-      boolean wasmMultiValue,
-      boolean fuelEnabled,
-      int maxMemoryPages,
-      int maxStackSize,
-      boolean epochInterruption,
-      int maxInstances,
-      boolean asyncSupport,
-      boolean wasmGc,
-      boolean wasmFunctionReferences,
-      boolean wasmExceptions,
-      long memoryReservation,
-      long memoryGuardSize,
-      long memoryReservationForGrowth,
-      boolean wasmTailCall,
-      boolean wasmRelaxedSimd,
-      boolean wasmMultiMemory,
-      boolean wasmMemory64,
-      boolean wasmExtendedConst,
-      boolean wasmComponentModel,
-      boolean coredumpOnTrap,
-      boolean craneliftNanCanonicalization,
-      boolean wasmCustomPageSizes,
-      boolean wasmWideArithmetic,
-      int profilingStrategy,
-      boolean nativeUnwindInfo,
-      boolean craneliftDebugVerifier,
-      long asyncStackSize,
-      boolean memoryMayMove,
-      boolean guardBeforeLinearMemory,
-      boolean parallelCompilation,
-      boolean poolingAllocator,
-      boolean tableLazyInit,
-      boolean relaxedSimdDeterministic,
-      boolean memoryInitCow,
-      boolean asyncStackZeroing,
-      boolean gcSupport,
-      String craneliftFlagsJson,
-      int moduleVersionStrategy,
-      String moduleVersionCustom);
-
   /**
    * Clears the native handle registries used for memory and store validation.
    *
@@ -536,27 +487,4 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   private static native int nativeClearHandleRegistries();
-
-  /**
-   * Converts a cranelift settings map to a simple JSON object string.
-   *
-   * @param settings the cranelift settings map (may be null or empty)
-   * @return a JSON string like {"key":"value"}, or null if empty
-   */
-  private static String craneliftSettingsToJson(final Map<String, String> settings) {
-    if (settings == null || settings.isEmpty()) {
-      return null;
-    }
-    final StringBuilder sb = new StringBuilder("{");
-    boolean first = true;
-    for (final Map.Entry<String, String> entry : settings.entrySet()) {
-      if (!first) {
-        sb.append(',');
-      }
-      sb.append('"').append(entry.getKey()).append("\":\"").append(entry.getValue()).append('"');
-      first = false;
-    }
-    sb.append('}');
-    return sb.toString();
-  }
 }

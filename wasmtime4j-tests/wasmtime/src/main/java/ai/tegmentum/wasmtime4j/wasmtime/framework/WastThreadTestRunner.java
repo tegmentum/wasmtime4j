@@ -41,7 +41,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -128,6 +127,7 @@ public final class WastThreadTestRunner implements AutoCloseable {
    */
   private static EngineConfig createDefaultConfig() {
     return new EngineConfig()
+        .sharedMemory(true)
         .addWasmFeature(WasmFeature.THREADS)
         .addWasmFeature(WasmFeature.BULK_MEMORY)
         .addWasmFeature(WasmFeature.MULTI_VALUE)
@@ -166,31 +166,30 @@ public final class WastThreadTestRunner implements AutoCloseable {
     // Pre-extract memory exports while still in the main thread
     // This avoids Panama thread confinement issues when accessing from worker threads
     final String[] exportNames = instance.getExportNames();
-    System.out.println("[DEBUG] defineSharedModule: name=" + name);
-    System.out.println(
-        "[DEBUG] Export names: " + (exportNames != null ? Arrays.toString(exportNames) : "null"));
-    System.out.println("[DEBUG] Export count: " + (exportNames != null ? exportNames.length : 0));
+    LOGGER.fine(() -> "defineSharedModule: name=" + name);
+    LOGGER.fine(() -> "Export names: "
+        + (exportNames != null ? Arrays.toString(exportNames) : "null"));
+    LOGGER.fine(() -> "Export count: " + (exportNames != null ? exportNames.length : 0));
 
     if (exportNames != null) {
       for (final String exportName : exportNames) {
-        System.out.println("[DEBUG] Checking export: '" + exportName + "'");
+        LOGGER.fine(() -> "Checking export: '" + exportName + "'");
         try {
           final java.util.Optional<WasmMemory> memOpt = instance.getMemory(exportName);
-          System.out.println(
-              "[DEBUG] getMemory('" + exportName + "') present: " + memOpt.isPresent());
+          LOGGER.fine(() -> "getMemory('" + exportName + "') present: " + memOpt.isPresent());
           memOpt.ifPresent(
               memory -> {
                 info.memories.put(exportName, memory);
-                System.out.println(
-                    "[DEBUG] Stored memory: " + exportName + ", shared=" + memory.isShared());
+                LOGGER.fine(() -> "Stored memory: " + exportName
+                    + ", shared=" + memory.isShared());
               });
         } catch (final Exception e) {
           // Not a memory export, skip
-          System.out.println("[DEBUG] Export '" + exportName + "' error: " + e.getMessage());
+          LOGGER.fine(() -> "Export '" + exportName + "' error: " + e.getMessage());
         }
       }
     }
-    System.out.println("[DEBUG] Module " + name + " memories: " + info.memories.keySet());
+    LOGGER.fine(() -> "Module " + name + " memories: " + info.memories.keySet());
 
     sharedModules.put(name, info);
     LOGGER.fine(() -> "Defined shared module: " + name);
@@ -290,7 +289,7 @@ public final class WastThreadTestRunner implements AutoCloseable {
     } catch (final WasmException e) {
       throw new AssertionError("Function call failed: " + functionName, e);
     }
-    if (!Arrays.equals(expected, results)) {
+    if (!WasmValueComparator.arraysEqual(expected, results)) {
       throw new AssertionError(
           String.format(
               "assertReturn failed for '%s': expected %s but got %s",
@@ -375,14 +374,14 @@ public final class WastThreadTestRunner implements AutoCloseable {
       def.setup.accept(context);
 
       // Record success
-      threadResults.put(def.name, new ThreadResult(true, null));
+      threadResults.put(def.name, new ThreadResult(null));
 
     } catch (final Exception e) {
       LOGGER.log(Level.WARNING, "Thread " + def.name + " failed", e);
-      threadResults.put(def.name, new ThreadResult(false, e));
+      threadResults.put(def.name, new ThreadResult(e));
     } catch (final AssertionError e) {
       LOGGER.log(Level.WARNING, "Thread " + def.name + " assertion failed", e);
-      threadResults.put(def.name, new ThreadResult(false, new Exception(e.getMessage(), e)));
+      threadResults.put(def.name, new ThreadResult(new Exception(e.getMessage(), e)));
     } finally {
       // Clean up thread-local resources
       if (context != null) {
@@ -465,11 +464,9 @@ public final class WastThreadTestRunner implements AutoCloseable {
 
   /** Result of thread execution. */
   private static final class ThreadResult {
-    final boolean success;
     final Exception error;
 
-    ThreadResult(final boolean success, final Exception error) {
-      this.success = success;
+    ThreadResult(final Exception error) {
       this.error = error;
     }
   }
@@ -489,7 +486,6 @@ public final class WastThreadTestRunner implements AutoCloseable {
     private final Linker<?> linker;
     private final Map<String, Instance> instances;
     private Instance currentInstance;
-    private final AtomicReference<AssertionError> assertionError;
 
     ThreadContext(final String threadName, final Engine engine, final WastThreadTestRunner runner)
         throws Exception {
@@ -499,7 +495,6 @@ public final class WastThreadTestRunner implements AutoCloseable {
       this.store = engine.createStore();
       this.linker = Linker.create(engine);
       this.instances = new HashMap<>();
-      this.assertionError = new AtomicReference<>();
     }
 
     /**
@@ -530,6 +525,7 @@ public final class WastThreadTestRunner implements AutoCloseable {
      * @param instanceName the name of the instance to register (or null for current)
      * @throws Exception if registration fails
      */
+    @SuppressWarnings("deprecation")
     public void register(final String registerName, final String instanceName) throws Exception {
       final Instance instance =
           instanceName != null ? instances.get(instanceName) : currentInstance;
@@ -601,7 +597,7 @@ public final class WastThreadTestRunner implements AutoCloseable {
         final String functionName, final WasmValue[] expected, final WasmValue... args) {
       try {
         final WasmValue[] actual = invoke(functionName, args);
-        if (!valuesEqual(expected, actual)) {
+        if (!WasmValueComparator.arraysEqual(expected, actual)) {
           throw new AssertionError(
               String.format(
                   "Thread %s: assertReturn failed for '%s': expected %s but got %s",
@@ -648,38 +644,6 @@ public final class WastThreadTestRunner implements AutoCloseable {
               e);
         }
         LOGGER.fine(() -> "Thread " + threadName + ": assertTrap passed for " + functionName);
-      }
-    }
-
-    private boolean valuesEqual(final WasmValue[] expected, final WasmValue[] actual) {
-      if (expected.length != actual.length) {
-        return false;
-      }
-      for (int i = 0; i < expected.length; i++) {
-        if (!valueEquals(expected[i], actual[i])) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    private boolean valueEquals(final WasmValue a, final WasmValue b) {
-      if (a.getType() != b.getType()) {
-        return false;
-      }
-      switch (a.getType()) {
-        case I32:
-          return a.asInt() == b.asInt();
-        case I64:
-          return a.asLong() == b.asLong();
-        case F32:
-          return Float.compare(a.asFloat(), b.asFloat()) == 0
-              || (Float.isNaN(a.asFloat()) && Float.isNaN(b.asFloat()));
-        case F64:
-          return Double.compare(a.asDouble(), b.asDouble()) == 0
-              || (Double.isNaN(a.asDouble()) && Double.isNaN(b.asDouble()));
-        default:
-          return Objects.equals(a, b);
       }
     }
 

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /** Comprehensive tests for host functions - Java functions callable from WebAssembly. */
+@SuppressWarnings("deprecation")
 public class HostFunctionTest {
 
   private Engine engine;

@@ -21,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +51,15 @@ class JniLinkerTest {
     testImplementation = params -> null;
   }
 
+  @AfterEach
+  void tearDown() {
+    // Mark all fake-handle resources as closed to prevent GC-triggered native cleanup
+    // with invalid handles (which would crash the JVM).
+    linker.markClosedForTesting();
+    testStore.markClosedForTesting();
+    testEngine.markClosedForTesting();
+  }
+
   // Constructor tests
 
   @Test
@@ -60,6 +69,7 @@ class JniLinkerTest {
     assertThat(newLinker).isNotNull();
     assertThat(newLinker.getNativeHandle()).isEqualTo(VALID_HANDLE);
     assertThat(newLinker.getEngine()).isEqualTo(testEngine);
+    newLinker.markClosedForTesting();
   }
 
   @Test
@@ -121,6 +131,7 @@ class JniLinkerTest {
             () -> linker.defineMemory(null, "env", "memory", memory));
 
     assertThat(exception.getMessage()).contains("Store cannot be null");
+    memory.markClosedForTesting();
   }
 
   @Test
@@ -133,6 +144,7 @@ class JniLinkerTest {
             () -> linker.defineMemory(testStore, null, "memory", memory));
 
     assertThat(exception.getMessage()).contains("Module name cannot be null");
+    memory.markClosedForTesting();
   }
 
   @Test
@@ -156,6 +168,7 @@ class JniLinkerTest {
             IllegalArgumentException.class, () -> linker.defineTable(null, "env", "table", table));
 
     assertThat(exception.getMessage()).contains("Store cannot be null");
+    table.markClosedForTesting();
   }
 
   @Test
@@ -168,6 +181,7 @@ class JniLinkerTest {
             () -> linker.defineTable(testStore, null, "table", table));
 
     assertThat(exception.getMessage()).contains("Module name cannot be null");
+    table.markClosedForTesting();
   }
 
   @Test
@@ -192,6 +206,7 @@ class JniLinkerTest {
             () -> linker.defineGlobal(null, "env", "global", global));
 
     assertThat(exception.getMessage()).contains("Store cannot be null");
+    global.markClosedForTesting();
   }
 
   @Test
@@ -204,6 +219,7 @@ class JniLinkerTest {
             () -> linker.defineGlobal(testStore, null, "global", global));
 
     assertThat(exception.getMessage()).contains("Module name cannot be null");
+    global.markClosedForTesting();
   }
 
   @Test
@@ -227,6 +243,8 @@ class JniLinkerTest {
         assertThrows(IllegalArgumentException.class, () -> linker.defineInstance(null, instance));
 
     assertThat(exception.getMessage()).contains("Module name cannot be null");
+    instance.markClosedForTesting();
+    module.markClosedForTesting();
   }
 
   @Test
@@ -247,6 +265,7 @@ class JniLinkerTest {
         assertThrows(IllegalArgumentException.class, () -> linker.instantiate(null, module));
 
     assertThat(exception.getMessage()).contains("Store cannot be null");
+    module.markClosedForTesting();
   }
 
   @Test
@@ -269,6 +288,7 @@ class JniLinkerTest {
             IllegalArgumentException.class, () -> linker.instantiate(null, "test", module));
 
     assertThat(exception.getMessage()).contains("Store cannot be null");
+    module.markClosedForTesting();
   }
 
   @Test
@@ -280,6 +300,7 @@ class JniLinkerTest {
             IllegalArgumentException.class, () -> linker.instantiate(testStore, null, module));
 
     assertThat(exception.getMessage()).contains("Module name cannot be null");
+    module.markClosedForTesting();
   }
 
   @Test
@@ -291,22 +312,6 @@ class JniLinkerTest {
     assertThat(exception.getMessage()).contains("Module cannot be null");
   }
 
-  // Methods that work with fake handles (defensive programming skips native calls)
-
-  @Test
-  void testEnableWasiDoesNotCrashWithFakeHandle() throws WasmException {
-    // With fake handle, enableWasi should return early without calling native code
-    // This tests defensive programming - no crash, just graceful skip
-    linker.enableWasi(); // Should not throw or crash
-  }
-
-  @Test
-  void testAliasDoesNotCrashWithFakeHandle() throws WasmException {
-    // With fake handle, alias should return early without calling native code
-    // This tests defensive programming - no crash, just graceful skip
-    linker.alias("from", "fromName", "to", "toName"); // Should not throw or crash
-  }
-
   @Test
   void testGetImportRegistryReturnsEmptyList() {
     final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> registry =
@@ -314,16 +319,6 @@ class JniLinkerTest {
 
     assertThat(registry).isNotNull();
     assertThat(registry).isEmpty();
-  }
-
-  @Test
-  void testValidateImportsAcceptsValidModule() {
-    final JniModule module = new JniModule(VALID_HANDLE, testEngine);
-
-    // validateImports is now implemented and should not throw for valid module
-    final ai.tegmentum.wasmtime4j.validation.ImportValidation result =
-        linker.validateImports(module);
-    assertThat(result).isNotNull();
   }
 
   // State validation tests
@@ -340,7 +335,7 @@ class JniLinkerTest {
 
   @Test
   void testIsValidAfterClose() {
-    linker.close();
+    linker.markClosedForTesting();
 
     assertFalse(linker.isValid());
   }
@@ -377,16 +372,17 @@ class JniLinkerTest {
 
   @Test
   void testCloseIsIdempotent() {
-    linker.close();
-    linker.close();
-    linker.close();
+    // Use markClosedForTesting to avoid native calls with fake handles
+    linker.markClosedForTesting();
+    linker.close(); // Second close should be a no-op
+    linker.close(); // Third close should be a no-op
 
     assertFalse(linker.isValid());
   }
 
   @Test
   void testDefineHostFunctionAfterCloseThrowsJniResourceException() {
-    linker.close();
+    linker.markClosedForTesting();
 
     final JniResourceException exception =
         assertThrows(
@@ -399,11 +395,12 @@ class JniLinkerTest {
   @Test
   void testInstantiateAfterCloseThrowsJniResourceException() {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
-    linker.close();
+    linker.markClosedForTesting();
 
     final JniResourceException exception =
         assertThrows(JniResourceException.class, () -> linker.instantiate(testStore, module));
 
     assertThat(exception.getMessage()).contains("closed");
+    module.markClosedForTesting();
   }
 }

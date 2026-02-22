@@ -162,16 +162,15 @@ public final class PanamaComponent {
 
       try {
         // Allocate memory segment for WASM bytes with zero-copy approach
-        ArenaResourceManager.ManagedMemorySegment wasmMemory =
-            resourceManager.allocate(wasmBytes.length);
+        MemorySegment wasmSegment = resourceManager.getArena().allocate(wasmBytes.length);
 
         // Copy bytes into native memory
-        ByteBuffer wasmBuffer = wasmMemory.segment().asByteBuffer();
+        ByteBuffer wasmBuffer = wasmSegment.asByteBuffer();
         wasmBuffer.put(wasmBytes);
 
         // Load component through FFI
         MemorySegment componentPtr =
-            loadNativeComponentFromBytes(engineResource.resource(), wasmMemory.segment());
+            loadNativeComponentFromBytes(engineResource.resource(), wasmSegment);
         PanamaValidation.requireValidHandle(componentPtr, "componentPtr");
 
         return new PanamaComponentHandle(resourceManager, componentPtr);

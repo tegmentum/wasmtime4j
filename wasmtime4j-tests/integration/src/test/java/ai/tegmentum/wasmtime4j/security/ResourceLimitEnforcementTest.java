@@ -52,6 +52,7 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Resource Limit Enforcement Tests")
 @Tag("integration")
 @Tag("security")
+@SuppressWarnings("deprecation")
 class ResourceLimitEnforcementTest {
 
   private static final Logger LOGGER =
@@ -481,7 +482,7 @@ class ResourceLimitEnforcementTest {
       // Create engine with epoch interruption
       try {
         final EngineConfig epochConfig = new EngineConfig();
-        epochConfig.setEpochInterruption(true);
+        epochConfig.epochInterruption(true);
 
         try (Engine epochEngine = runtime.createEngine(epochConfig);
             Store epochStore = epochEngine.createStore()) {

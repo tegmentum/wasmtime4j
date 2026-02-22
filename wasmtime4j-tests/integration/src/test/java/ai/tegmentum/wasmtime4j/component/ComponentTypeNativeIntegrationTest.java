@@ -245,12 +245,12 @@ class ComponentTypeNativeIntegrationTest {
   class EnumCompletenessTests {
 
     @Test
-    @DisplayName("should have all 23 component types")
+    @DisplayName("should have all 26 component types")
     void shouldHaveAllComponentTypes() {
       LOGGER.info("Testing enum completeness");
 
       final ComponentType[] types = ComponentType.values();
-      assertEquals(23, types.length, "Should have 23 component types");
+      assertEquals(26, types.length, "Should have 26 component types");
 
       LOGGER.info("Enum has " + types.length + " values as expected");
     }

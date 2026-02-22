@@ -62,10 +62,10 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeGetBuffer
- * Signature: (J)Ljava/nio/ByteBuffer;
+ * Signature: (JJ)Ljava/nio/ByteBuffer;
  */
 JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetBuffer
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory

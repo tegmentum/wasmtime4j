@@ -479,7 +479,7 @@ public interface Engine extends Closeable {
    * Engine engine = Engine.create(
    *     Engine.builder()
    *         .consumeFuel(true)
-   *         .setEpochInterruption(true)
+   *         .epochInterruption(true)
    * );
    * }</pre>
    *

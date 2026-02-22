@@ -201,7 +201,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       // Register with JniLinker's callback map so Rust can invoke this function
       // via JniLinker.invokeHostFunctionCallback when called from WASM
       JniLinker.registerHostFunctionCallbackWithId(
-          hostFunctionId, null, functionName, implementation, functionType);
+          hostFunctionId, null, functionName, implementation);
 
       if (LOGGER.isLoggable(Level.FINE)) {
         LOGGER.fine(

@@ -368,7 +368,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
     })
 }
 
-/// Add WASI Preview2 context to a Linker (JNI version)
+/// Add WASI Preview 2 context to a Linker (JNI version).
+///
+/// For core WebAssembly modules, Preview 1 and Preview 2 share the same linker
+/// setup via `enable_wasi()`. The separate function exists for API completeness
+/// and to support future divergence when component-model-based Preview 2 differs.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAddWasiPreview2ToLinker(
     mut env: JNIEnv,
@@ -422,12 +426,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
         let wasi_context = wasi_tuple.0.clone();
         linker_wrapper.set_wasi_context(wasi_context);
 
-        // Call enable_wasi() which adds WASI Preview 1 imports to the linker
-        // P1 provides P2 ABI compatibility for core modules
+        // For core modules, Preview 1 and Preview 2 use the same enable_wasi() path.
+        // Component-model Preview 2 uses wasmtime::component::Linker (separate API).
         linker_wrapper.enable_wasi()?;
 
         log::debug!(
-            "WASI Preview 2 imports successfully added to Linker for runtime 0x{:x}",
+            "WASI imports added (P1/P2 compatible for core modules) to Linker for runtime 0x{:x}",
             runtime_handle
         );
         Ok(0)
@@ -509,6 +513,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDes
         let byte_converter = crate::jni::module::VecByteArrayConverter::new(data);
         crate::shared_ffi::module::deserialize_module_shared(engine, byte_converter)
     }) as jlong
+}
+
+/// Check if WASI-NN is available (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeIsNnAvailable(
+    _env: JNIEnv,
+    _class: JClass,
+) -> jint {
+    // WASI-NN is not currently compiled into the native library
+    0
+}
+
+/// Check if the component model is supported (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeSupportsComponentModel(
+    _env: JNIEnv,
+    _class: JClass,
+    _runtime_handle: jlong,
+) -> jboolean {
+    // Component model is compiled into the native library when the feature is enabled
+    #[cfg(feature = "component-model")]
+    {
+        1
+    }
+    #[cfg(not(feature = "component-model"))]
+    {
+        0
+    }
 }
 
 /// Create a WASI-enabled linker with the specified configuration

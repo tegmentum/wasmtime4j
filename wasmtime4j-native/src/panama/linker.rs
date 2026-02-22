@@ -1017,7 +1017,7 @@ pub extern "C" fn wasmtime4j_panama_linker_get_by_import(
     }
 
     ffi_utils::ffi_try_ptr(|| {
-        let linker = unsafe { linker_core::get_linker_ref(linker_ptr)? };
+        let linker = unsafe { linker_core::get_linker_mut(linker_ptr)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
         let mod_str = unsafe { CStr::from_ptr(module_name) }
             .to_str()
@@ -1029,6 +1029,12 @@ pub extern "C" fn wasmtime4j_panama_linker_get_by_import(
             .map_err(|e| crate::error::WasmtimeError::Utf8Error {
                 message: e.to_string(),
             })?;
+
+        // Flush pending host functions so they are visible to wasmtime::Linker::get()
+        {
+            let mut store_lock = store.try_lock_store()?;
+            linker.instantiate_host_functions(&mut *store_lock)?;
+        }
 
         match linker_core::get_extern(linker, store, mod_str, name_str)? {
             Some(extern_item) => Ok(Box::new(extern_item)),

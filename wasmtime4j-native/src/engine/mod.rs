@@ -245,6 +245,9 @@ impl Engine {
                 self.config_summary.wasm_component_model_error_context
             }
             WasmFeature::ComponentModelGc => self.config_summary.wasm_component_model_gc,
+            WasmFeature::ComponentModelThreading => {
+                self.config_summary.wasm_component_model_threading
+            }
         }
     }
 
@@ -405,6 +408,8 @@ pub enum WasmFeature {
     ComponentModelErrorContext,
     /// WebAssembly component model GC support
     ComponentModelGc,
+    /// WebAssembly component model threading support
+    ComponentModelThreading,
 }
 
 impl Default for Engine {

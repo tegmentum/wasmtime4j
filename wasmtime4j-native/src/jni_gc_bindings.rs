@@ -21,9 +21,7 @@ use crate::gc_heap::ObjectId;
 use crate::gc_types::{
     ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
 };
-// FFI constants
-const FFI_SUCCESS: jint = 0;
-const FFI_ERROR: jint = -1;
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 
 /// JNI binding for creating a GC runtime
 #[no_mangle]

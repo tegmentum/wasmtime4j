@@ -1746,3 +1746,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicXo
         core::atomic_xor_i64(memory, store, offset as usize, value)
     })
 }
+
+/// Check if memory supports 64-bit addressing (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeSupports64BitAddressing(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        Ok(if memory.memory_type.is_64() { 1 } else { 0 })
+    })
+}

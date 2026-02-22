@@ -71,6 +71,7 @@ pub enum FfiWasmFeature {
     ComponentModelAsyncStackful = 20,
     ComponentModelErrorContext = 21,
     ComponentModelGc = 22,
+    ComponentModelThreading = 23,
 }
 
 impl FfiWasmFeature {
@@ -100,8 +101,9 @@ impl FfiWasmFeature {
             20 => Ok(WasmFeature::ComponentModelAsyncStackful),
             21 => Ok(WasmFeature::ComponentModelErrorContext),
             22 => Ok(WasmFeature::ComponentModelGc),
+            23 => Ok(WasmFeature::ComponentModelThreading),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-22", value),
+                message: format!("Invalid WASM feature: {}. Expected 0-23", value),
             }),
         }
     }
@@ -109,9 +111,9 @@ impl FfiWasmFeature {
     /// Validate FFI value without conversion (for early parameter checking)
     pub fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
-            0..=22 => Ok(()),
+            0..=23 => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-22", value),
+                message: format!("Invalid WASM feature: {}. Expected 0-23", value),
             }),
         }
     }
@@ -142,6 +144,7 @@ impl FfiWasmFeature {
             FfiWasmFeature::ComponentModelAsyncStackful => WasmFeature::ComponentModelAsyncStackful,
             FfiWasmFeature::ComponentModelErrorContext => WasmFeature::ComponentModelErrorContext,
             FfiWasmFeature::ComponentModelGc => WasmFeature::ComponentModelGc,
+            FfiWasmFeature::ComponentModelThreading => WasmFeature::ComponentModelThreading,
         }
     }
 
@@ -171,6 +174,7 @@ impl FfiWasmFeature {
             WasmFeature::ComponentModelAsyncStackful => FfiWasmFeature::ComponentModelAsyncStackful,
             WasmFeature::ComponentModelErrorContext => FfiWasmFeature::ComponentModelErrorContext,
             WasmFeature::ComponentModelGc => FfiWasmFeature::ComponentModelGc,
+            WasmFeature::ComponentModelThreading => FfiWasmFeature::ComponentModelThreading,
         }
     }
 }
@@ -366,29 +370,6 @@ pub mod module {
     /// This function provides unified module compilation logic that works
     /// with any byte array representation through the ByteArrayConverter trait.
     pub fn compile_module_shared<B>(engine: &Engine, wasm_bytes: B) -> WasmtimeResult<Box<Module>>
-    where
-        B: ByteArrayConverter,
-    {
-        // Validate byte array
-        if wasm_bytes.is_empty() {
-            return Err(WasmtimeError::InvalidParameter {
-                message: "WebAssembly bytes cannot be empty".to_string(),
-            });
-        }
-
-        // Get bytes safely and compile
-        let bytes = unsafe { wasm_bytes.get_bytes()? };
-        core::compile_module(engine, bytes)
-    }
-
-    /// Shared implementation for module compilation from bytes
-    ///
-    /// This function provides unified WASM bytecode compilation logic that works
-    /// with any byte array representation through the ByteArrayConverter trait.
-    pub fn compile_module_bytes_shared<B>(
-        engine: &Engine,
-        wasm_bytes: B,
-    ) -> WasmtimeResult<Box<Module>>
     where
         B: ByteArrayConverter,
     {
@@ -729,8 +710,8 @@ mod tests {
 
     #[test]
     fn test_wasm_feature_all_values() {
-        // Test all valid WasmFeature values (0-22)
-        for i in 0..=22 {
+        // Test all valid WasmFeature values (0-23)
+        for i in 0..=23 {
             let result = FfiWasmFeature::from_ffi(i);
             assert!(result.is_ok(), "Feature {} should be valid", i);
         }
@@ -739,7 +720,7 @@ mod tests {
     #[test]
     fn test_wasm_feature_invalid_values() {
         // Test invalid feature values (valid range is 0-22)
-        for invalid in [23, 100, -1, i32::MAX, i32::MIN] {
+        for invalid in [24, 100, -1, i32::MAX, i32::MIN] {
             assert!(
                 FfiWasmFeature::from_ffi(invalid).is_err(),
                 "Feature {} should be invalid",
@@ -996,6 +977,7 @@ mod tests {
             WasmFeature::ComponentModelAsyncStackful,
             WasmFeature::ComponentModelErrorContext,
             WasmFeature::ComponentModelGc,
+            WasmFeature::ComponentModelThreading,
         ];
 
         for feature in features {
@@ -1009,6 +991,7 @@ mod tests {
     fn test_ffi_wasm_feature_repr_values_complete() {
         assert_eq!(FfiWasmFeature::Threads as i32, 0);
         assert_eq!(FfiWasmFeature::ComponentModelGc as i32, 22);
+        assert_eq!(FfiWasmFeature::ComponentModelThreading as i32, 23);
     }
 
     #[test]

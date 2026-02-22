@@ -477,14 +477,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding(
-        "wasmtime4j_module_validate_imports",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return result code
-            ValueLayout.ADDRESS, // module_ptr
-            ValueLayout.ADDRESS, // imports_ptr
-            ValueLayout.JAVA_LONG)); // imports_count
-
-    addFunctionBinding(
         "wasmtime4j_panama_module_serialize",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return result code
@@ -1565,21 +1557,7 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     return callNativeFunction("wasmtime4j_module_get_name", MemorySegment.class, modulePtr);
   }
 
-  /**
-   * Validates imports against a module.
-   *
-   * @param modulePtr pointer to the module
-   * @param importsPtr pointer to imports array
-   * @param importsCount number of imports
-   * @return 0 on success, negative error code on failure
-   */
-  public int moduleValidateImports(
-      final MemorySegment modulePtr, final MemorySegment importsPtr, final long importsCount) {
-    validatePointer(modulePtr, "modulePtr");
-    validatePointer(importsPtr, "importsPtr");
-    return callNativeFunction(
-        "wasmtime4j_module_validate_imports", Integer.class, modulePtr, importsPtr, importsCount);
-  }
+
 
   /**
    * Gets the number of exports in a module.

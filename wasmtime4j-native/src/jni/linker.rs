@@ -583,12 +583,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstanti
             unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
 
         // If linker has a WASI context, attach it to the store before instantiation
+        // The store may already have a WASI context if the caller (e.g., Panama runtime)
+        // explicitly set it before calling instantiate.
         if let Some(wasi_ctx) = linker.get_wasi_context() {
-            // Create a new fd_manager for this store (it manages per-store file descriptors)
-            let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
-            // Build a fresh WasiP1Ctx from the configuration and set on the store
-            store.set_wasi_context(wasi_ctx, fd_manager)?;
-            log::debug!("Attached WASI context to store before named instantiation");
+            if !store.has_wasi_context() {
+                let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+                store.set_wasi_context(wasi_ctx, fd_manager)?;
+                log::debug!("Attached WASI context to store before named instantiation");
+            } else {
+                log::debug!("Store already has WASI context, skipping linker context attachment");
+            }
         }
 
         // Instantiate the module using the linker with a name
@@ -1288,8 +1292,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetByImp
     };
 
     jni_utils::jni_try_with_default(&mut env, 0, || {
-        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+        let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+        // Flush pending host functions so they are visible to wasmtime::Linker::get()
+        {
+            let mut store_lock = store.try_lock_store()?;
+            linker.instantiate_host_functions(&mut *store_lock)?;
+        }
 
         match linker_core::get_extern(linker, store, &mod_str, &name_str)? {
             Some(extern_item) => Ok(Box::into_raw(Box::new(extern_item)) as jlong),
@@ -1512,4 +1522,40 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeDes
             );
         }
     }
+}
+
+/// Pre-instantiate a module using the linker (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstantiatePre(
+    mut env: JNIEnv,
+    _obj: jobject,
+    linker_handle: jlong,
+    module_handle: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+        let module =
+            unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+
+        let start = std::time::Instant::now();
+        let inner_linker = linker.inner()?;
+        let wasmtime_module = module.inner();
+
+        let instance_pre = inner_linker
+            .instantiate_pre(wasmtime_module)
+            .map_err(|e| WasmtimeError::Instantiation {
+                message: format!("Failed to create InstancePre: {}", e),
+            })?;
+
+        drop(inner_linker);
+
+        let preparation_time = start.elapsed().as_nanos() as u64;
+        let wrapper = crate::linker::InstancePreWrapper::new(
+            instance_pre,
+            module.clone(),
+            preparation_time,
+        );
+
+        Ok(Box::into_raw(Box::new(wrapper)) as jlong)
+    })
 }

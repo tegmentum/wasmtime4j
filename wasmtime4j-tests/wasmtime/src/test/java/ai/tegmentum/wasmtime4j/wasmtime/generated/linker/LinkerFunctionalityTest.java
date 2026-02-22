@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * <p>This test validates that wasmtime4j linker operations produce the same behavior as the
  * upstream Wasmtime implementation.
  */
+@SuppressWarnings("deprecation")
 public final class LinkerFunctionalityTest extends DualRuntimeTest {
 
   @AfterEach

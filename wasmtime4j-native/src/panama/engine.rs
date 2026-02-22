@@ -210,6 +210,7 @@ pub extern "C" fn wasmtime4j_panama_engine_supports_feature(
         "COMPONENT_MODEL_ASYNC_STACKFUL" => WasmFeature::ComponentModelAsyncStackful,
         "COMPONENT_MODEL_ERROR_CONTEXT" => WasmFeature::ComponentModelErrorContext,
         "COMPONENT_MODEL_GC" => WasmFeature::ComponentModelGc,
+        "COMPONENT_MODEL_THREADING" => WasmFeature::ComponentModelThreading,
         _ => return -1,
     };
 

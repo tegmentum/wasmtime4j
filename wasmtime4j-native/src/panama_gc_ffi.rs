@@ -17,10 +17,8 @@ use crate::gc_heap::ObjectId;
 use crate::gc_types::{
     ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
 };
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 use crate::{ffi_boundary_i32, ffi_boundary_result};
-
-const FFI_SUCCESS: i32 = 0;
-const FFI_ERROR: i32 = 1;
 
 /// Panama FFI function for creating a GC runtime
 #[no_mangle]

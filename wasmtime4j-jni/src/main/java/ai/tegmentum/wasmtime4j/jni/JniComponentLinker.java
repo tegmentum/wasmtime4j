@@ -124,20 +124,18 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     final long callbackId = registerHostFunctionCallback(implementation);
     hostFunctions.put(witPath, callbackId);
 
-    // Wire to native component linker if handle is valid
-    if (isNativeHandleReasonable(nativeHandle)) {
-      try {
-        nativeDefineHostFunction(nativeHandle, witPath, callbackId);
-      } catch (final Exception e) {
-        // Remove from local tracking if native call fails
-        hostFunctions.remove(witPath);
-        HOST_FUNCTION_CALLBACKS.remove(callbackId);
-        registeredCallbackIds.remove(callbackId);
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Failed to define host function: " + e.getMessage(), e);
+    // Wire to native component linker
+    try {
+      nativeDefineHostFunction(nativeHandle, witPath, callbackId);
+    } catch (final Exception e) {
+      // Remove from local tracking if native call fails
+      hostFunctions.remove(witPath);
+      HOST_FUNCTION_CALLBACKS.remove(callbackId);
+      registeredCallbackIds.remove(callbackId);
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
       }
+      throw new WasmException("Failed to define host function: " + e.getMessage(), e);
     }
 
     LOGGER.fine("Defined component function: " + witPath);
@@ -183,20 +181,18 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     final long callbackId = registerHostFunctionCallback(implementation);
     hostFunctions.put(witPath, callbackId);
 
-    // Wire to native component linker if handle is valid
-    if (isNativeHandleReasonable(nativeHandle)) {
-      try {
-        nativeDefineHostFunctionAsync(nativeHandle, witPath, callbackId);
-      } catch (final Exception e) {
-        // Remove from local tracking if native call fails
-        hostFunctions.remove(witPath);
-        HOST_FUNCTION_CALLBACKS.remove(callbackId);
-        registeredCallbackIds.remove(callbackId);
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Failed to define async host function: " + e.getMessage(), e);
+    // Wire to native component linker
+    try {
+      nativeDefineHostFunctionAsync(nativeHandle, witPath, callbackId);
+    } catch (final Exception e) {
+      // Remove from local tracking if native call fails
+      hostFunctions.remove(witPath);
+      HOST_FUNCTION_CALLBACKS.remove(callbackId);
+      registeredCallbackIds.remove(callbackId);
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
       }
+      throw new WasmException("Failed to define async host function: " + e.getMessage(), e);
     }
 
     LOGGER.fine("Defined async component function: " + witPath);
@@ -260,31 +256,29 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
           registerHostFunctionCallback(params -> java.util.Collections.emptyList());
     }
 
-    // Wire to native component linker if handle is valid
-    if (isNativeHandleReasonable(nativeHandle)) {
-      try {
-        nativeDefineResource(
-            nativeHandle,
-            interfaceNamespace,
-            interfaceName,
-            resourceName,
-            constructorCallbackId,
-            destructorCallbackId);
-      } catch (final Exception e) {
-        // Remove from local tracking if native call fails
-        if (constructorCallbackId > 0) {
-          HOST_FUNCTION_CALLBACKS.remove(constructorCallbackId);
-          registeredCallbackIds.remove(constructorCallbackId);
-        }
-        if (destructorCallbackId > 0) {
-          HOST_FUNCTION_CALLBACKS.remove(destructorCallbackId);
-          registeredCallbackIds.remove(destructorCallbackId);
-        }
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Failed to define resource: " + e.getMessage(), e);
+    // Wire to native component linker
+    try {
+      nativeDefineResource(
+          nativeHandle,
+          interfaceNamespace,
+          interfaceName,
+          resourceName,
+          constructorCallbackId,
+          destructorCallbackId);
+    } catch (final Exception e) {
+      // Remove from local tracking if native call fails
+      if (constructorCallbackId > 0) {
+        HOST_FUNCTION_CALLBACKS.remove(constructorCallbackId);
+        registeredCallbackIds.remove(constructorCallbackId);
       }
+      if (destructorCallbackId > 0) {
+        HOST_FUNCTION_CALLBACKS.remove(destructorCallbackId);
+        registeredCallbackIds.remove(destructorCallbackId);
+      }
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to define resource: " + e.getMessage(), e);
     }
 
     // Track resource in defined interfaces
@@ -368,10 +362,6 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     final JniComponentImpl jniComponent = (JniComponentImpl) component;
     final long componentHandle = jniComponent.getNativeHandle();
 
-    if (!isNativeHandleReasonable(nativeHandle)) {
-      throw new WasmException("ComponentLinker has an invalid native handle");
-    }
-
     final long preHandle = nativeInstantiatePre(nativeHandle, componentHandle);
     if (preHandle == 0) {
       throw new WasmException("Failed to pre-instantiate component");
@@ -400,24 +390,16 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     final long storeHandle = getStoreHandle(store);
     final long componentHandle = jniComponent.getNativeHandle();
 
-    // Wire to native linker instantiation if handle is valid
-    if (isNativeHandleReasonable(nativeHandle)) {
-      try {
-        final long instanceHandle =
-            nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
-        if (instanceHandle != 0) {
-          final JniComponent.JniComponentInstanceHandle instanceWrapper =
-              new JniComponent.JniComponentInstanceHandle(instanceHandle);
-          return new JniComponentInstanceImpl(
-              instanceWrapper, jniComponent, new ComponentInstanceConfig());
-        }
-      } catch (final Exception e) {
-        LOGGER.fine("Native linker instantiation failed, falling back to component: " + e);
-      }
+    final long instanceHandle =
+        nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
+    if (instanceHandle == 0) {
+      throw new WasmException("Failed to instantiate component with linker");
     }
 
-    // Fallback to component's own instantiation mechanism
-    return jniComponent.instantiate();
+    final JniComponent.JniComponentInstanceHandle instanceWrapper =
+        new JniComponent.JniComponentInstanceHandle(instanceHandle);
+    return new JniComponentInstanceImpl(
+        instanceWrapper, jniComponent, new ComponentInstanceConfig());
   }
 
   /**
@@ -437,10 +419,6 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   public void enableWasiPreview2() throws WasmException {
     ensureNotClosed();
 
-    if (!isNativeHandleReasonable(nativeHandle)) {
-      return;
-    }
-
     try {
       nativeEnableWasiP2(nativeHandle);
     } catch (final Exception e) {
@@ -457,10 +435,6 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       throw new IllegalArgumentException("Config cannot be null");
     }
     ensureNotClosed();
-
-    if (!isNativeHandleReasonable(nativeHandle)) {
-      return;
-    }
 
     // Apply config settings before enabling WASI
     applyWasiConfig(config);
@@ -654,9 +628,6 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   @Override
   public void allowShadowing(final boolean allow) {
     ensureNotClosed();
-    if (!isNativeHandleReasonable(nativeHandle)) {
-      return;
-    }
     nativeAllowShadowing(nativeHandle, allow);
   }
 
@@ -674,10 +645,6 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
 
     final JniComponentImpl jniComponent = (JniComponentImpl) component;
     final long componentHandle = jniComponent.getNativeHandle();
-
-    if (!isNativeHandleReasonable(nativeHandle)) {
-      throw new WasmException("ComponentLinker has an invalid native handle");
-    }
 
     final int result = nativeDefineUnknownImportsAsTraps(nativeHandle, componentHandle);
     if (result != 0) {

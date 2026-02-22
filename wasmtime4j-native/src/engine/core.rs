@@ -120,6 +120,8 @@ pub struct EngineConfigFfi {
 
     // Backtrace and debugging
     pub wasm_backtrace: Option<bool>,
+    // "enable", "disable", "environment"
+    pub backtrace_details: Option<String>,
     pub generate_address_map: Option<bool>,
 
     // Shared memory (independent of wasm threads)
@@ -326,6 +328,15 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
     // Backtrace and debugging
     if let Some(v) = config.wasm_backtrace {
         builder = builder.wasm_backtrace(v);
+    }
+    if let Some(ref details) = config.backtrace_details {
+        let bt_details = match details.as_str() {
+            "enable" => wasmtime::WasmBacktraceDetails::Enable,
+            "disable" => wasmtime::WasmBacktraceDetails::Disable,
+            "environment" => wasmtime::WasmBacktraceDetails::Environment,
+            _ => wasmtime::WasmBacktraceDetails::Enable,
+        };
+        builder = builder.wasm_backtrace_details(bt_details);
     }
     if let Some(v) = config.generate_address_map {
         builder = builder.generate_address_map(v);

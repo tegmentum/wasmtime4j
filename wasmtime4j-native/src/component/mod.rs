@@ -1249,11 +1249,9 @@ pub mod core {
 
 // Component Model C API for FFI integration
 
+use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_void};
-
-const FFI_SUCCESS: c_int = 0;
-const FFI_ERROR: c_int = -1;
 
 /// Destroy a component engine and free its resources
 #[no_mangle]

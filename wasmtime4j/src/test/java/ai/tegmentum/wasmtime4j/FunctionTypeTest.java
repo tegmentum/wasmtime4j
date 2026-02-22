@@ -263,21 +263,24 @@ class FunctionTypeTest {
     }
 
     @Test
-    @DisplayName("should match multi-value pattern")
-    void shouldMatchMultiValuePattern() {
+    @DisplayName("should match compatible function type")
+    void shouldMatchCompatibleFunctionType() {
       final FunctionType funcType =
           new FunctionType(
               new WasmValueType[] {WasmValueType.I32, WasmValueType.I64},
               new WasmValueType[] {WasmValueType.F32, WasmValueType.F64});
       assertTrue(
-          funcType.matchesMultiValuePattern(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I64},
-              new WasmValueType[] {WasmValueType.F32, WasmValueType.F64}),
-          "Should match identical pattern");
+          funcType.isCompatibleWith(
+              FunctionType.of(
+                  new WasmValueType[] {WasmValueType.I32, WasmValueType.I64},
+                  new WasmValueType[] {WasmValueType.F32, WasmValueType.F64})),
+          "Should match identical type");
       assertFalse(
-          funcType.matchesMultiValuePattern(
-              new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.F32}),
-          "Should not match different pattern");
+          funcType.isCompatibleWith(
+              FunctionType.of(
+                  new WasmValueType[] {WasmValueType.I64},
+                  new WasmValueType[] {WasmValueType.F32})),
+          "Should not match different type");
     }
   }
 

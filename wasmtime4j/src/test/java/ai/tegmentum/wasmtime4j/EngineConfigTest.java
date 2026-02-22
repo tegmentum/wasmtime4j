@@ -81,14 +81,6 @@ class EngineConfigTest {
   @Test
   @DisplayName("Should have correct defaults for factory methods")
   void shouldHaveCorrectDefaultsForFactoryMethods() {
-    final EngineConfig speedConfig = EngineConfig.forSpeed();
-    assertEquals(
-        OptimizationLevel.SPEED,
-        speedConfig.getOptimizationLevel(),
-        "forSpeed() should use SPEED optimization");
-    assertTrue(
-        speedConfig.isParallelCompilation(), "forSpeed() should enable parallel compilation");
-
     final EngineConfig sizeConfig = EngineConfig.forSize();
     assertEquals(
         OptimizationLevel.SIZE,

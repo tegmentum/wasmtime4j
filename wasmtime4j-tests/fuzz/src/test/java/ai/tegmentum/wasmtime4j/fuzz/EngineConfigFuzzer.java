@@ -66,7 +66,7 @@ public class EngineConfigFuzzer {
 
       // Apply random boolean toggles
       config.consumeFuel(data.consumeBoolean());
-      config.setEpochInterruption(data.consumeBoolean());
+      config.epochInterruption(data.consumeBoolean());
       config.parallelCompilation(data.consumeBoolean());
 
       // Wasm feature toggles via individual setters
@@ -204,7 +204,7 @@ public class EngineConfigFuzzer {
     try {
       final EngineConfig config = new EngineConfig();
       config.consumeFuel(data.consumeBoolean());
-      config.setEpochInterruption(data.consumeBoolean());
+      config.epochInterruption(data.consumeBoolean());
       config.parallelCompilation(data.consumeBoolean());
       config.debugInfo(data.consumeBoolean());
 

@@ -289,7 +289,7 @@ public class RuntimeInitializationBenchmark extends BenchmarkBase {
   @Benchmark
   public void benchmarkConfigurationOverhead(final Blackhole blackhole) throws WasmException {
     final EngineConfig[] configs = {
-      new EngineConfig(), EngineConfig.forSpeed(), EngineConfig.forDebug()
+      new EngineConfig(), EngineConfig.forDebug()
     };
 
     for (final EngineConfig config : configs) {

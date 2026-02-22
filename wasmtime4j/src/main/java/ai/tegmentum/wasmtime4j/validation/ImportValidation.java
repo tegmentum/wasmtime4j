@@ -102,44 +102,17 @@ public final class ImportValidation {
     return validationTime;
   }
 
-  /**
-   * Calculates the validation success rate as a percentage.
-   *
-   * @return the percentage of imports that passed validation (0.0 to 100.0)
-   */
-  public double getValidationRate() {
-    if (totalImports == 0) {
-      return 100.0;
-    }
-    return (double) validImports / totalImports * 100.0;
-  }
-
-  /**
-   * Gets issues of a specific severity level.
-   *
-   * @param severity the severity level to filter by
-   * @return a list of issues with the specified severity
-   */
-  public List<ImportIssue> getIssuesBySeverity(final ImportIssue.Severity severity) {
-    Objects.requireNonNull(severity, "severity");
-    return issues.stream().filter(issue -> issue.getSeverity() == severity).toList();
-  }
-
-  /**
-   * Checks if there are any critical validation issues.
-   *
-   * @return true if there are critical issues, false otherwise
-   */
-  public boolean hasCriticalIssues() {
-    return issues.stream().anyMatch(issue -> issue.getSeverity() == ImportIssue.Severity.CRITICAL);
-  }
-
   @Override
   public String toString() {
     return String.format(
         "ImportValidation{valid=%s, imports=%d, validImports=%d (%.1f%%), "
             + "issues=%d, validationTime=%s}",
-        valid, totalImports, validImports, getValidationRate(), issues.size(), validationTime);
+        valid,
+        totalImports,
+        validImports,
+        totalImports == 0 ? 100.0 : (double) validImports / totalImports * 100.0,
+        issues.size(),
+        validationTime);
   }
 
   @Override

@@ -17,14 +17,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstant
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
- * Method:    nativeInstantiateModuleWithImports
- * Signature: (JJJ)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInstantiateModuleWithImports
-  (JNIEnv *, jclass, jlong, jlong, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
  * Method:    nativeSerializeModule
  * Signature: (J)[B
  */

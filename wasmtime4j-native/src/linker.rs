@@ -374,6 +374,8 @@ impl Linker {
 
         self.host_functions.insert(key.clone(), definition);
         self.metadata.host_function_count += 1;
+        // Reset the instantiation flag so new host functions are flushed on next use
+        self.metadata.host_functions_instantiated = false;
 
         // Record in imports registry
         let import_def = ImportDefinition {

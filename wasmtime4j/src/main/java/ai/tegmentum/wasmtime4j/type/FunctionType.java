@@ -181,21 +181,6 @@ public final class FunctionType implements FuncType {
   }
 
   /**
-   * Creates a multi-value function type with multiple parameters and return values.
-   *
-   * @param paramTypes the parameter types
-   * @param returnTypes the return types (may be multiple)
-   * @return a new FunctionType supporting multi-value
-   * @throws IllegalArgumentException if paramTypes or returnTypes is null
-   * @deprecated Use {@link #of(WasmValueType[], WasmValueType[])} instead
-   */
-  @Deprecated
-  public static FunctionType multiValue(
-      final WasmValueType[] paramTypes, final WasmValueType[] returnTypes) {
-    return new FunctionType(paramTypes, returnTypes);
-  }
-
-  /**
    * Creates a function type with no parameters and multiple return values.
    *
    * @param returnTypes the return types
@@ -215,39 +200,6 @@ public final class FunctionType implements FuncType {
    */
   public static FunctionType multiValueNoReturns(final WasmValueType... paramTypes) {
     return new FunctionType(paramTypes, new WasmValueType[0]);
-  }
-
-  /**
-   * Checks if this function type matches a multi-value pattern.
-   *
-   * @param expectedParamTypes expected parameter types
-   * @param expectedReturnTypes expected return types
-   * @return true if the pattern matches
-   */
-  public boolean matchesMultiValuePattern(
-      final WasmValueType[] expectedParamTypes, final WasmValueType[] expectedReturnTypes) {
-    if (expectedParamTypes == null || expectedReturnTypes == null) {
-      return false;
-    }
-
-    if (paramTypes.length != expectedParamTypes.length
-        || returnTypes.length != expectedReturnTypes.length) {
-      return false;
-    }
-
-    for (int i = 0; i < paramTypes.length; i++) {
-      if (paramTypes[i] != expectedParamTypes[i]) {
-        return false;
-      }
-    }
-
-    for (int i = 0; i < returnTypes.length; i++) {
-      if (returnTypes[i] != expectedReturnTypes[i]) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   /**

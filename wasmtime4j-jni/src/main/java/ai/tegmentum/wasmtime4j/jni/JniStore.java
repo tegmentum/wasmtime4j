@@ -751,12 +751,15 @@ public final class JniStore extends JniResource implements Store {
    */
   @Override
   public long getExecutionCount() {
-    ensureNotClosed();
+    if (isClosed()) {
+      return 0;
+    }
 
     try {
       return nativeGetExecutionCount(getNativeHandle());
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to get execution count", e);
+      LOGGER.warning("Error getting execution count: " + e.getMessage());
+      return 0;
     }
   }
 
@@ -771,12 +774,15 @@ public final class JniStore extends JniResource implements Store {
    */
   @Override
   public long getTotalExecutionTimeMicros() {
-    ensureNotClosed();
+    if (isClosed()) {
+      return 0;
+    }
 
     try {
       return nativeGetExecutionTime(getNativeHandle());
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to get total execution time", e);
+      LOGGER.warning("Error getting total execution time: " + e.getMessage());
+      return 0;
     }
   }
 

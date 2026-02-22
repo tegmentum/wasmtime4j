@@ -1839,6 +1839,11 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
+        "wasmtime4j_instance_get_tag_by_name",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
         "wasmtime4j_panama_instance_get_global_wrapped",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));

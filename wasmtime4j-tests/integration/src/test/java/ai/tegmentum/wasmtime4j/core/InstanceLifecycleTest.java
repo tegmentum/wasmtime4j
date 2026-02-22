@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * Instance#cleanup()}. Verifies that instances track disposal state correctly and handle
  * double-dispose gracefully without JVM crashes.
  */
+@SuppressWarnings("deprecation")
 @DisplayName("Instance Lifecycle Tests")
 public class InstanceLifecycleTest extends DualRuntimeTest {
 

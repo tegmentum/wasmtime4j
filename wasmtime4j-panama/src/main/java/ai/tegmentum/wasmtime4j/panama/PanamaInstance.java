@@ -24,7 +24,6 @@ import ai.tegmentum.wasmtime4j.type.TableType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -49,7 +47,19 @@ public final class PanamaInstance implements Instance {
   private static final NativeMemoryBindings NATIVE_MEMORY_BINDINGS =
       NativeMemoryBindings.getInstance();
 
-  // Thread-local arena pool for function calls - eliminates per-call Arena allocation
+  /**
+   * Thread-local arena pool for function calls — eliminates per-call Arena allocation.
+   *
+   * <p><strong>Lifecycle:</strong> Each thread lazily creates a confined {@link Arena} on first WASM
+   * call. The arena is reused across all subsequent calls on that thread. Because {@code
+   * ThreadLocal} entries are only reclaimed when the thread terminates, long-lived threads (e.g.
+   * thread-pool workers) retain their arena indefinitely. This is a deliberate performance
+   * trade-off: the per-thread memory footprint is small (typically &lt;1 KB) and the allocation
+   * savings are significant in high-throughput call loops.
+   *
+   * <p>Call {@link #clearCallContext()} to explicitly release a thread's arena when the thread is
+   * known to be done with WASM calls (e.g., before returning a thread to a pool).
+   */
   private static final ThreadLocal<CallContext> CALL_CONTEXT =
       ThreadLocal.withInitial(CallContext::new);
 
@@ -94,6 +104,20 @@ public final class PanamaInstance implements Instance {
         paramsBuffer = arena.allocate(Math.max(needed, MIN_PARAMS_BUFFER_SIZE));
       }
       return paramsBuffer;
+    }
+  }
+
+  /**
+   * Releases the current thread's call context arena, freeing its off-heap memory.
+   *
+   * <p>This is useful when a thread-pool worker is about to be returned to the pool and will not
+   * make further WASM calls for a while. A new context will be lazily created on the next call.
+   */
+  public static void clearCallContext() {
+    final CallContext ctx = CALL_CONTEXT.get();
+    if (ctx != null) {
+      ctx.arena.close();
+      CALL_CONTEXT.remove();
     }
   }
 
@@ -1596,111 +1620,6 @@ public final class PanamaInstance implements Instance {
         // Clean up the function handle
         NATIVE_INSTANCE_BINDINGS.funcDestroy(funcPtr);
       }
-    }
-  }
-
-  /**
-   * Reads bytes from memory.
-   *
-   * @param memory the memory to read from
-   * @param offset offset in memory
-   * @param dest destination array
-   * @param destOffset offset in destination array
-   * @param length number of bytes to read
-   */
-  void readMemoryBytes(
-      final PanamaMemory memory,
-      final int offset,
-      final byte[] dest,
-      final int destOffset,
-      final int length)
-  {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment buffer = tempArena.allocate(length);
-
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.instanceReadMemoryBytes(
-              nativeInstance, store.getNativeStore(), nameSegment, offset, length, buffer);
-
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to read bytes: " + PanamaErrorMapper.getErrorDescription(result));
-      }
-
-      // Copy from native buffer to Java array
-      MemorySegment.copy(buffer, ValueLayout.JAVA_BYTE, 0, dest, destOffset, length);
-    }
-  }
-
-  /**
-   * Writes bytes to memory.
-   *
-   * @param memory the memory to write to
-   * @param offset offset in memory
-   * @param src source array
-   * @param srcOffset offset in source array
-   * @param length number of bytes to write
-   */
-  void writeMemoryBytes(
-      final PanamaMemory memory,
-      final int offset,
-      final byte[] src,
-      final int srcOffset,
-      final int length)
-  {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment buffer = tempArena.allocate(length);
-
-      // Copy from Java array to native buffer
-      MemorySegment.copy(src, srcOffset, buffer, ValueLayout.JAVA_BYTE, 0, length);
-
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.instanceWriteMemoryBytes(
-              nativeInstance, store.getNativeStore(), nameSegment, offset, length, buffer);
-
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to write bytes: " + PanamaErrorMapper.getErrorDescription(result));
-      }
-    }
-  }
-
-  /**
-   * Gets a ByteBuffer view of memory.
-   *
-   * @param memory the memory to get buffer for
-   * @return ByteBuffer view
-   */
-  ByteBuffer getMemoryBuffer(final PanamaMemory memory) {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
-      // Get memory size in bytes
-      final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.instanceGetMemorySizeBytes(
-              nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
-
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
-      }
-
-      final long sizeBytes = sizeOut.get(ValueLayout.JAVA_LONG, 0);
-
-      // Allocate a buffer and read all memory into it
-      final byte[] buffer = new byte[(int) sizeBytes];
-      readMemoryBytes(memory, 0, buffer, 0, (int) sizeBytes);
-
-      return java.nio.ByteBuffer.wrap(buffer).asReadOnlyBuffer();
     }
   }
 

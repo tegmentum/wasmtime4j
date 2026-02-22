@@ -44,12 +44,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for {@link PanamaFunctionReference}.
+ * Panama-specific tests for {@link PanamaFunctionReference}.
  *
- * <p>Tests both host function and WebAssembly function reference creation, calling, registry
- * management, lifecycle, and error handling using real native library interaction.
+ * <p>Tests Panama-specific functionality including direct constructors, ArenaResourceManager,
+ * upcall stubs, native registry, callback invocation, global callback stubs, toString output,
+ * lifecycle management, and wasm function reference creation via Panama constructors.
+ *
+ * <p>Generic API tests (creation via Store, calling, multiple types) have been migrated to
+ * {@code FunctionReferenceApiDualRuntimeTest} in the integration test module.
  */
-@DisplayName("PanamaFunctionReference Integration Tests")
+@DisplayName("PanamaFunctionReference Panama-Specific Tests")
 class PanamaFunctionReferenceTest {
 
   private static final Logger LOGGER =
@@ -254,48 +258,8 @@ class PanamaFunctionReferenceTest {
   }
 
   @Nested
-  @DisplayName("Host Function Reference Creation and Properties Tests")
-  class HostFunctionReferenceTests {
-
-    @Test
-    @DisplayName("Should create host function reference with valid parameters")
-    void shouldCreateHostFunctionReference() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(99)};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      assertNotNull(ref, "Function reference should not be null");
-      trackRef(ref);
-      LOGGER.info("Created host function reference: " + ref);
-    }
-
-    @Test
-    @DisplayName("Should return function type for host function reference")
-    void shouldReturnFunctionType() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf =
-          (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      final FunctionType returnedType = ref.getFunctionType();
-      assertNotNull(returnedType, "Function type should not be null");
-      assertEquals(2, returnedType.getParamTypes().length, "Should have 2 param types");
-      assertEquals(1, returnedType.getReturnTypes().length, "Should have 1 return type");
-      assertEquals(WasmValueType.I32, returnedType.getParamTypes()[0], "First param should be I32");
-      assertEquals(
-          WasmValueType.I32, returnedType.getReturnTypes()[0], "Return type should be I32");
-      LOGGER.info(
-          "Function type: params="
-              + returnedType.getParamTypes().length
-              + " returns="
-              + returnedType.getReturnTypes().length);
-    }
+  @DisplayName("Host Function Reference Panama-Specific Properties Tests")
+  class HostFunctionPanamaPropertiesTests {
 
     @Test
     @DisplayName("Should return host function name with prefix")
@@ -331,34 +295,6 @@ class PanamaFunctionReferenceTest {
       assertFalse(ref.isWasmFunction(), "Should not be a wasm function");
       LOGGER.info(
           "isHostFunction=" + ref.isHostFunction() + " isWasmFunction=" + ref.isWasmFunction());
-    }
-
-    @Test
-    @DisplayName("Should be valid after creation")
-    void shouldBeValidAfterCreation() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(1)};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      assertTrue(ref.isValid(), "Function reference should be valid after creation");
-      LOGGER.info("isValid=" + ref.isValid());
-    }
-
-    @Test
-    @DisplayName("Should have positive ID")
-    void shouldHavePositiveId() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(1)};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      assertTrue(ref.getId() >= 0, "Function reference ID should be non-negative: " + ref.getId());
-      LOGGER.info("Function reference ID: " + ref.getId());
     }
 
     @Test
@@ -409,58 +345,6 @@ class PanamaFunctionReferenceTest {
           "Native registry ID should be non-negative: " + ref.getNativeRegistryId());
       LOGGER.info("Native registry ID: " + ref.getNativeRegistryId());
     }
-
-    @Test
-    @DisplayName("Should call host function reference with no parameters")
-    void shouldCallHostFunctionNoParams() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(42)};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      final WasmValue[] results = ref.call();
-      assertNotNull(results, "Results should not be null");
-      assertEquals(1, results.length, "Should have 1 result");
-      assertEquals(42, results[0].asInt(), "Result should be 42");
-      LOGGER.info("Call result: " + results[0].asInt());
-    }
-
-    @Test
-    @DisplayName("Should call host function reference with parameters")
-    void shouldCallHostFunctionWithParams() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf =
-          (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      final WasmValue[] results = ref.call(WasmValue.i32(10), WasmValue.i32(20));
-      assertNotNull(results, "Results should not be null");
-      assertEquals(1, results.length, "Should have 1 result");
-      assertEquals(30, results[0].asInt(), "Result should be 30");
-      LOGGER.info("Call result (10+20): " + results[0].asInt());
-    }
-
-    @Test
-    @DisplayName("Should call void host function reference")
-    void shouldCallVoidHostFunction() throws WasmException {
-      final FunctionType ft = FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {});
-      final HostFunction hf = (params) -> new WasmValue[] {};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      final WasmValue[] results = ref.call();
-      assertNotNull(results, "Results should not be null");
-      assertEquals(0, results.length, "Should have no results for void function");
-      LOGGER.info("Void function call completed, result length: " + results.length);
-    }
   }
 
   @Nested
@@ -468,7 +352,7 @@ class PanamaFunctionReferenceTest {
   class WasmFunctionReferenceTests {
 
     @Test
-    @DisplayName("Should create wasm function reference via 4-arg constructor")
+    @DisplayName("Should create wasm function reference via constructor")
     void shouldCreateWasmFunctionReference() throws WasmException {
       final PanamaInstance instance = createInstanceFromWat(FUNCTIONS_WAT);
       final Optional<WasmFunction> funcOpt = instance.getFunction("return_i32");
@@ -601,40 +485,8 @@ class PanamaFunctionReferenceTest {
   }
 
   @Nested
-  @DisplayName("Store-Created Function Reference Tests")
-  class StoreCreatedFunctionReferenceTests {
-
-    @Test
-    @DisplayName("Should create function reference from wasm function via store")
-    void shouldCreateFromWasmFunctionViaStore() throws WasmException {
-      final PanamaInstance instance = createInstanceFromWat(FUNCTIONS_WAT);
-      final Optional<WasmFunction> funcOpt = instance.getFunction("return_i32");
-      assertTrue(funcOpt.isPresent(), "return_i32 function should exist");
-
-      final FunctionReference ref = store.createFunctionReference(funcOpt.get());
-      trackRef(ref);
-
-      assertNotNull(ref, "Store-created function reference should not be null");
-      assertTrue(ref.isValid(), "Should be valid");
-      LOGGER.info("Store-created wasm function reference: " + ref);
-    }
-
-    @Test
-    @DisplayName("Should call store-created wasm function reference")
-    void shouldCallStoreCreatedWasmFunctionReference() throws WasmException {
-      final PanamaInstance instance = createInstanceFromWat(FUNCTIONS_WAT);
-      final Optional<WasmFunction> funcOpt = instance.getFunction("add");
-      assertTrue(funcOpt.isPresent(), "add function should exist");
-
-      final FunctionReference ref = store.createFunctionReference(funcOpt.get());
-      trackRef(ref);
-
-      final WasmValue[] results = ref.call(WasmValue.i32(100), WasmValue.i32(200));
-      assertNotNull(results, "Results should not be null");
-      assertEquals(1, results.length, "Should have 1 result");
-      assertEquals(300, results[0].asInt(), "100+200 should equal 300");
-      LOGGER.info("Store-created function call result (100+200): " + results[0].asInt());
-    }
+  @DisplayName("Store-Created Wasm Function Reference Panama-Specific Tests")
+  class StoreCreatedPanamaTests {
 
     @Test
     @DisplayName("Store-created wasm function reference should be host function type")
@@ -851,6 +703,25 @@ class PanamaFunctionReferenceTest {
       assertFalse(ref.isValid(), "Should be invalid after close");
       LOGGER.info("Wasm function reference closed successfully");
     }
+
+    @Test
+    @DisplayName("Should close one reference without affecting others")
+    void shouldCloseOneWithoutAffectingOthers() throws WasmException {
+      final FunctionType ft =
+          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
+      final HostFunction hf1 = (params) -> new WasmValue[] {WasmValue.i32(10)};
+      final HostFunction hf2 = (params) -> new WasmValue[] {WasmValue.i32(20)};
+
+      final PanamaFunctionReference ref1 = trackRef(store.createFunctionReference(hf1, ft));
+      final PanamaFunctionReference ref2 = trackRef(store.createFunctionReference(hf2, ft));
+
+      ref1.close();
+
+      assertFalse(ref1.isValid(), "ref1 should be invalid after close");
+      assertTrue(ref2.isValid(), "ref2 should still be valid");
+      assertEquals(20, ref2.call()[0].asInt(), "ref2 should still work");
+      LOGGER.info("Closing one reference did not affect the other");
+    }
   }
 
   @Nested
@@ -995,149 +866,6 @@ class PanamaFunctionReferenceTest {
       final MemorySegment stub2 = PanamaFunctionReference.getGlobalCallbackStub();
       assertEquals(stub1, stub2, "Global callback stub should be singleton");
       LOGGER.info("Global callback stub is singleton: same instance");
-    }
-  }
-
-  @Nested
-  @DisplayName("Multiple Function Type Tests")
-  class MultipleTypeTests {
-
-    @Test
-    @DisplayName("Should create I64 host function reference")
-    void shouldCreateI64HostFunctionReference() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.I64});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i64(params[0].asLong() * 2)};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      final WasmValue[] results = ref.call(WasmValue.i64(100L));
-      assertEquals(200L, results[0].asLong(), "100*2 should equal 200");
-      LOGGER.info("I64 function result: " + results[0].asLong());
-    }
-
-    @Test
-    @DisplayName("Should create F32 host function reference")
-    void shouldCreateF32HostFunctionReference() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.F32}, new WasmValueType[] {WasmValueType.F32});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.f32(params[0].asFloat() + 1.0f)};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      final WasmValue[] results = ref.call(WasmValue.f32(3.14f));
-      assertEquals(4.14f, results[0].asFloat(), 0.001f, "3.14+1.0 should equal 4.14");
-      LOGGER.info("F32 function result: " + results[0].asFloat());
-    }
-
-    @Test
-    @DisplayName("Should create F64 host function reference")
-    void shouldCreateF64HostFunctionReference() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.F64}, new WasmValueType[] {WasmValueType.F64});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.f64(params[0].asDouble() * 0.5)};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      final WasmValue[] results = ref.call(WasmValue.f64(10.0));
-      assertEquals(5.0, results[0].asDouble(), 0.001, "10.0*0.5 should equal 5.0");
-      LOGGER.info("F64 function result: " + results[0].asDouble());
-    }
-
-    @Test
-    @DisplayName("Should create multi-parameter host function reference")
-    void shouldCreateMultiParamHostFunctionReference() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(
-              new WasmValueType[] {WasmValueType.I32, WasmValueType.I64, WasmValueType.F64},
-              new WasmValueType[] {WasmValueType.F64});
-      final HostFunction hf =
-          (params) ->
-              new WasmValue[] {
-                WasmValue.f64(
-                    (double) params[0].asInt() + (double) params[1].asLong() + params[2].asDouble())
-              };
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      final WasmValue[] results = ref.call(WasmValue.i32(1), WasmValue.i64(2L), WasmValue.f64(3.0));
-      assertEquals(6.0, results[0].asDouble(), 0.001, "1+2+3.0 should equal 6.0");
-      LOGGER.info("Multi-param function result: " + results[0].asDouble());
-    }
-  }
-
-  @Nested
-  @DisplayName("Call with Null Parameters Tests")
-  class NullParameterCallTests {
-
-    @Test
-    @DisplayName("Should throw NullPointerException for null params array")
-    void shouldThrowForNullParamsArray() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i32(1)};
-
-      final FunctionReference ref = store.createFunctionReference(hf, ft);
-      trackRef(ref);
-
-      assertThrows(
-          NullPointerException.class,
-          () -> ref.call((WasmValue[]) null),
-          "Should throw NullPointerException for null params");
-      LOGGER.info("Correctly threw NullPointerException for null params");
-    }
-  }
-
-  @Nested
-  @DisplayName("Multiple Function References Tests")
-  class MultipleFunctionReferencesTests {
-
-    @Test
-    @DisplayName("Should create multiple host function references independently")
-    void shouldCreateMultipleIndependent() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf1 = (params) -> new WasmValue[] {WasmValue.i32(1)};
-      final HostFunction hf2 = (params) -> new WasmValue[] {WasmValue.i32(2)};
-      final HostFunction hf3 = (params) -> new WasmValue[] {WasmValue.i32(3)};
-
-      final FunctionReference ref1 = store.createFunctionReference(hf1, ft);
-      trackRef(ref1);
-      final FunctionReference ref2 = store.createFunctionReference(hf2, ft);
-      trackRef(ref2);
-      final FunctionReference ref3 = store.createFunctionReference(hf3, ft);
-      trackRef(ref3);
-
-      assertEquals(1, ref1.call()[0].asInt(), "ref1 should return 1");
-      assertEquals(2, ref2.call()[0].asInt(), "ref2 should return 2");
-      assertEquals(3, ref3.call()[0].asInt(), "ref3 should return 3");
-      LOGGER.info("Three independent function references work correctly");
-    }
-
-    @Test
-    @DisplayName("Should close one reference without affecting others")
-    void shouldCloseOneWithoutAffectingOthers() throws WasmException {
-      final FunctionType ft =
-          FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {WasmValueType.I32});
-      final HostFunction hf1 = (params) -> new WasmValue[] {WasmValue.i32(10)};
-      final HostFunction hf2 = (params) -> new WasmValue[] {WasmValue.i32(20)};
-
-      final PanamaFunctionReference ref1 = trackRef(store.createFunctionReference(hf1, ft));
-      final PanamaFunctionReference ref2 = trackRef(store.createFunctionReference(hf2, ft));
-
-      ref1.close();
-
-      assertFalse(ref1.isValid(), "ref1 should be invalid after close");
-      assertTrue(ref2.isValid(), "ref2 should still be valid");
-      assertEquals(20, ref2.call()[0].asInt(), "ref2 should still work");
-      LOGGER.info("Closing one reference did not affect the other");
     }
   }
 }

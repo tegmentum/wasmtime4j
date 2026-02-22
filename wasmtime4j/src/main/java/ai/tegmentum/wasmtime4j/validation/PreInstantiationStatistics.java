@@ -16,24 +16,14 @@ public final class PreInstantiationStatistics {
 
   private final Instant creationTime;
   private final Duration preparationTime;
-  private final long memoryFootprint;
-  private final long functionsPrecompiled;
-  private final long totalFunctions;
   private final long instancesCreated;
   private final Duration averageInstantiationTime;
-  private final long memoryPoolSize;
-  private final boolean poolingEnabled;
 
   private PreInstantiationStatistics(final Builder builder) {
     this.creationTime = builder.creationTime;
     this.preparationTime = builder.preparationTime;
-    this.memoryFootprint = builder.memoryFootprint;
-    this.functionsPrecompiled = builder.functionsPrecompiled;
-    this.totalFunctions = builder.totalFunctions;
     this.instancesCreated = builder.instancesCreated;
     this.averageInstantiationTime = builder.averageInstantiationTime;
-    this.memoryPoolSize = builder.memoryPoolSize;
-    this.poolingEnabled = builder.poolingEnabled;
   }
 
   /**
@@ -55,33 +45,6 @@ public final class PreInstantiationStatistics {
   }
 
   /**
-   * Gets the memory footprint of the pre-instantiated module.
-   *
-   * @return memory footprint in bytes
-   */
-  public long getMemoryFootprint() {
-    return memoryFootprint;
-  }
-
-  /**
-   * Gets the number of functions that were precompiled.
-   *
-   * @return number of precompiled functions
-   */
-  public long getFunctionsPrecompiled() {
-    return functionsPrecompiled;
-  }
-
-  /**
-   * Gets the total number of functions in the module.
-   *
-   * @return total number of functions
-   */
-  public long getTotalFunctions() {
-    return totalFunctions;
-  }
-
-  /**
    * Gets the number of instances created from this InstancePre.
    *
    * @return number of instances created
@@ -97,45 +60,6 @@ public final class PreInstantiationStatistics {
    */
   public Duration getAverageInstantiationTime() {
     return averageInstantiationTime;
-  }
-
-  /**
-   * Gets the size of the memory pool used for fast instantiation.
-   *
-   * @return memory pool size in bytes
-   */
-  public long getMemoryPoolSize() {
-    return memoryPoolSize;
-  }
-
-  /**
-   * Checks if pooling was enabled for this pre-instantiation.
-   *
-   * @return true if pooling was enabled
-   */
-  public boolean isPoolingEnabled() {
-    return poolingEnabled;
-  }
-
-  /**
-   * Calculates the function precompilation ratio.
-   *
-   * @return precompilation ratio (0.0 to 1.0)
-   */
-  public double getFunctionPrecompilationRatio() {
-    return totalFunctions > 0 ? (double) functionsPrecompiled / totalFunctions : 0.0;
-  }
-
-  /**
-   * Calculates the preparation efficiency (instances created per second of preparation time).
-   *
-   * @return preparation efficiency
-   */
-  public double getPreparationEfficiency() {
-    if (preparationTime.isZero() || instancesCreated == 0) {
-      return 0.0;
-    }
-    return (double) instancesCreated / preparationTime.toMillis() * 1000.0;
   }
 
   /**
@@ -156,12 +80,7 @@ public final class PreInstantiationStatistics {
       return false;
     }
     final PreInstantiationStatistics that = (PreInstantiationStatistics) obj;
-    return memoryFootprint == that.memoryFootprint
-        && functionsPrecompiled == that.functionsPrecompiled
-        && totalFunctions == that.totalFunctions
-        && instancesCreated == that.instancesCreated
-        && memoryPoolSize == that.memoryPoolSize
-        && poolingEnabled == that.poolingEnabled
+    return instancesCreated == that.instancesCreated
         && Objects.equals(creationTime, that.creationTime)
         && Objects.equals(preparationTime, that.preparationTime)
         && Objects.equals(averageInstantiationTime, that.averageInstantiationTime);
@@ -169,16 +88,7 @@ public final class PreInstantiationStatistics {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        creationTime,
-        preparationTime,
-        memoryFootprint,
-        functionsPrecompiled,
-        totalFunctions,
-        instancesCreated,
-        averageInstantiationTime,
-        memoryPoolSize,
-        poolingEnabled);
+    return Objects.hash(creationTime, preparationTime, instancesCreated, averageInstantiationTime);
   }
 
   @Override
@@ -188,20 +98,10 @@ public final class PreInstantiationStatistics {
         + creationTime
         + ", preparationTime="
         + preparationTime
-        + ", memoryFootprint="
-        + memoryFootprint
-        + ", functionsPrecompiled="
-        + functionsPrecompiled
-        + ", totalFunctions="
-        + totalFunctions
         + ", instancesCreated="
         + instancesCreated
         + ", averageInstantiationTime="
         + averageInstantiationTime
-        + ", memoryPoolSize="
-        + memoryPoolSize
-        + ", poolingEnabled="
-        + poolingEnabled
         + '}';
   }
 
@@ -209,16 +109,17 @@ public final class PreInstantiationStatistics {
   public static final class Builder {
     private Instant creationTime = Instant.now();
     private Duration preparationTime = Duration.ZERO;
-    private long memoryFootprint = 0;
-    private long functionsPrecompiled = 0;
-    private long totalFunctions = 0;
     private long instancesCreated = 0;
     private Duration averageInstantiationTime = Duration.ZERO;
-    private long memoryPoolSize = 0;
-    private boolean poolingEnabled = false;
 
     private Builder() {}
 
+    /**
+     * Sets the creation time.
+     *
+     * @param creationTime the creation time
+     * @return this builder
+     */
     public Builder creationTime(final Instant creationTime) {
       this.creationTime = Objects.requireNonNull(creationTime, "Creation time cannot be null");
       return this;
@@ -236,21 +137,12 @@ public final class PreInstantiationStatistics {
       return this;
     }
 
-    public Builder memoryFootprint(final long memoryFootprint) {
-      this.memoryFootprint = memoryFootprint;
-      return this;
-    }
-
-    public Builder functionsPrecompiled(final long functionsPrecompiled) {
-      this.functionsPrecompiled = functionsPrecompiled;
-      return this;
-    }
-
-    public Builder totalFunctions(final long totalFunctions) {
-      this.totalFunctions = totalFunctions;
-      return this;
-    }
-
+    /**
+     * Sets the number of instances created.
+     *
+     * @param instancesCreated the number of instances created
+     * @return this builder
+     */
     public Builder instancesCreated(final long instancesCreated) {
       this.instancesCreated = instancesCreated;
       return this;
@@ -269,16 +161,11 @@ public final class PreInstantiationStatistics {
       return this;
     }
 
-    public Builder memoryPoolSize(final long memoryPoolSize) {
-      this.memoryPoolSize = memoryPoolSize;
-      return this;
-    }
-
-    public Builder poolingEnabled(final boolean poolingEnabled) {
-      this.poolingEnabled = poolingEnabled;
-      return this;
-    }
-
+    /**
+     * Builds the PreInstantiationStatistics instance.
+     *
+     * @return a new PreInstantiationStatistics instance
+     */
     public PreInstantiationStatistics build() {
       return new PreInstantiationStatistics(this);
     }

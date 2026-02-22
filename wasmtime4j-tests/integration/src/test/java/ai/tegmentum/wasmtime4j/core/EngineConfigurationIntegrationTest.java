@@ -50,6 +50,7 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Engine Configuration Integration Tests")
+@SuppressWarnings("deprecation")
 public final class EngineConfigurationIntegrationTest {
 
   private static final Logger LOGGER =
@@ -167,7 +168,7 @@ public final class EngineConfigurationIntegrationTest {
 
       // Create config with speed optimization
       final EngineConfig config = new EngineConfig();
-      config.setOptimizationLevel(OptimizationLevel.SPEED);
+      config.optimizationLevel(OptimizationLevel.SPEED);
 
       final Engine engine = runtime.createEngine(config);
       resources.add(0, engine);
@@ -197,7 +198,7 @@ public final class EngineConfigurationIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final EngineConfig config = new EngineConfig();
-      config.setOptimizationLevel(OptimizationLevel.SPEED_AND_SIZE);
+      config.optimizationLevel(OptimizationLevel.SPEED_AND_SIZE);
 
       final Engine engine = runtime.createEngine(config);
       resources.add(0, engine);
@@ -224,7 +225,7 @@ public final class EngineConfigurationIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final EngineConfig config = new EngineConfig();
-      config.setOptimizationLevel(OptimizationLevel.NONE);
+      config.optimizationLevel(OptimizationLevel.NONE);
 
       final Engine engine = runtime.createEngine(config);
       resources.add(0, engine);
@@ -347,7 +348,7 @@ public final class EngineConfigurationIntegrationTest {
       config.addWasmFeature(WasmFeature.SIMD);
       config.addWasmFeature(WasmFeature.BULK_MEMORY);
       config.addWasmFeature(WasmFeature.REFERENCE_TYPES);
-      config.setOptimizationLevel(OptimizationLevel.SPEED);
+      config.optimizationLevel(OptimizationLevel.SPEED);
 
       final Engine engine = runtime.createEngine(config);
       resources.add(0, engine);
@@ -383,13 +384,13 @@ public final class EngineConfigurationIntegrationTest {
 
       // Create first engine with speed optimization
       final EngineConfig config1 = new EngineConfig();
-      config1.setOptimizationLevel(OptimizationLevel.SPEED);
+      config1.optimizationLevel(OptimizationLevel.SPEED);
       final Engine engine1 = runtime.createEngine(config1);
       resources.add(0, engine1);
 
       // Create second engine with size optimization
       final EngineConfig config2 = new EngineConfig();
-      config2.setOptimizationLevel(OptimizationLevel.SPEED_AND_SIZE);
+      config2.optimizationLevel(OptimizationLevel.SPEED_AND_SIZE);
       final Engine engine2 = runtime.createEngine(config2);
       resources.add(0, engine2);
 

@@ -148,7 +148,7 @@ public class LinkerFuzzer {
           Instance instance = linker.instantiate(store, module)) {
 
         // Define the instance in the linker namespace
-        linker.defineInstance(moduleName, instance);
+        linker.defineInstance(store, moduleName, instance);
 
         // Try to compile and instantiate a second module that might import from first
         if (useSimpleModule) {

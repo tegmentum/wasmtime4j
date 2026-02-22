@@ -102,28 +102,6 @@ public final class ArenaResourceManager implements AutoCloseable {
   }
 
   /**
-   * Allocates memory in the arena with the specified size.
-   *
-   * @param size the size in bytes
-   * @return managed memory segment
-   * @throws IllegalStateException if the manager is closed
-   */
-  public ManagedMemorySegment allocate(final long size) {
-    if (size <= 0) {
-      throw new IllegalArgumentException("Size must be positive: " + size);
-    }
-    checkNotClosed();
-
-    try {
-      MemorySegment segment = arena.allocate(size);
-      return createManagedSegment(segment, "allocated(" + size + ")");
-    } catch (Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to allocate memory with size: " + size, e);
-      throw e;
-    }
-  }
-
-  /**
    * Creates a managed wrapper around an existing native resource.
    *
    * @param nativePointer pointer to the native resource
@@ -236,18 +214,6 @@ public final class ArenaResourceManager implements AutoCloseable {
     return !closed;
   }
 
-  /**
-   * Gets resource statistics.
-   *
-   * @return resource statistics
-   */
-  public Statistics getStatistics() {
-    return new Statistics(
-        trackingEnabled ? resources.size() : 0,
-        trackingEnabled ? managedResources.size() : 0,
-        arena.scope().isAlive());
-  }
-
   /** Closes the resource manager and cleans up all resources. */
   @Override
   public void close() {
@@ -264,11 +230,11 @@ public final class ArenaResourceManager implements AutoCloseable {
             .append(" unclosed resources:\n");
         resources.forEach(
             (id, resource) -> {
-              long ageMs = System.currentTimeMillis() - resource.getCreationTime();
+              long ageMs = System.currentTimeMillis() - resource.creationTime();
               sb.append("  - ID ")
                   .append(id)
                   .append(": ")
-                  .append(resource.getDescription())
+                  .append(resource.description())
                   .append(" (age: ")
                   .append(ageMs)
                   .append("ms)\n");
@@ -294,29 +260,6 @@ public final class ArenaResourceManager implements AutoCloseable {
   }
 
   /**
-   * Creates a managed memory segment wrapper.
-   *
-   * @param segment the memory segment to wrap
-   * @param description description for tracking
-   * @return managed memory segment
-   */
-  private ManagedMemorySegment createManagedSegment(
-      final MemorySegment segment, final String description) {
-    ManagedMemorySegment managedSegment = new ManagedMemorySegment(segment, description);
-
-    if (trackingEnabled) {
-      long resourceId = resourceIdGenerator.getAndIncrement();
-      ManagedResource managedResource =
-          new ManagedResource(resourceId, description, System.currentTimeMillis());
-      resources.put(resourceId, managedResource);
-
-      LOGGER.finest("Created managed memory segment: " + description + " (id=" + resourceId + ")");
-    }
-
-    return managedSegment;
-  }
-
-  /**
    * Checks that the resource manager is not closed.
    *
    * @throws IllegalStateException if the manager is closed
@@ -327,34 +270,8 @@ public final class ArenaResourceManager implements AutoCloseable {
     }
   }
 
-  /** Managed memory segment that tracks its lifecycle. */
-  public static final class ManagedMemorySegment {
-    private final MemorySegment segment;
-    private final String description;
-
-    private ManagedMemorySegment(final MemorySegment segment, final String description) {
-      this.segment = Objects.requireNonNull(segment);
-      this.description = Objects.requireNonNull(description);
-    }
-
-    /**
-     * Gets the underlying memory segment.
-     *
-     * @return the memory segment
-     */
-    public MemorySegment segment() {
-      return segment;
-    }
-
-    @Override
-    public String toString() {
-      return "ManagedMemorySegment{description='"
-          + description
-          + "', size="
-          + segment.byteSize()
-          + "}";
-    }
-  }
+  /** Simple tracking record for managed resources used in leak detection. */
+  private record ManagedResource(long id, String description, long creationTime) {}
 
   /** Managed native resource that tracks its lifecycle. */
   public static final class ManagedNativeResource implements AutoCloseable {
@@ -421,74 +338,4 @@ public final class ArenaResourceManager implements AutoCloseable {
     }
   }
 
-  /** Internal resource tracking information. */
-  private static final class ManagedResource {
-    private final String description;
-    private final long creationTime;
-
-    ManagedResource(final long id, final String description, final long creationTime) {
-      this.description = description;
-      this.creationTime = creationTime;
-    }
-
-    String getDescription() {
-      return description;
-    }
-
-    long getCreationTime() {
-      return creationTime;
-    }
-  }
-
-  /** Resource statistics data. */
-  public static final class Statistics {
-    private final int totalResources;
-    private final int nativeResources;
-    private final boolean arenaActive;
-
-    Statistics(final int totalResources, final int nativeResources, final boolean arenaActive) {
-      this.totalResources = totalResources;
-      this.nativeResources = nativeResources;
-      this.arenaActive = arenaActive;
-    }
-
-    /**
-     * Gets the total number of resources.
-     *
-     * @return total resource count
-     */
-    public int getTotalResources() {
-      return totalResources;
-    }
-
-    /**
-     * Gets the number of native resources.
-     *
-     * @return native resource count
-     */
-    public int getNativeResources() {
-      return nativeResources;
-    }
-
-    /**
-     * Checks if the arena is active.
-     *
-     * @return true if arena is active
-     */
-    public boolean isArenaActive() {
-      return arenaActive;
-    }
-
-    @Override
-    public String toString() {
-      return "Statistics{"
-          + "totalResources="
-          + totalResources
-          + ", nativeResources="
-          + nativeResources
-          + ", arenaActive="
-          + arenaActive
-          + '}';
-    }
-  }
 }

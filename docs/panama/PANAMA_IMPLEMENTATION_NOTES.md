@@ -278,7 +278,7 @@ PanamaLinker linker = new PanamaLinker(engine);
 // Define host function
 linker.defineHostFunction(
     "env", "add",
-    FunctionType.multiValue(
+    FunctionType.of(
         new WasmValueType[]{WasmValueType.I32, WasmValueType.I32},
         new WasmValueType[]{WasmValueType.I32}
     ),

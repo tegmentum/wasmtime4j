@@ -150,7 +150,10 @@ public final class JniMemory extends JniResource implements WasmMemory {
             + pages);
 
     try {
-      return nativeGrow(memHandle, storeHandle, pages);
+      final long previousSize = nativeGrow(memHandle, storeHandle, pages);
+      // Invalidate cached buffer since memory layout changed
+      cachedBuffer = null;
+      return previousSize;
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -378,14 +381,16 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
 
     try {
-      cachedBuffer = nativeGetBuffer(getNativeHandle());
+      cachedBuffer = nativeGetBuffer(getNativeHandle(), store.getNativeHandle());
       if (cachedBuffer != null) {
         cachedBuffer.order(ByteOrder.LITTLE_ENDIAN); // WebAssembly is little-endian
       }
       lastBufferCheck = currentTime;
       return cachedBuffer != null ? cachedBuffer.duplicate() : null;
+    } catch (final RuntimeException e) {
+      throw e;
     } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting buffer", e);
+      throw new RuntimeException("Failed to get buffer: " + e.getMessage(), e);
     }
   }
 
@@ -676,9 +681,10 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * Gets a direct ByteBuffer view of the memory.
    *
    * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
    * @return a direct ByteBuffer view of the memory
    */
-  private static native ByteBuffer nativeGetBuffer(long memoryHandle);
+  private static native ByteBuffer nativeGetBuffer(long memoryHandle, long storeHandle);
 
   /**
    * Gets memory type information directly from the memory.
@@ -1430,7 +1436,10 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
     ensureUsable();
     try {
-      return nativeGrow(getNativeHandle(), store.getNativeHandle(), pages);
+      final long previousSize = nativeGrow(getNativeHandle(), store.getNativeHandle(), pages);
+      // Invalidate cached buffer since memory layout changed
+      cachedBuffer = null;
+      return previousSize;
     } catch (final Exception e) {
       return -1;
     }
@@ -1744,7 +1753,10 @@ public final class JniMemory extends JniResource implements WasmMemory {
             + pages);
 
     try {
-      return nativeGrowAsync(memHandle, storeHandle, pages);
+      final long previousSize = nativeGrowAsync(memHandle, storeHandle, pages);
+      // Invalidate cached buffer since memory layout changed
+      cachedBuffer = null;
+      return previousSize;
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {

@@ -38,7 +38,9 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   private final Set<String> imports = new HashSet<>();
   private final java.util.Map<String, ai.tegmentum.wasmtime4j.validation.ImportInfo>
       importRegistry = new java.util.concurrent.ConcurrentHashMap<>();
-  private final Set<Long> registeredCallbackIds = new HashSet<>();
+  private final Set<Long> registeredCallbackIds =
+      java.util.concurrent.ConcurrentHashMap.newKeySet();
+  private boolean wasiEnabled = false;
 
   /**
    * Creates a new JNI linker with the given native handle.
@@ -87,18 +89,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
 
     // Create a callback wrapper that will be invoked from native code
     final long callbackId =
-        registerHostFunctionCallback(moduleName, name, implementation, functionType);
-
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, just track the import without calling native code
-      addImportWithMetadata(
-          moduleName,
-          name,
-          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
-          functionType.toString());
-      return;
-    }
+        registerHostFunctionCallback(moduleName, name, implementation);
 
     try {
       final boolean success =
@@ -152,13 +143,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final long memoryHandle = jniMemory.getNativeHandle();
     final long storeHandle = jniStore.getNativeHandle();
 
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, just track the import without calling native code
-      addImport(moduleName, name);
-      return;
-    }
-
     try {
       final boolean success =
           nativeDefineMemory(nativeHandle, storeHandle, moduleName, name, memoryHandle);
@@ -205,13 +189,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final JniStore jniStore = (JniStore) store;
     final long tableHandle = jniTable.getNativeHandle();
     final long storeHandle = jniStore.getNativeHandle();
-
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, just track the import without calling native code
-      addImport(moduleName, name);
-      return;
-    }
 
     try {
       final boolean success =
@@ -260,13 +237,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final long globalHandle = jniGlobal.getNativeHandle();
     final long storeHandle = jniStore.getNativeHandle();
 
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, just track the import without calling native code
-      addImport(moduleName, name);
-      return;
-    }
-
     try {
       final boolean success =
           nativeDefineGlobal(nativeHandle, storeHandle, moduleName, name, globalHandle);
@@ -311,13 +281,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final JniStore jniStore = (JniStore) store;
     final long storeHandle = jniStore.getNativeHandle();
 
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, just track the import without calling native code
-      addImport(moduleName, "*");
-      return;
-    }
-
     try {
       final boolean success =
           nativeDefineInstance(nativeHandle, storeHandle, moduleName, instanceHandle);
@@ -339,14 +302,15 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   public void enableWasi() throws WasmException {
     ensureNotClosed();
 
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, skip native call
+    // Check if WASI is already enabled - skip if so to avoid duplicate definition errors
+    if (wasiEnabled) {
+      LOGGER.fine("WASI already enabled for linker, skipping");
       return;
     }
 
     try {
       nativeEnableWasi(nativeHandle);
+      wasiEnabled = true;
     } catch (final Exception e) {
       if (e instanceof WasmException) {
         throw e;
@@ -373,12 +337,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       throw new IllegalArgumentException("toName cannot be null or empty");
     }
 
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, skip native call
-      return;
-    }
-
     try {
       nativeAlias(nativeHandle, fromModule, fromName, toModule, toName);
     } catch (final Exception e) {
@@ -398,10 +356,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       throw new IllegalArgumentException("Alias module name cannot be null");
     }
     ensureNotClosed();
-
-    if (!isNativeHandleReasonable()) {
-      return;
-    }
 
     try {
       final boolean success = nativeAliasModule(nativeHandle, module, asModule);
@@ -487,12 +441,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final JniStore jniStore = (JniStore) store;
     final JniModule jniModule = (JniModule) module;
 
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, throw exception instead of crashing
-      throw new WasmException("Cannot instantiate with fake/test handle");
-    }
-
     try {
       final long instanceHandle =
           nativeInstantiate(nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
@@ -534,12 +482,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final JniStore jniStore = (JniStore) store;
     final JniModule jniModule = (JniModule) module;
 
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, throw exception instead of crashing
-      throw new WasmException("Cannot instantiate with fake/test handle");
-    }
-
     try {
       final long instanceHandle =
           nativeInstantiateNamed(
@@ -576,11 +518,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     }
 
     final JniModule jniModule = (JniModule) module;
-
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      throw new WasmException("Cannot create InstancePre with fake/test handle");
-    }
 
     try {
       final long instancePreHandle =
@@ -628,19 +565,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   }
 
   /**
-   * Check if native handle looks valid. This is a heuristic check to prevent crashes from obviously
-   * fake test pointers.
-   *
-   * <p>Native handles should be real memory addresses from the native library. Test code that uses
-   * fake handles like 0x1 will fail this check.
-   *
-   * @return true if handle looks potentially valid
-   */
-  private boolean isNativeHandleReasonable() {
-    return isNativeHandleReasonable(nativeHandle);
-  }
-
-  /**
    * Registers a host function callback.
    *
    * @param moduleName the module name
@@ -652,10 +576,9 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   private long registerHostFunctionCallback(
       final String moduleName,
       final String name,
-      final HostFunction implementation,
-      final FunctionType functionType) {
+      final HostFunction implementation) {
     final HostFunctionWrapper wrapper =
-        new HostFunctionWrapper(moduleName, name, implementation, functionType);
+        new HostFunctionWrapper(moduleName, name, implementation);
     final long id = wrapper.getId();
     HOST_FUNCTION_CALLBACKS.put(id, wrapper);
     registeredCallbackIds.add(id);
@@ -676,10 +599,9 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       final long callbackId,
       final String moduleName,
       final String name,
-      final HostFunction implementation,
-      final FunctionType functionType) {
+      final HostFunction implementation) {
     final HostFunctionWrapper wrapper =
-        new HostFunctionWrapper(callbackId, moduleName, name, implementation, functionType);
+        new HostFunctionWrapper(callbackId, moduleName, name, implementation);
     HOST_FUNCTION_CALLBACKS.put(callbackId, wrapper);
   }
 
@@ -743,18 +665,14 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   @Override
   public Linker<T> allowShadowing(final boolean allow) {
     ensureNotClosed();
-    if (isNativeHandleReasonable()) {
-      nativeAllowShadowing(nativeHandle, allow);
-    }
+    nativeAllowShadowing(nativeHandle, allow);
     return this;
   }
 
   @Override
   public Linker<T> allowUnknownExports(final boolean allow) {
     ensureNotClosed();
-    if (isNativeHandleReasonable()) {
-      nativeAllowUnknownExports(nativeHandle, allow);
-    }
+    nativeAllowUnknownExports(nativeHandle, allow);
     return this;
   }
 
@@ -779,13 +697,11 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final JniStore jniStore = (JniStore) store;
     final JniModule jniModule = (JniModule) module;
 
-    if (isNativeHandleReasonable()) {
-      final boolean success =
-          nativeDefineUnknownImportsAsTraps(
-              nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
-      if (!success) {
-        throw new WasmException("Failed to define unknown imports as traps");
-      }
+    final boolean success =
+        nativeDefineUnknownImportsAsTraps(
+            nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
+    if (!success) {
+      throw new WasmException("Failed to define unknown imports as traps");
     }
   }
 
@@ -810,13 +726,11 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final JniStore jniStore = (JniStore) store;
     final JniModule jniModule = (JniModule) module;
 
-    if (isNativeHandleReasonable()) {
-      final boolean success =
-          nativeDefineUnknownImportsAsDefaultValues(
-              nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
-      if (!success) {
-        throw new WasmException("Failed to define unknown imports as default values");
-      }
+    final boolean success =
+        nativeDefineUnknownImportsAsDefaultValues(
+            nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
+    if (!success) {
+      throw new WasmException("Failed to define unknown imports as default values");
     }
   }
 
@@ -877,10 +791,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
 
     final JniStore jniStore = (JniStore) store;
 
-    if (!isNativeHandleReasonable()) {
-      return null;
-    }
-
     final long externHandle =
         nativeGetByImport(nativeHandle, jniStore.getNativeHandle(), moduleName, name);
 
@@ -923,17 +833,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     }
 
     final JniStore jniStore = (JniStore) store;
-
-    // DEFENSIVE: Check if handle looks valid before calling native code
-    if (!isNativeHandleReasonable()) {
-      // For test code with fake handles, just track the import without calling native code
-      addImportWithMetadata(
-          "", // No module name for top-level definitions
-          name,
-          getExternImportKind(extern),
-          extern.toString());
-      return;
-    }
 
     try {
       // Get the native handle from the extern
@@ -1012,7 +911,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     } else if (extern instanceof JniExternGlobal) {
       return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.GLOBAL;
     }
-    return ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
+    throw new IllegalArgumentException("Unknown extern type: " + extern.getClass().getName());
   }
 
   @Override
@@ -1032,10 +931,6 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
 
     final JniStore jniStore = (JniStore) store;
 
-    if (!isNativeHandleReasonable()) {
-      return null;
-    }
-
     final long funcHandle = nativeGetDefault(nativeHandle, jniStore.getNativeHandle(), moduleName);
 
     if (funcHandle == 0) {
@@ -1054,18 +949,15 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     private final String moduleName;
     private final String name;
     private final HostFunction implementation;
-    private final FunctionType functionType;
 
     HostFunctionWrapper(
         final String moduleName,
         final String name,
-        final HostFunction implementation,
-        final FunctionType functionType) {
+        final HostFunction implementation) {
       this.id = nextId.getAndIncrement();
       this.moduleName = moduleName;
       this.name = name;
       this.implementation = implementation;
-      this.functionType = functionType;
     }
 
     /**
@@ -1076,13 +968,11 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
         final long callbackId,
         final String moduleName,
         final String name,
-        final HostFunction implementation,
-        final FunctionType functionType) {
+        final HostFunction implementation) {
       this.id = callbackId;
       this.moduleName = moduleName;
       this.name = name;
       this.implementation = implementation;
-      this.functionType = functionType;
     }
 
     long getId() {

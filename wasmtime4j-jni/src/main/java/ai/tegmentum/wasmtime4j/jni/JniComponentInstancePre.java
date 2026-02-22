@@ -21,7 +21,6 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import java.util.logging.Logger;
 
 /**
@@ -116,7 +115,7 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
     if (!closed) {
       closed = true;
 
-      if (nativeHandle == 0 || !JniResource.isNativeHandleReasonable(nativeHandle)) {
+      if (nativeHandle == 0) {
         return;
       }
 

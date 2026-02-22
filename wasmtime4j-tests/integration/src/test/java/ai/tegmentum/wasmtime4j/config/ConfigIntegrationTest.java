@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the configuration enums and classes.
  */
 @DisplayName("Config Integration Tests")
+@SuppressWarnings("deprecation")
 public class ConfigIntegrationTest {
 
   private static final Logger LOGGER = Logger.getLogger(ConfigIntegrationTest.class.getName());
@@ -74,9 +75,11 @@ public class ConfigIntegrationTest {
       LOGGER.info("Testing CompilationStrategy enum values");
 
       CompilationStrategy[] strategies = CompilationStrategy.values();
-      assertEquals(5, strategies.length, "Should have 5 compilation strategies");
+      assertEquals(7, strategies.length, "Should have 7 compilation strategies");
 
       assertNotNull(CompilationStrategy.AUTO, "AUTO should exist");
+      assertNotNull(CompilationStrategy.CRANELIFT, "CRANELIFT should exist");
+      assertNotNull(CompilationStrategy.WINCH, "WINCH should exist");
       assertNotNull(CompilationStrategy.SPEED, "SPEED should exist");
       assertNotNull(CompilationStrategy.PERFORMANCE, "PERFORMANCE should exist");
       assertNotNull(CompilationStrategy.SIZE, "SIZE should exist");

@@ -510,6 +510,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupports
                 crate::engine::WasmFeature::ComponentModelErrorContext
             }
             "COMPONENT_MODEL_GC" => crate::engine::WasmFeature::ComponentModelGc,
+            "COMPONENT_MODEL_THREADING" => crate::engine::WasmFeature::ComponentModelThreading,
             _ => {
                 return Err(WasmtimeError::InvalidParameter {
                     message: format!("Unknown feature: {}", feature_str),

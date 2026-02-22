@@ -57,6 +57,7 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Epoch Interruption Integration Tests")
+@SuppressWarnings("deprecation")
 public final class EpochInterruptionIntegrationTest {
 
   private static final Logger LOGGER =
@@ -172,7 +173,7 @@ public final class EpochInterruptionIntegrationTest {
   @BeforeAll
   static void checkEpochInterruptionAvailable() {
     try {
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
       try (final Engine engine = Engine.create(config)) {
         epochInterruptionAvailable = engine.isEpochInterruptionEnabled();
         LOGGER.info("Epoch interruption available: " + epochInterruptionAvailable);
@@ -194,7 +195,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch interruption enablement");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config)) {
         assertTrue(
@@ -228,7 +229,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch deadline setting");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
@@ -247,7 +248,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch deadline trap configuration");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
@@ -274,7 +275,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch increment");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config)) {
         assertDoesNotThrow(engine::incrementEpoch, "Should increment epoch without throwing");
@@ -295,7 +296,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing thread-safe epoch increment");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config)) {
         final int numThreads = 4;
@@ -340,7 +341,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing execution interruption at epoch deadline");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       Module module;
       try (final Engine engine = Engine.create(config)) {
@@ -406,7 +407,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing execution without interruption");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore();
@@ -439,7 +440,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch deadline callback");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
@@ -500,7 +501,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch callback continuation allows loop to complete");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       // WAT module with a loop that counts to a target value
       final String countingLoopWat =
@@ -620,7 +621,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch callback exception handling");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       // WAT module with an infinite loop
       final String infiniteLoopWat =
@@ -708,7 +709,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing async epoch yield and update configuration");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true).asyncSupport(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true).asyncSupport(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
@@ -743,7 +744,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing zero epoch deadline");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
@@ -761,7 +762,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing large epoch deadline");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
@@ -780,7 +781,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing rapid epoch increments");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       try (final Engine engine = Engine.create(config)) {
         for (int i = 0; i < 10000; i++) {
@@ -803,7 +804,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing combined fuel and epoch configuration");
 
-      final EngineConfig config = new EngineConfig().consumeFuel(true).setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().consumeFuel(true).epochInterruption(true);
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore();
@@ -836,7 +837,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch behavior during host function execution");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       // WAT module that imports and calls a host function
       final String importHostFuncWat =
@@ -967,7 +968,7 @@ public final class EpochInterruptionIntegrationTest {
 
       LOGGER.info("Testing epoch check after host function returns");
 
-      final EngineConfig config = new EngineConfig().setEpochInterruption(true);
+      final EngineConfig config = new EngineConfig().epochInterruption(true);
 
       // WAT module that calls host function in a loop
       final String loopWithHostCallWat =

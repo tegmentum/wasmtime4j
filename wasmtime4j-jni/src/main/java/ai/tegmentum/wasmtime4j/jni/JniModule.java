@@ -44,9 +44,6 @@ public class JniModule extends JniResource implements Module {
   @Override
   public List<ImportType> getImports() {
     ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
-      return java.util.Collections.emptyList();
-    }
 
     try {
       return nativeGetModuleImports(nativeHandle);
@@ -82,28 +79,9 @@ public class JniModule extends JniResource implements Module {
       final ai.tegmentum.wasmtime4j.Store store,
       final ai.tegmentum.wasmtime4j.validation.ImportMap imports)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    if (store == null) {
-      throw new IllegalArgumentException("store cannot be null");
-    }
-    if (imports == null) {
-      throw new IllegalArgumentException("imports cannot be null");
-    }
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("store must be a JniStore instance");
-    }
-    ensureNotClosed();
-
-    final JniStore jniStore = (JniStore) store;
-    // For now, use simple instantiation - proper ImportMap support can be added later
-    final long instanceHandle =
-        nativeInstantiateModuleWithImports(nativeHandle, jniStore.getNativeHandle(), 0);
-
-    if (instanceHandle == 0) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to instantiate module with imports - native instantiation returned null");
-    }
-
-    return new JniInstance(instanceHandle, this, store);
+    throw new UnsupportedOperationException(
+        "ImportMap-based instantiation is not yet implemented."
+            + " Use Linker-based instantiation instead.");
   }
 
   @Override
@@ -114,9 +92,6 @@ public class JniModule extends JniResource implements Module {
               + " message")
   public List<ExportType> getExports() {
     ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
-      return java.util.Collections.emptyList();
-    }
 
     try {
       final List<ExportType> result = nativeGetModuleExports(nativeHandle);
@@ -125,7 +100,7 @@ public class JniModule extends JniResource implements Module {
             .warning("nativeGetModuleExports returned null for handle: " + nativeHandle);
         return java.util.Collections.emptyList();
       }
-      return result;
+      return java.util.Collections.unmodifiableList(result);
     } catch (final Throwable t) {
       java.util.logging.Logger.getLogger(JniModule.class.getName())
           .log(java.util.logging.Level.SEVERE, "nativeGetModuleExports failed", t);
@@ -136,10 +111,6 @@ public class JniModule extends JniResource implements Module {
   @Override
   public Map<String, byte[]> getCustomSections() {
     ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
-      // Return empty map for unreasonable handle - prevents crashes from test fake pointers
-      return java.util.Collections.emptyMap();
-    }
 
     try {
       return nativeGetCustomSections(nativeHandle);
@@ -195,19 +166,6 @@ public class JniModule extends JniResource implements Module {
       }
     }
     return java.util.Collections.unmodifiableList(functionTypes);
-  }
-
-  /**
-   * Check if native handle looks valid. This is a heuristic check to prevent crashes from obviously
-   * fake test pointers.
-   *
-   * <p>Native handles should be real memory addresses from the native library. Test code that uses
-   * fake handles like 0x12345678 will fail this check.
-   *
-   * @return true if handle looks potentially valid
-   */
-  private boolean isNativeHandleReasonable() {
-    return isNativeHandleReasonable(nativeHandle);
   }
 
   @Override
@@ -280,10 +238,6 @@ public class JniModule extends JniResource implements Module {
       throw new IllegalArgumentException("Export name cannot be null");
     }
     ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
-      // Return false for unreasonable handle - prevents crashes from test fake pointers
-      return false;
-    }
 
     try {
       return nativeHasExport(nativeHandle, name);
@@ -302,10 +256,6 @@ public class JniModule extends JniResource implements Module {
       throw new IllegalArgumentException("Field name cannot be null");
     }
     ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
-      // Return false for unreasonable handle - prevents crashes from test fake pointers
-      return false;
-    }
 
     try {
       return nativeHasImport(nativeHandle, moduleName, fieldName);
@@ -343,9 +293,6 @@ public class JniModule extends JniResource implements Module {
       throw new IllegalArgumentException("name cannot be null");
     }
     ensureNotClosed();
-    if (!isNativeHandleReasonable()) {
-      return -1;
-    }
     try {
       return (int) nativeGetExportIndex(nativeHandle, name);
     } catch (final Throwable t) {
@@ -381,240 +328,13 @@ public class JniModule extends JniResource implements Module {
       throw new IllegalArgumentException("imports cannot be null");
     }
     ensureNotClosed();
-
-    final long startTime = System.nanoTime();
-    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportIssue> issues =
-        new java.util.ArrayList<>();
-    final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> validatedImports =
-        new java.util.ArrayList<>();
-    final java.util.Map<String, java.util.Map<String, Object>> importsMap = imports.getImports();
-
-    final List<ImportType> importTypes = getImports();
-    int validCount = 0;
-
-    for (final ImportType importType : importTypes) {
-      final String moduleName = importType.getModuleName();
-      final String fieldName = importType.getName();
-      final ai.tegmentum.wasmtime4j.type.WasmType expectedType = importType.getType();
-
-      // Check if import exists
-      if (!imports.contains(moduleName, fieldName)) {
-        issues.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.MISSING_IMPORT,
-                moduleName,
-                fieldName,
-                "Required import is missing from ImportMap"));
-        continue;
-      }
-
-      // Get actual import object and validate type
-      final java.util.Map<String, Object> moduleMap = importsMap.get(moduleName);
-      if (moduleMap == null) {
-        issues.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.MODULE_NOT_FOUND,
-                moduleName,
-                fieldName,
-                "Module not found in ImportMap"));
-        continue;
-      }
-
-      final Object actualImport = moduleMap.get(fieldName);
-      if (actualImport == null) {
-        issues.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.EXPORT_NOT_FOUND,
-                moduleName,
-                fieldName,
-                "Import field not found in module"));
-        continue;
-      }
-
-      // Type check based on expected type kind
-      final ai.tegmentum.wasmtime4j.type.WasmTypeKind expectedKind = expectedType.getKind();
-      boolean typeMatches = true;
-      String expectedTypeStr = expectedKind.toString();
-      String actualTypeStr = actualImport.getClass().getSimpleName();
-
-      switch (expectedKind) {
-        case GLOBAL:
-          if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmGlobal) {
-            final ai.tegmentum.wasmtime4j.WasmGlobal global =
-                (ai.tegmentum.wasmtime4j.WasmGlobal) actualImport;
-            final ai.tegmentum.wasmtime4j.type.GlobalType actualGlobalType = global.getGlobalType();
-            final ai.tegmentum.wasmtime4j.type.GlobalType expectedGlobalType =
-                (ai.tegmentum.wasmtime4j.type.GlobalType) expectedType;
-
-            if (!typesMatch(expectedGlobalType, actualGlobalType)) {
-              typeMatches = false;
-              expectedTypeStr = formatGlobalType(expectedGlobalType);
-              actualTypeStr = formatGlobalType(actualGlobalType);
-            }
-          } else {
-            typeMatches = false;
-          }
-          break;
-
-        case TABLE:
-          if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmTable) {
-            final ai.tegmentum.wasmtime4j.WasmTable table =
-                (ai.tegmentum.wasmtime4j.WasmTable) actualImport;
-            final ai.tegmentum.wasmtime4j.type.TableType actualTableType = table.getTableType();
-            final ai.tegmentum.wasmtime4j.type.TableType expectedTableType =
-                (ai.tegmentum.wasmtime4j.type.TableType) expectedType;
-
-            if (!typesMatch(expectedTableType, actualTableType)) {
-              typeMatches = false;
-              expectedTypeStr = formatTableType(expectedTableType);
-              actualTypeStr = formatTableType(actualTableType);
-            }
-          } else {
-            typeMatches = false;
-          }
-          break;
-
-        case MEMORY:
-          if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmMemory) {
-            final ai.tegmentum.wasmtime4j.WasmMemory memory =
-                (ai.tegmentum.wasmtime4j.WasmMemory) actualImport;
-            final ai.tegmentum.wasmtime4j.type.MemoryType actualMemoryType = memory.getMemoryType();
-            final ai.tegmentum.wasmtime4j.type.MemoryType expectedMemoryType =
-                (ai.tegmentum.wasmtime4j.type.MemoryType) expectedType;
-
-            if (!typesMatch(expectedMemoryType, actualMemoryType)) {
-              typeMatches = false;
-              expectedTypeStr = formatMemoryType(expectedMemoryType);
-              actualTypeStr = formatMemoryType(actualMemoryType);
-            }
-          } else {
-            typeMatches = false;
-          }
-          break;
-
-        case FUNCTION:
-          if (actualImport instanceof ai.tegmentum.wasmtime4j.WasmFunction) {
-            // Function type checking would go here
-            // For now, accept any WasmFunction as matching
-            typeMatches = true;
-          } else {
-            typeMatches = false;
-          }
-          break;
-
-        default:
-          typeMatches = false;
-          expectedTypeStr = "Unknown type: " + expectedKind;
-      }
-
-      if (!typeMatches) {
-        issues.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportIssue(
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Severity.ERROR,
-                ai.tegmentum.wasmtime4j.validation.ImportIssue.Type.TYPE_MISMATCH,
-                moduleName,
-                fieldName,
-                "Import type does not match expected type",
-                expectedTypeStr,
-                actualTypeStr));
-      } else {
-        validCount++;
-        // Determine ImportInfo.ImportKind from WasmTypeKind
-        final ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind infoType;
-        switch (expectedKind) {
-          case GLOBAL:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.GLOBAL;
-            break;
-          case TABLE:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.TABLE;
-            break;
-          case MEMORY:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.MEMORY;
-            break;
-          case FUNCTION:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
-            break;
-          default:
-            infoType = ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION;
-        }
-
-        validatedImports.add(
-            new ai.tegmentum.wasmtime4j.validation.ImportInfo(
-                moduleName,
-                fieldName,
-                infoType,
-                java.util.Optional.of(actualTypeStr),
-                java.time.Instant.now(),
-                actualImport instanceof ai.tegmentum.wasmtime4j.WasmFunction,
-                java.util.Optional.of("Provided via ImportMap")));
-      }
-    }
-
-    final long endTime = System.nanoTime();
-    final java.time.Duration validationTime = java.time.Duration.ofNanos(endTime - startTime);
-
-    return new ai.tegmentum.wasmtime4j.validation.ImportValidation(
-        issues.isEmpty(), issues, validatedImports, importTypes.size(), validCount, validationTime);
-  }
-
-  private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.type.GlobalType expected,
-      final ai.tegmentum.wasmtime4j.type.GlobalType actual) {
-    return expected.getValueType() == actual.getValueType()
-        && expected.isMutable() == actual.isMutable();
-  }
-
-  private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.type.TableType expected,
-      final ai.tegmentum.wasmtime4j.type.TableType actual) {
-    return expected.getElementType() == actual.getElementType()
-        && expected.getMinimum() <= actual.getMinimum()
-        && (!expected.getMaximum().isPresent()
-            || (actual.getMaximum().isPresent()
-                && expected.getMaximum().get() >= actual.getMaximum().get()));
-  }
-
-  private boolean typesMatch(
-      final ai.tegmentum.wasmtime4j.type.MemoryType expected,
-      final ai.tegmentum.wasmtime4j.type.MemoryType actual) {
-    return expected.getMinimum() <= actual.getMinimum()
-        && expected.is64Bit() == actual.is64Bit()
-        && expected.isShared() == actual.isShared()
-        && (!expected.getMaximum().isPresent()
-            || (actual.getMaximum().isPresent()
-                && expected.getMaximum().get() >= actual.getMaximum().get()));
-  }
-
-  private String formatGlobalType(final ai.tegmentum.wasmtime4j.type.GlobalType type) {
-    return String.format(
-        "Global(%s, %s)", type.getValueType(), type.isMutable() ? "mutable" : "immutable");
-  }
-
-  private String formatTableType(final ai.tegmentum.wasmtime4j.type.TableType type) {
-    return String.format(
-        "Table(%s, min=%d, max=%s)",
-        type.getElementType(),
-        type.getMinimum(),
-        type.getMaximum().map(String::valueOf).orElse("none"));
-  }
-
-  private String formatMemoryType(final ai.tegmentum.wasmtime4j.type.MemoryType type) {
-    return String.format(
-        "Memory(min=%d, max=%s, %s, %s)",
-        type.getMinimum(),
-        type.getMaximum().map(String::valueOf).orElse("none"),
-        type.is64Bit() ? "64-bit" : "32-bit",
-        type.isShared() ? "shared" : "not-shared");
+    return ai.tegmentum.wasmtime4j.util.ModuleValidationSupport.validateImportsDetailed(
+        getImports(), imports);
   }
 
   @Override
   public byte[] serialize() {
-    if (isClosed() || !isNativeHandleReasonable()) {
-      // Return empty array for closed module or unreasonable handle
-      // Prevents crashes from test fake pointers and allows graceful handling after close
+    if (isClosed()) {
       return new byte[0];
     }
 
@@ -655,16 +375,6 @@ public class JniModule extends JniResource implements Module {
    */
   private static native long nativeInstantiateModule(long moduleHandle, long storeHandle);
 
-  /**
-   * Native method to instantiate a module with imports.
-   *
-   * @param moduleHandle the native module handle
-   * @param storeHandle the native store handle
-   * @param importMapHandle the native import map handle (0 if no imports)
-   * @return the native instance handle, or 0 on failure
-   */
-  private static native long nativeInstantiateModuleWithImports(
-      long moduleHandle, long storeHandle, long importMapHandle);
 
   private native byte[] nativeSerializeModule(long handle);
 

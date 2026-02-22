@@ -180,8 +180,8 @@ Engine engine = runtime.createEngine(config);
 ### Built-in Configurations
 
 ```java
-// Optimized for speed
-Engine speedEngine = runtime.createEngine(EngineConfig.forSpeed());
+// Default configuration (optimized for speed)
+Engine speedEngine = runtime.createEngine(new EngineConfig());
 
 // Optimized for size
 Engine sizeEngine = runtime.createEngine(EngineConfig.forSize());
