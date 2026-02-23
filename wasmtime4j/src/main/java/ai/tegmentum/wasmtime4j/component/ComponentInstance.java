@@ -151,6 +151,31 @@ public interface ComponentInstance extends AutoCloseable {
   boolean hasResource(String resourceName) throws WasmException;
 
   /**
+   * Gets the resource type definition exported by this component instance.
+   *
+   * <p>If the component exports a resource type with the given name, this method returns a handle
+   * representing that resource type. The handle can be used to create instances of the resource
+   * or to check resource type compatibility.
+   *
+   * @param resourceName the name of the resource to retrieve
+   * @return an Optional containing the resource handle if found, or empty if not exported
+   * @throws WasmException if the lookup fails
+   * @throws IllegalArgumentException if resourceName is null or empty
+   * @since 1.0.0
+   */
+  default Optional<ComponentResourceHandle> getExportedResource(final String resourceName)
+      throws WasmException {
+    if (resourceName == null || resourceName.isEmpty()) {
+      throw new IllegalArgumentException("resourceName cannot be null or empty");
+    }
+    // Default: delegates to hasResource and returns a handle with no native backing
+    if (hasResource(resourceName)) {
+      return Optional.of(ComponentResourceHandle.own(resourceName, 0));
+    }
+    return Optional.empty();
+  }
+
+  /**
    * Looks up a core module exported by this component instance.
    *
    * <p>Some components export core WebAssembly modules that can be instantiated separately.

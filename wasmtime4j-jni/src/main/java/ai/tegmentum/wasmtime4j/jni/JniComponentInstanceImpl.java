@@ -11,7 +11,9 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitValue;
 import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -128,10 +130,33 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   }
 
   @Override
-  public java.util.Set<String> getExportedFunctions() {
-    // Return empty set as the native layer handles function exports directly
-    // In a full implementation, this would query the component for its function exports
-    return java.util.Collections.emptySet();
+  public Set<String> getExportedFunctions() {
+    if (!isValid()) {
+      return java.util.Collections.emptySet();
+    }
+
+    try {
+      final long engineHandle = component.getEngine().getNativeHandle();
+      final long instanceHandle = nativeInstance.getNativeHandle();
+      final Set<String> functions = new HashSet<>();
+
+      // Enumerate component exports and check which are functions
+      final long componentHandle = component.getNativeHandle();
+      final int exportCount = JniComponent.nativeGetComponentExportCount(componentHandle);
+
+      for (int i = 0; i < exportCount; i++) {
+        final String name = JniComponent.nativeGetComponentExportName(componentHandle, i);
+        if (name != null && JniComponent.nativeComponentInstanceHasFunc(
+            engineHandle, instanceHandle, name) != 0) {
+          functions.add(name);
+        }
+      }
+
+      return java.util.Collections.unmodifiableSet(functions);
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to get exported functions: " + e.getMessage());
+      return java.util.Collections.emptySet();
+    }
   }
 
   @Override

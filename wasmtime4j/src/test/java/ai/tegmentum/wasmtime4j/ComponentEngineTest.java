@@ -100,49 +100,6 @@ class ComponentEngineTest {
   }
 
   // ========================================================================
-  // Component Linking Method Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Component Linking Method Tests")
-  class LinkingMethodTests {
-
-    @Test
-    @DisplayName("should have linkComponents method")
-    void shouldHaveLinkComponentsMethod() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("linkComponents", List.class);
-      assertNotNull(method, "linkComponents method should exist");
-      assertEquals(Component.class, method.getReturnType(), "Return type should be Component");
-      assertEquals(1, method.getParameterCount(), "linkComponents should have 1 parameter");
-    }
-
-    @Test
-    @DisplayName("linkComponents should accept List<Component> parameter")
-    void linkComponentsShouldAcceptComponentList() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("linkComponents", List.class);
-      Type[] genericParameterTypes = method.getGenericParameterTypes();
-      assertEquals(1, genericParameterTypes.length, "Should have 1 generic parameter type");
-
-      if (genericParameterTypes[0] instanceof ParameterizedType) {
-        ParameterizedType paramType = (ParameterizedType) genericParameterTypes[0];
-        assertEquals(List.class, paramType.getRawType(), "Raw type should be List");
-        Type[] typeArgs = paramType.getActualTypeArguments();
-        assertEquals(1, typeArgs.length, "List should have one type argument");
-        assertEquals(Component.class, typeArgs[0], "List type argument should be Component");
-      }
-    }
-
-    @Test
-    @DisplayName("linkComponents should throw WasmException")
-    void linkComponentsShouldThrowWasmException() throws NoSuchMethodException {
-      Method method = ComponentEngine.class.getMethod("linkComponents", List.class);
-      Class<?>[] exceptionTypes = method.getExceptionTypes();
-      assertEquals(1, exceptionTypes.length, "Should declare one exception");
-      assertEquals(WasmException.class, exceptionTypes[0], "Should throw WasmException");
-    }
-  }
-
-  // ========================================================================
   // Compatibility Check Method Tests
   // ========================================================================
 
@@ -356,7 +313,6 @@ class ComponentEngineTest {
               Arrays.asList(
                   "getEngine",
                   "compileComponent",
-                  "linkComponents",
                   "checkCompatibility",
                   "createInstance",
                   "getWitSupportInfo",

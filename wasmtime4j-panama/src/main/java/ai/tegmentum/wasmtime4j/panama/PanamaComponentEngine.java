@@ -58,6 +58,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
   private final AtomicLong componentIdCounter;
   private final WasmRuntime runtime;
   private final NativeResourceHandle resourceHandle;
+  private volatile Engine cachedEngine;
 
   /**
    * Creates a new Panama component engine with the given configuration.
@@ -291,13 +292,40 @@ public final class PanamaComponentEngine implements ComponentEngine {
   }
 
   @Override
-  public Component linkComponents(final List<Component> components) throws WasmException {
-    throw new UnsupportedOperationException("linkComponents not yet implemented");
-  }
-
-  @Override
   public WitCompatibilityResult checkCompatibility(final Component source, final Component target) {
-    throw new UnsupportedOperationException("checkCompatibility not yet implemented");
+    Objects.requireNonNull(source, "source cannot be null");
+    Objects.requireNonNull(target, "target cannot be null");
+
+    try {
+      ensureNotClosed();
+
+      // Get exported and imported interfaces
+      final Set<String> sourceExports = source.getExportedInterfaces();
+      final Set<String> targetImports = target.getImportedInterfaces();
+
+      // Check if source can satisfy target's imports
+      final Set<String> satisfiedImports = new HashSet<>(sourceExports);
+      satisfiedImports.retainAll(targetImports);
+
+      final Set<String> unsatisfiedImports = new HashSet<>(targetImports);
+      unsatisfiedImports.removeAll(sourceExports);
+
+      final boolean compatible = unsatisfiedImports.isEmpty();
+      final String details =
+          compatible
+              ? "All imports satisfied"
+              : "Unsatisfied imports: " + String.join(", ", unsatisfiedImports);
+
+      return new WitCompatibilityResult(compatible, details, satisfiedImports, unsatisfiedImports);
+
+    } catch (final Exception e) {
+      LOGGER.warning("Failed to check component compatibility: " + e.getMessage());
+      return new WitCompatibilityResult(
+          false,
+          "Compatibility check failed: " + e.getMessage(),
+          Set.of(),
+          Set.of());
+    }
   }
 
   @Override
@@ -330,9 +358,21 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public Engine getEngine() {
-    throw new UnsupportedOperationException(
-        "PanamaComponentEngine does not yet expose its underlying Engine. "
-            + "Use WasmRuntime.createEngine() to obtain a regular Engine.");
+    if (runtime == null) {
+      throw new IllegalStateException(
+          "No runtime associated with this ComponentEngine. "
+              + "Use the constructor that accepts a WasmRuntime.");
+    }
+    Engine engine = cachedEngine;
+    if (engine == null || !engine.isValid()) {
+      try {
+        engine = runtime.createEngine();
+        cachedEngine = engine;
+      } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+        throw new RuntimeException("Failed to create engine from runtime", e);
+      }
+    }
+    return engine;
   }
 
   @Override

@@ -43,6 +43,7 @@ public final class StoreLimitsBuilder {
   private long instances = 0;
   private long tables = 0;
   private long memories = 0;
+  private boolean trapOnGrowFailure = false;
 
   /** Creates a new StoreLimitsBuilder with default (unlimited) values. */
   public StoreLimitsBuilder() {
@@ -183,6 +184,29 @@ public final class StoreLimitsBuilder {
   }
 
   /**
+   * Sets whether memory/table growth failures should trap instead of returning -1.
+   *
+   * <p>When enabled, if a memory.grow or table.grow operation fails due to the configured limits,
+   * the WebAssembly execution will trap instead of returning -1 to the WebAssembly code.
+   *
+   * @param trap true to trap on grow failure
+   * @return this builder for chaining
+   */
+  public StoreLimitsBuilder trapOnGrowFailure(final boolean trap) {
+    this.trapOnGrowFailure = trap;
+    return this;
+  }
+
+  /**
+   * Gets whether trap on grow failure is enabled.
+   *
+   * @return true if trap on grow failure is enabled
+   */
+  public boolean isTrapOnGrowFailure() {
+    return trapOnGrowFailure;
+  }
+
+  /**
    * Builds the StoreLimits instance.
    *
    * @return a new StoreLimits with the configured limits
@@ -192,6 +216,9 @@ public final class StoreLimitsBuilder {
         .memorySize(memorySize)
         .tableElements(tableElements)
         .instances(instances)
+        .tables(tables)
+        .memories(memories)
+        .trapOnGrowFailure(trapOnGrowFailure)
         .build();
   }
 
@@ -208,6 +235,8 @@ public final class StoreLimitsBuilder {
         + tables
         + ", memories="
         + memories
+        + ", trapOnGrowFailure="
+        + trapOnGrowFailure
         + "}";
   }
 }

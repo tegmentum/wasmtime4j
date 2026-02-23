@@ -101,6 +101,87 @@ public interface ValType {
   boolean matches(final ValType other);
 
   /**
+   * Checks if this is the I32 type.
+   *
+   * @return true if this is I32
+   */
+  default boolean isI32() {
+    return getValueType() == WasmValueType.I32;
+  }
+
+  /**
+   * Checks if this is the I64 type.
+   *
+   * @return true if this is I64
+   */
+  default boolean isI64() {
+    return getValueType() == WasmValueType.I64;
+  }
+
+  /**
+   * Checks if this is the F32 type.
+   *
+   * @return true if this is F32
+   */
+  default boolean isF32() {
+    return getValueType() == WasmValueType.F32;
+  }
+
+  /**
+   * Checks if this is the F64 type.
+   *
+   * @return true if this is F64
+   */
+  default boolean isF64() {
+    return getValueType() == WasmValueType.F64;
+  }
+
+  /**
+   * Checks if this is the V128 type.
+   *
+   * @return true if this is V128
+   */
+  default boolean isV128() {
+    return getValueType() == WasmValueType.V128;
+  }
+
+  /**
+   * Checks if this is the FUNCREF type.
+   *
+   * @return true if this is FUNCREF
+   */
+  default boolean isFuncRef() {
+    return getValueType() == WasmValueType.FUNCREF;
+  }
+
+  /**
+   * Checks if this is the EXTERNREF type.
+   *
+   * @return true if this is EXTERNREF
+   */
+  default boolean isExternRef() {
+    return getValueType() == WasmValueType.EXTERNREF;
+  }
+
+  /**
+   * Checks if this is the ANYREF type.
+   *
+   * @return true if this is ANYREF
+   */
+  default boolean isAnyRef() {
+    return getValueType() == WasmValueType.ANYREF;
+  }
+
+  /**
+   * Checks if this is the EXNREF type.
+   *
+   * @return true if this is EXNREF
+   */
+  default boolean isExnRef() {
+    return getValueType() == WasmValueType.EXNREF;
+  }
+
+  /**
    * Checks for precise type equality.
    *
    * <p>Unlike {@link #matches(ValType)}, this method checks for exact type equality without
@@ -119,8 +200,7 @@ public interface ValType {
    * @throws IllegalArgumentException if valueType is null
    */
   static ValType from(final WasmValueType valueType) {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.from(valueType);
   }
 
   /**
@@ -129,8 +209,7 @@ public interface ValType {
    * @return an I32 ValType
    */
   static ValType i32() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.i32();
   }
 
   /**
@@ -139,8 +218,7 @@ public interface ValType {
    * @return an I64 ValType
    */
   static ValType i64() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.i64();
   }
 
   /**
@@ -149,8 +227,7 @@ public interface ValType {
    * @return an F32 ValType
    */
   static ValType f32() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.f32();
   }
 
   /**
@@ -159,8 +236,7 @@ public interface ValType {
    * @return an F64 ValType
    */
   static ValType f64() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.f64();
   }
 
   /**
@@ -169,8 +245,7 @@ public interface ValType {
    * @return a V128 ValType
    */
   static ValType v128() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.v128();
   }
 
   /**
@@ -179,8 +254,7 @@ public interface ValType {
    * @return a FUNCREF ValType
    */
   static ValType funcref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.funcref();
   }
 
   /**
@@ -189,8 +263,7 @@ public interface ValType {
    * @return an EXTERNREF ValType
    */
   static ValType externref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.externref();
   }
 
   // WasmGC reference type factory methods
@@ -204,8 +277,7 @@ public interface ValType {
    * @return an ANYREF ValType
    */
   static ValType anyref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.anyref();
   }
 
   /**
@@ -216,8 +288,7 @@ public interface ValType {
    * @return an EQREF ValType
    */
   static ValType eqref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.eqref();
   }
 
   /**
@@ -229,8 +300,7 @@ public interface ValType {
    * @return an I31REF ValType
    */
   static ValType i31ref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.i31ref();
   }
 
   /**
@@ -241,8 +311,7 @@ public interface ValType {
    * @return a STRUCTREF ValType
    */
   static ValType structref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.structref();
   }
 
   /**
@@ -253,8 +322,7 @@ public interface ValType {
    * @return an ARRAYREF ValType
    */
   static ValType arrayref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.arrayref();
   }
 
   /**
@@ -265,8 +333,7 @@ public interface ValType {
    * @return a NULLREF ValType
    */
   static ValType nullref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.nullref();
   }
 
   /**
@@ -277,8 +344,7 @@ public interface ValType {
    * @return a NULLFUNCREF ValType
    */
   static ValType nullfuncref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.nullfuncref();
   }
 
   /**
@@ -289,7 +355,17 @@ public interface ValType {
    * @return a NULLEXTERNREF ValType
    */
   static ValType nullexternref() {
-    throw new UnsupportedOperationException(
-        "Static factory method must be provided by implementation");
+    return SimpleValType.Factory.nullexternref();
+  }
+
+  /**
+   * Creates an EXNREF value type.
+   *
+   * <p>EXNREF is the type for exception references (exception handling proposal).
+   *
+   * @return an EXNREF ValType
+   */
+  static ValType exnref() {
+    return SimpleValType.Factory.exnref();
   }
 }

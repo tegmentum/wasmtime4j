@@ -19,5 +19,12 @@ public enum WasmTypeKind {
   MEMORY,
 
   /** A WebAssembly table type. */
-  TABLE
+  TABLE,
+
+  /**
+   * A WebAssembly tag type (exception handling proposal).
+   *
+   * @since 1.1.0
+   */
+  TAG
 }

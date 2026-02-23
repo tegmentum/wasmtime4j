@@ -785,8 +785,8 @@ public final class JniInstance extends JniResource implements Instance {
 
       return java.util.Collections.unmodifiableMap(exports);
     } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get all exports: " + e.getMessage());
-      return java.util.Collections.emptyMap();
+      LOGGER.log(java.util.logging.Level.SEVERE, "Failed to get all exports", e);
+      throw e;
     }
   }
 

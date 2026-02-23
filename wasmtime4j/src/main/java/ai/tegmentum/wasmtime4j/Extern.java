@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.type.ExternType;
 
 /**
@@ -28,6 +29,8 @@ import ai.tegmentum.wasmtime4j.type.ExternType;
  *   <li>Tables
  *   <li>Memories
  *   <li>Globals
+ *   <li>Tags (exception handling)
+ *   <li>Shared Memories (thread-safe memories)
  * </ul>
  *
  * <p>This interface provides a common API for working with external values regardless of their
@@ -113,6 +116,46 @@ public interface Extern {
    * @return the global, or null if not a global
    */
   default WasmGlobal asGlobal() {
+    return null;
+  }
+
+  /**
+   * Checks if this extern is a tag.
+   *
+   * @return true if this is a tag extern
+   * @since 1.1.0
+   */
+  default boolean isTag() {
+    return getType() == ExternType.TAG;
+  }
+
+  /**
+   * Checks if this extern is a shared memory.
+   *
+   * @return true if this is a shared memory extern
+   * @since 1.1.0
+   */
+  default boolean isSharedMemory() {
+    return getType() == ExternType.SHARED_MEMORY;
+  }
+
+  /**
+   * Attempts to get this extern as a tag.
+   *
+   * @return the tag, or null if not a tag
+   * @since 1.1.0
+   */
+  default Tag asTag() {
+    return null;
+  }
+
+  /**
+   * Attempts to get this extern as a shared memory.
+   *
+   * @return the shared memory, or null if not a shared memory
+   * @since 1.1.0
+   */
+  default WasmMemory asSharedMemory() {
     return null;
   }
 }

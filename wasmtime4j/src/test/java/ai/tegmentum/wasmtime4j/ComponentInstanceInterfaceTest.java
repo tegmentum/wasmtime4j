@@ -393,9 +393,11 @@ class ComponentInstanceInterfaceTest {
 
       for (Method method : methods) {
         int modifiers = method.getModifiers();
+        boolean isPublicAbstract = Modifier.isPublic(modifiers) && Modifier.isAbstract(modifiers);
+        boolean isDefault = method.isDefault();
         assertTrue(
-            Modifier.isPublic(modifiers) && Modifier.isAbstract(modifiers),
-            "Method " + method.getName() + " should be public and abstract");
+            isPublicAbstract || isDefault,
+            "Method " + method.getName() + " should be public and abstract or default");
       }
     }
   }

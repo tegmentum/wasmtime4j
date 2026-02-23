@@ -51,6 +51,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSto
             zero_to_none_usize(max_instances as i64),
             zero_to_none_u32(max_table_elements),
             zero_to_none_usize(max_functions as i64),
+            None,  // max_tables
+            None,  // max_memories
+            false, // trap_on_grow_failure
         )?;
         let store_ptr = store.as_ref() as *const _ as *const c_void;
         crate::memory::core::register_store_handle(store_ptr)?;
@@ -814,9 +817,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
-    memory_size: jlong,    // 0 = no limit
-    table_elements: jlong, // 0 = no limit
-    instances: jlong,      // 0 = no limit
+    memory_size: jlong,       // 0 = no limit
+    table_elements: jlong,    // 0 = no limit
+    instances: jlong,         // 0 = no limit
+    tables: jlong,            // 0 = no limit
+    memories: jlong,          // 0 = no limit
+    trap_on_grow_failure: jboolean, // 0 = false, non-zero = true
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
@@ -831,6 +837,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
             zero_to_none_usize(instances),
             zero_to_none_u32(table_elements as i32),
             None, // max_functions
+            zero_to_none_usize(tables),
+            zero_to_none_usize(memories),
+            trap_on_grow_failure != 0,
         )?;
         let store_ptr = store.as_ref() as *const _ as *const c_void;
         crate::memory::core::register_store_handle(store_ptr)?;
@@ -858,9 +867,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
             zero_to_none_u64(fuel_limit),
             zero_to_none_usize(memory_size),
             zero_to_none_u64(execution_timeout_secs),
-            None, // instances
-            None, // table_elements
-            None, // max_functions
+            None,  // instances
+            None,  // table_elements
+            None,  // max_functions
+            None,  // max_tables
+            None,  // max_memories
+            false, // trap_on_grow_failure
         )?;
         let store_ptr = store.as_ref() as *const _ as *const c_void;
         crate::memory::core::register_store_handle(store_ptr)?;

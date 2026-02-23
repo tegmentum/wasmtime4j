@@ -55,6 +55,8 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private final Map<String, Long> hostFunctions = new ConcurrentHashMap<>();
   private final Map<String, Set<String>> definedInterfaces = new ConcurrentHashMap<>();
   private final Set<Long> registeredCallbackIds = Collections.synchronizedSet(new HashSet<Long>());
+  private final ai.tegmentum.wasmtime4j.component.DefaultResourceTable resourceTable =
+      new ai.tegmentum.wasmtime4j.component.DefaultResourceTable();
 
   /**
    * Creates a new JNI component linker with the given native handle.
@@ -244,16 +246,39 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     // Register constructor callback if present
     long constructorCallbackId = 0;
     if (resourceDefinition.getConstructor().isPresent()) {
-      // Constructor callback wraps the resource constructor from the definition
+      @SuppressWarnings("unchecked")
+      final ComponentResourceDefinition<Object> typedDef =
+          (ComponentResourceDefinition<Object>) resourceDefinition;
+      final ComponentResourceDefinition.ResourceConstructor<Object> ctor =
+          typedDef.getConstructor().get();
       constructorCallbackId =
-          registerHostFunctionCallback(params -> java.util.Collections.singletonList(null));
+          registerHostFunctionCallback(
+              params -> {
+                final Object resource = ctor.construct(params);
+                final int handle = resourceTable.push(resource);
+                return java.util.Collections.singletonList(
+                    ai.tegmentum.wasmtime4j.component.ComponentVal.s32(handle));
+              });
     }
 
     // Register destructor callback if present
     long destructorCallbackId = 0;
     if (resourceDefinition.getDestructor().isPresent()) {
+      @SuppressWarnings("unchecked")
+      final ComponentResourceDefinition<Object> typedDef =
+          (ComponentResourceDefinition<Object>) resourceDefinition;
+      final java.util.function.Consumer<Object> dtor = typedDef.getDestructor().get();
       destructorCallbackId =
-          registerHostFunctionCallback(params -> java.util.Collections.emptyList());
+          registerHostFunctionCallback(
+              params -> {
+                if (!params.isEmpty()) {
+                  final int handle = params.get(0).asS32();
+                  final java.util.Optional<Object> entry =
+                      resourceTable.delete(handle, Object.class);
+                  entry.ifPresent(dtor);
+                }
+                return java.util.Collections.emptyList();
+              });
     }
 
     // Wire to native component linker

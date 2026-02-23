@@ -122,10 +122,10 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativ
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
  * Method:    nativeCreateStoreWithLimits
- * Signature: (JJJJ)J
+ * Signature: (JJJJJJZ)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateStoreWithLimits
-  (JNIEnv *, jclass, jlong, jlong, jlong, jlong);
+  (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jlong, jlong, jboolean);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime

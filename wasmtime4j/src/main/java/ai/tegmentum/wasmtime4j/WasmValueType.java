@@ -54,7 +54,10 @@ public enum WasmValueType {
   NULLFUNCREF(-1, false, false),
 
   /** Nullable external reference type. */
-  NULLEXTERNREF(-1, false, false);
+  NULLEXTERNREF(-1, false, false),
+
+  /** Exception reference type (exception handling proposal). */
+  EXNREF(-1, false, false);
 
   private final int size;
   private final boolean isInteger;
@@ -110,6 +113,7 @@ public enum WasmValueType {
       case NULLREF:
       case NULLFUNCREF:
       case NULLEXTERNREF:
+      case EXNREF:
         return true;
       default:
         return false;
@@ -211,6 +215,8 @@ public enum WasmValueType {
         return NULLFUNCREF;
       case 14:
         return NULLEXTERNREF;
+      case 15:
+        return EXNREF;
       default:
         throw new IllegalArgumentException("Unknown type code: " + typeCode);
     }
@@ -254,6 +260,8 @@ public enum WasmValueType {
         return 13;
       case NULLEXTERNREF:
         return 14;
+      case EXNREF:
+        return 15;
       default:
         throw new IllegalStateException("Unknown value type: " + this);
     }
@@ -271,6 +279,7 @@ public enum WasmValueType {
    *   <li>structref &lt;: eqref
    *   <li>arrayref &lt;: eqref
    *   <li>nullref is the bottom type for nullable references
+   *   <li>exnref is in a separate hierarchy for exception handling
    * </ul>
    *
    * @param supertype the potential supertype

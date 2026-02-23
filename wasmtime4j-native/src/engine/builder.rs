@@ -1270,6 +1270,40 @@ impl EngineBuilder {
         self
     }
 
+    /// Load default cache configuration
+    ///
+    /// Enables compilation caching using the default cache directory. This
+    /// avoids recompiling modules that have already been compiled by a
+    /// previous engine instance, significantly improving startup time.
+    ///
+    /// The default cache location is platform-specific and managed by Wasmtime.
+    pub fn cache_config_load_default(mut self) -> WasmtimeResult<Self> {
+        let cache =
+            wasmtime::Cache::from_file(None).map_err(|e| WasmtimeError::EngineConfig {
+                message: format!("Failed to load default cache config: {}", e),
+            })?;
+        self.config.cache(Some(cache));
+        Ok(self)
+    }
+
+    /// Load cache configuration from a file
+    ///
+    /// Enables compilation caching using the specified configuration file.
+    /// The configuration file specifies the cache directory, eviction policy,
+    /// and other caching parameters.
+    ///
+    /// # Arguments
+    /// * `path` - Path to the cache configuration TOML file
+    pub fn cache_config_load(mut self, path: &str) -> WasmtimeResult<Self> {
+        let cache = wasmtime::Cache::from_file(Some(std::path::Path::new(path))).map_err(
+            |e| WasmtimeError::EngineConfig {
+                message: format!("Failed to load cache config from '{}': {}", path, e),
+            },
+        )?;
+        self.config.cache(Some(cache));
+        Ok(self)
+    }
+
     /// Build engine with current configuration
     pub fn build(self) -> WasmtimeResult<Engine> {
         let summary = EngineConfigSummary::from_builder(&self);

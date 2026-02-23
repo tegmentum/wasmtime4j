@@ -321,6 +321,14 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public java.util.Optional<Boolean> detectHostFeature(final String feature) {
+    if (feature == null) {
+      throw new IllegalArgumentException("feature cannot be null");
+    }
+    return java.util.Optional.of(NATIVE_BINDINGS.engineDetectHostFeature(feature) == 1);
+  }
+
+  @Override
   public int getMemoryLimitPages() {
     ensureNotClosed();
     final int limit = NATIVE_BINDINGS.engineMemoryLimitPages(nativeEngine);

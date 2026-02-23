@@ -30,6 +30,11 @@ import java.util.logging.Logger;
  * <p>This implementation ensures defensive programming to prevent native resource leaks and JVM
  * crashes.
  *
+ * @implNote The current native implementation uses MVP stubs for pollable operations. The
+ *     {@link #ready()} method always returns {@code true} and {@link #block()} returns immediately
+ *     without actually waiting. This means all pollables resolve instantly, which is safe but may
+ *     cause busy-polling if callers rely on pollables for backpressure. The Panama runtime has
+ *     partial real pollable support; this JNI implementation will be enhanced in a future release.
  * @since 1.0.0
  */
 public final class JniWasiPollable extends JniResource implements WasiPollable {

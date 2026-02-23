@@ -19,13 +19,15 @@ package ai.tegmentum.wasmtime4j.type;
 /**
  * Enumeration of external value types in WebAssembly.
  *
- * <p>WebAssembly defines four kinds of external values that can be imported or exported:
+ * <p>WebAssembly defines several kinds of external values that can be imported or exported:
  *
  * <ul>
  *   <li>{@link #FUNC} - Functions (callable code)
  *   <li>{@link #TABLE} - Tables (arrays of references)
  *   <li>{@link #MEMORY} - Linear memories (byte arrays)
  *   <li>{@link #GLOBAL} - Globals (typed mutable/immutable values)
+ *   <li>{@link #TAG} - Tags (exception handling)
+ *   <li>{@link #SHARED_MEMORY} - Shared linear memories (thread-safe byte arrays)
  * </ul>
  *
  * @since 1.0.0
@@ -61,7 +63,27 @@ public enum ExternType {
    * <p>Represents a WebAssembly global variable. Globals can be mutable or immutable and have a
    * specific value type.
    */
-  GLOBAL(3);
+  GLOBAL(3),
+
+  /**
+   * Tag extern type.
+   *
+   * <p>Represents a WebAssembly tag used in the exception handling proposal. Tags identify
+   * exception types for throw and catch operations.
+   *
+   * @since 1.1.0
+   */
+  TAG(4),
+
+  /**
+   * Shared memory extern type.
+   *
+   * <p>Represents a WebAssembly shared linear memory that can be accessed concurrently from
+   * multiple threads. Requires the engine to be configured with {@code wasmThreads(true)}.
+   *
+   * @since 1.1.0
+   */
+  SHARED_MEMORY(5);
 
   private final int code;
 
@@ -95,6 +117,10 @@ public enum ExternType {
         return MEMORY;
       case 3:
         return GLOBAL;
+      case 4:
+        return TAG;
+      case 5:
+        return SHARED_MEMORY;
       default:
         throw new IllegalArgumentException("Unknown extern type code: " + code);
     }

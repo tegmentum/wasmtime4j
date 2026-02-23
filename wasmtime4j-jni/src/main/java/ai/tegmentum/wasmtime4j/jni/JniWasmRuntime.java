@@ -159,7 +159,10 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
               engineHandle,
               limits.getMemorySize(),
               limits.getTableElements(),
-              limits.getInstances());
+              limits.getInstances(),
+              limits.getTables(),
+              limits.getMemories(),
+              limits.isTrapOnGrowFailure());
 
       if (storeHandle == 0) {
         throw new WasmException("Failed to create store with limits");
@@ -898,7 +901,13 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @return the native store handle, or 0 on failure
    */
   private static native long nativeCreateStoreWithLimits(
-      long engineHandle, long memorySize, long tableElements, long instances);
+      long engineHandle,
+      long memorySize,
+      long tableElements,
+      long instances,
+      long tables,
+      long memories,
+      boolean trapOnGrowFailure);
 
   /**
    * Deserialize a module from bytes.

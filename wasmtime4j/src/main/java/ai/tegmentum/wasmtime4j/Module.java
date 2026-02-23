@@ -419,6 +419,29 @@ public interface Module extends Closeable {
   }
 
   /**
+   * Compiles a WebAssembly module from a file on disk.
+   *
+   * <p>This is a convenience method that reads the file and compiles it. The file can contain
+   * either binary WebAssembly (.wasm) or WebAssembly text format (.wat).
+   *
+   * @param engine the engine to use for compilation
+   * @param path the path to the WebAssembly file
+   * @return a compiled Module
+   * @throws WasmException if compilation fails or file cannot be read
+   * @throws IllegalArgumentException if engine or path is null
+   * @since 1.1.0
+   */
+  static Module fromFile(final Engine engine, final java.nio.file.Path path) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    return engine.compileFromFile(path);
+  }
+
+  /**
    * Checks if this module and another module share the same underlying compiled code.
    *
    * <p>Two modules are considered the "same" if they were cloned from the same original compilation.

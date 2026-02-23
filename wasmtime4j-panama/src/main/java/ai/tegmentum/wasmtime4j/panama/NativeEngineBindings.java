@@ -931,6 +931,22 @@ public final class NativeEngineBindings extends NativeBindingsBase {
    *
    * @param enginePtr pointer to the engine
    */
+  /**
+   * Detects whether a host CPU feature is available.
+   *
+   * @param featureName the feature name (e.g., "sse4.2", "avx2")
+   * @return 1 if available, 0 if not
+   */
+  public int engineDetectHostFeature(final String featureName) {
+    try (final Arena arena = Arena.ofConfined()) {
+      final MemorySegment featureNameSegment = arena.allocateFrom(featureName);
+      return callNativeFunction(
+          "wasmtime4j_panama_engine_detect_host_feature",
+          Integer.class,
+          featureNameSegment);
+    }
+  }
+
   public void engineIncrementEpoch(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
     callNativeFunction("wasmtime4j_panama_engine_increment_epoch", Void.class, enginePtr);

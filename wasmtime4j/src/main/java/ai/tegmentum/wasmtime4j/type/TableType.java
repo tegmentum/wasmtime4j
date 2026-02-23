@@ -46,6 +46,20 @@ public interface TableType extends WasmType {
     return false;
   }
 
+  /**
+   * Creates a TableType with the specified element type and size constraints.
+   *
+   * @param elementType the element type (e.g., FUNCREF or EXTERNREF)
+   * @param min the minimum number of elements
+   * @param max the maximum number of elements, or empty if unlimited
+   * @return a new TableType
+   * @throws IllegalArgumentException if elementType is null or min is negative
+   */
+  static TableType of(
+      final WasmValueType elementType, final long min, final java.util.OptionalLong max) {
+    return DefaultTableType.create(elementType, min, max);
+  }
+
   @Override
   default WasmTypeKind getKind() {
     return WasmTypeKind.TABLE;

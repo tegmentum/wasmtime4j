@@ -62,25 +62,6 @@ public interface ComponentEngine extends Closeable {
   Component compileComponent(byte[] componentBytes, String name) throws WasmException;
 
   /**
-   * Links multiple components together.
-   *
-   * <p>This method validates that the components can be linked together by checking their
-   * import/export compatibility and creates a linked component instance.
-   *
-   * <p><strong>Note:</strong> This method has no backing Wasmtime API and all implementations
-   * currently throw {@link UnsupportedOperationException}.
-   *
-   * @param components the list of components to link
-   * @return a linked component representing the composition
-   * @throws WasmException if linking fails due to incompatible interfaces
-   * @throws IllegalArgumentException if components is null or empty
-   * @throws UnsupportedOperationException always, as this feature is not supported
-   * @deprecated No Wasmtime API backing. All implementations throw UnsupportedOperationException.
-   */
-  @Deprecated
-  Component linkComponents(List<Component> components) throws WasmException;
-
-  /**
    * Validates component compatibility.
    *
    * <p>This method checks if two components can work together by examining their interfaces,

@@ -49,7 +49,7 @@ class ExternTypeTest {
     @Test
     @DisplayName("should have exactly 4 values")
     void shouldHaveExactValueCount() {
-      assertEquals(4, ExternType.values().length, "ExternType should have exactly 4 values");
+      assertEquals(6, ExternType.values().length, "ExternType should have exactly 6 values");
     }
   }
 
@@ -241,6 +241,12 @@ class ExternTypeTest {
             break;
           case GLOBAL:
             result = "global";
+            break;
+          case TAG:
+            result = "tag";
+            break;
+          case SHARED_MEMORY:
+            result = "shared_memory";
             break;
           default:
             result = "unknown";

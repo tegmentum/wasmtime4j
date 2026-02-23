@@ -5,7 +5,8 @@
 
 use std::os::raw::{c_char, c_int, c_long};
 
-/// Trap code constants matching Java TrapException.TrapType enum ordinals
+/// Trap code constants matching Java TrapException.TrapType enum ordinals.
+/// CRITICAL: These ordinals MUST match the Java enum declaration order exactly.
 pub mod trap_codes {
     /// Stack overflow trap
     pub const STACK_OVERFLOW: i32 = 0;
@@ -29,14 +30,48 @@ pub mod trap_codes {
     pub const UNREACHABLE_CODE_REACHED: i32 = 9;
     /// Execution interrupted trap
     pub const INTERRUPT: i32 = 10;
+    /// Component model always-trap adapter
+    pub const ALWAYS_TRAP_ADAPTER: i32 = 11;
     /// Out of fuel trap
-    pub const OUT_OF_FUEL: i32 = 11;
+    pub const OUT_OF_FUEL: i32 = 12;
+    /// Atomic wait on non-shared memory
+    pub const ATOMIC_WAIT_NON_SHARED_MEMORY: i32 = 13;
     /// Null reference trap (GC proposal)
-    pub const NULL_REFERENCE: i32 = 12;
+    pub const NULL_REFERENCE: i32 = 14;
     /// Array out of bounds trap (GC proposal)
-    pub const ARRAY_OUT_OF_BOUNDS: i32 = 13;
+    pub const ARRAY_OUT_OF_BOUNDS: i32 = 15;
+    /// Allocation too large (GC proposal)
+    pub const ALLOCATION_TOO_LARGE: i32 = 16;
+    /// Cast failure (GC proposal)
+    pub const CAST_FAILURE: i32 = 17;
+    /// Cannot enter component (reentrance)
+    pub const CANNOT_ENTER_COMPONENT: i32 = 18;
+    /// Async export did not produce a result
+    pub const NO_ASYNC_RESULT: i32 = 19;
+    /// Unhandled tag during suspension
+    pub const UNHANDLED_TAG: i32 = 20;
+    /// Continuation already consumed
+    pub const CONTINUATION_ALREADY_CONSUMED: i32 = 21;
+    /// Disabled opcode executed
+    pub const DISABLED_OPCODE: i32 = 22;
+    /// Async event loop deadlocked
+    pub const ASYNC_DEADLOCK: i32 = 23;
+    /// Cannot leave component from current context
+    pub const CANNOT_LEAVE_COMPONENT: i32 = 24;
+    /// Synchronous task cannot make blocking call
+    pub const CANNOT_BLOCK_SYNC_TASK: i32 = 25;
+    /// Invalid character bit pattern
+    pub const INVALID_CHAR: i32 = 26;
+    /// String access out of bounds
+    pub const STRING_OUT_OF_BOUNDS: i32 = 27;
+    /// List access out of bounds
+    pub const LIST_OUT_OF_BOUNDS: i32 = 28;
+    /// Invalid discriminant for variant
+    pub const INVALID_DISCRIMINANT: i32 = 29;
+    /// Unaligned pointer in component operation
+    pub const UNALIGNED_POINTER: i32 = 30;
     /// Unknown trap type
-    pub const UNKNOWN: i32 = 14;
+    pub const UNKNOWN: i32 = 31;
 }
 
 /// Parse a trap code from an error message string
@@ -60,7 +95,8 @@ pub extern "C" fn wasmtime4j_panama_trap_parse_code(error_message: *const c_char
         Err(_) => return trap_codes::UNKNOWN,
     };
 
-    // Parse trap type from message content using Wasmtime's error messages
+    // Parse trap type from message content using Wasmtime's error messages.
+    // Order matters: more specific patterns must come before more general ones.
     if msg.contains("stack overflow") || msg.contains("call stack exhausted") {
         trap_codes::STACK_OVERFLOW
     } else if msg.contains("out of bounds memory") || msg.contains("memory access out of bounds") {
@@ -83,12 +119,46 @@ pub extern "C" fn wasmtime4j_panama_trap_parse_code(error_message: *const c_char
         trap_codes::UNREACHABLE_CODE_REACHED
     } else if msg.contains("interrupt") || msg.contains("epoch") {
         trap_codes::INTERRUPT
+    } else if msg.contains("always trap adapter") || msg.contains("alwaystrapadapter") {
+        trap_codes::ALWAYS_TRAP_ADAPTER
     } else if msg.contains("fuel") && (msg.contains("out of") || msg.contains("ran out")) {
         trap_codes::OUT_OF_FUEL
+    } else if msg.contains("atomic wait") && msg.contains("non-shared") {
+        trap_codes::ATOMIC_WAIT_NON_SHARED_MEMORY
     } else if msg.contains("null reference") || msg.contains("null funcref") {
         trap_codes::NULL_REFERENCE
     } else if msg.contains("array") && msg.contains("out of bounds") {
         trap_codes::ARRAY_OUT_OF_BOUNDS
+    } else if msg.contains("allocation too large") {
+        trap_codes::ALLOCATION_TOO_LARGE
+    } else if msg.contains("cast failure") || msg.contains("cast mismatch") {
+        trap_codes::CAST_FAILURE
+    } else if msg.contains("cannot enter component") {
+        trap_codes::CANNOT_ENTER_COMPONENT
+    } else if msg.contains("no async result") || msg.contains("task.return") {
+        trap_codes::NO_ASYNC_RESULT
+    } else if msg.contains("unhandled tag") {
+        trap_codes::UNHANDLED_TAG
+    } else if msg.contains("continuation") && msg.contains("consumed") {
+        trap_codes::CONTINUATION_ALREADY_CONSUMED
+    } else if msg.contains("disabled opcode") {
+        trap_codes::DISABLED_OPCODE
+    } else if msg.contains("async") && msg.contains("deadlock") {
+        trap_codes::ASYNC_DEADLOCK
+    } else if msg.contains("cannot leave component") {
+        trap_codes::CANNOT_LEAVE_COMPONENT
+    } else if msg.contains("cannot block") && msg.contains("sync") {
+        trap_codes::CANNOT_BLOCK_SYNC_TASK
+    } else if msg.contains("invalid char") {
+        trap_codes::INVALID_CHAR
+    } else if msg.contains("string") && msg.contains("out of bounds") {
+        trap_codes::STRING_OUT_OF_BOUNDS
+    } else if msg.contains("list") && msg.contains("out of bounds") {
+        trap_codes::LIST_OUT_OF_BOUNDS
+    } else if msg.contains("invalid discriminant") {
+        trap_codes::INVALID_DISCRIMINANT
+    } else if msg.contains("unaligned pointer") {
+        trap_codes::UNALIGNED_POINTER
     } else {
         trap_codes::UNKNOWN
     }
@@ -115,9 +185,26 @@ pub extern "C" fn wasmtime4j_panama_trap_code_name(trap_code: c_int) -> *const c
     static BAD_CONVERSION_TO_INTEGER: &[u8] = b"BAD_CONVERSION_TO_INTEGER\0";
     static UNREACHABLE_CODE_REACHED: &[u8] = b"UNREACHABLE_CODE_REACHED\0";
     static INTERRUPT: &[u8] = b"INTERRUPT\0";
+    static ALWAYS_TRAP_ADAPTER: &[u8] = b"ALWAYS_TRAP_ADAPTER\0";
     static OUT_OF_FUEL: &[u8] = b"OUT_OF_FUEL\0";
+    static ATOMIC_WAIT_NON_SHARED_MEMORY: &[u8] = b"ATOMIC_WAIT_NON_SHARED_MEMORY\0";
     static NULL_REFERENCE: &[u8] = b"NULL_REFERENCE\0";
     static ARRAY_OUT_OF_BOUNDS: &[u8] = b"ARRAY_OUT_OF_BOUNDS\0";
+    static ALLOCATION_TOO_LARGE: &[u8] = b"ALLOCATION_TOO_LARGE\0";
+    static CAST_FAILURE: &[u8] = b"CAST_FAILURE\0";
+    static CANNOT_ENTER_COMPONENT: &[u8] = b"CANNOT_ENTER_COMPONENT\0";
+    static NO_ASYNC_RESULT: &[u8] = b"NO_ASYNC_RESULT\0";
+    static UNHANDLED_TAG: &[u8] = b"UNHANDLED_TAG\0";
+    static CONTINUATION_ALREADY_CONSUMED: &[u8] = b"CONTINUATION_ALREADY_CONSUMED\0";
+    static DISABLED_OPCODE: &[u8] = b"DISABLED_OPCODE\0";
+    static ASYNC_DEADLOCK: &[u8] = b"ASYNC_DEADLOCK\0";
+    static CANNOT_LEAVE_COMPONENT: &[u8] = b"CANNOT_LEAVE_COMPONENT\0";
+    static CANNOT_BLOCK_SYNC_TASK: &[u8] = b"CANNOT_BLOCK_SYNC_TASK\0";
+    static INVALID_CHAR: &[u8] = b"INVALID_CHAR\0";
+    static STRING_OUT_OF_BOUNDS: &[u8] = b"STRING_OUT_OF_BOUNDS\0";
+    static LIST_OUT_OF_BOUNDS: &[u8] = b"LIST_OUT_OF_BOUNDS\0";
+    static INVALID_DISCRIMINANT: &[u8] = b"INVALID_DISCRIMINANT\0";
+    static UNALIGNED_POINTER: &[u8] = b"UNALIGNED_POINTER\0";
     static UNKNOWN: &[u8] = b"UNKNOWN\0";
 
     let name = match trap_code {
@@ -132,9 +219,26 @@ pub extern "C" fn wasmtime4j_panama_trap_code_name(trap_code: c_int) -> *const c
         trap_codes::BAD_CONVERSION_TO_INTEGER => BAD_CONVERSION_TO_INTEGER,
         trap_codes::UNREACHABLE_CODE_REACHED => UNREACHABLE_CODE_REACHED,
         trap_codes::INTERRUPT => INTERRUPT,
+        trap_codes::ALWAYS_TRAP_ADAPTER => ALWAYS_TRAP_ADAPTER,
         trap_codes::OUT_OF_FUEL => OUT_OF_FUEL,
+        trap_codes::ATOMIC_WAIT_NON_SHARED_MEMORY => ATOMIC_WAIT_NON_SHARED_MEMORY,
         trap_codes::NULL_REFERENCE => NULL_REFERENCE,
         trap_codes::ARRAY_OUT_OF_BOUNDS => ARRAY_OUT_OF_BOUNDS,
+        trap_codes::ALLOCATION_TOO_LARGE => ALLOCATION_TOO_LARGE,
+        trap_codes::CAST_FAILURE => CAST_FAILURE,
+        trap_codes::CANNOT_ENTER_COMPONENT => CANNOT_ENTER_COMPONENT,
+        trap_codes::NO_ASYNC_RESULT => NO_ASYNC_RESULT,
+        trap_codes::UNHANDLED_TAG => UNHANDLED_TAG,
+        trap_codes::CONTINUATION_ALREADY_CONSUMED => CONTINUATION_ALREADY_CONSUMED,
+        trap_codes::DISABLED_OPCODE => DISABLED_OPCODE,
+        trap_codes::ASYNC_DEADLOCK => ASYNC_DEADLOCK,
+        trap_codes::CANNOT_LEAVE_COMPONENT => CANNOT_LEAVE_COMPONENT,
+        trap_codes::CANNOT_BLOCK_SYNC_TASK => CANNOT_BLOCK_SYNC_TASK,
+        trap_codes::INVALID_CHAR => INVALID_CHAR,
+        trap_codes::STRING_OUT_OF_BOUNDS => STRING_OUT_OF_BOUNDS,
+        trap_codes::LIST_OUT_OF_BOUNDS => LIST_OUT_OF_BOUNDS,
+        trap_codes::INVALID_DISCRIMINANT => INVALID_DISCRIMINANT,
+        trap_codes::UNALIGNED_POINTER => UNALIGNED_POINTER,
         _ => UNKNOWN,
     };
 
@@ -172,7 +276,19 @@ pub extern "C" fn wasmtime4j_panama_trap_is_trap(error_message: *const c_char) -
         || msg.contains("out of fuel")
         || msg.contains("epoch")
         || msg.contains("null reference")
-        || msg.contains("misaligned");
+        || msg.contains("misaligned")
+        || msg.contains("always trap adapter")
+        || msg.contains("atomic wait")
+        || msg.contains("allocation too large")
+        || msg.contains("cast failure")
+        || msg.contains("cannot enter component")
+        || msg.contains("cannot leave component")
+        || msg.contains("continuation") && msg.contains("consumed")
+        || msg.contains("disabled opcode")
+        || msg.contains("async") && msg.contains("deadlock")
+        || msg.contains("unhandled tag")
+        || msg.contains("invalid discriminant")
+        || msg.contains("unaligned pointer");
 
     if is_trap {
         1

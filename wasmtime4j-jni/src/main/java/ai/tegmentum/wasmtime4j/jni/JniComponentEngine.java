@@ -52,6 +52,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   private final ConcurrentMap<String, Component> loadedComponents;
   private final AtomicLong componentIdCounter;
   private final WasmRuntime runtime;
+  private volatile Engine cachedEngine;
 
   // Load native library when this class is first loaded
   static {
@@ -128,9 +129,21 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   public Engine getEngine() {
-    throw new UnsupportedOperationException(
-        "JniComponentEngine does not yet expose its underlying Engine. "
-            + "Use WasmRuntime.createEngine() to obtain a regular Engine.");
+    if (runtime == null) {
+      throw new IllegalStateException(
+          "No runtime associated with this ComponentEngine. "
+              + "Use the constructor that accepts a WasmRuntime.");
+    }
+    Engine engine = cachedEngine;
+    if (engine == null || !engine.isValid()) {
+      try {
+        engine = runtime.createEngine();
+        cachedEngine = engine;
+      } catch (final WasmException e) {
+        throw new RuntimeException("Failed to create engine from runtime", e);
+      }
+    }
+    return engine;
   }
 
   @Override
@@ -241,17 +254,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     } catch (final java.io.IOException e) {
       throw new WasmException("Failed to read component file: " + filePath, e);
     }
-  }
-
-  @Override
-  public Component linkComponents(final List<Component> components) throws WasmException {
-    Validation.requireNonNull(components, "components");
-    if (components.isEmpty()) {
-      throw new IllegalArgumentException("Components list cannot be empty");
-    }
-    ensureNotClosed();
-
-    throw new UnsupportedOperationException("Component linking not yet implemented");
   }
 
   @Override

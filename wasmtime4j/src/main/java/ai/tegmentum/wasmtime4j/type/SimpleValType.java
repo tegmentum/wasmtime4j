@@ -270,5 +270,14 @@ public final class SimpleValType implements ValType {
     static ValType nullexternref() {
       return new SimpleValType(WasmValueType.NULLEXTERNREF);
     }
+
+    /**
+     * Creates an EXNREF value type.
+     *
+     * @return an EXNREF ValType
+     */
+    static ValType exnref() {
+      return new SimpleValType(WasmValueType.EXNREF);
+    }
   }
 }

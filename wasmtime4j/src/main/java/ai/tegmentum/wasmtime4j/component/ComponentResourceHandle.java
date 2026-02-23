@@ -75,6 +75,20 @@ public interface ComponentResourceHandle {
   <T> T getHostObject(Class<T> clazz);
 
   /**
+   * Gets the native resource handle identifier, if backed by a native resource.
+   *
+   * <p>This returns the unique identifier used to track this resource in the native resource
+   * registry. For resources created from pure Java (via {@link #own} or {@link #borrow}), this
+   * returns -1 indicating no native backing.
+   *
+   * @return the native resource handle ID, or -1 if not backed by native resource
+   * @since 1.0.0
+   */
+  default long getNativeHandle() {
+    return -1;
+  }
+
+  /**
    * Creates an owned resource handle.
    *
    * @param resourceType the resource type name

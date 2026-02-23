@@ -42,13 +42,26 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  @SuppressFBWarnings(
+      value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
+      justification =
+          "Error details are logged internally only; exception thrown to caller has sanitized"
+              + " message")
   public List<ImportType> getImports() {
     ensureNotClosed();
 
     try {
-      return nativeGetModuleImports(nativeHandle);
+      final List<ImportType> result = nativeGetModuleImports(nativeHandle);
+      if (result == null) {
+        java.util.logging.Logger.getLogger(JniModule.class.getName())
+            .warning("nativeGetModuleImports returned null for handle: " + nativeHandle);
+        return java.util.Collections.emptyList();
+      }
+      return java.util.Collections.unmodifiableList(result);
     } catch (final Throwable t) {
-      return java.util.Collections.emptyList();
+      java.util.logging.Logger.getLogger(JniModule.class.getName())
+          .log(java.util.logging.Level.SEVERE, "nativeGetModuleImports failed", t);
+      throw new RuntimeException("Failed to get module imports");
     }
   }
 
@@ -109,14 +122,26 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  @SuppressFBWarnings(
+      value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
+      justification =
+          "Error details are logged internally only; exception thrown to caller has sanitized"
+              + " message")
   public Map<String, byte[]> getCustomSections() {
     ensureNotClosed();
 
     try {
-      return nativeGetCustomSections(nativeHandle);
+      final Map<String, byte[]> result = nativeGetCustomSections(nativeHandle);
+      if (result == null) {
+        java.util.logging.Logger.getLogger(JniModule.class.getName())
+            .warning("nativeGetCustomSections returned null for handle: " + nativeHandle);
+        return java.util.Collections.emptyMap();
+      }
+      return java.util.Collections.unmodifiableMap(result);
     } catch (final Throwable t) {
-      // Defensive: Return empty map on native error instead of crashing JVM
-      return java.util.Collections.emptyMap();
+      java.util.logging.Logger.getLogger(JniModule.class.getName())
+          .log(java.util.logging.Level.SEVERE, "nativeGetCustomSections failed", t);
+      throw new RuntimeException("Failed to get custom sections");
     }
   }
 

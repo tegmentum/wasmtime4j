@@ -41,6 +41,9 @@ pub extern "C" fn wasmtime4j_panama_store_create_with_config(
     max_instances: c_uint,           // 0 = no limit
     max_table_elements: c_uint,      // 0 = no limit
     max_functions: c_uint,           // 0 = no limit
+    max_tables: c_uint,              // 0 = no limit
+    max_memories: c_uint,            // 0 = no limit
+    trap_on_grow_failure: c_int,     // 0 = false, non-zero = true
     store_ptr: *mut *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
@@ -56,6 +59,9 @@ pub extern "C" fn wasmtime4j_panama_store_create_with_config(
             zero_to_none_usize(max_instances as i64),
             zero_to_none_u32(max_table_elements as i32),
             zero_to_none_usize(max_functions as i64),
+            zero_to_none_usize(max_tables as i64),
+            zero_to_none_usize(max_memories as i64),
+            trap_on_grow_failure != 0,
         )?;
         let raw_ptr = Box::into_raw(store);
         crate::memory::core::register_store_handle(raw_ptr as *const c_void)?;

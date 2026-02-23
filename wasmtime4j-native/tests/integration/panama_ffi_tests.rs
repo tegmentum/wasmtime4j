@@ -544,6 +544,9 @@ fn test_store_create_with_config() {
         0, // max_instances: default
         0, // max_table_elements: default
         0, // max_functions: default
+        0, // max_tables: default
+        0, // max_memories: default
+        0, // trap_on_grow_failure: false
         &mut store_ptr,
     );
 

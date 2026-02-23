@@ -333,6 +333,16 @@ public class JniEngine extends JniResource implements Engine {
 
   private native boolean nativeSupportsFeature(long engineHandle, String featureName);
 
+  private static native boolean nativeDetectHostFeature(String featureName);
+
+  @Override
+  public java.util.Optional<Boolean> detectHostFeature(final String feature) {
+    if (feature == null) {
+      throw new IllegalArgumentException("feature cannot be null");
+    }
+    return java.util.Optional.of(nativeDetectHostFeature(feature));
+  }
+
   @Override
   public boolean isPulley() {
     if (isClosed()) {

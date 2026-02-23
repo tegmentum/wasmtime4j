@@ -89,4 +89,85 @@ public final class ValTypes {
   public static ValType externref() {
     return SimpleValType.Factory.externref();
   }
+
+  /**
+   * Creates an ANYREF value type.
+   *
+   * @return an ANYREF ValType
+   */
+  public static ValType anyref() {
+    return SimpleValType.Factory.anyref();
+  }
+
+  /**
+   * Creates an EQREF value type.
+   *
+   * @return an EQREF ValType
+   */
+  public static ValType eqref() {
+    return SimpleValType.Factory.eqref();
+  }
+
+  /**
+   * Creates an I31REF value type.
+   *
+   * @return an I31REF ValType
+   */
+  public static ValType i31ref() {
+    return SimpleValType.Factory.i31ref();
+  }
+
+  /**
+   * Creates a STRUCTREF value type.
+   *
+   * @return a STRUCTREF ValType
+   */
+  public static ValType structref() {
+    return SimpleValType.Factory.structref();
+  }
+
+  /**
+   * Creates an ARRAYREF value type.
+   *
+   * @return an ARRAYREF ValType
+   */
+  public static ValType arrayref() {
+    return SimpleValType.Factory.arrayref();
+  }
+
+  /**
+   * Creates a NULLREF value type.
+   *
+   * @return a NULLREF ValType
+   */
+  public static ValType nullref() {
+    return SimpleValType.Factory.nullref();
+  }
+
+  /**
+   * Creates a NULLFUNCREF value type.
+   *
+   * @return a NULLFUNCREF ValType
+   */
+  public static ValType nullfuncref() {
+    return SimpleValType.Factory.nullfuncref();
+  }
+
+  /**
+   * Creates a NULLEXTERNREF value type.
+   *
+   * @return a NULLEXTERNREF ValType
+   */
+  public static ValType nullexternref() {
+    return SimpleValType.Factory.nullexternref();
+  }
+
+  /**
+   * Creates an EXNREF value type.
+   *
+   * @return an EXNREF ValType
+   */
+  public static ValType exnref() {
+    return SimpleValType.Factory.exnref();
+  }
 }

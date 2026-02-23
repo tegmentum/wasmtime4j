@@ -49,7 +49,7 @@ class WasmTypeKindTest {
     @Test
     @DisplayName("WasmTypeKind should have exactly 4 values")
     void shouldHaveExactlyFourValues() {
-      assertEquals(4, WasmTypeKind.values().length, "Should have 4 values");
+      assertEquals(5, WasmTypeKind.values().length, "Should have 5 values");
     }
   }
 
@@ -205,6 +205,9 @@ class WasmTypeKindTest {
             break;
           case TABLE:
             result = "table";
+            break;
+          case TAG:
+            result = "tag";
             break;
           default:
             result = "unknown";

@@ -41,7 +41,7 @@ public class TrapException extends WasmException {
   /** Recovery suggestion for this trap type. */
   private final String recoverySuggestion;
 
-  /** Enumeration of WebAssembly trap types. */
+  /** Enumeration of WebAssembly trap types matching Wasmtime 41.0.3 Trap codes. */
   public enum TrapType {
     /** The current stack space was exhausted. */
     STACK_OVERFLOW("Stack overflow - recursion depth exceeded limit"),
@@ -65,12 +65,46 @@ public class TrapException extends WasmException {
     UNREACHABLE_CODE_REACHED("Unreachable code was executed"),
     /** Execution has potentially run too long and was interrupted. */
     INTERRUPT("Execution interrupted (timeout or cancellation)"),
+    /** Component model canonical lift/lower adapter that always traps. */
+    ALWAYS_TRAP_ADAPTER("Component model always-trap adapter called"),
     /** Wasm code ran out of configured fuel. */
     OUT_OF_FUEL("Execution ran out of fuel"),
+    /** Atomic wait operation on non-shared memory. */
+    ATOMIC_WAIT_NON_SHARED_MEMORY("Atomic wait on non-shared memory"),
     /** Call to a null reference (GC proposal). */
     NULL_REFERENCE("Call to null reference"),
     /** Attempt to access beyond the bounds of an array (GC proposal). */
     ARRAY_OUT_OF_BOUNDS("Array access out of bounds"),
+    /** Attempted allocation that was too large to succeed (GC proposal). */
+    ALLOCATION_TOO_LARGE("Allocation too large"),
+    /** Attempted cast to a type that the reference is not an instance of (GC proposal). */
+    CAST_FAILURE("Reference cast failure"),
+    /** Component tried to call another component violating reentrance rules. */
+    CANNOT_ENTER_COMPONENT("Cannot enter component due to reentrance rules"),
+    /** Async-lifted export failed to produce a result. */
+    NO_ASYNC_RESULT("Async export did not produce a result"),
+    /** Suspension to a tag for which there is no active handler. */
+    UNHANDLED_TAG("Unhandled tag during suspension"),
+    /** Attempt to resume a continuation that was already consumed. */
+    CONTINUATION_ALREADY_CONSUMED("Continuation already consumed"),
+    /** A Pulley opcode was disabled at compile time but executed at runtime. */
+    DISABLED_OPCODE("Disabled opcode executed"),
+    /** Async event loop deadlocked with no further progress possible. */
+    ASYNC_DEADLOCK("Async event loop deadlocked"),
+    /** Component instance tried to call import when not allowed (e.g. from post-return). */
+    CANNOT_LEAVE_COMPONENT("Cannot leave component from current context"),
+    /** Synchronous task attempted a potentially blocking call. */
+    CANNOT_BLOCK_SYNC_TASK("Synchronous task cannot make blocking call"),
+    /** Component tried to lift a char with an invalid bit pattern. */
+    INVALID_CHAR("Invalid character bit pattern"),
+    /** Component string access past the end of memory. */
+    STRING_OUT_OF_BOUNDS("String access out of bounds"),
+    /** Component list access past the end of memory. */
+    LIST_OUT_OF_BOUNDS("List access out of bounds"),
+    /** Component used an invalid discriminant when lowering a variant. */
+    INVALID_DISCRIMINANT("Invalid discriminant for variant"),
+    /** Component passed an unaligned pointer when lifting or lowering. */
+    UNALIGNED_POINTER("Unaligned pointer in component operation"),
     /** Unknown or unspecified trap condition. */
     UNKNOWN("Unknown trap condition");
 
@@ -189,7 +223,8 @@ public class TrapException extends WasmException {
   public boolean isMemoryError() {
     return trapType == TrapType.MEMORY_OUT_OF_BOUNDS
         || trapType == TrapType.HEAP_MISALIGNED
-        || trapType == TrapType.STACK_OVERFLOW;
+        || trapType == TrapType.STACK_OVERFLOW
+        || trapType == TrapType.ATOMIC_WAIT_NON_SHARED_MEMORY;
   }
 
   /**
@@ -212,7 +247,9 @@ public class TrapException extends WasmException {
     return trapType == TrapType.INDIRECT_CALL_TO_NULL
         || trapType == TrapType.BAD_SIGNATURE
         || trapType == TrapType.UNREACHABLE_CODE_REACHED
-        || trapType == TrapType.NULL_REFERENCE;
+        || trapType == TrapType.NULL_REFERENCE
+        || trapType == TrapType.CAST_FAILURE
+        || trapType == TrapType.ALWAYS_TRAP_ADAPTER;
   }
 
   /**
@@ -223,7 +260,8 @@ public class TrapException extends WasmException {
   public boolean isResourceExhaustionError() {
     return trapType == TrapType.STACK_OVERFLOW
         || trapType == TrapType.OUT_OF_FUEL
-        || trapType == TrapType.INTERRUPT;
+        || trapType == TrapType.INTERRUPT
+        || trapType == TrapType.ALLOCATION_TOO_LARGE;
   }
 
   /**
@@ -234,7 +272,9 @@ public class TrapException extends WasmException {
   public boolean isBoundsError() {
     return trapType == TrapType.MEMORY_OUT_OF_BOUNDS
         || trapType == TrapType.TABLE_OUT_OF_BOUNDS
-        || trapType == TrapType.ARRAY_OUT_OF_BOUNDS;
+        || trapType == TrapType.ARRAY_OUT_OF_BOUNDS
+        || trapType == TrapType.STRING_OUT_OF_BOUNDS
+        || trapType == TrapType.LIST_OUT_OF_BOUNDS;
   }
 
   /**
@@ -304,12 +344,46 @@ public class TrapException extends WasmException {
         return "Review code paths to ensure unreachable instructions are not executed";
       case INTERRUPT:
         return "Increase execution timeout or optimize WebAssembly code";
+      case ALWAYS_TRAP_ADAPTER:
+        return "Avoid calling component model adapters that are not intended to be called directly";
       case OUT_OF_FUEL:
         return "Increase fuel limit or optimize WebAssembly code for better performance";
+      case ATOMIC_WAIT_NON_SHARED_MEMORY:
+        return "Use shared memory for atomic wait operations (enable wasmThreads)";
       case NULL_REFERENCE:
         return "Check for null references before dereferencing";
       case ARRAY_OUT_OF_BOUNDS:
         return "Validate array indices before access";
+      case ALLOCATION_TOO_LARGE:
+        return "Reduce allocation size or increase memory limits";
+      case CAST_FAILURE:
+        return "Verify reference types before casting";
+      case CANNOT_ENTER_COMPONENT:
+        return "Avoid reentrant calls between components";
+      case NO_ASYNC_RESULT:
+        return "Ensure async exports call task.return before completing";
+      case UNHANDLED_TAG:
+        return "Add a handler for the tag being suspended to";
+      case CONTINUATION_ALREADY_CONSUMED:
+        return "Do not resume a continuation more than once";
+      case DISABLED_OPCODE:
+        return "Enable the required feature at compile time";
+      case ASYNC_DEADLOCK:
+        return "Ensure async tasks can make progress and avoid circular dependencies";
+      case CANNOT_LEAVE_COMPONENT:
+        return "Do not call imports from post-return functions";
+      case CANNOT_BLOCK_SYNC_TASK:
+        return "Use async operations or ensure the task completes synchronously";
+      case INVALID_CHAR:
+        return "Ensure character values are valid Unicode code points";
+      case STRING_OUT_OF_BOUNDS:
+        return "Verify string pointers and lengths are within memory bounds";
+      case LIST_OUT_OF_BOUNDS:
+        return "Verify list pointers and lengths are within memory bounds";
+      case INVALID_DISCRIMINANT:
+        return "Ensure variant discriminants are within valid range";
+      case UNALIGNED_POINTER:
+        return "Ensure pointers are properly aligned for their type";
       case UNKNOWN:
       default:
         return "Review WebAssembly code for potential runtime issues";

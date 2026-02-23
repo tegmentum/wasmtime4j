@@ -45,6 +45,31 @@ public interface FuncType extends WasmType {
     return getResults().size();
   }
 
+  /**
+   * Checks if this function type matches another by comparing params and results.
+   *
+   * @param other the function type to compare with
+   * @return true if the function types have the same params and results
+   */
+  default boolean matches(final FuncType other) {
+    if (other == null) {
+      return false;
+    }
+    return getParams().equals(other.getParams()) && getResults().equals(other.getResults());
+  }
+
+  /**
+   * Creates a FuncType with the specified parameter and result types.
+   *
+   * @param params the parameter types
+   * @param results the result types
+   * @return a new FuncType
+   * @throws IllegalArgumentException if params or results is null
+   */
+  static FuncType of(final WasmValueType[] params, final WasmValueType[] results) {
+    return FunctionType.of(params, results);
+  }
+
   @Override
   default WasmTypeKind getKind() {
     return WasmTypeKind.FUNCTION;

@@ -389,6 +389,23 @@ public interface Linker<T> extends Closeable {
   Extern getByImport(Store store, String moduleName, String name);
 
   /**
+   * Gets a single extern by module and name, returning an Optional.
+   *
+   * <p>This is a convenience method wrapping {@link #getByImport(Store, String, String)} that
+   * returns an {@link java.util.Optional} instead of a nullable value.
+   *
+   * @param store the store context
+   * @param moduleName the module name
+   * @param name the item name
+   * @return an Optional containing the extern, or empty if not found
+   * @since 1.1.0
+   */
+  default java.util.Optional<Extern> getOneByName(
+      final Store store, final String moduleName, final String name) {
+    return java.util.Optional.ofNullable(getByImport(store, moduleName, name));
+  }
+
+  /**
    * Gets the default function for a module.
    *
    * <p>Returns the default export from a module, which is typically the main entry point (usually

@@ -146,12 +146,42 @@ final class PanamaComponentImpl implements Component {
 
   @Override
   public ComponentInstance instantiate() throws WasmException {
-    throw new UnsupportedOperationException("Use engine.createInstance() instead");
+    return instantiate(new ComponentInstanceConfig());
   }
 
   @Override
   public ComponentInstance instantiate(final ComponentInstanceConfig config) throws WasmException {
-    throw new UnsupportedOperationException("Use engine.createInstance() instead");
+    if (config == null) {
+      throw new IllegalArgumentException("config cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment instanceIdOut = tempArena.allocate(
+          java.lang.foreign.ValueLayout.JAVA_LONG);
+
+      final int errorCode =
+          NATIVE_BINDINGS.enhancedComponentInstantiate(
+              engine.getNativeHandle(), componentHandle, instanceIdOut);
+
+      if (errorCode != 0) {
+        throw new WasmException(
+            "Failed to instantiate component: native error code " + errorCode);
+      }
+
+      final long instanceId = instanceIdOut.get(java.lang.foreign.ValueLayout.JAVA_LONG, 0);
+
+      if (instanceId == 0) {
+        throw new WasmException(
+            "Failed to instantiate component: invalid instance ID returned");
+      }
+
+      return new PanamaComponentInstance(engine.getNativeHandle(), instanceId, this, null);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to instantiate component", e);
+    }
   }
 
   @Override

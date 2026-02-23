@@ -63,6 +63,34 @@ public interface MemoryType extends WasmType {
     return 16;
   }
 
+  /**
+   * Creates a MemoryType with the specified minimum and maximum page counts.
+   *
+   * @param min the minimum page count
+   * @param max the maximum page count, or empty if unlimited
+   * @return a new MemoryType
+   * @throws IllegalArgumentException if min is negative or max is null
+   */
+  static MemoryType of(final long min, final java.util.OptionalLong max) {
+    if (min < 0) {
+      throw new IllegalArgumentException("min cannot be negative");
+    }
+    if (max == null) {
+      throw new IllegalArgumentException("max cannot be null; use OptionalLong.empty()");
+    }
+    final Long maxValue = max.isPresent() ? max.getAsLong() : null;
+    return new DefaultMemoryType(min, maxValue, false, false, 65536L);
+  }
+
+  /**
+   * Creates a new MemoryTypeBuilder for constructing MemoryType instances.
+   *
+   * @return a new builder
+   */
+  static MemoryTypeBuilder builder() {
+    return new MemoryTypeBuilder();
+  }
+
   @Override
   default WasmTypeKind getKind() {
     return WasmTypeKind.MEMORY;

@@ -193,6 +193,20 @@ public interface Engine extends Closeable {
   boolean supportsFeature(final WasmFeature feature);
 
   /**
+   * Detects whether a specific CPU feature is available on the current host.
+   *
+   * <p>This can be used to query for hardware capabilities like SSE4.2, AVX, AVX2, BMI1, BMI2,
+   * LZCNT, POPCNT, etc. Feature names correspond to Cranelift ISA feature names.
+   *
+   * @param feature the CPU feature name to check (e.g., "sse4.2", "avx2")
+   * @return an Optional containing true if the feature is detected, false if not detected, or
+   *     empty if the feature name is not recognized
+   * @throws IllegalArgumentException if feature is null
+   * @since 1.1.0
+   */
+  java.util.Optional<Boolean> detectHostFeature(final String feature);
+
+  /**
    * Gets the memory limit in pages for this engine.
    *
    * <p>Returns the maximum number of WebAssembly pages (64KB each) that can be allocated for linear

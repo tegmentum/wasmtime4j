@@ -429,6 +429,9 @@ public final class PanamaStore implements Store {
             (int) limits.getInstances(),
             (int) limits.getTableElements(),
             0, // max functions - 0 means no limit
+            (int) limits.getTables(),
+            (int) limits.getMemories(),
+            limits.isTrapOnGrowFailure() ? 1 : 0,
             storePtr);
 
     if (result != 0) {
@@ -487,6 +490,9 @@ public final class PanamaStore implements Store {
             0, // instances - 0 means no limit
             0, // table elements - 0 means no limit
             0, // max functions - 0 means no limit
+            0, // max tables - 0 means no limit
+            0, // max memories - 0 means no limit
+            0, // trap on grow failure - 0 means false
             storePtr);
 
     if (result != 0) {

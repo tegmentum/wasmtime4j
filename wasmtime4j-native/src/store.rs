@@ -16,8 +16,9 @@ use std::time::{Duration, Instant};
 #[cfg(feature = "wasi-http")]
 use wasmtime::component::ResourceTable;
 use wasmtime::{
-    AsContext, AsContextMut, CallHook, Func, FuncType, Store as WasmtimeStore, StoreContext,
-    StoreContextMut,
+    AsContext, AsContextMut, CallHook, Func, FuncType,
+    StoreLimits as WasmtimeStoreLimits, StoreLimitsBuilder as WasmtimeStoreLimitsBuilder,
+    Store as WasmtimeStore, StoreContext, StoreContextMut,
 };
 use wasmtime_wasi::p1::WasiP1Ctx;
 use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
@@ -89,6 +90,9 @@ pub struct StoreData {
     /// Optional WASI-NN context for neural network inference
     #[cfg(feature = "wasi-nn")]
     pub wasi_nn_ctx: Option<WasiNnCtx>,
+    /// Optional static resource limits built from Wasmtime's StoreLimitsBuilder.
+    /// Applied via store.limiter() when resource limits are configured.
+    pub wasmtime_store_limits: Option<WasmtimeStoreLimits>,
     /// Optional callback-based resource limiter for dynamic resource limiting
     pub callback_resource_limiter: Option<CallbackResourceLimiter>,
     /// Optional async callback-based resource limiter for dynamic resource limiting
@@ -115,6 +119,7 @@ impl StoreData {
             resource_table: ResourceTable::new(),
             #[cfg(feature = "wasi-nn")]
             wasi_nn_ctx: None,
+            wasmtime_store_limits: None,
             callback_resource_limiter: None,
             callback_resource_limiter_async: None,
             epoch_interruption_enabled: false,
@@ -173,6 +178,13 @@ impl std::fmt::Debug for StoreData {
             &self.wasi_nn_ctx.as_ref().map(|_| "<WasiNnCtx>"),
         );
         debug.field(
+            "wasmtime_store_limits",
+            &self
+                .wasmtime_store_limits
+                .as_ref()
+                .map(|_| "<WasmtimeStoreLimits>"),
+        );
+        debug.field(
             "callback_resource_limiter",
             &self
                 .callback_resource_limiter
@@ -207,6 +219,7 @@ impl Clone for StoreData {
             resource_table: ResourceTable::new(), // Fresh table for cloned store
             #[cfg(feature = "wasi-nn")]
             wasi_nn_ctx: None, // WasiNnCtx is store-specific
+            wasmtime_store_limits: None, // Limiter is store-specific, must be re-registered
             callback_resource_limiter: None, // Limiter is store-specific, must be re-registered
             callback_resource_limiter_async: None, // Async limiter is store-specific
             epoch_interruption_enabled: self.epoch_interruption_enabled,
@@ -236,6 +249,12 @@ pub struct ResourceLimits {
     pub max_instances: Option<usize>,
     /// Maximum number of functions that can be instantiated
     pub max_functions: Option<usize>,
+    /// Maximum number of tables that can be created
+    pub max_tables: Option<usize>,
+    /// Maximum number of memories that can be created
+    pub max_memories: Option<usize>,
+    /// Whether memory/table growth failures should trap instead of returning -1
+    pub trap_on_grow_failure: bool,
 }
 
 /// Resource limiter backed by C function pointer callbacks.
@@ -1235,6 +1254,50 @@ impl Store {
     }
 }
 
+/// Build a `wasmtime::StoreLimits` from our `ResourceLimits` and apply it to the store
+/// via `store.limiter()`. This ensures configured limits are actually enforced by Wasmtime.
+fn apply_resource_limits(
+    wasmtime_store: &mut WasmtimeStore<StoreData>,
+    resource_limits: &ResourceLimits,
+) {
+    let has_limits = resource_limits.max_memory_bytes.is_some()
+        || resource_limits.max_table_elements.is_some()
+        || resource_limits.max_instances.is_some()
+        || resource_limits.max_tables.is_some()
+        || resource_limits.max_memories.is_some()
+        || resource_limits.trap_on_grow_failure;
+
+    if has_limits {
+        let mut builder = WasmtimeStoreLimitsBuilder::new();
+        if let Some(mem) = resource_limits.max_memory_bytes {
+            builder = builder.memory_size(mem);
+        }
+        if let Some(elements) = resource_limits.max_table_elements {
+            builder = builder.table_elements(elements as usize);
+        }
+        if let Some(instances) = resource_limits.max_instances {
+            builder = builder.instances(instances);
+        }
+        if let Some(tables) = resource_limits.max_tables {
+            builder = builder.tables(tables);
+        }
+        if let Some(memories) = resource_limits.max_memories {
+            builder = builder.memories(memories);
+        }
+        if resource_limits.trap_on_grow_failure {
+            builder = builder.trap_on_grow_failure(true);
+        }
+
+        let wt_limits = builder.build();
+        wasmtime_store.data_mut().wasmtime_store_limits = Some(wt_limits);
+        wasmtime_store.limiter(|data| {
+            data.wasmtime_store_limits
+                .as_mut()
+                .expect("wasmtime_store_limits was set but is missing")
+        });
+    }
+}
+
 impl StoreBuilder {
     /// Create new store builder
     fn new() -> Self {
@@ -1247,6 +1310,9 @@ impl StoreBuilder {
                 max_table_elements: None,
                 max_instances: None,
                 max_functions: None,
+                max_tables: None,
+                max_memories: None,
+                trap_on_grow_failure: false,
             },
         }
     }
@@ -1288,6 +1354,24 @@ impl StoreBuilder {
         self
     }
 
+    /// Set maximum number of tables
+    pub fn max_tables(mut self, limit: usize) -> Self {
+        self.resource_limits.max_tables = Some(limit);
+        self
+    }
+
+    /// Set maximum number of memories
+    pub fn max_memories(mut self, limit: usize) -> Self {
+        self.resource_limits.max_memories = Some(limit);
+        self
+    }
+
+    /// Set whether growth failures should trap
+    pub fn trap_on_grow_failure(mut self, trap: bool) -> Self {
+        self.resource_limits.trap_on_grow_failure = trap;
+        self
+    }
+
     /// Build store with current configuration
     pub fn build(self, engine: &Engine) -> WasmtimeResult<Store> {
         engine.validate()?;
@@ -1307,9 +1391,13 @@ impl StoreBuilder {
             id
         };
 
+        let resource_limits = self.resource_limits.clone();
         let mut store_data = StoreData::new(store_id, self.resource_limits);
         store_data.epoch_interruption_enabled = engine.epoch_interruption_enabled();
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
+
+        // Apply resource limits via Wasmtime's StoreLimits if any are configured
+        apply_resource_limits(&mut wasmtime_store, &resource_limits);
 
         // Configure fuel if specified OR if Engine requires it
         if engine.fuel_enabled() {
@@ -1369,6 +1457,7 @@ impl StoreBuilder {
             id
         };
 
+        let resource_limits = self.resource_limits.clone();
         let mut store_data = StoreData::new(store_id, self.resource_limits);
         store_data.epoch_interruption_enabled = module.engine().epoch_interruption_enabled();
 
@@ -1376,6 +1465,9 @@ impl StoreBuilder {
         // This ensures the Store's internal Arc matches the Module's internal Arc
         let wasmtime_engine = module.wasmtime_engine();
         let mut wasmtime_store = WasmtimeStore::new(wasmtime_engine, store_data);
+
+        // Apply resource limits via Wasmtime's StoreLimits if any are configured
+        apply_resource_limits(&mut wasmtime_store, &resource_limits);
 
         // Configure fuel if the engine has it enabled
         // Check via the module's engine reference
@@ -1417,6 +1509,9 @@ impl Default for ResourceLimits {
             max_memory_bytes: Some(64 * 1024 * 1024), // 64MB default
             max_table_elements: Some(10000),
             max_instances: Some(100),
+            max_tables: None,
+            max_memories: None,
+            trap_on_grow_failure: false,
             max_functions: Some(1000),
         }
     }
@@ -1469,6 +1564,9 @@ pub mod core {
         max_instances: Option<usize>,
         max_table_elements: Option<u32>,
         max_functions: Option<usize>,
+        max_tables: Option<usize>,
+        max_memories: Option<usize>,
+        trap_on_grow_failure: bool,
     ) -> WasmtimeResult<Box<Store>> {
         let mut builder = Store::builder();
 
@@ -1494,6 +1592,18 @@ pub mod core {
 
         if let Some(functions) = max_functions {
             builder = builder.max_functions(functions);
+        }
+
+        if let Some(tables) = max_tables {
+            builder = builder.max_tables(tables);
+        }
+
+        if let Some(memories) = max_memories {
+            builder = builder.max_memories(memories);
+        }
+
+        if trap_on_grow_failure {
+            builder = builder.trap_on_grow_failure(true);
         }
 
         builder.build(engine).map(Box::new)
@@ -1819,6 +1929,9 @@ mod tests {
             Some(20),              // max_instances
             Some(5000),            // max_table_elements
             Some(500),             // max_functions
+            None,                  // max_tables
+            None,                  // max_memories
+            false,                 // trap_on_grow_failure
         )
         .expect("Failed to create store with config via core");
 
@@ -1843,7 +1956,7 @@ mod tests {
             .build()
             .expect("Failed to create engine with fuel enabled");
         let store =
-            core::create_store_with_config(&engine, Some(1000), None, None, None, None, None)
+            core::create_store_with_config(&engine, Some(1000), None, None, None, None, None, None, None, false)
                 .expect("Failed to create store with fuel");
 
         let store_ref = unsafe {

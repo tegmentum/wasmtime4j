@@ -132,6 +132,10 @@ pub struct EngineConfigFfi {
 
     // Memory guaranteed dense image size
     pub memory_guaranteed_dense_image_size: Option<u64>,
+
+    // Cache configuration
+    pub cache_enabled: Option<bool>,
+    pub cache_config_path: Option<String>,
 }
 
 /// Key-value pair for Cranelift compiler flags
@@ -355,6 +359,15 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
     // Memory guaranteed dense image size
     if let Some(v) = config.memory_guaranteed_dense_image_size {
         builder = builder.memory_guaranteed_dense_image_size(v);
+    }
+
+    // Cache configuration
+    if let Some(true) = config.cache_enabled {
+        if let Some(ref path) = config.cache_config_path {
+            builder = builder.cache_config_load(path)?;
+        } else {
+            builder = builder.cache_config_load_default()?;
+        }
     }
 
     builder.build().map(Box::new)

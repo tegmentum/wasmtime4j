@@ -351,6 +351,9 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @param maxInstances the maximum number of instances (0 = no limit)
    * @param maxTableElements the maximum table elements (0 = no limit)
    * @param maxFunctions the maximum functions (0 = no limit)
+   * @param maxTables the maximum number of tables (0 = no limit)
+   * @param maxMemories the maximum number of memories (0 = no limit)
+   * @param trapOnGrowFailure whether growth failures should trap (0 = false, non-zero = true)
    * @param storePtr pointer to store the created store (output parameter)
    * @return 0 on success, negative error code on failure
    */
@@ -362,6 +365,9 @@ public final class NativeStoreBindings extends NativeBindingsBase {
       final int maxInstances,
       final int maxTableElements,
       final int maxFunctions,
+      final int maxTables,
+      final int maxMemories,
+      final int trapOnGrowFailure,
       final MemorySegment storePtr) {
     validatePointer(enginePtr, "enginePtr");
     validatePointer(storePtr, "storePtr");
@@ -376,6 +382,9 @@ public final class NativeStoreBindings extends NativeBindingsBase {
         maxInstances,
         maxTableElements,
         maxFunctions,
+        maxTables,
+        maxMemories,
+        trapOnGrowFailure,
         storePtr);
   }
 

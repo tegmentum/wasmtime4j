@@ -112,6 +112,10 @@ public final class EngineConfig {
   // Shared memory (independent of wasm threads)
   private boolean sharedMemory = false;
 
+  // Cache configuration
+  private boolean cacheEnabled = false;
+  private String cacheConfigPath = null; // null = use default cache config
+
   // Cranelift proof-carrying code validation
   private boolean craneliftPcc = false;
 
@@ -1879,6 +1883,62 @@ public final class EngineConfig {
   }
 
   /**
+   * Enables compilation caching with the default cache configuration.
+   *
+   * <p>When enabled, compiled modules are cached on disk to speed up subsequent compilations of
+   * the same module. The default cache location is platform-specific (typically
+   * {@code ~/.cache/wasmtime} on Linux/macOS).
+   *
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig cacheConfigLoadDefault() {
+    this.cacheEnabled = true;
+    this.cacheConfigPath = null;
+    return this;
+  }
+
+  /**
+   * Enables compilation caching with a custom cache configuration file.
+   *
+   * <p>The configuration file specifies cache location, size limits, and other cache-related
+   * settings. See Wasmtime documentation for the cache configuration file format.
+   *
+   * @param path the path to the cache configuration file
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if path is null
+   * @since 1.1.0
+   */
+  public EngineConfig cacheConfigLoad(final java.nio.file.Path path) {
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    this.cacheEnabled = true;
+    this.cacheConfigPath = path.toString();
+    return this;
+  }
+
+  /**
+   * Returns whether compilation caching is enabled.
+   *
+   * @return true if cache is enabled
+   * @since 1.1.0
+   */
+  public boolean isCacheEnabled() {
+    return cacheEnabled;
+  }
+
+  /**
+   * Returns the cache configuration file path, or null for default.
+   *
+   * @return the cache config path, or null if using default
+   * @since 1.1.0
+   */
+  public String getCacheConfigPath() {
+    return cacheConfigPath;
+  }
+
+  /**
    * Sets the GC collector implementation.
    *
    * <p>Valid values are "auto", "deferred_reference_counting", "null".
@@ -2091,6 +2151,14 @@ public final class EngineConfig {
     // Target
     if (target != null) {
       first = appendJsonField(sb, first, "target", target);
+    }
+
+    // Cache configuration
+    if (cacheEnabled) {
+      first = appendJsonBool(sb, first, "cacheEnabled", true);
+      if (cacheConfigPath != null) {
+        first = appendJsonField(sb, first, "cacheConfigPath", cacheConfigPath);
+      }
     }
 
     // Component model (from features set)
