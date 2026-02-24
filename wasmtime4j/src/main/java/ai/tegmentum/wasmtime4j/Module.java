@@ -487,6 +487,46 @@ public interface Module extends Closeable {
   }
 
   /**
+   * Compiles a WebAssembly module from binary wasm bytes.
+   *
+   * <p>Unlike {@link #compile(Engine, byte[])} which auto-detects and accepts both binary wasm and
+   * WAT text format, this method only accepts pre-compiled binary wasm bytes. The bytes must begin
+   * with the WebAssembly binary magic number ({@code \0asm}).
+   *
+   * <p>This corresponds to Wasmtime's {@code Module::from_binary()}.
+   *
+   * @param engine the engine to use for compilation
+   * @param wasmBytes the binary WebAssembly bytecode (must not be WAT)
+   * @return a compiled Module
+   * @throws WasmException if compilation fails
+   * @throws IllegalArgumentException if engine or wasmBytes is null, or if the bytes are not valid
+   *     binary wasm (e.g. WAT text format)
+   * @since 1.1.0
+   */
+  static Module fromBinary(final Engine engine, final byte[] wasmBytes) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    if (wasmBytes.length < 4) {
+      throw new IllegalArgumentException(
+          "Binary wasm bytes too short (minimum 4 bytes for magic number)");
+    }
+    // Validate WebAssembly binary magic number: \0asm (0x00 0x61 0x73 0x6D)
+    if (wasmBytes[0] != 0x00
+        || wasmBytes[1] != 0x61
+        || wasmBytes[2] != 0x73
+        || wasmBytes[3] != 0x6D) {
+      throw new IllegalArgumentException(
+          "Not binary wasm: missing WebAssembly magic number. "
+              + "Use Module.compile() for WAT text format.");
+    }
+    return engine.getRuntime().compileModule(engine, wasmBytes);
+  }
+
+  /**
    * Compiles a WebAssembly module from a file on disk.
    *
    * <p>This is a convenience method that reads the file and compiles it. The file can contain

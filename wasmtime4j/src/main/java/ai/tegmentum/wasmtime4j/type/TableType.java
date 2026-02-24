@@ -47,6 +47,22 @@ public interface TableType extends WasmType {
   }
 
   /**
+   * Gets the element reference type for this table.
+   *
+   * <p>This returns the full {@link RefType} for the element, providing heap type and nullability
+   * information. For tables created with only a {@link WasmValueType}, the returned RefType is
+   * derived from the element type.
+   *
+   * @return the element reference type
+   * @since 1.1.0
+   */
+  default RefType getElement() {
+    final WasmValueType elementType = getElementType();
+    final ValType valType = ValType.from(elementType);
+    return valType.asRef().orElse(RefType.FUNCREF);
+  }
+
+  /**
    * Creates a TableType with the specified element type and size constraints.
    *
    * @param elementType the element type (e.g., FUNCREF or EXTERNREF)

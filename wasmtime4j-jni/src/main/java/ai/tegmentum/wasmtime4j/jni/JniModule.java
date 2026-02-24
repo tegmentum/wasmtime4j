@@ -260,6 +260,25 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.ResourcesRequired resourcesRequired() {
+    ensureNotClosed();
+    final long[] data = nativeGetModuleResourcesRequired(nativeHandle);
+    if (data == null || data.length < 8) {
+      // Fall back to default implementation if native call fails
+      return Module.super.resourcesRequired();
+    }
+    return new ai.tegmentum.wasmtime4j.ResourcesRequired(
+        data[0], // minimumMemoryBytes
+        data[1], // maximumMemoryBytes (-1 if unbounded)
+        (int) data[2], // minimumTableElements
+        data[3] > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) data[3], // maximumTableElements
+        (int) data[4], // numMemories
+        (int) data[5], // numTables
+        (int) data[6], // numGlobals
+        (int) data[7]); // numFunctions
+  }
+
+  @Override
   public boolean isValid() {
     return !isClosed();
   }
@@ -360,4 +379,6 @@ public class JniModule extends JniResource implements Module {
   private static native void nativeDestroyModuleExport(long moduleExportHandle);
 
   private static native boolean nativeInitializeCopyOnWriteImage(long moduleHandle);
+
+  private static native long[] nativeGetModuleResourcesRequired(long moduleHandle);
 }

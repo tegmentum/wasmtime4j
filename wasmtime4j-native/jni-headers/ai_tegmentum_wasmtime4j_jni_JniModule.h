@@ -111,6 +111,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyM
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInitializeCopyOnWriteImage
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleResourcesRequired
+ * Signature: (J)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleResourcesRequired
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

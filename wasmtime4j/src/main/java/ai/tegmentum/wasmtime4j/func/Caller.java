@@ -189,6 +189,25 @@ public interface Caller<T> {
   void gc() throws WasmException;
 
   /**
+   * Performs garbage collection asynchronously.
+   *
+   * <p>This is the async variant of {@link #gc()} that cooperatively yields during collection.
+   * Requires the store to have async support enabled.
+   *
+   * @return a future that completes when GC is finished
+   * @since 1.1.0
+   */
+  default java.util.concurrent.CompletableFuture<Void> gcAsync() {
+    return java.util.concurrent.CompletableFuture.runAsync(() -> {
+      try {
+        gc();
+      } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
    * Configures the fuel-based async yield interval for this caller's store.
    *
    * <p>When both fuel consumption and async support are enabled, this controls how frequently the

@@ -44,6 +44,7 @@ public final class EngineConfig {
   private boolean wasmSharedEverythingThreads = false;
 
   private java.util.Map<String, String> craneliftSettings = new java.util.HashMap<>();
+  private java.util.List<String> craneliftFlagEnables = new java.util.ArrayList<>();
 
   // Component model feature (no individual boolean existed before; tracked here directly)
   private boolean wasmComponentModel = false;
@@ -241,6 +242,26 @@ public final class EngineConfig {
     }
     this.craneliftSettings.clear();
     this.craneliftSettings.putAll(settings);
+    return this;
+  }
+
+  /**
+   * Enables a single Cranelift boolean flag by name.
+   *
+   * <p>This is the single-flag variant that sets the flag value to "true". Unlike {@link
+   * #setCraneliftSettings(java.util.Map)} which sets key-value pairs, this method simply enables a
+   * boolean flag. For example: {@code craneliftFlagEnable("is_pic")}.
+   *
+   * @param flagName the name of the Cranelift flag to enable
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if flagName is null or empty
+   * @since 1.1.0
+   */
+  public EngineConfig craneliftFlagEnable(final String flagName) {
+    if (flagName == null || flagName.isEmpty()) {
+      throw new IllegalArgumentException("Cranelift flag name cannot be null or empty");
+    }
+    this.craneliftFlagEnables.add(flagName);
     return this;
   }
 
@@ -847,6 +868,7 @@ public final class EngineConfig {
     c.wasmSharedEverythingThreads = this.wasmSharedEverythingThreads;
     // Maps (defensive copy)
     c.craneliftSettings = new java.util.HashMap<>(this.craneliftSettings);
+    c.craneliftFlagEnables = new java.util.ArrayList<>(this.craneliftFlagEnables);
     // Allocation strategy
     c.allocationStrategy = this.allocationStrategy;
     c.poolingAllocatorEnabled = this.poolingAllocatorEnabled;
@@ -2328,6 +2350,26 @@ public final class EngineConfig {
         sb.append("\",\"value\":\"");
         appendJsonEscaped(sb, entry.getValue());
         sb.append("\"}");
+      }
+      sb.append(']');
+    }
+
+    // Cranelift flag enables (single-flag variant)
+    if (!craneliftFlagEnables.isEmpty()) {
+      if (!first) {
+        sb.append(',');
+      }
+      first = false;
+      sb.append("\"craneliftFlagEnables\":[");
+      boolean enableFirst = true;
+      for (String flagName : craneliftFlagEnables) {
+        if (!enableFirst) {
+          sb.append(',');
+        }
+        enableFirst = false;
+        sb.append('"');
+        appendJsonEscaped(sb, flagName);
+        sb.append('"');
       }
       sb.append(']');
     }

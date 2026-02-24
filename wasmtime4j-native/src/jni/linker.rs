@@ -1054,6 +1054,104 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHo
     })
 }
 
+/// Define an unchecked host function in the linker (bypasses per-call type validation)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunctionUnchecked(
+    mut env: JNIEnv,
+    obj: jobject,
+    linker_handle: jlong,
+    module_name: JString,
+    name: JString,
+    param_types: jintArray,
+    return_types: jintArray,
+    callback_id: jlong,
+) -> jboolean {
+    // Convert strings before the closure
+    let module_name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    let jvm = match env.get_java_vm() {
+        Ok(vm) => vm,
+        Err(_) => return 0,
+    };
+
+    let param_array = unsafe { jni::objects::JIntArray::from_raw(param_types) };
+    let param_len = match env.get_array_length(&param_array) {
+        Ok(len) => len as usize,
+        Err(_) => return 0,
+    };
+    let mut param_vals = vec![0i32; param_len];
+    if env
+        .get_int_array_region(&param_array, 0, &mut param_vals)
+        .is_err()
+    {
+        return 0;
+    }
+
+    let return_array = unsafe { jni::objects::JIntArray::from_raw(return_types) };
+    let return_len = match env.get_array_length(&return_array) {
+        Ok(len) => len as usize,
+        Err(_) => return 0,
+    };
+    let mut return_vals = vec![0i32; return_len];
+    if env
+        .get_int_array_region(&return_array, 0, &mut return_vals)
+        .is_err()
+    {
+        return 0;
+    }
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use crate::hostfunc::HostFunction;
+        use wasmtime::{FuncType, ValType};
+
+        let param_val_types: Vec<ValType> = param_vals
+            .iter()
+            .map(|&t| int_to_valtype(t))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let return_val_types: Vec<ValType> = return_vals
+            .iter()
+            .map(|&t| int_to_valtype(t))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+
+        let linker_lock = linker.inner()?;
+        let engine = linker_lock.engine();
+        let func_type = FuncType::new(engine, param_val_types, return_val_types);
+        drop(linker_lock);
+
+        let callback = JniHostFunctionCallback {
+            jvm: std::sync::Arc::new(jvm),
+            callback_id,
+            is_function_reference: false,
+        };
+
+        let host_func = HostFunction::new(
+            format!("{}::{}", module_name_str, name_str),
+            func_type,
+            Box::new(callback),
+        )?;
+
+        let host_func_clone = (*host_func).clone();
+        linker.define_host_function_unchecked(
+            &module_name_str,
+            &name_str,
+            host_func.func_type().clone(),
+            host_func_clone,
+        )?;
+
+        Ok(1)
+    })
+}
+
 /// Enable WASI for the linker
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeEnableWasi(

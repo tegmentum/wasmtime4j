@@ -306,6 +306,27 @@ public interface WasmRuntime extends Closeable {
   void addWasiToLinker(Linker<WasiContext> linker, WasiContext context) throws WasmException;
 
   /**
+   * Adds WASI imports to the specified linker using async-compatible host functions.
+   *
+   * <p>When used with async-enabled stores, the WASI host functions will cooperatively yield
+   * during I/O operations. This corresponds to Wasmtime's
+   * {@code wasmtime_wasi::p2::add_to_linker_async()}.
+   *
+   * <p>The default implementation delegates to {@link #addWasiToLinker(Linker, WasiContext)}.
+   * Implementations should override to use native async WASI functions when available.
+   *
+   * @param linker the linker to add async WASI imports to
+   * @param context the WASI context containing configuration
+   * @throws WasmException if adding WASI imports fails
+   * @throws IllegalArgumentException if linker or context is null
+   * @since 1.1.0
+   */
+  default void addWasiToLinkerAsync(Linker<WasiContext> linker, WasiContext context)
+      throws WasmException {
+    addWasiToLinker(linker, context);
+  }
+
+  /**
    * Adds WASI Preview 2 functions to the given linker.
    *
    * <p>This method configures the linker with WASI Preview 2 function imports, enabling WebAssembly

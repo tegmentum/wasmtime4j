@@ -759,10 +759,36 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     }
     ensureNotClosed();
 
-    // TODO: This delegates to defineHostFunction() which performs full type checking,
-    // making "unchecked" misleading. The store parameter is also unused. Consider
-    // implementing true unchecked semantics or updating the Linker interface.
-    defineHostFunction(moduleName, name, functionType, implementation);
+    // Convert FunctionType to native representation
+    final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
+    final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
+
+    // Register callback and get ID
+    final long callbackId =
+        registerHostFunctionCallback(moduleName, name, implementation);
+
+    try {
+      final boolean success =
+          nativeDefineHostFunctionUnchecked(
+              nativeHandle, moduleName, name, paramTypes, returnTypes, callbackId);
+
+      if (!success) {
+        throw new WasmException(
+            "Failed to define unchecked host function: " + moduleName + "::" + name);
+      }
+
+      addImportWithMetadata(
+          moduleName,
+          name,
+          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
+          functionType.toString());
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException(
+          "Failed to define unchecked host function: " + moduleName + "::" + name, e);
+    }
   }
 
   @Override
@@ -1091,6 +1117,28 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    * @return true on success
    */
   private native boolean nativeDefineHostFunction(
+      long linkerHandle,
+      String moduleName,
+      String name,
+      int[] paramTypes,
+      int[] returnTypes,
+      long callbackId);
+
+  /**
+   * Defines an unchecked host function in the linker.
+   *
+   * <p>This uses {@code Func::new_unchecked} internally, which skips type-checking
+   * at call time for better performance.
+   *
+   * @param linkerHandle the linker handle
+   * @param moduleName the module name
+   * @param name the function name
+   * @param paramTypes array of parameter type codes
+   * @param returnTypes array of return type codes
+   * @param callbackId callback ID for invoking the Java implementation
+   * @return true on success
+   */
+  private native boolean nativeDefineHostFunctionUnchecked(
       long linkerHandle,
       String moduleName,
       String name,

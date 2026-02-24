@@ -1057,10 +1057,66 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
     ensureNotClosed();
 
-    // For unchecked version, we simply call defineHostFunction
-    // The native layer handles the unchecked semantics
-    defineHostFunction(moduleName, name, functionType, implementation);
-    LOGGER.fine("Defined unchecked function: " + moduleName + "::" + name);
+    // Convert FunctionType to native representation
+    final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
+    final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
+
+    // Register callback and get ID
+    final long callbackId =
+        registerHostFunctionCallback(moduleName, name, implementation);
+
+    try {
+      // Create upcall stub for the callback function
+      final MemorySegment callbackStub = createCallbackStub();
+
+      // Allocate native memory for strings and arrays
+      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+      final MemorySegment namePtr = arena.allocateFrom(name);
+
+      // Allocate and copy parameter types
+      final MemorySegment paramTypesPtr = arena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
+      for (int i = 0; i < paramTypes.length; i++) {
+        paramTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i]);
+      }
+
+      // Allocate and copy return types
+      final MemorySegment returnTypesPtr = arena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
+      for (int i = 0; i < returnTypes.length; i++) {
+        returnTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, returnTypes[i]);
+      }
+
+      // Call native function to define unchecked host function
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineHostFunctionUnchecked(
+              nativeLinker,
+              moduleNamePtr,
+              namePtr,
+              paramTypesPtr,
+              paramTypes.length,
+              returnTypesPtr,
+              returnTypes.length,
+              callbackStub,
+              callbackId);
+
+      if (result != 0) {
+        throw new WasmException(
+            "Failed to define unchecked host function: " + moduleName + "::" + name);
+      }
+
+      addImportWithMetadata(
+          moduleName,
+          name,
+          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
+          functionType.toString());
+
+      LOGGER.fine("Defined unchecked function: " + moduleName + "::" + name);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException(
+          "Failed to define unchecked host function: " + moduleName + "::" + name, e);
+    }
   }
 
   @Override

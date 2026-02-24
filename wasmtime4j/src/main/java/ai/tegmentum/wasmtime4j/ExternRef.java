@@ -288,6 +288,29 @@ public final class ExternRef<T> {
   }
 
   /**
+   * Gets the {@link ai.tegmentum.wasmtime4j.type.RefType} for this reference within a store
+   * context.
+   *
+   * <p>For null references, returns nullable {@code externref}. For non-null references, returns a
+   * non-nullable externref type.
+   *
+   * @param store the store context
+   * @return the reference type
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public ai.tegmentum.wasmtime4j.type.RefType ty(final Store store) {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (value == null) {
+      return ai.tegmentum.wasmtime4j.type.RefType.EXTERNREF;
+    }
+    return ai.tegmentum.wasmtime4j.type.RefType.nonNull(
+        ai.tegmentum.wasmtime4j.type.HeapType.EXTERN);
+  }
+
+  /**
    * Converts this ExternRef to a WasmValue.
    *
    * @return a WasmValue containing this ExternRef

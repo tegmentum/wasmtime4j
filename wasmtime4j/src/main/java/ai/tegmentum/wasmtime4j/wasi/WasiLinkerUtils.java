@@ -97,6 +97,50 @@ public final class WasiLinkerUtils {
   }
 
   /**
+   * Adds all WASI imports to the specified linker using async-compatible host functions.
+   *
+   * <p>When used with async-enabled stores, the WASI host functions will cooperatively yield
+   * during I/O operations, allowing other async tasks to make progress. This corresponds to
+   * Wasmtime's {@code wasmtime_wasi::p2::add_to_linker_async()}.
+   *
+   * <p>The default implementation delegates to {@link #addToLinker(Linker, WasiContext)}. Runtime
+   * implementations may override the underlying runtime method to use native async WASI functions.
+   *
+   * @param linker the linker to add async WASI imports to
+   * @param context the WASI context containing configuration
+   * @throws WasmException if adding WASI imports fails
+   * @throws IllegalArgumentException if linker or context is null
+   * @since 1.1.0
+   */
+  public static void addToLinkerAsync(Linker<WasiContext> linker, WasiContext context)
+      throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("Linker cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("WasiContext cannot be null");
+    }
+
+    // Default: delegates to sync variant. Runtimes may override addWasiToLinkerAsync()
+    // to use wasmtime_wasi::p2::add_to_linker_async() for cooperative yielding.
+    WasmRuntimeFactory.create().addWasiToLinkerAsync(linker, context);
+  }
+
+  /**
+   * Adds all WASI imports to the specified linker using async-compatible host functions with a
+   * default WASI context.
+   *
+   * @param linker the linker to add async WASI imports to
+   * @throws WasmException if adding WASI imports fails
+   * @throws IllegalArgumentException if linker is null
+   * @since 1.1.0
+   */
+  public static void addToLinkerAsync(Linker<WasiContext> linker) throws WasmException {
+    WasiContext defaultContext = WasiContext.create().inheritStdio();
+    addToLinkerAsync(linker, defaultContext);
+  }
+
+  /**
    * Creates a new linker with WASI imports already configured.
    *
    * <p>This is a convenience method that creates a new linker and adds all WASI imports using the

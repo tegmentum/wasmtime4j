@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.type.ExternType;
+import ai.tegmentum.wasmtime4j.type.ExternTypeInfo;
 import ai.tegmentum.wasmtime4j.type.WasmType;
 
 /**
@@ -175,6 +176,49 @@ public interface Extern {
    * @since 1.1.0
    */
   default WasmType getDetailedType() {
+    return null;
+  }
+
+  /**
+   * Gets the full type information for this extern as an {@link ExternTypeInfo}.
+   *
+   * <p>This pairs the kind discriminant ({@link ExternType}) with the detailed type data
+   * ({@link WasmType}), providing type-safe access via methods like
+   * {@link ExternTypeInfo#asFuncType()}, {@link ExternTypeInfo#asTableType()}, etc.
+   *
+   * @return the extern type info, or null if the detailed type is not available
+   * @since 1.1.0
+   */
+  default ExternTypeInfo getExternTypeInfo() {
+    final WasmType detailed = getDetailedType();
+    if (detailed == null) {
+      return null;
+    }
+    switch (getType()) {
+      case FUNC:
+        if (detailed instanceof ai.tegmentum.wasmtime4j.type.FuncType) {
+          return ExternTypeInfo.forFunc((ai.tegmentum.wasmtime4j.type.FuncType) detailed);
+        }
+        break;
+      case TABLE:
+        if (detailed instanceof ai.tegmentum.wasmtime4j.type.TableType) {
+          return ExternTypeInfo.forTable((ai.tegmentum.wasmtime4j.type.TableType) detailed);
+        }
+        break;
+      case MEMORY:
+      case SHARED_MEMORY:
+        if (detailed instanceof ai.tegmentum.wasmtime4j.type.MemoryType) {
+          return ExternTypeInfo.forMemory((ai.tegmentum.wasmtime4j.type.MemoryType) detailed);
+        }
+        break;
+      case GLOBAL:
+        if (detailed instanceof ai.tegmentum.wasmtime4j.type.GlobalType) {
+          return ExternTypeInfo.forGlobal((ai.tegmentum.wasmtime4j.type.GlobalType) detailed);
+        }
+        break;
+      default:
+        break;
+    }
     return null;
   }
 }

@@ -262,6 +262,47 @@ public final class AnyRef implements GcRef {
   }
 
   /**
+   * Gets the {@link ai.tegmentum.wasmtime4j.type.RefType} for this reference within a store
+   * context.
+   *
+   * <p>For null references, returns nullable {@code anyref}. For non-null references, returns a
+   * non-nullable ref type with the appropriate heap type derived from the underlying GC object's
+   * reference type.
+   *
+   * @param store the store context
+   * @return the reference type
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public ai.tegmentum.wasmtime4j.type.RefType ty(final Store store) {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (value == null) {
+      return ai.tegmentum.wasmtime4j.type.RefType.ANYREF;
+    }
+    final ai.tegmentum.wasmtime4j.type.HeapType heapType;
+    switch (value.getReferenceType()) {
+      case I31_REF:
+        heapType = ai.tegmentum.wasmtime4j.type.HeapType.I31;
+        break;
+      case STRUCT_REF:
+        heapType = ai.tegmentum.wasmtime4j.type.HeapType.STRUCT;
+        break;
+      case ARRAY_REF:
+        heapType = ai.tegmentum.wasmtime4j.type.HeapType.ARRAY;
+        break;
+      case EQ_REF:
+        heapType = ai.tegmentum.wasmtime4j.type.HeapType.EQ;
+        break;
+      default:
+        heapType = ai.tegmentum.wasmtime4j.type.HeapType.ANY;
+        break;
+    }
+    return ai.tegmentum.wasmtime4j.type.RefType.nonNull(heapType);
+  }
+
+  /**
    * Converts this AnyRef to a WasmValue.
    *
    * @return a WasmValue containing this reference

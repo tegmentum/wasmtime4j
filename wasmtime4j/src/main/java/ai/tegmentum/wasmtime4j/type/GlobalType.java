@@ -27,6 +27,19 @@ public interface GlobalType extends WasmType {
   boolean isMutable();
 
   /**
+   * Gets the content type of this global as a {@link ValType}.
+   *
+   * <p>This returns the full {@link ValType} for the global's content, which provides richer type
+   * information than the raw {@link WasmValueType} enum from {@link #getValueType()}.
+   *
+   * @return the content value type
+   * @since 1.1.0
+   */
+  default ValType getContent() {
+    return ValType.from(getValueType());
+  }
+
+  /**
    * Gets the mutability of this global as a typed enum.
    *
    * @return the mutability (CONST or VAR)

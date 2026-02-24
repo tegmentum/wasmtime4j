@@ -7,7 +7,7 @@ resolver = "2"
 # Update wasmtime version here - it propagates to all crates
 [workspace.dependencies]
 # Wasmtime WebAssembly runtime - single source of truth for version
-wasmtime = { version = "41.0.3", features = ["component-model", "component-model-async", "async", "call-hook", "coredump", "gc", "cache"] }
+wasmtime = { version = "41.0.3", features = ["component-model", "component-model-async", "async", "call-hook", "coredump", "gc", "cache", "debug"] }
 wasmtime-wasi = { version = "41.0.3" }
 wasmtime-wasi-http = { version = "41.0.3" }
 wasmtime-wasi-nn = { version = "41.0.3" }

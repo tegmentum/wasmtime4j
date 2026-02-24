@@ -555,6 +555,20 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT, // return 0 on success, -1 on error
             ValueLayout.ADDRESS)); // module_ptr
 
+    addFunctionBinding(
+        "wasmtime4j_module_resources_required",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // min_memory_bytes_out (i64 ptr)
+            ValueLayout.ADDRESS, // max_memory_bytes_out (i64 ptr)
+            ValueLayout.ADDRESS, // min_table_elements_out (i64 ptr)
+            ValueLayout.ADDRESS, // max_table_elements_out (i64 ptr)
+            ValueLayout.ADDRESS, // num_memories_out (i32 ptr)
+            ValueLayout.ADDRESS, // num_tables_out (i32 ptr)
+            ValueLayout.ADDRESS, // num_globals_out (i32 ptr)
+            ValueLayout.ADDRESS)); // num_functions_out (i32 ptr)
+
   }
 
   // ===========================================================================================
@@ -1329,6 +1343,45 @@ public final class NativeEngineBindings extends NativeBindingsBase {
 
     return callNativeFunction(
         "wasmtime4j_panama_module_initialize_cow_image", Integer.class, modulePtr);
+  }
+
+  /**
+   * Gets the resources required to instantiate a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param minMemoryBytesOut output pointer for minimum memory bytes (i64)
+   * @param maxMemoryBytesOut output pointer for maximum memory bytes (i64, -1 if unbounded)
+   * @param minTableElementsOut output pointer for minimum table elements (i64)
+   * @param maxTableElementsOut output pointer for maximum table elements (i64, -1 if unbounded)
+   * @param numMemoriesOut output pointer for number of memories (i32)
+   * @param numTablesOut output pointer for number of tables (i32)
+   * @param numGlobalsOut output pointer for number of globals (i32)
+   * @param numFunctionsOut output pointer for number of functions (i32)
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleResourcesRequired(
+      final MemorySegment modulePtr,
+      final MemorySegment minMemoryBytesOut,
+      final MemorySegment maxMemoryBytesOut,
+      final MemorySegment minTableElementsOut,
+      final MemorySegment maxTableElementsOut,
+      final MemorySegment numMemoriesOut,
+      final MemorySegment numTablesOut,
+      final MemorySegment numGlobalsOut,
+      final MemorySegment numFunctionsOut) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_module_resources_required",
+        Integer.class,
+        modulePtr,
+        minMemoryBytesOut,
+        maxMemoryBytesOut,
+        minTableElementsOut,
+        maxTableElementsOut,
+        numMemoriesOut,
+        numTablesOut,
+        numGlobalsOut,
+        numFunctionsOut);
   }
 
   /**

@@ -7,7 +7,7 @@
 
 use jni::objects::{JByteArray, JClass, JObject, JString, JValue};
 use jni::strings::JavaStr;
-use jni::sys::{jboolean, jbyteArray, jlong, jobject, jobjectArray, jstring};
+use jni::sys::{jboolean, jbyteArray, jlong, jlongArray, jobject, jobjectArray, jstring};
 use jni::JNIEnv;
 
 use crate::error::jni_utils;
@@ -1220,6 +1220,63 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInitiali
         Err(e) => {
             let _ = jni_utils::throw_jni_exception(&mut env, &e);
             0
+        }
+    }
+}
+
+/// JNI binding for Module.resourcesRequired() - returns long[8]
+///
+/// Returns [minMemoryBytes, maxMemoryBytes, minTableElements, maxTableElements,
+///          numMemories, numTables, numGlobals, numFunctions]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleResourcesRequired(
+    mut env: JNIEnv,
+    _class: JClass,
+    module_ptr: jlong,
+) -> jlongArray {
+    if module_ptr == 0 {
+        let _ = jni_utils::throw_jni_exception(
+            &mut env,
+            &crate::error::WasmtimeError::InvalidParameter {
+                message: "Module pointer cannot be null".to_string(),
+            },
+        );
+        return std::ptr::null_mut();
+    }
+
+    let data = (|| -> crate::error::WasmtimeResult<[i64; 8]> {
+        let (min_mem, max_mem, min_tab, max_tab, n_mem, n_tab, n_glob, n_func) = unsafe {
+            crate::module::core::get_module_resources_required(
+                module_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        Ok([
+            min_mem,
+            max_mem,
+            min_tab,
+            max_tab,
+            n_mem as i64,
+            n_tab as i64,
+            n_glob as i64,
+            n_func as i64,
+        ])
+    })();
+
+    match data {
+        Ok(values) => {
+            let result = env.new_long_array(8);
+            match result {
+                Ok(arr) => {
+                    let _ = env.set_long_array_region(&arr, 0, &values);
+                    arr.into_raw()
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(e) => {
+            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
         }
     }
 }

@@ -48,8 +48,12 @@ pub mod valtype_conversion {
             12 => Ok(ValType::Ref(RefType::new(true, HeapType::None))),
             13 => Ok(ValType::Ref(RefType::new(true, HeapType::NoFunc))),
             14 => Ok(ValType::Ref(RefType::new(true, HeapType::NoExtern))),
+            15 => Ok(ValType::Ref(RefType::new(true, HeapType::Exn))),
+            16 => Ok(ValType::Ref(RefType::new(true, HeapType::NoExn))),
+            17 => Ok(ValType::Ref(RefType::new(true, HeapType::Cont))),
+            18 => Ok(ValType::Ref(RefType::new(true, HeapType::NoCont))),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid ValType code: {}. Expected 0-14", code),
+                message: format!("Invalid ValType code: {}. Expected 0-18", code),
             }),
         }
     }
@@ -75,6 +79,10 @@ pub mod valtype_conversion {
                 HeapType::None => 12,
                 HeapType::NoFunc => 13,
                 HeapType::NoExtern => 14,
+                HeapType::Exn => 15,
+                HeapType::NoExn => 16,
+                HeapType::Cont => 17,
+                HeapType::NoCont => 18,
                 _ => 6, // Default to EXTERNREF for unknown heap types
             },
         }
@@ -1085,7 +1093,7 @@ mod tests {
 
     #[test]
     fn test_int_to_valtype_all_valid_codes() {
-        for code in 0..=14 {
+        for code in 0..=18 {
             let result = int_to_valtype(code);
             assert!(result.is_ok(), "Code {} should be valid", code);
         }
@@ -1093,7 +1101,7 @@ mod tests {
 
     #[test]
     fn test_int_to_valtype_invalid_codes() {
-        for code in [15, 100, -1, i32::MAX, i32::MIN] {
+        for code in [19, 100, -1, i32::MAX, i32::MIN] {
             let result = int_to_valtype(code);
             assert!(result.is_err(), "Code {} should be invalid", code);
         }
@@ -1140,11 +1148,15 @@ mod tests {
         assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::None))), 12);
         assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoFunc))), 13);
         assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoExtern))), 14);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Exn))), 15);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoExn))), 16);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Cont))), 17);
+        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoCont))), 18);
     }
 
     #[test]
     fn test_valtype_roundtrip() {
-        for code in 0..=14 {
+        for code in 0..=18 {
             let valtype = int_to_valtype(code).unwrap();
             let back = valtype_to_int(&valtype);
             assert_eq!(code, back, "Roundtrip failed for code {}", code);

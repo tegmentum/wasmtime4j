@@ -99,6 +99,8 @@ pub struct StoreData {
     pub callback_resource_limiter_async: Option<CallbackResourceLimiterAsync>,
     /// Whether the engine has epoch interruption enabled (cached for caller access)
     pub epoch_interruption_enabled: bool,
+    /// Whether the engine has async support enabled (cached for caller access)
+    pub async_enabled: bool,
 }
 
 impl StoreData {
@@ -123,6 +125,7 @@ impl StoreData {
             callback_resource_limiter: None,
             callback_resource_limiter_async: None,
             epoch_interruption_enabled: false,
+            async_enabled: false,
         }
     }
 }
@@ -223,6 +226,7 @@ impl Clone for StoreData {
             callback_resource_limiter: None, // Limiter is store-specific, must be re-registered
             callback_resource_limiter_async: None, // Async limiter is store-specific
             epoch_interruption_enabled: self.epoch_interruption_enabled,
+            async_enabled: self.async_enabled,
         }
     }
 }
@@ -409,6 +413,65 @@ impl Store {
     /// Get the unique identifier for this store
     pub fn id(&self) -> u64 {
         self.id
+    }
+
+    /// Check if this store has async support enabled.
+    ///
+    /// Async-enabled stores are required for Wasmtime's `*_async()` operations
+    /// (e.g., `call_async`, `instantiate_async`). The async flag is inherited from
+    /// the Engine's `async_support` configuration at store creation time.
+    pub fn is_async(&self) -> bool {
+        match self.try_lock_store() {
+            Ok(guard) => guard.data().async_enabled,
+            Err(_) => false,
+        }
+    }
+
+    // ===== Debugging API =====
+
+    /// Check if single-step mode is active.
+    ///
+    /// Returns false if guest debugging is not enabled or if the store is closed.
+    pub fn is_single_step(&self) -> bool {
+        match self.try_lock_store() {
+            Ok(store) => store.is_single_step(),
+            Err(_) => false,
+        }
+    }
+
+    /// Get the number of active breakpoints.
+    ///
+    /// Returns None if guest debugging is not enabled, or the count otherwise.
+    pub fn breakpoint_count(&self) -> WasmtimeResult<Option<usize>> {
+        let store = self.try_lock_store()?;
+        let result = {
+            match store.breakpoints() {
+                Some(iter) => Some(iter.count()),
+                None => None,
+            }
+        };
+        Ok(result)
+    }
+
+    /// Edit breakpoints on this store.
+    ///
+    /// This requires guest debugging to be enabled. The callback receives a
+    /// BreakpointEdit which allows adding/removing breakpoints and toggling single-step.
+    pub fn edit_breakpoints<F>(&self, editor_fn: F) -> WasmtimeResult<bool>
+    where
+        F: FnOnce(&mut wasmtime::BreakpointEdit<'_>),
+    {
+        let mut store = self.try_lock_store()?;
+        let has_debug = {
+            let maybe_edit = store.edit_breakpoints();
+            if let Some(mut edit) = maybe_edit {
+                editor_fn(&mut edit);
+                true
+            } else {
+                false
+            }
+        };
+        Ok(has_debug)
     }
 
     /// Check if the store has been closed.
@@ -680,6 +743,17 @@ impl Store {
         let mut store = self.inner.lock();
 
         store.gc(None); // Pass None for manual GC trigger
+        Ok(())
+    }
+
+    /// Perform garbage collection asynchronously.
+    ///
+    /// This spawns a Tokio task that calls gc_async on the Wasmtime store,
+    /// cooperatively yielding during collection if async yielding is configured.
+    pub async fn gc_async(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+        store.gc_async(None).await;
         Ok(())
     }
 
@@ -1313,6 +1387,7 @@ impl StoreBuilder {
         let resource_limits = self.resource_limits.clone();
         let mut store_data = StoreData::new(store_id, self.resource_limits);
         store_data.epoch_interruption_enabled = engine.epoch_interruption_enabled();
+        store_data.async_enabled = engine.async_support_enabled();
         let mut wasmtime_store = WasmtimeStore::new(engine.inner(), store_data);
 
         // Apply resource limits via Wasmtime's StoreLimits if any are configured
@@ -1379,6 +1454,7 @@ impl StoreBuilder {
         let resource_limits = self.resource_limits.clone();
         let mut store_data = StoreData::new(store_id, self.resource_limits);
         store_data.epoch_interruption_enabled = module.engine().epoch_interruption_enabled();
+        store_data.async_enabled = module.engine().async_support_enabled();
 
         // CRITICAL: Use the wasmtime Engine from the Module's internal wasmtime::Module
         // This ensures the Store's internal Arc matches the Module's internal Arc
@@ -2529,6 +2605,29 @@ pub unsafe extern "C" fn wasmtime4j_store_validate(store_ptr: *const c_void) -> 
     }
 }
 
+/// Check if this store has async support enabled
+///
+/// # Returns
+///
+/// 1 if async is enabled, 0 if not, negative on error
+///
+/// # Safety
+///
+/// store_ptr must be a valid pointer from wasmtime4j_store_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_is_async(store_ptr: *const c_void) -> c_int {
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => {
+            if store.is_async() {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
 /// Add fuel to store for execution metering
 ///
 /// # Safety
@@ -2631,6 +2730,161 @@ pub unsafe extern "C" fn wasmtime4j_store_has_wasi_context(store_ptr: *const c_v
             }
         }
         Err(_) => -1,
+    }
+}
+
+// ===== Debugging FFI Functions =====
+
+/// Check if single-step mode is active
+///
+/// # Returns
+///
+/// 1 if single-step is active, 0 if not, negative on error
+///
+/// # Safety
+///
+/// store_ptr must be a valid pointer from wasmtime4j_store_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_is_single_step(store_ptr: *const c_void) -> c_int {
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => {
+            if store.is_single_step() {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get the number of active breakpoints
+///
+/// # Returns
+///
+/// Number of breakpoints (>= 0), or -1 if debugging not enabled, -2 on error
+///
+/// # Safety
+///
+/// store_ptr must be a valid pointer from wasmtime4j_store_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_breakpoint_count(store_ptr: *const c_void) -> c_int {
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => match store.breakpoint_count() {
+            Ok(Some(count)) => count as c_int,
+            Ok(None) => -1,  // debugging not enabled
+            Err(_) => -2,
+        },
+        Err(_) => -2,
+    }
+}
+
+/// Enable or disable single-step mode
+///
+/// # Returns
+///
+/// 0 on success, 1 if debugging not enabled, negative on error
+///
+/// # Safety
+///
+/// store_ptr must be a valid pointer from wasmtime4j_store_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_set_single_step(
+    store_ptr: *const c_void,
+    enabled: c_int,
+) -> c_int {
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => {
+            let enable = enabled != 0;
+            match store.edit_breakpoints(|edit| {
+                let _ = edit.single_step(enable);
+            }) {
+                Ok(true) => FFI_SUCCESS,
+                Ok(false) => 1,  // debugging not enabled
+                Err(_) => FFI_ERROR,
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Add a breakpoint at a specific module and program counter
+///
+/// # Returns
+///
+/// 0 on success, 1 if debugging not enabled, negative on error
+///
+/// # Safety
+///
+/// store_ptr must be a valid pointer from wasmtime4j_store_new
+/// module_ptr must be a valid pointer from wasmtime4j_module_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_add_breakpoint(
+    store_ptr: *const c_void,
+    module_ptr: *const c_void,
+    pc: u32,
+) -> c_int {
+    if module_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let module = match crate::module::core::get_module_ref(module_ptr) {
+        Ok(m) => m,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => {
+            let wasm_module = module.inner().clone();
+            match store.edit_breakpoints(|edit| {
+                let _ = edit.add_breakpoint(&wasm_module, pc);
+            }) {
+                Ok(true) => FFI_SUCCESS,
+                Ok(false) => 1,
+                Err(_) => FFI_ERROR,
+            }
+        }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Remove a breakpoint at a specific module and program counter
+///
+/// # Returns
+///
+/// 0 on success, 1 if debugging not enabled, negative on error
+///
+/// # Safety
+///
+/// store_ptr must be a valid pointer from wasmtime4j_store_new
+/// module_ptr must be a valid pointer from wasmtime4j_module_new
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_remove_breakpoint(
+    store_ptr: *const c_void,
+    module_ptr: *const c_void,
+    pc: u32,
+) -> c_int {
+    if module_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let module = match crate::module::core::get_module_ref(module_ptr) {
+        Ok(m) => m,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => {
+            let wasm_module = module.inner().clone();
+            match store.edit_breakpoints(|edit| {
+                let _ = edit.remove_breakpoint(&wasm_module, pc);
+            }) {
+                Ok(true) => FFI_SUCCESS,
+                Ok(false) => 1,
+                Err(_) => FFI_ERROR,
+            }
+        }
+        Err(_) => FFI_ERROR,
     }
 }
 

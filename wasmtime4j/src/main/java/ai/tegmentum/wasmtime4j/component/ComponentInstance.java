@@ -221,6 +221,20 @@ public interface ComponentInstance extends AutoCloseable {
   ComponentInstanceConfig getConfig();
 
   /**
+   * Gets the pre-instantiated template that this instance was created from, if any.
+   *
+   * <p>If this instance was created via {@link ComponentInstancePre#instantiate()}, this method
+   * returns the original pre-instantiated template. If the instance was created directly from
+   * a linker, this returns empty.
+   *
+   * @return the ComponentInstancePre this instance was created from, or empty
+   * @since 1.1.0
+   */
+  default Optional<ComponentInstancePre> instancePre() {
+    return Optional.empty();
+  }
+
+  /**
    * Checks if this component instance is still valid and usable.
    *
    * @return true if the instance is valid, false otherwise

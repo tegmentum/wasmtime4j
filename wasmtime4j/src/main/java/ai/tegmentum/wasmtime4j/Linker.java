@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.func.HostFunctionAsync;
 import ai.tegmentum.wasmtime4j.type.ExternType;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.ImportType;
@@ -52,6 +53,46 @@ public interface Linker<T> extends Closeable {
       final FunctionType functionType,
       final HostFunction implementation)
       throws WasmException;
+
+  /**
+   * Defines an asynchronous host function that can be imported by WebAssembly modules.
+   *
+   * <p>Async host functions return a {@link java.util.concurrent.CompletableFuture} instead of
+   * blocking. This enables cooperative scheduling with Wasmtime's async executor when used with
+   * async-enabled stores.
+   *
+   * <p>The default implementation wraps the async function as a synchronous call by joining the
+   * future. Implementations should override to use native {@code Func::new_async()} for true
+   * cooperative async behavior.
+   *
+   * @param moduleName the module name for the import (e.g., "env")
+   * @param name the function name for the import
+   * @param functionType the WebAssembly function type signature
+   * @param implementation the async Java implementation of the function
+   * @throws WasmException if the function cannot be defined
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  default void defineHostFunctionAsync(
+      final String moduleName,
+      final String name,
+      final FunctionType functionType,
+      final HostFunctionAsync implementation)
+      throws WasmException {
+    // Default: wrap async implementation as a synchronous host function that blocks on the future.
+    // JNI/Panama implementations should override to use Func::new_async() for true async.
+    defineHostFunction(moduleName, name, functionType, (params) -> {
+      try {
+        return implementation.execute(null, params).join();
+      } catch (final java.util.concurrent.CompletionException e) {
+        if (e.getCause() instanceof WasmException) {
+          throw (WasmException) e.getCause();
+        }
+        throw new WasmException("Async host function failed: " + e.getCause().getMessage(),
+            e.getCause());
+      }
+    });
+  }
 
   /**
    * Defines a memory that can be imported by WebAssembly modules.
@@ -510,6 +551,55 @@ public interface Linker<T> extends Closeable {
       final String name, final FunctionType functionType, final HostFunction implementation)
       throws WasmException {
     defineHostFunction("", name, functionType, implementation);
+  }
+
+  /**
+   * Asynchronously instantiates a WebAssembly module using this linker to resolve imports.
+   *
+   * <p>This is the async variant of {@link #instantiate(Store, Module)}. The default implementation
+   * delegates to the synchronous method on the ForkJoinPool. Implementations may override to use
+   * native async instantiation via Wasmtime's {@code Linker::instantiate_async()}.
+   *
+   * @param store the store to instantiate the module in
+   * @param module the compiled module to instantiate
+   * @return a future that completes with a new Instance of the module
+   * @throws IllegalArgumentException if store or module is null
+   * @since 1.1.0
+   */
+  default java.util.concurrent.CompletableFuture<Instance> instantiateAsync(
+      final Store store, final Module module) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+      try {
+        return instantiate(store, module);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * Asynchronously defines a module's exports into the linker.
+   *
+   * <p>This is the async variant of {@link #module(Store, String, Module)}. The default
+   * implementation delegates to the synchronous method on the ForkJoinPool. Implementations may
+   * override to use native async via Wasmtime's {@code Linker::module_async()}.
+   *
+   * @param store the store to use for instantiation
+   * @param moduleName the name to define the module's exports under
+   * @param module the compiled module to instantiate and define
+   * @return a future that completes when the module has been defined
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  default java.util.concurrent.CompletableFuture<Void> moduleAsync(
+      final Store store, final String moduleName, final Module module) {
+    return java.util.concurrent.CompletableFuture.runAsync(() -> {
+      try {
+        module(store, moduleName, module);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
   }
 
   /**

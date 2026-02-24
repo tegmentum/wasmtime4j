@@ -60,6 +60,8 @@ pub struct HostFunctionDefinition {
     pub host_function: HostFunction,
     /// Timestamp when defined
     pub defined_at: Instant,
+    /// Whether to use Func::new_unchecked (bypasses per-call type validation)
+    pub unchecked: bool,
 }
 
 /// Import definition for linker registry
@@ -348,21 +350,42 @@ impl Linker {
             });
         }
 
-        let _linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to lock linker: {}", e),
-            backtrace: None,
-        })?;
-
-        // Use the host function to create a proper Wasmtime function
-        // This will be handled through the HostFunction callback system
-        // For now, we just register the metadata and defer actual function creation
         log::debug!(
             "Registering host function for later instantiation: {}::{}",
             module_name,
             function_name
         );
 
-        // Record the host function definition
+        self.define_host_function_internal(
+            module_name, function_name, function_type, host_function, false,
+        )
+    }
+
+    /// Define an unchecked host function that bypasses per-call type validation.
+    ///
+    /// Uses `Func::new_unchecked()` internally for better performance on
+    /// frequently-called host functions. The caller must ensure type correctness.
+    pub fn define_host_function_unchecked(
+        &mut self,
+        module_name: &str,
+        function_name: &str,
+        function_type: FuncType,
+        host_function: HostFunction,
+    ) -> WasmtimeResult<()> {
+        self.define_host_function_internal(
+            module_name, function_name, function_type, host_function, true,
+        )
+    }
+
+    /// Internal implementation for both checked and unchecked host function definition.
+    fn define_host_function_internal(
+        &mut self,
+        module_name: &str,
+        function_name: &str,
+        function_type: FuncType,
+        host_function: HostFunction,
+        unchecked: bool,
+    ) -> WasmtimeResult<()> {
         let key = format!("{}::{}", module_name, function_name);
         let definition = HostFunctionDefinition {
             module_name: module_name.to_string(),
@@ -370,6 +393,7 @@ impl Linker {
             function_type: function_type.clone(),
             host_function,
             defined_at: Instant::now(),
+            unchecked,
         };
 
         self.host_functions.insert(key.clone(), definition);
@@ -387,7 +411,10 @@ impl Linker {
         self.imports_registry.insert(key, import_def);
         self.metadata.import_count += 1;
 
-        log::debug!("Defined host function {}::{}", module_name, function_name);
+        log::debug!(
+            "Defined host function {}::{} (unchecked={})",
+            module_name, function_name, unchecked
+        );
         Ok(())
     }
 
@@ -427,8 +454,12 @@ impl Linker {
         // This allows HOST_FUNCTION_REGISTRY lock to be acquired safely
         let mut created_funcs = Vec::with_capacity(definitions.len());
         for (key, definition) in &definitions {
-            log::debug!("Creating host function: {}", key);
-            let wasmtime_func = definition.host_function.create_wasmtime_func(store)?;
+            log::debug!("Creating host function: {} (unchecked={})", key, definition.unchecked);
+            let wasmtime_func = if definition.unchecked {
+                definition.host_function.create_wasmtime_func_unchecked(store)?
+            } else {
+                definition.host_function.create_wasmtime_func(store)?
+            };
             created_funcs.push((
                 definition.module_name.clone(),
                 definition.function_name.clone(),

@@ -407,6 +407,41 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.ResourcesRequired resourcesRequired() {
+    ensureNotClosed();
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment minMemOut = localArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment maxMemOut = localArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment minTabOut = localArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment maxTabOut = localArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment numMemOut = localArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment numTabOut = localArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment numGlobOut = localArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment numFuncOut = localArena.allocate(ValueLayout.JAVA_INT);
+
+      final int result = NATIVE_BINDINGS.moduleResourcesRequired(
+          nativeModule, minMemOut, maxMemOut, minTabOut, maxTabOut,
+          numMemOut, numTabOut, numGlobOut, numFuncOut);
+
+      if (result != 0) {
+        // Fall back to default implementation on error
+        return Module.super.resourcesRequired();
+      }
+
+      final long maxTab = maxTabOut.get(ValueLayout.JAVA_LONG, 0);
+      return new ai.tegmentum.wasmtime4j.ResourcesRequired(
+          minMemOut.get(ValueLayout.JAVA_LONG, 0),
+          maxMemOut.get(ValueLayout.JAVA_LONG, 0),
+          (int) minTabOut.get(ValueLayout.JAVA_LONG, 0),
+          maxTab > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxTab,
+          numMemOut.get(ValueLayout.JAVA_INT, 0),
+          numTabOut.get(ValueLayout.JAVA_INT, 0),
+          numGlobOut.get(ValueLayout.JAVA_INT, 0),
+          numFuncOut.get(ValueLayout.JAVA_INT, 0));
+    }
+  }
+
+  @Override
   public boolean isValid() {
     return !resourceHandle.isClosed();
   }

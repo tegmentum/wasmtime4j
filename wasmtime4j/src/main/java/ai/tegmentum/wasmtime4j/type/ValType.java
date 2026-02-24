@@ -182,6 +182,18 @@ public interface ValType {
   }
 
   /**
+   * Checks if this is the CONTREF type.
+   *
+   * <p>CONTREF is the continuation reference type from the stack switching proposal.
+   *
+   * @return true if this is CONTREF
+   * @since 1.1.0
+   */
+  default boolean isContRef() {
+    return getValueType() == WasmValueType.CONTREF;
+  }
+
+  /**
    * Checks for precise type equality.
    *
    * <p>Unlike {@link #matches(ValType)}, this method checks for exact type equality without

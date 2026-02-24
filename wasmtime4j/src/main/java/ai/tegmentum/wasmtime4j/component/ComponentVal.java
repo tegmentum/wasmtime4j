@@ -778,4 +778,123 @@ public interface ComponentVal {
   static ComponentVal errorContext(final long handle) {
     return ComponentValFactory.INSTANCE.createErrorContext(handle);
   }
+
+  // ===== WAVE Serialization =====
+
+  /**
+   * Serializes this value to the WAVE (WebAssembly Value Encoding) text format.
+   *
+   * <p>WAVE is Wasmtime's human-readable text encoding for Component Model values. It produces
+   * strings like {@code "hello"}, {@code 42}, {@code some("world")}, {@code {name: "Alice"}}.
+   *
+   * <p>The default implementation provides a best-effort Java-side serialization. Implementations
+   * may override to use native Wasmtime's {@code Val::to_wave()} for exact compatibility.
+   *
+   * @return the WAVE text representation of this value
+   * @since 1.1.0
+   */
+  default String toWave() {
+    final ComponentType type = getType();
+    switch (type) {
+      case BOOL:
+        return String.valueOf(asBool());
+      case S8:
+        return String.valueOf(asS8());
+      case S16:
+        return String.valueOf(asS16());
+      case S32:
+        return String.valueOf(asS32());
+      case S64:
+        return String.valueOf(asS64());
+      case U8:
+        return String.valueOf(asU8());
+      case U16:
+        return String.valueOf(asU16());
+      case U32:
+        return String.valueOf(asU32());
+      case U64:
+        return String.valueOf(asU64());
+      case F32:
+        return String.valueOf(asF32());
+      case F64:
+        return String.valueOf(asF64());
+      case CHAR:
+        return "'" + asChar() + "'";
+      case STRING:
+        return "\"" + asString().replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+      case OPTION:
+        final Optional<ComponentVal> optVal = asSome();
+        return optVal.map(v -> "some(" + v.toWave() + ")").orElse("none");
+      case LIST:
+        final List<ComponentVal> listVal = asList();
+        final StringBuilder listBuilder = new StringBuilder("[");
+        for (int i = 0; i < listVal.size(); i++) {
+          if (i > 0) {
+            listBuilder.append(", ");
+          }
+          listBuilder.append(listVal.get(i).toWave());
+        }
+        listBuilder.append("]");
+        return listBuilder.toString();
+      case RECORD:
+        final Map<String, ComponentVal> recordVal = asRecord();
+        final StringBuilder recBuilder = new StringBuilder("{");
+        boolean first = true;
+        for (final Map.Entry<String, ComponentVal> entry : recordVal.entrySet()) {
+          if (!first) {
+            recBuilder.append(", ");
+          }
+          first = false;
+          recBuilder.append(entry.getKey()).append(": ").append(entry.getValue().toWave());
+        }
+        recBuilder.append("}");
+        return recBuilder.toString();
+      case TUPLE:
+        final List<ComponentVal> tupleVal = asTuple();
+        final StringBuilder tupleBuilder = new StringBuilder("(");
+        for (int i = 0; i < tupleVal.size(); i++) {
+          if (i > 0) {
+            tupleBuilder.append(", ");
+          }
+          tupleBuilder.append(tupleVal.get(i).toWave());
+        }
+        tupleBuilder.append(")");
+        return tupleBuilder.toString();
+      case RESULT:
+        final ComponentResult resultVal = asResult();
+        if (resultVal.isOk()) {
+          final Optional<ComponentVal> okInner = resultVal.getOk();
+          return okInner.map(v -> "ok(" + v.toWave() + ")").orElse("ok");
+        } else {
+          final Optional<ComponentVal> errInner = resultVal.getErr();
+          return errInner.map(v -> "err(" + v.toWave() + ")").orElse("err");
+        }
+      default:
+        return "<" + type.name().toLowerCase() + ">";
+    }
+  }
+
+  /**
+   * Deserializes a component value from the WAVE (WebAssembly Value Encoding) text format.
+   *
+   * <p>This is the inverse of {@link #toWave()}. The default implementation throws
+   * {@link UnsupportedOperationException} because correct parsing requires type information
+   * that is only available through the native Wasmtime {@code Val::from_wave()} implementation.
+   *
+   * <p>Implementations should override to use native Wasmtime's WAVE parser.
+   *
+   * @param wave the WAVE text representation to parse
+   * @return the parsed ComponentVal
+   * @throws UnsupportedOperationException if native WAVE parsing is not available
+   * @throws IllegalArgumentException if wave is null
+   * @since 1.1.0
+   */
+  static ComponentVal fromWave(final String wave) {
+    if (wave == null) {
+      throw new IllegalArgumentException("WAVE string cannot be null");
+    }
+    throw new UnsupportedOperationException(
+        "WAVE parsing requires native Wasmtime support with type context; "
+            + "use the native runtime's WAVE parser instead");
+  }
 }

@@ -1174,6 +1174,55 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * Defines an unchecked host function in the linker (Panama FFI version).
+   *
+   * <p>This uses {@code Func::new_unchecked} internally, which skips type-checking
+   * at call time for better performance. The caller is responsible for ensuring
+   * correct types.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param moduleName pointer to the module name string
+   * @param name pointer to the function name string
+   * @param paramTypes pointer to array of parameter type codes
+   * @param paramCount number of parameters
+   * @param returnTypes pointer to array of return type codes
+   * @param returnCount number of returns
+   * @param callbackFn callback function pointer
+   * @param callbackId callback ID
+   * @return 0 on success, non-zero on error
+   */
+  public int panamaLinkerDefineHostFunctionUnchecked(
+      final MemorySegment linkerPtr,
+      final MemorySegment moduleName,
+      final MemorySegment name,
+      final MemorySegment paramTypes,
+      final int paramCount,
+      final MemorySegment returnTypes,
+      final int returnCount,
+      final MemorySegment callbackFn,
+      final long callbackId) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(moduleName, "moduleName");
+    validatePointer(name, "name");
+    validatePointer(paramTypes, "paramTypes");
+    validatePointer(returnTypes, "returnTypes");
+    validatePointer(callbackFn, "callbackFn");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_define_host_function_unchecked",
+        Integer.class,
+        linkerPtr,
+        moduleName,
+        name,
+        paramTypes,
+        paramCount,
+        returnTypes,
+        returnCount,
+        callbackFn,
+        callbackId);
+  }
+
+  /**
    * Defines a global in the linker (Panama FFI version).
    *
    * @param linkerPtr pointer to the linker
@@ -2126,6 +2175,20 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
 
     addFunctionBinding(
         "wasmtime4j_panama_linker_define_host_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_define_host_function_unchecked",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,

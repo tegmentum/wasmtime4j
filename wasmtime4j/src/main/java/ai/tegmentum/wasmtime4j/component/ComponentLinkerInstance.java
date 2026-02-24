@@ -80,6 +80,83 @@ public interface ComponentLinkerInstance {
   void resource(String name, ComponentResourceDefinition<?> definition) throws WasmException;
 
   /**
+   * Associates a core WebAssembly module with this linker instance scope.
+   *
+   * <p>This corresponds to Wasmtime's {@code LinkerInstance::module()} which allows embedding
+   * a core WebAssembly module within a component linker definition. This is used when a component
+   * imports a core module.
+   *
+   * <p>The default implementation throws {@link UnsupportedOperationException}. Implementations
+   * should override to call the native binding.
+   *
+   * @param name the name to associate the module under
+   * @param module the core WebAssembly module to associate
+   * @throws WasmException if the module association fails
+   * @throws IllegalArgumentException if name or module is null
+   * @since 1.1.0
+   */
+  default void module(final String name, final ai.tegmentum.wasmtime4j.Module module)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "Core module association in component linker requires native implementation");
+  }
+
+  /**
+   * Defines a concurrent host function within this instance scope.
+   *
+   * <p>Concurrent host functions cooperatively interleave with other component operations on the
+   * same store, enabling true concurrent component execution. This is part of the Component Model
+   * async proposal.
+   *
+   * <p>The default implementation delegates to {@link #funcNewAsync(String, ComponentHostFunction)}.
+   * Implementations should override to use native concurrent function support.
+   *
+   * @param name the function name within this scope
+   * @param implementation the host function implementation
+   * @throws WasmException if the function definition fails
+   * @throws IllegalArgumentException if name or implementation is null or empty
+   * @since 1.1.0
+   */
+  default void funcNewConcurrent(final String name, final ComponentHostFunction implementation)
+      throws WasmException {
+    funcNewAsync(name, implementation);
+  }
+
+  /**
+   * Defines an async resource type within this instance scope.
+   *
+   * <p>Async resources support asynchronous drop operations in the Component Model async proposal.
+   * The default implementation delegates to {@link #resource(String, ComponentResourceDefinition)}.
+   *
+   * @param name the resource name within this scope
+   * @param definition the resource type definition
+   * @throws WasmException if the resource definition fails
+   * @throws IllegalArgumentException if name or definition is null or empty
+   * @since 1.1.0
+   */
+  default void resourceAsync(final String name, final ComponentResourceDefinition<?> definition)
+      throws WasmException {
+    resource(name, definition);
+  }
+
+  /**
+   * Defines a concurrent resource type within this instance scope.
+   *
+   * <p>Concurrent resources support concurrent drop and method operations. The default
+   * implementation delegates to {@link #resourceAsync(String, ComponentResourceDefinition)}.
+   *
+   * @param name the resource name within this scope
+   * @param definition the resource type definition
+   * @throws WasmException if the resource definition fails
+   * @throws IllegalArgumentException if name or definition is null or empty
+   * @since 1.1.0
+   */
+  default void resourceConcurrent(final String name, final ComponentResourceDefinition<?> definition)
+      throws WasmException {
+    resourceAsync(name, definition);
+  }
+
+  /**
    * Creates a nested instance scope within this scope.
    *
    * <p>This corresponds to entering a named instance in Wasmtime's linker hierarchy. The returned

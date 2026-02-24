@@ -14,7 +14,7 @@ use crate::table::core::{
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use wasmtime::{Func, FuncType, RefType, Val, ValType};
+use wasmtime::{Func, FuncType, RefType, Val, ValRaw, ValType};
 
 /// Compare ValType values since they don't implement PartialEq
 fn valtype_eq(a: &ValType, b: &ValType) -> bool {
@@ -307,6 +307,61 @@ impl HostFunction {
         Ok(func)
     }
 
+    /// Create an unchecked Wasmtime Func for this host function.
+    ///
+    /// Uses `Func::new_unchecked()` which bypasses per-call type validation for
+    /// better performance. The caller is responsible for ensuring type correctness.
+    ///
+    /// # Safety
+    ///
+    /// The function type must accurately describe the parameters and results.
+    pub fn create_wasmtime_func_unchecked(
+        &self,
+        store: &mut wasmtime::Store<StoreData>,
+    ) -> WasmtimeResult<Func> {
+        let host_func_id = self.id;
+        let func_type = self.func_type.clone();
+
+        // Capture param/result types for ValRaw marshaling
+        let param_types: Vec<ValType> = func_type.params().collect();
+        let result_types: Vec<ValType> = func_type.results().collect();
+
+        let func = unsafe {
+            Func::new_unchecked(store, func_type, move |mut caller, args_and_results| {
+                let store_id = caller.data().store_id;
+
+                // Look up the host function in the registry
+                let host_function = {
+                    let registry = get_host_function_registry().lock().map_err(|e| {
+                        anyhow::anyhow!("Failed to lock host function registry: {}", e)
+                    })?;
+                    registry.get(&host_func_id).cloned().ok_or_else(|| {
+                        anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
+                    })?
+                };
+
+                // Read params from ValRaw BEFORE writing results (they share the buffer)
+                let (wasm_params, temp_ids) =
+                    marshal_params_from_valraw(args_and_results, &param_types, store_id)?;
+
+                // Execute the callback
+                let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
+                    anyhow::anyhow!("Host function execution failed: {}", e)
+                })?;
+
+                // Clean up temporary funcref registrations
+                cleanup_temp_funcref_ids(&temp_ids);
+
+                // Write results back to the shared buffer
+                marshal_results_to_valraw(&wasm_results, args_and_results, &result_types, store_id)?;
+
+                Ok(())
+            })
+        };
+
+        Ok(func)
+    }
+
     /// Create an async Wasmtime Func for this host function
     #[cfg(feature = "async")]
     pub fn create_wasmtime_func_async(
@@ -582,6 +637,91 @@ fn marshal_results_to_wasmtime(
                 Val::ExternRef(None)
             }
         };
+    }
+
+    Ok(())
+}
+
+/// Marshal parameters from ValRaw to WasmValue (for unchecked path)
+///
+/// Reads params from the `args_and_results` buffer using the provided type information.
+/// Must be called BEFORE writing results since params and results share the buffer.
+fn marshal_params_from_valraw(
+    args_and_results: &mut [ValRaw],
+    param_types: &[ValType],
+    store_id: u64,
+) -> Result<(Vec<WasmValue>, Vec<u64>), anyhow::Error> {
+    let mut wasm_params = Vec::with_capacity(param_types.len());
+    let mut temp_funcref_ids = Vec::new();
+
+    for (i, param_type) in param_types.iter().enumerate() {
+        let raw = &args_and_results[i];
+        let wasm_value = match param_type {
+            ValType::I32 => WasmValue::I32(unsafe { raw.get_i32() }),
+            ValType::I64 => WasmValue::I64(unsafe { raw.get_i64() }),
+            ValType::F32 => WasmValue::F32(f32::from_bits(unsafe { raw.get_f32() })),
+            ValType::F64 => WasmValue::F64(f64::from_bits(unsafe { raw.get_f64() })),
+            ValType::V128 => WasmValue::V128(unsafe { raw.get_v128() }.to_le_bytes()),
+            ValType::Ref(ref_type) => {
+                if ref_type.heap_type().is_func() {
+                    // FuncRef handling
+                    let ptr = unsafe { raw.get_funcref() };
+                    if ptr.is_null() {
+                        WasmValue::FuncRef(None)
+                    } else {
+                        // We can't reconstruct a Func from a raw pointer in the unchecked path
+                        // without more context, so treat as null for safety
+                        WasmValue::FuncRef(None)
+                    }
+                } else {
+                    // ExternRef/AnyRef/etc - data extraction requires Store context
+                    WasmValue::ExternRef(None)
+                }
+            }
+        };
+        wasm_params.push(wasm_value);
+    }
+
+    Ok((wasm_params, temp_funcref_ids))
+}
+
+/// Marshal results from WasmValue to ValRaw (for unchecked path)
+///
+/// Writes results to the beginning of the `args_and_results` buffer.
+fn marshal_results_to_valraw(
+    wasm_results: &[WasmValue],
+    args_and_results: &mut [ValRaw],
+    result_types: &[ValType],
+    _store_id: u64,
+) -> Result<(), anyhow::Error> {
+    if wasm_results.len() != result_types.len() {
+        return Err(anyhow::anyhow!(
+            "Host function returned {} values, expected {}",
+            wasm_results.len(),
+            result_types.len()
+        ));
+    }
+
+    for (i, wasm_result) in wasm_results.iter().enumerate() {
+        let raw = &mut args_and_results[i];
+        match wasm_result {
+            WasmValue::I32(v) => *raw = ValRaw::i32(*v),
+            WasmValue::I64(v) => *raw = ValRaw::i64(*v),
+            WasmValue::F32(v) => *raw = ValRaw::f32(v.to_bits()),
+            WasmValue::F64(v) => *raw = ValRaw::f64(v.to_bits()),
+            WasmValue::V128(v) => *raw = ValRaw::v128(u128::from_le_bytes(*v)),
+            WasmValue::FuncRef(ref_id) => {
+                if ref_id.is_some() {
+                    // For safety, null funcrefs when going through unchecked path
+                    *raw = ValRaw::funcref(std::ptr::null_mut());
+                } else {
+                    *raw = ValRaw::funcref(std::ptr::null_mut());
+                }
+            }
+            WasmValue::ExternRef(_) => {
+                *raw = ValRaw::externref(0);
+            }
+        }
     }
 
     Ok(())

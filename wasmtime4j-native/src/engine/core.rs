@@ -139,6 +139,12 @@ pub struct EngineConfigFfi {
     pub force_memory_init_memfd: Option<bool>,
     pub cranelift_debug_checks: Option<bool>,
     pub enable_compiler: Option<bool>,
+
+    // Guest debugging instrumentation
+    pub guest_debug: Option<bool>,
+
+    // Cranelift flag enables (single-flag variant, sets flag to "true")
+    pub cranelift_flag_enables: Option<Vec<String>>,
 }
 
 /// Key-value pair for Cranelift compiler flags
@@ -387,6 +393,18 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
     }
     if let Some(v) = config.enable_compiler {
         builder = builder.enable_compiler(v);
+    }
+
+    // Guest debugging instrumentation
+    if let Some(v) = config.guest_debug {
+        builder = builder.guest_debug(v);
+    }
+
+    // Cranelift flag enables (single-flag variant)
+    if let Some(ref enables) = config.cranelift_flag_enables {
+        for flag_name in enables {
+            builder = builder.cranelift_flag_enable(flag_name);
+        }
     }
 
     builder.build().map(Box::new)

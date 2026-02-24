@@ -344,4 +344,52 @@ public interface Instance extends Closeable {
       throws WasmException {
     return store.createInstance(module, imports);
   }
+
+  /**
+   * Asynchronously creates an instance of a WebAssembly module in the given store.
+   *
+   * <p>This is the async variant of {@link #create(Store, Module)}. The default implementation
+   * delegates to the synchronous method on the ForkJoinPool. Implementations may override to use
+   * native async instantiation via Wasmtime's {@code Instance::new_async()}.
+   *
+   * @param store the store to create the instance in
+   * @param module the compiled module to instantiate
+   * @return a future that completes with a new Instance of the module
+   * @throws IllegalArgumentException if store or module is null
+   * @since 1.1.0
+   */
+  static java.util.concurrent.CompletableFuture<Instance> createAsync(
+      final Store store, final Module module) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+      try {
+        return store.createInstance(module);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * Asynchronously creates an instance of a WebAssembly module with explicit imports.
+   *
+   * <p>This is the async variant of {@link #create(Store, Module, Extern[])}. The default
+   * implementation delegates to the synchronous method on the ForkJoinPool.
+   *
+   * @param store the store to create the instance in
+   * @param module the compiled module to instantiate
+   * @param imports the array of extern values to satisfy the module's imports, in order
+   * @return a future that completes with a new Instance of the module
+   * @throws IllegalArgumentException if any argument is null
+   * @since 1.1.0
+   */
+  static java.util.concurrent.CompletableFuture<Instance> createAsync(
+      final Store store, final Module module, final Extern[] imports) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+      try {
+        return store.createInstance(module, imports);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
 }

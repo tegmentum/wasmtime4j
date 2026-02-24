@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
+import ai.tegmentum.wasmtime4j.type.ValType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
@@ -695,6 +696,79 @@ public final class WasmValue {
   }
 
   /**
+   * Converts this value to a {@link ai.tegmentum.wasmtime4j.type.Ref} if it holds a reference type.
+   *
+   * <p>The method name uses a trailing underscore because {@code ref} is a reserved word in Java.
+   * This corresponds to extracting the {@code Ref} union from a WebAssembly value.
+   *
+   * <p>For null reference values, returns a null {@code Ref} of the appropriate kind. For non-null
+   * references, wraps the underlying value in the appropriate {@code Ref} variant.
+   *
+   * @return the reference, or empty if this is not a reference type
+   * @since 1.1.0
+   */
+  public java.util.Optional<ai.tegmentum.wasmtime4j.type.Ref> ref_() {
+    if (!type.isReference()) {
+      return java.util.Optional.empty();
+    }
+    switch (type) {
+      case FUNCREF:
+        if (value == null) {
+          return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullFuncRef());
+        }
+        if (value instanceof WasmFunction) {
+          return java.util.Optional.of(
+              ai.tegmentum.wasmtime4j.type.Ref.fromFunc((WasmFunction) value));
+        }
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullFuncRef());
+      case NULLFUNCREF:
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullFuncRef());
+      case EXTERNREF:
+        if (value == null) {
+          return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullExternRef());
+        }
+        if (value instanceof ExternRef) {
+          return java.util.Optional.of(
+              ai.tegmentum.wasmtime4j.type.Ref.fromExtern((ExternRef<?>) value));
+        }
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullExternRef());
+      case NULLEXTERNREF:
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullExternRef());
+      case ANYREF:
+      case EQREF:
+      case I31REF:
+      case STRUCTREF:
+      case ARRAYREF:
+      case NULLREF:
+        if (value == null) {
+          return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullAnyRef());
+        }
+        if (value instanceof ai.tegmentum.wasmtime4j.gc.AnyRef) {
+          return java.util.Optional.of(
+              ai.tegmentum.wasmtime4j.type.Ref.fromAny((ai.tegmentum.wasmtime4j.gc.AnyRef) value));
+        }
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullAnyRef());
+      case EXNREF:
+        if (value == null) {
+          return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullExnRef());
+        }
+        if (value instanceof ExnRef) {
+          return java.util.Optional.of(
+              ai.tegmentum.wasmtime4j.type.Ref.fromExn((ExnRef) value));
+        }
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullExnRef());
+      case NULLEXNREF:
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullExnRef());
+      case CONTREF:
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullContRef());
+      case NULLCONTREF:
+        return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullContRef());
+      default:
+        return java.util.Optional.empty();
+    }
+  }
+
+  /**
    * Validates that this value matches the expected type.
    *
    * @param expectedType the expected type
@@ -708,6 +782,26 @@ public final class WasmValue {
       throw new IllegalArgumentException(
           "Type mismatch: expected " + expectedType + ", got " + type);
     }
+  }
+
+  /**
+   * Checks if this value's type matches the expected ValType.
+   *
+   * <p>Unlike {@link #validateType(WasmValueType)} which checks for exact type equality,
+   * this method uses {@link ValType#matches(ValType)} which accounts for the subtyping
+   * relationship between reference types. For example, a NULLREF value matches ANYREF
+   * because NULLREF is a subtype of ANYREF.
+   *
+   * @param expected the expected ValType to check against
+   * @return true if this value's type matches the expected type, false otherwise
+   * @throws IllegalArgumentException if expected is null
+   */
+  public boolean matchesType(final ValType expected) {
+    if (expected == null) {
+      throw new IllegalArgumentException("Expected type cannot be null");
+    }
+    final ValType actual = ValType.from(type);
+    return actual.matches(expected);
   }
 
   /**

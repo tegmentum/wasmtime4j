@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.type;
 
+import java.util.Optional;
+
 /**
  * Represents a WebAssembly reference type with nullability and heap type information.
  *
@@ -119,6 +121,19 @@ public interface RefType {
       return false;
     }
     return isNullable() == other.isNullable() && getHeapType() == other.getHeapType();
+  }
+
+  /**
+   * Gets the concrete heap type information, if this reference type has a concrete heap type.
+   *
+   * <p>For abstract heap types (func, extern, any, etc.), this returns empty. For concrete types
+   * that reference a specific type definition in the module's type section, this returns the
+   * concrete type information.
+   *
+   * @return the concrete heap type, or empty if this is an abstract reference type
+   */
+  default Optional<ConcreteHeapType> getConcreteHeapType() {
+    return Optional.empty();
   }
 
   /**

@@ -230,12 +230,177 @@ public enum HeapType {
   }
 
   /**
+   * Checks if this heap type is a top type in its hierarchy.
+   *
+   * <p>Top types are: {@code any}, {@code func}, {@code extern}, {@code exn}, {@code cont}.
+   *
+   * @return true if this is a top type
+   */
+  public boolean isTop() {
+    return this == ANY || this == FUNC || this == EXTERN || this == EXN || this == CONT;
+  }
+
+  /**
+   * Gets the top type for this heap type's hierarchy.
+   *
+   * @return the corresponding top type
+   */
+  public HeapType getTopType() {
+    if (this == EXTERN || this == NOEXTERN) {
+      return EXTERN;
+    } else if (isSubtypeOf(FUNC)) {
+      return FUNC;
+    } else if (isSubtypeOf(EXN)) {
+      return EXN;
+    } else if (isSubtypeOf(CONT)) {
+      return CONT;
+    }
+    // any hierarchy (any, eq, i31, struct, array, none) and concrete
+    return ANY;
+  }
+
+  /**
    * Checks if this heap type is a bottom type.
    *
-   * @return true if this is a bottom type (none, nofunc, noextern)
+   * @return true if this is a bottom type (none, nofunc, noextern, noexn, nocont)
    */
   public boolean isBottom() {
     return this == NONE || this == NOFUNC || this == NOEXTERN || this == NOEXN || this == NOCONT;
+  }
+
+  /**
+   * Checks if this is the {@code func} heap type.
+   *
+   * @return true if this is func
+   */
+  public boolean isFunc() {
+    return this == FUNC;
+  }
+
+  /**
+   * Checks if this is the {@code extern} heap type.
+   *
+   * @return true if this is extern
+   */
+  public boolean isExtern() {
+    return this == EXTERN;
+  }
+
+  /**
+   * Checks if this is the {@code any} heap type.
+   *
+   * @return true if this is any
+   */
+  public boolean isAny() {
+    return this == ANY;
+  }
+
+  /**
+   * Checks if this is the {@code eq} heap type.
+   *
+   * @return true if this is eq
+   */
+  public boolean isEq() {
+    return this == EQ;
+  }
+
+  /**
+   * Checks if this is the {@code i31} heap type.
+   *
+   * @return true if this is i31
+   */
+  public boolean isI31() {
+    return this == I31;
+  }
+
+  /**
+   * Checks if this is the {@code struct} heap type.
+   *
+   * @return true if this is struct
+   */
+  public boolean isStruct() {
+    return this == STRUCT;
+  }
+
+  /**
+   * Checks if this is the {@code array} heap type.
+   *
+   * @return true if this is array
+   */
+  public boolean isArray() {
+    return this == ARRAY;
+  }
+
+  /**
+   * Checks if this is the {@code none} heap type.
+   *
+   * @return true if this is none
+   */
+  public boolean isNone() {
+    return this == NONE;
+  }
+
+  /**
+   * Checks if this is the {@code nofunc} heap type.
+   *
+   * @return true if this is nofunc
+   */
+  public boolean isNoFunc() {
+    return this == NOFUNC;
+  }
+
+  /**
+   * Checks if this is the {@code noextern} heap type.
+   *
+   * @return true if this is noextern
+   */
+  public boolean isNoExtern() {
+    return this == NOEXTERN;
+  }
+
+  /**
+   * Checks if this is the {@code exn} heap type.
+   *
+   * @return true if this is exn
+   */
+  public boolean isExn() {
+    return this == EXN;
+  }
+
+  /**
+   * Checks if this is the {@code noexn} heap type.
+   *
+   * @return true if this is noexn
+   */
+  public boolean isNoExn() {
+    return this == NOEXN;
+  }
+
+  /**
+   * Checks if this is the {@code cont} heap type.
+   *
+   * @return true if this is cont
+   */
+  public boolean isCont() {
+    return this == CONT;
+  }
+
+  /**
+   * Checks if this is the {@code nocont} heap type.
+   *
+   * @return true if this is nocont
+   */
+  public boolean isNoCont() {
+    return this == NOCONT;
+  }
+
+  /**
+   * Checks if this is a concrete (user-defined) heap type.
+   *
+   * @return true if this is a concrete type index
+   */
+  public boolean isConcrete() {
+    return this == CONCRETE;
   }
 
   /**

@@ -478,6 +478,74 @@ impl Module {
             })
     }
 
+    /// Get the resources required to instantiate this module.
+    ///
+    /// Returns a tuple of 8 values:
+    /// (min_memory_bytes, max_memory_bytes, min_table_elements, max_table_elements,
+    ///  num_memories, num_tables, num_globals, num_functions)
+    ///
+    /// max_memory_bytes is -1 if any memory is unbounded.
+    /// max_table_elements is -1 if any table is unbounded.
+    pub fn resources_required(&self) -> (i64, i64, i64, i64, i32, i32, i32, i32) {
+        let req = self.inner.resources_required();
+        let num_memories = req.num_memories as i32;
+        let num_tables = req.num_tables as i32;
+
+        // Compute min/max from memory and table types by iterating imports + exports
+        let mut min_memory_bytes: i64 = 0;
+        let mut max_memory_bytes: i64 = 0;
+        let mut min_table_elements: i64 = 0;
+        let mut max_table_elements: i64 = 0;
+
+        for mem_type in self.inner.imports().filter_map(|i| match i.ty() {
+            wasmtime::ExternType::Memory(m) => Some(m),
+            _ => None,
+        }).chain(self.inner.exports().filter_map(|e| match e.ty() {
+            wasmtime::ExternType::Memory(m) => Some(m),
+            _ => None,
+        })) {
+            min_memory_bytes += mem_type.minimum() as i64 * 65536;
+            match mem_type.maximum() {
+                Some(max) if max_memory_bytes >= 0 => {
+                    max_memory_bytes += max as i64 * 65536;
+                }
+                None => max_memory_bytes = -1,
+                _ => {} // already unbounded
+            }
+        }
+
+        for table_type in self.inner.imports().filter_map(|i| match i.ty() {
+            wasmtime::ExternType::Table(t) => Some(t),
+            _ => None,
+        }).chain(self.inner.exports().filter_map(|e| match e.ty() {
+            wasmtime::ExternType::Table(t) => Some(t),
+            _ => None,
+        })) {
+            min_table_elements += table_type.minimum() as i64;
+            match table_type.maximum() {
+                Some(max) if max_table_elements >= 0 => {
+                    max_table_elements += max as i64;
+                }
+                None => max_table_elements = -1,
+                _ => {} // already unbounded
+            }
+        }
+
+        let num_globals = self.metadata.globals.len() as i32;
+        let num_functions = self.metadata.functions.len() as i32;
+
+        (
+            min_memory_bytes,
+            max_memory_bytes,
+            min_table_elements,
+            max_table_elements,
+            num_memories,
+            num_tables,
+            num_globals,
+            num_functions,
+        )
+    }
+
     /// Get module serialization for caching
     pub fn serialize(&self) -> WasmtimeResult<Vec<u8>> {
         self.inner.serialize().map_err(|e| WasmtimeError::Internal {
@@ -931,6 +999,17 @@ pub mod core {
                 module_export_ptr as *mut wasmtime::ModuleExport,
             ));
         }
+    }
+
+    /// Core function to get module resources required.
+    ///
+    /// Returns 8 values as a tuple matching Java's ResourcesRequired fields.
+    pub unsafe fn get_module_resources_required(
+        module_ptr: *const c_void,
+    ) -> WasmtimeResult<(i64, i64, i64, i64, i32, i32, i32, i32)> {
+        validate_ptr_not_null!(module_ptr, "module");
+        let module = &*(module_ptr as *const Module);
+        Ok(module.resources_required())
     }
 
     /// Core function to validate WebAssembly bytes without compilation
@@ -1540,6 +1619,53 @@ pub unsafe extern "C" fn wasmtime4j_module_get_export_kind(
             0 // Not found
         }
         _ => 0,
+    }
+}
+
+/// Get module resources required
+///
+/// # Safety
+///
+/// module_ptr must be a valid pointer, all output pointers must be non-null.
+/// Writes 8 values matching Java ResourcesRequired fields.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_module_resources_required(
+    module_ptr: *const c_void,
+    min_memory_bytes_out: *mut i64,
+    max_memory_bytes_out: *mut i64,
+    min_table_elements_out: *mut i64,
+    max_table_elements_out: *mut i64,
+    num_memories_out: *mut i32,
+    num_tables_out: *mut i32,
+    num_globals_out: *mut i32,
+    num_functions_out: *mut i32,
+) -> i32 {
+    if module_ptr.is_null()
+        || min_memory_bytes_out.is_null()
+        || max_memory_bytes_out.is_null()
+        || min_table_elements_out.is_null()
+        || max_table_elements_out.is_null()
+        || num_memories_out.is_null()
+        || num_tables_out.is_null()
+        || num_globals_out.is_null()
+        || num_functions_out.is_null()
+    {
+        return -1;
+    }
+
+    match core::get_module_resources_required(module_ptr) {
+        Ok((min_mem, max_mem, min_tab, max_tab, n_mem, n_tab, n_glob, n_func)) => {
+            *min_memory_bytes_out = min_mem;
+            *max_memory_bytes_out = max_mem;
+            *min_table_elements_out = min_tab;
+            *max_table_elements_out = max_tab;
+            *num_memories_out = n_mem;
+            *num_tables_out = n_tab;
+            *num_globals_out = n_glob;
+            *num_functions_out = n_func;
+            0
+        }
+        Err(_) => -1,
     }
 }
 

@@ -229,6 +229,42 @@ public final class NativeStoreBindings extends NativeBindingsBase {
         "wasmtime4j_store_has_wasi_context",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
+    // Debugging API
+    addFunctionBinding(
+        "wasmtime4j_store_is_single_step",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_store_breakpoint_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_store_set_single_step",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT)); // enabled
+
+    addFunctionBinding(
+        "wasmtime4j_store_add_breakpoint",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.JAVA_INT)); // pc
+
+    addFunctionBinding(
+        "wasmtime4j_store_remove_breakpoint",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.JAVA_INT)); // pc
+
+    addFunctionBinding(
+        "wasmtime4j_store_is_async",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
     addFunctionBinding(
         "wasmtime4j_panama_store_epoch_deadline_async_yield_and_update",
         FunctionDescriptor.of(
@@ -790,5 +826,61 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    */
   public MethodHandle getPanamaStoreGetExecutionStats() {
     return resolveHandle("wasmtime4j_panama_store_get_execution_stats");
+  }
+
+  // ===== Debugging API =====
+
+  /**
+   * Gets the method handle for checking single-step mode.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreIsSingleStep() {
+    return resolveHandle("wasmtime4j_store_is_single_step");
+  }
+
+  /**
+   * Gets the method handle for getting breakpoint count.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreBreakpointCount() {
+    return resolveHandle("wasmtime4j_store_breakpoint_count");
+  }
+
+  /**
+   * Gets the method handle for setting single-step mode.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreSetSingleStep() {
+    return resolveHandle("wasmtime4j_store_set_single_step");
+  }
+
+  /**
+   * Gets the method handle for adding a breakpoint.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreAddBreakpoint() {
+    return resolveHandle("wasmtime4j_store_add_breakpoint");
+  }
+
+  /**
+   * Gets the method handle for removing a breakpoint.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreRemoveBreakpoint() {
+    return resolveHandle("wasmtime4j_store_remove_breakpoint");
+  }
+
+  /**
+   * Gets the method handle for checking async support.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreIsAsync() {
+    return resolveHandle("wasmtime4j_store_is_async");
   }
 }

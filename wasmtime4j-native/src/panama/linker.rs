@@ -213,6 +213,82 @@ pub extern "C" fn wasmtime4j_panama_linker_define_host_function(
     })
 }
 
+/// Define an unchecked host function in the linker (Panama FFI version)
+///
+/// This uses `Func::new_unchecked` internally, which skips type-checking at call
+/// time for better performance. The caller is responsible for ensuring correct types.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_define_host_function_unchecked(
+    linker_ptr: *mut c_void,
+    module_name: *const c_char,
+    name: *const c_char,
+    param_types: *const c_int,
+    param_count: c_uint,
+    return_types: *const c_int,
+    return_count: c_uint,
+    callback_fn: PanamaHostFunctionCallback,
+    callback_id: i64,
+) -> c_int {
+    if linker_ptr.is_null() || module_name.is_null() || name.is_null() {
+        return -1;
+    }
+
+    ffi_utils::ffi_try_code(|| {
+        let module_name_str = unsafe { CStr::from_ptr(module_name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+        let name_str = unsafe { CStr::from_ptr(name) }.to_str().map_err(|e| {
+            crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            }
+        })?;
+
+        let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
+        let param_val_types: Vec<ValType> = param_slice
+            .iter()
+            .map(|&t| int_to_valtype(t))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let return_slice =
+            unsafe { std::slice::from_raw_parts(return_types, return_count as usize) };
+        let return_val_types: Vec<ValType> = return_slice
+            .iter()
+            .map(|&t| int_to_valtype(t))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let result_count = return_val_types.len();
+        let linker = unsafe { linker_core::get_linker_mut(linker_ptr)? };
+        let linker_lock = linker.inner()?;
+        let engine = linker_lock.engine();
+        let func_type = FuncType::new(engine, param_val_types, return_val_types);
+        drop(linker_lock);
+
+        let callback = PanamaHostFunctionCallbackImpl {
+            callback_fn,
+            callback_id,
+            result_count,
+        };
+
+        let host_func = HostFunction::new(
+            format!("{}::{}", module_name_str, name_str),
+            func_type,
+            Box::new(callback),
+        )?;
+
+        let host_func_clone = (*host_func).clone();
+        linker.define_host_function_unchecked(
+            module_name_str,
+            name_str,
+            host_func.func_type().clone(),
+            host_func_clone,
+        )?;
+
+        Ok(())
+    })
+}
+
 /// Create an alias for an export (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_linker_alias(

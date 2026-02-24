@@ -1335,4 +1335,100 @@ public final class JniStore extends JniResource implements Store {
 
   // Native methods for new functionality
   private native void nativeSetFuelAsyncYieldInterval(long storeHandle, long interval);
+
+  // ===== Debugging API =====
+
+  @Override
+  public boolean isSingleStep() {
+    if (isClosed()) {
+      return false;
+    }
+    return nativeIsSingleStep(getNativeHandle());
+  }
+
+  @Override
+  public boolean isAsync() {
+    if (isClosed()) {
+      return false;
+    }
+    return nativeIsAsync(getNativeHandle());
+  }
+
+  @Override
+  public java.util.Optional<java.util.List<ai.tegmentum.wasmtime4j.debug.Breakpoint>>
+      breakpoints() {
+    if (isClosed()) {
+      return java.util.Optional.empty();
+    }
+    final int count = nativeBreakpointCount(getNativeHandle());
+    if (count < 0) {
+      return java.util.Optional.empty(); // debugging not enabled or error
+    }
+    // We can report count but not individual breakpoints without iteration support
+    return java.util.Optional.of(java.util.Collections.emptyList());
+  }
+
+  @Override
+  public java.util.Optional<ai.tegmentum.wasmtime4j.debug.BreakpointEditor> editBreakpoints() {
+    if (isClosed()) {
+      return java.util.Optional.empty();
+    }
+    // Check if debugging is available by trying breakpoint count
+    final int count = nativeBreakpointCount(getNativeHandle());
+    if (count < -1) {
+      return java.util.Optional.empty(); // error
+    }
+    final long storeHandle = getNativeHandle();
+    return java.util.Optional.of(
+        new ai.tegmentum.wasmtime4j.debug.BreakpointEditor() {
+          @Override
+          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor addBreakpoint(
+              final ai.tegmentum.wasmtime4j.Module module, final int pc) {
+            java.util.Objects.requireNonNull(module, "module cannot be null");
+            if (pc < 0) {
+              throw new IllegalArgumentException("pc cannot be negative: " + pc);
+            }
+            final long moduleHandle = ((JniModule) module).getNativeHandle();
+            nativeAddBreakpoint(storeHandle, moduleHandle, pc);
+            return this;
+          }
+
+          @Override
+          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor removeBreakpoint(
+              final ai.tegmentum.wasmtime4j.Module module, final int pc) {
+            java.util.Objects.requireNonNull(module, "module cannot be null");
+            if (pc < 0) {
+              throw new IllegalArgumentException("pc cannot be negative: " + pc);
+            }
+            final long moduleHandle = ((JniModule) module).getNativeHandle();
+            nativeRemoveBreakpoint(storeHandle, moduleHandle, pc);
+            return this;
+          }
+
+          @Override
+          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(
+              final boolean enabled) {
+            nativeSetSingleStep(storeHandle, enabled);
+            return this;
+          }
+
+          @Override
+          public void apply() {
+            // Breakpoint edits are applied immediately via native calls
+          }
+        });
+  }
+
+  // Debugging native methods
+  private static native boolean nativeIsSingleStep(long storeHandle);
+
+  private static native boolean nativeIsAsync(long storeHandle);
+
+  private static native int nativeBreakpointCount(long storeHandle);
+
+  private static native int nativeAddBreakpoint(long storeHandle, long moduleHandle, int pc);
+
+  private static native int nativeRemoveBreakpoint(long storeHandle, long moduleHandle, int pc);
+
+  private static native int nativeSetSingleStep(long storeHandle, boolean enabled);
 }

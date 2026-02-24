@@ -1515,3 +1515,139 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCall
 ) {
     Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCallHook(env, _class, store_ptr);
 }
+
+// ===== Debugging API =====
+
+/// Check if single-step mode is active
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeIsSingleStep(
+    _env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) -> jboolean {
+    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
+        Ok(store) => {
+            if store.is_single_step() {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => 0,
+    }
+}
+
+/// Check if store has async support enabled
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeIsAsync(
+    _env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) -> jboolean {
+    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
+        Ok(store) => {
+            if store.is_async() {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => 0,
+    }
+}
+
+/// Get the number of active breakpoints
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeBreakpointCount(
+    _env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) -> jint {
+    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
+        Ok(store) => match store.breakpoint_count() {
+            Ok(Some(count)) => count as jint,
+            Ok(None) => -1,
+            Err(_) => -2,
+        },
+        Err(_) => -2,
+    }
+}
+
+/// Add a breakpoint
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeAddBreakpoint(
+    _env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+    module_ptr: jlong,
+    pc: jint,
+) -> jint {
+    let module = match unsafe { crate::module::core::get_module_ref(module_ptr as *const c_void) } {
+        Ok(m) => m,
+        Err(_) => return -1,
+    };
+    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
+        Ok(store) => {
+            let wasm_module = module.inner().clone();
+            match store.edit_breakpoints(|edit| {
+                let _ = edit.add_breakpoint(&wasm_module, pc as u32);
+            }) {
+                Ok(true) => 0,
+                Ok(false) => 1,
+                Err(_) => -1,
+            }
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Remove a breakpoint
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeRemoveBreakpoint(
+    _env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+    module_ptr: jlong,
+    pc: jint,
+) -> jint {
+    let module = match unsafe { crate::module::core::get_module_ref(module_ptr as *const c_void) } {
+        Ok(m) => m,
+        Err(_) => return -1,
+    };
+    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
+        Ok(store) => {
+            let wasm_module = module.inner().clone();
+            match store.edit_breakpoints(|edit| {
+                let _ = edit.remove_breakpoint(&wasm_module, pc as u32);
+            }) {
+                Ok(true) => 0,
+                Ok(false) => 1,
+                Err(_) => -1,
+            }
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Set single-step mode
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetSingleStep(
+    _env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+    enabled: jboolean,
+) -> jint {
+    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
+        Ok(store) => {
+            let enable = enabled != 0;
+            match store.edit_breakpoints(|edit| {
+                let _ = edit.single_step(enable);
+            }) {
+                Ok(true) => 0,
+                Ok(false) => 1,
+                Err(_) => -1,
+            }
+        }
+        Err(_) => -1,
+    }
+}

@@ -17,6 +17,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefi
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefineHostFunctionUnchecked
+ * Signature: (JLjava/lang/String;Ljava/lang/String;[I[IJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunctionUnchecked
+  (JNIEnv *, jobject, jlong, jstring, jstring, jintArray, jintArray, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
  * Method:    nativeDefineMemory
  * Signature: (JJLjava/lang/String;Ljava/lang/String;J)Z
  */

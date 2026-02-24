@@ -251,8 +251,41 @@ public interface ComponentLinker<T> extends Closeable {
    */
   default java.util.concurrent.CompletableFuture<ComponentInstance> instantiateAsync(
       final Store store, final Component component) throws WasmException {
-    throw new UnsupportedOperationException(
-        "Async instantiation requires async engine support and FFI bridging");
+    // Default: delegate to sync instantiation on ForkJoinPool.
+    // Implementations should override to use native linker.instantiate_async().
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+      try {
+        return instantiate(store, component);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * Returns the component type with all imports substituted by the linker's definitions.
+   *
+   * <p>This method computes a {@link ComponentTypeInfo} reflecting the component's type after the
+   * linker has filled in all available imports. The result shows which imports are still unsatisfied
+   * and which exports will be available.
+   *
+   * <p>This is useful for checking link-time compatibility before instantiation, or for generating
+   * documentation about a component's effective interface after imports are resolved.
+   *
+   * @param component the component to compute the substituted type for
+   * @return the component type with linker-provided imports substituted
+   * @throws WasmException if the computation fails
+   * @throws IllegalArgumentException if component is null
+   * @since 1.1.0
+   */
+  default ComponentTypeInfo substitutedComponentType(final Component component)
+      throws WasmException {
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    // Default: return the component's own type info (no substitution).
+    // Implementations should override to use Wasmtime's Linker::substituted_component_type().
+    return component.componentType();
   }
 
   /**

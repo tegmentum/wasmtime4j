@@ -1144,6 +1144,33 @@ impl EngineBuilder {
         Ok(self)
     }
 
+    /// Enable or disable guest debugging instrumentation
+    ///
+    /// When enabled, compiled code includes extra instrumentation to support
+    /// debugging guest WebAssembly code. This enables features like breakpoints,
+    /// single-stepping, and frame inspection.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable guest debugging (default: false)
+    pub fn guest_debug(mut self, enable: bool) -> Self {
+        self.config.guest_debug(enable);
+        self
+    }
+
+    /// Enable a Cranelift boolean flag by name
+    ///
+    /// This is the single-flag variant that sets the flag value to "true".
+    /// For example: `cranelift_flag_enable("is_pic")`.
+    ///
+    /// # Arguments
+    /// * `name` - The flag name to enable
+    pub fn cranelift_flag_enable(mut self, name: &str) -> Self {
+        unsafe {
+            self.config.cranelift_flag_enable(name);
+        }
+        self
+    }
+
     /// Build engine with current configuration
     pub fn build(self) -> WasmtimeResult<Engine> {
         let summary = EngineConfigSummary::from_builder(&self);

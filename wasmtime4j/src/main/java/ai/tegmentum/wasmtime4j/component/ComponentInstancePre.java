@@ -87,8 +87,15 @@ public interface ComponentInstancePre extends Closeable {
    */
   default java.util.concurrent.CompletableFuture<ComponentInstance> instantiateAsync()
       throws WasmException {
-    throw new UnsupportedOperationException(
-        "Async instantiation requires async engine support and FFI bridging");
+    // Default: delegate to sync instantiation on ForkJoinPool.
+    // Implementations should override to use native instantiate_async().
+    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+      try {
+        return instantiate();
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
   }
 
   /**

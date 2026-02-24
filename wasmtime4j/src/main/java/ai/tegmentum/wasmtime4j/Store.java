@@ -345,6 +345,95 @@ public interface Store extends Closeable {
   void gc() throws WasmException;
 
   /**
+   * Performs garbage collection asynchronously.
+   *
+   * <p>This is the async variant of {@link #gc()} that cooperatively yields during collection
+   * if async fuel yielding or epoch-based yielding is configured. This allows other async tasks
+   * to make progress during potentially long GC operations.
+   *
+   * <p>Requires the store to have async support enabled (via {@code Config.asyncSupport(true)}).
+   *
+   * @return a future that completes when GC is finished
+   * @throws UnsupportedOperationException if async support is not enabled
+   * @since 1.1.0
+   */
+  default CompletableFuture<Void> gcAsync() {
+    // Default implementation: delegate to sync gc on ForkJoinPool
+    // Implementations should override to use real native async
+    return CompletableFuture.runAsync(() -> {
+      try {
+        gc();
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * Asynchronously creates an instance of a WebAssembly module in this store.
+   *
+   * <p>This is the async variant of {@link #createInstance(Module)}. The default implementation
+   * delegates to the synchronous method on the ForkJoinPool. Implementations may override to use
+   * native async instantiation.
+   *
+   * @param module the compiled module to instantiate
+   * @return a future that completes with a new Instance
+   * @throws IllegalArgumentException if module is null
+   * @since 1.1.0
+   */
+  default CompletableFuture<Instance> createInstanceAsync(final Module module) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return createInstance(module);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * Asynchronously creates a new WebAssembly linear memory from a memory type descriptor.
+   *
+   * <p>This is the async variant of {@link #createMemory(MemoryType)}. The default implementation
+   * delegates to the synchronous method on the ForkJoinPool.
+   *
+   * @param memoryType the memory type descriptor specifying all memory attributes
+   * @return a future that completes with a new WasmMemory
+   * @throws IllegalArgumentException if memoryType is null
+   * @since 1.1.0
+   */
+  default CompletableFuture<WasmMemory> createMemoryAsync(final MemoryType memoryType) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return createMemory(memoryType);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * Asynchronously creates a new WebAssembly table from a table type descriptor.
+   *
+   * <p>This is the async variant of {@link #createTable(TableType)}. The default implementation
+   * delegates to the synchronous method on the ForkJoinPool.
+   *
+   * @param tableType the table type descriptor specifying all table attributes
+   * @return a future that completes with a new WasmTable
+   * @throws IllegalArgumentException if tableType is null
+   * @since 1.1.0
+   */
+  default CompletableFuture<WasmTable> createTableAsync(final TableType tableType) {
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return createTable(tableType);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
    * Configures epoch-deadline expiration to yield to the async caller and update the deadline.
    *
    * <p>When epoch-interruption-instrumented code is executed on this store and the epoch deadline
@@ -646,6 +735,203 @@ public interface Store extends Closeable {
    * @since 1.1.0
    */
   void setResourceLimiterAsync(ResourceLimiterAsync limiter) throws WasmException;
+
+  // ===== Debugging API =====
+
+  /**
+   * Gets the current stack frames for debugging.
+   *
+   * <p>Returns frame handles from innermost (current function) to outermost (root caller).
+   * Frame handles provide access to function identity, program counter, locals, and stack values.
+   *
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
+   *
+   * @return a list of frame handles, innermost first
+   * @throws UnsupportedOperationException if guest debugging is not enabled
+   * @throws WasmException if frame retrieval fails
+   * @since 1.1.0
+   */
+  default java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "debugExitFrames requires guest debugging to be enabled via Config.guestDebug(true)");
+  }
+
+  /**
+   * Gets all instances currently alive in this store.
+   *
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
+   *
+   * @return a list of all instances in this store
+   * @throws UnsupportedOperationException if guest debugging is not enabled
+   * @throws WasmException if retrieval fails
+   * @since 1.1.0
+   */
+  default java.util.List<Instance> debugAllInstances() throws WasmException {
+    throw new UnsupportedOperationException(
+        "debugAllInstances requires guest debugging to be enabled via Config.guestDebug(true)");
+  }
+
+  /**
+   * Gets all modules currently loaded in this store.
+   *
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
+   *
+   * @return a list of all modules in this store
+   * @throws UnsupportedOperationException if guest debugging is not enabled
+   * @throws WasmException if retrieval fails
+   * @since 1.1.0
+   */
+  default java.util.List<Module> debugAllModules() throws WasmException {
+    throw new UnsupportedOperationException(
+        "debugAllModules requires guest debugging to be enabled via Config.guestDebug(true)");
+  }
+
+  /**
+   * Creates a breakpoint editor for batch-modifying breakpoints.
+   *
+   * <p>The returned editor allows adding/removing breakpoints and toggling single-step mode.
+   * Changes are applied when {@link ai.tegmentum.wasmtime4j.debug.BreakpointEditor#apply()} is
+   * called.
+   *
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
+   *
+   * @return a breakpoint editor, or empty if guest debugging is not enabled
+   * @since 1.1.0
+   */
+  default java.util.Optional<ai.tegmentum.wasmtime4j.debug.BreakpointEditor> editBreakpoints() {
+    return java.util.Optional.empty();
+  }
+
+  /**
+   * Gets all currently active breakpoints.
+   *
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
+   *
+   * @return a list of active breakpoints, or empty if guest debugging is not enabled
+   * @since 1.1.0
+   */
+  default java.util.Optional<java.util.List<ai.tegmentum.wasmtime4j.debug.Breakpoint>>
+      breakpoints() {
+    return java.util.Optional.empty();
+  }
+
+  /**
+   * Checks if single-step mode is active.
+   *
+   * <p>When single-step mode is enabled, the debug handler is invoked before each
+   * WebAssembly instruction is executed.
+   *
+   * @return true if single-step mode is active
+   * @since 1.1.0
+   */
+  default boolean isSingleStep() {
+    return false;
+  }
+
+  /**
+   * Sets a debug handler for this store.
+   *
+   * <p>The handler will be invoked when debug events occur, such as breakpoints being hit,
+   * traps occurring, or exceptions being thrown.
+   *
+   * <p>Requires the engine to be configured with both {@code guestDebug(true)} and
+   * {@code asyncSupport(true)}.
+   *
+   * @param handler the debug handler to set
+   * @throws UnsupportedOperationException if guest debugging or async support is not enabled
+   * @throws NullPointerException if handler is null
+   * @since 1.1.0
+   */
+  default void setDebugHandler(final ai.tegmentum.wasmtime4j.debug.DebugHandler handler) {
+    throw new UnsupportedOperationException(
+        "setDebugHandler requires guest debugging and async support to be enabled");
+  }
+
+  /**
+   * Clears the current debug handler.
+   *
+   * <p>After clearing, no debug events will be delivered to any handler.
+   *
+   * @since 1.1.0
+   */
+  default void clearDebugHandler() {
+    // No-op by default when no handler is set
+  }
+
+  // ===== Concurrency API =====
+
+  /**
+   * Runs a concurrent task on this store, returning a future for its result.
+   *
+   * <p>This method is part of the shared-everything-threads proposal. The task executes
+   * concurrently within this store's context, cooperatively interleaving with other concurrent
+   * operations on the same store.
+   *
+   * <p>The default implementation executes the task asynchronously on the ForkJoinPool.
+   * Implementations should override to use native concurrent execution support when available.
+   *
+   * <p>Requires the engine to have been created with async support enabled.
+   *
+   * @param <R> the result type of the task
+   * @param task the concurrent task to execute
+   * @return a future that completes with the task's result
+   * @throws IllegalArgumentException if task is null
+   * @since 1.1.0
+   */
+  default <R> CompletableFuture<R> runConcurrent(final ConcurrentTask<R> task) {
+    if (task == null) {
+      throw new IllegalArgumentException("task cannot be null");
+    }
+    final Store self = this;
+    return CompletableFuture.supplyAsync(() -> {
+      try {
+        return task.execute(self);
+      } catch (final WasmException e) {
+        throw new java.util.concurrent.CompletionException(e);
+      }
+    });
+  }
+
+  /**
+   * Spawns a concurrent task on this store, returning a handle to join its result.
+   *
+   * <p>Unlike {@link #runConcurrent(ConcurrentTask)}, which returns a plain {@link
+   * CompletableFuture}, this method returns a {@link JoinHandle} that provides cancellation
+   * support and blocking join semantics.
+   *
+   * <p>The default implementation wraps the task in a {@link CompletableFuture} and provides a
+   * default JoinHandle. Implementations should override to use native spawn support when available.
+   *
+   * <p>Requires the engine to have been created with async support enabled.
+   *
+   * @param <R> the result type of the task
+   * @param task the concurrent task to spawn
+   * @return a JoinHandle for the spawned task
+   * @throws IllegalArgumentException if task is null
+   * @since 1.1.0
+   */
+  default <R> JoinHandle<R> spawn(final ConcurrentTask<R> task) {
+    if (task == null) {
+      throw new IllegalArgumentException("task cannot be null");
+    }
+    final CompletableFuture<R> future = runConcurrent(task);
+    return new DefaultJoinHandle<>(future);
+  }
+
+  /**
+   * Checks whether this store has async support enabled.
+   *
+   * <p>Async-enabled stores are required for Wasmtime's async operations such as
+   * {@code callAsync()}, {@code instantiateAsync()}, and async host functions. The async flag
+   * is inherited from the Engine's {@code asyncSupport} configuration at store creation time.
+   *
+   * @return true if this store supports async operations
+   * @since 1.1.0
+   */
+  default boolean isAsync() {
+    return false;
+  }
 
   /**
    * Closes the store and releases associated resources.
