@@ -65,14 +65,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasI
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
- * Method:    nativeGetCustomSections
- * Signature: (J)Ljava/util/Map;
- */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetCustomSections
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
  * Method:    nativeCompileFromFile
  * Signature: (JLjava/lang/String;)J
  */
@@ -94,6 +86,30 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeModu
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExportIndex
   (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleExport
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleExport
+  (JNIEnv *, jobject, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeDestroyModuleExport
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModuleExport
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeInitializeCopyOnWriteImage
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInitializeCopyOnWriteImage
+  (JNIEnv *, jclass, jlong);
 
 #ifdef __cplusplus
 }

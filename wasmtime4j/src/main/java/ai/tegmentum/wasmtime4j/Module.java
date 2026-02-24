@@ -93,41 +93,82 @@ public interface Module extends Closeable {
    * Gets the function type for a specific exported function.
    *
    * @param functionName the name of the exported function
-   * @return the function type, or empty if the function doesn't exist or isn't a function
-   * @throws IllegalArgumentException if functionName is null
+   * @return the function type, or empty if the function doesn't exist, isn't a function, or name is
+   *     null
    * @since 1.0.0
    */
-  java.util.Optional<FuncType> getFunctionType(final String functionName);
+  default java.util.Optional<FuncType> getFunctionType(final String functionName) {
+    if (functionName == null) {
+      return java.util.Optional.empty();
+    }
+    for (final ExportType export : getExports()) {
+      if (export.getName().equals(functionName)
+          && export.getType().getKind() == WasmTypeKind.FUNCTION) {
+        return java.util.Optional.of((FuncType) export.getType());
+      }
+    }
+    return java.util.Optional.empty();
+  }
 
   /**
    * Gets the global type for a specific exported global.
    *
    * @param globalName the name of the exported global
-   * @return the global type, or empty if the global doesn't exist or isn't a global
-   * @throws IllegalArgumentException if globalName is null
+   * @return the global type, or empty if the global doesn't exist, isn't a global, or name is null
    * @since 1.0.0
    */
-  java.util.Optional<GlobalType> getGlobalType(final String globalName);
+  default java.util.Optional<GlobalType> getGlobalType(final String globalName) {
+    if (globalName == null) {
+      return java.util.Optional.empty();
+    }
+    for (final ExportType export : getExports()) {
+      if (export.getName().equals(globalName)
+          && export.getType().getKind() == WasmTypeKind.GLOBAL) {
+        return java.util.Optional.of((GlobalType) export.getType());
+      }
+    }
+    return java.util.Optional.empty();
+  }
 
   /**
    * Gets the memory type for a specific exported memory.
    *
    * @param memoryName the name of the exported memory
-   * @return the memory type, or empty if the memory doesn't exist or isn't a memory
-   * @throws IllegalArgumentException if memoryName is null
+   * @return the memory type, or empty if the memory doesn't exist, isn't a memory, or name is null
    * @since 1.0.0
    */
-  java.util.Optional<MemoryType> getMemoryType(final String memoryName);
+  default java.util.Optional<MemoryType> getMemoryType(final String memoryName) {
+    if (memoryName == null) {
+      return java.util.Optional.empty();
+    }
+    for (final ExportType export : getExports()) {
+      if (export.getName().equals(memoryName)
+          && export.getType().getKind() == WasmTypeKind.MEMORY) {
+        return java.util.Optional.of((MemoryType) export.getType());
+      }
+    }
+    return java.util.Optional.empty();
+  }
 
   /**
    * Gets the table type for a specific exported table.
    *
    * @param tableName the name of the exported table
-   * @return the table type, or empty if the table doesn't exist or isn't a table
-   * @throws IllegalArgumentException if tableName is null
+   * @return the table type, or empty if the table doesn't exist, isn't a table, or name is null
    * @since 1.0.0
    */
-  java.util.Optional<TableType> getTableType(final String tableName);
+  default java.util.Optional<TableType> getTableType(final String tableName) {
+    if (tableName == null) {
+      return java.util.Optional.empty();
+    }
+    for (final ExportType export : getExports()) {
+      if (export.getName().equals(tableName)
+          && export.getType().getKind() == WasmTypeKind.TABLE) {
+        return java.util.Optional.of((TableType) export.getType());
+      }
+    }
+    return java.util.Optional.empty();
+  }
 
   /**
    * Checks if this module exports a specific item.
@@ -261,7 +302,15 @@ public interface Module extends Closeable {
    *
    * @return an immutable list of function types
    */
-  java.util.List<FuncType> getFunctionTypes();
+  default java.util.List<FuncType> getFunctionTypes() {
+    final java.util.List<FuncType> types = new java.util.ArrayList<>();
+    for (final ExportType export : getExports()) {
+      if (export.getType().getKind() == WasmTypeKind.FUNCTION) {
+        types.add((FuncType) export.getType());
+      }
+    }
+    return java.util.Collections.unmodifiableList(types);
+  }
 
   /**
    * Gets all memory types defined in this module.
@@ -270,7 +319,15 @@ public interface Module extends Closeable {
    *
    * @return an immutable list of memory types
    */
-  java.util.List<MemoryType> getMemoryTypes();
+  default java.util.List<MemoryType> getMemoryTypes() {
+    final java.util.List<MemoryType> types = new java.util.ArrayList<>();
+    for (final ExportType export : getExports()) {
+      if (export.getType().getKind() == WasmTypeKind.MEMORY) {
+        types.add((MemoryType) export.getType());
+      }
+    }
+    return java.util.Collections.unmodifiableList(types);
+  }
 
   /**
    * Gets all table types defined in this module.
@@ -279,7 +336,15 @@ public interface Module extends Closeable {
    *
    * @return an immutable list of table types
    */
-  java.util.List<TableType> getTableTypes();
+  default java.util.List<TableType> getTableTypes() {
+    final java.util.List<TableType> types = new java.util.ArrayList<>();
+    for (final ExportType export : getExports()) {
+      if (export.getType().getKind() == WasmTypeKind.TABLE) {
+        types.add((TableType) export.getType());
+      }
+    }
+    return java.util.Collections.unmodifiableList(types);
+  }
 
   /**
    * Gets all global types defined in this module.
@@ -288,17 +353,15 @@ public interface Module extends Closeable {
    *
    * @return an immutable list of global types
    */
-  java.util.List<GlobalType> getGlobalTypes();
-
-  /**
-   * Gets custom sections from this module.
-   *
-   * <p>Custom sections contain arbitrary data that can be embedded in WebAssembly modules for
-   * metadata or debugging purposes.
-   *
-   * @return a map of custom section names to their binary data
-   */
-  java.util.Map<String, byte[]> getCustomSections();
+  default java.util.List<GlobalType> getGlobalTypes() {
+    final java.util.List<GlobalType> types = new java.util.ArrayList<>();
+    for (final ExportType export : getExports()) {
+      if (export.getType().getKind() == WasmTypeKind.GLOBAL) {
+        types.add((GlobalType) export.getType());
+      }
+    }
+    return java.util.Collections.unmodifiableList(types);
+  }
 
   /**
    * Gets the resources required to instantiate this module.
@@ -348,6 +411,23 @@ public interface Module extends Closeable {
         tableTypes.size(),
         getGlobalTypes().size(),
         getFunctionTypes().size());
+  }
+
+  /**
+   * Pre-initializes this module's copy-on-write image for faster instantiation.
+   *
+   * <p>When using copy-on-write memory initialization (the default), this method eagerly creates the
+   * memory-mapped image used to initialize linear memories during instantiation. Without this call,
+   * the image is created lazily on first instantiation.
+   *
+   * <p>Calling this is beneficial for server-side use cases where the first instantiation latency
+   * matters and you want to front-load the cost during module compilation/loading.
+   *
+   * @throws WasmException if creating the copy-on-write image fails
+   * @since 1.1.0
+   */
+  default void initializeCopyOnWriteImage() throws WasmException {
+    // Default no-op; runtime implementations override with native calls
   }
 
   /**
@@ -468,6 +548,19 @@ public interface Module extends Closeable {
   int getExportIndex(final String name);
 
   /**
+   * Gets a pre-resolved export handle for O(1) export lookups.
+   *
+   * <p>This returns an opaque {@link ModuleExport} handle that can be passed to {@link
+   * Instance#getExport(Store, ModuleExport)} for fast export access without string hashing.
+   *
+   * @param name the name of the export to resolve
+   * @return the module export handle, or empty if no export with this name exists
+   * @throws IllegalArgumentException if name is null
+   * @since 1.1.0
+   */
+  java.util.Optional<ModuleExport> getModuleExport(final String name);
+
+  /**
    * Serializes this compiled module to a byte array for caching or distribution.
    *
    * <p>Serialized modules can be stored to disk, sent over the network, or cached for faster
@@ -513,16 +606,4 @@ public interface Module extends Closeable {
     return engine.getRuntime().deserializeModuleFile(engine, path);
   }
 
-  /**
-   * Checks if this module can be serialized.
-   *
-   * <p>Some modules may not be serializable depending on their compilation settings or the engine
-   * configuration.
-   *
-   * @return true if this module can be serialized
-   * @since 1.0.0
-   */
-  default boolean isSerializable() {
-    return true;
-  }
 }

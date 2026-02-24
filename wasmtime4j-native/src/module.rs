@@ -47,8 +47,6 @@ pub struct ModuleMetadata {
     pub memories: Vec<MemoryInfo>,
     /// Information about tables in the module
     pub tables: Vec<TableInfo>,
-    /// Custom sections from the WebAssembly module
-    pub custom_sections: HashMap<String, Vec<u8>>,
 }
 
 /// Import information for validation and resolution
@@ -468,6 +466,18 @@ impl Module {
         Ok(())
     }
 
+    /// Pre-initialize copy-on-write image for faster instantiation
+    ///
+    /// When using CoW memory initialization (the default), this eagerly creates the
+    /// memory-mapped image, avoiding the lazy initialization cost on first instantiation.
+    pub fn initialize_copy_on_write_image(&self) -> WasmtimeResult<()> {
+        self.inner
+            .initialize_copy_on_write_image()
+            .map_err(|e| WasmtimeError::Internal {
+                message: format!("Failed to initialize copy-on-write image: {}", e),
+            })
+    }
+
     /// Get module serialization for caching
     pub fn serialize(&self) -> WasmtimeResult<Vec<u8>> {
         self.inner.serialize().map_err(|e| WasmtimeError::Internal {
@@ -651,9 +661,6 @@ impl ModuleMetadata {
             }
         }
 
-        // Extract custom sections from raw WASM bytes
-        let custom_sections = extract_custom_sections(wasm_bytes);
-
         Ok(ModuleMetadata {
             name: module.name().map(|s| s.to_string()),
             size_bytes,
@@ -663,7 +670,6 @@ impl ModuleMetadata {
             globals,
             memories,
             tables,
-            custom_sections,
         })
     }
 
@@ -678,32 +684,8 @@ impl ModuleMetadata {
             globals: Vec::new(),
             memories: Vec::new(),
             tables: Vec::new(),
-            custom_sections: HashMap::new(),
         }
     }
-}
-
-/// Extract custom sections from WebAssembly bytecode
-fn extract_custom_sections(wasm_bytes: &[u8]) -> HashMap<String, Vec<u8>> {
-    use wasmparser::{Parser, Payload};
-
-    let mut custom_sections = HashMap::new();
-
-    let parser = Parser::new(0);
-    for payload in parser.parse_all(wasm_bytes) {
-        match payload {
-            Ok(Payload::CustomSection(reader)) => {
-                let name = reader.name().to_string();
-                let data = reader.data().to_vec();
-                custom_sections.insert(name, data);
-            }
-            _ => {
-                // Continue parsing other sections
-            }
-        }
-    }
-
-    custom_sections
 }
 
 // Helper functions for type conversion
@@ -924,6 +906,33 @@ pub mod core {
             .unwrap_or(-1))
     }
 
+    /// Core function to get a pre-resolved ModuleExport handle for O(1) export lookups.
+    ///
+    /// Returns a boxed ModuleExport pointer, or null if the export name is not found.
+    pub unsafe fn get_wasmtime_module_export(
+        module_ptr: *const c_void,
+        name: &str,
+    ) -> WasmtimeResult<*mut c_void> {
+        validate_ptr_not_null!(module_ptr, "module");
+        let module = &*(module_ptr as *const Module);
+        match module.inner().get_export_index(name) {
+            Some(module_export) => {
+                let boxed = Box::new(module_export);
+                Ok(Box::into_raw(boxed) as *mut c_void)
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    }
+
+    /// Core function to destroy a ModuleExport handle.
+    pub unsafe fn destroy_module_export(module_export_ptr: *mut c_void) {
+        if !module_export_ptr.is_null() {
+            drop(Box::from_raw(
+                module_export_ptr as *mut wasmtime::ModuleExport,
+            ));
+        }
+    }
+
     /// Core function to validate WebAssembly bytes without compilation
     pub fn validate_module_bytes(wasm_bytes: &[u8]) -> WasmtimeResult<()> {
         validate_not_empty!(wasm_bytes, "WebAssembly bytes");
@@ -999,6 +1008,11 @@ pub mod core {
     /// Core function to validate module functionality
     pub fn validate_module(module: &Module) -> WasmtimeResult<()> {
         module.validate()
+    }
+
+    /// Core function to initialize copy-on-write image
+    pub fn initialize_copy_on_write_image(module: &Module) -> WasmtimeResult<()> {
+        module.initialize_copy_on_write_image()
     }
 
     /// Core function to get module size in bytes
@@ -1229,7 +1243,6 @@ mod tests {
         assert!(metadata.globals.is_empty());
         assert!(metadata.memories.is_empty());
         assert!(metadata.tables.is_empty());
-        assert!(metadata.custom_sections.is_empty());
     }
 
     #[test]

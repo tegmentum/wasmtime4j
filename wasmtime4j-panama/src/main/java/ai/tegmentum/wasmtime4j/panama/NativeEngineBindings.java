@@ -99,57 +99,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     addFunctionBinding("wasmtime4j_engine_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
 
     addFunctionBinding(
-        "wasmtime4j_panama_engine_create_with_extended_config",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return engine_ptr
-            ValueLayout.JAVA_INT, // strategy
-            ValueLayout.JAVA_INT, // opt_level
-            ValueLayout.JAVA_INT, // debug_info
-            ValueLayout.JAVA_INT, // wasm_threads
-            ValueLayout.JAVA_INT, // wasm_simd
-            ValueLayout.JAVA_INT, // wasm_reference_types
-            ValueLayout.JAVA_INT, // wasm_bulk_memory
-            ValueLayout.JAVA_INT, // wasm_multi_value
-            ValueLayout.JAVA_INT, // fuel_enabled
-            ValueLayout.JAVA_INT, // max_memory_pages
-            ValueLayout.JAVA_INT, // max_stack_size
-            ValueLayout.JAVA_INT, // epoch_interruption
-            ValueLayout.JAVA_INT, // max_instances
-            ValueLayout.JAVA_INT, // async_support
-            ValueLayout.JAVA_INT, // wasm_gc
-            ValueLayout.JAVA_INT, // wasm_function_references
-            ValueLayout.JAVA_INT, // wasm_exceptions
-            ValueLayout.JAVA_LONG, // memory_reservation
-            ValueLayout.JAVA_LONG, // memory_guard_size
-            ValueLayout.JAVA_LONG, // memory_reservation_for_growth
-            ValueLayout.JAVA_INT, // wasm_tail_call
-            ValueLayout.JAVA_INT, // wasm_relaxed_simd
-            ValueLayout.JAVA_INT, // wasm_multi_memory
-            ValueLayout.JAVA_INT, // wasm_memory64
-            ValueLayout.JAVA_INT, // wasm_extended_const
-            ValueLayout.JAVA_INT, // wasm_component_model
-            ValueLayout.JAVA_INT, // coredump_on_trap
-            ValueLayout.JAVA_INT, // cranelift_nan_canonicalization
-            ValueLayout.JAVA_INT, // wasm_custom_page_sizes
-            ValueLayout.JAVA_INT, // wasm_wide_arithmetic
-            ValueLayout.JAVA_INT, // profiling_strategy
-            ValueLayout.JAVA_INT, // native_unwind_info
-            ValueLayout.JAVA_INT, // cranelift_debug_verifier
-            ValueLayout.JAVA_LONG, // async_stack_size
-            ValueLayout.JAVA_INT, // memory_may_move
-            ValueLayout.JAVA_INT, // guard_before_linear_memory
-            ValueLayout.JAVA_INT, // parallel_compilation
-            ValueLayout.JAVA_INT, // pooling_allocator
-            ValueLayout.JAVA_INT, // table_lazy_init
-            ValueLayout.JAVA_INT, // relaxed_simd_deterministic
-            ValueLayout.JAVA_INT, // memory_init_cow
-            ValueLayout.JAVA_INT, // async_stack_zeroing
-            ValueLayout.JAVA_INT, // gc_support
-            ValueLayout.ADDRESS, // cranelift_flags_json (nullable C string)
-            ValueLayout.JAVA_INT, // module_version_strategy
-            ValueLayout.ADDRESS)); // module_version_custom (nullable C string)
-
-    addFunctionBinding(
         "wasmtime4j_panama_engine_create_from_json_config",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return engine_ptr
@@ -226,6 +175,16 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT, // return: 1=supported, 0=not supported, -1=error
             ValueLayout.ADDRESS, // engine_ptr
             ValueLayout.ADDRESS)); // feature_name (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_detect_host_feature",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 1=available, 0=not available
+            ValueLayout.ADDRESS)); // feature_name (C string)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_tls_eager_initialize",
+        FunctionDescriptor.ofVoid()); // no params, void return
 
     addFunctionBinding(
         "wasmtime4j_engine_max_instances",
@@ -500,12 +459,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG)); // len
 
     addFunctionBinding(
-        "wasmtime4j_panama_module_get_custom_sections",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return JSON string pointer
-            ValueLayout.ADDRESS)); // module_ptr
-
-    addFunctionBinding(
         "wasmtime4j_serializer_free_buffer",
         FunctionDescriptor.ofVoid(
             ValueLayout.ADDRESS, // buffer
@@ -604,6 +557,12 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // module_ptr
             ValueLayout.ADDRESS)); // name (null-terminated string)
 
+    addFunctionBinding(
+        "wasmtime4j_panama_module_initialize_cow_image",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS)); // module_ptr
+
   }
 
   // ===========================================================================================
@@ -681,30 +640,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
       LOGGER.severe("Exception during engine creation with JSON config: " + e.getMessage());
       return null;
     }
-  }
-
-  /**
-   * Converts a cranelift settings map to a simple JSON object string.
-   *
-   * @param settings the cranelift settings map (may be null or empty)
-   * @return a JSON string like {"key":"value"}, or null if empty
-   */
-  private static String craneliftSettingsToJson(
-      final java.util.Map<String, String> settings) {
-    if (settings == null || settings.isEmpty()) {
-      return null;
-    }
-    final StringBuilder sb = new StringBuilder("{");
-    boolean first = true;
-    for (final java.util.Map.Entry<String, String> entry : settings.entrySet()) {
-      if (!first) {
-        sb.append(',');
-      }
-      sb.append('"').append(entry.getKey()).append("\":\"").append(entry.getValue()).append('"');
-      first = false;
-    }
-    sb.append('}');
-    return sb.toString();
   }
 
   /**
@@ -945,6 +880,13 @@ public final class NativeEngineBindings extends NativeBindingsBase {
           Integer.class,
           featureNameSegment);
     }
+  }
+
+  /**
+   * Eagerly initializes Wasmtime's thread-local state for the current thread.
+   */
+  public void tlsEagerInitialize() {
+    callNativeFunction("wasmtime4j_panama_engine_tls_eager_initialize", Void.class);
   }
 
   public void engineIncrementEpoch(final MemorySegment enginePtr) {
@@ -1406,6 +1348,19 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Pre-initializes a module's copy-on-write image for faster instantiation.
+   *
+   * @param modulePtr pointer to the module
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleInitializeCowImage(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_initialize_cow_image", Integer.class, modulePtr);
+  }
+
+  /**
    * Creates a WebAssembly module from bytecode (Panama FFI).
    *
    * @param enginePtr pointer to the engine
@@ -1535,20 +1490,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     validatePointer(modulePtr, "modulePtr");
     return callNativeFunction(
         "wasmtime4j_panama_module_get_imports_json", MemorySegment.class, modulePtr);
-  }
-
-  /**
-   * Gets custom sections from a module as JSON.
-   *
-   * <p>Returns a JSON string mapping section names to Base64-encoded data.
-   *
-   * @param modulePtr pointer to the module
-   * @return MemorySegment pointing to JSON string, or NULL on error
-   */
-  public MemorySegment moduleGetCustomSections(final MemorySegment modulePtr) {
-    validatePointer(modulePtr, "modulePtr");
-    return callNativeFunction(
-        "wasmtime4j_panama_module_get_custom_sections", MemorySegment.class, modulePtr);
   }
 
   /**

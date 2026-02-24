@@ -313,6 +313,7 @@ class ComponentEngineTest {
               Arrays.asList(
                   "getEngine",
                   "compileComponent",
+                  "compileComponentFile",
                   "checkCompatibility",
                   "createInstance",
                   "getWitSupportInfo",
@@ -321,6 +322,8 @@ class ComponentEngineTest {
                   "same",
                   "isAsync",
                   "isValid",
+                  "deserializeComponent",
+                  "deserializeComponentFile",
                   "detectPrecompiled"));
 
       Method[] methods = ComponentEngine.class.getDeclaredMethods();
@@ -337,15 +340,18 @@ class ComponentEngineTest {
     }
 
     @Test
-    @DisplayName("All ComponentEngine methods should be public and abstract")
-    void allMethodsShouldBePublicAbstract() {
+    @DisplayName("All ComponentEngine methods should be public (abstract or default)")
+    void allMethodsShouldBePublic() {
       Method[] methods = ComponentEngine.class.getDeclaredMethods();
 
       for (Method method : methods) {
         int modifiers = method.getModifiers();
         assertTrue(
-            Modifier.isPublic(modifiers) && Modifier.isAbstract(modifiers),
-            "Method " + method.getName() + " should be public and abstract");
+            Modifier.isPublic(modifiers),
+            "Method " + method.getName() + " should be public");
+        assertTrue(
+            Modifier.isAbstract(modifiers) || method.isDefault(),
+            "Method " + method.getName() + " should be abstract or default");
       }
     }
   }
@@ -357,16 +363,6 @@ class ComponentEngineTest {
   @Nested
   @DisplayName("Interface Integration Tests")
   class IntegrationTests {
-
-    @Test
-    @DisplayName("ComponentEngine should be in ai.tegmentum.wasmtime4j.component package")
-    void shouldBeInCorrectPackage() {
-      String packageName = ComponentEngine.class.getPackage().getName();
-      assertEquals(
-          "ai.tegmentum.wasmtime4j.component",
-          packageName,
-          "ComponentEngine should be in ai.tegmentum.wasmtime4j.component package");
-    }
 
     @Test
     @DisplayName("ComponentEngine extends Closeable (composition, not Engine)")

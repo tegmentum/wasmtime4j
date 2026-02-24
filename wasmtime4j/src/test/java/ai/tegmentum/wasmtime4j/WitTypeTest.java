@@ -19,7 +19,7 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -325,18 +325,6 @@ class WitTypeTest {
   @DisplayName("Test WitTypeCategory values")
   void testWitTypeCategory() {
     assertEquals(10, WitTypeCategory.values().length);
-
-    // Verify all expected categories exist
-    assertNotNull(WitTypeCategory.PRIMITIVE);
-    assertNotNull(WitTypeCategory.RECORD);
-    assertNotNull(WitTypeCategory.VARIANT);
-    assertNotNull(WitTypeCategory.ENUM);
-    assertNotNull(WitTypeCategory.FLAGS);
-    assertNotNull(WitTypeCategory.LIST);
-    assertNotNull(WitTypeCategory.OPTION);
-    assertNotNull(WitTypeCategory.RESULT);
-    assertNotNull(WitTypeCategory.TUPLE);
-    assertNotNull(WitTypeCategory.RESOURCE);
   }
 
   @Test

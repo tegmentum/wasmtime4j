@@ -17,13 +17,11 @@
 package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
-import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import org.junit.jupiter.api.DisplayName;
@@ -33,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for core enums in the wasmtime4j package.
  *
- * <p>This test class verifies the enum structures, values, and functionality for WasmTypeKind,
- * OptimizationLevel, and ProfilingStrategy using reflection-based testing.
+ * <p>This test class verifies the enum structures, values, and functionality for
+ * OptimizationLevel and ProfilingStrategy.
  */
 @DisplayName("Core Enums Tests")
 class CoreEnumsTest {
@@ -66,30 +64,6 @@ class CoreEnumsTest {
     void shouldHaveExactlyFourValues() {
       OptimizationLevel[] values = OptimizationLevel.values();
       assertEquals(4, values.length, "OptimizationLevel should have exactly 4 values");
-    }
-
-    @Test
-    @DisplayName("NONE should exist")
-    void shouldHaveNone() {
-      assertNotNull(OptimizationLevel.valueOf("NONE"), "NONE should exist");
-    }
-
-    @Test
-    @DisplayName("SPEED should exist")
-    void shouldHaveSpeed() {
-      assertNotNull(OptimizationLevel.valueOf("SPEED"), "SPEED should exist");
-    }
-
-    @Test
-    @DisplayName("SIZE should exist")
-    void shouldHaveSize() {
-      assertNotNull(OptimizationLevel.valueOf("SIZE"), "SIZE should exist");
-    }
-
-    @Test
-    @DisplayName("SPEED_AND_SIZE should exist")
-    void shouldHaveSpeedAndSize() {
-      assertNotNull(OptimizationLevel.valueOf("SPEED_AND_SIZE"), "SPEED_AND_SIZE should exist");
     }
 
     @Test
@@ -143,30 +117,6 @@ class CoreEnumsTest {
     }
 
     @Test
-    @DisplayName("NONE should exist")
-    void shouldHaveNone() {
-      assertNotNull(ProfilingStrategy.valueOf("NONE"), "NONE should exist");
-    }
-
-    @Test
-    @DisplayName("JIT_DUMP should exist")
-    void shouldHaveJitDump() {
-      assertNotNull(ProfilingStrategy.valueOf("JIT_DUMP"), "JIT_DUMP should exist");
-    }
-
-    @Test
-    @DisplayName("PERF_MAP should exist")
-    void shouldHavePerfMap() {
-      assertNotNull(ProfilingStrategy.valueOf("PERF_MAP"), "PERF_MAP should exist");
-    }
-
-    @Test
-    @DisplayName("VTUNE should exist")
-    void shouldHaveVtune() {
-      assertNotNull(ProfilingStrategy.valueOf("VTUNE"), "VTUNE should exist");
-    }
-
-    @Test
     @DisplayName("valueOf should throw for invalid name")
     void valueOfShouldThrowForInvalidName() {
       assertThrows(
@@ -188,65 +138,4 @@ class CoreEnumsTest {
   // Cross-Enum Tests
   // ========================================================================
 
-  @Nested
-  @DisplayName("Cross-Enum Tests")
-  class CrossEnumTests {
-
-    @Test
-    @DisplayName("All core enums should be in their correct packages")
-    void allEnumsShouldBeInCorrectPackages() {
-      assertEquals(
-          "ai.tegmentum.wasmtime4j.type",
-          WasmTypeKind.class.getPackage().getName(),
-          "WasmTypeKind should be in type package");
-      assertEquals(
-          "ai.tegmentum.wasmtime4j.config",
-          OptimizationLevel.class.getPackage().getName(),
-          "OptimizationLevel should be in config package");
-      assertEquals(
-          "ai.tegmentum.wasmtime4j.execution",
-          ProfilingStrategy.class.getPackage().getName(),
-          "ProfilingStrategy should be in execution package");
-    }
-
-    @Test
-    @DisplayName("All core enums should be final (implicit)")
-    void allEnumsShouldBeFinal() {
-      assertTrue(
-          Modifier.isFinal(WasmTypeKind.class.getModifiers()), "WasmTypeKind should be final");
-      assertTrue(
-          Modifier.isFinal(OptimizationLevel.class.getModifiers()),
-          "OptimizationLevel should be final");
-      assertTrue(
-          Modifier.isFinal(ProfilingStrategy.class.getModifiers()),
-          "ProfilingStrategy should be final");
-    }
-
-    @Test
-    @DisplayName("All core enums should extend Enum")
-    void allEnumsShouldExtendEnum() {
-      assertTrue(
-          Enum.class.isAssignableFrom(WasmTypeKind.class), "WasmTypeKind should extend Enum");
-      assertTrue(
-          Enum.class.isAssignableFrom(OptimizationLevel.class),
-          "OptimizationLevel should extend Enum");
-      assertTrue(
-          Enum.class.isAssignableFrom(ProfilingStrategy.class),
-          "ProfilingStrategy should extend Enum");
-    }
-
-    @Test
-    @DisplayName("All core enums should implement Comparable")
-    void allEnumsShouldImplementComparable() {
-      assertTrue(
-          Comparable.class.isAssignableFrom(WasmTypeKind.class),
-          "WasmTypeKind should implement Comparable");
-      assertTrue(
-          Comparable.class.isAssignableFrom(OptimizationLevel.class),
-          "OptimizationLevel should implement Comparable");
-      assertTrue(
-          Comparable.class.isAssignableFrom(ProfilingStrategy.class),
-          "ProfilingStrategy should implement Comparable");
-    }
-  }
 }

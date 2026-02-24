@@ -256,66 +256,6 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  public Optional<FuncType> getFunctionType(final String functionName) {
-    if (functionName == null) {
-      return Optional.empty();
-    }
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(functionName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.FUNCTION) {
-        return Optional.of((ai.tegmentum.wasmtime4j.type.FuncType) export.getType());
-      }
-    }
-    return Optional.empty();
-  }
-
-  @Override
-  public Optional<GlobalType> getGlobalType(final String globalName) {
-    if (globalName == null) {
-      return Optional.empty();
-    }
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(globalName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL) {
-        return Optional.of((ai.tegmentum.wasmtime4j.type.GlobalType) export.getType());
-      }
-    }
-    return Optional.empty();
-  }
-
-  @Override
-  public Optional<MemoryType> getMemoryType(final String memoryName) {
-    if (memoryName == null) {
-      return Optional.empty();
-    }
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(memoryName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.MEMORY) {
-        return Optional.of((ai.tegmentum.wasmtime4j.type.MemoryType) export.getType());
-      }
-    }
-    return Optional.empty();
-  }
-
-  @Override
-  public Optional<TableType> getTableType(final String tableName) {
-    if (tableName == null) {
-      return Optional.empty();
-    }
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(tableName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.TABLE) {
-        return Optional.of((ai.tegmentum.wasmtime4j.type.TableType) export.getType());
-      }
-    }
-    return Optional.empty();
-  }
-
-  @Override
   public boolean hasExport(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
@@ -380,6 +320,41 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  public java.util.Optional<ai.tegmentum.wasmtime4j.ModuleExport> getModuleExport(
+      final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final java.lang.foreign.Arena localArena = java.lang.foreign.Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment nameSegment = localArena.allocateFrom(name);
+      final java.lang.foreign.MemorySegment outPtr =
+          localArena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+
+      final NativeInstanceBindings instanceBindings = NativeInstanceBindings.getInstance();
+      final int result =
+          instanceBindings.panamaModuleGetModuleExport(nativeModule, nameSegment, outPtr);
+
+      if (result != 0) {
+        return java.util.Optional.empty();
+      }
+
+      final java.lang.foreign.MemorySegment moduleExportPtr =
+          outPtr.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
+      if (moduleExportPtr.equals(java.lang.foreign.MemorySegment.NULL)
+          || moduleExportPtr.address() == 0) {
+        return java.util.Optional.empty();
+      }
+
+      return java.util.Optional.of(new PanamaModuleExport(name, moduleExportPtr));
+    } catch (final Exception e) {
+      LOGGER.warning("Error getting module export: " + name + " - " + e.getMessage());
+      return java.util.Optional.empty();
+    }
+  }
+
+  @Override
   public Engine getEngine() {
     return engine;
   }
@@ -415,104 +390,20 @@ public final class PanamaModule implements Module {
   }
 
   @Override
-  public List<FuncType> getFunctionTypes() {
-    final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.type.FuncType> functionTypes = new java.util.ArrayList<>();
-    for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.FUNCTION) {
-        functionTypes.add((ai.tegmentum.wasmtime4j.type.FuncType) export.getType());
-      }
-    }
-    return java.util.Collections.unmodifiableList(functionTypes);
-  }
-
-  @Override
-  public List<MemoryType> getMemoryTypes() {
-    final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.type.MemoryType> memoryTypes = new java.util.ArrayList<>();
-    for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.MEMORY) {
-        memoryTypes.add((ai.tegmentum.wasmtime4j.type.MemoryType) export.getType());
-      }
-    }
-    return java.util.Collections.unmodifiableList(memoryTypes);
-  }
-
-  @Override
-  public List<TableType> getTableTypes() {
-    final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.type.TableType> tableTypes = new java.util.ArrayList<>();
-    for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.TABLE) {
-        tableTypes.add((ai.tegmentum.wasmtime4j.type.TableType) export.getType());
-      }
-    }
-    return java.util.Collections.unmodifiableList(tableTypes);
-  }
-
-  @Override
-  public List<GlobalType> getGlobalTypes() {
-    final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.type.GlobalType> globalTypes = new java.util.ArrayList<>();
-    for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL) {
-        globalTypes.add((ai.tegmentum.wasmtime4j.type.GlobalType) export.getType());
-      }
-    }
-    return java.util.Collections.unmodifiableList(globalTypes);
-  }
-
-  @Override
-  public Map<String, byte[]> getCustomSections() {
-    ensureNotClosed();
-
-    // Get custom sections as JSON from native code
-    final MemorySegment jsonPtr = NATIVE_BINDINGS.moduleGetCustomSections(nativeModule);
-    if (jsonPtr == null || jsonPtr.equals(MemorySegment.NULL)) {
-      return Collections.emptyMap();
-    }
-
-    try {
-      // Convert C string to Java String
-      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
-
-      if (jsonString == null || jsonString.equals("{}")) {
-        return Collections.emptyMap();
-      }
-
-      // Parse JSON object {"name1":"base64data1","name2":"base64data2"} using Gson
-      final Map<String, String> parsed =
-          new Gson().fromJson(jsonString, new TypeToken<Map<String, String>>() {}.getType());
-
-      if (parsed == null || parsed.isEmpty()) {
-        return Collections.emptyMap();
-      }
-
-      // Decode Base64 values to byte arrays
-      final Map<String, byte[]> result = new HashMap<>();
-      for (final Map.Entry<String, String> entry : parsed.entrySet()) {
-        try {
-          final byte[] decoded = java.util.Base64.getDecoder().decode(entry.getValue());
-          result.put(entry.getKey(), decoded);
-        } catch (final IllegalArgumentException e) {
-          // If not valid Base64, store as UTF-8 bytes
-          result.put(entry.getKey(), entry.getValue().getBytes(StandardCharsets.UTF_8));
-        }
-      }
-
-      return Collections.unmodifiableMap(result);
-    } finally {
-      // Free the native string
-      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
-    }
-  }
-
-  @Override
   public String getName() {
     ensureNotClosed();
     // Return module identifier based on native pointer
     // Matches JNI backend pattern which returns "jni-module-{handle}"
     return "panama-module-" + System.identityHashCode(nativeModule);
+  }
+
+  @Override
+  public void initializeCopyOnWriteImage() throws WasmException {
+    ensureNotClosed();
+    final int result = NATIVE_BINDINGS.moduleInitializeCowImage(nativeModule);
+    if (result != 0) {
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to initialize copy-on-write image");
+    }
   }
 
   @Override

@@ -678,6 +678,47 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExpor
     }
 }
 
+/// Get a ModuleExport handle for O(1) export lookups (JNI version)
+///
+/// Returns a native pointer to a boxed wasmtime::ModuleExport, or 0 if not found.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleExport(
+    mut env: JNIEnv,
+    _class: JClass,
+    module_ptr: jlong,
+    export_name: JString,
+) -> jlong {
+    if module_ptr == 0 {
+        return 0;
+    }
+
+    let name = match env.get_string(&export_name) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return 0,
+    };
+
+    match unsafe {
+        core::get_wasmtime_module_export(module_ptr as *const std::os::raw::c_void, &name)
+    } {
+        Ok(ptr) => ptr as jlong,
+        Err(_) => 0,
+    }
+}
+
+/// Destroy a ModuleExport handle (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModuleExport(
+    _env: JNIEnv,
+    _class: JClass,
+    module_export_ptr: jlong,
+) {
+    if module_export_ptr != 0 {
+        unsafe {
+            core::destroy_module_export(module_export_ptr as *mut std::os::raw::c_void);
+        }
+    }
+}
+
 /// Destroy a module
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModule(
@@ -1161,51 +1202,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasImpor
     }
 }
 
-/// Get custom sections from the module
-/// Returns a Map<String, String> where values are Base64-encoded binary data
+/// JNI binding for Module.initializeCopyOnWriteImage()
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetCustomSections(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInitializeCopyOnWriteImage(
     mut env: JNIEnv,
     _class: JClass,
     module_ptr: jlong,
-) -> jobject {
-    use base64::Engine;
+) -> jboolean {
+    if module_ptr == 0 {
+        return 0;
+    }
 
-    jni_utils::jni_try_object(&mut env, |env_ref| {
-        if module_ptr == 0 {
-            return Err(crate::error::WasmtimeError::Module {
-                message: "Invalid module pointer".to_string(),
-            });
+    match crate::shared_ffi::module::initialize_copy_on_write_image_shared(
+        module_ptr as *mut std::os::raw::c_void,
+    ) {
+        Ok(()) => 1,
+        Err(e) => {
+            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+            0
         }
-
-        let module = unsafe {
-            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)?
-        };
-        let metadata = crate::module::core::get_metadata(module);
-
-        // Create HashMap for custom sections
-        let hashmap_class = env_ref.find_class("java/util/HashMap")?;
-        let hashmap = env_ref.new_object(hashmap_class, "()V", &[])?;
-
-        // Iterate through custom sections and add them to the HashMap
-        for (name, data) in &metadata.custom_sections {
-            // Encode binary data as Base64 for safe transmission through JNI
-            let encoded = base64::engine::general_purpose::STANDARD.encode(data);
-
-            let name_jstring = env_ref.new_string(name)?;
-            let data_jstring = env_ref.new_string(&encoded)?;
-
-            // Use call_method for safer invocation
-            env_ref.call_method(
-                &hashmap,
-                "put",
-                "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;",
-                &[(&name_jstring).into(), (&data_jstring).into()],
-            )?;
-        }
-
-        // Return hashmap as JObject with 'static lifetime
-        // Safety: The JNI framework manages the lifetime
-        Ok(unsafe { std::mem::transmute(hashmap) })
-    })
+    }
 }

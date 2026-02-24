@@ -7,7 +7,7 @@ import java.util.List;
  * Result of WebAssembly module validation.
  *
  * <p>This class encapsulates the result of validating WebAssembly bytecode, including whether the
- * validation succeeded and any validation errors or warnings.
+ * validation succeeded and any validation errors.
  *
  * @since 1.0.0
  */
@@ -15,7 +15,6 @@ public final class ModuleValidationResult {
 
   private final boolean isValid;
   private final List<String> errors;
-  private final List<String> warnings;
 
   /**
    * Creates a successful validation result.
@@ -23,7 +22,7 @@ public final class ModuleValidationResult {
    * @return a successful validation result
    */
   public static ModuleValidationResult success() {
-    return new ModuleValidationResult(true, Collections.emptyList(), Collections.emptyList());
+    return new ModuleValidationResult(true, Collections.emptyList());
   }
 
   /**
@@ -34,18 +33,7 @@ public final class ModuleValidationResult {
    * @throws IllegalArgumentException if errors is null
    */
   public static ModuleValidationResult failure(final List<String> errors) {
-    return new ModuleValidationResult(false, errors, Collections.emptyList());
-  }
-
-  /**
-   * Creates a successful validation result with warnings.
-   *
-   * @param warnings the validation warnings
-   * @return a successful validation result with warnings
-   * @throws IllegalArgumentException if warnings is null
-   */
-  public static ModuleValidationResult successWithWarnings(final List<String> warnings) {
-    return new ModuleValidationResult(true, Collections.emptyList(), warnings);
+    return new ModuleValidationResult(false, errors);
   }
 
   /**
@@ -53,20 +41,14 @@ public final class ModuleValidationResult {
    *
    * @param isValid whether the validation succeeded
    * @param errors the validation errors (empty if none)
-   * @param warnings the validation warnings (empty if none)
-   * @throws IllegalArgumentException if errors or warnings is null
+   * @throws IllegalArgumentException if errors is null
    */
-  public ModuleValidationResult(
-      final boolean isValid, final List<String> errors, final List<String> warnings) {
+  public ModuleValidationResult(final boolean isValid, final List<String> errors) {
     if (errors == null) {
       throw new IllegalArgumentException("Errors list cannot be null");
     }
-    if (warnings == null) {
-      throw new IllegalArgumentException("Warnings list cannot be null");
-    }
     this.isValid = isValid;
     this.errors = Collections.unmodifiableList(errors);
-    this.warnings = Collections.unmodifiableList(warnings);
   }
 
   /**
@@ -88,15 +70,6 @@ public final class ModuleValidationResult {
   }
 
   /**
-   * Gets the validation warnings.
-   *
-   * @return an immutable list of validation warnings
-   */
-  public List<String> getWarnings() {
-    return warnings;
-  }
-
-  /**
    * Checks if there are any validation errors.
    *
    * @return true if there are errors, false otherwise
@@ -105,24 +78,12 @@ public final class ModuleValidationResult {
     return !errors.isEmpty();
   }
 
-  /**
-   * Checks if there are any validation warnings.
-   *
-   * @return true if there are warnings, false otherwise
-   */
-  public boolean hasWarnings() {
-    return !warnings.isEmpty();
-  }
-
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
     sb.append("ModuleValidationResult{valid=").append(isValid);
     if (hasErrors()) {
       sb.append(", errors=").append(errors.size());
-    }
-    if (hasWarnings()) {
-      sb.append(", warnings=").append(warnings.size());
     }
     sb.append('}');
     return sb.toString();
@@ -137,11 +98,11 @@ public final class ModuleValidationResult {
       return false;
     }
     final ModuleValidationResult that = (ModuleValidationResult) obj;
-    return isValid == that.isValid && errors.equals(that.errors) && warnings.equals(that.warnings);
+    return isValid == that.isValid && errors.equals(that.errors);
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(isValid, errors, warnings);
+    return java.util.Objects.hash(isValid, errors);
   }
 }

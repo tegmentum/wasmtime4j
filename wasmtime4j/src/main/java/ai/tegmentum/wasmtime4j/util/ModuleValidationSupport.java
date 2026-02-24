@@ -14,7 +14,6 @@ import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 import ai.tegmentum.wasmtime4j.validation.ImportIssue;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.validation.ImportValidation;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +43,6 @@ public final class ModuleValidationSupport {
    */
   public static ImportValidation validateImportsDetailed(
       final List<ImportType> importTypes, final ImportMap imports) {
-    final long startTime = System.nanoTime();
     final List<ImportIssue> issues = new ArrayList<>();
     final List<ImportInfo> validatedImports = new ArrayList<>();
     final Map<String, Map<String, Object>> importsMap = imports.getImports();
@@ -206,11 +204,8 @@ public final class ModuleValidationSupport {
       }
     }
 
-    final long endTime = System.nanoTime();
-    final Duration validationTime = Duration.ofNanos(endTime - startTime);
-
     return new ImportValidation(
-        issues.isEmpty(), issues, validatedImports, importTypes.size(), validCount, validationTime);
+        issues.isEmpty(), issues, validatedImports, importTypes.size(), validCount);
   }
 
   /**

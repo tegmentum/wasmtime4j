@@ -365,47 +365,6 @@ pub extern "C" fn wasmtime4j_panama_module_free_string(str_ptr: *mut c_char) {
     }
 }
 
-/// Get custom sections from a WebAssembly module (Panama FFI version)
-/// Returns a JSON string mapping section names to Base64-encoded data
-/// Caller must free the returned string with wasmtime4j_panama_module_free_string
-#[no_mangle]
-pub extern "C" fn wasmtime4j_panama_module_get_custom_sections(
-    module_ptr: *mut c_void,
-) -> *mut c_char {
-    use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
-
-    if module_ptr.is_null() {
-        return std::ptr::null_mut();
-    }
-
-    match unsafe { crate::module::core::get_module_ref(module_ptr) } {
-        Ok(module) => {
-            let metadata = module.metadata();
-
-            // Build JSON object with custom sections
-            let mut json_parts: Vec<String> = Vec::new();
-            for (name, data) in &metadata.custom_sections {
-                let encoded = BASE64.encode(data);
-                // Escape JSON string values
-                let escaped_name = name.replace('\\', "\\\\").replace('"', "\\\"");
-                json_parts.push(format!(
-                    r#""{}":{}"#,
-                    escaped_name,
-                    serde_json::json!(encoded)
-                ));
-            }
-
-            let json = format!("{{{}}}", json_parts.join(","));
-
-            match std::ffi::CString::new(json) {
-                Ok(c_str) => c_str.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
-        }
-        Err(_) => std::ptr::null_mut(),
-    }
-}
-
 /// Compile a WebAssembly module from a file path (Panama FFI version)
 ///
 /// The file can contain either binary WebAssembly (.wasm) or WebAssembly Text (.wat).
@@ -479,6 +438,56 @@ pub extern "C" fn wasmtime4j_panama_module_get_export_index(
 
     match unsafe { crate::module::core::get_export_index(module_ptr, name_str) } {
         Ok(idx) => idx,
+        Err(_) => -1,
+    }
+}
+
+/// Get a ModuleExport handle for O(1) export lookups (Panama FFI version)
+///
+/// Returns a pointer to a boxed ModuleExport via out_ptr. Returns 0 on success.
+/// If the export is not found, out_ptr is set to null and 0 is still returned (not an error).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_get_module_export(
+    module_ptr: *mut c_void,
+    name: *const c_char,
+    out_ptr: *mut *mut c_void,
+) -> c_int {
+    if module_ptr.is_null() || name.is_null() || out_ptr.is_null() {
+        return -1;
+    }
+
+    let name_cstr = unsafe { std::ffi::CStr::from_ptr(name) };
+    let name_str = match name_cstr.to_str() {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+
+    match unsafe { crate::module::core::get_wasmtime_module_export(module_ptr, name_str) } {
+        Ok(ptr) => {
+            unsafe {
+                *out_ptr = ptr;
+            }
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Destroy a ModuleExport handle (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_export_destroy(module_export_ptr: *mut c_void) {
+    unsafe {
+        crate::module::core::destroy_module_export(module_export_ptr);
+    }
+}
+
+/// Initialize copy-on-write image for faster instantiation (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_initialize_cow_image(
+    module_ptr: *mut c_void,
+) -> c_int {
+    match crate::shared_ffi::module::initialize_copy_on_write_image_shared(module_ptr) {
+        Ok(()) => 0,
         Err(_) => -1,
     }
 }

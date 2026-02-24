@@ -8,7 +8,6 @@ import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 import ai.tegmentum.wasmtime4j.validation.ImportIssue;
 import ai.tegmentum.wasmtime4j.validation.ImportValidation;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -143,8 +142,6 @@ public final class LinkerSupport {
       throw new IllegalArgumentException("At least one module must be provided");
     }
 
-    final long startTime = System.nanoTime();
-
     final List<ImportIssue> issues = new ArrayList<>();
     final List<ImportInfo> validatedImports = new ArrayList<>();
 
@@ -195,13 +192,10 @@ public final class LinkerSupport {
       }
     }
 
-    final long endTime = System.nanoTime();
-    final Duration validationTime = Duration.ofNanos(endTime - startTime);
-
     final boolean valid = issues.isEmpty();
 
     return new ImportValidation(
-        valid, issues, validatedImports, totalImports, validImportCount, validationTime);
+        valid, issues, validatedImports, totalImports, validImportCount);
   }
 
   /**

@@ -775,8 +775,6 @@ public class WasiUdpDataTypesTest {
     @DisplayName("Should have IPV4 and IPV6 values")
     void shouldHaveIpv4AndIpv6Values() {
       assertEquals(2, IpAddressFamily.values().length);
-      assertNotNull(IpAddressFamily.IPV4);
-      assertNotNull(IpAddressFamily.IPV6);
       LOGGER.info("Verified IpAddressFamily enum values");
     }
 

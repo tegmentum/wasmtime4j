@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -55,9 +55,9 @@ class HeapTypeTest {
     }
 
     @Test
-    @DisplayName("should have exactly 11 values")
-    void shouldHaveExactlyElevenValues() {
-      assertEquals(11, HeapType.values().length, "HeapType should have exactly 11 values");
+    @DisplayName("should have exactly 15 values")
+    void shouldHaveExactlyFifteenValues() {
+      assertEquals(15, HeapType.values().length, "HeapType should have exactly 15 values");
     }
 
     @Test
@@ -75,107 +75,14 @@ class HeapTypeTest {
               "EXTERN",
               "NOEXTERN",
               "NONE",
+              "EXN",
+              "NOEXN",
+              "CONT",
+              "NOCONT",
               "CONCRETE");
       Set<String> actualValues =
           Arrays.stream(HeapType.values()).map(Enum::name).collect(Collectors.toSet());
       assertEquals(expectedValues, actualValues, "HeapType should have all expected values");
-    }
-  }
-
-  // ========================================================================
-  // Enum Value Tests
-  // ========================================================================
-
-  @Nested
-  @DisplayName("Enum Value Tests")
-  class EnumValueTests {
-
-    @Test
-    @DisplayName("ANY should exist")
-    void anyShouldExist() {
-      HeapType value = HeapType.ANY;
-      assertNotNull(value, "ANY should exist");
-      assertEquals("ANY", value.name(), "ANY should have correct name");
-    }
-
-    @Test
-    @DisplayName("EQ should exist")
-    void eqShouldExist() {
-      HeapType value = HeapType.EQ;
-      assertNotNull(value, "EQ should exist");
-      assertEquals("EQ", value.name(), "EQ should have correct name");
-    }
-
-    @Test
-    @DisplayName("I31 should exist")
-    void i31ShouldExist() {
-      HeapType value = HeapType.I31;
-      assertNotNull(value, "I31 should exist");
-      assertEquals("I31", value.name(), "I31 should have correct name");
-    }
-
-    @Test
-    @DisplayName("STRUCT should exist")
-    void structShouldExist() {
-      HeapType value = HeapType.STRUCT;
-      assertNotNull(value, "STRUCT should exist");
-      assertEquals("STRUCT", value.name(), "STRUCT should have correct name");
-    }
-
-    @Test
-    @DisplayName("ARRAY should exist")
-    void arrayShouldExist() {
-      HeapType value = HeapType.ARRAY;
-      assertNotNull(value, "ARRAY should exist");
-      assertEquals("ARRAY", value.name(), "ARRAY should have correct name");
-    }
-
-    @Test
-    @DisplayName("FUNC should exist")
-    void funcShouldExist() {
-      HeapType value = HeapType.FUNC;
-      assertNotNull(value, "FUNC should exist");
-      assertEquals("FUNC", value.name(), "FUNC should have correct name");
-    }
-
-    @Test
-    @DisplayName("NOFUNC should exist")
-    void nofuncShouldExist() {
-      HeapType value = HeapType.NOFUNC;
-      assertNotNull(value, "NOFUNC should exist");
-      assertEquals("NOFUNC", value.name(), "NOFUNC should have correct name");
-    }
-
-    @Test
-    @DisplayName("EXTERN should exist")
-    void externShouldExist() {
-      HeapType value = HeapType.EXTERN;
-      assertNotNull(value, "EXTERN should exist");
-      assertEquals("EXTERN", value.name(), "EXTERN should have correct name");
-    }
-
-    @Test
-    @DisplayName("NOEXTERN should exist")
-    void noexternShouldExist() {
-      HeapType value = HeapType.NOEXTERN;
-      assertNotNull(value, "NOEXTERN should exist");
-      assertEquals("NOEXTERN", value.name(), "NOEXTERN should have correct name");
-    }
-
-    @Test
-    @DisplayName("NONE should exist")
-    void noneShouldExist() {
-      HeapType value = HeapType.NONE;
-      assertNotNull(value, "NONE should exist");
-      assertEquals("NONE", value.name(), "NONE should have correct name");
-    }
-
-    @Test
-    @DisplayName("CONCRETE should exist")
-    void concreteShouldExist() {
-      HeapType value = HeapType.CONCRETE;
-      assertNotNull(value, "CONCRETE should exist");
-      assertEquals("CONCRETE", value.name(), "CONCRETE should have correct name");
     }
   }
 
@@ -249,6 +156,30 @@ class HeapTypeTest {
     @DisplayName("NONE should have wasm name 'none'")
     void noneShouldHaveWasmNameNone() {
       assertEquals("none", HeapType.NONE.getWasmName(), "NONE should have wasm name 'none'");
+    }
+
+    @Test
+    @DisplayName("EXN should have wasm name 'exn'")
+    void exnShouldHaveWasmNameExn() {
+      assertEquals("exn", HeapType.EXN.getWasmName(), "EXN should have wasm name 'exn'");
+    }
+
+    @Test
+    @DisplayName("NOEXN should have wasm name 'noexn'")
+    void noexnShouldHaveWasmNameNoexn() {
+      assertEquals("noexn", HeapType.NOEXN.getWasmName(), "NOEXN should have wasm name 'noexn'");
+    }
+
+    @Test
+    @DisplayName("CONT should have wasm name 'cont'")
+    void contShouldHaveWasmNameCont() {
+      assertEquals("cont", HeapType.CONT.getWasmName(), "CONT should have wasm name 'cont'");
+    }
+
+    @Test
+    @DisplayName("NOCONT should have wasm name 'nocont'")
+    void nocontShouldHaveWasmNameNocont() {
+      assertEquals("nocont", HeapType.NOCONT.getWasmName(), "NOCONT should have wasm name 'nocont'");
     }
 
     @Test
@@ -418,6 +349,30 @@ class HeapTypeTest {
     }
 
     @Test
+    @DisplayName("NOEXN should be bottom")
+    void noexnShouldBeBottom() {
+      assertTrue(HeapType.NOEXN.isBottom(), "NOEXN should be bottom");
+    }
+
+    @Test
+    @DisplayName("NOCONT should be bottom")
+    void nocontShouldBeBottom() {
+      assertTrue(HeapType.NOCONT.isBottom(), "NOCONT should be bottom");
+    }
+
+    @Test
+    @DisplayName("CONT should not be bottom")
+    void contShouldNotBeBottom() {
+      assertFalse(HeapType.CONT.isBottom(), "CONT should not be bottom");
+    }
+
+    @Test
+    @DisplayName("EXN should not be bottom")
+    void exnShouldNotBeBottom() {
+      assertFalse(HeapType.EXN.isBottom(), "EXN should not be bottom");
+    }
+
+    @Test
     @DisplayName("CONCRETE should not be bottom")
     void concreteShouldNotBeBottom() {
       assertFalse(HeapType.CONCRETE.isBottom(), "CONCRETE should not be bottom");
@@ -529,6 +484,36 @@ class HeapTypeTest {
           HeapType.NOEXTERN.getBottomType(),
           "NOEXTERN should have bottom type NOEXTERN");
     }
+
+    @Test
+    @DisplayName("EXN should have bottom type NOEXN")
+    void exnShouldHaveBottomTypeNoexn() {
+      assertEquals(
+          HeapType.NOEXN, HeapType.EXN.getBottomType(), "EXN should have bottom type NOEXN");
+    }
+
+    @Test
+    @DisplayName("NOEXN should have bottom type NOEXN (self)")
+    void noexnShouldHaveBottomTypeNoexn() {
+      assertEquals(
+          HeapType.NOEXN, HeapType.NOEXN.getBottomType(), "NOEXN should have bottom type NOEXN");
+    }
+
+    @Test
+    @DisplayName("CONT should have bottom type NOCONT")
+    void contShouldHaveBottomTypeNocont() {
+      assertEquals(
+          HeapType.NOCONT, HeapType.CONT.getBottomType(), "CONT should have bottom type NOCONT");
+    }
+
+    @Test
+    @DisplayName("NOCONT should have bottom type NOCONT (self)")
+    void nocontShouldHaveBottomTypeNocont() {
+      assertEquals(
+          HeapType.NOCONT,
+          HeapType.NOCONT.getBottomType(),
+          "NOCONT should have bottom type NOCONT");
+    }
   }
 
   // ========================================================================
@@ -592,6 +577,30 @@ class HeapTypeTest {
     @DisplayName("EXTERN should not be subtype of ANY")
     void externShouldNotBeSubtypeOfAny() {
       assertFalse(HeapType.EXTERN.isSubtypeOf(HeapType.ANY), "EXTERN should not be subtype of ANY");
+    }
+
+    @Test
+    @DisplayName("NOEXN should be subtype of EXN")
+    void noexnShouldBeSubtypeOfExn() {
+      assertTrue(HeapType.NOEXN.isSubtypeOf(HeapType.EXN), "NOEXN should be subtype of EXN");
+    }
+
+    @Test
+    @DisplayName("NOCONT should be subtype of CONT")
+    void nocontShouldBeSubtypeOfCont() {
+      assertTrue(HeapType.NOCONT.isSubtypeOf(HeapType.CONT), "NOCONT should be subtype of CONT");
+    }
+
+    @Test
+    @DisplayName("CONT should not be subtype of ANY")
+    void contShouldNotBeSubtypeOfAny() {
+      assertFalse(HeapType.CONT.isSubtypeOf(HeapType.ANY), "CONT should not be subtype of ANY");
+    }
+
+    @Test
+    @DisplayName("CONT should not be subtype of FUNC")
+    void contShouldNotBeSubtypeOfFunc() {
+      assertFalse(HeapType.CONT.isSubtypeOf(HeapType.FUNC), "CONT should not be subtype of FUNC");
     }
 
     @Test
@@ -697,6 +706,27 @@ class HeapTypeTest {
       assertFalse(HeapType.EXTERN.isSubtypeOf(HeapType.EQ), "EXTERN should not be subtype of EQ");
       assertTrue(
           HeapType.NOEXTERN.isSubtypeOf(HeapType.EXTERN), "NOEXTERN should be subtype of EXTERN");
+    }
+
+    @Test
+    @DisplayName("exn hierarchy should be separate from internal hierarchy")
+    void exnHierarchyShouldBeSeparateFromInternalHierarchy() {
+      // EXN and NOEXN form a separate hierarchy
+      assertFalse(HeapType.EXN.isSubtypeOf(HeapType.ANY), "EXN should not be subtype of ANY");
+      assertFalse(HeapType.EXN.isSubtypeOf(HeapType.FUNC), "EXN should not be subtype of FUNC");
+      assertTrue(HeapType.NOEXN.isSubtypeOf(HeapType.EXN), "NOEXN should be subtype of EXN");
+    }
+
+    @Test
+    @DisplayName("cont hierarchy should be separate from all other hierarchies")
+    void contHierarchyShouldBeSeparateFromAllOtherHierarchies() {
+      // CONT and NOCONT form a separate hierarchy
+      assertFalse(HeapType.CONT.isSubtypeOf(HeapType.ANY), "CONT should not be subtype of ANY");
+      assertFalse(HeapType.CONT.isSubtypeOf(HeapType.FUNC), "CONT should not be subtype of FUNC");
+      assertFalse(HeapType.CONT.isSubtypeOf(HeapType.EXN), "CONT should not be subtype of EXN");
+      assertFalse(
+          HeapType.CONT.isSubtypeOf(HeapType.EXTERN), "CONT should not be subtype of EXTERN");
+      assertTrue(HeapType.NOCONT.isSubtypeOf(HeapType.CONT), "NOCONT should be subtype of CONT");
     }
   }
 }

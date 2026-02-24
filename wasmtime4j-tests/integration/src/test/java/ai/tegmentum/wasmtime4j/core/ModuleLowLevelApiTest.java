@@ -25,7 +25,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.ResourcesRequired;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
-import java.util.Map;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,8 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Module low-level APIs: {@link Module#getCustomSections()}, {@link
- * Module#resourcesRequired()}, and {@link Module#isSerializable()}.
+ * Tests Module low-level APIs: {@link Module#resourcesRequired()}.
  *
  * @since 1.0.0
  */
@@ -65,44 +63,6 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
   @AfterEach
   void cleanup() {
     clearRuntimeSelection();
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getCustomSections returns non-null map")
-  void getCustomSectionsReturnsMap(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getCustomSections");
-
-    try (Engine engine = Engine.create()) {
-      final Module module = engine.compileWat(RICH_WAT);
-
-      try {
-        final Map<String, byte[]> sections = module.getCustomSections();
-        assertNotNull(sections, "Custom sections map should not be null");
-        LOGGER.info("[" + runtime + "] Custom sections: " + sections.size() + " entries");
-        for (final Map.Entry<String, byte[]> entry : sections.entrySet()) {
-          LOGGER.info(
-              "["
-                  + runtime
-                  + "]   Section '"
-                  + entry.getKey()
-                  + "': "
-                  + entry.getValue().length
-                  + " bytes");
-        }
-      } catch (final UnsatisfiedLinkError | Exception e) {
-        LOGGER.info(
-            "["
-                + runtime
-                + "] getCustomSections not supported: "
-                + e.getClass().getName()
-                + " - "
-                + e.getMessage());
-      }
-
-      module.close();
-    }
   }
 
   @ParameterizedTest
@@ -284,20 +244,4 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
     }
   }
 
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("isSerializable returns true")
-  void isSerializableReturnsTrue(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing isSerializable");
-
-    try (Engine engine = Engine.create()) {
-      final Module module = engine.compileWat(RICH_WAT);
-
-      assertTrue(module.isSerializable(), "Module should be serializable by default");
-      LOGGER.info("[" + runtime + "] isSerializable: " + module.isSerializable());
-
-      module.close();
-    }
-  }
 }

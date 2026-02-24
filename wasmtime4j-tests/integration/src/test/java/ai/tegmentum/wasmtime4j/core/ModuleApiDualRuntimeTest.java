@@ -777,10 +777,6 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         } catch (final Exception e) {
           LOGGER.info("[" + runtime + "] getName on closed module threw: " + e.getClass().getName());
         }
-        assertThrows(
-            Exception.class,
-            module::getCustomSections,
-            "getCustomSections on closed module should throw");
         LOGGER.info("[" + runtime + "] All operations correctly throw on closed module");
       }
     }
@@ -867,52 +863,6 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
           LOGGER.info("[" + runtime + "] serialize() on closed module threw: "
               + e.getClass().getName() + " - " + e.getMessage());
         }
-      }
-    }
-  }
-
-  // ===== Custom Sections Tests =====
-
-  @Nested
-  @DisplayName("Custom Sections Tests")
-  class CustomSectionsTests {
-
-    @ParameterizedTest
-    @ArgumentsSource(RuntimeProvider.class)
-    @DisplayName("getCustomSections should return empty map for basic module")
-    void getCustomSectionsShouldReturnEmptyForBasicModule(final RuntimeType runtime)
-        throws Exception {
-      setRuntime(runtime);
-      LOGGER.info("[" + runtime + "] Testing custom sections on basic module");
-
-      try (Engine engine = Engine.create();
-          Module module = engine.compileWat(FUNCTION_MODULE_WAT)) {
-
-        final Map<String, byte[]> sections = module.getCustomSections();
-        assertNotNull(sections, "Custom sections map should not be null");
-        assertTrue(sections.isEmpty(), "Basic WAT module should have no custom sections");
-        LOGGER.info(
-            "[" + runtime + "] getCustomSections returned empty map for basic module");
-      }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(RuntimeProvider.class)
-    @DisplayName("getCustomSections on closed module should throw IllegalStateException")
-    void getCustomSectionsOnClosedModuleShouldThrow(final RuntimeType runtime) throws Exception {
-      setRuntime(runtime);
-      LOGGER.info("[" + runtime + "] Testing custom sections on closed module");
-
-      try (Engine engine = Engine.create()) {
-        final Module module = engine.compileWat(FUNCTION_MODULE_WAT);
-        module.close();
-
-        assertThrows(
-            Exception.class,
-            module::getCustomSections,
-            "getCustomSections on closed module should throw");
-        LOGGER.info(
-            "[" + runtime + "] getCustomSections correctly throws on closed module");
       }
     }
   }

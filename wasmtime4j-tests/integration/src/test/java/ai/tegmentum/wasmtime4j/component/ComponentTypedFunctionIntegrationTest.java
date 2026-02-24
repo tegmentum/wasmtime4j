@@ -103,7 +103,7 @@ public final class ComponentTypedFunctionIntegrationTest {
    */
   private static void checkTypedFunctionAvailable(final JniComponentEngine engine) {
     try {
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       final ComponentInstance instance = component.instantiate();
       final Optional<ComponentFunction> funcOpt = instance.getFunc("add");
 
@@ -300,61 +300,6 @@ public final class ComponentTypedFunctionIntegrationTest {
   }
 
   @Nested
-  @DisplayName("ComponentTypedFunc Signature Tests")
-  class SignatureTests {
-
-    @Test
-    @DisplayName("should validate common signature formats")
-    void shouldValidateCommonSignatureFormats(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Test valid signature formats (these are just string formats, not actual validation)
-      final String[] validSignatures = {
-        "void->void",
-        "s32->s32",
-        "s32,s32->s32",
-        "s32,s32->s64",
-        "s64->s64",
-        "s64,s64->s64",
-        "f32->f32",
-        "f32,f32->f32",
-        "f64->f64",
-        "f64,f64->f64",
-        "string->string",
-        "bool->bool",
-        "->string",
-        "->bool"
-      };
-
-      for (final String signature : validSignatures) {
-        LOGGER.info("Signature format: " + signature);
-        // We can't actually test signature validation without a supporting implementation
-        // but we document what formats should be supported
-        assertNotNull(signature, "Signature should not be null: " + signature);
-        assertTrue(signature.contains("->"), "Signature should contain arrow: " + signature);
-      }
-
-      LOGGER.info(
-          "Signature format validation completed for " + validSignatures.length + " formats");
-    }
-
-    @Test
-    @DisplayName("signature should follow param->return format")
-    void signatureShouldFollowParamReturnFormat(final TestInfo testInfo) {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      // Test the format structure
-      final String signature = "s32,s32->s32";
-      final String[] parts = signature.split("->");
-      assertEquals(2, parts.length, "Signature should have params and return parts");
-      assertEquals("s32,s32", parts[0], "Params should be 's32,s32'");
-      assertEquals("s32", parts[1], "Return should be 's32'");
-
-      LOGGER.info("Signature format verified: " + signature);
-    }
-  }
-
-  @Nested
   @DisplayName("ComponentTypedFunc Creation with Real Component Tests")
   class RealComponentCreationTests {
 
@@ -367,7 +312,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeComponentAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -408,7 +353,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeComponentAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -434,7 +379,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeTypedFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -463,7 +408,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeTypedFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -512,7 +457,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeTypedFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -539,7 +484,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeTypedFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -568,7 +513,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeTypedFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -601,7 +546,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeTypedFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -638,7 +583,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       assumeTypedFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();

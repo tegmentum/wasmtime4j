@@ -1,6 +1,5 @@
 package ai.tegmentum.wasmtime4j.validation;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -20,7 +19,6 @@ public final class ImportValidation {
   private final List<ImportInfo> validatedImports;
   private final int totalImports;
   private final int validImports;
-  private final Duration validationTime;
 
   /**
    * Creates a new import validation result.
@@ -30,22 +28,19 @@ public final class ImportValidation {
    * @param validatedImports list of all imports that were validated
    * @param totalImports total number of imports checked
    * @param validImports number of imports that passed validation
-   * @param validationTime time taken for validation
    */
   public ImportValidation(
       final boolean valid,
       final List<ImportIssue> issues,
       final List<ImportInfo> validatedImports,
       final int totalImports,
-      final int validImports,
-      final Duration validationTime) {
+      final int validImports) {
     this.valid = valid;
     this.issues = Collections.unmodifiableList(Objects.requireNonNull(issues, "issues"));
     this.validatedImports =
         Collections.unmodifiableList(Objects.requireNonNull(validatedImports, "validatedImports"));
     this.totalImports = totalImports;
     this.validImports = validImports;
-    this.validationTime = Objects.requireNonNull(validationTime, "validationTime");
   }
 
   /**
@@ -93,26 +88,15 @@ public final class ImportValidation {
     return validImports;
   }
 
-  /**
-   * Gets the time taken for validation.
-   *
-   * @return the validation duration
-   */
-  public Duration getValidationTime() {
-    return validationTime;
-  }
-
   @Override
   public String toString() {
     return String.format(
-        "ImportValidation{valid=%s, imports=%d, validImports=%d (%.1f%%), "
-            + "issues=%d, validationTime=%s}",
+        "ImportValidation{valid=%s, imports=%d, validImports=%d (%.1f%%), " + "issues=%d}",
         valid,
         totalImports,
         validImports,
         totalImports == 0 ? 100.0 : (double) validImports / totalImports * 100.0,
-        issues.size(),
-        validationTime);
+        issues.size());
   }
 
   @Override
@@ -128,13 +112,11 @@ public final class ImportValidation {
         && totalImports == that.totalImports
         && validImports == that.validImports
         && Objects.equals(issues, that.issues)
-        && Objects.equals(validatedImports, that.validatedImports)
-        && Objects.equals(validationTime, that.validationTime);
+        && Objects.equals(validatedImports, that.validatedImports);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        valid, issues, validatedImports, totalImports, validImports, validationTime);
+    return Objects.hash(valid, issues, validatedImports, totalImports, validImports);
   }
 }

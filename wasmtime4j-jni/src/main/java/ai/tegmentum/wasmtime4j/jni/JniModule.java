@@ -122,142 +122,6 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
-  @SuppressFBWarnings(
-      value = "INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE",
-      justification =
-          "Error details are logged internally only; exception thrown to caller has sanitized"
-              + " message")
-  public Map<String, byte[]> getCustomSections() {
-    ensureNotClosed();
-
-    try {
-      final Map<String, byte[]> result = nativeGetCustomSections(nativeHandle);
-      if (result == null) {
-        java.util.logging.Logger.getLogger(JniModule.class.getName())
-            .warning("nativeGetCustomSections returned null for handle: " + nativeHandle);
-        return java.util.Collections.emptyMap();
-      }
-      return java.util.Collections.unmodifiableMap(result);
-    } catch (final Throwable t) {
-      java.util.logging.Logger.getLogger(JniModule.class.getName())
-          .log(java.util.logging.Level.SEVERE, "nativeGetCustomSections failed", t);
-      throw new RuntimeException("Failed to get custom sections");
-    }
-  }
-
-  @Override
-  public List<ai.tegmentum.wasmtime4j.type.GlobalType> getGlobalTypes() {
-    final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.type.GlobalType> globalTypes = new java.util.ArrayList<>();
-    for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL) {
-        globalTypes.add((ai.tegmentum.wasmtime4j.type.GlobalType) export.getType());
-      }
-    }
-    return java.util.Collections.unmodifiableList(globalTypes);
-  }
-
-  @Override
-  public List<ai.tegmentum.wasmtime4j.type.TableType> getTableTypes() {
-    final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.type.TableType> tableTypes = new java.util.ArrayList<>();
-    for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.TABLE) {
-        tableTypes.add((ai.tegmentum.wasmtime4j.type.TableType) export.getType());
-      }
-    }
-    return java.util.Collections.unmodifiableList(tableTypes);
-  }
-
-  @Override
-  public List<ai.tegmentum.wasmtime4j.type.MemoryType> getMemoryTypes() {
-    final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.type.MemoryType> memoryTypes = new java.util.ArrayList<>();
-    for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.MEMORY) {
-        memoryTypes.add((ai.tegmentum.wasmtime4j.type.MemoryType) export.getType());
-      }
-    }
-    return java.util.Collections.unmodifiableList(memoryTypes);
-  }
-
-  @Override
-  public List<ai.tegmentum.wasmtime4j.type.FuncType> getFunctionTypes() {
-    final List<ExportType> exports = getExports();
-    final List<ai.tegmentum.wasmtime4j.type.FuncType> functionTypes = new java.util.ArrayList<>();
-    for (final ExportType export : exports) {
-      if (export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.FUNCTION) {
-        functionTypes.add((ai.tegmentum.wasmtime4j.type.FuncType) export.getType());
-      }
-    }
-    return java.util.Collections.unmodifiableList(functionTypes);
-  }
-
-  @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.type.FuncType> getFunctionType(
-      final String functionName) {
-    if (functionName == null) {
-      return java.util.Optional.empty();
-    }
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(functionName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.FUNCTION) {
-        return java.util.Optional.of((ai.tegmentum.wasmtime4j.type.FuncType) export.getType());
-      }
-    }
-    return java.util.Optional.empty();
-  }
-
-  @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.type.GlobalType> getGlobalType(
-      final String globalName) {
-    if (globalName == null) {
-      return java.util.Optional.empty();
-    }
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(globalName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL) {
-        return java.util.Optional.of((ai.tegmentum.wasmtime4j.type.GlobalType) export.getType());
-      }
-    }
-    return java.util.Optional.empty();
-  }
-
-  @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.type.MemoryType> getMemoryType(
-      final String memoryName) {
-    if (memoryName == null) {
-      return java.util.Optional.empty();
-    }
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(memoryName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.MEMORY) {
-        return java.util.Optional.of((ai.tegmentum.wasmtime4j.type.MemoryType) export.getType());
-      }
-    }
-    return java.util.Optional.empty();
-  }
-
-  @Override
-  public java.util.Optional<ai.tegmentum.wasmtime4j.type.TableType> getTableType(
-      final String tableName) {
-    if (tableName == null) {
-      return java.util.Optional.empty();
-    }
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(tableName)
-          && export.getType().getKind() == ai.tegmentum.wasmtime4j.type.WasmTypeKind.TABLE) {
-        return java.util.Optional.of((ai.tegmentum.wasmtime4j.type.TableType) export.getType());
-      }
-    }
-    return java.util.Optional.empty();
-  }
-
-  @Override
   public boolean hasExport(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Export name cannot be null");
@@ -326,6 +190,24 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  public java.util.Optional<ai.tegmentum.wasmtime4j.ModuleExport> getModuleExport(
+      final String name) {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    ensureNotClosed();
+    try {
+      final long handle = nativeGetModuleExport(nativeHandle, name);
+      if (handle == 0) {
+        return java.util.Optional.empty();
+      }
+      return java.util.Optional.of(new JniModuleExport(name, handle));
+    } catch (final Throwable t) {
+      return java.util.Optional.empty();
+    }
+  }
+
+  @Override
   public boolean validateImports(final ai.tegmentum.wasmtime4j.validation.ImportMap imports) {
     if (imports == null) {
       throw new IllegalArgumentException("imports cannot be null");
@@ -369,6 +251,12 @@ public class JniModule extends JniResource implements Module {
       // Defensive: Return empty array on native error instead of crashing JVM
       return new byte[0];
     }
+  }
+
+  @Override
+  public void initializeCopyOnWriteImage() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    nativeInitializeCopyOnWriteImage(nativeHandle);
   }
 
   @Override
@@ -441,18 +329,6 @@ public class JniModule extends JniResource implements Module {
   private native boolean nativeHasImport(long moduleHandle, String moduleName, String fieldName);
 
   /**
-   * Native method to get custom sections from the module.
-   *
-   * <p>Custom sections are binary data embedded in WebAssembly modules that can contain metadata,
-   * debug information, or other arbitrary data. The data is Base64-encoded for safe transmission
-   * through JNI.
-   *
-   * @param moduleHandle the native module handle
-   * @return map of custom section names to their binary data
-   */
-  private native Map<String, byte[]> nativeGetCustomSections(long moduleHandle);
-
-  /**
    * Native method to compile a module from a file path.
    *
    * @param engineHandle the native engine handle
@@ -478,4 +354,10 @@ public class JniModule extends JniResource implements Module {
    * @return the zero-based index, or -1 if not found
    */
   private native long nativeGetExportIndex(long moduleHandle, String exportName);
+
+  private native long nativeGetModuleExport(long moduleHandle, String exportName);
+
+  private static native void nativeDestroyModuleExport(long moduleExportHandle);
+
+  private static native boolean nativeInitializeCopyOnWriteImage(long moduleHandle);
 }

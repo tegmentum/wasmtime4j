@@ -401,36 +401,6 @@ public final class ModuleTest extends DualRuntimeTest {
 
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("module::module_custom_sections")
-  public void testModuleCustomSections(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-
-    // Note: Custom sections in WAT are usually created via binary format
-    // This test uses a simple module and checks that custom section API works
-    final String wat =
-        """
-        (module
-          (func (export "test") (result i32) i32.const 42)
-        )
-        """;
-
-    try (final Engine engine = Engine.create()) {
-      final Module module = engine.compileWat(wat);
-
-      try {
-        // Custom sections API should work (even if empty for this module)
-        final var customSections = module.getCustomSections();
-        assertNotNull(customSections, "Custom sections should not be null");
-      } catch (final UnsupportedOperationException | IllegalArgumentException e) {
-        Assumptions.assumeTrue(false, "Custom sections not supported: " + e.getMessage());
-      }
-
-      module.close();
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("module::module_with_start_function")
   public void testModuleWithStartFunction(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);

@@ -586,36 +586,4 @@ public class ModuleImportValidationTest extends DualRuntimeTest {
     assertEquals(1, validation.getIssues().size());
   }
 
-  /**
-   * Tests validateImportsDetailed() reports validation timing.
-   *
-   * @param runtime the runtime type to use (JNI or Panama)
-   * @throws Exception if the test fails
-   */
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("Validate imports reports timing information")
-  public void testValidateImportsReportsTimingInfo(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    setupRuntime();
-
-    final String wat =
-        """
-        (module
-          (import "env" "counter" (global (mut i32)))
-        )
-        """;
-
-    final Module module = engine.compileWat(wat);
-
-    final WasmGlobal counter = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(0));
-
-    final ImportMap imports = new TestImportMap();
-    imports.addGlobal("env", "counter", counter);
-
-    // Validate imports
-    final ImportValidation validation = module.validateImportsDetailed(imports);
-    assertNotNull(validation.getValidationTime());
-    assertTrue(validation.getValidationTime().toNanos() > 0, "Validation time should be positive");
-  }
 }

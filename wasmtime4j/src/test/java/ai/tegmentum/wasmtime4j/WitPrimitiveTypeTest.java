@@ -18,7 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,23 +53,6 @@ class WitPrimitiveTypeTest {
       assertEquals(13, values.length);
     }
 
-    @Test
-    @DisplayName("should have all expected types")
-    void shouldHaveAllExpectedTypes() {
-      assertNotNull(WitPrimitiveType.BOOL);
-      assertNotNull(WitPrimitiveType.S8);
-      assertNotNull(WitPrimitiveType.U8);
-      assertNotNull(WitPrimitiveType.S16);
-      assertNotNull(WitPrimitiveType.U16);
-      assertNotNull(WitPrimitiveType.S32);
-      assertNotNull(WitPrimitiveType.U32);
-      assertNotNull(WitPrimitiveType.S64);
-      assertNotNull(WitPrimitiveType.U64);
-      assertNotNull(WitPrimitiveType.FLOAT32);
-      assertNotNull(WitPrimitiveType.FLOAT64);
-      assertNotNull(WitPrimitiveType.CHAR);
-      assertNotNull(WitPrimitiveType.STRING);
-    }
   }
 
   @Nested
