@@ -389,29 +389,6 @@ public final class PanamaInstance implements Instance {
   }
 
   @Override
-  public Optional<WasmMemory> getDefaultMemory() {
-    ensureNotClosed();
-
-    // First, try to get memory named "memory" (most common convention)
-    final Optional<WasmMemory> namedMemory = getMemory("memory");
-    if (namedMemory.isPresent()) {
-      return namedMemory;
-    }
-
-    // If not found, try to get the first memory export
-    final String[] exportNames = getExportNames();
-    for (final String exportName : exportNames) {
-      final Optional<WasmMemory> memory = getMemory(exportName);
-      if (memory.isPresent()) {
-        return memory;
-      }
-    }
-
-    // No memory exports found
-    return Optional.empty();
-  }
-
-  @Override
   public String[] getExportNames() {
     ensureNotClosed();
 

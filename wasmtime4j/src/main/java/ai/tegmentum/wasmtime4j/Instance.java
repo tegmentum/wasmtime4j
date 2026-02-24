@@ -167,12 +167,25 @@ public interface Instance extends Closeable {
   /**
    * Gets the default linear memory if the module exports one.
    *
-   * <p>This is a convenience method that returns the first exported memory, which is typically
-   * named "memory" in WebAssembly modules.
+   * <p>This is a convenience method that first tries the conventional name "memory", then falls back
+   * to returning the first memory export found. This matches Wasmtime's behavior of returning the
+   * first exported memory.
    *
    * @return the default memory, or empty if no memory is exported
    */
-  Optional<WasmMemory> getDefaultMemory();
+  default Optional<WasmMemory> getDefaultMemory() {
+    final Optional<WasmMemory> namedMemory = getMemory("memory");
+    if (namedMemory.isPresent()) {
+      return namedMemory;
+    }
+    for (final String exportName : getExportNames()) {
+      final Optional<WasmMemory> memory = getMemory(exportName);
+      if (memory.isPresent()) {
+        return memory;
+      }
+    }
+    return Optional.empty();
+  }
 
   /**
    * Gets an exported shared memory by name.

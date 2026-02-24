@@ -230,8 +230,8 @@ class JniErrorHandlingTest {
     assertNotNull(exception3);
     assertTrue(exception3.getMessage().contains("Unknown native error"));
 
-    // Test just outside valid range (-27 is beyond the -26 maximum)
-    WasmException exception4 = JniExceptionMapper.mapNativeError(-27, "beyond range");
+    // Test just outside valid range (-28 is beyond the -27 maximum)
+    WasmException exception4 = JniExceptionMapper.mapNativeError(-28, "beyond range");
     assertNotNull(exception4);
     assertTrue(exception4.getMessage().contains("Unknown native error"));
   }

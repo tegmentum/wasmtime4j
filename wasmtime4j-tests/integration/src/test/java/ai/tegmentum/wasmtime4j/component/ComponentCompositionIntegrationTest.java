@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
-import java.io.ByteArrayOutputStream;
+import ai.tegmentum.wasmtime4j.test.TestUtils;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,7 +86,7 @@ public final class ComponentCompositionIntegrationTest {
           ComponentCompositionIntegrationTest.class.getResourceAsStream(
               "/components/with-imports.wasm")) {
         if (is != null) {
-          withImportsComponentBytes = readAllBytes(is);
+          withImportsComponentBytes = TestUtils.readAllBytes(is);
           LOGGER.info(
               "with-imports.wasm component loaded - "
                   + withImportsComponentBytes.length
@@ -98,7 +98,7 @@ public final class ComponentCompositionIntegrationTest {
                   .getClassLoader()
                   .getResourceAsStream("components/with-imports.wasm")) {
             if (altIs != null) {
-              withImportsComponentBytes = readAllBytes(altIs);
+              withImportsComponentBytes = TestUtils.readAllBytes(altIs);
               LOGGER.info(
                   "with-imports.wasm loaded from alternate path - "
                       + withImportsComponentBytes.length
@@ -116,7 +116,7 @@ public final class ComponentCompositionIntegrationTest {
       try (InputStream is =
           ComponentCompositionIntegrationTest.class.getResourceAsStream("/components/add.wasm")) {
         if (is != null) {
-          addComponentBytes = readAllBytes(is);
+          addComponentBytes = TestUtils.readAllBytes(is);
           LOGGER.info("add.wasm component loaded - " + addComponentBytes.length + " bytes");
         }
       }
@@ -136,16 +136,6 @@ public final class ComponentCompositionIntegrationTest {
     assumeTrue(
         componentCompositionAvailable,
         "ComponentComposition native implementation not available: " + unavailableReason);
-  }
-
-  private static byte[] readAllBytes(final InputStream inputStream) throws Exception {
-    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    final byte[] tempBuffer = new byte[1024];
-    int bytesRead;
-    while ((bytesRead = inputStream.read(tempBuffer)) != -1) {
-      buffer.write(tempBuffer, 0, bytesRead);
-    }
-    return buffer.toByteArray();
   }
 
   private Engine engine;

@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
-import java.io.ByteArrayOutputStream;
+import ai.tegmentum.wasmtime4j.test.TestUtils;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +71,7 @@ public final class ComponentInstanceIntegrationTest {
       try (InputStream is =
           ComponentInstanceIntegrationTest.class.getResourceAsStream("/components/add.wasm")) {
         if (is != null) {
-          addComponentBytes = readAllBytes(is);
+          addComponentBytes = TestUtils.readAllBytes(is);
           componentInstanceAvailable = true;
           LOGGER.info(
               "ComponentInstance native implementation available - "
@@ -95,16 +95,6 @@ public final class ComponentInstanceIntegrationTest {
     assumeTrue(
         componentInstanceAvailable,
         "ComponentInstance native implementation not available: " + unavailableReason);
-  }
-
-  private static byte[] readAllBytes(final InputStream inputStream) throws Exception {
-    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    final byte[] tempBuffer = new byte[1024];
-    int bytesRead;
-    while ((bytesRead = inputStream.read(tempBuffer)) != -1) {
-      buffer.write(tempBuffer, 0, bytesRead);
-    }
-    return buffer.toByteArray();
   }
 
   private JniComponentEngine engine;

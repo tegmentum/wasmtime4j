@@ -1,5 +1,8 @@
 package ai.tegmentum.wasmtime4j.test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.logging.Logger;
 
 /**
@@ -56,5 +59,24 @@ public final class TestUtils {
     }
 
     LOGGER.warning("Could not clear handle registries - no implementation available");
+  }
+
+  /**
+   * Reads all bytes from an {@link InputStream} into a byte array.
+   *
+   * <p>This is a Java 8-compatible alternative to {@code InputStream.readAllBytes()} (Java 9+).
+   *
+   * @param inputStream the input stream to read from
+   * @return the byte array containing all bytes from the stream
+   * @throws IOException if an I/O error occurs
+   */
+  public static byte[] readAllBytes(final InputStream inputStream) throws IOException {
+    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    final byte[] tempBuffer = new byte[1024];
+    int bytesRead;
+    while ((bytesRead = inputStream.read(tempBuffer)) != -1) {
+      buffer.write(tempBuffer, 0, bytesRead);
+    }
+    return buffer.toByteArray();
   }
 }

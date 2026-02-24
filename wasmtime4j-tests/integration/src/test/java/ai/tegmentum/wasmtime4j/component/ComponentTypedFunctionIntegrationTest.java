@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.io.ByteArrayOutputStream;
+import ai.tegmentum.wasmtime4j.test.TestUtils;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +71,7 @@ public final class ComponentTypedFunctionIntegrationTest {
       try (InputStream is =
           ComponentTypedFunctionIntegrationTest.class.getResourceAsStream("/components/add.wasm")) {
         if (is != null) {
-          addComponentBytes = readAllBytes(is);
+          addComponentBytes = TestUtils.readAllBytes(is);
           componentAvailable = true;
           LOGGER.info(
               "Component native implementation available - "
@@ -139,16 +139,6 @@ public final class ComponentTypedFunctionIntegrationTest {
   private static void assumeTypedFuncAvailable() {
     assumeComponentAvailable();
     assumeTrue(typedFuncAvailable, "Typed component function not available");
-  }
-
-  private static byte[] readAllBytes(final InputStream inputStream) throws Exception {
-    final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    final byte[] tempBuffer = new byte[1024];
-    int bytesRead;
-    while ((bytesRead = inputStream.read(tempBuffer)) != -1) {
-      buffer.write(tempBuffer, 0, bytesRead);
-    }
-    return buffer.toByteArray();
   }
 
   private JniComponentEngine engine;

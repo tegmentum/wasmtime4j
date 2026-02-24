@@ -201,17 +201,6 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
-  /**
-   * Gets the default memory export (named "memory").
-   *
-   * @return the default memory wrapper, or empty if not found
-   * @throws IllegalStateException if this instance is closed
-   */
-  @Override
-  public Optional<WasmMemory> getDefaultMemory() {
-    return getMemory("memory");
-  }
-
   @Override
   public Optional<WasmMemory> getSharedMemory(final String name) {
     Validation.requireNonBlank(name, "name");
