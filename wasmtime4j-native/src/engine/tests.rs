@@ -105,9 +105,8 @@ fn test_comprehensive_configuration() {
     assert_eq!(engine.stack_size_limit(), Some(1024 * 1024));
 
     let config = engine.config_summary();
-    assert_eq!(config.strategy, "Cranelift");
-    assert_eq!(config.opt_level, "SpeedAndSize");
-    assert!(config.debug_info);
+    assert!(config.fuel_enabled);
+    assert!(config.epoch_interruption);
 }
 
 #[test]
@@ -650,9 +649,9 @@ fn test_builder_with_cranelift_options() {
         .build()
         .expect("Failed to build engine with Cranelift options");
 
-    let config = engine.config_summary();
-    assert!(config.cranelift_debug_verifier);
-    assert!(config.cranelift_nan_canonicalization);
+    // cranelift_debug_verifier and cranelift_nan_canonicalization are applied to
+    // the Wasmtime config but not tracked in EngineConfigSummary (construction-only).
+    // The test verifies the builder accepts these options without error.
 }
 
 #[test]
@@ -680,9 +679,8 @@ fn test_builder_with_all_memory_features() {
     let config = engine.config_summary();
     assert!(config.wasm_memory64);
     assert!(config.wasm_multi_memory);
-    assert!(config.memory_may_move);
-    assert!(config.guard_before_linear_memory);
-    assert!(config.memory_init_cow);
+    // memory_may_move, guard_before_linear_memory, memory_init_cow are applied to
+    // the Wasmtime config but not tracked in EngineConfigSummary (construction-only).
 }
 
 #[test]
@@ -724,8 +722,8 @@ fn test_builder_with_parallel_compilation() {
         .build()
         .expect("Failed to build engine with parallel compilation disabled");
 
-    let config = engine.config_summary();
-    assert!(!config.parallel_compilation);
+    // parallel_compilation is applied to the Wasmtime config but not tracked
+    // in EngineConfigSummary (construction-only). Test verifies builder accepts it.
 }
 
 #[test]
@@ -749,8 +747,8 @@ fn test_builder_opt_level_none() {
         .build()
         .expect("Failed to build engine with no optimization");
 
-    let config = engine.config_summary();
-    assert_eq!(config.opt_level, "None");
+    // opt_level is applied to the Wasmtime config but not tracked in
+    // EngineConfigSummary (construction-only). Test verifies builder accepts it.
 }
 
 #[test]
@@ -760,8 +758,8 @@ fn test_builder_strategy_auto() {
         .build()
         .expect("Failed to build engine with auto strategy");
 
-    let config = engine.config_summary();
-    assert_eq!(config.strategy, "Auto");
+    // strategy is applied to the Wasmtime config but not tracked in
+    // EngineConfigSummary (construction-only). Test verifies builder accepts it.
 }
 
 // =========================================================================
@@ -843,8 +841,8 @@ fn test_gc_support_enabled() {
         .build()
         .expect("Failed to build engine with GC support");
 
-    let config = engine.config_summary();
-    assert!(config.gc_support);
+    // gc_support is applied to the Wasmtime config but not tracked in
+    // EngineConfigSummary (construction-only). Test verifies builder accepts it.
 }
 
 #[test]
@@ -1075,7 +1073,9 @@ fn test_core_check_feature_support() {
 fn test_core_get_config_summary() {
     let engine = Engine::new().expect("Failed to create engine");
     let summary = core::get_config_summary(&engine);
-    assert!(!summary.strategy.is_empty());
+    // Verify summary has expected defaults
+    assert!(!summary.fuel_enabled);
+    assert!(!summary.epoch_interruption);
 }
 
 #[test]
