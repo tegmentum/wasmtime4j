@@ -406,41 +406,17 @@ pub enum WasmFeature {
 
 impl Default for Engine {
     fn default() -> Self {
-        // Create a minimal, guaranteed-to-succeed engine configuration
-        match Self::new() {
-            Ok(engine) => engine,
-            Err(_) => {
-                // Fallback to absolute minimal configuration that should always work
-                let mut config = safe_wasmtime_config();
-                config.strategy(Strategy::Cranelift);
-
-                match WasmtimeEngine::new(&config) {
-                    Ok(wasmtime_engine) => Engine {
-                        inner: Arc::new(wasmtime_engine),
-                        config_summary: EngineConfigSummary::default(),
-                        concurrent_ops_lock: Arc::new(RwLock::new(())),
-                        is_closed: Arc::new(AtomicBool::new(false)),
-                    },
-                    Err(_) => {
-                        // Last resort: create engine with safe wasmtime config
-                        // This should virtually never fail unless the system is severely broken
-                        let default_config = safe_wasmtime_config();
-                        Engine {
-                            inner: Arc::new(WasmtimeEngine::new(&default_config).unwrap_or_else(
-                                |_| {
-                                    panic!(
-                                        "Critical: Cannot create fallback engine - system unusable"
-                                    )
-                                },
-                            )),
-                            config_summary: EngineConfigSummary::default(),
-                            concurrent_ops_lock: Arc::new(RwLock::new(())),
-                            is_closed: Arc::new(AtomicBool::new(false)),
-                        }
-                    }
-                }
+        Self::new().unwrap_or_else(|_| {
+            let config = safe_wasmtime_config();
+            let wasmtime_engine = WasmtimeEngine::new(&config)
+                .expect("Critical: Cannot create engine - system unusable");
+            Engine {
+                inner: Arc::new(wasmtime_engine),
+                config_summary: EngineConfigSummary::default(),
+                concurrent_ops_lock: Arc::new(RwLock::new(())),
+                is_closed: Arc::new(AtomicBool::new(false)),
             }
-        }
+        })
     }
 }
 

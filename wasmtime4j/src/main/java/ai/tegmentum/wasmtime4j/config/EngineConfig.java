@@ -44,7 +44,9 @@ public final class EngineConfig {
   private boolean wasmSharedEverythingThreads = false;
 
   private java.util.Map<String, String> craneliftSettings = new java.util.HashMap<>();
-  private java.util.Set<WasmFeature> wasmFeatures = new java.util.HashSet<>();
+
+  // Component model feature (no individual boolean existed before; tracked here directly)
+  private boolean wasmComponentModel = false;
 
   // Instance allocation strategy
   private InstanceAllocationStrategy allocationStrategy = InstanceAllocationStrategy.ON_DEMAND;
@@ -145,25 +147,7 @@ public final class EngineConfig {
 
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
-    // Sync wasmFeatures set with boolean defaults that are true
-    wasmFeatures.add(WasmFeature.REFERENCE_TYPES);
-    wasmFeatures.add(WasmFeature.SIMD);
-    wasmFeatures.add(WasmFeature.MULTI_VALUE);
-    wasmFeatures.add(WasmFeature.BULK_MEMORY);
-  }
-
-  /**
-   * Synchronizes an individual feature boolean with the wasmFeatures Set.
-   *
-   * @param feature the WasmFeature enum value
-   * @param enabled true to add, false to remove from the Set
-   */
-  private void syncFeatureToSet(final WasmFeature feature, final boolean enabled) {
-    if (enabled) {
-      this.wasmFeatures.add(feature);
-    } else {
-      this.wasmFeatures.remove(feature);
-    }
+    // Default feature flags are set via field initializers above
   }
 
   /**
@@ -379,10 +363,8 @@ public final class EngineConfig {
     if (features == null) {
       throw new IllegalArgumentException("WebAssembly features cannot be null");
     }
-    this.wasmFeatures.clear();
-    this.wasmFeatures.addAll(features);
 
-    // Update all individual feature flags based on the set
+    // Set all feature flags based on the set
     this.wasmReferenceTypes = features.contains(WasmFeature.REFERENCE_TYPES);
     this.wasmSimd = features.contains(WasmFeature.SIMD);
     this.wasmRelaxedSimd = features.contains(WasmFeature.RELAXED_SIMD);
@@ -396,14 +378,11 @@ public final class EngineConfig {
     this.wasmExceptions = features.contains(WasmFeature.EXCEPTIONS);
     this.wasmFunctionReferences = features.contains(WasmFeature.TYPED_FUNCTION_REFERENCES);
     this.wasmWideArithmetic = features.contains(WasmFeature.WIDE_ARITHMETIC);
-
-    // Update experimental feature flags
+    this.wasmComponentModel = features.contains(WasmFeature.COMPONENT_MODEL);
     this.wasmStackSwitching = features.contains(WasmFeature.STACK_SWITCHING);
     this.wasmExtendedConstExpressions = features.contains(WasmFeature.EXTENDED_CONST_EXPRESSIONS);
     this.wasmCustomPageSizes = features.contains(WasmFeature.CUSTOM_PAGE_SIZES);
     this.wasmSharedEverythingThreads = features.contains(WasmFeature.SHARED_EVERYTHING_THREADS);
-
-    // Update component model extension flags
     this.wasmComponentModelAsync = features.contains(WasmFeature.COMPONENT_MODEL_ASYNC);
     this.wasmComponentModelAsyncBuiltins =
         features.contains(WasmFeature.COMPONENT_MODEL_ASYNC_BUILTINS);
@@ -428,9 +407,7 @@ public final class EngineConfig {
     if (feature == null) {
       throw new IllegalArgumentException("WebAssembly feature cannot be null");
     }
-    this.wasmFeatures.add(feature);
 
-    // Update individual feature flags based on the feature
     switch (feature) {
       case REFERENCE_TYPES:
         this.wasmReferenceTypes = true;
@@ -460,7 +437,7 @@ public final class EngineConfig {
         this.wasmMemory64 = true;
         break;
       case COMPONENT_MODEL:
-        // Component Model is handled at the runtime level
+        this.wasmComponentModel = true;
         break;
       case GC:
         this.wasmGc = true;
@@ -505,7 +482,6 @@ public final class EngineConfig {
         this.wasmComponentModelThreading = true;
         break;
       default:
-        // Unknown feature, just add to the set
         break;
     }
 
@@ -632,7 +608,32 @@ public final class EngineConfig {
   }
 
   public java.util.Set<WasmFeature> getWasmFeatures() {
-    return new java.util.HashSet<>(wasmFeatures);
+    final java.util.Set<WasmFeature> features = java.util.EnumSet.noneOf(WasmFeature.class);
+    if (wasmReferenceTypes) features.add(WasmFeature.REFERENCE_TYPES);
+    if (wasmSimd) features.add(WasmFeature.SIMD);
+    if (wasmRelaxedSimd) features.add(WasmFeature.RELAXED_SIMD);
+    if (wasmMultiValue) features.add(WasmFeature.MULTI_VALUE);
+    if (wasmBulkMemory) features.add(WasmFeature.BULK_MEMORY);
+    if (wasmThreads) features.add(WasmFeature.THREADS);
+    if (wasmTailCall) features.add(WasmFeature.TAIL_CALL);
+    if (wasmMultiMemory) features.add(WasmFeature.MULTI_MEMORY);
+    if (wasmMemory64) features.add(WasmFeature.MEMORY64);
+    if (wasmGc) features.add(WasmFeature.GC);
+    if (wasmExceptions) features.add(WasmFeature.EXCEPTIONS);
+    if (wasmFunctionReferences) features.add(WasmFeature.TYPED_FUNCTION_REFERENCES);
+    if (wasmWideArithmetic) features.add(WasmFeature.WIDE_ARITHMETIC);
+    if (wasmComponentModel) features.add(WasmFeature.COMPONENT_MODEL);
+    if (wasmStackSwitching) features.add(WasmFeature.STACK_SWITCHING);
+    if (wasmExtendedConstExpressions) features.add(WasmFeature.EXTENDED_CONST_EXPRESSIONS);
+    if (wasmCustomPageSizes) features.add(WasmFeature.CUSTOM_PAGE_SIZES);
+    if (wasmSharedEverythingThreads) features.add(WasmFeature.SHARED_EVERYTHING_THREADS);
+    if (wasmComponentModelAsync) features.add(WasmFeature.COMPONENT_MODEL_ASYNC);
+    if (wasmComponentModelAsyncBuiltins) features.add(WasmFeature.COMPONENT_MODEL_ASYNC_BUILTINS);
+    if (wasmComponentModelAsyncStackful) features.add(WasmFeature.COMPONENT_MODEL_ASYNC_STACKFUL);
+    if (wasmComponentModelErrorContext) features.add(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT);
+    if (wasmComponentModelGc) features.add(WasmFeature.COMPONENT_MODEL_GC);
+    if (wasmComponentModelThreading) features.add(WasmFeature.COMPONENT_MODEL_THREADING);
+    return features;
   }
 
   // Experimental feature getters
@@ -844,9 +845,8 @@ public final class EngineConfig {
     c.wasmExtendedConstExpressions = this.wasmExtendedConstExpressions;
     c.wasmCustomPageSizes = this.wasmCustomPageSizes;
     c.wasmSharedEverythingThreads = this.wasmSharedEverythingThreads;
-    // Maps and sets (defensive copy)
+    // Maps (defensive copy)
     c.craneliftSettings = new java.util.HashMap<>(this.craneliftSettings);
-    c.wasmFeatures = new java.util.HashSet<>(this.wasmFeatures);
     // Allocation strategy
     c.allocationStrategy = this.allocationStrategy;
     c.poolingAllocatorEnabled = this.poolingAllocatorEnabled;
@@ -883,7 +883,8 @@ public final class EngineConfig {
     // Register allocation and backtrace
     c.regallocAlgorithm = this.regallocAlgorithm;
     c.backtraceDetails = this.backtraceDetails;
-    // Component model extensions
+    // Component model
+    c.wasmComponentModel = this.wasmComponentModel;
     c.wasmComponentModelAsync = this.wasmComponentModelAsync;
     c.wasmComponentModelAsyncStackful = this.wasmComponentModelAsyncStackful;
     c.wasmComponentModelErrorContext = this.wasmComponentModelErrorContext;
@@ -948,7 +949,6 @@ public final class EngineConfig {
     if (enable) {
       this.gcSupport = true;
     }
-    syncFeatureToSet(WasmFeature.GC, enable);
     return this;
   }
 
@@ -1303,7 +1303,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmWideArithmetic(final boolean enable) {
     this.wasmWideArithmetic = enable;
-    syncFeatureToSet(WasmFeature.WIDE_ARITHMETIC, enable);
     return this;
   }
 
@@ -1328,7 +1327,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmFunctionReferences(final boolean enable) {
     this.wasmFunctionReferences = enable;
-    syncFeatureToSet(WasmFeature.TYPED_FUNCTION_REFERENCES, enable);
     return this;
   }
 
@@ -1548,7 +1546,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmExceptions(final boolean enable) {
     this.wasmExceptions = enable;
-    syncFeatureToSet(WasmFeature.EXCEPTIONS, enable);
     return this;
   }
 
@@ -1576,7 +1573,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelAsyncBuiltins(final boolean enable) {
     this.wasmComponentModelAsyncBuiltins = enable;
-    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_ASYNC_BUILTINS, enable);
     return this;
   }
 
@@ -1599,7 +1595,7 @@ public final class EngineConfig {
    * @since 1.1.0
    */
   public boolean isWasmComponentModel() {
-    return wasmFeatures.contains(WasmFeature.COMPONENT_MODEL);
+    return wasmComponentModel;
   }
 
   /**
@@ -1705,7 +1701,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelAsync(final boolean enable) {
     this.wasmComponentModelAsync = enable;
-    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_ASYNC, enable);
     return this;
   }
 
@@ -1728,7 +1723,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelAsyncStackful(final boolean enable) {
     this.wasmComponentModelAsyncStackful = enable;
-    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_ASYNC_STACKFUL, enable);
     return this;
   }
 
@@ -1751,7 +1745,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelErrorContext(final boolean enable) {
     this.wasmComponentModelErrorContext = enable;
-    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT, enable);
     return this;
   }
 
@@ -1774,7 +1767,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelGc(final boolean enable) {
     this.wasmComponentModelGc = enable;
-    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_GC, enable);
     return this;
   }
 
@@ -1797,7 +1789,6 @@ public final class EngineConfig {
    */
   public EngineConfig wasmComponentModelThreading(final boolean enable) {
     this.wasmComponentModelThreading = enable;
-    syncFeatureToSet(WasmFeature.COMPONENT_MODEL_THREADING, enable);
     return this;
   }
 
@@ -2387,8 +2378,8 @@ public final class EngineConfig {
       }
     }
 
-    // Component model (from features set)
-    if (wasmFeatures.contains(WasmFeature.COMPONENT_MODEL)) {
+    // Component model
+    if (wasmComponentModel) {
       appendJsonBool(sb, first, "wasmComponentModel", true);
     }
 

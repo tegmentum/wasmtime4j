@@ -1153,6 +1153,24 @@ fn get_limiter_context(callback_id: i64) -> Option<(std::sync::Arc<jni::JavaVM>,
     })
 }
 
+// Module-scope trampolines that delegate to JNI dispatch functions.
+// Shared by both sync and async resource limiter JNI bindings.
+extern "C" fn jni_memory_growing_trampoline(callback_id: i64, current: u64, desired: u64, maximum: u64) -> i32 {
+    jni_memory_growing_dispatch(callback_id, current, desired, maximum)
+}
+
+extern "C" fn jni_table_growing_trampoline(callback_id: i64, current: u32, desired: u32, maximum: u32) -> i32 {
+    jni_table_growing_dispatch(callback_id, current, desired, maximum)
+}
+
+extern "C" fn jni_memory_grow_failed_trampoline(callback_id: i64, error: *const std::os::raw::c_char) {
+    jni_memory_grow_failed_dispatch(callback_id, error)
+}
+
+extern "C" fn jni_table_grow_failed_trampoline(callback_id: i64, error: *const std::os::raw::c_char) {
+    jni_table_grow_failed_dispatch(callback_id, error)
+}
+
 /// Dispatch function for JNI memory growing callbacks
 fn jni_memory_growing_dispatch(callback_id: i64, current: u64, desired: u64, maximum: u64) -> i32 {
     let (jvm, global_ref_ptr) = match get_limiter_context(callback_id) {
@@ -1373,46 +1391,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResour
     let _ = jni_utils::jni_try_void(&mut env, || {
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
 
-        // Define extern "C" trampolines that dispatch to JNI
-        extern "C" fn memory_growing_trampoline(
-            callback_id: i64,
-            current: u64,
-            desired: u64,
-            maximum: u64,
-        ) -> i32 {
-            jni_memory_growing_dispatch(callback_id, current, desired, maximum)
-        }
-
-        extern "C" fn table_growing_trampoline(
-            callback_id: i64,
-            current: u32,
-            desired: u32,
-            maximum: u32,
-        ) -> i32 {
-            jni_table_growing_dispatch(callback_id, current, desired, maximum)
-        }
-
-        extern "C" fn memory_grow_failed_trampoline(
-            callback_id: i64,
-            error: *const std::os::raw::c_char,
-        ) {
-            jni_memory_grow_failed_dispatch(callback_id, error)
-        }
-
-        extern "C" fn table_grow_failed_trampoline(
-            callback_id: i64,
-            error: *const std::os::raw::c_char,
-        ) {
-            jni_table_grow_failed_dispatch(callback_id, error)
-        }
-
         core::set_resource_limiter(
             store,
             callback_id,
-            memory_growing_trampoline,
-            table_growing_trampoline,
-            Some(memory_grow_failed_trampoline),
-            Some(table_grow_failed_trampoline),
+            jni_memory_growing_trampoline,
+            jni_table_growing_trampoline,
+            Some(jni_memory_grow_failed_trampoline),
+            Some(jni_table_grow_failed_trampoline),
         )?;
         Ok(())
     });
@@ -1465,47 +1450,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResour
     let _ = jni_utils::jni_try_void(&mut env, || {
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
 
-        // Reuse the same trampolines as the sync version since the callbacks
-        // are synchronous from Rust's perspective
-        extern "C" fn memory_growing_trampoline(
-            callback_id: i64,
-            current: u64,
-            desired: u64,
-            maximum: u64,
-        ) -> i32 {
-            jni_memory_growing_dispatch(callback_id, current, desired, maximum)
-        }
-
-        extern "C" fn table_growing_trampoline(
-            callback_id: i64,
-            current: u32,
-            desired: u32,
-            maximum: u32,
-        ) -> i32 {
-            jni_table_growing_dispatch(callback_id, current, desired, maximum)
-        }
-
-        extern "C" fn memory_grow_failed_trampoline(
-            callback_id: i64,
-            error: *const std::os::raw::c_char,
-        ) {
-            jni_memory_grow_failed_dispatch(callback_id, error)
-        }
-
-        extern "C" fn table_grow_failed_trampoline(
-            callback_id: i64,
-            error: *const std::os::raw::c_char,
-        ) {
-            jni_table_grow_failed_dispatch(callback_id, error)
-        }
-
         core::set_resource_limiter_async(
             store,
             callback_id,
-            memory_growing_trampoline,
-            table_growing_trampoline,
-            Some(memory_grow_failed_trampoline),
-            Some(table_grow_failed_trampoline),
+            jni_memory_growing_trampoline,
+            jni_table_growing_trampoline,
+            Some(jni_memory_grow_failed_trampoline),
+            Some(jni_table_grow_failed_trampoline),
         )?;
         Ok(())
     });

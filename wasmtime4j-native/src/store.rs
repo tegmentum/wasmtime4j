@@ -257,10 +257,14 @@ pub struct ResourceLimits {
 
 /// Resource limiter backed by C function pointer callbacks.
 ///
-/// Implements wasmtime's `ResourceLimiter` trait by delegating to extern "C" function pointers,
-/// allowing Java code (via Panama FFI) to make dynamic resource allocation decisions at runtime.
+/// Resource limiter backed by C function pointer callbacks.
 ///
-/// This is the Rust-side counterpart to the Java `ResourceLimiter` interface.
+/// Implements both wasmtime's `ResourceLimiter` and `ResourceLimiterAsync` traits by delegating
+/// to extern "C" function pointers, allowing Java code (via JNI or Panama FFI) to make dynamic
+/// resource allocation decisions at runtime.
+///
+/// The callbacks are synchronous from Rust's perspective — the async trait impl simply wraps
+/// the same synchronous calls, since Java resolves them immediately.
 #[derive(Clone, Copy)]
 pub struct CallbackResourceLimiter {
     /// Callback invoked when linear memory is about to grow.
@@ -281,36 +285,20 @@ pub struct CallbackResourceLimiter {
     callback_id: i64,
 }
 
-impl wasmtime::ResourceLimiter for CallbackResourceLimiter {
-    fn memory_growing(
-        &mut self,
-        current: usize,
-        desired: usize,
-        maximum: Option<usize>,
-    ) -> anyhow::Result<bool> {
+impl CallbackResourceLimiter {
+    fn do_memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
         let max_val = maximum.map(|m| m as u64).unwrap_or(u64::MAX);
-        let result =
-            (self.memory_growing_fn)(self.callback_id, current as u64, desired as u64, max_val);
+        let result = (self.memory_growing_fn)(self.callback_id, current as u64, desired as u64, max_val);
         Ok(result != 0)
     }
 
-    fn table_growing(
-        &mut self,
-        current: usize,
-        desired: usize,
-        maximum: Option<usize>,
-    ) -> anyhow::Result<bool> {
+    fn do_table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
         let max_val = maximum.map(|m| m as u32).unwrap_or(u32::MAX);
-        let result = (self.table_growing_fn)(
-            self.callback_id,
-            current as u32,
-            desired as u32,
-            max_val,
-        );
+        let result = (self.table_growing_fn)(self.callback_id, current as u32, desired as u32, max_val);
         Ok(result != 0)
     }
 
-    fn memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+    fn do_memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
         if let Some(callback) = self.memory_grow_failed_fn {
             if let Ok(c_msg) = CString::new(error.to_string()) {
                 callback(self.callback_id, c_msg.as_ptr());
@@ -319,7 +307,7 @@ impl wasmtime::ResourceLimiter for CallbackResourceLimiter {
         Ok(())
     }
 
-    fn table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+    fn do_table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
         if let Some(callback) = self.table_grow_failed_fn {
             if let Ok(c_msg) = CString::new(error.to_string()) {
                 callback(self.callback_id, c_msg.as_ptr());
@@ -329,80 +317,43 @@ impl wasmtime::ResourceLimiter for CallbackResourceLimiter {
     }
 }
 
-/// Async resource limiter backed by C function pointer callbacks.
-///
-/// Implements wasmtime's `ResourceLimiterAsync` trait by delegating to the same extern "C"
-/// function pointer pattern as `CallbackResourceLimiter`, but wrapped in async futures.
-///
-/// The callbacks are synchronous from Rust's perspective - they call into Java which can
-/// resolve the CompletableFuture immediately. The async wrapping allows wasmtime to treat
-/// these as async operations in the async execution context.
-///
-/// This is the Rust-side counterpart to the Java `ResourceLimiterAsync` interface.
-#[derive(Clone, Copy)]
-pub struct CallbackResourceLimiterAsync {
-    /// Callback invoked when linear memory is about to grow.
-    /// Parameters: callback_id, current_bytes, desired_bytes, maximum_bytes
-    /// Returns: non-zero to allow, zero to deny
-    memory_growing_fn: extern "C" fn(i64, u64, u64, u64) -> i32,
-    /// Callback invoked when a table is about to grow.
-    /// Parameters: callback_id, current_elements, desired_elements, maximum_elements
-    /// Returns: non-zero to allow, zero to deny
-    table_growing_fn: extern "C" fn(i64, u32, u32, u32) -> i32,
-    /// Optional callback invoked when a memory grow operation fails after being allowed.
-    memory_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
-    /// Optional callback invoked when a table grow operation fails after being allowed.
-    table_grow_failed_fn: Option<extern "C" fn(i64, *const std::os::raw::c_char)>,
-    /// Identifier passed back to callbacks for Java-side dispatch.
-    callback_id: i64,
+impl wasmtime::ResourceLimiter for CallbackResourceLimiter {
+    fn memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+        self.do_memory_growing(current, desired, maximum)
+    }
+
+    fn table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+        self.do_table_growing(current, desired, maximum)
+    }
+
+    fn memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+        self.do_memory_grow_failed(error)
+    }
+
+    fn table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+        self.do_table_grow_failed(error)
+    }
 }
+
+/// Type alias for async resource limiter — uses the same struct since callbacks are synchronous.
+pub type CallbackResourceLimiterAsync = CallbackResourceLimiter;
 
 #[async_trait::async_trait]
-impl wasmtime::ResourceLimiterAsync for CallbackResourceLimiterAsync {
-    async fn memory_growing(
-        &mut self,
-        current: usize,
-        desired: usize,
-        maximum: Option<usize>,
-    ) -> anyhow::Result<bool> {
-        let max_val = maximum.map(|m| m as u64).unwrap_or(u64::MAX);
-        let result =
-            (self.memory_growing_fn)(self.callback_id, current as u64, desired as u64, max_val);
-        Ok(result != 0)
+impl wasmtime::ResourceLimiterAsync for CallbackResourceLimiter {
+    async fn memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+        self.do_memory_growing(current, desired, maximum)
     }
 
-    async fn table_growing(
-        &mut self,
-        current: usize,
-        desired: usize,
-        maximum: Option<usize>,
-    ) -> anyhow::Result<bool> {
-        let max_val = maximum.map(|m| m as u32).unwrap_or(u32::MAX);
-        let result = (self.table_growing_fn)(
-            self.callback_id,
-            current as u32,
-            desired as u32,
-            max_val,
-        );
-        Ok(result != 0)
+    async fn table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+        self.do_table_growing(current, desired, maximum)
     }
 
     fn memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
-        if let Some(callback) = self.memory_grow_failed_fn {
-            if let Ok(c_msg) = CString::new(error.to_string()) {
-                callback(self.callback_id, c_msg.as_ptr());
-            }
-        }
-        Ok(())
+        self.do_memory_grow_failed(error)
     }
 
     fn table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
-        if let Some(callback) = self.table_grow_failed_fn {
-            if let Ok(c_msg) = CString::new(error.to_string()) {
-                callback(self.callback_id, c_msg.as_ptr());
-            }
-        }
-        Ok(())
+        self.do_table_grow_failed(error)
     }
 }
 
