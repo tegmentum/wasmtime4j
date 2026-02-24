@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j;
 import ai.tegmentum.wasmtime4j.config.ResourceLimiter;
 import ai.tegmentum.wasmtime4j.config.ResourceLimiterAsync;
 import ai.tegmentum.wasmtime4j.config.StoreLimits;
-import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.CallHook;
 import ai.tegmentum.wasmtime4j.func.CallHookHandler;
@@ -305,67 +304,25 @@ public interface Store extends Closeable {
   Instance createInstance(final Module module) throws WasmException;
 
   /**
+   * Creates an instance of a WebAssembly module in this store with explicit imports.
+   *
+   * <p>The imports must be provided in the same order as the module's import declarations. Each
+   * element in the array corresponds to one import, matching the module's import list by position.
+   *
+   * @param module the compiled module to instantiate
+   * @param imports the array of extern values to satisfy the module's imports, in order
+   * @return a new Instance of the module
+   * @throws WasmException if instantiation fails or imports don't match
+   * @throws IllegalArgumentException if module or imports is null
+   */
+  Instance createInstance(final Module module, final Extern[] imports) throws WasmException;
+
+  /**
    * Checks if the store is still valid and usable.
    *
    * @return true if the store is valid, false otherwise
    */
   boolean isValid();
-
-  /**
-   * Gets the total amount of fuel consumed by this store since creation.
-   *
-   * <p>This method provides historical fuel consumption data for monitoring and profiling
-   * WebAssembly execution patterns.
-   *
-   * @return the total fuel consumed since store creation
-   * @throws WasmException if fuel tracking is not enabled
-   * @since 1.0.0
-   */
-  long getTotalFuelConsumed() throws WasmException;
-
-  /**
-   * Gets the number of function executions performed in this store.
-   *
-   * <p>This counter includes all function calls made through this store, both host functions and
-   * WebAssembly functions.
-   *
-   * @return the total number of function executions
-   * @since 1.0.0
-   */
-  long getExecutionCount();
-
-  /**
-   * Gets the total execution time in microseconds for this store.
-   *
-   * <p>This includes time spent in both WebAssembly execution and host function calls made through
-   * this store.
-   *
-   * @return the total execution time in microseconds
-   * @since 1.0.0
-   */
-  long getTotalExecutionTimeMicros();
-
-  /**
-   * Captures a WebAssembly backtrace from this store.
-   *
-   * <p>This method captures the current call stack if backtrace capture is enabled in the engine
-   * configuration. If backtrace capture is disabled, this may return an empty backtrace.
-   *
-   * @return a WasmBacktrace containing the current call stack
-   * @since 1.0.0
-   */
-  WasmBacktrace captureBacktrace();
-
-  /**
-   * Forces capture of a WebAssembly backtrace from this store.
-   *
-   * <p>This method always captures the call stack, even if backtrace capture is disabled in the
-   * engine configuration. Force-captured backtraces may have performance implications.
-   *
-   * @return a WasmBacktrace containing the current call stack
-   * @since 1.0.0
-   */
-  WasmBacktrace forceCaptureBacktrace();
 
   /**
    * Triggers garbage collection for this store.

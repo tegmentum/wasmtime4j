@@ -227,11 +227,9 @@ if (engine.supportsFeature(WasmFeature.EXCEPTION_HANDLING)) {
 
 New methods added to Engine interface:
 - `supportsFeature(WasmFeature)`: Check WebAssembly feature support
-- `getMemoryLimitPages()`: Get memory limit configuration
 - `getStackSizeLimit()`: Get stack size configuration
 - `isFuelEnabled()`: Check fuel consumption status
 - `isEpochInterruptionEnabled()`: Check epoch interruption status
-- `getMaxInstances()`: Get instance limit configuration
 - `getReferenceCount()`: Get engine reference count
 
 ### Store Enhancements

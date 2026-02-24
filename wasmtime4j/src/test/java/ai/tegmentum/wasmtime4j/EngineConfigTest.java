@@ -104,4 +104,35 @@ class EngineConfigTest {
     assertNotNull(
         Boolean.valueOf(config.isWasmMemory64()), "isWasmMemory64() should return a boolean value");
   }
+
+  @Test
+  @DisplayName("Should have enableCompiler enabled by default")
+  void shouldHaveEnableCompilerEnabledByDefault() {
+    final EngineConfig config = new EngineConfig();
+    assertTrue(config.isEnableCompiler(), "enableCompiler should be enabled by default");
+  }
+
+  @Test
+  @DisplayName("Should allow disabling the compiler")
+  void shouldAllowDisablingCompiler() {
+    final EngineConfig config = new EngineConfig().enableCompiler(false);
+    assertFalse(config.isEnableCompiler(), "enableCompiler should be disabled after setting false");
+  }
+
+  @Test
+  @DisplayName("Should preserve enableCompiler in copy")
+  void shouldPreserveEnableCompilerInCopy() {
+    final EngineConfig config = new EngineConfig().enableCompiler(false);
+    final EngineConfig copy = config.copy();
+    assertFalse(copy.isEnableCompiler(), "copy should preserve enableCompiler=false");
+  }
+
+  @Test
+  @DisplayName("Should serialize enableCompiler to JSON")
+  void shouldSerializeEnableCompilerToJson() {
+    final EngineConfig config = new EngineConfig().enableCompiler(false);
+    final String json = new String(config.toJson(), java.nio.charset.StandardCharsets.UTF_8);
+    assertTrue(json.contains("\"enableCompiler\":false"),
+        "JSON should contain enableCompiler:false but was: " + json);
+  }
 }

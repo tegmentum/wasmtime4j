@@ -143,7 +143,7 @@ public final class ComponentInstanceIntegrationTest {
       assumeComponentInstanceAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       assertNotNull(component, "Component should not be null");
@@ -158,7 +158,7 @@ public final class ComponentInstanceIntegrationTest {
       assumeComponentInstanceAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -176,7 +176,7 @@ public final class ComponentInstanceIntegrationTest {
       assumeComponentInstanceAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -200,7 +200,7 @@ public final class ComponentInstanceIntegrationTest {
       assumeComponentInstanceAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -243,7 +243,7 @@ public final class ComponentInstanceIntegrationTest {
       assumeComponentInstanceAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       final ComponentInstance instance = component.instantiate();
 
       assertTrue(instance.isValid(), "Instance should be valid before close");
@@ -264,7 +264,7 @@ public final class ComponentInstanceIntegrationTest {
       assumeComponentInstanceAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       final ComponentInstance instance = component.instantiate();
 
       // Multiple close calls should be safe
@@ -286,7 +286,7 @@ public final class ComponentInstanceIntegrationTest {
       assumeComponentInstanceAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -312,7 +312,7 @@ public final class ComponentInstanceIntegrationTest {
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       assertThrows(
-          Exception.class, () -> engine.loadComponentFromBytes(null), "Should reject null bytes");
+          Exception.class, () -> engine.compileComponent(null), "Should reject null bytes");
 
       LOGGER.info("Null component bytes rejected as expected");
     }
@@ -325,7 +325,7 @@ public final class ComponentInstanceIntegrationTest {
 
       assertThrows(
           Exception.class,
-          () -> engine.loadComponentFromBytes(new byte[0]),
+          () -> engine.compileComponent(new byte[0]),
           "Should reject empty bytes");
 
       LOGGER.info("Empty component bytes rejected as expected");
@@ -341,7 +341,7 @@ public final class ComponentInstanceIntegrationTest {
 
       assertThrows(
           Exception.class,
-          () -> engine.loadComponentFromBytes(invalidBytes),
+          () -> engine.compileComponent(invalidBytes),
           "Should reject invalid WASM bytes");
 
       LOGGER.info("Invalid WASM bytes rejected as expected");
@@ -359,7 +359,7 @@ public final class ComponentInstanceIntegrationTest {
 
       assertThrows(
           Exception.class,
-          () -> testEngine.loadComponentFromBytes(addComponentBytes),
+          () -> testEngine.compileComponent(addComponentBytes),
           "Should reject operations on closed engine");
 
       LOGGER.info("Closed engine handled gracefully");
@@ -381,7 +381,7 @@ public final class ComponentInstanceIntegrationTest {
         for (int i = 0; i < 3; i++) {
           final JniComponentEngine eng = new JniComponentEngine(new ComponentEngineConfig());
           engines.add(eng);
-          assertNotNull(eng.getId(), "Engine " + i + " should have an ID");
+          assertTrue(eng.isValid(), "Engine " + i + " should be valid");
         }
 
         LOGGER.info("Created " + engines.size() + " independent engines");
@@ -403,8 +403,8 @@ public final class ComponentInstanceIntegrationTest {
 
       try {
         // Load same component in both engines
-        final Component comp1 = engine1.loadComponentFromBytes(addComponentBytes);
-        final Component comp2 = engine2.loadComponentFromBytes(addComponentBytes);
+        final Component comp1 = engine1.compileComponent(addComponentBytes);
+        final Component comp2 = engine2.compileComponent(addComponentBytes);
 
         // Instantiate in both
         final ComponentInstance inst1 = comp1.instantiate();

@@ -283,9 +283,9 @@ pub extern "C" fn wasmtime4j_panama_trap_is_trap(error_message: *const c_char) -
         || msg.contains("cast failure")
         || msg.contains("cannot enter component")
         || msg.contains("cannot leave component")
-        || msg.contains("continuation") && msg.contains("consumed")
+        || (msg.contains("continuation") && msg.contains("consumed"))
         || msg.contains("disabled opcode")
-        || msg.contains("async") && msg.contains("deadlock")
+        || (msg.contains("async") && msg.contains("deadlock"))
         || msg.contains("unhandled tag")
         || msg.contains("invalid discriminant")
         || msg.contains("unaligned pointer");

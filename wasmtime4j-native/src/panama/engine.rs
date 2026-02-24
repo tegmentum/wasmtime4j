@@ -27,20 +27,15 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_config(
     wasm_bulk_memory: c_int,
     wasm_multi_value: c_int,
     fuel_enabled: c_int,
-    max_memory_pages: c_int,
     max_stack_size: c_int,
     epoch_interruption: c_int,
-    max_instances: c_int,
     async_support: c_int,
 ) -> *mut c_void {
     ffi_utils::ffi_try_ptr(|| {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
         let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
-        let max_memory_pages_opt =
-            parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
         let max_stack_size_opt =
             parameter_conversion::convert_int_to_optional_usize(max_stack_size);
-        let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
 
         core::create_engine_with_config(
             strategy_opt,
@@ -52,10 +47,8 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_config(
             parameter_conversion::convert_int_to_bool(wasm_bulk_memory),
             parameter_conversion::convert_int_to_bool(wasm_multi_value),
             parameter_conversion::convert_int_to_bool(fuel_enabled),
-            max_memory_pages_opt,
             max_stack_size_opt,
             parameter_conversion::convert_int_to_bool(epoch_interruption),
-            max_instances_opt,
             parameter_conversion::convert_int_to_bool(async_support),
         )
     })
@@ -118,18 +111,6 @@ pub extern "C" fn wasmtime4j_panama_engine_is_coredump_on_trap_enabled(
     }
 }
 
-/// Get memory limit in pages (Panama FFI version)
-#[no_mangle]
-pub extern "C" fn wasmtime4j_panama_engine_get_memory_limit(engine_ptr: *mut c_void) -> c_int {
-    match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => engine
-            .memory_limit_pages()
-            .map(|limit| limit as c_int)
-            .unwrap_or(-1),
-        Err(_) => -1,
-    }
-}
-
 /// Get stack size limit in bytes (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_void) -> c_long {
@@ -137,17 +118,6 @@ pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_vo
         Ok(engine) => engine
             .stack_size_limit()
             .map(|limit| limit as c_long)
-            .unwrap_or(-1),
-        Err(_) => -1,
-    }
-}
-
-/// Get maximum instances limit (Panama FFI version)
-#[no_mangle]
-pub extern "C" fn wasmtime4j_panama_engine_get_max_instances(engine_ptr: *mut c_void) -> c_int {
-    match unsafe { core::get_engine_ref(engine_ptr) } {
-        Ok(engine) => core::get_max_instances(engine)
-            .map(|limit| limit as c_int)
             .unwrap_or(-1),
         Err(_) => -1,
     }
@@ -452,10 +422,8 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
     wasm_bulk_memory: c_int,
     wasm_multi_value: c_int,
     fuel_enabled: c_int,
-    max_memory_pages: c_int,
     max_stack_size: c_int,
     epoch_interruption: c_int,
-    max_instances: c_int,
     async_support: c_int,
     // GC configuration
     wasm_gc: c_int,
@@ -500,9 +468,7 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
 ) -> *mut c_void {
     let strategy_opt = parameter_conversion::convert_strategy(strategy);
     let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
-    let max_memory_pages_opt = parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
     let max_stack_size_opt = parameter_conversion::convert_int_to_optional_usize(max_stack_size);
-    let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
 
     // Memory config: 0 means use default
     let memory_reservation_opt = if memory_reservation > 0 {
@@ -557,10 +523,8 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
         parameter_conversion::convert_int_to_bool(wasm_bulk_memory),
         parameter_conversion::convert_int_to_bool(wasm_multi_value),
         parameter_conversion::convert_int_to_bool(fuel_enabled),
-        max_memory_pages_opt,
         max_stack_size_opt,
         parameter_conversion::convert_int_to_bool(epoch_interruption),
-        max_instances_opt,
         parameter_conversion::convert_int_to_bool(async_support),
         // GC configuration
         parameter_conversion::convert_int_to_bool(wasm_gc),
@@ -808,6 +772,12 @@ pub extern "C" fn wasmtime4j_panama_engine_create_shared_memory(
             std::ptr::null_mut()
         }
     }
+}
+
+/// Panama FFI export: Eagerly initialize Wasmtime's thread-local state
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_tls_eager_initialize() {
+    core::tls_eager_initialize().ok();
 }
 
 /// Parse cranelift flags from a simple JSON-like string format.

@@ -131,7 +131,7 @@ public final class ConfigurationBuilderIntegrationTest {
   // ========================================================================
 
   @Nested
-  @DisplayName("StoreLimitsBuilder Functional Tests")
+  @DisplayName("StoreLimits.builder() Functional Tests")
   class StoreLimitsBuilderFunctionalTests {
 
     @Nested
@@ -143,14 +143,14 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldHaveZeroDefaultsUnlimited(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
+        final StoreLimits limits = StoreLimits.builder().build();
 
-        assertEquals(0L, builder.getMemorySize(), "Default memory size should be 0 (unlimited)");
+        assertEquals(0L, limits.getMemorySize(), "Default memory size should be 0 (unlimited)");
         assertEquals(
-            0L, builder.getTableElements(), "Default table elements should be 0 (unlimited)");
-        assertEquals(0L, builder.getInstances(), "Default instances should be 0 (unlimited)");
-        assertEquals(0L, builder.getTables(), "Default tables should be 0 (unlimited)");
-        assertEquals(0L, builder.getMemories(), "Default memories should be 0 (unlimited)");
+            0L, limits.getTableElements(), "Default table elements should be 0 (unlimited)");
+        assertEquals(0L, limits.getInstances(), "Default instances should be 0 (unlimited)");
+        assertEquals(0L, limits.getTables(), "Default tables should be 0 (unlimited)");
+        assertEquals(0L, limits.getMemories(), "Default memories should be 0 (unlimited)");
 
         LOGGER.info("All defaults verified as 0 (unlimited)");
       }
@@ -165,12 +165,11 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldSetMemorySizeCorrectly(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
         final long expectedSize = 10L * 1024L * 1024L; // 10 MB
 
-        builder.memorySize(expectedSize);
+        final StoreLimits limits = StoreLimits.builder().memorySize(expectedSize).build();
 
-        assertEquals(expectedSize, builder.getMemorySize(), "Memory size should be set correctly");
+        assertEquals(expectedSize, limits.getMemorySize(), "Memory size should be set correctly");
         LOGGER.info("Memory size set to: " + expectedSize);
       }
 
@@ -179,13 +178,12 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldSetTableElementsCorrectly(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
         final long expectedElements = 10000L;
 
-        builder.tableElements(expectedElements);
+        final StoreLimits limits = StoreLimits.builder().tableElements(expectedElements).build();
 
         assertEquals(
-            expectedElements, builder.getTableElements(), "Table elements should be set correctly");
+            expectedElements, limits.getTableElements(), "Table elements should be set correctly");
         LOGGER.info("Table elements set to: " + expectedElements);
       }
 
@@ -194,13 +192,12 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldSetInstancesCorrectly(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
         final long expectedInstances = 50L;
 
-        builder.instances(expectedInstances);
+        final StoreLimits limits = StoreLimits.builder().instances(expectedInstances).build();
 
         assertEquals(
-            expectedInstances, builder.getInstances(), "Instances should be set correctly");
+            expectedInstances, limits.getInstances(), "Instances should be set correctly");
         LOGGER.info("Instances set to: " + expectedInstances);
       }
 
@@ -209,12 +206,11 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldSetTablesCorrectly(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
         final long expectedTables = 25L;
 
-        builder.tables(expectedTables);
+        final StoreLimits limits = StoreLimits.builder().tables(expectedTables).build();
 
-        assertEquals(expectedTables, builder.getTables(), "Tables should be set correctly");
+        assertEquals(expectedTables, limits.getTables(), "Tables should be set correctly");
         LOGGER.info("Tables set to: " + expectedTables);
       }
 
@@ -223,12 +219,11 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldSetMemoriesCorrectly(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
         final long expectedMemories = 5L;
 
-        builder.memories(expectedMemories);
+        final StoreLimits limits = StoreLimits.builder().memories(expectedMemories).build();
 
-        assertEquals(expectedMemories, builder.getMemories(), "Memories should be set correctly");
+        assertEquals(expectedMemories, limits.getMemories(), "Memories should be set correctly");
         LOGGER.info("Memories set to: " + expectedMemories);
       }
 
@@ -237,19 +232,20 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldAllowSettingZeroUnlimited(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
+        final StoreLimits limits =
+            StoreLimits.builder()
+                .memorySize(0)
+                .tableElements(0)
+                .instances(0)
+                .tables(0)
+                .memories(0)
+                .build();
 
-        builder.memorySize(100).memorySize(0);
-        builder.tableElements(100).tableElements(0);
-        builder.instances(100).instances(0);
-        builder.tables(100).tables(0);
-        builder.memories(100).memories(0);
-
-        assertEquals(0L, builder.getMemorySize(), "Memory size should be 0");
-        assertEquals(0L, builder.getTableElements(), "Table elements should be 0");
-        assertEquals(0L, builder.getInstances(), "Instances should be 0");
-        assertEquals(0L, builder.getTables(), "Tables should be 0");
-        assertEquals(0L, builder.getMemories(), "Memories should be 0");
+        assertEquals(0L, limits.getMemorySize(), "Memory size should be 0");
+        assertEquals(0L, limits.getTableElements(), "Table elements should be 0");
+        assertEquals(0L, limits.getInstances(), "Instances should be 0");
+        assertEquals(0L, limits.getTables(), "Tables should be 0");
+        assertEquals(0L, limits.getMemories(), "Memories should be 0");
 
         LOGGER.info("All values set to 0 successfully");
       }
@@ -264,7 +260,7 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldSupportFluentMethodChaining(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
+        final StoreLimits.Builder builder = StoreLimits.builder();
 
         // Each method should return the same builder instance
         assertSame(builder, builder.memorySize(1000), "memorySize should return same builder");
@@ -282,7 +278,7 @@ public final class ConfigurationBuilderIntegrationTest {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits limits =
-            new StoreLimitsBuilder()
+            StoreLimits.builder()
                 .memorySize(10L * 1024L * 1024L)
                 .tableElements(10000L)
                 .instances(50L)
@@ -308,12 +304,10 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldRejectNegativeMemorySize(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
-
         final IllegalArgumentException exception =
             assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.memorySize(-1),
+                () -> StoreLimits.builder().memorySize(-1),
                 "Should reject negative memory size");
 
         assertTrue(
@@ -328,12 +322,10 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldRejectNegativeTableElements(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
-
         final IllegalArgumentException exception =
             assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.tableElements(-1),
+                () -> StoreLimits.builder().tableElements(-1),
                 "Should reject negative table elements");
 
         assertTrue(
@@ -348,12 +340,10 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldRejectNegativeInstances(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
-
         final IllegalArgumentException exception =
             assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.instances(-1),
+                () -> StoreLimits.builder().instances(-1),
                 "Should reject negative instances");
 
         assertTrue(
@@ -368,12 +358,10 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldRejectNegativeTables(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
-
         final IllegalArgumentException exception =
             assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.tables(-1),
+                () -> StoreLimits.builder().tables(-1),
                 "Should reject negative tables");
 
         assertTrue(
@@ -388,12 +376,10 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldRejectNegativeMemories(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
-
         final IllegalArgumentException exception =
             assertThrows(
                 IllegalArgumentException.class,
-                () -> builder.memories(-1),
+                () -> StoreLimits.builder().memories(-1),
                 "Should reject negative memories");
 
         assertTrue(
@@ -408,20 +394,21 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldAcceptMaximumLongValue(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder = new StoreLimitsBuilder();
-
         assertDoesNotThrow(
-            () -> builder.memorySize(Long.MAX_VALUE),
+            () -> StoreLimits.builder().memorySize(Long.MAX_VALUE),
             "Should accept Long.MAX_VALUE for memory size");
         assertDoesNotThrow(
-            () -> builder.tableElements(Long.MAX_VALUE),
+            () -> StoreLimits.builder().tableElements(Long.MAX_VALUE),
             "Should accept Long.MAX_VALUE for table elements");
         assertDoesNotThrow(
-            () -> builder.instances(Long.MAX_VALUE), "Should accept Long.MAX_VALUE for instances");
+            () -> StoreLimits.builder().instances(Long.MAX_VALUE),
+            "Should accept Long.MAX_VALUE for instances");
         assertDoesNotThrow(
-            () -> builder.tables(Long.MAX_VALUE), "Should accept Long.MAX_VALUE for tables");
+            () -> StoreLimits.builder().tables(Long.MAX_VALUE),
+            "Should accept Long.MAX_VALUE for tables");
         assertDoesNotThrow(
-            () -> builder.memories(Long.MAX_VALUE), "Should accept Long.MAX_VALUE for memories");
+            () -> StoreLimits.builder().memories(Long.MAX_VALUE),
+            "Should accept Long.MAX_VALUE for memories");
 
         LOGGER.info("Long.MAX_VALUE accepted for all fields");
       }
@@ -436,7 +423,7 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldBuildWithDefaultValues(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimits limits = new StoreLimitsBuilder().build();
+        final StoreLimits limits = StoreLimits.builder().build();
 
         assertNotNull(limits, "Built StoreLimits should not be null");
         assertEquals(0L, limits.getMemorySize(), "Default memory size should be 0");
@@ -456,7 +443,7 @@ public final class ConfigurationBuilderIntegrationTest {
         final long expectedInstances = 20L;
 
         final StoreLimits limits =
-            new StoreLimitsBuilder()
+            StoreLimits.builder()
                 .memorySize(expectedMemory)
                 .tableElements(expectedTableElements)
                 .instances(expectedInstances)
@@ -476,8 +463,8 @@ public final class ConfigurationBuilderIntegrationTest {
       void shouldAllowBuildingMultipleTimesFromSameBuilder(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder =
-            new StoreLimitsBuilder().memorySize(1000).tableElements(100).instances(10);
+        final StoreLimits.Builder builder =
+            StoreLimits.builder().memorySize(1000).tableElements(100).instances(10);
 
         final StoreLimits limits1 = builder.build();
         final StoreLimits limits2 = builder.build();
@@ -498,8 +485,8 @@ public final class ConfigurationBuilderIntegrationTest {
       void builderChangesShouldNotAffectAlreadyBuiltObjects(final TestInfo testInfo) {
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final StoreLimitsBuilder builder =
-            new StoreLimitsBuilder().memorySize(1000).tableElements(100).instances(10);
+        final StoreLimits.Builder builder =
+            StoreLimits.builder().memorySize(1000).tableElements(100).instances(10);
 
         final StoreLimits limits1 = builder.build();
 
@@ -521,36 +508,6 @@ public final class ConfigurationBuilderIntegrationTest {
         assertEquals(20L, limits2.getInstances(), "Second build instances should be new value");
 
         LOGGER.info("Builder changes do not affect previously built objects");
-      }
-    }
-
-    @Nested
-    @DisplayName("ToString Tests")
-    class ToStringTests {
-
-      @Test
-      @DisplayName("toString should include all field values")
-      void toStringShouldIncludeAllFieldValues(final TestInfo testInfo) {
-        LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-        final StoreLimitsBuilder builder =
-            new StoreLimitsBuilder()
-                .memorySize(1024)
-                .tableElements(512)
-                .instances(8)
-                .tables(4)
-                .memories(2);
-
-        final String result = builder.toString();
-
-        assertNotNull(result, "toString should not return null");
-        assertTrue(result.contains("1024"), "toString should contain memory size");
-        assertTrue(result.contains("512"), "toString should contain table elements");
-        assertTrue(result.contains("8"), "toString should contain instances");
-        assertTrue(result.contains("4"), "toString should contain tables");
-        assertTrue(result.contains("2"), "toString should contain memories");
-
-        LOGGER.info("toString result: " + result);
       }
     }
   }

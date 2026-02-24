@@ -473,47 +473,6 @@ public final class FuelManagementIntegrationTest {
   }
 
   @Nested
-  @DisplayName("Fuel Statistics Tests")
-  class FuelStatisticsTests {
-
-    @Test
-    @DisplayName("should track total fuel consumed")
-    void shouldTrackTotalFuelConsumed() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
-
-      LOGGER.info("Testing total fuel consumed tracking");
-
-      final EngineConfig config = new EngineConfig().consumeFuel(true);
-
-      try (final Engine engine = Engine.create(config);
-          final Store store = engine.createStore();
-          final Module module = engine.compileModule(ADD_WASM);
-          final Instance instance = module.instantiate(store)) {
-
-        store.setFuel(1000000L);
-
-        final Optional<WasmFunction> addFunc = instance.getFunction("add");
-        assertTrue(addFunc.isPresent(), "Should have add function");
-
-        // Execute multiple times
-        for (int i = 0; i < 5; i++) {
-          addFunc.get().call(WasmValue.i32(i), WasmValue.i32(i));
-        }
-
-        // Try to get total fuel consumed
-        try {
-          final long totalConsumed = store.getTotalFuelConsumed();
-          LOGGER.info("Total fuel consumed: " + totalConsumed);
-          assertTrue(totalConsumed >= 0, "Total consumed fuel should be non-negative");
-        } catch (final WasmException e) {
-          // Some implementations may not support this
-          LOGGER.info("Total fuel consumed not tracked: " + e.getMessage());
-        }
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("Fuel Boundary Condition Tests")
   class FuelBoundaryConditionTests {
 

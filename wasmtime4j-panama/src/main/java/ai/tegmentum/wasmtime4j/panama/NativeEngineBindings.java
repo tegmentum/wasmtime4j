@@ -158,10 +158,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
 
     addFunctionBinding(
-        "wasmtime4j_panama_engine_get_memory_limit",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
         "wasmtime4j_panama_engine_get_stack_limit",
         FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
 
@@ -185,10 +181,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_engine_tls_eager_initialize",
         FunctionDescriptor.ofVoid()); // no params, void return
-
-    addFunctionBinding(
-        "wasmtime4j_engine_max_instances",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
 
     addFunctionBinding(
         "wasmtime4j_engine_reference_count",
@@ -754,17 +746,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
-   * Gets the memory limit in pages.
-   *
-   * @param enginePtr pointer to the engine
-   * @return memory limit in pages, or -1 if not set
-   */
-  public int engineMemoryLimitPages(final MemorySegment enginePtr) {
-    return callNativeFunction(
-        "wasmtime4j_panama_engine_get_memory_limit", Integer.class, enginePtr);
-  }
-
-  /**
    * Gets the stack size limit.
    *
    * @param enginePtr pointer to the engine
@@ -836,16 +817,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     final int result =
         callNativeFunction("wasmtime4j_panama_engine_is_async", Integer.class, enginePtr);
     return result == 1;
-  }
-
-  /**
-   * Gets the maximum number of instances.
-   *
-   * @param enginePtr pointer to the engine
-   * @return maximum number of instances
-   */
-  public long engineMaxInstances(final MemorySegment enginePtr) {
-    return callNativeFunction("wasmtime4j_engine_max_instances", Long.class, enginePtr);
   }
 
   /**

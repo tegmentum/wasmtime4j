@@ -105,14 +105,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStac
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
- * Method:    nativeGetMemoryLimitPages
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemoryLimitPages
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeSupportsFeature
  * Signature: (JLjava/lang/String;)Z
  */

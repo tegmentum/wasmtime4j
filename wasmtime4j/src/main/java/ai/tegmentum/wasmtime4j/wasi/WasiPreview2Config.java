@@ -66,6 +66,9 @@ public final class WasiPreview2Config {
   private final boolean inheritStdin;
   private final boolean inheritStdout;
   private final boolean inheritStderr;
+  private final WasiStdioConfig stdinConfig;
+  private final WasiStdioConfig stdoutConfig;
+  private final WasiStdioConfig stderrConfig;
   private final List<PreopenDir> preopenDirs;
   private final boolean allowNetwork;
   private final boolean allowTcp;
@@ -91,6 +94,9 @@ public final class WasiPreview2Config {
     this.inheritStdin = builder.inheritStdin;
     this.inheritStdout = builder.inheritStdout;
     this.inheritStderr = builder.inheritStderr;
+    this.stdinConfig = builder.stdinConfig;
+    this.stdoutConfig = builder.stdoutConfig;
+    this.stderrConfig = builder.stderrConfig;
     this.preopenDirs = List.copyOf(builder.preopenDirs);
     this.allowNetwork = builder.allowNetwork;
     this.allowTcp = builder.allowTcp;
@@ -179,6 +185,51 @@ public final class WasiPreview2Config {
    */
   public boolean isInheritStderr() {
     return inheritStderr;
+  }
+
+  /**
+   * Gets the custom stdin configuration, if set.
+   *
+   * <p>When non-null, this provides fine-grained control over stdin behavior. Supported modes
+   * include {@link WasiStdioConfig.Type#INHERIT INHERIT}, {@link WasiStdioConfig.Type#INPUT_STREAM
+   * INPUT_STREAM}, and {@link WasiStdioConfig.Type#NULL NULL}. When null, the behavior is
+   * determined by {@link #isInheritStdin()} and {@link #isInheritStdio()}.
+   *
+   * @return the stdin configuration, or null if not explicitly configured
+   * @since 1.1.0
+   */
+  public WasiStdioConfig getStdinConfig() {
+    return stdinConfig;
+  }
+
+  /**
+   * Gets the custom stdout configuration, if set.
+   *
+   * <p>When non-null, this provides fine-grained control over stdout behavior. Supported modes
+   * include {@link WasiStdioConfig.Type#INHERIT INHERIT} and {@link WasiStdioConfig.Type#NULL
+   * NULL}. When null, the behavior is determined by {@link #isInheritStdout()} and {@link
+   * #isInheritStdio()}.
+   *
+   * @return the stdout configuration, or null if not explicitly configured
+   * @since 1.1.0
+   */
+  public WasiStdioConfig getStdoutConfig() {
+    return stdoutConfig;
+  }
+
+  /**
+   * Gets the custom stderr configuration, if set.
+   *
+   * <p>When non-null, this provides fine-grained control over stderr behavior. Supported modes
+   * include {@link WasiStdioConfig.Type#INHERIT INHERIT} and {@link WasiStdioConfig.Type#NULL
+   * NULL}. When null, the behavior is determined by {@link #isInheritStderr()} and {@link
+   * #isInheritStdio()}.
+   *
+   * @return the stderr configuration, or null if not explicitly configured
+   * @since 1.1.0
+   */
+  public WasiStdioConfig getStderrConfig() {
+    return stderrConfig;
   }
 
   /**
@@ -453,6 +504,9 @@ public final class WasiPreview2Config {
     private boolean inheritStdin = false;
     private boolean inheritStdout = false;
     private boolean inheritStderr = false;
+    private WasiStdioConfig stdinConfig = null;
+    private WasiStdioConfig stdoutConfig = null;
+    private WasiStdioConfig stderrConfig = null;
     private final List<PreopenDir> preopenDirs = new ArrayList<>();
     private boolean allowNetwork = false;
     private boolean allowTcp = true;
@@ -577,6 +631,79 @@ public final class WasiPreview2Config {
      */
     public Builder inheritStderr() {
       this.inheritStderr = true;
+      return this;
+    }
+
+    /**
+     * Configures stdin using a {@link WasiStdioConfig}.
+     *
+     * <p>This provides fine-grained control over the WASI stdin stream. Supported configurations:
+     *
+     * <ul>
+     *   <li>{@link WasiStdioConfig#inherit()} — inherit stdin from the host process
+     *   <li>{@link WasiStdioConfig#fromInputStream(java.io.InputStream)} — read stdin from a Java
+     *       InputStream (eagerly reads all bytes at initialization)
+     *   <li>{@link WasiStdioConfig#nulled()} — provide an empty stdin (EOF immediately)
+     * </ul>
+     *
+     * <p>When set, this takes precedence over {@link #inheritStdin()}.
+     *
+     * @param config the stdin configuration
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder stdin(final WasiStdioConfig config) {
+      this.stdinConfig = config;
+      return this;
+    }
+
+    /**
+     * Configures stdout using a {@link WasiStdioConfig}.
+     *
+     * <p>This provides fine-grained control over the WASI stdout stream. Supported configurations:
+     *
+     * <ul>
+     *   <li>{@link WasiStdioConfig#inherit()} — inherit stdout from the host process
+     *   <li>{@link WasiStdioConfig#nulled()} — discard all stdout output
+     * </ul>
+     *
+     * <p>When set, this takes precedence over {@link #inheritStdout()}.
+     *
+     * <p>Note: {@link WasiStdioConfig#fromOutputStream(java.io.OutputStream)} is not yet supported
+     * for stdout in the component model. Use the core module {@code WasiLinker} for OutputStream
+     * support.
+     *
+     * @param config the stdout configuration
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder stdout(final WasiStdioConfig config) {
+      this.stdoutConfig = config;
+      return this;
+    }
+
+    /**
+     * Configures stderr using a {@link WasiStdioConfig}.
+     *
+     * <p>This provides fine-grained control over the WASI stderr stream. Supported configurations:
+     *
+     * <ul>
+     *   <li>{@link WasiStdioConfig#inherit()} — inherit stderr from the host process
+     *   <li>{@link WasiStdioConfig#nulled()} — discard all stderr output
+     * </ul>
+     *
+     * <p>When set, this takes precedence over {@link #inheritStderr()}.
+     *
+     * <p>Note: {@link WasiStdioConfig#fromOutputStream(java.io.OutputStream)} is not yet supported
+     * for stderr in the component model. Use the core module {@code WasiLinker} for OutputStream
+     * support.
+     *
+     * @param config the stderr configuration
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder stderr(final WasiStdioConfig config) {
+      this.stderrConfig = config;
       return this;
     }
 

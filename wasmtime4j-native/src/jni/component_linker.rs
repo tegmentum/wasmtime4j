@@ -702,6 +702,31 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 }
 
 #[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiStdinBytes(
+    env: JNIEnv,
+    _cls: JClass,
+    linker_handle: jlong,
+    data: jni::sys::jbyteArray,
+) {
+    if linker_handle == 0 || data.is_null() {
+        return;
+    }
+    let linker = unsafe {
+        match component_linker_core::get_component_linker_mut(linker_handle as *mut c_void) {
+            Ok(l) => l,
+            Err(_) => return,
+        }
+    };
+
+    let byte_array = unsafe { jni::objects::JByteArray::from_raw(data) };
+    let bytes = match env.convert_byte_array(byte_array) {
+        Ok(b) => b,
+        Err(_) => return,
+    };
+    linker.set_wasi_stdin_bytes(bytes);
+}
+
+#[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiArgs(
     mut env: JNIEnv,
     _cls: JClass,

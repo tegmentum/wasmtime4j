@@ -82,53 +82,6 @@ public final class JniWasiPollable extends JniResource implements WasiPollable {
     return nativeReady(contextHandle, nativeHandle);
   }
 
-  public long getId() {
-    return nativeHandle;
-  }
-
-  public String getType() {
-    return "wasi:io/pollable";
-  }
-
-  public boolean isOwned() {
-    return true; // WASI pollables are owned by default
-  }
-
-  public boolean isValid() {
-    return !isClosed();
-  }
-
-  public java.time.Instant getCreatedAt() {
-    return java.time.Instant.now();
-  }
-
-  public java.util.Optional<java.time.Instant> getLastAccessedAt() {
-    return java.util.Optional.empty();
-  }
-
-  public java.util.List<String> getAvailableOperations() {
-    return java.util.Arrays.asList("block", "ready");
-  }
-
-  public Object invoke(final String operation, final Object... parameters) throws WasmException {
-    if (operation == null || operation.isEmpty()) {
-      throw new IllegalArgumentException("Operation cannot be null or empty");
-    }
-    ensureNotClosed();
-
-    switch (operation) {
-      case "block":
-        block();
-        return null;
-
-      case "ready":
-        return ready();
-
-      default:
-        throw new WasmException("Unknown operation: " + operation);
-    }
-  }
-
   @Override
   protected void doClose() throws Exception {
     nativeClose(contextHandle, nativeHandle);

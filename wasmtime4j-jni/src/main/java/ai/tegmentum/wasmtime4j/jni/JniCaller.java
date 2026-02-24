@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
+import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -119,6 +120,15 @@ final class JniCaller<T> implements Caller<T> {
       LOGGER.log(Level.WARNING, "Failed to get export: " + name, e);
       return Optional.empty();
     }
+  }
+
+  @Override
+  public Optional<Extern> getExport(final ModuleExport moduleExport) {
+    if (moduleExport == null) {
+      throw new IllegalArgumentException("ModuleExport cannot be null");
+    }
+    // Delegate to name-based lookup using the ModuleExport's name
+    return getExport(moduleExport.name());
   }
 
   @Override
@@ -246,32 +256,6 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   @Override
-  public boolean hasEpochDeadline() {
-    try {
-      return nativeHasEpochDeadline(callerHandle);
-    } catch (Exception e) {
-      LOGGER.log(Level.FINE, "Failed to check epoch deadline", e);
-      return false;
-    }
-  }
-
-  @Override
-  public Optional<Long> epochDeadline() {
-    // Wasmtime does not expose a getter for the current epoch deadline value.
-    // Only setEpochDeadline() and hasEpochDeadline() are supported.
-    return Optional.empty();
-  }
-
-  @Override
-  public void setEpochDeadline(final long deadline) throws WasmException {
-    try {
-      nativeSetEpochDeadline(callerHandle, deadline);
-    } catch (Exception e) {
-      throw new WasmException("Failed to set epoch deadline: " + e.getMessage(), e);
-    }
-  }
-
-  @Override
   public Engine engine() {
     // Get the engine from the store
     return store.getEngine();
@@ -381,22 +365,6 @@ final class JniCaller<T> implements Caller<T> {
   private static native void nativeAddFuel(long callerHandle, long fuel);
 
   private static native void nativeSetFuel(long callerHandle, long fuel);
-
-  /**
-   * Checks if an epoch deadline is set.
-   *
-   * @param callerHandle the native caller handle
-   * @return true if an epoch deadline is set
-   */
-  private static native boolean nativeHasEpochDeadline(long callerHandle);
-
-  /**
-   * Sets the epoch deadline.
-   *
-   * @param callerHandle the native caller handle
-   * @param deadline the epoch deadline to set
-   */
-  private static native void nativeSetEpochDeadline(long callerHandle, long deadline);
 
   /**
    * Sets the fuel async yield interval for the caller's store.

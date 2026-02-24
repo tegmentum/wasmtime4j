@@ -30,7 +30,6 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
@@ -47,10 +46,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link Caller} epoch deadline and module export lookup methods.
+ * Tests for {@link Caller} module export lookup methods.
  *
- * <p>Covers: {@link Caller#hasEpochDeadline()}, {@link Caller#epochDeadline()}, {@link
- * Caller#getExport(String)}.
+ * <p>Covers: {@link Caller#getExport(String)}.
  *
  * <p>All tests use host functions registered via the Linker with {@link
  * HostFunction#multiValueWithCaller} to obtain {@link Caller} context during WASM execution.
@@ -118,109 +116,6 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
       current = current.getCause();
     }
     return false;
-  }
-
-  // ========== Epoch Deadline Tests ==========
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("Caller.hasEpochDeadline returns true when epoch deadline is set")
-  void callerHasEpochDeadlineReturnsTrueWhenSet(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing Caller.hasEpochDeadline() with epoch enabled");
-
-    final AtomicBoolean hasDeadlineResult = new AtomicBoolean(false);
-
-    final HostFunction hostFn =
-        HostFunction.multiValueWithCaller(
-            (Caller<Void> caller, WasmValue[] params) -> {
-              final boolean hasDeadline = caller.hasEpochDeadline();
-              hasDeadlineResult.set(hasDeadline);
-              LOGGER.info("[" + runtime + "] Caller.hasEpochDeadline(): " + hasDeadline);
-              return new WasmValue[] {WasmValue.i32(hasDeadline ? 1 : 0)};
-            });
-
-    final EngineConfig config = Engine.builder().epochInterruption(true);
-    try (Engine engine = Engine.create(config);
-        Linker<Void> linker = Linker.create(engine);
-        Store store = engine.createStore();
-        Module module = engine.compileWat(WAT)) {
-
-      store.setEpochDeadline(100L);
-      linker.defineHostFunction("env", "host_fn", HOST_FN_TYPE, hostFn);
-
-      try (Instance instance = linker.instantiate(store, module)) {
-        final Optional<WasmFunction> callHostOpt = instance.getFunction("call_host");
-        assertTrue(callHostOpt.isPresent(), "call_host export must be present");
-
-        try {
-          callHostOpt.get().call();
-        } catch (final WasmException e) {
-          if (isCallerUnavailable(e)) {
-            LOGGER.info("[" + runtime + "] " + CALLER_NOT_AVAILABLE);
-            return;
-          }
-          throw e;
-        }
-      }
-    }
-
-    assertTrue(
-        hasDeadlineResult.get(),
-        "hasEpochDeadline() should return true when epoch deadline is set on store");
-    LOGGER.info("[" + runtime + "] Verified: hasEpochDeadline() = true");
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("Caller.epochDeadline returns value when epoch deadline is set")
-  void callerEpochDeadlineReturnsValue(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing Caller.epochDeadline() with epoch enabled");
-
-    final AtomicReference<Optional<Long>> epochResult = new AtomicReference<>();
-
-    final HostFunction hostFn =
-        HostFunction.multiValueWithCaller(
-            (Caller<Void> caller, WasmValue[] params) -> {
-              epochResult.set(caller.epochDeadline());
-              LOGGER.info("[" + runtime + "] Caller.epochDeadline(): " + epochResult.get());
-              return new WasmValue[] {WasmValue.i32(42)};
-            });
-
-    final EngineConfig config = Engine.builder().epochInterruption(true);
-    try (Engine engine = Engine.create(config);
-        Linker<Void> linker = Linker.create(engine);
-        Store store = engine.createStore();
-        Module module = engine.compileWat(WAT)) {
-
-      store.setEpochDeadline(100L);
-      linker.defineHostFunction("env", "host_fn", HOST_FN_TYPE, hostFn);
-
-      try (Instance instance = linker.instantiate(store, module)) {
-        final Optional<WasmFunction> callHostOpt = instance.getFunction("call_host");
-        assertTrue(callHostOpt.isPresent(), "call_host export must be present");
-
-        try {
-          callHostOpt.get().call();
-        } catch (final WasmException e) {
-          if (isCallerUnavailable(e)) {
-            LOGGER.info("[" + runtime + "] " + CALLER_NOT_AVAILABLE);
-            return;
-          }
-          throw e;
-        }
-      }
-    }
-
-    assertNotNull(epochResult.get(), "epochDeadline() result should not be null");
-    assertTrue(
-        epochResult.get().isPresent(),
-        "epochDeadline() should return a value when epoch interruption is enabled");
-    assertTrue(
-        epochResult.get().get() > 0,
-        "epochDeadline() value should be > 0, got: " + epochResult.get().get());
-    LOGGER.info("[" + runtime + "] Verified: epochDeadline() = " + epochResult.get().get());
   }
 
   // ========== getExport by name Tests ==========
@@ -317,7 +212,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
         HostFunction.multiValueWithCaller(
             (Caller<Void> caller, WasmValue[] params) -> {
               try {
-                caller.getExport(null);
+                caller.getExport((String) null);
               } catch (final IllegalArgumentException | NullPointerException e) {
                 threwException.set(true);
                 caughtException.set(e);

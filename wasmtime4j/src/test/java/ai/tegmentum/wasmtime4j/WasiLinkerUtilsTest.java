@@ -164,21 +164,16 @@ final class WasiLinkerUtilsTest {
   }
 
   @Nested
-  @DisplayName("hasComponentModelImports null checks")
-  final class HasComponentModelImportsNullChecksTests {
+  @DisplayName("runtimeSupportsComponentModel tests")
+  final class RuntimeSupportsComponentModelTests {
 
     @Test
-    @DisplayName("should reject null linker for hasComponentModelImports")
-    void shouldRejectNullLinkerForHasComponentModelImports() {
-      final IllegalArgumentException exception =
-          assertThrows(
-              IllegalArgumentException.class,
-              () -> WasiLinkerUtils.hasComponentModelImports(null),
-              "Expected IllegalArgumentException for null linker in hasComponentModelImports");
-      assertEquals(
-          "Linker cannot be null",
-          exception.getMessage(),
-          "Exception message should indicate linker was null for hasComponentModelImports");
+    @DisplayName("should return boolean without throwing")
+    void shouldReturnBooleanWithoutThrowing() {
+      // Method should return a boolean and not throw
+      assertDoesNotThrow(
+          () -> WasiLinkerUtils.runtimeSupportsComponentModel(),
+          "runtimeSupportsComponentModel() should not throw");
     }
   }
 

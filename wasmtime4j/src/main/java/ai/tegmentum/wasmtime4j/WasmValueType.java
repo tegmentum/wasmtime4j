@@ -57,7 +57,16 @@ public enum WasmValueType {
   NULLEXTERNREF(-1, false, false),
 
   /** Exception reference type (exception handling proposal). */
-  EXNREF(-1, false, false);
+  EXNREF(-1, false, false),
+
+  /** Null exception reference type - bottom of the exn hierarchy. */
+  NULLEXNREF(-1, false, false),
+
+  /** Continuation reference type (stack switching proposal). */
+  CONTREF(-1, false, false),
+
+  /** Null continuation reference type - bottom of the cont hierarchy. */
+  NULLCONTREF(-1, false, false);
 
   private final int size;
   private final boolean isInteger;
@@ -114,6 +123,9 @@ public enum WasmValueType {
       case NULLFUNCREF:
       case NULLEXTERNREF:
       case EXNREF:
+      case NULLEXNREF:
+      case CONTREF:
+      case NULLCONTREF:
         return true;
       default:
         return false;
@@ -135,6 +147,9 @@ public enum WasmValueType {
       case NULLREF:
       case NULLFUNCREF:
       case NULLEXTERNREF:
+      case NULLEXNREF:
+      case CONTREF:
+      case NULLCONTREF:
         return true;
       default:
         return false;
@@ -151,6 +166,8 @@ public enum WasmValueType {
       case NULLREF:
       case NULLFUNCREF:
       case NULLEXTERNREF:
+      case NULLEXNREF:
+      case NULLCONTREF:
         return true;
       default:
         return false;
@@ -217,6 +234,12 @@ public enum WasmValueType {
         return NULLEXTERNREF;
       case 15:
         return EXNREF;
+      case 16:
+        return NULLEXNREF;
+      case 17:
+        return CONTREF;
+      case 18:
+        return NULLCONTREF;
       default:
         throw new IllegalArgumentException("Unknown type code: " + typeCode);
     }
@@ -262,6 +285,12 @@ public enum WasmValueType {
         return 14;
       case EXNREF:
         return 15;
+      case NULLEXNREF:
+        return 16;
+      case CONTREF:
+        return 17;
+      case NULLCONTREF:
+        return 18;
       default:
         throw new IllegalStateException("Unknown value type: " + this);
     }
@@ -310,6 +339,16 @@ public enum WasmValueType {
       return supertype == EXTERNREF || supertype == NULLEXTERNREF;
     }
 
+    // NULLEXNREF is a subtype of EXNREF
+    if (this == NULLEXNREF) {
+      return supertype == EXNREF || supertype == NULLEXNREF;
+    }
+
+    // NULLCONTREF is a subtype of CONTREF
+    if (this == NULLCONTREF) {
+      return supertype == CONTREF || supertype == NULLCONTREF;
+    }
+
     // GC reference type hierarchy
     switch (this) {
       case ANYREF:
@@ -322,6 +361,8 @@ public enum WasmValueType {
         return supertype == ANYREF || supertype == EQREF || supertype == STRUCTREF;
       case ARRAYREF:
         return supertype == ANYREF || supertype == EQREF || supertype == ARRAYREF;
+      case CONTREF:
+        return supertype == CONTREF;
       default:
         return false;
     }

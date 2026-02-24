@@ -368,4 +368,121 @@ public interface ValType {
   static ValType exnref() {
     return SimpleValType.Factory.exnref();
   }
+
+  /**
+   * Creates a NULLEXNREF value type.
+   *
+   * <p>NULLEXNREF is the null exception reference type - bottom of the exn hierarchy.
+   *
+   * @return a NULLEXNREF ValType
+   */
+  static ValType nullexnref() {
+    return SimpleValType.Factory.nullexnref();
+  }
+
+  /**
+   * Creates a CONTREF value type.
+   *
+   * <p>CONTREF is the continuation reference type (stack switching proposal).
+   *
+   * @return a CONTREF ValType
+   */
+  static ValType contref() {
+    return SimpleValType.Factory.contref();
+  }
+
+  /**
+   * Creates a NULLCONTREF value type.
+   *
+   * <p>NULLCONTREF is the null continuation reference type - bottom of the cont hierarchy.
+   *
+   * @return a NULLCONTREF ValType
+   */
+  static ValType nullcontref() {
+    return SimpleValType.Factory.nullcontref();
+  }
+
+  /**
+   * Returns this ValType as a RefType, if it represents a reference type.
+   *
+   * @return an Optional containing the RefType if this is a reference type, empty otherwise
+   */
+  default java.util.Optional<RefType> asRef() {
+    if (!isReference()) {
+      return java.util.Optional.empty();
+    }
+    final WasmValueType vt = getValueType();
+    switch (vt) {
+      case FUNCREF:
+        return java.util.Optional.of(RefType.FUNCREF);
+      case EXTERNREF:
+        return java.util.Optional.of(RefType.EXTERNREF);
+      case ANYREF:
+        return java.util.Optional.of(RefType.ANYREF);
+      case EQREF:
+        return java.util.Optional.of(RefType.EQREF);
+      case STRUCTREF:
+        return java.util.Optional.of(RefType.STRUCTREF);
+      case ARRAYREF:
+        return java.util.Optional.of(RefType.ARRAYREF);
+      case I31REF:
+        return java.util.Optional.of(RefType.I31REF);
+      case EXNREF:
+        return java.util.Optional.of(RefType.EXNREF);
+      case NULLREF:
+        return java.util.Optional.of(RefType.NULLREF);
+      case NULLFUNCREF:
+        return java.util.Optional.of(RefType.NULLFUNCREF);
+      case NULLEXTERNREF:
+        return java.util.Optional.of(RefType.NULLEXTERNREF);
+      case NULLEXNREF:
+        return java.util.Optional.of(RefType.NULLEXNREF);
+      case CONTREF:
+        return java.util.Optional.of(RefType.CONTREF);
+      case NULLCONTREF:
+        return java.util.Optional.of(RefType.NULLCONTREF);
+      default:
+        return java.util.Optional.empty();
+    }
+  }
+
+  /**
+   * Returns this ValType as a RefType, throwing if it is not a reference type.
+   *
+   * @return the RefType
+   * @throws IllegalStateException if this is not a reference type
+   */
+  default RefType unwrapRef() {
+    return asRef()
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "Not a reference type: " + getValueType()));
+  }
+
+  /**
+   * Returns the default value for this value type.
+   *
+   * <p>Default values are: 0 for integers, 0.0 for floats, zero bytes for v128, and null for
+   * reference types.
+   *
+   * @return the default value as an Object (Integer, Long, Float, Double, byte[], or null)
+   */
+  default Object defaultValue() {
+    switch (getValueType()) {
+      case I32:
+        return Integer.valueOf(0);
+      case I64:
+        return Long.valueOf(0L);
+      case F32:
+        return Float.valueOf(0.0f);
+      case F64:
+        return Double.valueOf(0.0);
+      case V128:
+        return new byte[16];
+      default:
+        // All reference types default to null
+        return null;
+    }
+  }
 }

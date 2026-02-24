@@ -57,6 +57,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDes
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeTlsEagerInitialize
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeTlsEagerInitialize
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
  * Method:    nativeCreateWasiContext
  * Signature: (J)J
  */

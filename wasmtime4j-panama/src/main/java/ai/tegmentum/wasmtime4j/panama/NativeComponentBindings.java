@@ -2075,6 +2075,25 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   }
 
   /**
+   * Sets stdin bytes for the WASI context.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param data pointer to the byte data
+   * @param dataLen length of the byte data
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiStdinBytes(
+      final MemorySegment linkerPtr, final MemorySegment data, final long dataLen) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_stdin_bytes",
+        Integer.class,
+        linkerPtr,
+        data,
+        dataLen);
+  }
+
+  /**
    * Sets whether TCP sockets are allowed.
    *
    * @param linkerPtr pointer to the component linker

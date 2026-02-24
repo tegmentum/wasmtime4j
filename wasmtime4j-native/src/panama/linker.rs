@@ -1107,6 +1107,85 @@ pub extern "C" fn wasmtime4j_panama_linker_define_name(
     })
 }
 
+/// Panama FFI: Define an extern with module name and item name.
+///
+/// # Safety
+/// All pointers must be valid.
+///
+/// # Returns
+/// 0 on success, non-zero on failure.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_define(
+    linker_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    module_name: *const c_char,
+    name: *const c_char,
+    extern_ptr: *const c_void,
+) -> c_int {
+    if linker_ptr.is_null()
+        || store_ptr.is_null()
+        || module_name.is_null()
+        || name.is_null()
+        || extern_ptr.is_null()
+    {
+        return -1;
+    }
+
+    ffi_utils::ffi_try_code(|| {
+        let linker = unsafe { linker_core::get_linker_mut(linker_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let module_name_str = unsafe { CStr::from_ptr(module_name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+        let name_str = unsafe { CStr::from_ptr(name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+        let extern_item = unsafe { &*(extern_ptr as *const wasmtime::Extern) };
+        let cloned = extern_item.clone();
+
+        linker_core::define_extern(linker, store, module_name_str, name_str, cloned)
+    })
+}
+
+/// Panama FFI: Define a module in the linker.
+///
+/// Instantiates the module and defines all its exports under the given name.
+///
+/// # Safety
+/// All pointers must be valid.
+///
+/// # Returns
+/// 0 on success, non-zero on failure.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_linker_module(
+    linker_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    module_name: *const c_char,
+    module_ptr: *const c_void,
+) -> c_int {
+    if linker_ptr.is_null() || store_ptr.is_null() || module_name.is_null() || module_ptr.is_null()
+    {
+        return -1;
+    }
+
+    ffi_utils::ffi_try_code(|| {
+        let linker = unsafe { linker_core::get_linker_mut(linker_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let module_name_str = unsafe { CStr::from_ptr(module_name) }
+            .to_str()
+            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            })?;
+        let module = unsafe { crate::module::core::get_module_ref(module_ptr)? };
+
+        linker_core::define_module(linker, store, module_name_str, module)
+    })
+}
+
 /// Panama FFI: Iterate all definitions in the linker.
 ///
 /// Returns the count of definitions found. For each definition, the module name,

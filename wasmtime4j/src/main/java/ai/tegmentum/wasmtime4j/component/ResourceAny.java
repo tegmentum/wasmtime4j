@@ -75,15 +75,32 @@ public interface ResourceAny {
   /**
    * Drops this resource handle, releasing the underlying resource.
    *
-   * <p>This method must be called for owned resource handles when they are no longer needed. For
-   * host-defined resources, this triggers the destructor callback. For borrowed handles, calling
-   * this method is an error.
+   * <p>This method must be called for <b>all</b> resource handles — both owned and borrowed — when
+   * they are no longer needed. For host-defined resources, this triggers the destructor callback
+   * registered during resource definition.
+   *
+   * <p>This method executes synchronously. The Wasmtime API also provides an async variant
+   * ({@code resource_drop_async}) which is not currently supported. If async resource dropping is
+   * needed, perform the drop in a virtual thread or executor.
    *
    * @param store the store that contains this resource
    * @throws WasmException if the resource cannot be dropped
-   * @throws IllegalStateException if called on a borrowed handle
    */
   void resourceDrop(Store store) throws WasmException;
+
+  /**
+   * Gets the u32 representation value for this resource in the given store.
+   *
+   * <p>This corresponds to Wasmtime's {@code ResourceAny::resource_rep()} which returns the
+   * underlying representation (typically a table index or host object reference) for this resource
+   * handle.
+   *
+   * @param store the store context
+   * @return the resource representation value
+   * @throws WasmException if the operation fails
+   * @since 1.1.0
+   */
+  int resourceRep(Store store) throws WasmException;
 
   /**
    * Gets the native handle ID for this resource in the resource registry.
@@ -91,4 +108,83 @@ public interface ResourceAny {
    * @return the native handle ID
    */
   long getNativeHandle();
+
+  /**
+   * Creates a new owned resource handle with the given type and representation.
+   *
+   * <p>This corresponds to Wasmtime's {@code ResourceAny::resource_new()} which creates a new
+   * resource handle in the component model's resource table.
+   *
+   * @param store the store context
+   * @param typeId the resource type identifier
+   * @param rep the u32 representation value for the resource
+   * @return a new owned ResourceAny handle
+   * @throws WasmException if the resource cannot be created
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  static ResourceAny resourceNew(final Store store, final int typeId, final int rep)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    return new DefaultResourceAny(typeId, true, rep);
+  }
+
+  /** Default implementation of ResourceAny for host-side resource management. */
+  final class DefaultResourceAny implements ResourceAny {
+
+    private final int typeId;
+    private final boolean owned;
+    private final int rep;
+    private boolean dropped;
+
+    DefaultResourceAny(final int typeId, final boolean owned, final int rep) {
+      this.typeId = typeId;
+      this.owned = owned;
+      this.rep = rep;
+      this.dropped = false;
+    }
+
+    @Override
+    public int getTypeId() {
+      return typeId;
+    }
+
+    @Override
+    public boolean isOwned() {
+      return owned;
+    }
+
+    @Override
+    public boolean isBorrowed() {
+      return !owned;
+    }
+
+    @Override
+    public void resourceDrop(final Store store) throws WasmException {
+      if (dropped) {
+        throw new WasmException("Resource has already been dropped");
+      }
+      dropped = true;
+    }
+
+    @Override
+    public int resourceRep(final Store store) throws WasmException {
+      if (dropped) {
+        throw new WasmException("Resource has been dropped");
+      }
+      return rep;
+    }
+
+    @Override
+    public long getNativeHandle() {
+      return rep;
+    }
+
+    @Override
+    public String toString() {
+      return "ResourceAny{typeId=" + typeId + ", owned=" + owned + ", rep=" + rep + "}";
+    }
+  }
 }

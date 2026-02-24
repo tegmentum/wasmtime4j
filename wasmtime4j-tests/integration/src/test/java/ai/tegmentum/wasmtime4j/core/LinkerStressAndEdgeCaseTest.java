@@ -94,9 +94,12 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
       final Module module = engine.compileWat(wat.toString());
       final Instance instance = linker.instantiate(store, module);
 
-      assertEquals(0, instance.callI32Function("call_0"), "call_0 should return 0");
-      assertEquals(50, instance.callI32Function("call_50"), "call_50 should return 50");
-      assertEquals(99, instance.callI32Function("call_99"), "call_99 should return 99");
+      assertEquals(
+          0, instance.callFunction("call_0")[0].asInt(), "call_0 should return 0");
+      assertEquals(
+          50, instance.callFunction("call_50")[0].asInt(), "call_50 should return 50");
+      assertEquals(
+          99, instance.callFunction("call_99")[0].asInt(), "call_99 should return 99");
       LOGGER.info(
           "[" + runtime + "] 100-import stress test passed: call_0=0, call_50=50, " + "call_99=99");
 
@@ -138,7 +141,7 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
       final Module module = engine.compileWat(wat);
       final Instance instance = linker.instantiate(store, module);
 
-      final int result = instance.callI32Function("call_it");
+      final int result = instance.callFunction("call_it")[0].asInt();
       assertEquals(2, result, "Shadowed definition should return 2 (second definition wins)");
       LOGGER.info("[" + runtime + "] Shadowing test passed: call_it = " + result);
 
@@ -218,7 +221,7 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
         for (int i = 0; i < 3; i++) {
           try (Store store = engine.createStore()) {
             final Instance instance = pre.instantiate(store);
-            final int result = instance.callI32Function("call_it");
+            final int result = instance.callFunction("call_it")[0].asInt();
             assertEquals(42, result, "Instance " + i + " from pre should return 42");
             LOGGER.info("[" + runtime + "] instantiatePre reuse " + i + ": call_it = " + result);
             instance.close();

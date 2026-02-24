@@ -256,11 +256,6 @@ impl Engine {
         self.check_not_closed()
     }
 
-    /// Get memory limit in pages (64KB per page)
-    pub fn memory_limit_pages(&self) -> Option<u32> {
-        self.config_summary.max_memory_pages
-    }
-
     /// Get stack size limit in bytes
     pub fn stack_size_limit(&self) -> Option<usize> {
         self.config_summary.max_stack_size
@@ -274,11 +269,6 @@ impl Engine {
     /// Check if epoch-based interruption is enabled
     pub fn epoch_interruption_enabled(&self) -> bool {
         self.config_summary.epoch_interruption
-    }
-
-    /// Get maximum instances limit
-    pub fn max_instances(&self) -> Option<u32> {
-        self.config_summary.max_instances
     }
 
     /// Check if coredump generation on trap is enabled

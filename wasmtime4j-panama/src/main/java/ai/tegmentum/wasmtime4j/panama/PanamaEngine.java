@@ -329,13 +329,6 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
-  public int getMemoryLimitPages() {
-    ensureNotClosed();
-    final int limit = NATIVE_BINDINGS.engineMemoryLimitPages(nativeEngine);
-    return limit == -1 ? 0 : limit;
-  }
-
-  @Override
   public long getStackSizeLimit() {
     ensureNotClosed();
     final long limit = NATIVE_BINDINGS.engineStackSizeLimit(nativeEngine);

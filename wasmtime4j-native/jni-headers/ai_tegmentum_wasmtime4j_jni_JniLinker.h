@@ -167,6 +167,22 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetExter
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineName
   (JNIEnv *, jobject, jlong, jlong, jstring, jlong, jint);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeDefine
+ * Signature: (JJLjava/lang/String;Ljava/lang/String;JI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefine
+  (JNIEnv *, jobject, jlong, jlong, jstring, jstring, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeModule
+ * Signature: (JJLjava/lang/String;J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeModule
+  (JNIEnv *, jobject, jlong, jlong, jstring, jlong);
+
 #ifdef __cplusplus
 }
 #endif

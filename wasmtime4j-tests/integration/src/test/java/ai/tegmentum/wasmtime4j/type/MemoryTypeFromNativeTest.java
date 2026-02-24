@@ -325,20 +325,21 @@ public final class MemoryTypeFromNativeTest {
   }
 
   @Nested
-  @DisplayName("Instance.getMemoryType() Tests")
+  @DisplayName("Instance Memory Type via getMemory() Tests")
   class InstanceGetMemoryTypeTests {
 
     @Test
-    @DisplayName("should get memory type from instance")
+    @DisplayName("should get memory type from instance via getMemory()")
     void shouldGetMemoryTypeFromInstance() throws Exception {
-      LOGGER.info("Testing Instance.getMemoryType()");
+      LOGGER.info("Testing Instance memory type via getMemory()");
 
       try (final Engine engine = Engine.create();
           final Store store = engine.createStore()) {
         final Module module = engine.compileModule(createMinMaxMemoryModule());
         final Instance instance = store.createInstance(module);
 
-        final Optional<MemoryType> memoryTypeOpt = instance.getMemoryType("memory");
+        final Optional<MemoryType> memoryTypeOpt =
+            instance.getMemory("memory").map(m -> m.getMemoryType());
 
         assertTrue(memoryTypeOpt.isPresent(), "MemoryType should be present");
         final MemoryType memoryType = memoryTypeOpt.get();
@@ -395,7 +396,8 @@ public final class MemoryTypeFromNativeTest {
         final Instance instance = store.createInstance(module);
 
         final Optional<MemoryType> moduleMemoryType = module.getMemoryType("memory");
-        final Optional<MemoryType> instanceMemoryType = instance.getMemoryType("memory");
+        final Optional<MemoryType> instanceMemoryType =
+            instance.getMemory("memory").map(m -> m.getMemoryType());
 
         assertTrue(moduleMemoryType.isPresent(), "Module memory type should be present");
         assertTrue(instanceMemoryType.isPresent(), "Instance memory type should be present");

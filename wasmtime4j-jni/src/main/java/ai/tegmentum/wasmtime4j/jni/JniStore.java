@@ -692,6 +692,99 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public Instance createInstance(final Module module, final ai.tegmentum.wasmtime4j.Extern[] imports)
+      throws WasmException {
+    Objects.requireNonNull(module, "Module cannot be null");
+    Objects.requireNonNull(imports, "Imports cannot be null");
+    ensureNotClosed();
+
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException("Module must be a JniModule instance for JNI store");
+    }
+
+    final JniModule jniModule = (JniModule) module;
+
+    if (imports.length == 0) {
+      return jniModule.instantiate(this);
+    }
+
+    try {
+      final long[] externHandles = new long[imports.length];
+      final int[] externTypes = new int[imports.length];
+
+      for (int i = 0; i < imports.length; i++) {
+        final ai.tegmentum.wasmtime4j.Extern ext = imports[i];
+        if (ext == null) {
+          throw new IllegalArgumentException("Import at index " + i + " is null");
+        }
+        externHandles[i] = extractExternHandle(ext);
+        externTypes[i] = externTypeToNativeCode(ext.getType());
+      }
+
+      final long instanceHandle =
+          nativeCreateInstanceWithImports(
+              getNativeHandle(), jniModule.getNativeHandle(), externHandles, externTypes);
+
+      if (instanceHandle == 0) {
+        throw new WasmException("Failed to create instance with imports");
+      }
+
+      return new JniInstance(instanceHandle, jniModule, this);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to create instance with imports", e);
+    }
+  }
+
+  /**
+   * Extracts the native handle from a JNI Extern wrapper.
+   *
+   * @param ext the extern to extract the handle from
+   * @return the native handle
+   */
+  private static long extractExternHandle(final ai.tegmentum.wasmtime4j.Extern ext) {
+    if (ext instanceof JniExternFunc) {
+      return ((JniExternFunc) ext).getNativeHandle();
+    } else if (ext instanceof JniExternGlobal) {
+      return ((JniExternGlobal) ext).getNativeHandle();
+    } else if (ext instanceof JniExternTable) {
+      return ((JniExternTable) ext).getNativeHandle();
+    } else if (ext instanceof JniExternMemory) {
+      return ((JniExternMemory) ext).getNativeHandle();
+    }
+    throw new IllegalArgumentException("Unsupported extern type: " + ext.getClass().getName());
+  }
+
+  /**
+   * Converts a Java ExternType to the native type code used by the Rust FFI layer.
+   *
+   * <p>Native codes: 0=Func, 1=Global, 2=Table, 3=Memory, 4=SharedMemory, 5=Tag
+   *
+   * @param type the Java ExternType
+   * @return the native type code
+   */
+  private static int externTypeToNativeCode(
+      final ai.tegmentum.wasmtime4j.type.ExternType type) {
+    switch (type) {
+      case FUNC:
+        return 0;
+      case GLOBAL:
+        return 1;
+      case TABLE:
+        return 2;
+      case MEMORY:
+        return 3;
+      case SHARED_MEMORY:
+        return 4;
+      case TAG:
+        return 5;
+      default:
+        throw new IllegalArgumentException("Unknown extern type: " + type);
+    }
+  }
+
+  @Override
   public boolean isValid() {
     if (isClosed() || getNativeHandle() == 0) {
       return false;
@@ -735,77 +828,6 @@ public final class JniStore extends JniResource implements Store {
   @Override
   protected String getResourceType() {
     return "Store";
-  }
-
-  // Statistics and Metrics Methods
-
-  /**
-   * Gets the execution count for this store.
-   *
-   * <p>This method returns the total number of WebAssembly function executions that have occurred
-   * within this store context. This includes both exported function calls and internal function
-   * calls within WebAssembly modules.
-   *
-   * @return the number of executions performed in this store
-   * @throws JniResourceException if this store has been closed
-   */
-  @Override
-  public long getExecutionCount() {
-    if (isClosed()) {
-      return 0;
-    }
-
-    try {
-      return nativeGetExecutionCount(getNativeHandle());
-    } catch (final Exception e) {
-      LOGGER.warning("Error getting execution count: " + e.getMessage());
-      return 0;
-    }
-  }
-
-  /**
-   * Gets the total execution time in microseconds for this store.
-   *
-   * <p>This includes time spent in both WebAssembly execution and host function calls made through
-   * this store.
-   *
-   * @return the total execution time in microseconds
-   * @since 1.0.0
-   */
-  @Override
-  public long getTotalExecutionTimeMicros() {
-    if (isClosed()) {
-      return 0;
-    }
-
-    try {
-      return nativeGetExecutionTime(getNativeHandle());
-    } catch (final Exception e) {
-      LOGGER.warning("Error getting total execution time: " + e.getMessage());
-      return 0;
-    }
-  }
-
-  /**
-   * Gets the total fuel consumed by this store.
-   *
-   * <p>This method returns the cumulative amount of fuel consumed by all WebAssembly executions
-   * within this store. Fuel consumption tracking must be enabled in the engine configuration for
-   * this metric to be meaningful.
-   *
-   * @return the total fuel consumed
-   * @throws WasmException if the fuel consumption cannot be retrieved
-   * @throws JniResourceException if this store has been closed
-   */
-  @Override
-  public long getTotalFuelConsumed() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeGetTotalFuelConsumed(getNativeHandle());
-    } catch (final Exception e) {
-      throw new JniException("Failed to get total fuel consumed", e);
-    }
   }
 
   // Native method declarations
@@ -864,30 +886,6 @@ public final class JniStore extends JniResource implements Store {
    * @return true if the store is valid, false otherwise
    */
   private static native boolean nativeValidate(long storeHandle);
-
-  /**
-   * Gets the execution count for this store.
-   *
-   * @param storeHandle the native store handle
-   * @return the number of executions performed in this store
-   */
-  private static native long nativeGetExecutionCount(long storeHandle);
-
-  /**
-   * Gets the total execution time for this store.
-   *
-   * @param storeHandle the native store handle
-   * @return the total execution time in microseconds
-   */
-  private static native long nativeGetExecutionTime(long storeHandle);
-
-  /**
-   * Gets the total fuel consumed by this store.
-   *
-   * @param storeHandle the native store handle
-   * @return the total fuel consumed
-   */
-  private static native long nativeGetTotalFuelConsumed(long storeHandle);
 
   /**
    * Consumes a specific amount of fuel from the store.
@@ -966,6 +964,19 @@ public final class JniStore extends JniResource implements Store {
    *
    * @param storeHandle the native store handle
    */
+  /**
+   * Creates a new instance with explicit imports.
+   *
+   * @param storeHandle the native store handle
+   * @param moduleHandle the native module handle
+   * @param externHandles array of native extern handles
+   * @param externTypes array of native type codes (0=Func, 1=Global, 2=Table, 3=Memory,
+   *     4=SharedMemory, 5=Tag)
+   * @return the native instance handle, or 0 on failure
+   */
+  private static native long nativeCreateInstanceWithImports(
+      long storeHandle, long moduleHandle, long[] externHandles, int[] externTypes);
+
   private static native void nativeDestroyStore(long storeHandle);
 
   /**
@@ -1027,18 +1038,6 @@ public final class JniStore extends JniResource implements Store {
     }
 
     return components;
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace() {
-    ensureNotClosed();
-    return nativeCaptureBacktrace(nativeHandle);
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace() {
-    ensureNotClosed();
-    return nativeForceCaptureBacktrace(nativeHandle);
   }
 
   @Override
@@ -1211,12 +1210,6 @@ public final class JniStore extends JniResource implements Store {
       resourceLimiterAsync.tableGrowFailed(error);
     }
   }
-
-  private native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeCaptureBacktrace(
-      long storeHandle);
-
-  private native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeForceCaptureBacktrace(
-      long storeHandle);
 
   private native void nativeGc(long storeHandle);
 

@@ -1375,6 +1375,94 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineNa
     })
 }
 
+/// JNI binding for Linker.define(Store, String, String, Extern)
+///
+/// Defines an extern with module name and item name.
+///
+/// # Parameters
+/// - linker_handle: native linker pointer
+/// - store_handle: native store pointer
+/// - module_name: the module namespace
+/// - name: the item name
+/// - extern_handle: the extern to define (boxed wasmtime::Extern)
+/// - extern_type_code: type code (0=Func, 1=Table, 2=Memory, 3=Global)
+///
+/// # Returns
+/// true on success, false on failure
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefine(
+    mut env: JNIEnv,
+    _obj: jobject,
+    linker_handle: jlong,
+    store_handle: jlong,
+    module_name: JString,
+    name: JString,
+    extern_handle: jlong,
+    _extern_type_code: jni::sys::jint,
+) -> jboolean {
+    let module_name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0u8, || {
+        let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+
+        if extern_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "extern_handle is null".to_string(),
+            });
+        }
+
+        let extern_item = unsafe { &*(extern_handle as *const wasmtime::Extern) };
+        let cloned = extern_item.clone();
+
+        linker_core::define_extern(linker, store, &module_name_str, &name_str, cloned)?;
+        Ok(1u8)
+    })
+}
+
+/// JNI binding for Linker.module(Store, String, Module)
+///
+/// Instantiates a module and defines all its exports in the linker.
+///
+/// # Parameters
+/// - linker_handle: native linker pointer
+/// - store_handle: native store pointer
+/// - module_name: the name to define the module under
+/// - module_handle: native module pointer
+///
+/// # Returns
+/// true on success, false on failure
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeModule(
+    mut env: JNIEnv,
+    _obj: jobject,
+    linker_handle: jlong,
+    store_handle: jlong,
+    module_name: JString,
+    module_handle: jlong,
+) -> jboolean {
+    let module_name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0u8, || {
+        let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+
+        linker_core::define_module(linker, store, &module_name_str, module)?;
+        Ok(1u8)
+    })
+}
+
 // ===========================================================================
 // JniInstancePre native methods
 // ===========================================================================

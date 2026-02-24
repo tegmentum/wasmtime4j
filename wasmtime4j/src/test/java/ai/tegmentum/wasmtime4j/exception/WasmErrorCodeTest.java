@@ -20,12 +20,12 @@ class WasmErrorCodeTest {
   class EnumValueTests {
 
     @Test
-    @DisplayName("Should have exactly 27 variants (SUCCESS + 26 error codes)")
+    @DisplayName("Should have exactly 28 variants (SUCCESS + 27 error codes)")
     void shouldHaveCorrectNumberOfVariants() {
       assertEquals(
-          27,
+          28,
           WasmErrorCode.values().length,
-          "Should have 27 variants matching Rust ErrorCode enum");
+          "Should have 28 variants matching Rust ErrorCode enum");
     }
 
     @ParameterizedTest(name = "WasmErrorCode.{0} should have code {1}")
@@ -56,7 +56,8 @@ class WasmErrorCodeTest {
       "INVALID_DATA, -23",
       "IO_OPERATION_ERROR, -24",
       "UNSUPPORTED_OPERATION, -25",
-      "WOULD_BLOCK, -26"
+      "WOULD_BLOCK, -26",
+      "WASI_EXIT, -27"
     })
     @DisplayName("Should have correct integer code")
     void shouldHaveCorrectCode(final String name, final int expectedCode) {
@@ -117,7 +118,7 @@ class WasmErrorCodeTest {
     @ValueSource(
         ints = {
           0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16, -17, -18, -19,
-          -20, -21, -22, -23, -24, -25, -26
+          -20, -21, -22, -23, -24, -25, -26, -27
         })
     @DisplayName("Should find all valid codes")
     void shouldFindAllValidCodes(final int code) {
@@ -127,7 +128,7 @@ class WasmErrorCodeTest {
     }
 
     @ParameterizedTest(name = "fromCode({0}) should return null for unknown code")
-    @ValueSource(ints = {1, 2, -27, -100, -999, Integer.MIN_VALUE, Integer.MAX_VALUE})
+    @ValueSource(ints = {1, 2, -28, -100, -999, Integer.MIN_VALUE, Integer.MAX_VALUE})
     @DisplayName("Should return null for unknown codes")
     void shouldReturnNullForUnknownCodes(final int code) {
       assertNull(
@@ -178,9 +179,9 @@ class WasmErrorCodeTest {
   class RustAlignmentTests {
 
     @Test
-    @DisplayName("Error codes should form contiguous range from 0 to -26")
+    @DisplayName("Error codes should form contiguous range from 0 to -27")
     void errorCodesShouldBeContiguous() {
-      for (int code = 0; code >= -26; code--) {
+      for (int code = 0; code >= -27; code--) {
         final WasmErrorCode result = WasmErrorCode.fromCode(code);
         assertNotNull(
             result,

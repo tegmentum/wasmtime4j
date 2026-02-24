@@ -66,16 +66,6 @@ fn test_fuel_configuration() {
 }
 
 #[test]
-fn test_memory_limits() {
-    let engine = Engine::builder()
-        .max_memory_pages(1024) // 64MB limit (1024 * 64KB)
-        .build()
-        .expect("Failed to build engine with memory limits");
-
-    assert_eq!(engine.memory_limit_pages(), Some(1024));
-}
-
-#[test]
 fn test_stack_limits() {
     let engine = Engine::builder()
         .max_stack_size(2 * 1024 * 1024) // 2MB stack
@@ -96,26 +86,14 @@ fn test_epoch_interruption() {
 }
 
 #[test]
-fn test_instance_limits() {
-    let engine = Engine::builder()
-        .max_instances(100)
-        .build()
-        .expect("Failed to build engine with instance limits");
-
-    assert_eq!(engine.max_instances(), Some(100));
-}
-
-#[test]
 fn test_comprehensive_configuration() {
     let engine = Engine::builder()
         .strategy(Strategy::Cranelift)
         .opt_level(OptLevel::SpeedAndSize)
         .debug_info(true)
         .fuel_enabled(true)
-        .max_memory_pages(512)
         .max_stack_size(1024 * 1024)
         .epoch_interruption(true)
-        .max_instances(50)
         .wasm_threads(true)
         .wasm_simd(true)
         .build()
@@ -124,9 +102,7 @@ fn test_comprehensive_configuration() {
     assert!(engine.validate().is_ok());
     assert!(engine.fuel_enabled());
     assert!(engine.epoch_interruption_enabled());
-    assert_eq!(engine.memory_limit_pages(), Some(512));
     assert_eq!(engine.stack_size_limit(), Some(1024 * 1024));
-    assert_eq!(engine.max_instances(), Some(50));
 
     let config = engine.config_summary();
     assert_eq!(config.strategy, "Cranelift");
@@ -1111,15 +1087,11 @@ fn test_core_validate_engine() {
 #[test]
 fn test_core_get_limits() {
     let engine = Engine::builder()
-        .max_memory_pages(100)
         .max_stack_size(1024 * 1024)
-        .max_instances(50)
         .build()
         .expect("Failed to build engine");
 
-    assert_eq!(core::get_memory_limit(&engine), Some(100));
     assert_eq!(core::get_stack_limit(&engine), Some(1024 * 1024));
-    assert_eq!(core::get_max_instances(&engine), Some(50));
 }
 
 // =========================================================================

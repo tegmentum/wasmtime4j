@@ -17,9 +17,6 @@ import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
-import ai.tegmentum.wasmtime4j.type.GlobalType;
-import ai.tegmentum.wasmtime4j.type.MemoryType;
-import ai.tegmentum.wasmtime4j.type.TableType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -249,30 +246,6 @@ public final class PanamaInstance implements Instance {
     return Optional.of(new PanamaFunction(this, name, functionType));
   }
 
-  @Override
-  public Optional<WasmFunction> getFunction(final int index) {
-    if (index < 0) {
-      throw new IllegalArgumentException("Index cannot be negative");
-    }
-    ensureNotClosed();
-
-    // Get all export names and find the index-th function export
-    final String[] exportNames = getExportNames();
-    int functionIndex = 0;
-
-    for (final String exportName : exportNames) {
-      final Optional<WasmFunction> function = getFunction(exportName);
-      if (function.isPresent()) {
-        if (functionIndex == index) {
-          return function;
-        }
-        functionIndex++;
-      }
-    }
-
-    return Optional.empty();
-  }
-
   /**
    * Looks up the function type for a named export from the module metadata.
    *
@@ -329,29 +302,6 @@ public final class PanamaInstance implements Instance {
   }
 
   @Override
-  public Optional<WasmGlobal> getGlobal(final int index) {
-    if (index < 0) {
-      throw new IllegalArgumentException("Index cannot be negative");
-    }
-    ensureNotClosed();
-
-    // Iterate through exports and find the nth global
-    final String[] exportNames = getExportNames();
-    int globalCount = 0;
-    for (final String name : exportNames) {
-      final Optional<WasmGlobal> global = getGlobal(name);
-      if (global.isPresent()) {
-        if (globalCount == index) {
-          return global;
-        }
-        globalCount++;
-      }
-    }
-
-    return Optional.empty();
-  }
-
-  @Override
   public Optional<Tag> getTag(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
@@ -399,29 +349,6 @@ public final class PanamaInstance implements Instance {
   }
 
   @Override
-  public Optional<WasmMemory> getMemory(final int index) {
-    if (index < 0) {
-      throw new IllegalArgumentException("Index cannot be negative");
-    }
-    ensureNotClosed();
-
-    // Iterate through exports and find the nth memory
-    final String[] exportNames = getExportNames();
-    int memoryCount = 0;
-    for (final String name : exportNames) {
-      final Optional<WasmMemory> memory = getMemory(name);
-      if (memory.isPresent()) {
-        if (memoryCount == index) {
-          return memory;
-        }
-        memoryCount++;
-      }
-    }
-
-    return Optional.empty();
-  }
-
-  @Override
   public Optional<WasmTable> getTable(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
@@ -439,29 +366,6 @@ public final class PanamaInstance implements Instance {
     }
 
     return Optional.of(new PanamaTable(tablePtr, this));
-  }
-
-  @Override
-  public Optional<WasmTable> getTable(final int index) {
-    if (index < 0) {
-      throw new IllegalArgumentException("Index cannot be negative");
-    }
-    ensureNotClosed();
-
-    // Iterate through exports and find the nth table
-    final String[] exportNames = getExportNames();
-    int tableCount = 0;
-    for (final String name : exportNames) {
-      final Optional<WasmTable> table = getTable(name);
-      if (table.isPresent()) {
-        if (tableCount == index) {
-          return table;
-        }
-        tableCount++;
-      }
-    }
-
-    return Optional.empty();
   }
 
   @Override
@@ -545,46 +449,6 @@ public final class PanamaInstance implements Instance {
 
       return exportNames;
     }
-  }
-
-  @Override
-  public Optional<FuncType> getFunctionType(final String functionName) {
-    if (functionName == null) {
-      throw new IllegalArgumentException("Function name cannot be null");
-    }
-    ensureNotClosed();
-    // Delegate to module's type lookup - module knows all export types
-    return module.getFunctionType(functionName);
-  }
-
-  @Override
-  public Optional<GlobalType> getGlobalType(final String globalName) {
-    if (globalName == null) {
-      throw new IllegalArgumentException("Global name cannot be null");
-    }
-    ensureNotClosed();
-    // Delegate to module's type lookup - module knows all export types
-    return module.getGlobalType(globalName);
-  }
-
-  @Override
-  public Optional<MemoryType> getMemoryType(final String memoryName) {
-    if (memoryName == null) {
-      throw new IllegalArgumentException("Memory name cannot be null");
-    }
-    ensureNotClosed();
-    // Delegate to module's type lookup - module knows all export types
-    return module.getMemoryType(memoryName);
-  }
-
-  @Override
-  public Optional<TableType> getTableType(final String tableName) {
-    if (tableName == null) {
-      throw new IllegalArgumentException("Table name cannot be null");
-    }
-    ensureNotClosed();
-    // Delegate to module's type lookup - module knows all export types
-    return module.getTableType(tableName);
   }
 
   @Override
@@ -717,7 +581,7 @@ public final class PanamaInstance implements Instance {
    * @return true if a function export with this name exists, false otherwise
    * @throws IllegalArgumentException if name is null
    */
-  public boolean hasFunction(final String name) {
+  boolean hasFunction(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
@@ -740,7 +604,7 @@ public final class PanamaInstance implements Instance {
    * @return true if a memory export with this name exists, false otherwise
    * @throws IllegalArgumentException if name is null
    */
-  public boolean hasMemory(final String name) {
+  boolean hasMemory(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
@@ -763,7 +627,7 @@ public final class PanamaInstance implements Instance {
    * @return true if a table export with this name exists, false otherwise
    * @throws IllegalArgumentException if name is null
    */
-  public boolean hasTable(final String name) {
+  boolean hasTable(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
@@ -786,7 +650,7 @@ public final class PanamaInstance implements Instance {
    * @return true if a global export with this name exists, false otherwise
    * @throws IllegalArgumentException if name is null
    */
-  public boolean hasGlobal(final String name) {
+  boolean hasGlobal(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
@@ -894,48 +758,12 @@ public final class PanamaInstance implements Instance {
     return results;
   }
 
-  @Override
-  public Map<String, Object> getAllExports() {
-    ensureNotClosed();
-
-    final Map<String, Object> exports = new java.util.HashMap<>();
-    final String[] exportNames = getExportNames();
-
-    for (final String name : exportNames) {
-      // Try each export type
-      final Optional<WasmFunction> function = getFunction(name);
-      if (function.isPresent()) {
-        exports.put(name, function.get());
-        continue;
-      }
-
-      final Optional<WasmMemory> memory = getMemory(name);
-      if (memory.isPresent()) {
-        exports.put(name, memory.get());
-        continue;
-      }
-
-      final Optional<WasmTable> table = getTable(name);
-      if (table.isPresent()) {
-        exports.put(name, table.get());
-        continue;
-      }
-
-      final Optional<WasmGlobal> global = getGlobal(name);
-      if (global.isPresent()) {
-        exports.put(name, global.get());
-      }
-    }
-
-    return Collections.unmodifiableMap(exports);
-  }
-
   /**
    * Gets all exported function names.
    *
    * @return list of exported function names
    */
-  public List<String> getFunctionNames() {
+  List<String> getFunctionNames() {
     ensureNotClosed();
     final List<String> functionNames = new java.util.ArrayList<>();
     final String[] exportNames = getExportNames();
@@ -955,7 +783,7 @@ public final class PanamaInstance implements Instance {
    *
    * @return list of exported memory names
    */
-  public List<String> getMemoryNames() {
+  List<String> getMemoryNames() {
     ensureNotClosed();
     final List<String> memoryNames = new java.util.ArrayList<>();
     final String[] exportNames = getExportNames();
@@ -975,7 +803,7 @@ public final class PanamaInstance implements Instance {
    *
    * @return list of exported table names
    */
-  public List<String> getTableNames() {
+  List<String> getTableNames() {
     ensureNotClosed();
     final List<String> tableNames = new java.util.ArrayList<>();
     final String[] exportNames = getExportNames();
@@ -995,7 +823,7 @@ public final class PanamaInstance implements Instance {
    *
    * @return list of exported global names
    */
-  public List<String> getGlobalNames() {
+  List<String> getGlobalNames() {
     ensureNotClosed();
     final List<String> globalNames = new java.util.ArrayList<>();
     final String[] exportNames = getExportNames();
@@ -1015,7 +843,7 @@ public final class PanamaInstance implements Instance {
    *
    * @return number of function exports
    */
-  public int getFunctionCount() {
+  int getFunctionCount() {
     ensureNotClosed();
     int count = 0;
     final String[] exportNames = getExportNames();
@@ -1035,7 +863,7 @@ public final class PanamaInstance implements Instance {
    *
    * @return number of memory exports
    */
-  public int getMemoryCount() {
+  int getMemoryCount() {
     ensureNotClosed();
     int count = 0;
     final String[] exportNames = getExportNames();
@@ -1055,7 +883,7 @@ public final class PanamaInstance implements Instance {
    *
    * @return number of table exports
    */
-  public int getTableCount() {
+  int getTableCount() {
     ensureNotClosed();
     int count = 0;
     final String[] exportNames = getExportNames();
@@ -1075,7 +903,7 @@ public final class PanamaInstance implements Instance {
    *
    * @return number of global exports
    */
-  public int getGlobalCount() {
+  int getGlobalCount() {
     ensureNotClosed();
     int count = 0;
     final String[] exportNames = getExportNames();
@@ -1093,69 +921,6 @@ public final class PanamaInstance implements Instance {
   @Override
   public boolean isValid() {
     return !resourceHandle.isClosed() && !disposed.get();
-  }
-
-  @Override
-  public int callI32Function(final String functionName, final int... params) throws WasmException {
-    if (functionName == null) {
-      throw new IllegalArgumentException("Function name cannot be null");
-    }
-    ensureNotClosed();
-
-    // Convert int parameters to WasmValue array
-    final WasmValue[] wasmParams;
-    if (params != null && params.length > 0) {
-      wasmParams = new WasmValue[params.length];
-      for (int i = 0; i < params.length; i++) {
-        wasmParams[i] = WasmValue.i32(params[i]);
-      }
-    } else {
-      wasmParams = new WasmValue[0];
-    }
-
-    // Call the function
-    final WasmValue[] results = callFunction(functionName, wasmParams);
-
-    // Validate and extract result
-    if (results == null || results.length == 0) {
-      throw new WasmException("Function " + functionName + " did not return a value");
-    }
-    if (results.length > 1) {
-      throw new WasmException(
-          "Function " + functionName + " returned multiple values, expected single i32");
-    }
-    if (results[0].getType() != WasmValueType.I32) {
-      throw new WasmException(
-          "Function " + functionName + " returned " + results[0].getType() + ", expected I32");
-    }
-
-    return results[0].asInt();
-  }
-
-  @Override
-  public int callI32Function(final String functionName) throws WasmException {
-    if (functionName == null) {
-      throw new IllegalArgumentException("Function name cannot be null");
-    }
-    ensureNotClosed();
-
-    // Call the function with no parameters
-    final WasmValue[] results = callFunction(functionName);
-
-    // Validate and extract result
-    if (results == null || results.length == 0) {
-      throw new WasmException("Function " + functionName + " did not return a value");
-    }
-    if (results.length > 1) {
-      throw new WasmException(
-          "Function " + functionName + " returned multiple values, expected single i32");
-    }
-    if (results[0].getType() != WasmValueType.I32) {
-      throw new WasmException(
-          "Function " + functionName + " returned " + results[0].getType() + ", expected I32");
-    }
-
-    return results[0].asInt();
   }
 
   // ===== Optimized Typed Function Call Methods =====

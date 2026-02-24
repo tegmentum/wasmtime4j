@@ -40,7 +40,6 @@ pub extern "C" fn wasmtime4j_panama_store_create_with_config(
     execution_timeout_secs: c_ulong, // 0 = no timeout
     max_instances: c_uint,           // 0 = no limit
     max_table_elements: c_uint,      // 0 = no limit
-    max_functions: c_uint,           // 0 = no limit
     max_tables: c_uint,              // 0 = no limit
     max_memories: c_uint,            // 0 = no limit
     trap_on_grow_failure: c_int,     // 0 = false, non-zero = true
@@ -58,7 +57,6 @@ pub extern "C" fn wasmtime4j_panama_store_create_with_config(
             zero_to_none_u64(execution_timeout_secs as i64),
             zero_to_none_usize(max_instances as i64),
             zero_to_none_u32(max_table_elements as i32),
-            zero_to_none_usize(max_functions as i64),
             zero_to_none_usize(max_tables as i64),
             zero_to_none_usize(max_memories as i64),
             trap_on_grow_failure != 0,
@@ -141,13 +139,16 @@ pub extern "C" fn wasmtime4j_panama_store_epoch_deadline_trap(store_ptr: *mut c_
 }
 
 /// Set epoch deadline callback (Panama FFI version)
+///
+/// Note: This configures trap behavior as the default callback.
+/// Use `wasmtime4j_panama_store_set_epoch_deadline_callback_fn` for custom callbacks.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_set_epoch_deadline_callback(
     store_ptr: *mut c_void,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
-        core::epoch_deadline_callback(store)?;
+        core::epoch_deadline_trap(store)?;
         Ok(())
     })
 }
@@ -286,7 +287,7 @@ pub extern "C" fn wasmtime4j_panama_store_get_memory_usage(
         unsafe {
             *total_bytes_ptr = 0;
             *used_bytes_ptr = 0;
-            *instance_count_ptr = usage.instance_count as c_ulong;
+            *instance_count_ptr = usage.execution_count as c_ulong;
         }
 
         Ok(())

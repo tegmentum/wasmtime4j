@@ -18,8 +18,6 @@ package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -112,34 +110,60 @@ public interface ComponentInstance extends AutoCloseable {
   Optional<ComponentFunction> getFunc(ComponentExportIndex exportIndex) throws WasmException;
 
   /**
+   * Gets a typed component function by name and signature string.
+   *
+   * <p>This is a convenience method that combines {@link #getFunc(String)} with {@link
+   * ComponentTypedFunc#create(ComponentFunc, String)} to produce a type-safe function handle. The
+   * returned {@link ComponentTypedFunc} provides direct primitive type access for maximum
+   * performance.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * Optional<ComponentTypedFunc> addFunc = instance.getTypedFunc("add", "s32,s32->s32");
+   * if (addFunc.isPresent()) {
+   *     int result = addFunc.get().callS32S32ToS32(10, 20);
+   * }
+   * }</pre>
+   *
+   * @param functionName the name of the function to retrieve
+   * @param signature the type signature string (e.g., "s32,s32->s32")
+   * @return an Optional containing the typed function if found, or empty if not found
+   * @throws WasmException if function retrieval fails
+   * @throws IllegalArgumentException if functionName or signature is null or empty
+   * @since 1.1.0
+   */
+  default Optional<ComponentTypedFunc> getTypedFunc(
+      final String functionName, final String signature) throws WasmException {
+    if (functionName == null || functionName.isEmpty()) {
+      throw new IllegalArgumentException("functionName cannot be null or empty");
+    }
+    if (signature == null || signature.isEmpty()) {
+      throw new IllegalArgumentException("signature cannot be null or empty");
+    }
+
+    final Optional<ComponentFunction> func = getFunc(functionName);
+    if (func.isEmpty()) {
+      return Optional.empty();
+    }
+
+    final ComponentFunction componentFunction = func.get();
+    if (!(componentFunction instanceof ComponentFunc)) {
+      throw new WasmException(
+          "ComponentFunction does not implement ComponentFunc, "
+              + "cannot create typed function for: " + functionName);
+    }
+
+    return Optional.of(
+        ComponentTypedFunc.create((ComponentFunc) componentFunction, signature));
+  }
+
+  /**
    * Gets all exported function names from this component instance.
    *
    * @return set of exported function names
    */
   Set<String> getExportedFunctions();
-
-  /**
-   * Gets the exported interfaces from this component instance.
-   *
-   * @return map of interface name to interface definition
-   * @throws WasmException if interface retrieval fails
-   */
-  Map<String, WitInterfaceDefinition> getExportedInterfaces() throws WasmException;
-
-  /**
-   * Binds an imported interface to this component instance.
-   *
-   * <p><strong>Note:</strong> This method has no backing Wasmtime API. The Panama implementation
-   * throws {@link UnsupportedOperationException}.
-   *
-   * @param interfaceName the name of the interface to bind
-   * @param implementation the implementation to bind
-   * @throws WasmException if binding fails
-   * @throws UnsupportedOperationException if the runtime does not support this operation
-   * @deprecated Inconsistent support across runtimes. Panama throws UnsupportedOperationException.
-   */
-  @Deprecated
-  void bindInterface(String interfaceName, Object implementation) throws WasmException;
 
   /**
    * Checks if this component instance exports a specific resource type.
@@ -202,27 +226,6 @@ public interface ComponentInstance extends AutoCloseable {
    * @return true if the instance is valid, false otherwise
    */
   boolean isValid();
-
-  /**
-   * Pauses execution of this component instance.
-   *
-   * @throws WasmException if pause operation fails
-   */
-  void pause() throws WasmException;
-
-  /**
-   * Resumes execution of this component instance.
-   *
-   * @throws WasmException if resume operation fails
-   */
-  void resume() throws WasmException;
-
-  /**
-   * Stops this component instance.
-   *
-   * @throws WasmException if stop operation fails
-   */
-  void stop() throws WasmException;
 
   @Override
   void close();

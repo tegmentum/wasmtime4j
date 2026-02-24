@@ -17,32 +17,6 @@ import org.junit.jupiter.api.*;
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class JniBacktraceTest {
 
-  private static final long VALID_HANDLE = 0x12345678L;
-  private JniEngine testEngine;
-  private JniStore testStore;
-
-  @BeforeEach
-  void setUp() {
-    testEngine = new JniEngine(VALID_HANDLE);
-    testStore = new JniStore(VALID_HANDLE, testEngine);
-  }
-
-  @AfterEach
-  void tearDown() {
-    // Resources are lightweight test mocks, no cleanup needed
-  }
-
-  @Test
-  @DisplayName("Should have backtrace capture methods defined")
-  void shouldHaveBacktraceCaptureMethodsDefined() throws NoSuchMethodException {
-    // Verify methods exist via reflection (can't call them without native library loaded)
-    assertNotNull(
-        JniStore.class.getMethod("captureBacktrace"), "captureBacktrace method should exist");
-    assertNotNull(
-        JniStore.class.getMethod("forceCaptureBacktrace"),
-        "forceCaptureBacktrace method should exist");
-  }
-
   @Test
   @DisplayName("Should create WasmBacktrace with frames")
   void shouldCreateWasmBacktraceWithFrames() {

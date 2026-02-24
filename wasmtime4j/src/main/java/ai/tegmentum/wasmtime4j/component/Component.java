@@ -223,6 +223,46 @@ public interface Component extends AutoCloseable {
   }
 
   /**
+   * Compiles a WebAssembly component from a file on disk.
+   *
+   * <p>This is a convenience method that reads the file and compiles it. The file can contain
+   * either binary WebAssembly (.wasm) or WebAssembly text format (.wat).
+   *
+   * @param engine the component engine to use for compilation
+   * @param path the path to the WebAssembly component file
+   * @return a compiled Component
+   * @throws WasmException if compilation fails or the file cannot be read
+   * @throws IllegalArgumentException if engine or path is null
+   * @since 1.1.0
+   */
+  static Component fromFile(final ComponentEngine engine, final Path path) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    return engine.compileComponentFile(path);
+  }
+
+  /**
+   * Gets the component type description for this component.
+   *
+   * <p>This method corresponds to Wasmtime's {@code Component::component_type()} and returns a
+   * frozen snapshot of the component's type-level information, including all imports and exports.
+   *
+   * <p>The returned {@link ComponentTypeInfo} can be used for programmatic introspection, type
+   * compatibility checking, and interface discovery.
+   *
+   * @return the component type information
+   * @throws WasmException if type introspection fails
+   * @since 1.1.0
+   */
+  default ComponentTypeInfo componentType() throws WasmException {
+    return new ComponentTypeInfo(getImportedInterfaces(), getExportedInterfaces());
+  }
+
+  /**
    * Gets the engine that was used to compile this component.
    *
    * @return the ComponentEngine used for compilation

@@ -128,20 +128,21 @@ public final class TableTypeFromNativeTest {
   }
 
   @Nested
-  @DisplayName("Instance.getTableType() Tests")
+  @DisplayName("Instance Table Type via getTable() Tests")
   class InstanceGetTableTypeTests {
 
     @Test
-    @DisplayName("should get table type from instance")
+    @DisplayName("should get table type from instance via getTable()")
     void shouldGetTableTypeFromInstance() throws Exception {
-      LOGGER.info("Testing Instance.getTableType()");
+      LOGGER.info("Testing Instance table type via getTable()");
 
       try (final Engine engine = Engine.create();
           final Store store = engine.createStore()) {
         final Module module = engine.compileWat(TABLE_MIN_MAX_WAT);
         final Instance instance = store.createInstance(module);
 
-        final Optional<TableType> tableTypeOpt = instance.getTableType("table");
+        final Optional<TableType> tableTypeOpt =
+            instance.getTable("table").map(t -> t.getTableType());
 
         assertTrue(tableTypeOpt.isPresent(), "TableType should be present");
         final TableType tableType = tableTypeOpt.get();

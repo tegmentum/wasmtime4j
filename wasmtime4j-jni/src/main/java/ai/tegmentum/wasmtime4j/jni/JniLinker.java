@@ -856,6 +856,99 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     }
   }
 
+  @Override
+  public void define(
+      final Store store, final String moduleName, final String name, final Extern extern)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    if (extern == null) {
+      throw new IllegalArgumentException("Extern cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+
+    try {
+      final long externHandle = getExternNativeHandle(extern);
+      final int externTypeCode = getExternTypeCode(extern);
+
+      final boolean success =
+          nativeDefine(
+              nativeHandle,
+              jniStore.getNativeHandle(),
+              moduleName,
+              name,
+              externHandle,
+              externTypeCode);
+
+      if (!success) {
+        throw new WasmException("Failed to define: " + moduleName + "::" + name);
+      }
+
+      addImportWithMetadata(moduleName, name, getExternImportKind(extern), extern.toString());
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error defining: " + moduleName + "::" + name, e);
+    }
+  }
+
+  @Override
+  public void module(final Store store, final String moduleName, final Module module)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+    }
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    final JniModule jniModule = (JniModule) module;
+
+    try {
+      final boolean success =
+          nativeModule(
+              nativeHandle,
+              jniStore.getNativeHandle(),
+              moduleName,
+              jniModule.getNativeHandle());
+
+      if (!success) {
+        throw new WasmException("Failed to define module: " + moduleName);
+      }
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Error defining module: " + moduleName, e);
+    }
+  }
+
   /**
    * Gets the native handle from an Extern.
    *
@@ -1204,4 +1297,35 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    */
   private native boolean nativeDefineName(
       long linkerHandle, long storeHandle, String name, long externHandle, int externTypeCode);
+
+  /**
+   * Native method to define an extern with module name and item name.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param moduleName the module name
+   * @param name the item name
+   * @param externHandle the extern handle
+   * @param externTypeCode the extern type code
+   * @return true on success
+   */
+  private native boolean nativeDefine(
+      long linkerHandle,
+      long storeHandle,
+      String moduleName,
+      String name,
+      long externHandle,
+      int externTypeCode);
+
+  /**
+   * Native method to define a module in the linker.
+   *
+   * @param linkerHandle the linker handle
+   * @param storeHandle the store handle
+   * @param moduleName the name to define the module under
+   * @param moduleHandle the module handle
+   * @return true on success
+   */
+  private native boolean nativeModule(
+      long linkerHandle, long storeHandle, String moduleName, long moduleHandle);
 }

@@ -279,5 +279,32 @@ public final class SimpleValType implements ValType {
     static ValType exnref() {
       return new SimpleValType(WasmValueType.EXNREF);
     }
+
+    /**
+     * Creates a NULLEXNREF value type.
+     *
+     * @return a NULLEXNREF ValType
+     */
+    static ValType nullexnref() {
+      return new SimpleValType(WasmValueType.NULLEXNREF);
+    }
+
+    /**
+     * Creates a CONTREF value type.
+     *
+     * @return a CONTREF ValType
+     */
+    static ValType contref() {
+      return new SimpleValType(WasmValueType.CONTREF);
+    }
+
+    /**
+     * Creates a NULLCONTREF value type.
+     *
+     * @return a NULLCONTREF ValType
+     */
+    static ValType nullcontref() {
+      return new SimpleValType(WasmValueType.NULLCONTREF);
+    }
   }
 }

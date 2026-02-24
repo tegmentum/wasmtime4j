@@ -120,19 +120,19 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
 
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
-    @DisplayName("getTable by index should return table")
-    void shouldReturnTableByIndex(final RuntimeType runtime) throws Exception {
+    @DisplayName("getTable by name should return table")
+    void shouldReturnTableByName(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
-      LOGGER.info("[" + runtime + "] Testing getTable by index");
+      LOGGER.info("[" + runtime + "] Testing getTable by name");
 
       try (Engine engine = Engine.create();
           Store store = engine.createStore();
           Module module = engine.compileWat(TABLE_5_NO_MAX_WAT);
           Instance instance = module.instantiate(store)) {
 
-        final Optional<WasmTable> tableOpt = instance.getTable(0);
-        assertTrue(tableOpt.isPresent(), "Table at index 0 should be present");
-        LOGGER.info("[" + runtime + "] getTable(0) returned table successfully");
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table named 'table' should be present");
+        LOGGER.info("[" + runtime + "] getTable(\"table\") returned table successfully");
       }
     }
   }

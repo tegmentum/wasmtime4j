@@ -147,14 +147,6 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   @Override
-  public int getMemoryLimitPages() {
-    if (isClosed()) {
-      return 0;
-    }
-    return nativeGetMemoryLimitPages(nativeHandle);
-  }
-
-  @Override
   public boolean supportsFeature(final ai.tegmentum.wasmtime4j.WasmFeature feature) {
     if (feature == null) {
       return false;
@@ -328,8 +320,6 @@ public class JniEngine extends JniResource implements Engine {
   private native boolean nativeIsFuelEnabled(long engineHandle);
 
   private native long nativeGetStackSizeLimit(long engineHandle);
-
-  private native int nativeGetMemoryLimitPages(long engineHandle);
 
   private native boolean nativeSupportsFeature(long engineHandle, String featureName);
 

@@ -60,10 +60,8 @@ try (Engine engine = Engine.create(config)) {
     // Engine now enforces the specified limits
 
     // Check engine capabilities
-    System.out.println("Memory limit: " + engine.getMemoryLimitPages() + " pages");
     System.out.println("Stack limit: " + engine.getStackSizeLimit() + " bytes");
     System.out.println("Fuel enabled: " + engine.isFuelEnabled());
-    System.out.println("Max instances: " + engine.getMaxInstances());
 
     // Check WebAssembly feature support
     if (engine.supportsFeature(WasmFeature.THREADS)) {

@@ -175,13 +175,6 @@ class PanamaFunctionTest {
       assertThat(func).isInstanceOf(PanamaFunction.class);
     }
 
-    @Test
-    @DisplayName("getFunction by index should return function")
-    void shouldReturnFunctionByIndex() throws Exception {
-      final PanamaInstance instance = createFunctionTestInstance();
-      final Optional<WasmFunction> funcOpt = instance.getFunction(0);
-      assertTrue(funcOpt.isPresent(), "Function at index 0 should exist");
-    }
   }
 
   // ==================== Accessor Tests ====================

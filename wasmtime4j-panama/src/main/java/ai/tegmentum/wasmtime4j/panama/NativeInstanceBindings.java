@@ -159,6 +159,106 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * Creates a WebAssembly instance with explicit imports (Panama FFI).
+   *
+   * @param storePtr pointer to the store
+   * @param modulePtr pointer to the module
+   * @param externPtrs pointer to array of extern handle pointers
+   * @param externTypes pointer to array of extern type codes
+   * @param count number of imports
+   * @param instanceOut output pointer for the created instance
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaInstanceCreateWithImports(
+      final MemorySegment storePtr,
+      final MemorySegment modulePtr,
+      final MemorySegment externPtrs,
+      final MemorySegment externTypes,
+      final int count,
+      final MemorySegment instanceOut) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(instanceOut, "instanceOut");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_create_with_imports",
+        Integer.class,
+        storePtr,
+        modulePtr,
+        externPtrs,
+        externTypes,
+        count,
+        instanceOut);
+  }
+
+  /**
+   * Gets an export from an instance using a pre-resolved ModuleExport handle (Panama FFI).
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param moduleExportPtr pointer to the ModuleExport handle
+   * @param outHandle output pointer for the extern handle
+   * @param outType output pointer for the extern type code
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaInstanceGetModuleExport(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleExportPtr,
+      final MemorySegment outHandle,
+      final MemorySegment outType) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleExportPtr, "moduleExportPtr");
+    validatePointer(outHandle, "outHandle");
+    validatePointer(outType, "outType");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_get_module_export",
+        Integer.class,
+        instancePtr,
+        storePtr,
+        moduleExportPtr,
+        outHandle,
+        outType);
+  }
+
+  /**
+   * Gets a ModuleExport handle for O(1) export lookups (Panama FFI).
+   *
+   * @param modulePtr pointer to the module
+   * @param namePtr pointer to the export name string
+   * @param outPtr output pointer for the ModuleExport handle
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaModuleGetModuleExport(
+      final MemorySegment modulePtr,
+      final MemorySegment namePtr,
+      final MemorySegment outPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(outPtr, "outPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_get_module_export",
+        Integer.class,
+        modulePtr,
+        namePtr,
+        outPtr);
+  }
+
+  /**
+   * Destroys a ModuleExport handle (Panama FFI).
+   *
+   * @param moduleExportPtr pointer to the ModuleExport to destroy
+   */
+  public void panamaModuleExportDestroy(final MemorySegment moduleExportPtr) {
+    validatePointer(moduleExportPtr, "moduleExportPtr");
+    callNativeFunction(
+        "wasmtime4j_panama_module_export_destroy", Void.class, moduleExportPtr);
+  }
+
+  /**
    * Calls a WebAssembly function in an instance.
    *
    * @param instancePtr pointer to the instance
@@ -1237,6 +1337,36 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * Defines a module in the linker, instantiating it and registering all exports (Panama FFI
+   * version). This corresponds to Wasmtime's {@code Linker::module()} which handles WASI commands
+   * specially.
+   *
+   * @param linkerPtr pointer to the linker
+   * @param storePtr pointer to the store
+   * @param moduleNamePtr pointer to the module name string
+   * @param modulePtr pointer to the module
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaLinkerModule(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment moduleNamePtr,
+      final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(moduleNamePtr, "moduleNamePtr");
+    validatePointer(modulePtr, "modulePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_module",
+        Integer.class,
+        linkerPtr,
+        storePtr,
+        moduleNamePtr,
+        modulePtr);
+  }
+
+  /**
    * Instantiates a module using the linker (Panama FFI version).
    *
    * @param linkerPtr pointer to the linker
@@ -1692,6 +1822,38 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
+        "wasmtime4j_panama_instance_create_with_imports",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_instance_get_module_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_get_module_export",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_export_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
         "wasmtime4j_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     addFunctionBinding(
@@ -2019,6 +2181,15 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
 
     addFunctionBinding(
         "wasmtime4j_panama_linker_define_instance",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_linker_module",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,

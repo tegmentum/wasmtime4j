@@ -22,6 +22,32 @@ public final class WasiLinkerUtils {
   // Prevent instantiation
   private WasiLinkerUtils() {}
 
+  /** WASI Preview 1 module name. */
+  public static final String WASI_P1_MODULE = "wasi_snapshot_preview1";
+
+  /**
+   * WASI Preview 1 import markers for hasImport() tracking. Each entry is {moduleName, fieldName}.
+   */
+  public static final String[][] WASI_P1_IMPORTS = {
+    {WASI_P1_MODULE, "fd_write"},
+    {WASI_P1_MODULE, "proc_exit"},
+    {WASI_P1_MODULE, "fd_read"},
+    {WASI_P1_MODULE, "fd_close"},
+    {WASI_P1_MODULE, "environ_get"},
+    {WASI_P1_MODULE, "environ_sizes_get"},
+    {WASI_P1_MODULE, "args_get"},
+    {WASI_P1_MODULE, "args_sizes_get"},
+  };
+
+  /**
+   * WASI Preview 2 import markers for hasImport() tracking. Each entry is {moduleName, fieldName}.
+   */
+  public static final String[][] WASI_P2_IMPORTS = {
+    {"wasi:filesystem/types", "filesystem"},
+    {"wasi:io/streams", "input-stream"},
+    {"wasi:sockets/network", "network"},
+  };
+
   /**
    * Adds all WASI imports to the specified linker using the provided WASI context.
    *
@@ -292,9 +318,12 @@ public final class WasiLinkerUtils {
     }
 
     // Check for common WASI imports
-    return linker.hasImport("wasi_snapshot_preview1", "fd_write")
-        || linker.hasImport("wasi_snapshot_preview1", "proc_exit")
-        || linker.hasImport("wasi_unstable", "fd_write");
+    for (final String[] entry : WASI_P1_IMPORTS) {
+      if (linker.hasImport(entry[0], entry[1])) {
+        return true;
+      }
+    }
+    return linker.hasImport("wasi_unstable", "fd_write");
   }
 
   /**
@@ -314,29 +343,21 @@ public final class WasiLinkerUtils {
     }
 
     // Check for common WASI Preview 2 imports
-    return linker.hasImport("wasi:filesystem/types", "filesystem")
-        || linker.hasImport("wasi:io/streams", "input-stream")
-        || linker.hasImport("wasi:sockets/network", "network");
+    for (final String[] entry : WASI_P2_IMPORTS) {
+      if (linker.hasImport(entry[0], entry[1])) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
-   * Checks if a linker has Component Model imports configured.
+   * Checks if the current runtime supports the Component Model.
    *
-   * <p>This method checks for the presence of Component Model imports to determine if Component
-   * Model functionality has been added to the linker.
-   *
-   * @param linker the linker to check
-   * @return true if Component Model imports are present, false otherwise
-   * @throws IllegalArgumentException if linker is null
+   * @return true if the runtime supports the Component Model, false otherwise
    * @since 1.0.0
    */
-  public static boolean hasComponentModelImports(Linker<?> linker) {
-    if (linker == null) {
-      throw new IllegalArgumentException("Linker cannot be null");
-    }
-
-    // Check for Component Model capabilities - these would be internal runtime functions
-    // Rather than specific imports, we check if the linker supports component features
+  public static boolean runtimeSupportsComponentModel() {
     try {
       return WasmRuntimeFactory.create().supportsComponentModel();
     } catch (Exception e) {

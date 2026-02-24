@@ -68,14 +68,10 @@ pub struct EngineConfigSummary {
     pub wasm_component_model_gc: bool,
     /// Whether fuel consumption is enabled
     pub fuel_enabled: bool,
-    /// Maximum memory pages allowed (64KB per page)
-    pub max_memory_pages: Option<u32>,
     /// Maximum stack size in bytes
     pub max_stack_size: Option<usize>,
     /// Whether epoch-based interruption is enabled
     pub epoch_interruption: bool,
-    /// Maximum number of WebAssembly instances per engine
-    pub max_instances: Option<u32>,
     /// Whether async execution support is enabled
     pub async_support: bool,
     /// Whether coredump generation on trap is enabled
@@ -86,8 +82,6 @@ pub struct EngineConfigSummary {
     pub memory_guard_size: Option<u64>,
     /// Memory reservation for growth in bytes (extra reservation for growing)
     pub memory_reservation_for_growth: Option<u64>,
-    /// Maximum memory size in bytes (hard limit on memory usage)
-    pub max_memory_size: Option<usize>,
     /// Whether Cranelift debug verifier is enabled
     pub cranelift_debug_verifier: bool,
     /// Whether Cranelift NaN canonicalization is enabled for determinism
@@ -178,16 +172,13 @@ impl Default for EngineConfigSummary {
             wasm_component_model_error_context: false,
             wasm_component_model_gc: false,
             fuel_enabled: false,
-            max_memory_pages: None,
             max_stack_size: None,
             epoch_interruption: false,
-            max_instances: None,
             async_support: false,
             coredump_on_trap: false,
             memory_reservation: None,
             memory_guard_size: None,
             memory_reservation_for_growth: None,
-            max_memory_size: None,
             cranelift_debug_verifier: false,
             cranelift_nan_canonicalization: false,
             cranelift_pcc: false,
@@ -251,16 +242,13 @@ impl EngineConfigSummary {
             wasm_component_model_error_context: false, // Component model extension - off by default
             wasm_component_model_gc: false,            // Component model extension - off by default
             fuel_enabled: true, // Default assumption (enabled for Store operations)
-            max_memory_pages: None, // No limit by default
             max_stack_size: None, // No limit by default
             epoch_interruption: false, // Default assumption
-            max_instances: None, // No limit by default
             async_support: false, // Off by default
             coredump_on_trap: false, // Off by default
             memory_reservation: None, // No custom reservation by default
             memory_guard_size: None, // No custom guard size by default
             memory_reservation_for_growth: None, // No custom growth reservation by default
-            max_memory_size: None, // No custom max memory by default
             cranelift_debug_verifier: false, // Off by default
             cranelift_nan_canonicalization: false, // Off by default
             cranelift_pcc: false, // Off by default
@@ -337,16 +325,13 @@ impl EngineConfigSummary {
             wasm_component_model_error_context: builder.wasm_component_model_error_context,
             wasm_component_model_gc: builder.wasm_component_model_gc,
             fuel_enabled: builder.fuel_enabled,
-            max_memory_pages: builder.max_memory_pages,
             max_stack_size: builder.max_stack_size,
             epoch_interruption: builder.epoch_interruption,
-            max_instances: builder.max_instances,
             async_support: builder.async_support,
             coredump_on_trap: builder.coredump_on_trap,
             memory_reservation: builder.memory_reservation,
             memory_guard_size: builder.memory_guard_size,
             memory_reservation_for_growth: builder.memory_reservation_for_growth,
-            max_memory_size: builder.max_memory_size,
             cranelift_debug_verifier: builder.cranelift_debug_verifier,
             cranelift_nan_canonicalization: builder.cranelift_nan_canonicalization,
             cranelift_pcc: builder.cranelift_pcc,
@@ -426,10 +411,8 @@ pub struct EngineBuilder {
     pub(crate) opt_level: Option<OptLevel>,
     pub(crate) debug_info: bool,
     pub(crate) fuel_enabled: bool,
-    pub(crate) max_memory_pages: Option<u32>,
     pub(crate) max_stack_size: Option<usize>,
     pub(crate) epoch_interruption: bool,
-    pub(crate) max_instances: Option<u32>,
     // Track wasm features separately for proper config summary
     pub(crate) wasm_threads: bool,
     pub(crate) wasm_reference_types: bool,
@@ -460,7 +443,6 @@ pub struct EngineBuilder {
     pub(crate) memory_reservation: Option<u64>,
     pub(crate) memory_guard_size: Option<u64>,
     pub(crate) memory_reservation_for_growth: Option<u64>,
-    pub(crate) max_memory_size: Option<usize>,
     // Cranelift configuration options
     pub(crate) cranelift_debug_verifier: bool,
     pub(crate) cranelift_nan_canonicalization: bool,
@@ -557,10 +539,8 @@ impl EngineBuilder {
             opt_level: Some(OptLevel::Speed),
             debug_info: true,
             fuel_enabled: false,
-            max_memory_pages: None,
             max_stack_size: None,
             epoch_interruption: false,
-            max_instances: None,
             wasm_threads: true,
             wasm_reference_types: true,
             wasm_simd: true,
@@ -589,7 +569,6 @@ impl EngineBuilder {
             memory_reservation: None,                  // Memory reservation - use Wasmtime default
             memory_guard_size: None,                   // Memory guard size - use Wasmtime default
             memory_reservation_for_growth: None, // Memory reservation for growth - use Wasmtime default
-            max_memory_size: None,               // Max memory size - use Wasmtime default
             cranelift_debug_verifier: false,     // Cranelift debug verifier - off by default
             cranelift_nan_canonicalization: false, // Cranelift NaN canonicalization - off by default
             cranelift_pcc: false,                  // Cranelift proof-carrying code - off by default
@@ -816,14 +795,6 @@ impl EngineBuilder {
         self
     }
 
-    /// Set maximum memory pages limit (64KB per page)
-    pub fn max_memory_pages(mut self, pages: u32) -> Self {
-        // Note: Wasmtime doesn't have direct config for max memory pages
-        // This is tracked for validation in the wrapper layer
-        self.max_memory_pages = Some(pages);
-        self
-    }
-
     /// Set maximum stack size in bytes
     pub fn max_stack_size(mut self, size: usize) -> Self {
         self.config.max_wasm_stack(size);
@@ -835,13 +806,6 @@ impl EngineBuilder {
     pub fn epoch_interruption(mut self, enable: bool) -> Self {
         self.config.epoch_interruption(enable);
         self.epoch_interruption = enable;
-        self
-    }
-
-    /// Set maximum number of instances per engine
-    pub fn max_instances(mut self, instances: u32) -> Self {
-        // This is tracked for validation in the wrapper layer
-        self.max_instances = Some(instances);
         self
     }
 
@@ -900,20 +864,6 @@ impl EngineBuilder {
     pub fn memory_reservation_for_growth(mut self, size: u64) -> Self {
         self.config.memory_reservation_for_growth(size);
         self.memory_reservation_for_growth = Some(size);
-        self
-    }
-
-    /// Set maximum memory size in bytes
-    ///
-    /// This limits the maximum size that any linear memory can grow to.
-    /// This is a wrapper-level limit tracked for validation.
-    ///
-    /// # Arguments
-    /// * `size` - The maximum size in bytes
-    pub fn max_memory_size(mut self, size: usize) -> Self {
-        // Note: Wasmtime doesn't have direct config for max memory size
-        // This is tracked for validation in the wrapper layer
-        self.max_memory_size = Some(size);
         self
     }
 

@@ -18,7 +18,6 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -428,7 +427,6 @@ public final class PanamaStore implements Store {
             0, // execution timeout - 0 means no timeout
             (int) limits.getInstances(),
             (int) limits.getTableElements(),
-            0, // max functions - 0 means no limit
             (int) limits.getTables(),
             (int) limits.getMemories(),
             limits.isTrapOnGrowFailure() ? 1 : 0,
@@ -489,7 +487,6 @@ public final class PanamaStore implements Store {
             executionTimeoutSeconds,
             0, // instances - 0 means no limit
             0, // table elements - 0 means no limit
-            0, // max functions - 0 means no limit
             0, // max tables - 0 means no limit
             0, // max memories - 0 means no limit
             0, // trap on grow failure - 0 means false
@@ -1422,43 +1419,116 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.Instance createInstance(
+      final ai.tegmentum.wasmtime4j.Module module,
+      final ai.tegmentum.wasmtime4j.Extern[] imports)
+      throws WasmException {
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    if (imports == null) {
+      throw new IllegalArgumentException("Imports cannot be null");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule");
+    }
+    ensureNotClosed();
+
+    final PanamaModule panamaModule = (PanamaModule) module;
+
+    if (imports.length == 0) {
+      return createInstance(module);
+    }
+
+    try (final Arena importArena = Arena.ofConfined()) {
+      final MemorySegment externPtrs =
+          importArena.allocate(ValueLayout.ADDRESS, imports.length);
+      final MemorySegment externTypes =
+          importArena.allocate(ValueLayout.JAVA_INT, imports.length);
+
+      for (int i = 0; i < imports.length; i++) {
+        final ai.tegmentum.wasmtime4j.Extern ext = imports[i];
+        if (ext == null) {
+          throw new IllegalArgumentException("Import at index " + i + " is null");
+        }
+        externPtrs.setAtIndex(ValueLayout.ADDRESS, i, extractExternHandle(ext));
+        externTypes.setAtIndex(ValueLayout.JAVA_INT, i, externTypeToNativeCode(ext.getType()));
+      }
+
+      final MemorySegment instanceOut = importArena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          INSTANCE_BINDINGS.panamaInstanceCreateWithImports(
+              nativeStore, panamaModule.getNativeModule(),
+              externPtrs, externTypes, imports.length, instanceOut);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create instance with imports");
+      }
+
+      final MemorySegment instancePtr = instanceOut.get(ValueLayout.ADDRESS, 0);
+      if (instancePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created instance pointer is null");
+      }
+
+      return new PanamaInstance(instancePtr, panamaModule, this);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error creating instance with imports: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Extracts the native handle from a Panama Extern wrapper.
+   *
+   * @param ext the extern to extract the handle from
+   * @return the native memory segment handle
+   */
+  private static MemorySegment extractExternHandle(final ai.tegmentum.wasmtime4j.Extern ext) {
+    if (ext instanceof PanamaExternFunc) {
+      return ((PanamaExternFunc) ext).getNativeHandle();
+    } else if (ext instanceof PanamaExternGlobal) {
+      return ((PanamaExternGlobal) ext).getNativeHandle();
+    } else if (ext instanceof PanamaExternTable) {
+      return ((PanamaExternTable) ext).getNativeHandle();
+    } else if (ext instanceof PanamaExternMemory) {
+      return ((PanamaExternMemory) ext).getNativeHandle();
+    }
+    throw new IllegalArgumentException("Unsupported extern type: " + ext.getClass().getName());
+  }
+
+  /**
+   * Converts a Java ExternType to the native type code used by the Rust FFI layer.
+   *
+   * <p>Native codes: 0=Func, 1=Global, 2=Table, 3=Memory, 4=SharedMemory, 5=Tag
+   *
+   * @param type the Java ExternType
+   * @return the native type code
+   */
+  private static int externTypeToNativeCode(
+      final ai.tegmentum.wasmtime4j.type.ExternType type) {
+    switch (type) {
+      case FUNC:
+        return 0;
+      case GLOBAL:
+        return 1;
+      case TABLE:
+        return 2;
+      case MEMORY:
+        return 3;
+      case SHARED_MEMORY:
+        return 4;
+      case TAG:
+        return 5;
+      default:
+        throw new IllegalArgumentException("Unknown extern type: " + type);
+    }
+  }
+
+  @Override
   public boolean isValid() {
     return !resourceHandle.isClosed();
-  }
-
-  @Override
-  public long getTotalFuelConsumed() throws WasmException {
-    ensureNotClosed();
-    final ExecutionStats stats = getExecutionStats();
-    return stats.fuelConsumed;
-  }
-
-  @Override
-  public long getExecutionCount() {
-    if (resourceHandle.isClosed()) {
-      return 0;
-    }
-    try {
-      final ExecutionStats stats = getExecutionStats();
-      return stats.executionCount;
-    } catch (final WasmException e) {
-      LOGGER.warning("Error getting execution count: " + e.getMessage());
-      return 0;
-    }
-  }
-
-  @Override
-  public long getTotalExecutionTimeMicros() {
-    if (resourceHandle.isClosed()) {
-      return 0;
-    }
-    try {
-      final ExecutionStats stats = getExecutionStats();
-      return stats.totalExecutionTimeMicros;
-    } catch (final WasmException e) {
-      LOGGER.warning("Error getting total execution time: " + e.getMessage());
-      return 0;
-    }
   }
 
   @Override
@@ -1492,109 +1562,6 @@ public final class PanamaStore implements Store {
    */
   Arena getArena() {
     return arena;
-  }
-
-  /**
-   * Gets execution statistics from the native store.
-   *
-   * @return execution statistics
-   * @throws WasmException if failed to get stats
-   */
-  private ExecutionStats getExecutionStats() throws WasmException {
-    try {
-      final MethodHandle getStatsHandle = NATIVE_BINDINGS.getPanamaStoreGetExecutionStats();
-      if (getStatsHandle == null) {
-        throw new WasmException("Panama store get execution stats function not available");
-      }
-
-      final MemorySegment executionCountSegment = arena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment totalExecutionTimeUsSegment = arena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment fuelConsumedSegment = arena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result =
-          (int)
-              getStatsHandle.invoke(
-                  nativeStore,
-                  executionCountSegment,
-                  totalExecutionTimeUsSegment,
-                  fuelConsumedSegment);
-
-      if (result != 0) {
-        throw new WasmException("Failed to get execution statistics");
-      }
-
-      final long executionCount = executionCountSegment.get(ValueLayout.JAVA_LONG, 0);
-      final long totalExecutionTimeUs = totalExecutionTimeUsSegment.get(ValueLayout.JAVA_LONG, 0);
-      final long fuelConsumed = fuelConsumedSegment.get(ValueLayout.JAVA_LONG, 0);
-
-      return new ExecutionStats(executionCount, totalExecutionTimeUs, fuelConsumed);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error getting execution statistics: " + e.getMessage(), e);
-    }
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace() {
-    ensureNotClosed();
-    return captureBacktraceInternal(false);
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace() {
-    ensureNotClosed();
-    return captureBacktraceInternal(true);
-  }
-
-  /**
-   * Internal method to capture backtrace.
-   *
-   * @param forceCapture whether to force capture
-   * @return the captured backtrace
-   * @throws WasmException if backtrace capture fails
-   */
-  private ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktraceInternal(
-      final boolean forceCapture) {
-    try {
-      // Allocate output parameters
-      final MemorySegment bufferOutPtr = arena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment bufferLenPtr = arena.allocate(ValueLayout.JAVA_INT);
-
-      // Call native function
-      final int result;
-      if (forceCapture) {
-        result =
-            NATIVE_BINDINGS.storeForceCaptureBacktrace(nativeStore, bufferOutPtr, bufferLenPtr);
-      } else {
-        result = NATIVE_BINDINGS.storeCaptureBacktrace(nativeStore, bufferOutPtr, bufferLenPtr);
-      }
-
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Failed to capture backtrace");
-      }
-
-      // Read the buffer pointer and length
-      final MemorySegment bufferPtr = bufferOutPtr.get(ValueLayout.ADDRESS, 0);
-      final int bufferLen = bufferLenPtr.get(ValueLayout.JAVA_INT, 0);
-
-      if (bufferPtr == null || bufferPtr.equals(MemorySegment.NULL) || bufferLen <= 0) {
-        // Empty backtrace
-        return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(new ArrayList<>(), forceCapture);
-      }
-
-      // Copy buffer data to Java byte array
-      final byte[] data = new byte[bufferLen];
-      final MemorySegment dataSegment = bufferPtr.reinterpret(bufferLen);
-      MemorySegment.copy(dataSegment, ValueLayout.JAVA_BYTE, 0, data, 0, bufferLen);
-
-      // Deserialize backtrace
-      return ai.tegmentum.wasmtime4j.panama.util.BacktraceDeserializer.deserialize(data);
-
-    } catch (final Exception e) {
-      throw new RuntimeException("Error capturing backtrace: " + e.getMessage(), e);
-    }
   }
 
   @Override
@@ -1875,20 +1842,6 @@ public final class PanamaStore implements Store {
    */
   private void ensureNotClosed() {
     resourceHandle.ensureNotClosed();
-  }
-
-  /** Holds execution statistics from the native store. */
-  private static final class ExecutionStats {
-    final long executionCount;
-    final long totalExecutionTimeMicros;
-    final long fuelConsumed;
-
-    ExecutionStats(
-        final long executionCount, final long totalExecutionTimeMicros, final long fuelConsumed) {
-      this.executionCount = executionCount;
-      this.totalExecutionTimeMicros = totalExecutionTimeMicros;
-      this.fuelConsumed = fuelConsumed;
-    }
   }
 
   // ===== Fuel Async Methods =====

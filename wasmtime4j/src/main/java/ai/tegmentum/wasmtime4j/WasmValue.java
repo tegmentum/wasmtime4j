@@ -172,6 +172,32 @@ public final class WasmValue {
   }
 
   /**
+   * Gets this value as an exception reference.
+   *
+   * @return the exception reference value (may be null)
+   * @throws ClassCastException if this value is not an exnref
+   */
+  public Object asExnref() {
+    if (type != WasmValueType.EXNREF) {
+      throw new ClassCastException("Value is not an exnref, but " + type);
+    }
+    return value;
+  }
+
+  /**
+   * Gets this value as a continuation reference.
+   *
+   * @return the continuation reference value (may be null)
+   * @throws ClassCastException if this value is not a contref
+   */
+  public Object asContref() {
+    if (type != WasmValueType.CONTREF) {
+      throw new ClassCastException("Value is not a contref, but " + type);
+    }
+    return value;
+  }
+
+  /**
    * Gets this value as a type-safe ExternRef wrapper.
    *
    * @return the ExternRef wrapping the external reference value
@@ -551,12 +577,100 @@ public final class WasmValue {
   }
 
   /**
-   * Checks if this value is a reference type (funcref or externref).
+   * Creates an exception reference value.
+   *
+   * <p>This is used in the WebAssembly exception handling proposal for references to exception
+   * values.
+   *
+   * @param value the exception reference value (may be null)
+   * @return a new WasmValue representing exnref
+   */
+  public static WasmValue exnref(final Object value) {
+    return new WasmValue(WasmValueType.EXNREF, value);
+  }
+
+  /**
+   * Creates a null exnref value.
+   *
+   * <p>This is used in the WebAssembly exception handling proposal for null exception references.
+   *
+   * @return a new WasmValue representing null exnref
+   */
+  public static WasmValue nullExnRef() {
+    return new WasmValue(WasmValueType.EXNREF, null);
+  }
+
+  /**
+   * Creates a null exnref bottom type value.
+   *
+   * <p>NULLEXNREF can only hold null and is a subtype of all nullable exception reference types.
+   *
+   * @return a new WasmValue representing null exnref bottom type
+   */
+  public static WasmValue nullNullExnRef() {
+    return new WasmValue(WasmValueType.NULLEXNREF, null);
+  }
+
+  /**
+   * Creates a continuation reference value.
+   *
+   * <p>This is used in the WebAssembly stack switching proposal for references to continuation
+   * values.
+   *
+   * @param value the continuation reference value (may be null)
+   * @return a new WasmValue representing contref
+   */
+  public static WasmValue contref(final Object value) {
+    return new WasmValue(WasmValueType.CONTREF, value);
+  }
+
+  /**
+   * Creates a null contref value.
+   *
+   * <p>This is used in the WebAssembly stack switching proposal for null continuation references.
+   *
+   * @return a new WasmValue representing null contref
+   */
+  public static WasmValue nullContRef() {
+    return new WasmValue(WasmValueType.CONTREF, null);
+  }
+
+  /**
+   * Creates a null contref bottom type value.
+   *
+   * <p>NULLCONTREF can only hold null and is a subtype of all nullable continuation reference types.
+   *
+   * @return a new WasmValue representing null contref bottom type
+   */
+  public static WasmValue nullNullContRef() {
+    return new WasmValue(WasmValueType.NULLCONTREF, null);
+  }
+
+  /**
+   * Checks if this value is an exception reference.
+   *
+   * @return true if this value is of type EXNREF, false otherwise
+   */
+  public boolean isExnref() {
+    return type == WasmValueType.EXNREF;
+  }
+
+  /**
+   * Checks if this value is a continuation reference.
+   *
+   * @return true if this value is of type CONTREF, false otherwise
+   */
+  public boolean isContref() {
+    return type == WasmValueType.CONTREF;
+  }
+
+  /**
+   * Checks if this value is a reference type (any WebAssembly reference type).
    *
    * @return true if this is a reference type, false otherwise
    */
   public boolean isReference() {
-    return type == WasmValueType.FUNCREF || type == WasmValueType.EXTERNREF;
+    return type.isReference();
   }
 
   /**
@@ -593,6 +707,64 @@ public final class WasmValue {
     if (type != expectedType) {
       throw new IllegalArgumentException(
           "Type mismatch: expected " + expectedType + ", got " + type);
+    }
+  }
+
+  /**
+   * Returns the default value for the given WebAssembly value type.
+   *
+   * <p>For numeric types this returns zero. For reference types this returns null. This corresponds
+   * to Wasmtime's {@code Val::default_for_ty()}.
+   *
+   * @param type the WebAssembly value type
+   * @return a new WasmValue with the default value for that type
+   * @throws IllegalArgumentException if type is null or unknown
+   */
+  public static WasmValue defaultForType(final WasmValueType type) {
+    if (type == null) {
+      throw new IllegalArgumentException("Type cannot be null");
+    }
+    switch (type) {
+      case I32:
+        return i32(0);
+      case I64:
+        return i64(0L);
+      case F32:
+        return f32(0.0f);
+      case F64:
+        return f64(0.0);
+      case V128:
+        return v128(new byte[16]);
+      case FUNCREF:
+        return nullFuncref();
+      case EXTERNREF:
+        return nullExternref();
+      case ANYREF:
+        return nullAnyRef();
+      case EQREF:
+        return nullEqRef();
+      case I31REF:
+        return nullI31Ref();
+      case STRUCTREF:
+        return nullStructRef();
+      case ARRAYREF:
+        return nullArrayRef();
+      case NULLREF:
+        return nullRef();
+      case NULLFUNCREF:
+        return nullNullFuncRef();
+      case NULLEXTERNREF:
+        return nullNullExternRef();
+      case EXNREF:
+        return nullExnRef();
+      case NULLEXNREF:
+        return nullNullExnRef();
+      case CONTREF:
+        return nullContRef();
+      case NULLCONTREF:
+        return nullNullContRef();
+      default:
+        throw new IllegalArgumentException("Unknown WasmValueType: " + type);
     }
   }
 

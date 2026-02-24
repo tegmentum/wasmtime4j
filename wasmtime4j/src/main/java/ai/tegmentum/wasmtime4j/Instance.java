@@ -3,10 +3,6 @@ package ai.tegmentum.wasmtime4j;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.memory.Tag;
-import ai.tegmentum.wasmtime4j.type.FuncType;
-import ai.tegmentum.wasmtime4j.type.GlobalType;
-import ai.tegmentum.wasmtime4j.type.MemoryType;
-import ai.tegmentum.wasmtime4j.type.TableType;
 import java.io.Closeable;
 import java.util.Optional;
 
@@ -35,17 +31,6 @@ public interface Instance extends Closeable {
    * @throws IllegalArgumentException if name is null
    */
   Optional<WasmFunction> getFunction(final String name);
-
-  /**
-   * Gets an exported function by index.
-   *
-   * <p>Functions are indexed in the order they appear in the module's export section.
-   *
-   * @param index the index of the function
-   * @return the exported function, or empty if not found or not a function
-   * @throws IllegalArgumentException if index is negative
-   */
-  java.util.Optional<WasmFunction> getFunction(final int index);
 
   /**
    * Gets an exported tag by name.
@@ -162,17 +147,6 @@ public interface Instance extends Closeable {
   Optional<WasmGlobal> getGlobal(final String name);
 
   /**
-   * Gets an exported global by index.
-   *
-   * <p>Globals are indexed in the order they appear in the module's export section.
-   *
-   * @param index the index of the global
-   * @return the exported global, or empty if not found or not a global
-   * @throws IllegalArgumentException if index is negative
-   */
-  java.util.Optional<WasmGlobal> getGlobal(final int index);
-
-  /**
    * Gets an exported memory by name.
    *
    * @param name the name of the exported memory
@@ -182,17 +156,6 @@ public interface Instance extends Closeable {
   Optional<WasmMemory> getMemory(final String name);
 
   /**
-   * Gets an exported memory by index.
-   *
-   * <p>Memories are indexed in the order they appear in the module's export section.
-   *
-   * @param index the index of the memory
-   * @return the exported memory, or empty if not found or not a memory
-   * @throws IllegalArgumentException if index is negative
-   */
-  java.util.Optional<WasmMemory> getMemory(final int index);
-
-  /**
    * Gets an exported table by name.
    *
    * @param name the name of the exported table
@@ -200,17 +163,6 @@ public interface Instance extends Closeable {
    * @throws IllegalArgumentException if name is null
    */
   Optional<WasmTable> getTable(final String name);
-
-  /**
-   * Gets an exported table by index.
-   *
-   * <p>Tables are indexed in the order they appear in the module's export section.
-   *
-   * @param index the index of the table
-   * @return the exported table, or empty if not found or not a table
-   * @throws IllegalArgumentException if index is negative
-   */
-  java.util.Optional<WasmTable> getTable(final int index);
 
   /**
    * Gets the default linear memory if the module exports one.
@@ -246,46 +198,6 @@ public interface Instance extends Closeable {
   String[] getExportNames();
 
   /**
-   * Gets the runtime function type for a specific exported function.
-   *
-   * @param functionName the name of the exported function
-   * @return the function type, or empty if the function doesn't exist or isn't a function
-   * @throws IllegalArgumentException if functionName is null
-   * @since 1.0.0
-   */
-  java.util.Optional<FuncType> getFunctionType(final String functionName);
-
-  /**
-   * Gets the runtime global type for a specific exported global.
-   *
-   * @param globalName the name of the exported global
-   * @return the global type, or empty if the global doesn't exist or isn't a global
-   * @throws IllegalArgumentException if globalName is null
-   * @since 1.0.0
-   */
-  java.util.Optional<GlobalType> getGlobalType(final String globalName);
-
-  /**
-   * Gets the runtime memory type for a specific exported memory.
-   *
-   * @param memoryName the name of the exported memory
-   * @return the memory type, or empty if the memory doesn't exist or isn't a memory
-   * @throws IllegalArgumentException if memoryName is null
-   * @since 1.0.0
-   */
-  java.util.Optional<MemoryType> getMemoryType(final String memoryName);
-
-  /**
-   * Gets the runtime table type for a specific exported table.
-   *
-   * @param tableName the name of the exported table
-   * @return the table type, or empty if the table doesn't exist or isn't a table
-   * @throws IllegalArgumentException if tableName is null
-   * @since 1.0.0
-   */
-  java.util.Optional<TableType> getTableType(final String tableName);
-
-  /**
    * Checks if this instance exports a specific item at runtime.
    *
    * @param name the name of the export to check
@@ -307,6 +219,23 @@ public interface Instance extends Closeable {
    * @since 1.1.0
    */
   Optional<Extern> getExport(final String name);
+
+  /**
+   * Gets an exported item using a pre-resolved {@link ModuleExport} handle for O(1) lookup.
+   *
+   * <p>This method provides fast export access by using a cached index handle obtained from {@link
+   * Module#getModuleExport(String)}. The ModuleExport must have been obtained from the same Module
+   * that this Instance was created from.
+   *
+   * @param store the store containing this instance
+   * @param moduleExport the pre-resolved export handle
+   * @return the export if it exists, empty otherwise
+   * @throws IllegalArgumentException if store or moduleExport is null
+   * @throws WasmException if the lookup fails
+   * @since 1.1.0
+   */
+  Optional<Extern> getExport(final Store store, final ModuleExport moduleExport)
+      throws WasmException;
 
   /**
    * Gets the module that this instance was created from.
@@ -337,27 +266,25 @@ public interface Instance extends Closeable {
       throws WasmException;
 
   /**
-   * Gets all exports from this instance as a map.
+   * Gets all exports from this instance as typed {@link Extern} values.
    *
-   * <p>This method provides a convenient way to access all exports at once. The map keys are export
-   * names and values are the exported objects.
+   * <p>This method corresponds to Wasmtime's {@code Instance::exports()} which returns an iterator
+   * of {@code (name, Extern)} pairs. Each entry contains the export name and its typed Extern
+   * value, allowing callers to inspect or cast exports without additional lookups.
    *
-   * @return a map of export names to exported objects
+   * @return a list of name-to-Extern entries for all exports in this instance
+   * @since 1.1.0
    */
-  java.util.Map<String, Object> getAllExports();
-
-
-  /**
-   * Gets the current lifecycle state of this instance.
-   *
-   * <p>Instance state tracking provides visibility into the instance lifecycle for proper resource
-   * management and debugging.
-   *
-   * @return the current instance state
-   * @since 1.0.0
-   */
-  InstanceState getState();
-
+  default java.util.List<java.util.Map.Entry<String, Extern>> getExports() {
+    final String[] names = getExportNames();
+    final java.util.List<java.util.Map.Entry<String, Extern>> result =
+        new java.util.ArrayList<>(names.length);
+    for (final String name : names) {
+      final java.util.Optional<Extern> ext = getExport(name);
+      ext.ifPresent(e -> result.add(java.util.Map.entry(name, e)));
+    }
+    return result;
+  }
 
   /**
    * Checks if the instance is still valid and usable.
@@ -365,83 +292,6 @@ public interface Instance extends Closeable {
    * @return true if the instance is valid, false otherwise
    */
   boolean isValid();
-
-  /**
-   * Disposes of this instance, releasing resources immediately.
-   *
-   * <p>This method provides explicit resource cleanup, allowing instances to be disposed of before
-   * the store is closed. Once disposed, the instance becomes invalid and should not be used.
-   *
-   * @return true if disposal was successful, false if already disposed
-   * @throws WasmException if disposal fails
-   * @since 1.0.0
-   * @deprecated Use {@link #close()} instead for consistent resource management via
-   *     try-with-resources.
-   */
-  @Deprecated
-  boolean dispose() throws WasmException;
-
-  /**
-   * Checks if this instance has been disposed.
-   *
-   * <p>Disposed instances are no longer usable and will throw exceptions if operations are
-   * attempted on them.
-   *
-   * @return true if the instance has been disposed, false otherwise
-   * @since 1.0.0
-   */
-  boolean isDisposed();
-
-  /**
-   * Gets the creation timestamp of this instance in microseconds.
-   *
-   * <p>This timestamp represents when the instance was created, measured from the Unix epoch in
-   * microseconds.
-   *
-   * @return the creation timestamp in microseconds since Unix epoch
-   * @since 1.0.0
-   */
-  long getCreatedAtMicros();
-
-  /**
-   * Gets the count of metadata exports in this instance.
-   *
-   * <p>Metadata exports include debugging information, custom sections, and other non-executable
-   * exports that provide information about the module structure.
-   *
-   * @return the number of metadata exports
-   * @since 1.0.0
-   */
-  int getMetadataExportCount();
-
-  /**
-   * Calls a 32-bit integer function with parameters.
-   *
-   * <p>This is an optimized calling convention for functions that take 32-bit integer parameters
-   * and return a 32-bit integer result.
-   *
-   * @param functionName the name of the function to call
-   * @param params array of 32-bit integer parameters
-   * @return the 32-bit integer result
-   * @throws WasmException if the function call fails or function doesn't exist
-   * @throws IllegalArgumentException if functionName is null
-   * @since 1.0.0
-   */
-  int callI32Function(final String functionName, final int... params) throws WasmException;
-
-  /**
-   * Calls a 32-bit integer function with no parameters.
-   *
-   * <p>This is an optimized calling convention for functions that take no parameters and return a
-   * 32-bit integer result.
-   *
-   * @param functionName the name of the function to call
-   * @return the 32-bit integer result
-   * @throws WasmException if the function call fails or function doesn't exist
-   * @throws IllegalArgumentException if functionName is null
-   * @since 1.0.0
-   */
-  int callI32Function(final String functionName) throws WasmException;
 
   /**
    * Closes the instance and releases associated resources.
@@ -462,5 +312,23 @@ public interface Instance extends Closeable {
    */
   static Instance create(final Store store, final Module module) throws WasmException {
     return store.createInstance(module);
+  }
+
+  /**
+   * Creates an instance of a WebAssembly module with explicit imports.
+   *
+   * <p>The imports array must contain extern values in the same order as the module's import
+   * declarations. This is the low-level instantiation API that bypasses the linker.
+   *
+   * @param store the store to create the instance in
+   * @param module the compiled module to instantiate
+   * @param imports the array of extern values to satisfy the module's imports, in order
+   * @return a new Instance of the module
+   * @throws WasmException if instantiation fails or imports don't match
+   * @throws IllegalArgumentException if any argument is null
+   */
+  static Instance create(final Store store, final Module module, final Extern[] imports)
+      throws WasmException {
+    return store.createInstance(module, imports);
   }
 }

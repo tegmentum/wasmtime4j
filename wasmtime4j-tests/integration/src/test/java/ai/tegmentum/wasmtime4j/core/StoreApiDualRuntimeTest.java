@@ -526,41 +526,6 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
 
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
-    @DisplayName("Execution count on closed store should return 0")
-    void executionCountOnClosedStoreShouldReturnZero(final RuntimeType runtime) throws Exception {
-      setRuntime(runtime);
-      LOGGER.info("[" + runtime + "] Testing execution count on closed store");
-
-      final Engine engine = Engine.create();
-      resources.add(engine);
-
-      final Store store = Store.create(engine);
-      store.close();
-
-      assertEquals(0, store.getExecutionCount(), "Closed store execution count should be 0");
-      LOGGER.info("[" + runtime + "] Closed store correctly returns 0 for execution count");
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(RuntimeProvider.class)
-    @DisplayName("Execution time on closed store should return 0")
-    void executionTimeOnClosedStoreShouldReturnZero(final RuntimeType runtime) throws Exception {
-      setRuntime(runtime);
-      LOGGER.info("[" + runtime + "] Testing execution time on closed store");
-
-      final Engine engine = Engine.create();
-      resources.add(engine);
-
-      final Store store = Store.create(engine);
-      store.close();
-
-      assertEquals(
-          0, store.getTotalExecutionTimeMicros(), "Closed store execution time should be 0");
-      LOGGER.info("[" + runtime + "] Closed store correctly returns 0 for execution time");
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("Pending exception on closed store should return false")
     void pendingExceptionOnClosedStoreShouldReturnFalse(final RuntimeType runtime)
         throws Exception {

@@ -31,20 +31,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
     wasm_bulk_memory: jboolean,
     wasm_multi_value: jboolean,
     fuel_enabled: jboolean,
-    max_memory_pages: jint,
     max_stack_size: jint,
     epoch_interruption: jboolean,
-    max_instances: jint,
     async_support: jboolean,
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
         let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
-        let max_memory_pages_opt =
-            parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
         let max_stack_size_opt =
             parameter_conversion::convert_int_to_optional_usize(max_stack_size);
-        let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
 
         core::create_engine_with_config(
             strategy_opt,
@@ -56,10 +51,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
             parameter_conversion::convert_int_to_bool(wasm_bulk_memory as i32),
             parameter_conversion::convert_int_to_bool(wasm_multi_value as i32),
             parameter_conversion::convert_int_to_bool(fuel_enabled as i32),
-            max_memory_pages_opt,
             max_stack_size_opt,
             parameter_conversion::convert_int_to_bool(epoch_interruption as i32),
-            max_instances_opt,
             parameter_conversion::convert_int_to_bool(async_support as i32),
         )
     }) as jlong
@@ -79,10 +72,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
     wasm_bulk_memory: jboolean,
     wasm_multi_value: jboolean,
     fuel_enabled: jboolean,
-    max_memory_pages: jint,
     max_stack_size: jint,
     epoch_interruption: jboolean,
-    max_instances: jint,
     async_support: jboolean,
     // GC configuration
     wasm_gc: jboolean,
@@ -150,11 +141,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
     jni_utils::jni_try_ptr(&mut env, || {
         let strategy_opt = parameter_conversion::convert_strategy(strategy);
         let opt_level_opt = parameter_conversion::convert_opt_level(opt_level);
-        let max_memory_pages_opt =
-            parameter_conversion::convert_int_to_optional_u32(max_memory_pages);
         let max_stack_size_opt =
             parameter_conversion::convert_int_to_optional_usize(max_stack_size);
-        let max_instances_opt = parameter_conversion::convert_int_to_optional_u32(max_instances);
 
         // Memory config: 0 means use default
         let memory_reservation_opt = if memory_reservation > 0 {
@@ -192,10 +180,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
             parameter_conversion::convert_int_to_bool(wasm_bulk_memory as i32),
             parameter_conversion::convert_int_to_bool(wasm_multi_value as i32),
             parameter_conversion::convert_int_to_bool(fuel_enabled as i32),
-            max_memory_pages_opt,
             max_stack_size_opt,
             parameter_conversion::convert_int_to_bool(epoch_interruption as i32),
-            max_instances_opt,
             parameter_conversion::convert_int_to_bool(async_support as i32),
             // GC configuration
             parameter_conversion::convert_int_to_bool(wasm_gc as i32),
@@ -437,20 +423,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStack
     jni_utils::jni_try(&mut env, || {
         let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
         Ok(engine.stack_size_limit().unwrap_or(0) as jlong)
-    })
-    .1
-}
-
-/// Get memory limit in pages (64KB per page)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetMemoryLimitPages(
-    mut env: JNIEnv,
-    _class: JClass,
-    engine_ptr: jlong,
-) -> jint {
-    jni_utils::jni_try(&mut env, || {
-        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
-        Ok(engine.memory_limit_pages().unwrap_or(0) as jint)
     })
     .1
 }
@@ -891,4 +863,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateSh
             core::create_shared_memory(engine, initial_pages as u64, max_pages as u64)?;
         Ok(validated_ptr as jlong)
     })
+}
+
+/// JNI export: Eagerly initialize Wasmtime's thread-local state
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeTlsEagerInitialize(
+    _env: JNIEnv,
+    _class: JClass,
+) {
+    core::tls_eager_initialize().ok();
 }

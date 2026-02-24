@@ -14,7 +14,6 @@ import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
 import ai.tegmentum.wasmtime4j.wit.WitFloat64;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
 import ai.tegmentum.wasmtime4j.wit.WitRecord;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
 import ai.tegmentum.wasmtime4j.wit.WitS64;
@@ -26,11 +25,9 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * Panama implementation of a WebAssembly component instance.
@@ -41,8 +38,6 @@ import java.util.logging.Logger;
  * @since 1.0.0
  */
 final class PanamaComponentInstance implements ComponentInstance {
-
-  private static final Logger LOGGER = Logger.getLogger(PanamaComponentInstance.class.getName());
 
   private static final NativeComponentBindings NATIVE_BINDINGS =
       NativeComponentBindings.getInstance();
@@ -433,17 +428,6 @@ final class PanamaComponentInstance implements ComponentInstance {
   }
 
   @Override
-  public Map<String, WitInterfaceDefinition> getExportedInterfaces() throws WasmException {
-    throw new UnsupportedOperationException("getExportedInterfaces not yet implemented");
-  }
-
-  @Override
-  public void bindInterface(final String interfaceName, final Object implementation)
-      throws WasmException {
-    throw new UnsupportedOperationException("bindInterface not yet implemented");
-  }
-
-  @Override
   public ComponentInstanceConfig getConfig() {
     return new ComponentInstanceConfig();
   }
@@ -454,29 +438,6 @@ final class PanamaComponentInstance implements ComponentInstance {
         && enhancedEngineHandle != null
         && !enhancedEngineHandle.equals(MemorySegment.NULL)
         && instanceId != 0;
-  }
-
-  @Override
-  public void pause() throws WasmException {
-    ensureNotClosed();
-    // Pause is a no-op as Wasmtime doesn't support pausing component instances
-    // The instance remains in active state but no new invocations should occur
-    LOGGER.fine("Paused component instance: " + instanceId);
-  }
-
-  @Override
-  public void resume() throws WasmException {
-    ensureNotClosed();
-    // Resume is a no-op as Wasmtime doesn't support pausing/resuming component instances
-    LOGGER.fine("Resumed component instance: " + instanceId);
-  }
-
-  @Override
-  public void stop() throws WasmException {
-    ensureNotClosed();
-    // Stop functionality closes the instance
-    close();
-    LOGGER.fine("Stopped component instance: " + instanceId);
   }
 
   @Override

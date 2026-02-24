@@ -29,10 +29,14 @@ package ai.tegmentum.wasmtime4j.type;
  *                    any
  *                   /   \
  *                 eq     extern
- *              / | | \
- *           i31 struct array func
- *                      |
- *                   nofunc
+ *              / | | \      |
+ *           i31 struct array noextern
+ *             |
+ *           none
+ *
+ *   func    exn    cont
+ *     |      |       |
+ *   nofunc  noexn  nocont
  * </pre>
  *
  * @since 1.0.0
@@ -108,6 +112,34 @@ public enum HeapType {
   NOEXTERN("noextern"),
 
   /**
+   * The exn heap type - references to exceptions.
+   *
+   * <p>Exception references are used by the exception handling proposal.
+   */
+  EXN("exn"),
+
+  /**
+   * The noexn heap type - bottom type for exception references.
+   *
+   * <p>Only null is a valid noexn value.
+   */
+  NOEXN("noexn"),
+
+  /**
+   * The cont heap type - references to continuations.
+   *
+   * <p>Continuation references are used by the stack switching proposal.
+   */
+  CONT("cont"),
+
+  /**
+   * The nocont heap type - bottom type for continuation references.
+   *
+   * <p>Only null is a valid nocont value.
+   */
+  NOCONT("nocont"),
+
+  /**
    * The none heap type - bottom type for the eq hierarchy.
    *
    * <p>Only null is a valid none value.
@@ -172,6 +204,14 @@ public enum HeapType {
         return supertype == EXTERN;
       case NOEXTERN:
         return supertype == EXTERN || supertype == NOEXTERN;
+      case EXN:
+        return supertype == EXN;
+      case NOEXN:
+        return supertype == EXN || supertype == NOEXN;
+      case CONT:
+        return supertype == CONT;
+      case NOCONT:
+        return supertype == CONT || supertype == NOCONT;
       case CONCRETE:
         // Concrete types need external type information to determine subtyping
         return false;
@@ -195,7 +235,7 @@ public enum HeapType {
    * @return true if this is a bottom type (none, nofunc, noextern)
    */
   public boolean isBottom() {
-    return this == NONE || this == NOFUNC || this == NOEXTERN;
+    return this == NONE || this == NOFUNC || this == NOEXTERN || this == NOEXN || this == NOCONT;
   }
 
   /**
@@ -213,12 +253,16 @@ public enum HeapType {
    * @return the corresponding bottom type
    */
   public HeapType getBottomType() {
-    if (isSubtypeOf(EQ)) {
+    if (isSubtypeOf(EQ) || this == ANY) {
       return NONE;
     } else if (isSubtypeOf(FUNC)) {
       return NOFUNC;
     } else if (isSubtypeOf(EXTERN)) {
       return NOEXTERN;
+    } else if (isSubtypeOf(EXN)) {
+      return NOEXN;
+    } else if (isSubtypeOf(CONT)) {
+      return NOCONT;
     }
     return NONE;
   }

@@ -174,6 +174,30 @@ public interface ComponentEngine extends Closeable {
   Component deserializeComponentFile(String path) throws WasmException;
 
   /**
+   * Compiles a WebAssembly component from a file on disk.
+   *
+   * <p>This reads the file and compiles it. The file can contain either binary WebAssembly (.wasm)
+   * or WebAssembly text format (.wat).
+   *
+   * @param path the path to the WebAssembly component file
+   * @return a compiled Component
+   * @throws WasmException if compilation fails or the file cannot be read
+   * @throws IllegalArgumentException if path is null
+   * @since 1.1.0
+   */
+  default Component compileComponentFile(final java.nio.file.Path path) throws WasmException {
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    try {
+      final byte[] bytes = java.nio.file.Files.readAllBytes(path);
+      return compileComponent(bytes);
+    } catch (final java.io.IOException e) {
+      throw new WasmException("Failed to read component file: " + path, e);
+    }
+  }
+
+  /**
    * Detects if bytes contain a precompiled module or component.
    *
    * @param bytes the bytes to check

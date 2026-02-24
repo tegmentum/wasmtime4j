@@ -20,17 +20,6 @@ import org.junit.jupiter.api.*;
 class PanamaBacktraceTest {
 
   @Test
-  @DisplayName("Should have backtrace capture methods defined")
-  void shouldHaveBacktraceCaptureMethodsDefined() throws NoSuchMethodException {
-    // Verify methods exist via reflection (can't call them without native library loaded)
-    assertNotNull(
-        PanamaStore.class.getMethod("captureBacktrace"), "captureBacktrace method should exist");
-    assertNotNull(
-        PanamaStore.class.getMethod("forceCaptureBacktrace"),
-        "forceCaptureBacktrace method should exist");
-  }
-
-  @Test
   @DisplayName("Should create WasmBacktrace with frames")
   void shouldCreateWasmBacktraceWithFrames() {
     final FrameInfo frame =

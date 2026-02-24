@@ -1618,6 +1618,125 @@ pub mod core {
         }
     }
 
+    // ===== C.1: Create instance with extern handle array =====
+
+    /// Extern type constants for FFI boundary
+    pub const EXTERN_TYPE_FUNC: i32 = 0;
+    pub const EXTERN_TYPE_GLOBAL: i32 = 1;
+    pub const EXTERN_TYPE_TABLE: i32 = 2;
+    pub const EXTERN_TYPE_MEMORY: i32 = 3;
+    pub const EXTERN_TYPE_SHARED_MEMORY: i32 = 4;
+    pub const EXTERN_TYPE_TAG: i32 = 5;
+
+    /// Core function to create an instance from an array of extern handles and their types.
+    ///
+    /// Each extern is passed as a raw pointer + type discriminator. The pointer is dereferenced
+    /// to obtain the corresponding wasmtime type (Func, Global, Table, Memory, SharedMemory).
+    pub unsafe fn create_instance_from_extern_handles(
+        store: &mut Store,
+        module: &Module,
+        extern_ptrs: &[*const c_void],
+        extern_types: &[i32],
+    ) -> WasmtimeResult<Box<Instance>> {
+        if extern_ptrs.len() != extern_types.len() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!(
+                    "extern_ptrs length ({}) != extern_types length ({})",
+                    extern_ptrs.len(),
+                    extern_types.len()
+                ),
+            });
+        }
+
+        let mut imports = Vec::with_capacity(extern_ptrs.len());
+        for (i, (&ptr, &typ)) in extern_ptrs.iter().zip(extern_types.iter()).enumerate() {
+            if ptr.is_null() {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("extern_ptrs[{}] is null", i),
+                });
+            }
+            let ext = match typ {
+                EXTERN_TYPE_FUNC => Extern::Func(*(ptr as *const wasmtime::Func)),
+                EXTERN_TYPE_GLOBAL => Extern::Global(*(ptr as *const wasmtime::Global)),
+                EXTERN_TYPE_TABLE => Extern::Table(*(ptr as *const wasmtime::Table)),
+                EXTERN_TYPE_MEMORY => Extern::Memory(*(ptr as *const wasmtime::Memory)),
+                EXTERN_TYPE_SHARED_MEMORY => {
+                    Extern::SharedMemory((&*(ptr as *const wasmtime::SharedMemory)).clone())
+                }
+                _ => {
+                    return Err(WasmtimeError::InvalidParameter {
+                        message: format!("Unknown extern type {} at index {}", typ, i),
+                    })
+                }
+            };
+            imports.push(ext);
+        }
+
+        Instance::new(store, module, &imports).map(Box::new)
+    }
+
+    // ===== C.2: ModuleExport fast export lookup =====
+
+    /// Core function to get an export from an instance using a pre-resolved ModuleExport handle.
+    ///
+    /// Returns (extern_handle, extern_type) where extern_type uses the EXTERN_TYPE_* constants.
+    /// Returns (null, -1) if the export is not found.
+    pub unsafe fn get_export_by_module_export(
+        instance: &Instance,
+        store: &mut Store,
+        module_export_ptr: *const c_void,
+    ) -> WasmtimeResult<(*mut c_void, i32)> {
+        validate_ptr_not_null!(module_export_ptr, "module_export");
+
+        let module_export = &*(module_export_ptr as *const wasmtime::ModuleExport);
+        let instance_guard =
+            instance
+                .inner
+                .try_lock()
+                .ok_or_else(|| WasmtimeError::Instance {
+                    message: "Failed to lock instance for module export lookup".to_string(),
+                })?;
+        let mut store_guard = store.try_lock_store()?;
+        use wasmtime::AsContextMut;
+
+        match instance_guard.get_module_export(&mut (*store_guard).as_context_mut(), module_export)
+        {
+            Some(ext) => {
+                let (handle, typ) = match ext {
+                    Extern::Func(f) => {
+                        let boxed = Box::new(f);
+                        (Box::into_raw(boxed) as *mut c_void, EXTERN_TYPE_FUNC)
+                    }
+                    Extern::Global(g) => {
+                        let boxed = Box::new(g);
+                        (Box::into_raw(boxed) as *mut c_void, EXTERN_TYPE_GLOBAL)
+                    }
+                    Extern::Table(t) => {
+                        let boxed = Box::new(t);
+                        (Box::into_raw(boxed) as *mut c_void, EXTERN_TYPE_TABLE)
+                    }
+                    Extern::Memory(m) => {
+                        let boxed = Box::new(m);
+                        (Box::into_raw(boxed) as *mut c_void, EXTERN_TYPE_MEMORY)
+                    }
+                    Extern::SharedMemory(sm) => {
+                        let boxed = Box::new(sm);
+                        (
+                            Box::into_raw(boxed) as *mut c_void,
+                            EXTERN_TYPE_SHARED_MEMORY,
+                        )
+                    }
+                    Extern::Tag(t) => {
+                        let boxed = Box::new(t);
+                        (Box::into_raw(boxed) as *mut c_void, EXTERN_TYPE_TAG)
+                    }
+                };
+                Ok((handle, typ))
+            }
+            None => Ok((std::ptr::null_mut(), -1)),
+        }
+    }
+
     // Function-specific operations for Panama FFI bindings
 
     /// Get function export by name - returns wasmtime::Func

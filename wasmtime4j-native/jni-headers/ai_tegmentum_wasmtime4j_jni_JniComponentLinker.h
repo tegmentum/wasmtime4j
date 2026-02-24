@@ -41,14 +41,6 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
- * Method:    nativeSetAsyncSupport
- * Signature: (JZ)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetAsyncSupport
-  (JNIEnv *, jobject, jlong, jboolean);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
  * Method:    nativeDefineResource
  * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;JJ)J
  */
@@ -102,6 +94,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiInheritStdin
   (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiStdinBytes
+ * Signature: (J[B)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiStdinBytes
+  (JNIEnv *, jclass, jlong, jbyteArray);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker

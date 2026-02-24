@@ -18,11 +18,17 @@ final class DefaultTableType implements TableType {
   private final WasmValueType elementType;
   private final long minimum;
   private final Long maximum;
+  private final boolean is64;
 
-  private DefaultTableType(final WasmValueType elementType, final long minimum, final Long maximum) {
+  private DefaultTableType(
+      final WasmValueType elementType,
+      final long minimum,
+      final Long maximum,
+      final boolean is64) {
     this.elementType = elementType;
     this.minimum = minimum;
     this.maximum = maximum;
+    this.is64 = is64;
   }
 
   /**
@@ -46,7 +52,31 @@ final class DefaultTableType implements TableType {
       throw new IllegalArgumentException("max cannot be null; use OptionalLong.empty()");
     }
     final Long maxValue = max.isPresent() ? max.getAsLong() : null;
-    return new DefaultTableType(elementType, min, maxValue);
+    return new DefaultTableType(elementType, min, maxValue, false);
+  }
+
+  /**
+   * Creates a new DefaultTableType with 64-bit indices.
+   *
+   * @param elementType the element type
+   * @param min the minimum size
+   * @param max the maximum size
+   * @return a new 64-bit DefaultTableType
+   * @throws IllegalArgumentException if elementType is null or min is negative
+   */
+  static DefaultTableType create64(
+      final WasmValueType elementType, final long min, final OptionalLong max) {
+    if (elementType == null) {
+      throw new IllegalArgumentException("elementType cannot be null");
+    }
+    if (min < 0) {
+      throw new IllegalArgumentException("min cannot be negative");
+    }
+    if (max == null) {
+      throw new IllegalArgumentException("max cannot be null; use OptionalLong.empty()");
+    }
+    final Long maxValue = max.isPresent() ? max.getAsLong() : null;
+    return new DefaultTableType(elementType, min, maxValue, true);
   }
 
   @Override
@@ -65,6 +95,11 @@ final class DefaultTableType implements TableType {
   }
 
   @Override
+  public boolean is64Bit() {
+    return is64;
+  }
+
+  @Override
   public boolean equals(final Object obj) {
     if (this == obj) {
       return true;
@@ -75,19 +110,21 @@ final class DefaultTableType implements TableType {
     final TableType other = (TableType) obj;
     return this.elementType == other.getElementType()
         && this.minimum == other.getMinimum()
-        && Objects.equals(getMaximum(), other.getMaximum());
+        && Objects.equals(getMaximum(), other.getMaximum())
+        && this.is64 == other.is64Bit();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(elementType, minimum, maximum);
+    return Objects.hash(elementType, minimum, maximum, is64);
   }
 
   @Override
   public String toString() {
+    final String suffix = is64 ? ", 64-bit" : "";
     if (maximum != null) {
-      return "TableType(" + elementType + ", " + minimum + ", " + maximum + ")";
+      return "TableType(" + elementType + ", " + minimum + ", " + maximum + suffix + ")";
     }
-    return "TableType(" + elementType + ", " + minimum + ")";
+    return "TableType(" + elementType + ", " + minimum + suffix + ")";
   }
 }

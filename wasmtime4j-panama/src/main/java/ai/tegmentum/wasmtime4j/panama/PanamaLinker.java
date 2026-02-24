@@ -1160,6 +1160,94 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     }
   }
 
+  @Override
+  public void define(
+      final Store store, final String moduleName, final String name, final Extern extern)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("Name cannot be null");
+    }
+    if (extern == null) {
+      throw new IllegalArgumentException("Extern cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final MemorySegment storePtr = panamaStore.getNativeStore();
+    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+    final MemorySegment namePtr = arena.allocateFrom(name);
+
+    try {
+      final int result = defineExternByType(extern, storePtr, moduleNamePtr, namePtr);
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to define: " + moduleName + "::" + name);
+      }
+
+      addImportWithMetadata(moduleName, name, getExternImportKind(extern), extern.toString());
+      LOGGER.fine("Defined: " + moduleName + "::" + name);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Error defining: " + moduleName + "::" + name, e);
+    }
+  }
+
+  @Override
+  public void module(final Store store, final String moduleName, final Module module)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("Module name cannot be null");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
+    }
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule for Panama linker");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final PanamaModule panamaModule = (PanamaModule) module;
+    final MemorySegment storePtr = panamaStore.getNativeStore();
+    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+    final MemorySegment modulePtr = panamaModule.getNativeModule();
+
+    try {
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerModule(
+              nativeLinker, storePtr, moduleNamePtr, modulePtr);
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to define module: " + moduleName);
+      }
+
+      LOGGER.fine("Defined module: " + moduleName);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Error defining module: " + moduleName, e);
+    }
+  }
+
   private int defineExternByType(
       final Extern extern,
       final MemorySegment storePtr,

@@ -207,17 +207,6 @@ public interface Engine extends Closeable {
   java.util.Optional<Boolean> detectHostFeature(final String feature);
 
   /**
-   * Gets the memory limit in pages for this engine.
-   *
-   * <p>Returns the maximum number of WebAssembly pages (64KB each) that can be allocated for linear
-   * memory in this engine. A value of 0 indicates no limit.
-   *
-   * @return the memory limit in pages, or 0 for unlimited
-   * @since 1.0.0
-   */
-  int getMemoryLimitPages();
-
-  /**
    * Gets the stack size limit for this engine.
    *
    * <p>Returns the maximum stack size in bytes for WebAssembly execution. A value of 0 indicates
@@ -502,5 +491,21 @@ public interface Engine extends Closeable {
    */
   static EngineConfig builder() {
     return new EngineConfig();
+  }
+
+  /**
+   * Eagerly initializes thread-local state needed for Wasmtime on the current thread.
+   *
+   * <p>Wasmtime uses thread-local storage internally. Normally this is lazily initialized on first
+   * use, but in performance-sensitive scenarios you may want to pre-initialize it to avoid the
+   * latency spike on the first WebAssembly operation on a thread.
+   *
+   * <p>It is safe to call this function multiple times and from multiple threads concurrently.
+   *
+   * @throws WasmException if TLS initialization fails
+   * @since 1.0.0
+   */
+  static void tlsEagerInitialize() throws WasmException {
+    WasmRuntimeFactory.create().tlsEagerInitialize();
   }
 }

@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
+import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -132,6 +133,15 @@ final class PanamaCaller<T> implements Caller<T> {
       LOGGER.log(Level.WARNING, "Failed to get export: " + name, e);
       return Optional.empty();
     }
+  }
+
+  @Override
+  public Optional<Extern> getExport(final ModuleExport moduleExport) {
+    if (moduleExport == null) {
+      throw new IllegalArgumentException("ModuleExport cannot be null");
+    }
+    // Delegate to name-based lookup using the ModuleExport's name
+    return getExport(moduleExport.name());
   }
 
   @Override
@@ -295,38 +305,6 @@ final class PanamaCaller<T> implements Caller<T> {
       throw e;
     } catch (Exception e) {
       throw new WasmException("Failed to set fuel: " + e.getMessage(), e);
-    }
-  }
-
-  @Override
-  public boolean hasEpochDeadline() {
-    try {
-      final int result = bindings.callerHasEpochDeadline(callerPtr);
-      return result == 1;
-    } catch (Exception e) {
-      LOGGER.log(Level.FINE, "Failed to check epoch deadline", e);
-      return false;
-    }
-  }
-
-  @Override
-  public Optional<Long> epochDeadline() {
-    // Wasmtime does not expose a getter for the current epoch deadline value.
-    // Only setEpochDeadline() and hasEpochDeadline() are supported.
-    return Optional.empty();
-  }
-
-  @Override
-  public void setEpochDeadline(final long deadline) throws WasmException {
-    try {
-      final int result = bindings.callerSetEpochDeadline(callerPtr, deadline);
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Failed to set epoch deadline");
-      }
-    } catch (WasmException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new WasmException("Failed to set epoch deadline: " + e.getMessage(), e);
     }
   }
 

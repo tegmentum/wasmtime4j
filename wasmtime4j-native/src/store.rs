@@ -247,8 +247,6 @@ pub struct ResourceLimits {
     pub max_table_elements: Option<u32>,
     /// Maximum number of WebAssembly instances in this store
     pub max_instances: Option<usize>,
-    /// Maximum number of functions that can be instantiated
-    pub max_functions: Option<usize>,
     /// Maximum number of tables that can be created
     pub max_tables: Option<usize>,
     /// Maximum number of memories that can be created
@@ -791,23 +789,6 @@ impl Store {
         Ok(())
     }
 
-    /// Configure an epoch deadline callback (default trap behavior)
-    ///
-    /// When the epoch counter exceeds the deadline, the provided callback
-    /// function will be invoked to determine how to proceed.
-    ///
-    /// Note: This simple version configures trap behavior.
-    /// Use `epoch_deadline_callback_with_fn` for full callback support.
-    ///
-    /// # Errors
-    /// Returns an error if the store has been closed.
-    pub fn epoch_deadline_callback(&self) -> WasmtimeResult<()> {
-        self.check_not_closed()?;
-        let mut store = self.inner.lock();
-        store.epoch_deadline_trap();
-        Ok(())
-    }
-
     /// Configure an epoch deadline callback with a function pointer.
     ///
     /// When the epoch counter exceeds the deadline, the provided callback
@@ -884,7 +865,7 @@ impl Store {
         let store = self.inner.lock();
 
         Ok(MemoryUsage {
-            instance_count: store.data().execution_state.execution_count as usize,
+            execution_count: store.data().execution_state.execution_count as usize,
         })
     }
 
@@ -1183,14 +1164,8 @@ impl Store {
     /// # Errors
     /// Returns an error if the store has been closed.
     pub fn clear_call_hook(&self) -> WasmtimeResult<()> {
-        self.check_not_closed()?;
-        let mut store = self.inner.lock();
-
         log::debug!("Clearing call hook on store {}", self.id);
-
-        store.call_hook(|_ctx, _hook| Ok(()));
-
-        Ok(())
+        self.set_call_hook()
     }
 
     /// Set a call hook with a function pointer callback.
@@ -1309,7 +1284,6 @@ impl StoreBuilder {
                 max_memory_bytes: None,
                 max_table_elements: None,
                 max_instances: None,
-                max_functions: None,
                 max_tables: None,
                 max_memories: None,
                 trap_on_grow_failure: false,
@@ -1345,12 +1319,6 @@ impl StoreBuilder {
     /// Set maximum number of table elements
     pub fn max_table_elements(mut self, limit: u32) -> Self {
         self.resource_limits.max_table_elements = Some(limit);
-        self
-    }
-
-    /// Set maximum number of functions
-    pub fn max_functions(mut self, limit: usize) -> Self {
-        self.resource_limits.max_functions = Some(limit);
         self
     }
 
@@ -1495,12 +1463,12 @@ impl StoreBuilder {
 /// Memory usage statistics for a store.
 ///
 /// Note: Wasmtime does not expose per-store memory aggregation, so only
-/// `instance_count` (actually execution count) is tracked. The removed
-/// `total_bytes` and `used_bytes` fields always returned 0.
+/// `execution_count` is tracked. The removed `total_bytes` and `used_bytes`
+/// fields always returned 0.
 #[derive(Debug, Clone)]
 pub struct MemoryUsage {
     /// Number of executions performed in this store
-    pub instance_count: usize,
+    pub execution_count: usize,
 }
 
 impl Default for ResourceLimits {
@@ -1512,7 +1480,6 @@ impl Default for ResourceLimits {
             max_tables: None,
             max_memories: None,
             trap_on_grow_failure: false,
-            max_functions: Some(1000),
         }
     }
 }
@@ -1563,7 +1530,6 @@ pub mod core {
         execution_timeout_secs: Option<u64>,
         max_instances: Option<usize>,
         max_table_elements: Option<u32>,
-        max_functions: Option<usize>,
         max_tables: Option<usize>,
         max_memories: Option<usize>,
         trap_on_grow_failure: bool,
@@ -1588,10 +1554,6 @@ pub mod core {
 
         if let Some(table_elements) = max_table_elements {
             builder = builder.max_table_elements(table_elements);
-        }
-
-        if let Some(functions) = max_functions {
-            builder = builder.max_functions(functions);
         }
 
         if let Some(tables) = max_tables {
@@ -1664,11 +1626,6 @@ pub mod core {
     /// Core function to configure epoch deadline trap
     pub fn epoch_deadline_trap(store: &Store) -> WasmtimeResult<()> {
         store.epoch_deadline_trap()
-    }
-
-    /// Core function to configure epoch deadline callback (uses trap as default)
-    pub fn epoch_deadline_callback(store: &Store) -> WasmtimeResult<()> {
-        store.epoch_deadline_callback()
     }
 
     /// Core function to configure epoch deadline callback with function pointer
@@ -1878,7 +1835,7 @@ mod tests {
         let store = Store::new(&engine).expect("Failed to create store");
 
         let usage = store.memory_usage().expect("Failed to get memory usage");
-        assert_eq!(usage.instance_count, 0); // No instances created yet
+        assert_eq!(usage.execution_count, 0); // No instances created yet
     }
 
     #[test]
@@ -1928,7 +1885,6 @@ mod tests {
             Some(60),              // execution_timeout_secs
             Some(20),              // max_instances
             Some(5000),            // max_table_elements
-            Some(500),             // max_functions
             None,                  // max_tables
             None,                  // max_memories
             false,                 // trap_on_grow_failure
@@ -1956,7 +1912,7 @@ mod tests {
             .build()
             .expect("Failed to create engine with fuel enabled");
         let store =
-            core::create_store_with_config(&engine, Some(1000), None, None, None, None, None, None, None, false)
+            core::create_store_with_config(&engine, Some(1000), None, None, None, None, None, None, false)
                 .expect("Failed to create store with fuel");
 
         let store_ref = unsafe {
@@ -2007,7 +1963,7 @@ mod tests {
         // Test memory usage stats
         let memory_usage = core::get_memory_usage(store_ref).expect("Failed to get memory usage");
         assert_eq!(
-            memory_usage.instance_count,
+            memory_usage.execution_count,
             updated_stats.execution_count as usize
         );
     }
@@ -2051,7 +2007,6 @@ mod tests {
             .memory_limit(4 * 1024 * 1024)
             .max_instances(50)
             .max_table_elements(8000)
-            .max_functions(1500)
             .build(&engine)
             .expect("Failed to build store with resource limits");
 
@@ -2342,7 +2297,6 @@ mod tests {
         let store = Store::builder()
             .max_instances(100)
             .max_table_elements(10000)
-            .max_functions(5000)
             .build(&engine)
             .expect("Failed to build store");
 
@@ -2527,7 +2481,7 @@ mod tests {
         let store = Store::new(&engine).expect("Failed to create store");
 
         let usage = store.memory_usage().expect("Failed to get memory usage");
-        assert_eq!(usage.instance_count, 0);
+        assert_eq!(usage.execution_count, 0);
     }
 
     #[test]

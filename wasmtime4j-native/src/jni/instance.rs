@@ -948,122 +948,125 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMet
     })
 }
 
-/// Call an i32 function with i32 parameters
+/// Create instance with explicit imports (JNI version)
+///
+/// Takes arrays of extern handles and their types, creates a new instance.
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI32Function(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateInstanceWithImports(
     mut env: JNIEnv,
     _class: JClass,
-    instance_handle: jlong,
     store_handle: jlong,
-    function_name: JString,
-    params: jintArray,
-) -> jint {
-    use crate::instance::WasmValue;
-    use jni::objects::JPrimitiveArray;
+    module_handle: jlong,
+    extern_handles: jni::sys::jlongArray,
+    extern_types: jintArray,
+) -> jlong {
+    let result = (|| -> WasmtimeResult<jlong> {
+        let handles_array = unsafe { jni::objects::JLongArray::from_raw(extern_handles) };
+        let types_array = unsafe { jni::objects::JIntArray::from_raw(extern_types) };
 
-    let result = (|| -> WasmtimeResult<jint> {
-        // Get the instance and store
-        let instance = unsafe { core::get_instance_mut(instance_handle as *mut c_void)? };
+        let handles_len = env
+            .get_array_length(&handles_array)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get extern handles array length: {}", e),
+            })? as usize;
+
+        let types_len = env
+            .get_array_length(&types_array)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get extern types array length: {}", e),
+            })? as usize;
+
+        if handles_len != types_len {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!(
+                    "Handle array length ({}) != type array length ({})",
+                    handles_len, types_len
+                ),
+            });
+        }
+
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        let module =
+            unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
 
-        // Convert function name
-        let name_str: String = env
-            .get_string(&function_name)
+        if handles_len == 0 {
+            let instance = core::create_instance(store, module)?;
+            return Ok(
+                crate::ffi_common::memory_utils::box_into_raw_safe(instance) as jlong
+            );
+        }
+
+        let mut handle_buf = vec![0i64; handles_len];
+        let mut type_buf = vec![0i32; handles_len];
+
+        env.get_long_array_region(&handles_array, 0, &mut handle_buf)
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to convert function name: {}", e),
-            })?
-            .into();
-
-        // Convert int array to WasmValue::I32 vector
-        let params_array = unsafe { JPrimitiveArray::from_raw(params) };
-        let param_count =
-            env.get_array_length(&params_array)
-                .map_err(|e| WasmtimeError::InvalidParameter {
-                    message: format!("Failed to get array length: {}", e),
-                })?;
-
-        let mut int_values = vec![0i32; param_count as usize];
-        env.get_int_array_region(&params_array, 0, &mut int_values)
-            .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get int array: {}", e),
+                message: format!("Failed to read extern handles array: {}", e),
             })?;
 
-        let wasm_params: Vec<WasmValue> = int_values.into_iter().map(WasmValue::I32).collect();
+        env.get_int_array_region(&types_array, 0, &mut type_buf)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to read extern types array: {}", e),
+            })?;
 
-        // Call the function
-        let exec_result = instance.call_export_function(store, &name_str, &wasm_params)?;
+        let ptrs: Vec<*const c_void> = handle_buf.iter().map(|&h| h as *const c_void).collect();
 
-        // Extract the first result as i32
-        if exec_result.values.is_empty() {
-            return Err(WasmtimeError::Function {
-                message: "Function returned no values".to_string(),
-            });
-        }
+        let instance = unsafe {
+            core::create_instance_from_extern_handles(store, module, &ptrs, &type_buf)?
+        };
 
-        match exec_result.values[0] {
-            WasmValue::I32(value) => Ok(value),
-            _ => Err(WasmtimeError::Function {
-                message: "Function did not return an i32 value".to_string(),
-            }),
-        }
+        Ok(crate::ffi_common::memory_utils::box_into_raw_safe(instance) as jlong)
     })();
 
     match result {
-        Ok(value) => value,
+        Ok(handle) => handle,
         Err(e) => {
             jni_utils::throw_jni_exception(&mut env, &e);
-            -1
+            0
         }
     }
 }
 
-/// Call an i32 function with no parameters
+/// Get export by ModuleExport handle (JNI version)
+///
+/// Returns the extern handle. The extern type is written to out_type[0].
 #[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallI32FunctionNoParams(
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetModuleExport(
     mut env: JNIEnv,
     _class: JClass,
     instance_handle: jlong,
     store_handle: jlong,
-    function_name: JString,
-) -> jint {
-    use crate::instance::WasmValue;
-
-    let result = (|| -> WasmtimeResult<jint> {
-        // Get the instance and store
-        let instance = unsafe { core::get_instance_mut(instance_handle as *mut c_void)? };
+    module_export_handle: jlong,
+    out_type: jintArray,
+) -> jlong {
+    let result = (|| -> WasmtimeResult<jlong> {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
-        // Convert function name
-        let name_str: String = env
-            .get_string(&function_name)
+        let (handle, typ) = unsafe {
+            core::get_export_by_module_export(
+                instance,
+                store,
+                module_export_handle as *const c_void,
+            )?
+        };
+
+        // Write the type to the output array
+        let types_array = unsafe { jni::objects::JIntArray::from_raw(out_type) };
+        env.set_int_array_region(&types_array, 0, &[typ])
             .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to convert function name: {}", e),
-            })?
-            .into();
+                message: format!("Failed to write extern type: {}", e),
+            })?;
 
-        // Call the function with no parameters
-        let exec_result = instance.call_export_function(store, &name_str, &[])?;
-
-        // Extract the first result as i32
-        if exec_result.values.is_empty() {
-            return Err(WasmtimeError::Function {
-                message: "Function returned no values".to_string(),
-            });
-        }
-
-        match exec_result.values[0] {
-            WasmValue::I32(value) => Ok(value),
-            _ => Err(WasmtimeError::Function {
-                message: "Function did not return an i32 value".to_string(),
-            }),
-        }
+        Ok(handle as jlong)
     })();
 
     match result {
-        Ok(value) => value,
+        Ok(handle) => handle,
         Err(e) => {
             jni_utils::throw_jni_exception(&mut env, &e);
-            -1
+            0
         }
     }
 }
+

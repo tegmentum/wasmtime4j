@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.InstanceState;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -13,10 +12,6 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.memory.Tag;
-import ai.tegmentum.wasmtime4j.type.FuncType;
-import ai.tegmentum.wasmtime4j.type.GlobalType;
-import ai.tegmentum.wasmtime4j.type.MemoryType;
-import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -104,39 +99,6 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
-  @Override
-  public Optional<WasmFunction> getFunction(final int index) {
-    ensureNotClosed();
-
-    if (index < 0) {
-      return Optional.empty();
-    }
-
-    try {
-      final String[] exportNames = getExportNames();
-      if (index >= exportNames.length) {
-        return Optional.empty();
-      }
-
-      // Find the index-th function export
-      int functionIndex = 0;
-      for (final String exportName : exportNames) {
-        final Optional<WasmFunction> function = getFunction(exportName);
-        if (function.isPresent()) {
-          if (functionIndex == index) {
-            return function;
-          }
-          functionIndex++;
-        }
-      }
-
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get function by index " + index + ": " + e.getMessage());
-      return Optional.empty();
-    }
-  }
-
   /**
    * Gets a memory export by name.
    *
@@ -163,39 +125,6 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting memory: " + name, e);
-    }
-  }
-
-  @Override
-  public Optional<WasmMemory> getMemory(final int index) {
-    ensureNotClosed();
-
-    if (index < 0) {
-      return Optional.empty();
-    }
-
-    try {
-      final String[] exportNames = getExportNames();
-      if (index >= exportNames.length) {
-        return Optional.empty();
-      }
-
-      // Find the index-th memory export
-      int memoryIndex = 0;
-      for (final String exportName : exportNames) {
-        final Optional<WasmMemory> memory = getMemory(exportName);
-        if (memory.isPresent()) {
-          if (memoryIndex == index) {
-            return memory;
-          }
-          memoryIndex++;
-        }
-      }
-
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get memory by index " + index + ": " + e.getMessage());
-      return Optional.empty();
     }
   }
 
@@ -226,99 +155,6 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
-  @Override
-  public Optional<WasmTable> getTable(final int index) {
-    ensureNotClosed();
-
-    if (index < 0) {
-      return Optional.empty();
-    }
-
-    try {
-      final String[] exportNames = getExportNames();
-      if (index >= exportNames.length) {
-        return Optional.empty();
-      }
-
-      // Find the index-th table export
-      int tableIndex = 0;
-      for (final String exportName : exportNames) {
-        final Optional<WasmTable> table = getTable(exportName);
-        if (table.isPresent()) {
-          if (tableIndex == index) {
-            return table;
-          }
-          tableIndex++;
-        }
-      }
-
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get table by index " + index + ": " + e.getMessage());
-      return Optional.empty();
-    }
-  }
-
-  @Override
-  public Optional<TableType> getTableType(final String tableName) {
-    Validation.requireNonBlank(tableName, "tableName");
-    ensureNotClosed();
-
-    try {
-      // Delegate to module's type lookup - module knows all export types
-      return module.getTableType(tableName);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting table type: " + tableName, e);
-    }
-  }
-
-  @Override
-  public Optional<MemoryType> getMemoryType(final String memoryName) {
-    Validation.requireNonBlank(memoryName, "memoryName");
-    ensureNotClosed();
-
-    try {
-      // Delegate to module's type lookup - module knows all export types
-      return module.getMemoryType(memoryName);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting memory type: " + memoryName, e);
-    }
-  }
-
-  @Override
-  public Optional<GlobalType> getGlobalType(final String globalName) {
-    Validation.requireNonBlank(globalName, "globalName");
-    ensureNotClosed();
-
-    try {
-      // Delegate to module's type lookup - module knows all export types
-      return module.getGlobalType(globalName);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting global type: " + globalName, e);
-    }
-  }
-
-  @Override
-  public Optional<FuncType> getFunctionType(final String functionName) {
-    Validation.requireNonBlank(functionName, "functionName");
-    ensureNotClosed();
-
-    try {
-      // Delegate to module's type lookup - module knows all export types
-      return module.getFunctionType(functionName);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting function type: " + functionName, e);
-    }
-  }
-
   /**
    * Gets a global export by name.
    *
@@ -343,39 +179,6 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting global: " + name, e);
-    }
-  }
-
-  @Override
-  public Optional<WasmGlobal> getGlobal(final int index) {
-    ensureNotClosed();
-
-    if (index < 0) {
-      return Optional.empty();
-    }
-
-    try {
-      final String[] exportNames = getExportNames();
-      if (index >= exportNames.length) {
-        return Optional.empty();
-      }
-
-      // Find the index-th global export
-      int globalIndex = 0;
-      for (final String exportName : exportNames) {
-        final Optional<WasmGlobal> global = getGlobal(exportName);
-        if (global.isPresent()) {
-          if (globalIndex == index) {
-            return global;
-          }
-          globalIndex++;
-        }
-      }
-
-      return Optional.empty();
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get global by index " + index + ": " + e.getMessage());
-      return Optional.empty();
     }
   }
 
@@ -494,6 +297,68 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
+  @Override
+  public Optional<ai.tegmentum.wasmtime4j.Extern> getExport(
+      final ai.tegmentum.wasmtime4j.Store store,
+      final ai.tegmentum.wasmtime4j.ModuleExport moduleExport)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleExport == null) {
+      throw new IllegalArgumentException("ModuleExport cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalStateException("Store must be a JniStore instance");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    final long storeHandle = jniStore.getNativeHandle();
+    final int[] outType = new int[1];
+
+    try {
+      final long externHandle =
+          nativeGetModuleExport(getNativeHandle(), storeHandle, moduleExport.nativeHandle(), outType);
+
+      if (externHandle == 0) {
+        return Optional.empty();
+      }
+
+      return Optional.of(createExternFromNative(externHandle, outType[0], jniStore));
+    } catch (final Exception e) {
+      LOGGER.warning("Error getting module export: " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Creates the appropriate Extern wrapper from a native handle and type code.
+   *
+   * @param handle the native extern handle
+   * @param nativeType the native type code (0=Func, 1=Global, 2=Table, 3=Memory, 4=SharedMem,
+   *     5=Tag)
+   * @param jniStore the JNI store
+   * @return the Extern wrapper
+   */
+  private static ai.tegmentum.wasmtime4j.Extern createExternFromNative(
+      final long handle, final int nativeType, final JniStore jniStore) {
+    switch (nativeType) {
+      case 0:
+        return new JniExternFunc(handle, jniStore);
+      case 1:
+        return new JniExternGlobal(handle, jniStore);
+      case 2:
+        return new JniExternTable(handle, jniStore);
+      case 3:
+        return new JniExternMemory(handle, jniStore);
+      default:
+        LOGGER.warning("Unknown native extern type: " + nativeType);
+        return new JniExternFunc(handle, jniStore);
+    }
+  }
+
   /**
    * Gets the resource type name for logging and error messages.
    *
@@ -585,239 +450,6 @@ public final class JniInstance extends JniResource implements Instance {
     return results;
   }
 
-  /**
-   * Disposes of this instance, releasing resources immediately.
-   *
-   * <p>This method provides explicit resource cleanup, allowing instances to be disposed of before
-   * the store is closed. Once disposed, the instance becomes invalid and should not be used.
-   *
-   * @return true if disposal was successful, false if already disposed
-   * @throws WasmException if disposal fails
-   * @since 1.0.0
-   */
-  @Override
-  public boolean dispose() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      final boolean result = nativeDispose(getNativeHandle());
-      if (result) {
-        // Mark as closed to prevent further use
-        try {
-          close();
-        } catch (final Exception e) {
-          LOGGER.warning("Failed to close instance after disposal: " + e.getMessage());
-        }
-      }
-      return result;
-    } catch (final Exception e) {
-      throw new WasmException("Failed to dispose instance", e);
-    }
-  }
-
-  /**
-   * Checks if this instance has been disposed.
-   *
-   * <p>Disposed instances are no longer usable and will throw exceptions if operations are
-   * attempted on them.
-   *
-   * @return true if the instance has been disposed, false otherwise
-   * @since 1.0.0
-   */
-  @Override
-  public boolean isDisposed() {
-    try {
-      return nativeIsDisposed(getNativeHandle());
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to check dispose status: " + e.getMessage());
-      return true; // Assume disposed if we can't check
-    }
-  }
-
-  /**
-   * Gets the creation timestamp of this instance in microseconds.
-   *
-   * <p>This timestamp represents when the instance was created, measured from the Unix epoch in
-   * microseconds.
-   *
-   * @return the creation timestamp in microseconds since Unix epoch
-   * @since 1.0.0
-   */
-  @Override
-  public long getCreatedAtMicros() {
-    ensureNotClosed();
-
-    try {
-      return nativeGetCreatedAtMicros(getNativeHandle());
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to get creation timestamp", e);
-    }
-  }
-
-  /**
-   * Gets the count of metadata exports in this instance.
-   *
-   * <p>Metadata exports include debugging information, custom sections, and other non-executable
-   * exports that provide information about the module structure.
-   *
-   * @return the number of metadata exports
-   * @since 1.0.0
-   */
-  @Override
-  public int getMetadataExportCount() {
-    ensureNotClosed();
-
-    try {
-      return (int) nativeGetMetadataExportCount(getNativeHandle());
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to get metadata export count", e);
-    }
-  }
-
-  /**
-   * Calls a 32-bit integer function with parameters.
-   *
-   * <p>This is an optimized calling convention for functions that take 32-bit integer parameters
-   * and return a 32-bit integer result.
-   *
-   * @param functionName the name of the function to call
-   * @param params array of 32-bit integer parameters
-   * @return the 32-bit integer result
-   * @throws WasmException if the function call fails or function doesn't exist
-   * @throws IllegalArgumentException if functionName is null
-   * @since 1.0.0
-   */
-  @Override
-  public int callI32Function(final String functionName, final int... params) throws WasmException {
-    Validation.requireNonEmpty(functionName, "functionName");
-    Validation.requireNonNull(params, "params");
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalStateException("Store must be a JniStore instance");
-    }
-
-    try {
-      final JniStore jniStore = (JniStore) store;
-      return nativeCallI32Function(
-          getNativeHandle(), jniStore.getNativeHandle(), functionName, params);
-    } catch (final Exception e) {
-      throw new WasmException("Failed to call I32 function " + functionName, e);
-    }
-  }
-
-  /**
-   * Calls a 32-bit integer function with no parameters.
-   *
-   * <p>This is an optimized calling convention for functions that take no parameters and return a
-   * 32-bit integer result.
-   *
-   * @param functionName the name of the function to call
-   * @return the 32-bit integer result
-   * @throws WasmException if the function call fails or function doesn't exist
-   * @throws IllegalArgumentException if functionName is null
-   * @since 1.0.0
-   */
-  @Override
-  public int callI32Function(final String functionName) throws WasmException {
-    Validation.requireNonEmpty(functionName, "functionName");
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalStateException("Store must be a JniStore instance");
-    }
-
-    try {
-      final JniStore jniStore = (JniStore) store;
-      return nativeCallI32FunctionNoParams(
-          getNativeHandle(), jniStore.getNativeHandle(), functionName);
-    } catch (final Exception e) {
-      throw new WasmException("Failed to call I32 function " + functionName, e);
-    }
-  }
-
-  @Override
-  public InstanceState getState() {
-    ensureNotClosed();
-    try {
-      final int stateValue = nativeGetState(getNativeHandle());
-      return convertIntToInstanceState(stateValue);
-    } catch (final RuntimeException e) {
-      LOGGER.warning("Failed to get instance state: " + e.getMessage());
-      return InstanceState.ERROR;
-    }
-  }
-
-
-  @Override
-  public java.util.Map<String, Object> getAllExports() {
-    ensureNotClosed();
-
-    try {
-      final java.util.Map<String, Object> exports = new java.util.HashMap<>();
-      final String[] exportNames = getExportNames();
-
-      for (final String exportName : exportNames) {
-        // Try to get each type of export
-        Optional<WasmFunction> function = getFunction(exportName);
-        if (function.isPresent()) {
-          exports.put(exportName, function.get());
-          continue;
-        }
-
-        Optional<WasmMemory> memory = getMemory(exportName);
-        if (memory.isPresent()) {
-          exports.put(exportName, memory.get());
-          continue;
-        }
-
-        Optional<WasmTable> table = getTable(exportName);
-        if (table.isPresent()) {
-          exports.put(exportName, table.get());
-          continue;
-        }
-
-        Optional<WasmGlobal> global = getGlobal(exportName);
-        if (global.isPresent()) {
-          exports.put(exportName, global.get());
-        }
-      }
-
-      return java.util.Collections.unmodifiableMap(exports);
-    } catch (final RuntimeException e) {
-      LOGGER.log(java.util.logging.Level.SEVERE, "Failed to get all exports", e);
-      throw e;
-    }
-  }
-
-  /**
-   * Converts integer state value to InstanceState enum.
-   *
-   * @param stateValue the integer state value from native code
-   * @return the corresponding InstanceState
-   */
-  private static InstanceState convertIntToInstanceState(final int stateValue) {
-    switch (stateValue) {
-      case 0:
-        return InstanceState.CREATING;
-      case 1:
-        return InstanceState.CREATED;
-      case 2:
-        return InstanceState.RUNNING;
-      case 3:
-        return InstanceState.SUSPENDED;
-      case 4:
-        return InstanceState.ERROR;
-      case 5:
-        return InstanceState.DISPOSED;
-      case 6:
-        return InstanceState.DESTROYING;
-      default:
-        LOGGER.warning("Unknown instance state value: " + stateValue);
-        return InstanceState.ERROR;
-    }
-  }
-
   // Native method declarations
 
   /**
@@ -887,37 +519,8 @@ public final class JniInstance extends JniResource implements Instance {
    */
   private static native String[] nativeGetExportNames(long instanceHandle);
 
-  /**
-   * Disposes of a native instance.
-   *
-   * @param instanceHandle the native instance handle
-   * @return true if disposal was successful, false otherwise
-   */
-  private static native boolean nativeDispose(long instanceHandle);
-
-  /**
-   * Checks if a native instance has been disposed.
-   *
-   * @param instanceHandle the native instance handle
-   * @return true if the instance has been disposed, false otherwise
-   */
-  private static native boolean nativeIsDisposed(long instanceHandle);
-
-  /**
-   * Gets the creation timestamp of a native instance.
-   *
-   * @param instanceHandle the native instance handle
-   * @return the creation timestamp in microseconds since Unix epoch
-   */
-  private static native long nativeGetCreatedAtMicros(long instanceHandle);
-
-  /**
-   * Gets the metadata export count for a native instance.
-   *
-   * @param instanceHandle the native instance handle
-   * @return the number of metadata exports
-   */
-  private static native long nativeGetMetadataExportCount(long instanceHandle);
+  private static native long nativeGetModuleExport(
+      long instanceHandle, long storeHandle, long moduleExportHandle, int[] outType);
 
   /**
    * Calls a WebAssembly function directly without extracting a Function object.
@@ -930,36 +533,5 @@ public final class JniInstance extends JniResource implements Instance {
    */
   private static native Object[] nativeCallFunction(
       long instanceHandle, long storeHandle, String functionName, Object[] params);
-
-  /**
-   * Calls a 32-bit integer function with parameters.
-   *
-   * @param instanceHandle the native instance handle
-   * @param storeHandle the native store handle
-   * @param functionName the name of the function to call
-   * @param params array of 32-bit integer parameters
-   * @return the 32-bit integer result
-   */
-  private static native int nativeCallI32Function(
-      long instanceHandle, long storeHandle, String functionName, int[] params);
-
-  /**
-   * Calls a 32-bit integer function with no parameters.
-   *
-   * @param instanceHandle the native instance handle
-   * @param storeHandle the native store handle
-   * @param functionName the name of the function to call
-   * @return the 32-bit integer result
-   */
-  private static native int nativeCallI32FunctionNoParams(
-      long instanceHandle, long storeHandle, String functionName);
-
-  /**
-   * Gets the state of a native instance.
-   *
-   * @param instanceHandle the native instance handle
-   * @return the instance state as an integer
-   */
-  private static native int nativeGetState(long instanceHandle);
 
 }

@@ -758,4 +758,141 @@ class WasmValueTest {
       assertNull(value.getValue(), "Value should be null");
     }
   }
+
+  @Nested
+  @DisplayName("ExnRef Value Tests")
+  class ExnRefValueTests {
+
+    @Test
+    @DisplayName("should create exnref value")
+    void shouldCreateExnrefValue() {
+      final Object exnObj = new Object();
+      final WasmValue value = WasmValue.exnref(exnObj);
+      assertEquals(WasmValueType.EXNREF, value.getType(), "Type should be EXNREF");
+      assertSame(exnObj, value.asExnref(), "asExnref() should return the same object");
+      assertTrue(value.isExnref(), "isExnref() should be true");
+      assertTrue(value.isReference(), "isReference() should be true for exnref");
+    }
+
+    @Test
+    @DisplayName("should create null exnref value")
+    void shouldCreateNullExnref() {
+      final WasmValue value = WasmValue.nullExnRef();
+      assertEquals(WasmValueType.EXNREF, value.getType(), "Type should be EXNREF");
+      assertNull(value.asExnref(), "asExnref() should be null");
+    }
+
+    @Test
+    @DisplayName("should create null exnref bottom type")
+    void shouldCreateNullNullExnRef() {
+      final WasmValue value = WasmValue.nullNullExnRef();
+      assertEquals(WasmValueType.NULLEXNREF, value.getType(), "Type should be NULLEXNREF");
+      assertNull(value.getValue(), "Value should be null");
+    }
+
+    @Test
+    @DisplayName("asExnref should throw for non-exnref type")
+    void asExnrefShouldThrowForWrongType() {
+      final WasmValue value = WasmValue.i32(42);
+      assertThrows(ClassCastException.class, value::asExnref, "Should throw for non-exnref");
+    }
+  }
+
+  @Nested
+  @DisplayName("ContRef Value Tests")
+  class ContRefValueTests {
+
+    @Test
+    @DisplayName("should create contref value")
+    void shouldCreateContrefValue() {
+      final Object contObj = new Object();
+      final WasmValue value = WasmValue.contref(contObj);
+      assertEquals(WasmValueType.CONTREF, value.getType(), "Type should be CONTREF");
+      assertSame(contObj, value.asContref(), "asContref() should return the same object");
+      assertTrue(value.isContref(), "isContref() should be true");
+      assertTrue(value.isReference(), "isReference() should be true for contref");
+    }
+
+    @Test
+    @DisplayName("should create null contref value")
+    void shouldCreateNullContref() {
+      final WasmValue value = WasmValue.nullContRef();
+      assertEquals(WasmValueType.CONTREF, value.getType(), "Type should be CONTREF");
+      assertNull(value.asContref(), "asContref() should be null");
+    }
+
+    @Test
+    @DisplayName("should create null contref bottom type")
+    void shouldCreateNullNullContRef() {
+      final WasmValue value = WasmValue.nullNullContRef();
+      assertEquals(WasmValueType.NULLCONTREF, value.getType(), "Type should be NULLCONTREF");
+      assertNull(value.getValue(), "Value should be null");
+    }
+
+    @Test
+    @DisplayName("asContref should throw for non-contref type")
+    void asContrefShouldThrowForWrongType() {
+      final WasmValue value = WasmValue.i32(42);
+      assertThrows(ClassCastException.class, value::asContref, "Should throw for non-contref");
+    }
+  }
+
+  @Nested
+  @DisplayName("DefaultForType Tests")
+  class DefaultForTypeTests {
+
+    @Test
+    @DisplayName("should return zero for numeric types")
+    void shouldReturnZeroForNumericTypes() {
+      assertEquals(0, WasmValue.defaultForType(WasmValueType.I32).asInt(), "I32 default is 0");
+      assertEquals(0L, WasmValue.defaultForType(WasmValueType.I64).asLong(), "I64 default is 0");
+      assertEquals(0.0f, WasmValue.defaultForType(WasmValueType.F32).asFloat(), "F32 default is 0");
+      assertEquals(0.0, WasmValue.defaultForType(WasmValueType.F64).asDouble(), "F64 default is 0");
+    }
+
+    @Test
+    @DisplayName("should return zero vector for V128")
+    void shouldReturnZeroVectorForV128() {
+      final WasmValue v = WasmValue.defaultForType(WasmValueType.V128);
+      assertEquals(WasmValueType.V128, v.getType(), "Type should be V128");
+      final byte[] bytes = v.asV128();
+      assertEquals(16, bytes.length, "V128 should be 16 bytes");
+      for (final byte b : bytes) {
+        assertEquals(0, b, "V128 default bytes should all be zero");
+      }
+    }
+
+    @Test
+    @DisplayName("should return null for reference types")
+    void shouldReturnNullForReferenceTypes() {
+      assertNull(WasmValue.defaultForType(WasmValueType.FUNCREF).getValue(),
+          "FUNCREF default is null");
+      assertNull(WasmValue.defaultForType(WasmValueType.EXTERNREF).getValue(),
+          "EXTERNREF default is null");
+      assertNull(WasmValue.defaultForType(WasmValueType.ANYREF).getValue(),
+          "ANYREF default is null");
+      assertNull(WasmValue.defaultForType(WasmValueType.EXNREF).getValue(),
+          "EXNREF default is null");
+      assertNull(WasmValue.defaultForType(WasmValueType.CONTREF).getValue(),
+          "CONTREF default is null");
+    }
+
+    @Test
+    @DisplayName("should throw for null type")
+    void shouldThrowForNullType() {
+      assertThrows(IllegalArgumentException.class,
+          () -> WasmValue.defaultForType(null), "Should throw for null type");
+    }
+
+    @Test
+    @DisplayName("should return correct type for all WasmValueType entries")
+    void shouldReturnCorrectTypeForAllEntries() {
+      for (final WasmValueType type : WasmValueType.values()) {
+        final WasmValue value = WasmValue.defaultForType(type);
+        assertNotNull(value, "Default for " + type + " should not be null");
+        assertEquals(type, value.getType(),
+            "Default for " + type + " should have correct type");
+      }
+    }
+  }
 }

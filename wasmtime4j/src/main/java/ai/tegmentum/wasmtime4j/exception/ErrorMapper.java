@@ -79,6 +79,9 @@ public final class ErrorMapper {
       case WASI_ERROR:
         return new WasiException(message);
 
+      case WASI_EXIT:
+        return parseI32Exit(context);
+
       case SECURITY_ERROR:
       case SECURITY_VIOLATION:
         return new WasmSecurityException(message);
@@ -117,5 +120,29 @@ public final class ErrorMapper {
    */
   public static WasmException mapErrorCode(final int errorCode) {
     return mapErrorCode(errorCode, null);
+  }
+
+  /**
+   * Parses the exit code from an I32Exit error message and creates an I32ExitException.
+   *
+   * <p>The native layer sends the exit code in the message in the format "exit_code:N" where N is
+   * the integer exit code. If parsing fails, defaults to exit code 1.
+   *
+   * @param message the error message from native code
+   * @return an I32ExitException with the parsed exit code
+   */
+  private static I32ExitException parseI32Exit(final String message) {
+    if (message != null) {
+      final int colonIndex = message.lastIndexOf(':');
+      if (colonIndex >= 0) {
+        try {
+          final int exitCode = Integer.parseInt(message.substring(colonIndex + 1).trim());
+          return new I32ExitException(exitCode);
+        } catch (NumberFormatException ignored) {
+          // Fall through to default
+        }
+      }
+    }
+    return new I32ExitException(1);
   }
 }

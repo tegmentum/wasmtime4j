@@ -95,7 +95,10 @@ public enum WasmErrorCode {
   UNSUPPORTED_OPERATION(-25, "Unsupported operation"),
 
   /** Operation would block (non-blocking I/O). */
-  WOULD_BLOCK(-26, "Operation would block");
+  WOULD_BLOCK(-26, "Operation would block"),
+
+  /** WASI proc_exit was called. */
+  WASI_EXIT(-27, "WASI proc_exit called");
 
   private final int code;
   private final String description;

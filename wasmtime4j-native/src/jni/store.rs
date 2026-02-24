@@ -36,7 +36,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSto
     execution_timeout_secs: jlong, // 0 = no timeout
     max_instances: jint,           // 0 = no limit
     max_table_elements: jint,      // 0 = no limit
-    max_functions: jint,           // 0 = no limit
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
@@ -50,7 +49,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSto
             zero_to_none_u64(execution_timeout_secs),
             zero_to_none_usize(max_instances as i64),
             zero_to_none_u32(max_table_elements),
-            zero_to_none_usize(max_functions as i64),
             None,  // max_tables
             None,  // max_memories
             false, // trap_on_grow_failure
@@ -439,7 +437,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetInstan
     jni_utils::jni_try_with_default(&mut env, -1, || {
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
         let usage = core::get_memory_usage(store)?;
-        Ok(usage.instance_count as jlong)
+        Ok(usage.execution_count as jlong)
     })
 }
 
@@ -836,7 +834,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
             None, // execution_timeout
             zero_to_none_usize(instances),
             zero_to_none_u32(table_elements as i32),
-            None, // max_functions
             zero_to_none_usize(tables),
             zero_to_none_usize(memories),
             trap_on_grow_failure != 0,
@@ -869,7 +866,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
             zero_to_none_u64(execution_timeout_secs),
             None,  // instances
             None,  // table_elements
-            None,  // max_functions
             None,  // max_tables
             None,  // max_memories
             false, // trap_on_grow_failure

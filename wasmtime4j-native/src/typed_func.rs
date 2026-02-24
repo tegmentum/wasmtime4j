@@ -109,10 +109,7 @@ where
     pub fn call(&self, mut store: impl AsContextMut, params: Params) -> WasmtimeResult<Results> {
         self.inner
             .call(store.as_context_mut(), params)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Typed function call failed: {}", e),
-                backtrace: None,
-            })
+            .map_err(|e| WasmtimeError::from_wasmtime_error(e))
     }
 
     /// Call the typed function asynchronously with the given parameters
@@ -155,10 +152,7 @@ where
         self.inner
             .call_async(store.as_context_mut(), params)
             .await
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Async typed function call failed: {}", e),
-                backtrace: None,
-            })
+            .map_err(|e| WasmtimeError::from_wasmtime_error(e))
     }
 
     /// Get the underlying untyped function

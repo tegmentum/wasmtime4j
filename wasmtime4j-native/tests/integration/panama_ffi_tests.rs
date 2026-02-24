@@ -50,10 +50,8 @@ fn test_engine_create_with_config_all_features() {
         1,  // wasm_bulk_memory: true
         1,  // wasm_multi_value: true
         1,  // fuel_enabled: true
-        -1, // max_memory_pages: default
         -1, // max_stack_size: default
         1,  // epoch_interruption: true
-        -1, // max_instances: default
         0,  // async_support: false
     );
     assert!(
@@ -215,7 +213,7 @@ fn test_engine_supports_feature() {
         1, // reference_types
         1, // bulk_memory
         1, // multi_value
-        0, -1, -1, 0, -1,
+        0, -1, 0,
         0, // async_support: false
     );
     assert!(!engine_ptr.is_null());
@@ -543,7 +541,6 @@ fn test_store_create_with_config() {
         0, // execution_timeout_secs: default
         0, // max_instances: default
         0, // max_table_elements: default
-        0, // max_functions: default
         0, // max_tables: default
         0, // max_memories: default
         0, // trap_on_grow_failure: false

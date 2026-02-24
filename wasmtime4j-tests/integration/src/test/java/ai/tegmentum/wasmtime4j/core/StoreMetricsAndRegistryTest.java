@@ -22,17 +22,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
-import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,12 +35,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests for {@link Store} execution metrics, callback registry, resource limiter getter, and fuel
- * async yield interval methods.
+ * Tests for {@link Store} callback registry and fuel async yield interval methods.
  *
- * <p>Covers: {@link Store#getExecutionCount()}, {@link Store#getTotalExecutionTimeMicros()}, {@link
- * Store#getCallbackRegistry()}, {@link Store#setFuelAsyncYieldInterval(long)}, {@link
- * Store#getFuelAsyncYieldInterval()}.
+ * <p>Covers: {@link Store#getCallbackRegistry()}, {@link Store#setFuelAsyncYieldInterval(long)},
+ * {@link Store#getFuelAsyncYieldInterval()}.
  *
  * @since 1.0.0
  */
@@ -55,140 +48,9 @@ public class StoreMetricsAndRegistryTest extends DualRuntimeTest {
   private static final Logger LOGGER =
       Logger.getLogger(StoreMetricsAndRegistryTest.class.getName());
 
-  /**
-   * Simple WAT module that exports an add function for exercising execution metrics.
-   *
-   * <pre>
-   * (module
-   *   (func (export "add") (param i32 i32) (result i32)
-   *     local.get 0 local.get 1 i32.add))
-   * </pre>
-   */
-  private static final String ADD_WAT =
-      """
-      (module
-        (func (export "add") (param i32 i32) (result i32)
-          local.get 0 local.get 1 i32.add))
-      """;
-
   @AfterEach
   void cleanup() {
     clearRuntimeSelection();
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getExecutionCount starts at zero for fresh store")
-  void getExecutionCountStartsAtZero(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getExecutionCount() on fresh store");
-
-    try (Engine engine = Engine.create();
-        Store store = engine.createStore()) {
-
-      final long count = store.getExecutionCount();
-      LOGGER.info("[" + runtime + "] Fresh store execution count: " + count);
-      assertTrue(count >= 0, "Execution count should be non-negative, got: " + count);
-      assertEquals(0L, count, "Execution count on fresh store should be 0");
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getExecutionCount increments after function calls")
-  void getExecutionCountIncrementsAfterCalls(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getExecutionCount() increments after calls");
-
-    try (Engine engine = Engine.create();
-        Store store = engine.createStore();
-        Module module = engine.compileWat(ADD_WAT)) {
-
-      final long countBefore = store.getExecutionCount();
-      LOGGER.info("[" + runtime + "] Execution count before calls: " + countBefore);
-
-      try (Instance instance = module.instantiate(store)) {
-        final Optional<WasmFunction> addFn = instance.getFunction("add");
-        assertTrue(addFn.isPresent(), "add export must be present");
-
-        final int numCalls = 5;
-        for (int i = 0; i < numCalls; i++) {
-          final WasmValue[] result = addFn.get().call(WasmValue.i32(i), WasmValue.i32(i + 1));
-          LOGGER.info("[" + runtime + "] add(" + i + ", " + (i + 1) + ") = " + result[0].asInt());
-        }
-
-        final long countAfter = store.getExecutionCount();
-        LOGGER.info(
-            "[" + runtime + "] Execution count after " + numCalls + " calls: " + countAfter);
-        assertTrue(
-            countAfter >= countBefore,
-            "Execution count should be >= initial count after calls, got: " + countAfter);
-        if (countAfter == countBefore) {
-          LOGGER.info(
-              "["
-                  + runtime
-                  + "] Runtime does not track per-call execution count "
-                  + "(returned "
-                  + countAfter
-                  + " before and after calls)");
-        } else {
-          assertTrue(
-              countAfter >= countBefore + numCalls,
-              "Execution count should be at least "
-                  + (countBefore + numCalls)
-                  + " after "
-                  + numCalls
-                  + " calls, got: "
-                  + countAfter);
-        }
-      }
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getTotalExecutionTimeMicros starts at zero for fresh store")
-  void getTotalExecutionTimeMicrosStartsAtZero(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getTotalExecutionTimeMicros() on fresh store");
-
-    try (Engine engine = Engine.create();
-        Store store = engine.createStore()) {
-
-      final long timeMicros = store.getTotalExecutionTimeMicros();
-      LOGGER.info("[" + runtime + "] Fresh store total execution time: " + timeMicros + " us");
-      assertTrue(
-          timeMicros >= 0, "Total execution time should be non-negative, got: " + timeMicros);
-      assertEquals(0L, timeMicros, "Total execution time on fresh store should be 0");
-    }
-  }
-
-  @ParameterizedTest
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("getTotalExecutionTimeMicros increments after function calls")
-  void getTotalExecutionTimeMicrosIncrementsAfterCalls(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-    LOGGER.info("[" + runtime + "] Testing getTotalExecutionTimeMicros() increments after calls");
-
-    try (Engine engine = Engine.create();
-        Store store = engine.createStore();
-        Module module = engine.compileWat(ADD_WAT)) {
-
-      try (Instance instance = module.instantiate(store)) {
-        final Optional<WasmFunction> addFn = instance.getFunction("add");
-        assertTrue(addFn.isPresent(), "add export must be present");
-
-        for (int i = 0; i < 10; i++) {
-          addFn.get().call(WasmValue.i32(i), WasmValue.i32(i + 1));
-        }
-
-        final long timeMicros = store.getTotalExecutionTimeMicros();
-        LOGGER.info("[" + runtime + "] Total execution time after 10 calls: " + timeMicros + " us");
-        assertTrue(
-            timeMicros >= 0,
-            "Total execution time should be non-negative after calls, got: " + timeMicros);
-      }
-    }
   }
 
   @ParameterizedTest

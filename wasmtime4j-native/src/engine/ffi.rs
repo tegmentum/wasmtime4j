@@ -46,25 +46,13 @@ pub unsafe extern "C" fn wasmtime4j_engine_new_with_config(
     wasm_bulk_memory: c_int,
     wasm_multi_value: c_int,
     fuel_enabled: c_int,
-    max_memory_pages: u32,
     max_stack_size: usize,
     epoch_interruption: c_int,
-    max_instances: u32,
 ) -> *mut c_void {
-    let opt_max_memory_pages = if max_memory_pages == 0 {
-        None
-    } else {
-        Some(max_memory_pages)
-    };
     let opt_max_stack_size = if max_stack_size == 0 {
         None
     } else {
         Some(max_stack_size)
-    };
-    let opt_max_instances = if max_instances == 0 {
-        None
-    } else {
-        Some(max_instances)
     };
 
     match core::create_engine_with_config(
@@ -77,10 +65,8 @@ pub unsafe extern "C" fn wasmtime4j_engine_new_with_config(
         wasm_bulk_memory != 0,
         wasm_multi_value != 0,
         fuel_enabled != 0,
-        opt_max_memory_pages,
         opt_max_stack_size,
         epoch_interruption != 0,
-        opt_max_instances,
         false, // async_support - TODO: add parameter
     ) {
         Ok(engine) => Box::into_raw(engine) as *mut c_void,
@@ -146,19 +132,6 @@ pub unsafe extern "C" fn wasmtime4j_engine_supports_feature(
     }
 }
 
-/// Get memory limit in pages (64KB per page)
-///
-/// # Safety
-///
-/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_engine_memory_limit_pages(engine_ptr: *const c_void) -> u32 {
-    match core::get_engine_ref(engine_ptr) {
-        Ok(engine) => core::get_memory_limit(engine).unwrap_or(0),
-        Err(_) => 0,
-    }
-}
-
 /// Get stack size limit in bytes
 ///
 /// # Safety
@@ -209,19 +182,6 @@ pub unsafe extern "C" fn wasmtime4j_engine_epoch_interruption_enabled(
             }
         }
         Err(_) => FFI_ERROR,
-    }
-}
-
-/// Get maximum instances limit
-///
-/// # Safety
-///
-/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_engine_max_instances(engine_ptr: *const c_void) -> u32 {
-    match core::get_engine_ref(engine_ptr) {
-        Ok(engine) => core::get_max_instances(engine).unwrap_or(0),
-        Err(_) => 0,
     }
 }
 
@@ -321,10 +281,8 @@ pub unsafe extern "C" fn wasmtime4j_engine_new_with_memory_config(
     wasm_bulk_memory: c_int,
     wasm_multi_value: c_int,
     fuel_enabled: c_int,
-    max_memory_pages: u32,
     max_stack_size: usize,
     epoch_interruption: c_int,
-    max_instances: u32,
     memory_reservation: u64,
     memory_guard_size: u64,
     memory_reservation_for_growth: u64,
@@ -341,14 +299,8 @@ pub unsafe extern "C" fn wasmtime4j_engine_new_with_memory_config(
         .fuel_enabled(fuel_enabled != 0)
         .epoch_interruption(epoch_interruption != 0);
 
-    if max_memory_pages > 0 {
-        builder = builder.max_memory_pages(max_memory_pages);
-    }
     if max_stack_size > 0 {
         builder = builder.max_stack_size(max_stack_size);
-    }
-    if max_instances > 0 {
-        builder = builder.max_instances(max_instances);
     }
     if memory_reservation > 0 {
         builder = builder.memory_reservation(memory_reservation);
@@ -417,22 +369,6 @@ pub unsafe extern "C" fn wasmtime4j_engine_memory_reservation_for_growth(
         .config_summary()
         .memory_reservation_for_growth
         .unwrap_or(0)
-}
-
-/// Get the configured max memory size for an engine
-///
-/// Returns the max memory size in bytes, or 0 if not configured or on error.
-///
-/// # Safety
-///
-/// engine_ptr must be a valid pointer from wasmtime4j_engine_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_engine_max_memory_size(engine_ptr: *const c_void) -> usize {
-    if engine_ptr.is_null() {
-        return 0;
-    }
-    let engine = &*(engine_ptr as *const Engine);
-    engine.config_summary().max_memory_size.unwrap_or(0)
 }
 
 /// Check if wmemcheck (WebAssembly memory checker) is enabled for an engine

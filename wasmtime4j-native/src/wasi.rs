@@ -2979,7 +2979,11 @@ impl WasiContext {
 
     /// Exit the process with given exit code
     pub fn proc_exit(&self, exit_code: u32) -> ! {
-        std::process::exit(exit_code as i32);
+        // Panic instead of calling std::process::exit() which would kill the JVM.
+        // Wasmtime catches panics at the host boundary and converts them to traps.
+        // For proper I32Exit handling, use the official Wasmtime WASI linker
+        // (wasmtime_wasi::p1::add_to_linker_sync) which raises wasmtime_wasi::I32Exit.
+        panic!("WASI proc_exit called with code {}", exit_code);
     }
 
     /// Get process ID (always returns 42 for security/portability)

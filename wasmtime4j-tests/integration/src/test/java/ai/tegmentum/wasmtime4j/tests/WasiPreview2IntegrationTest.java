@@ -114,7 +114,7 @@ public class WasiPreview2IntegrationTest {
 
     // Verify component model imports
     assertTrue(
-        WasiLinkerUtils.hasComponentModelImports(linker),
+        WasiLinkerUtils.runtimeSupportsComponentModel(),
         "Linker should have component model imports");
 
     LOGGER.info("Successfully validated component model support");
@@ -196,7 +196,7 @@ public class WasiPreview2IntegrationTest {
         WasiLinkerUtils.hasWasiPreview2Imports(linker),
         "Full linker should have WASI Preview 2 imports");
     assertTrue(
-        WasiLinkerUtils.hasComponentModelImports(linker),
+        WasiLinkerUtils.runtimeSupportsComponentModel(),
         "Full linker should have Component Model imports");
 
     LOGGER.info("Successfully created full WASI Preview 2 + Component Model linker");

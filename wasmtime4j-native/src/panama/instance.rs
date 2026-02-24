@@ -30,6 +30,87 @@ pub extern "C" fn wasmtime4j_panama_instance_create(
     })
 }
 
+/// Create a WebAssembly instance with explicit imports (Panama FFI version)
+///
+/// extern_ptrs: array of void* pointers to extern handles
+/// extern_types: array of i32 type discriminators (0=Func, 1=Global, 2=Table, 3=Memory, 4=SharedMem)
+/// count: number of imports
+/// instance_ptr: output pointer for the created instance
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_create_with_imports(
+    store_ptr: *mut c_void,
+    module_ptr: *mut c_void,
+    extern_ptrs: *const *const c_void,
+    extern_types: *const c_int,
+    count: c_int,
+    instance_ptr: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let module = unsafe { crate::module::core::get_module_ref(module_ptr)? };
+
+        let count = count as usize;
+
+        if count == 0 {
+            let instance = crate::instance::core::create_instance(store, module)?;
+            unsafe {
+                *instance_ptr =
+                    crate::ffi_common::memory_utils::box_into_raw_safe(instance) as *mut c_void;
+            }
+            return Ok(());
+        }
+
+        if extern_ptrs.is_null() || extern_types.is_null() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "extern_ptrs and extern_types must not be null when count > 0".to_string(),
+            });
+        }
+
+        let ptrs = unsafe { std::slice::from_raw_parts(extern_ptrs, count) };
+        let types = unsafe { std::slice::from_raw_parts(extern_types, count) };
+
+        let instance = unsafe {
+            crate::instance::core::create_instance_from_extern_handles(store, module, ptrs, types)?
+        };
+
+        unsafe {
+            *instance_ptr =
+                crate::ffi_common::memory_utils::box_into_raw_safe(instance) as *mut c_void;
+        }
+
+        Ok(())
+    })
+}
+
+/// Get export by ModuleExport handle (Panama FFI version)
+///
+/// Returns the extern handle via out_handle, and the extern type via out_type.
+/// Returns 0 on success, negative on error. If not found, out_handle is null and out_type is -1.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_get_module_export(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    module_export_ptr: *const c_void,
+    out_handle: *mut *mut c_void,
+    out_type: *mut c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+
+        let (handle, typ) = unsafe {
+            crate::instance::core::get_export_by_module_export(instance, store, module_export_ptr)?
+        };
+
+        unsafe {
+            *out_handle = handle;
+            *out_type = typ;
+        }
+
+        Ok(())
+    })
+}
+
 /// Destroy a WebAssembly instance (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_instance_destroy(instance_ptr: *mut c_void) {

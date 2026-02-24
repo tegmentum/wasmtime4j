@@ -147,6 +147,37 @@ class WasmValueTypeTest {
       assertTrue(WasmValueType.ARRAYREF.isReference(), "ARRAYREF should be a reference type");
       assertTrue(WasmValueType.ARRAYREF.isGcReference(), "ARRAYREF should be a GC reference type");
     }
+
+    @Test
+    @DisplayName("CONTREF should be a GC reference type")
+    void contrefShouldBeGcReference() {
+      assertTrue(WasmValueType.CONTREF.isReference(), "CONTREF should be a reference type");
+      assertTrue(WasmValueType.CONTREF.isGcReference(), "CONTREF should be a GC reference type");
+    }
+
+    @Test
+    @DisplayName("NULLCONTREF should be a GC reference type")
+    void nullcontrefShouldBeGcReference() {
+      assertTrue(
+          WasmValueType.NULLCONTREF.isReference(), "NULLCONTREF should be a reference type");
+      assertTrue(
+          WasmValueType.NULLCONTREF.isGcReference(), "NULLCONTREF should be a GC reference type");
+    }
+
+    @Test
+    @DisplayName("NULLEXNREF should be a GC reference type")
+    void nullexnrefShouldBeGcReference() {
+      assertTrue(
+          WasmValueType.NULLEXNREF.isReference(), "NULLEXNREF should be a reference type");
+      assertTrue(
+          WasmValueType.NULLEXNREF.isGcReference(), "NULLEXNREF should be a GC reference type");
+    }
+
+    @Test
+    @DisplayName("EXNREF should be a reference type")
+    void exnrefShouldBeReferenceType() {
+      assertTrue(WasmValueType.EXNREF.isReference(), "EXNREF should be a reference type");
+    }
   }
 
   @Nested
@@ -174,6 +205,24 @@ class WasmValueTypeTest {
           WasmValueType.NULLEXTERNREF.isReference(), "NULLEXTERNREF should be a reference type");
       assertTrue(
           WasmValueType.NULLEXTERNREF.isNullableReference(), "NULLEXTERNREF should be nullable");
+    }
+
+    @Test
+    @DisplayName("NULLEXNREF should be a nullable reference type")
+    void nullexnrefShouldBeNullable() {
+      assertTrue(
+          WasmValueType.NULLEXNREF.isReference(), "NULLEXNREF should be a reference type");
+      assertTrue(
+          WasmValueType.NULLEXNREF.isNullableReference(), "NULLEXNREF should be nullable");
+    }
+
+    @Test
+    @DisplayName("NULLCONTREF should be a nullable reference type")
+    void nullcontrefShouldBeNullable() {
+      assertTrue(
+          WasmValueType.NULLCONTREF.isReference(), "NULLCONTREF should be a reference type");
+      assertTrue(
+          WasmValueType.NULLCONTREF.isNullableReference(), "NULLCONTREF should be nullable");
     }
 
     @Test
@@ -238,6 +287,31 @@ class WasmValueTypeTest {
           WasmValueType.EXTERNREF,
           WasmValueType.fromNativeTypeCode(6),
           "Code 6 should be EXTERNREF");
+    }
+
+    @Test
+    @DisplayName("should convert new types to and from native code")
+    void shouldConvertNewTypes() {
+      assertEquals(
+          16, WasmValueType.NULLEXNREF.toNativeTypeCode(), "NULLEXNREF native code should be 16");
+      assertEquals(
+          WasmValueType.NULLEXNREF,
+          WasmValueType.fromNativeTypeCode(16),
+          "Code 16 should be NULLEXNREF");
+
+      assertEquals(
+          17, WasmValueType.CONTREF.toNativeTypeCode(), "CONTREF native code should be 17");
+      assertEquals(
+          WasmValueType.CONTREF,
+          WasmValueType.fromNativeTypeCode(17),
+          "Code 17 should be CONTREF");
+
+      assertEquals(
+          18, WasmValueType.NULLCONTREF.toNativeTypeCode(), "NULLCONTREF native code should be 18");
+      assertEquals(
+          WasmValueType.NULLCONTREF,
+          WasmValueType.fromNativeTypeCode(18),
+          "Code 18 should be NULLCONTREF");
     }
 
     @Test
@@ -341,6 +415,38 @@ class WasmValueTypeTest {
       assertTrue(
           WasmValueType.NULLEXTERNREF.isSubtypeOf(WasmValueType.EXTERNREF),
           "NULLEXTERNREF should be subtype of EXTERNREF");
+    }
+
+    @Test
+    @DisplayName("NULLEXNREF should be subtype of EXNREF")
+    void nullexnrefShouldBeSubtypeOfExnref() {
+      assertTrue(
+          WasmValueType.NULLEXNREF.isSubtypeOf(WasmValueType.EXNREF),
+          "NULLEXNREF should be subtype of EXNREF");
+    }
+
+    @Test
+    @DisplayName("NULLCONTREF should be subtype of CONTREF")
+    void nullcontrefShouldBeSubtypeOfContref() {
+      assertTrue(
+          WasmValueType.NULLCONTREF.isSubtypeOf(WasmValueType.CONTREF),
+          "NULLCONTREF should be subtype of CONTREF");
+    }
+
+    @Test
+    @DisplayName("CONTREF should not be subtype of ANYREF")
+    void contrefShouldNotBeSubtypeOfAnyref() {
+      assertFalse(
+          WasmValueType.CONTREF.isSubtypeOf(WasmValueType.ANYREF),
+          "CONTREF should not be subtype of ANYREF");
+    }
+
+    @Test
+    @DisplayName("CONTREF should not be subtype of FUNCREF")
+    void contrefShouldNotBeSubtypeOfFuncref() {
+      assertFalse(
+          WasmValueType.CONTREF.isSubtypeOf(WasmValueType.FUNCREF),
+          "CONTREF should not be subtype of FUNCREF");
     }
 
     @Test

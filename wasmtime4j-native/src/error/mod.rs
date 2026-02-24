@@ -238,6 +238,14 @@ pub enum WasmtimeError {
         message: String,
     },
 
+    /// WASI proc_exit was called with an exit code.
+    /// The error message format "exit_code:{exit_code}" is parsed by Java ErrorMapper.
+    #[error("exit_code:{exit_code}")]
+    WasiExit {
+        /// The exit code passed to proc_exit
+        exit_code: i32,
+    },
+
     /// Unsupported feature errors
     #[error("Unsupported feature: {message}")]
     UnsupportedFeature {
@@ -361,6 +369,9 @@ impl Clone for WasmtimeError {
             WasmtimeError::Security { message } => WasmtimeError::Security {
                 message: message.clone(),
             },
+            WasmtimeError::WasiExit { exit_code } => WasmtimeError::WasiExit {
+                exit_code: *exit_code,
+            },
             WasmtimeError::WastExecutionError(message) => {
                 WasmtimeError::WastExecutionError(message.clone())
             }
@@ -430,6 +441,8 @@ pub enum ErrorCode {
     UnsupportedOperation = -25,
     /// Operation would block (non-blocking I/O)
     WouldBlock = -26,
+    /// WASI proc_exit was called
+    WasiExit = -27,
 }
 
 // The impl WasmtimeError block is defined below to avoid duplication
@@ -495,6 +508,7 @@ impl WasmtimeError {
             WasmtimeError::UnsupportedFeature { .. } => ErrorCode::UnsupportedOperation,
             WasmtimeError::WastExecutionError(..) => ErrorCode::ValidationError,
             WasmtimeError::JniError(..) => ErrorCode::InternalError,
+            WasmtimeError::WasiExit { .. } => ErrorCode::WasiExit,
         }
     }
 
@@ -503,6 +517,33 @@ impl WasmtimeError {
         WasmtimeError::Runtime {
             message: trap.to_string(),
             backtrace: None, // trace() method removed in wasmtime 36.0.2
+        }
+    }
+
+    /// Create from a wasmtime::Error, detecting I32Exit for WASI proc_exit.
+    ///
+    /// This method checks if the error is a WASI I32Exit before converting to a
+    /// generic Runtime error. This allows Java callers to distinguish between a
+    /// clean WASI exit and a crash.
+    pub fn from_wasmtime_error(error: wasmtime::Error) -> Self {
+        // Check for WASI I32Exit (only when wasi feature is enabled)
+        #[cfg(feature = "wasi")]
+        if let Some(exit) = error.downcast_ref::<wasmtime_wasi::I32Exit>() {
+            return WasmtimeError::WasiExit {
+                exit_code: exit.0,
+            };
+        }
+        // Check for trap
+        if let Some(trap) = error.downcast_ref::<wasmtime::Trap>() {
+            return WasmtimeError::Runtime {
+                message: format!("WebAssembly trap: {}", trap),
+                backtrace: None,
+            };
+        }
+        // Generic runtime error
+        WasmtimeError::Runtime {
+            message: error.to_string(),
+            backtrace: None,
         }
     }
 

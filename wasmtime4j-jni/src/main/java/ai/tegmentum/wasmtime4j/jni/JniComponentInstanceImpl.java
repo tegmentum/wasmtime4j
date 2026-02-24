@@ -80,56 +80,6 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   }
 
   @Override
-  public void stop() throws WasmException {
-    if (!isValid()) {
-      throw new WasmException("Component instance is not valid");
-    }
-    // Stop functionality closes the instance
-    close();
-    LOGGER.fine("Stopped component instance: " + instanceId);
-  }
-
-  @Override
-  public void pause() throws WasmException {
-    if (!isValid()) {
-      throw new WasmException("Component instance is not valid");
-    }
-    // Pause is a no-op for this implementation as Wasmtime doesn't support pausing
-    // The instance remains in active state but no new invocations should occur
-    LOGGER.fine("Paused component instance: " + instanceId);
-  }
-
-  @Override
-  public void resume() throws WasmException {
-    if (!isValid()) {
-      throw new WasmException("Component instance is not valid");
-    }
-    // Resume is a no-op for this implementation
-    LOGGER.fine("Resumed component instance: " + instanceId);
-  }
-
-  @Override
-  public void bindInterface(final String interfaceName, final Object implementation)
-      throws WasmException {
-    Validation.requireNonEmpty(interfaceName, "interfaceName");
-    Validation.requireNonNull(implementation, "implementation");
-    if (!isValid()) {
-      throw new WasmException("Component instance is not valid");
-    }
-    // Interface binding stores the implementation for later use during invocations
-    // The actual binding happens at the native layer during component instantiation
-    LOGGER.fine("Bound interface " + interfaceName + " to instance: " + instanceId);
-  }
-
-  @Override
-  public java.util.Map<String, ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition>
-      getExportedInterfaces() {
-    // Return empty map as the native layer handles interface exports directly
-    // In a full implementation, this would query the component for its WIT exports
-    return java.util.Collections.emptyMap();
-  }
-
-  @Override
   public Set<String> getExportedFunctions() {
     if (!isValid()) {
       return java.util.Collections.emptySet();

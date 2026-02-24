@@ -437,6 +437,18 @@ pub mod module {
         core::serialize_module(module)
     }
 
+    /// Shared implementation for initializing copy-on-write image
+    ///
+    /// Pre-initializes the module's CoW memory image for faster instantiation.
+    pub fn initialize_copy_on_write_image_shared(
+        module_ptr: *mut c_void,
+    ) -> WasmtimeResult<()> {
+        validation::validate_not_null(module_ptr, "module")?;
+
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        core::initialize_copy_on_write_image(module)
+    }
+
     /// Shared implementation for module deserialization
     ///
     /// Deserializes a module from bytes using shared logic.

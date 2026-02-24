@@ -89,8 +89,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public Engine createEngine() throws WasmException {
-    Validation.requireNonNull(this, "runtime");
-
     try {
       final long engineHandle = nativeCreateEngine(nativeHandle);
       if (engineHandle == 0) {
@@ -597,6 +595,11 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
+  public void tlsEagerInitialize() throws WasmException {
+    nativeTlsEagerInitialize();
+  }
+
+  @Override
   protected void doClose() throws Exception {
     nativeDestroyRuntime(nativeHandle);
   }
@@ -712,14 +715,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     }
 
     // Track WASI imports for hasImport() checks
-    jniLinker.addImport("wasi_snapshot_preview1", "fd_write");
-    jniLinker.addImport("wasi_snapshot_preview1", "proc_exit");
-    jniLinker.addImport("wasi_snapshot_preview1", "fd_read");
-    jniLinker.addImport("wasi_snapshot_preview1", "fd_close");
-    jniLinker.addImport("wasi_snapshot_preview1", "environ_get");
-    jniLinker.addImport("wasi_snapshot_preview1", "environ_sizes_get");
-    jniLinker.addImport("wasi_snapshot_preview1", "args_get");
-    jniLinker.addImport("wasi_snapshot_preview1", "args_sizes_get");
+    for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P1_IMPORTS) {
+      jniLinker.addImport(entry[0], entry[1]);
+    }
   }
 
   @Override
@@ -746,9 +744,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     }
 
     // Track WASI Preview 2 imports for hasImport() checks
-    jniLinker.addImport("wasi:filesystem/types", "filesystem");
-    jniLinker.addImport("wasi:io/streams", "input-stream");
-    jniLinker.addImport("wasi:sockets/network", "network");
+    for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P2_IMPORTS) {
+      jniLinker.addImport(entry[0], entry[1]);
+    }
   }
 
   @Override
@@ -869,6 +867,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @param runtimeHandle the native runtime handle
    */
   private static native void nativeDestroyRuntime(long runtimeHandle);
+
+  private static native void nativeTlsEagerInitialize();
 
   // ===== WASI NATIVE METHOD DECLARATIONS =====
 

@@ -18,6 +18,12 @@ package ai.tegmentum.wasmtime4j.type;
  *   <li>{@link #ARRAYREF} - nullable array reference (GC proposal)
  *   <li>{@link #I31REF} - nullable i31 reference (GC proposal)
  *   <li>{@link #EXNREF} - nullable exception reference (exception handling proposal)
+ *   <li>{@link #NULLREF} - nullable null reference (bottom of any/eq hierarchy)
+ *   <li>{@link #NULLFUNCREF} - nullable null function reference (bottom of func hierarchy)
+ *   <li>{@link #NULLEXTERNREF} - nullable null external reference (bottom of extern hierarchy)
+ *   <li>{@link #NULLEXNREF} - nullable null exception reference (bottom of exn hierarchy)
+ *   <li>{@link #CONTREF} - nullable continuation reference (stack switching proposal)
+ *   <li>{@link #NULLCONTREF} - nullable null continuation reference (bottom of cont hierarchy)
  * </ul>
  *
  * @since 1.1.0
@@ -46,7 +52,25 @@ public interface RefType {
   RefType I31REF = DefaultRefType.create(true, HeapType.I31);
 
   /** Nullable exception reference type (exception handling proposal). */
-  RefType EXNREF = DefaultRefType.create(true, HeapType.NONE);
+  RefType EXNREF = DefaultRefType.create(true, HeapType.EXN);
+
+  /** Nullable null reference type - bottom of the any/eq hierarchy. */
+  RefType NULLREF = DefaultRefType.create(true, HeapType.NONE);
+
+  /** Nullable null function reference type - bottom of the func hierarchy. */
+  RefType NULLFUNCREF = DefaultRefType.create(true, HeapType.NOFUNC);
+
+  /** Nullable null external reference type - bottom of the extern hierarchy. */
+  RefType NULLEXTERNREF = DefaultRefType.create(true, HeapType.NOEXTERN);
+
+  /** Nullable null exception reference type - bottom of the exn hierarchy. */
+  RefType NULLEXNREF = DefaultRefType.create(true, HeapType.NOEXN);
+
+  /** Nullable continuation reference type (stack switching proposal). */
+  RefType CONTREF = DefaultRefType.create(true, HeapType.CONT);
+
+  /** Nullable null continuation reference type - bottom of the cont hierarchy. */
+  RefType NULLCONTREF = DefaultRefType.create(true, HeapType.NOCONT);
 
   /**
    * Checks if this reference type is nullable.
@@ -61,6 +85,41 @@ public interface RefType {
    * @return the heap type
    */
   HeapType getHeapType();
+
+  /**
+   * Checks if this reference type matches another according to subtyping rules.
+   *
+   * <p>A reference type matches another if its heap type is a subtype of the other's heap type and
+   * its nullability is compatible (nullable can match nullable, non-nullable can match either).
+   *
+   * @param other the reference type to check against
+   * @return true if this type matches the other
+   */
+  default boolean matches(final RefType other) {
+    if (other == null) {
+      return false;
+    }
+    // Non-nullable cannot match where nullable is not allowed
+    if (isNullable() && !other.isNullable()) {
+      return false;
+    }
+    return getHeapType().isSubtypeOf(other.getHeapType());
+  }
+
+  /**
+   * Checks for precise type equality with another reference type.
+   *
+   * <p>Two reference types are equal if they have the same nullability and heap type.
+   *
+   * @param other the reference type to compare with
+   * @return true if the types are exactly equal
+   */
+  default boolean eq(final RefType other) {
+    if (other == null) {
+      return false;
+    }
+    return isNullable() == other.isNullable() && getHeapType() == other.getHeapType();
+  }
 
   /**
    * Creates a reference type with the specified nullability and heap type.

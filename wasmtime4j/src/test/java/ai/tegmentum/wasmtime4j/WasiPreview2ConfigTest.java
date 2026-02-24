@@ -19,9 +19,12 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
+import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
+import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
@@ -241,6 +244,148 @@ final class WasiPreview2ConfigTest {
       assertEquals(hostPath, dir.getHostPath(), "Host path should match");
       assertEquals("/guest/local", dir.getGuestPath(), "Guest path should match");
       assertTrue(dir.isReadOnly(), "Read-only flag should be true");
+    }
+  }
+
+  @Nested
+  @DisplayName("builder stdio config methods")
+  final class BuilderStdioConfigTests {
+
+    @Test
+    @DisplayName("should default to null stdio configs")
+    void shouldDefaultToNullStdioConfigs() {
+      final WasiPreview2Config config = WasiPreview2Config.builder().build();
+      assertNull(config.getStdinConfig(), "Default stdin config should be null");
+      assertNull(config.getStdoutConfig(), "Default stdout config should be null");
+      assertNull(config.getStderrConfig(), "Default stderr config should be null");
+    }
+
+    @Test
+    @DisplayName("should set stdin to inherit")
+    void shouldSetStdinToInherit() {
+      final WasiPreview2Config config =
+          WasiPreview2Config.builder().stdin(WasiStdioConfig.inherit()).build();
+      assertNotNull(config.getStdinConfig(), "Stdin config should not be null");
+      assertEquals(
+          WasiStdioConfig.Type.INHERIT,
+          config.getStdinConfig().getType(),
+          "Stdin should be INHERIT type");
+    }
+
+    @Test
+    @DisplayName("should set stdin from input stream")
+    void shouldSetStdinFromInputStream() {
+      final ByteArrayInputStream bais = new ByteArrayInputStream("hello".getBytes());
+      final WasiPreview2Config config =
+          WasiPreview2Config.builder().stdin(WasiStdioConfig.fromInputStream(bais)).build();
+      assertNotNull(config.getStdinConfig(), "Stdin config should not be null");
+      assertEquals(
+          WasiStdioConfig.Type.INPUT_STREAM,
+          config.getStdinConfig().getType(),
+          "Stdin should be INPUT_STREAM type");
+      assertEquals(bais, config.getStdinConfig().getInputStream(), "InputStream should match");
+    }
+
+    @Test
+    @DisplayName("should set stdin to null (empty)")
+    void shouldSetStdinToNull() {
+      final WasiPreview2Config config =
+          WasiPreview2Config.builder().stdin(WasiStdioConfig.nulled()).build();
+      assertNotNull(config.getStdinConfig(), "Stdin config should not be null");
+      assertEquals(
+          WasiStdioConfig.Type.NULL,
+          config.getStdinConfig().getType(),
+          "Stdin should be NULL type");
+    }
+
+    @Test
+    @DisplayName("should set stdout to inherit")
+    void shouldSetStdoutToInherit() {
+      final WasiPreview2Config config =
+          WasiPreview2Config.builder().stdout(WasiStdioConfig.inherit()).build();
+      assertNotNull(config.getStdoutConfig(), "Stdout config should not be null");
+      assertEquals(
+          WasiStdioConfig.Type.INHERIT,
+          config.getStdoutConfig().getType(),
+          "Stdout should be INHERIT type");
+    }
+
+    @Test
+    @DisplayName("should set stderr to inherit")
+    void shouldSetStderrToInherit() {
+      final WasiPreview2Config config =
+          WasiPreview2Config.builder().stderr(WasiStdioConfig.inherit()).build();
+      assertNotNull(config.getStderrConfig(), "Stderr config should not be null");
+      assertEquals(
+          WasiStdioConfig.Type.INHERIT,
+          config.getStderrConfig().getType(),
+          "Stderr should be INHERIT type");
+    }
+
+    @Test
+    @DisplayName("should set all three stdio configs independently")
+    void shouldSetAllThreeStdioConfigs() {
+      final ByteArrayInputStream bais = new ByteArrayInputStream("input".getBytes());
+      final WasiPreview2Config config =
+          WasiPreview2Config.builder()
+              .stdin(WasiStdioConfig.fromInputStream(bais))
+              .stdout(WasiStdioConfig.inherit())
+              .stderr(WasiStdioConfig.nulled())
+              .build();
+      assertEquals(
+          WasiStdioConfig.Type.INPUT_STREAM,
+          config.getStdinConfig().getType(),
+          "Stdin should be INPUT_STREAM");
+      assertEquals(
+          WasiStdioConfig.Type.INHERIT,
+          config.getStdoutConfig().getType(),
+          "Stdout should be INHERIT");
+      assertEquals(
+          WasiStdioConfig.Type.NULL,
+          config.getStderrConfig().getType(),
+          "Stderr should be NULL");
+    }
+
+    @Test
+    @DisplayName("minimal config should have null stdio configs")
+    void minimalConfigShouldHaveNullStdioConfigs() {
+      final WasiPreview2Config config = WasiPreview2Config.minimal();
+      assertNull(config.getStdinConfig(), "Minimal stdin config should be null");
+      assertNull(config.getStdoutConfig(), "Minimal stdout config should be null");
+      assertNull(config.getStderrConfig(), "Minimal stderr config should be null");
+    }
+
+    @Test
+    @DisplayName("inherited config should have null stdio configs (uses boolean flags instead)")
+    void inheritedConfigShouldHaveNullStdioConfigs() {
+      final WasiPreview2Config config = WasiPreview2Config.inherited();
+      assertNull(
+          config.getStdinConfig(),
+          "Inherited config should use boolean flags, not WasiStdioConfig");
+      assertNull(
+          config.getStdoutConfig(),
+          "Inherited config should use boolean flags, not WasiStdioConfig");
+      assertNull(
+          config.getStderrConfig(),
+          "Inherited config should use boolean flags, not WasiStdioConfig");
+    }
+
+    @Test
+    @DisplayName("stdio config should override boolean inherit flags")
+    void stdioConfigShouldWorkAlongsideBooleanFlags() {
+      final WasiPreview2Config config =
+          WasiPreview2Config.builder()
+              .inheritStdio()
+              .stdin(WasiStdioConfig.nulled())
+              .build();
+      // Both are set — implementations should prefer WasiStdioConfig when present
+      assertTrue(config.isInheritStdio(), "Boolean inheritStdio should still be true");
+      assertNotNull(
+          config.getStdinConfig(), "WasiStdioConfig stdin should also be set");
+      assertEquals(
+          WasiStdioConfig.Type.NULL,
+          config.getStdinConfig().getType(),
+          "WasiStdioConfig should be NULL type");
     }
   }
 }

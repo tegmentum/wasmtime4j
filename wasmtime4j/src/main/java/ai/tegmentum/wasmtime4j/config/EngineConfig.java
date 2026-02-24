@@ -125,9 +125,31 @@ public final class EngineConfig {
   // Memory guaranteed dense image size in bytes
   private long memoryGuaranteedDenseImageSize = 0;
 
+  // Cranelift compiler inlining (wasmtime 41.0.3)
+  private boolean compilerInlining = true;
+
+  // Debug adapter modules support (wasmtime 41.0.3)
+  private boolean debugAdapterModules = false;
+
+  // WebAssembly memory checker (wasmtime 41.0.3)
+  private boolean wmemcheck = false;
+
+  // Force memfd for memory initialization (Linux optimization, wasmtime 41.0.3)
+  private boolean forceMemoryInitMemfd = false;
+
+  // Cranelift wasmtime debug checks (wasmtime 41.0.3)
+  private boolean craneliftDebugChecks = false;
+
+  // Enable or disable the compiler (wasmtime 41.0.3)
+  private boolean enableCompiler = true;
+
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
-    // Default configuration
+    // Sync wasmFeatures set with boolean defaults that are true
+    wasmFeatures.add(WasmFeature.REFERENCE_TYPES);
+    wasmFeatures.add(WasmFeature.SIMD);
+    wasmFeatures.add(WasmFeature.MULTI_VALUE);
+    wasmFeatures.add(WasmFeature.BULK_MEMORY);
   }
 
   /**
@@ -753,6 +775,37 @@ public final class EngineConfig {
   }
 
   /**
+   * Detects whether a host CPU feature is available.
+   *
+   * <p>This mirrors Wasmtime's {@code Config::detect_host_feature} which checks whether a specific
+   * CPU feature (e.g., "sse4.2", "avx2") is available on the current host. This is a static method
+   * because host feature detection does not require an engine instance.
+   *
+   * <p>This method creates a temporary engine to perform the detection. For repeated checks,
+   * consider using {@link Engine#detectHostFeature(String)} on an existing engine instead.
+   *
+   * @param feature the CPU feature name to check (e.g., "sse4.2", "avx2")
+   * @return true if the feature is detected, false if not detected or not recognized
+   * @throws IllegalArgumentException if feature is null
+   * @since 1.1.0
+   */
+  public static boolean detectHostFeature(final String feature) {
+    if (feature == null) {
+      throw new IllegalArgumentException("feature cannot be null");
+    }
+
+    try {
+      final ai.tegmentum.wasmtime4j.WasmRuntime runtime =
+          ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory.create();
+      try (final Engine engine = runtime.createEngine()) {
+        return engine.detectHostFeature(feature).orElse(false);
+      }
+    } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+      return false;
+    }
+  }
+
+  /**
    * Creates a deep copy of this configuration.
    *
    * <p>This method creates a new EngineConfig with all the same settings as this configuration.
@@ -849,6 +902,13 @@ public final class EngineConfig {
     c.collector = this.collector;
     // Memory guaranteed dense image size
     c.memoryGuaranteedDenseImageSize = this.memoryGuaranteedDenseImageSize;
+    // Wasmtime 41.0.3 additions
+    c.compilerInlining = this.compilerInlining;
+    c.debugAdapterModules = this.debugAdapterModules;
+    c.wmemcheck = this.wmemcheck;
+    c.forceMemoryInitMemfd = this.forceMemoryInitMemfd;
+    c.craneliftDebugChecks = this.craneliftDebugChecks;
+    c.enableCompiler = this.enableCompiler;
     return c;
   }
 
@@ -1984,6 +2044,166 @@ public final class EngineConfig {
     return memoryGuaranteedDenseImageSize;
   }
 
+  // ===== Wasmtime 41.0.3 Config Additions =====
+
+  /**
+   * Enables or disables Cranelift function inlining.
+   *
+   * <p>When enabled (the default), Cranelift may inline functions during compilation for better
+   * performance. Disabling can reduce compilation time and code size at the cost of runtime
+   * performance.
+   *
+   * @param enable true to enable compiler inlining
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig compilerInlining(final boolean enable) {
+    this.compilerInlining = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether Cranelift compiler inlining is enabled.
+   *
+   * @return true if compiler inlining is enabled
+   * @since 1.0.0
+   */
+  public boolean isCompilerInlining() {
+    return compilerInlining;
+  }
+
+  /**
+   * Enables or disables debug adapter modules.
+   *
+   * <p>When enabled, debug adapter modules are allowed. These modules provide debugging interfaces
+   * following the Debug Adapter Protocol (DAP).
+   *
+   * @param enable true to enable debug adapter modules
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig debugAdapterModules(final boolean enable) {
+    this.debugAdapterModules = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether debug adapter modules are enabled.
+   *
+   * @return true if debug adapter modules are enabled
+   * @since 1.0.0
+   */
+  public boolean isDebugAdapterModules() {
+    return debugAdapterModules;
+  }
+
+  /**
+   * Enables or disables the WebAssembly memory checker (wmemcheck).
+   *
+   * <p>When enabled, runtime memory checking detects memory errors such as use of uninitialized
+   * memory, similar to Valgrind's memcheck. This adds significant runtime overhead and should
+   * only be used for debugging.
+   *
+   * <p>Note: This requires the Wasmtime native library to be built with wmemcheck support.
+   *
+   * @param enable true to enable wmemcheck
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wmemcheck(final boolean enable) {
+    this.wmemcheck = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether the WebAssembly memory checker is enabled.
+   *
+   * @return true if wmemcheck is enabled
+   * @since 1.0.0
+   */
+  public boolean isWmemcheck() {
+    return wmemcheck;
+  }
+
+  /**
+   * Enables or disables forcing memfd for memory initialization on Linux.
+   *
+   * <p>When enabled, Wasmtime will always use memfd for memory initialization, even when
+   * copy-on-write initialization might not otherwise use it. This is a Linux-specific
+   * optimization that can improve memory initialization performance.
+   *
+   * @param enable true to force memfd memory initialization
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig forceMemoryInitMemfd(final boolean enable) {
+    this.forceMemoryInitMemfd = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether forced memfd memory initialization is enabled.
+   *
+   * @return true if forced memfd initialization is enabled
+   * @since 1.0.0
+   */
+  public boolean isForceMemoryInitMemfd() {
+    return forceMemoryInitMemfd;
+  }
+
+  /**
+   * Enables or disables Cranelift Wasmtime-specific debug checks.
+   *
+   * <p>When enabled, additional assertions are inserted into compiled code to verify runtime
+   * invariants maintained by Wasmtime. This is primarily useful for debugging Wasmtime itself
+   * and adds runtime overhead.
+   *
+   * @param enable true to enable Cranelift debug checks
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig craneliftDebugChecks(final boolean enable) {
+    this.craneliftDebugChecks = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether Cranelift Wasmtime debug checks are enabled.
+   *
+   * @return true if Cranelift debug checks are enabled
+   * @since 1.0.0
+   */
+  public boolean isCraneliftDebugChecks() {
+    return craneliftDebugChecks;
+  }
+
+  /**
+   * Enables or disables the compiler in the engine.
+   *
+   * <p>When disabled, the engine can only execute pre-compiled modules and cannot compile new
+   * WebAssembly modules. This is useful for runtime-only deployments where compilation is done ahead
+   * of time, or for creating engines that should never compile (e.g., in test scenarios with
+   * multiple engines).
+   *
+   * @param enable true to enable the compiler (default: true)
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig enableCompiler(final boolean enable) {
+    this.enableCompiler = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether the compiler is enabled.
+   *
+   * @return true if the compiler is enabled
+   * @since 1.0.0
+   */
+  public boolean isEnableCompiler() {
+    return enableCompiler;
+  }
+
   // ===== JSON Serialization =====
 
   /**
@@ -2079,6 +2299,12 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "craneliftDebugVerifier", craneliftDebugVerifier);
     first = appendJsonBool(sb, first, "craneliftNanCanonicalization", craneliftNanCanonicalization);
     first = appendJsonBool(sb, first, "craneliftPcc", craneliftPcc);
+    first = appendJsonBool(sb, first, "compilerInlining", compilerInlining);
+    first = appendJsonBool(sb, first, "debugAdapterModules", debugAdapterModules);
+    first = appendJsonBool(sb, first, "wmemcheck", wmemcheck);
+    first = appendJsonBool(sb, first, "forceMemoryInitMemfd", forceMemoryInitMemfd);
+    first = appendJsonBool(sb, first, "craneliftDebugChecks", craneliftDebugChecks);
+    first = appendJsonBool(sb, first, "enableCompiler", enableCompiler);
     first = appendJsonBool(sb, first, "macosUseMachPorts", macosUseMachPorts);
     first = appendJsonBool(sb, first, "wasmBacktrace", wasmBacktrace);
     if (backtraceDetails != null) {

@@ -315,7 +315,7 @@ public final class ComponentCompositionIntegrationTest {
           new JniComponentEngine(new ComponentEngineConfig());
       resources.add(componentEngine);
 
-      final Component component = componentEngine.loadComponentFromBytes(withImportsComponentBytes);
+      final Component component = componentEngine.compileComponent(withImportsComponentBytes);
       resources.add(component);
 
       assertNotNull(component, "Component should be loaded");
@@ -342,7 +342,7 @@ public final class ComponentCompositionIntegrationTest {
           new JniComponentEngine(new ComponentEngineConfig());
       resources.add(componentEngine);
 
-      final Component component = componentEngine.loadComponentFromBytes(withImportsComponentBytes);
+      final Component component = componentEngine.compileComponent(withImportsComponentBytes);
       resources.add(component);
 
       assertNotNull(component, "Component should be loaded");
@@ -407,8 +407,8 @@ public final class ComponentCompositionIntegrationTest {
       resources.add(engine2);
 
       // Load the same component in both engines
-      final Component comp1 = engine1.loadComponentFromBytes(addComponentBytes);
-      final Component comp2 = engine2.loadComponentFromBytes(addComponentBytes);
+      final Component comp1 = engine1.compileComponent(addComponentBytes);
+      final Component comp2 = engine2.compileComponent(addComponentBytes);
       resources.add(comp1);
       resources.add(comp2);
 
@@ -452,7 +452,7 @@ public final class ComponentCompositionIntegrationTest {
           new JniComponentEngine(new ComponentEngineConfig());
       resources.add(componentEngine);
 
-      final Component component = componentEngine.loadComponentFromBytes(addComponentBytes);
+      final Component component = componentEngine.compileComponent(addComponentBytes);
       resources.add(component);
 
       // Create multiple instances from the same component
@@ -710,7 +710,7 @@ public final class ComponentCompositionIntegrationTest {
 
       assertThrows(
           Exception.class,
-          () -> componentEngine.loadComponentFromBytes(invalidBytes),
+          () -> componentEngine.compileComponent(invalidBytes),
           "Should reject invalid component bytes");
 
       LOGGER.info("Invalid component bytes handled gracefully");

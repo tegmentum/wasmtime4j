@@ -36,6 +36,7 @@ pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
             "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException"
         }
         WasmtimeError::Wasi { .. } => "ai/tegmentum/wasmtime4j/exception/WasiException",
+        WasmtimeError::WasiExit { .. } => "ai/tegmentum/wasmtime4j/exception/I32ExitException",
         WasmtimeError::Security { .. } => "ai/tegmentum/wasmtime4j/exception/SecurityException",
         WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
         WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/exception/TrapException",
@@ -67,6 +68,10 @@ pub fn throw_jni_exception(env: &mut jni::JNIEnv, error: &WasmtimeError) {
         WasmtimeError::Execution { .. } => {
             // TrapException requires TrapType enum
             throw_trap_exception(env, &message)
+        }
+        WasmtimeError::WasiExit { exit_code } => {
+            // I32ExitException requires int exit code constructor
+            throw_i32_exit_exception(env, *exit_code)
         }
         _ => {
             // For other exceptions, use simple String constructor
@@ -137,6 +142,23 @@ fn throw_trap_exception(env: &mut jni::JNIEnv, message: &str) -> Result<(), jni:
         "(Lai/tegmentum/wasmtime4j/exception/TrapException$TrapType;Ljava/lang/String;)V",
         &[(&unknown_field).into(), JValue::Object(&message_jstring)],
     )?;
+
+    env.throw(JThrowable::from(exception_obj))
+}
+
+#[cfg(feature = "jni-bindings")]
+/// Helper to throw I32ExitException with exit code
+fn throw_i32_exit_exception(
+    env: &mut jni::JNIEnv,
+    exit_code: i32,
+) -> Result<(), jni::errors::Error> {
+    use jni::objects::{JThrowable, JValue};
+
+    // Create I32ExitException(int exitCode)
+    let exception_class =
+        env.find_class("ai/tegmentum/wasmtime4j/exception/I32ExitException")?;
+
+    let exception_obj = env.new_object(exception_class, "(I)V", &[JValue::Int(exit_code)])?;
 
     env.throw(JThrowable::from(exception_obj))
 }

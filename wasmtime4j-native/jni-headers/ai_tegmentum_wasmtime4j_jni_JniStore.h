@@ -57,30 +57,6 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeValid
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeGetExecutionCount
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetExecutionCount
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeGetExecutionTime
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetExecutionTime
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeGetTotalFuelConsumed
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetTotalFuelConsumed
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeConsumeFuel
  * Signature: (JJ)J
  */
@@ -137,27 +113,19 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTa
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeCreateInstanceWithImports
+ * Signature: (JJ[J[I)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateInstanceWithImports
+  (JNIEnv *, jclass, jlong, jlong, jlongArray, jintArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeDestroyStore
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore
   (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeCaptureBacktrace
- * Signature: (J)Lai/tegmentum/wasmtime4j/debug/WasmBacktrace;
- */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptureBacktrace
-  (JNIEnv *, jobject, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeForceCaptureBacktrace
- * Signature: (J)Lai/tegmentum/wasmtime4j/debug/WasmBacktrace;
- */
-JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCaptureBacktrace
-  (JNIEnv *, jobject, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore

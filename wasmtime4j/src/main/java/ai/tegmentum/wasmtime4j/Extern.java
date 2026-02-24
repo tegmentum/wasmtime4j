@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.type.ExternType;
+import ai.tegmentum.wasmtime4j.type.WasmType;
 
 /**
  * Represents an external value that can be imported or exported by a WebAssembly module.
@@ -156,6 +157,24 @@ public interface Extern {
    * @since 1.1.0
    */
   default WasmMemory asSharedMemory() {
+    return null;
+  }
+
+  /**
+   * Gets the detailed type descriptor for this extern.
+   *
+   * <p>This corresponds to Wasmtime's {@code Extern::ty(store)} which returns the full type
+   * information (e.g., {@link ai.tegmentum.wasmtime4j.type.FuncType} with parameter/result types,
+   * {@link ai.tegmentum.wasmtime4j.type.MemoryType} with limits, etc.) rather than just the kind
+   * discriminant.
+   *
+   * <p>The default implementation inspects the concrete value through the {@code asXxx()} methods
+   * to extract the type. Runtime implementations may override for more efficient native access.
+   *
+   * @return the detailed type, or null if the type cannot be determined
+   * @since 1.1.0
+   */
+  default WasmType getDetailedType() {
     return null;
   }
 }

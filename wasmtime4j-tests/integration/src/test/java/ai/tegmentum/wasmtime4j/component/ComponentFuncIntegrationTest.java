@@ -145,7 +145,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -166,7 +166,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -187,7 +187,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -208,7 +208,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -233,7 +233,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -262,7 +262,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -304,7 +304,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -328,7 +328,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();
@@ -363,7 +363,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       final ComponentInstance instance = component.instantiate();
 
       final Optional<ComponentFunction> funcOpt = instance.getFunc("add");
@@ -389,7 +389,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       final ComponentInstance instance = component.instantiate();
 
       final Optional<ComponentFunction> funcOpt = instance.getFunc("add");
@@ -418,7 +418,7 @@ public final class ComponentFuncIntegrationTest {
       assumeComponentFuncAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Component component = engine.loadComponentFromBytes(addComponentBytes);
+      final Component component = engine.compileComponent(addComponentBytes);
       resources.add(component);
 
       final ComponentInstance instance = component.instantiate();

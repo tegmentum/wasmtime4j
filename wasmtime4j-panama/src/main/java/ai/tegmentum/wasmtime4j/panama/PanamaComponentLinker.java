@@ -28,6 +28,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
+import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
 import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiMonotonicClock;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiWallClock;
@@ -622,16 +623,10 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
               + PanamaErrorMapper.getErrorDescription(allowRandomResult));
     }
 
-    // Apply individual stdio inherit flags
-    if (config.isInheritStdin()) {
-      NATIVE_BINDINGS.componentLinkerSetWasiInheritStdin(nativeLinker, 1);
-    }
-    if (config.isInheritStdout()) {
-      NATIVE_BINDINGS.componentLinkerSetWasiInheritStdout(nativeLinker, 1);
-    }
-    if (config.isInheritStderr()) {
-      NATIVE_BINDINGS.componentLinkerSetWasiInheritStderr(nativeLinker, 1);
-    }
+    // Apply individual stdio config
+    applyStdinConfig(config, nativeLinker);
+    applyStdoutConfig(config, nativeLinker);
+    applyStderrConfig(config, nativeLinker);
 
     // Apply granular network controls
     NATIVE_BINDINGS.componentLinkerSetWasiAllowTcp(
@@ -674,6 +669,103 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     // Apply socket address check
     if (config.getSocketAddrCheck() != null) {
       applyWasiSocketAddrCheck(config.getSocketAddrCheck());
+    }
+  }
+
+  /**
+   * Applies stdin configuration from WasiStdioConfig or falls back to boolean inherit flag.
+   *
+   * @param config the WASI preview 2 configuration
+   * @param nativeLinker the native linker memory segment
+   */
+  private void applyStdinConfig(
+      final WasiPreview2Config config, final MemorySegment nativeLinker) {
+    final WasiStdioConfig stdinConfig = config.getStdinConfig();
+    if (stdinConfig != null) {
+      switch (stdinConfig.getType()) {
+        case INHERIT:
+          NATIVE_BINDINGS.componentLinkerSetWasiInheritStdin(nativeLinker, 1);
+          break;
+        case INPUT_STREAM:
+          try {
+            final byte[] bytes = stdinConfig.getInputStream().readAllBytes();
+            try (Arena arena = Arena.ofConfined()) {
+              final MemorySegment dataSeg = arena.allocateFrom(ValueLayout.JAVA_BYTE, bytes);
+              NATIVE_BINDINGS.componentLinkerSetWasiStdinBytes(
+                  nativeLinker, dataSeg, bytes.length);
+            }
+          } catch (java.io.IOException e) {
+            LOGGER.warning("Failed to read stdin InputStream: " + e.getMessage());
+          }
+          break;
+        case NULL:
+          // Don't inherit stdin — native layer defaults to empty stdin
+          try (Arena arena = Arena.ofConfined()) {
+            final MemorySegment dataSeg = arena.allocate(ValueLayout.JAVA_BYTE, 0);
+            NATIVE_BINDINGS.componentLinkerSetWasiStdinBytes(nativeLinker, dataSeg, 0);
+          }
+          break;
+        default:
+          LOGGER.warning(
+              "Unsupported stdin config type for component model: " + stdinConfig.getType());
+          break;
+      }
+    } else if (config.isInheritStdin()) {
+      NATIVE_BINDINGS.componentLinkerSetWasiInheritStdin(nativeLinker, 1);
+    }
+  }
+
+  /**
+   * Applies stdout configuration from WasiStdioConfig or falls back to boolean inherit flag.
+   *
+   * @param config the WASI preview 2 configuration
+   * @param nativeLinker the native linker memory segment
+   */
+  private void applyStdoutConfig(
+      final WasiPreview2Config config, final MemorySegment nativeLinker) {
+    final WasiStdioConfig stdoutConfig = config.getStdoutConfig();
+    if (stdoutConfig != null) {
+      switch (stdoutConfig.getType()) {
+        case INHERIT:
+          NATIVE_BINDINGS.componentLinkerSetWasiInheritStdout(nativeLinker, 1);
+          break;
+        case NULL:
+          // Don't inherit stdout — native layer defaults to discarding output
+          break;
+        default:
+          LOGGER.warning(
+              "Unsupported stdout config type for component model: " + stdoutConfig.getType());
+          break;
+      }
+    } else if (config.isInheritStdout()) {
+      NATIVE_BINDINGS.componentLinkerSetWasiInheritStdout(nativeLinker, 1);
+    }
+  }
+
+  /**
+   * Applies stderr configuration from WasiStdioConfig or falls back to boolean inherit flag.
+   *
+   * @param config the WASI preview 2 configuration
+   * @param nativeLinker the native linker memory segment
+   */
+  private void applyStderrConfig(
+      final WasiPreview2Config config, final MemorySegment nativeLinker) {
+    final WasiStdioConfig stderrConfig = config.getStderrConfig();
+    if (stderrConfig != null) {
+      switch (stderrConfig.getType()) {
+        case INHERIT:
+          NATIVE_BINDINGS.componentLinkerSetWasiInheritStderr(nativeLinker, 1);
+          break;
+        case NULL:
+          // Don't inherit stderr — native layer defaults to discarding output
+          break;
+        default:
+          LOGGER.warning(
+              "Unsupported stderr config type for component model: " + stderrConfig.getType());
+          break;
+      }
+    } else if (config.isInheritStderr()) {
+      NATIVE_BINDINGS.componentLinkerSetWasiInheritStderr(nativeLinker, 1);
     }
   }
 

@@ -506,21 +506,6 @@ public class EngineApiDualRuntimeTest extends DualRuntimeTest {
 
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
-    @DisplayName("getMemoryLimitPages should return non-negative")
-    void shouldReturnNonNegativeMemoryLimit(final RuntimeType runtime) throws Exception {
-      setRuntime(runtime);
-      LOGGER.info("[" + runtime + "] Testing getMemoryLimitPages");
-
-      final Engine engine = Engine.create();
-      resources.add(engine);
-
-      final int limit = engine.getMemoryLimitPages();
-      LOGGER.info("[" + runtime + "] Memory limit pages: " + limit);
-      assertTrue(limit >= 0, "Memory limit should be non-negative: " + limit);
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("getStackSizeLimit should return non-negative")
     void shouldReturnNonNegativeStackSizeLimit(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
@@ -943,26 +928,6 @@ public class EngineApiDualRuntimeTest extends DualRuntimeTest {
 
       assertFalse(closedEngine.same(openEngine), "same() on closed engine should return false");
       LOGGER.info("[" + runtime + "] same() on closed engine correctly returned false");
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(RuntimeProvider.class)
-    @DisplayName("getMemoryLimitPages on closed engine should not crash")
-    void shouldNotCrashOnGetMemoryLimitAfterClose(final RuntimeType runtime) throws Exception {
-      setRuntime(runtime);
-      LOGGER.info("[" + runtime + "] Testing getMemoryLimitPages on closed engine");
-
-      final Engine engine = Engine.create();
-      engine.close();
-
-      // Behavior varies by runtime: Panama returns cached value, JNI may throw
-      try {
-        final long limit = engine.getMemoryLimitPages();
-        LOGGER.info("[" + runtime + "] getMemoryLimitPages returned " + limit + " after close");
-      } catch (final Exception e) {
-        LOGGER.info(
-            "[" + runtime + "] getMemoryLimitPages threw after close: " + e.getClass().getName());
-      }
     }
 
     @ParameterizedTest

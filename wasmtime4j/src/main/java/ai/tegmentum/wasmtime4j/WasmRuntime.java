@@ -485,6 +485,20 @@ public interface WasmRuntime extends Closeable {
   Module deserializeModuleFile(Engine engine, java.nio.file.Path path) throws WasmException;
 
   /**
+   * Eagerly initializes thread-local state needed for Wasmtime on the current thread.
+   *
+   * <p>Wasmtime uses thread-local storage internally. Normally this is lazily initialized on first
+   * use, but in performance-sensitive scenarios you may want to pre-initialize it to avoid the
+   * latency spike on the first WebAssembly operation on a thread.
+   *
+   * <p>It is safe to call this function multiple times and from multiple threads concurrently.
+   *
+   * @throws WasmException if TLS initialization fails
+   * @since 1.0.0
+   */
+  void tlsEagerInitialize() throws WasmException;
+
+  /**
    * Closes the runtime and releases associated resources.
    *
    * <p>After calling this method, the runtime becomes invalid and should not be used. Any attempt

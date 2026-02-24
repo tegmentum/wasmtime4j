@@ -7,7 +7,7 @@
 use std::os::raw::c_void;
 
 use serde::Deserialize;
-use wasmtime::{MemoryType, OptLevel, RegallocAlgorithm, SharedMemory as WasmtimeSharedMemory, Strategy};
+use wasmtime::{Engine as WasmtimeEngine, MemoryType, OptLevel, RegallocAlgorithm, SharedMemory as WasmtimeSharedMemory, Strategy};
 
 use super::{Engine, EngineBuilder, EngineConfigSummary, WasmFeature};
 use crate::error::{ffi_utils, WasmtimeError, WasmtimeResult};
@@ -44,17 +44,12 @@ pub struct EngineConfigFfi {
     pub async_stack_zeroing: Option<bool>,
 
     // Memory configuration
-    pub max_memory_pages: Option<u32>,
     pub memory_reservation: Option<u64>,
     pub memory_guard_size: Option<u64>,
     pub memory_reservation_for_growth: Option<u64>,
-    pub max_memory_size: Option<usize>,
     pub memory_may_move: Option<bool>,
     pub guard_before_linear_memory: Option<bool>,
     pub memory_init_cow: Option<bool>,
-
-    // Instance limits
-    pub max_instances: Option<u32>,
 
     // WASM feature flags
     pub wasm_threads: Option<bool>,
@@ -136,6 +131,14 @@ pub struct EngineConfigFfi {
     // Cache configuration
     pub cache_enabled: Option<bool>,
     pub cache_config_path: Option<String>,
+
+    // Wasmtime 41.0.3 config additions
+    pub compiler_inlining: Option<bool>,
+    pub debug_adapter_modules: Option<bool>,
+    pub wmemcheck: Option<bool>,
+    pub force_memory_init_memfd: Option<bool>,
+    pub cranelift_debug_checks: Option<bool>,
+    pub enable_compiler: Option<bool>,
 }
 
 /// Key-value pair for Cranelift compiler flags
@@ -191,21 +194,16 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
     if let Some(v) = config.async_stack_zeroing { builder = builder.async_stack_zeroing(v); }
 
     // Memory
-    if let Some(v) = config.max_memory_pages { builder = builder.max_memory_pages(v); }
     if let Some(v) = config.memory_reservation { builder = builder.memory_reservation(v); }
     if let Some(v) = config.memory_guard_size { builder = builder.memory_guard_size(v); }
     if let Some(v) = config.memory_reservation_for_growth {
         builder = builder.memory_reservation_for_growth(v);
     }
-    if let Some(v) = config.max_memory_size { builder = builder.max_memory_size(v); }
     if let Some(v) = config.memory_may_move { builder = builder.memory_may_move(v); }
     if let Some(v) = config.guard_before_linear_memory {
         builder = builder.guard_before_linear_memory(v);
     }
     if let Some(v) = config.memory_init_cow { builder = builder.memory_init_cow(v); }
-
-    // Instance limits
-    if let Some(v) = config.max_instances { builder = builder.max_instances(v); }
 
     // WASM features
     if let Some(v) = config.wasm_threads { builder = builder.wasm_threads(v); }
@@ -370,7 +368,37 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
         }
     }
 
+    // Wasmtime 41.0.3 config additions
+    if let Some(v) = config.compiler_inlining {
+        builder = builder.compiler_inlining(v);
+    }
+    if let Some(v) = config.debug_adapter_modules {
+        builder = builder.debug_adapter_modules(v);
+    }
+    #[cfg(feature = "wmemcheck")]
+    if let Some(v) = config.wmemcheck {
+        builder = builder.wmemcheck(v);
+    }
+    if let Some(v) = config.force_memory_init_memfd {
+        builder = builder.force_memory_init_memfd(v);
+    }
+    if let Some(v) = config.cranelift_debug_checks {
+        builder = builder.cranelift_debug_checks(v);
+    }
+    if let Some(v) = config.enable_compiler {
+        builder = builder.enable_compiler(v);
+    }
+
     builder.build().map(Box::new)
+}
+
+/// Core function to eagerly initialize Wasmtime's thread-local state
+///
+/// This pre-initializes Wasmtime's thread-local storage for the calling thread,
+/// avoiding the latency spike on the first WebAssembly operation.
+pub fn tls_eager_initialize() -> WasmtimeResult<()> {
+    WasmtimeEngine::tls_eager_initialize();
+    Ok(())
 }
 
 /// Core function to create a new engine with default configuration
@@ -390,10 +418,8 @@ pub fn create_engine_with_config(
     wasm_bulk_memory: bool,
     wasm_multi_value: bool,
     fuel_enabled: bool,
-    max_memory_pages: Option<u32>,
     max_stack_size: Option<usize>,
     epoch_interruption: bool,
-    max_instances: Option<u32>,
     async_support: bool,
 ) -> WasmtimeResult<Box<Engine>> {
     let mut builder = Engine::builder();
@@ -417,16 +443,8 @@ pub fn create_engine_with_config(
         .epoch_interruption(epoch_interruption)
         .async_support(async_support);
 
-    if let Some(pages) = max_memory_pages {
-        builder = builder.max_memory_pages(pages);
-    }
-
     if let Some(stack_size) = max_stack_size {
         builder = builder.max_stack_size(stack_size);
-    }
-
-    if let Some(instances) = max_instances {
-        builder = builder.max_instances(instances);
     }
 
     builder.build().map(Box::new)
@@ -444,10 +462,8 @@ pub fn create_engine_with_extended_config(
     wasm_bulk_memory: bool,
     wasm_multi_value: bool,
     fuel_enabled: bool,
-    max_memory_pages: Option<u32>,
     max_stack_size: Option<usize>,
     epoch_interruption: bool,
-    max_instances: Option<u32>,
     async_support: bool,
     // GC configuration
     wasm_gc: bool,
@@ -537,16 +553,8 @@ pub fn create_engine_with_extended_config(
         .async_stack_zeroing(async_stack_zeroing)
         .gc_support(gc_support);
 
-    if let Some(pages) = max_memory_pages {
-        builder = builder.max_memory_pages(pages);
-    }
-
     if let Some(stack_size) = max_stack_size {
         builder = builder.max_stack_size(stack_size);
-    }
-
-    if let Some(instances) = max_instances {
-        builder = builder.max_instances(instances);
     }
 
     // Memory configuration
@@ -738,11 +746,6 @@ pub fn validate_engine(engine: &Engine) -> WasmtimeResult<()> {
     engine.validate()
 }
 
-/// Core function to check memory limits
-pub fn get_memory_limit(engine: &Engine) -> Option<u32> {
-    engine.memory_limit_pages()
-}
-
 /// Core function to check stack size limits
 pub fn get_stack_limit(engine: &Engine) -> Option<usize> {
     engine.stack_size_limit()
@@ -761,11 +764,6 @@ pub fn is_epoch_interruption_enabled(engine: &Engine) -> bool {
 /// Core function to check if coredump on trap is enabled
 pub fn is_coredump_on_trap_enabled(engine: &Engine) -> bool {
     engine.coredump_on_trap()
-}
-
-/// Core function to get maximum instances limit
-pub fn get_max_instances(engine: &Engine) -> Option<u32> {
-    engine.max_instances()
 }
 
 /// Core function to get engine reference count

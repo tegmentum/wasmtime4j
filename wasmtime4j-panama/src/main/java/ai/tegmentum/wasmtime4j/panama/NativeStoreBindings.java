@@ -123,7 +123,9 @@ public final class NativeStoreBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG, // execution_timeout_secs
             ValueLayout.JAVA_INT, // max_instances
             ValueLayout.JAVA_INT, // max_table_elements
-            ValueLayout.JAVA_INT, // max_functions
+            ValueLayout.JAVA_INT, // max_tables
+            ValueLayout.JAVA_INT, // max_memories
+            ValueLayout.JAVA_INT, // trap_on_grow_failure
             ValueLayout.ADDRESS)); // store_ptr (output)
 
     addFunctionBinding(
@@ -350,7 +352,6 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    * @param executionTimeoutSecs the execution timeout in seconds (0 = no timeout)
    * @param maxInstances the maximum number of instances (0 = no limit)
    * @param maxTableElements the maximum table elements (0 = no limit)
-   * @param maxFunctions the maximum functions (0 = no limit)
    * @param maxTables the maximum number of tables (0 = no limit)
    * @param maxMemories the maximum number of memories (0 = no limit)
    * @param trapOnGrowFailure whether growth failures should trap (0 = false, non-zero = true)
@@ -364,7 +365,6 @@ public final class NativeStoreBindings extends NativeBindingsBase {
       final long executionTimeoutSecs,
       final int maxInstances,
       final int maxTableElements,
-      final int maxFunctions,
       final int maxTables,
       final int maxMemories,
       final int trapOnGrowFailure,
@@ -381,7 +381,6 @@ public final class NativeStoreBindings extends NativeBindingsBase {
         executionTimeoutSecs,
         maxInstances,
         maxTableElements,
-        maxFunctions,
         maxTables,
         maxMemories,
         trapOnGrowFailure,

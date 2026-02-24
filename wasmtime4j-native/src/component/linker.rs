@@ -464,6 +464,8 @@ pub struct WasiP2Config {
     pub inherit_stdout: bool,
     /// Whether to inherit stderr from host individually
     pub inherit_stderr: bool,
+    /// Stdin bytes (if set, overrides inherit_stdin)
+    pub stdin_bytes: Option<Vec<u8>>,
     /// Preopened directories (host_path, guest_path, dir_perms_bits, file_perms_bits)
     pub preopened_dirs: Vec<(String, String, u32, u32)>,
     /// Allow network access
@@ -505,6 +507,7 @@ impl Default for WasiP2Config {
             inherit_stdin: false,
             inherit_stdout: false,
             inherit_stderr: false,
+            stdin_bytes: None,
             preopened_dirs: Vec::new(),
             allow_network: false,
             allow_tcp: true,
@@ -555,7 +558,10 @@ impl WasiP2Config {
         if self.inherit_stdio {
             builder.inherit_stdio();
         } else {
-            if self.inherit_stdin {
+            if let Some(ref stdin_bytes) = self.stdin_bytes {
+                let pipe = wasmtime_wasi::p2::pipe::MemoryInputPipe::new(stdin_bytes.clone());
+                builder.stdin(pipe);
+            } else if self.inherit_stdin {
                 builder.inherit_stdin();
             }
             if self.inherit_stdout {
@@ -741,6 +747,11 @@ impl ComponentLinker {
     /// Set whether random number generation is allowed
     pub fn set_wasi_allow_random(&mut self, allow: bool) {
         self.wasi_p2_config.allow_random = allow;
+    }
+
+    /// Set stdin bytes (overrides inherit_stdin when set)
+    pub fn set_wasi_stdin_bytes(&mut self, bytes: Vec<u8>) {
+        self.wasi_p2_config.stdin_bytes = Some(bytes);
     }
 
     /// Set whether to inherit stdin individually
@@ -2289,6 +2300,27 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_random(
 
     let linker = &mut *(linker_ptr as *mut ComponentLinker);
     linker.set_wasi_allow_random(allow != 0);
+    FFI_SUCCESS
+}
+
+/// Set stdin bytes for WASI component
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_stdin_bytes(
+    linker_ptr: *mut c_void,
+    data: *const u8,
+    data_len: usize,
+) -> c_int {
+    if linker_ptr.is_null() || (data.is_null() && data_len > 0) {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    let bytes = if data_len > 0 {
+        std::slice::from_raw_parts(data, data_len).to_vec()
+    } else {
+        Vec::new()
+    };
+    linker.set_wasi_stdin_bytes(bytes);
     FFI_SUCCESS
 }
 

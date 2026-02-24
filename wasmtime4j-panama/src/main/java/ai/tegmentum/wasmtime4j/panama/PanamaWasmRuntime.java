@@ -474,14 +474,9 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     panamaLinker.setWasiContext(panamaWasiContext);
 
     // Track WASI imports for hasImport() checks
-    panamaLinker.addImport("wasi_snapshot_preview1", "fd_write");
-    panamaLinker.addImport("wasi_snapshot_preview1", "proc_exit");
-    panamaLinker.addImport("wasi_snapshot_preview1", "fd_read");
-    panamaLinker.addImport("wasi_snapshot_preview1", "fd_close");
-    panamaLinker.addImport("wasi_snapshot_preview1", "environ_get");
-    panamaLinker.addImport("wasi_snapshot_preview1", "environ_sizes_get");
-    panamaLinker.addImport("wasi_snapshot_preview1", "args_get");
-    panamaLinker.addImport("wasi_snapshot_preview1", "args_sizes_get");
+    for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P1_IMPORTS) {
+      panamaLinker.addImport(entry[0], entry[1]);
+    }
 
     LOGGER.fine("Added WASI imports to Panama linker");
   }
@@ -511,9 +506,9 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
     // Track WASI Preview 2 imports for hasImport() checks
     // Note: These are marker imports - full Preview 2 component model requires Component Linker
-    panamaLinker.addImport("wasi:filesystem/types", "filesystem");
-    panamaLinker.addImport("wasi:io/streams", "input-stream");
-    panamaLinker.addImport("wasi:sockets/network", "network");
+    for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P2_IMPORTS) {
+      panamaLinker.addImport(entry[0], entry[1]);
+    }
 
     LOGGER.fine("Added WASI Preview 2 support to linker");
   }
@@ -638,6 +633,11 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     final ai.tegmentum.wasmtime4j.panama.wasi.nn.PanaNnContextFactory factory =
         new ai.tegmentum.wasmtime4j.panama.wasi.nn.PanaNnContextFactory();
     return factory.isNnAvailable();
+  }
+
+  @Override
+  public void tlsEagerInitialize() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    NativeEngineBindings.getInstance().tlsEagerInitialize();
   }
 
   @Override

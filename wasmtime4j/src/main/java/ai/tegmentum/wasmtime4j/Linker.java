@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.ExternType;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.ImportType;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
 import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import java.io.Closeable;
@@ -138,6 +139,41 @@ public interface Linker<T> extends Closeable {
     }
     defineInstance(instance.getStore(), moduleName, instance);
   }
+
+  /**
+   * Defines an extern in the linker with a module and item name.
+   *
+   * <p>This is a generic define method that accepts any extern type (function, memory, table, or
+   * global) and makes it available under the specified module and name for import resolution.
+   *
+   * @param store the store context
+   * @param moduleName the module name for the import namespace
+   * @param name the item name within the module
+   * @param extern the extern value to define
+   * @throws WasmException if the definition cannot be created
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  void define(Store store, String moduleName, String name, Extern extern) throws WasmException;
+
+  /**
+   * Defines a module in the linker by instantiating it and registering all its exports.
+   *
+   * <p>This corresponds to Wasmtime's {@code Linker::module()} API. It instantiates the given
+   * module and defines all of its exports into the linker under the given module name. This
+   * handles WASI command modules specially by automatically running the {@code _start} function.
+   *
+   * <p>This is different from {@link #instantiate(Store, String, Module)} in that it uses
+   * Wasmtime's native module-level linking which properly handles WASI commands.
+   *
+   * @param store the store to use for instantiation
+   * @param moduleName the name to define the module's exports under
+   * @param module the compiled module to instantiate and define
+   * @throws WasmException if instantiation or definition fails
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  void module(Store store, String moduleName, Module module) throws WasmException;
 
   /**
    * Creates an alias for an export from one module to another.
@@ -403,6 +439,26 @@ public interface Linker<T> extends Closeable {
   default java.util.Optional<Extern> getOneByName(
       final Store store, final String moduleName, final String name) {
     return java.util.Optional.ofNullable(getByImport(store, moduleName, name));
+  }
+
+  /**
+   * Gets a definition by its import type.
+   *
+   * <p>This is a convenience method wrapping {@link #getByImport(Store, String, String)} that
+   * accepts an {@link ImportType} directly instead of separate module name and name strings.
+   *
+   * @param store the store context
+   * @param importType the import type to look up
+   * @return an Optional containing the extern, or empty if not found
+   * @throws IllegalArgumentException if store or importType is null
+   * @since 1.1.0
+   */
+  default java.util.Optional<Extern> getByImport(final Store store, final ImportType importType) {
+    if (importType == null) {
+      throw new IllegalArgumentException("importType cannot be null");
+    }
+    return java.util.Optional.ofNullable(
+        getByImport(store, importType.getModuleName(), importType.getName()));
   }
 
   /**

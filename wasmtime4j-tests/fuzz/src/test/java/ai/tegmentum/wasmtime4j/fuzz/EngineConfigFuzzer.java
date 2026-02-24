@@ -228,7 +228,6 @@ public class EngineConfigFuzzer {
         // Also verify other engine properties
         engine.isFuelEnabled();
         engine.isEpochInterruptionEnabled();
-        engine.getMemoryLimitPages();
         engine.getStackSizeLimit();
       }
     } catch (WasmException e) {

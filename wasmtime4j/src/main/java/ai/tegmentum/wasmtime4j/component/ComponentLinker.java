@@ -327,6 +327,30 @@ public interface ComponentLinker<T> extends Closeable {
   Set<String> getDefinedFunctions(String interfaceNamespace, String interfaceName);
 
   /**
+   * Gets the root linker instance for builder-style import definitions.
+   *
+   * <p>This method provides access to Wasmtime's {@code LinkerInstance} builder pattern, enabling
+   * scoped function and resource definitions through method chaining.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * linker.root()
+   *     .instance("wasi:cli/stdout@0.2.0")
+   *     .funcNew("print", params -> {
+   *         System.out.println(params.get(0).asString());
+   *         return Collections.emptyList();
+   *     });
+   * }</pre>
+   *
+   * @return the root {@link ComponentLinkerInstance}
+   * @since 1.1.0
+   */
+  default ComponentLinkerInstance root() {
+    return new ComponentLinkerInstance.Scoped(this, "");
+  }
+
+  /**
    * Creates an alias from one interface to another.
    *
    * <p>This allows an interface defined under one name to also satisfy imports under another name.

@@ -1573,6 +1573,50 @@ pub mod core {
             })
     }
 
+    /// Core function to define a module in the linker.
+    ///
+    /// This instantiates the given module and defines all of its exports into the linker
+    /// under the given module name. This corresponds to wasmtime's `Linker::module()` API
+    /// which handles WASI commands specially.
+    ///
+    /// # Arguments
+    /// * `linker` - The linker to modify
+    /// * `store` - The store context
+    /// * `module_name` - The name to define the module under
+    /// * `module` - The compiled module to instantiate and define
+    pub fn define_module(
+        linker: &mut Linker,
+        store: &mut crate::store::Store,
+        module_name: &str,
+        module: &Module,
+    ) -> WasmtimeResult<()> {
+        // Attach WASI context if needed (same pattern as instantiate_module)
+        if let Some(wasi_ctx) = linker.get_wasi_context() {
+            if !store.has_wasi_context() {
+                let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+                store.set_wasi_context(wasi_ctx, fd_manager)?;
+            }
+        }
+
+        // Flush host functions before module linking
+        {
+            let mut store_guard = store.try_lock_store()?;
+            linker.instantiate_host_functions(&mut *store_guard)?;
+        }
+
+        let mut linker_guard = linker.inner()?;
+        let mut store_guard = store.try_lock_store()?;
+        linker_guard
+            .module(&mut *store_guard, module_name, module.inner())
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Failed to define module '{}': {}",
+                    module_name, e
+                ),
+            })?;
+        Ok(())
+    }
+
     /// Convert a wasmtime::Extern to a type code.
     /// Type codes: 0=Func, 1=Table, 2=Memory, 3=Global, -1=Unknown
     pub fn extern_type_code(extern_item: &wasmtime::Extern) -> i32 {

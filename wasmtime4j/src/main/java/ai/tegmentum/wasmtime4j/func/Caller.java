@@ -2,6 +2,7 @@ package ai.tegmentum.wasmtime4j.func;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Extern;
+import ai.tegmentum.wasmtime4j.ModuleExport;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
@@ -47,6 +48,19 @@ public interface Caller<T> {
    * @since 1.0.0
    */
   Optional<Extern> getExport(String name);
+
+  /**
+   * Gets an exported item using a pre-resolved {@link ModuleExport} handle for O(1) lookup.
+   *
+   * <p>This method provides fast export access by using a cached index handle obtained from {@link
+   * Module#getModuleExport(String)}.
+   *
+   * @param moduleExport the pre-resolved export handle
+   * @return the export if it exists, empty otherwise
+   * @throws IllegalArgumentException if moduleExport is null
+   * @since 1.1.0
+   */
+  Optional<Extern> getExport(ModuleExport moduleExport);
 
   /**
    * Gets an exported function by name from the calling instance.
@@ -147,37 +161,6 @@ public interface Caller<T> {
    * @since 1.0.0
    */
   void setFuel(long fuel) throws WasmException;
-
-  /**
-   * Checks if an epoch deadline has been set for the current execution.
-   *
-   * <p>Epoch-based interruption provides another mechanism for limiting execution time and ensuring
-   * responsiveness.
-   *
-   * @return true if an epoch deadline is active
-   * @since 1.0.0
-   */
-  boolean hasEpochDeadline();
-
-  /**
-   * Gets the current epoch deadline if one is set.
-   *
-   * @return the epoch deadline, or empty if none is set
-   * @since 1.0.0
-   */
-  Optional<Long> epochDeadline();
-
-  /**
-   * Sets an epoch deadline for the caller.
-   *
-   * <p>This allows host functions to control execution limits. When the epoch counter reaches or
-   * exceeds the deadline, execution will be interrupted.
-   *
-   * @param deadline the epoch deadline to set
-   * @throws WasmException if setting the epoch deadline fails
-   * @since 1.0.0
-   */
-  void setEpochDeadline(long deadline) throws WasmException;
 
   /**
    * Gets the engine associated with the caller's store.

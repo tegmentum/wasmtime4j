@@ -60,6 +60,24 @@ public interface TableType extends WasmType {
     return DefaultTableType.create(elementType, min, max);
   }
 
+  /**
+   * Creates a TableType with 64-bit indices and the specified element type and size constraints.
+   *
+   * <p>64-bit tables are part of the WebAssembly Memory64 proposal, allowing tables with more than
+   * 2^32 elements using 64-bit indices.
+   *
+   * @param elementType the element type (e.g., FUNCREF or EXTERNREF)
+   * @param min the minimum number of elements
+   * @param max the maximum number of elements, or empty if unlimited
+   * @return a new 64-bit TableType
+   * @throws IllegalArgumentException if elementType is null or min is negative
+   * @since 1.1.0
+   */
+  static TableType of64(
+      final WasmValueType elementType, final long min, final java.util.OptionalLong max) {
+    return DefaultTableType.create64(elementType, min, max);
+  }
+
   @Override
   default WasmTypeKind getKind() {
     return WasmTypeKind.TABLE;

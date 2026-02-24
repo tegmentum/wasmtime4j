@@ -423,12 +423,13 @@ public final class ModuleInstanceIntegrationTest {
       final Instance instance = module.instantiate(store);
       resources.add(instance);
 
-      final Map<String, Object> exports = instance.getAllExports();
-      assertNotNull(exports, "Exports map should not be null");
-      assertFalse(exports.isEmpty(), "Exports map should not be empty");
+      final List<Map.Entry<String, ai.tegmentum.wasmtime4j.Extern>> exports =
+          instance.getExports();
+      assertNotNull(exports, "Exports list should not be null");
+      assertFalse(exports.isEmpty(), "Exports list should not be empty");
 
-      LOGGER.info("Exports map has " + exports.size() + " entries");
-      for (final Map.Entry<String, Object> entry : exports.entrySet()) {
+      LOGGER.info("Exports list has " + exports.size() + " entries");
+      for (final Map.Entry<String, ai.tegmentum.wasmtime4j.Extern> entry : exports) {
         LOGGER.info(
             "Export: " + entry.getKey() + " -> " + entry.getValue().getClass().getSimpleName());
       }
