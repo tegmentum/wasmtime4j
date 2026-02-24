@@ -47,7 +47,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   private static final Logger LOGGER = Logger.getLogger(JniComponentEngine.class.getName());
 
   private final String engineId;
-  private final ComponentEngineConfig config;
   private final JniComponent.JniComponentEngine nativeEngine;
   private final ConcurrentMap<String, Component> loadedComponents;
   private final AtomicLong componentIdCounter;
@@ -88,7 +87,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       throws WasmException {
     // Create native engine first before calling super() to get a valid handle
     super(createNativeEngine());
-    this.config = config != null ? config : new ComponentEngineConfig();
     this.runtime = runtime;
     this.engineId = "jni-component-engine-" + System.nanoTime();
     this.loadedComponents = new ConcurrentHashMap<>();
@@ -119,14 +117,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     }
   }
 
-  public String getId() {
-    return engineId;
-  }
-
-  public ComponentEngineConfig getComponentConfig() {
-    return config;
-  }
-
   @Override
   public Engine getEngine() {
     if (runtime == null) {
@@ -148,9 +138,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
   @Override
   public boolean same(final ai.tegmentum.wasmtime4j.Engine other) {
-    // ComponentEngine creates its own internal native engine, which is never
-    // shared with any separately-created Engine instance.
-    return false;
+    return getEngine().same(other);
   }
 
   @Override
@@ -213,46 +201,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       return component;
     } catch (final Exception e) {
       throw new WasmException("Failed to compile component from bytes with name", e);
-    }
-  }
-
-  /**
-   * Loads a component from raw WebAssembly component bytes.
-   *
-   * @param wasmBytes the WebAssembly component bytes
-   * @return the compiled Component
-   * @throws WasmException if loading fails
-   */
-  public Component loadComponentFromBytes(final byte[] wasmBytes) throws WasmException {
-    Validation.requireNonEmpty(wasmBytes, "wasmBytes");
-    ensureNotClosed();
-
-    try {
-      final JniComponent.JniComponentHandle componentHandle =
-          nativeEngine.loadComponentFromBytes(wasmBytes);
-      return new JniComponentImpl(componentHandle, this);
-    } catch (final Exception e) {
-      throw new WasmException("Failed to load component from bytes", e);
-    }
-  }
-
-  /**
-   * Loads a component from a file.
-   *
-   * @param filePath the path to the WebAssembly component file
-   * @return the compiled Component
-   * @throws WasmException if loading fails
-   */
-  public Component loadComponentFromFile(final String filePath) throws WasmException {
-    Validation.requireNonEmpty(filePath, "filePath");
-    ensureNotClosed();
-
-    try {
-      // Read file contents and delegate to loadComponentFromBytes
-      final byte[] wasmBytes = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(filePath));
-      return loadComponentFromBytes(wasmBytes);
-    } catch (final java.io.IOException e) {
-      throw new WasmException("Failed to read component file: " + filePath, e);
     }
   }
 
@@ -376,38 +324,6 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   @Override
   public Optional<Integer> getMaxLinkDepth() {
     return Optional.of(10); // Configurable limit
-  }
-
-  /**
-   * Returns the number of active component instances managed by this engine.
-   *
-   * @return the count of active instances
-   */
-  public int getActiveInstancesCount() {
-    ensureNotClosed();
-
-    try {
-      return nativeEngine.getActiveInstancesCount();
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to get active instances count: " + e.getMessage());
-      return 0;
-    }
-  }
-
-  /**
-   * Cleans up inactive component instances to free resources.
-   *
-   * @return the number of instances cleaned up
-   * @throws WasmException if cleanup fails
-   */
-  public int cleanupInactiveInstances() throws WasmException {
-    ensureNotClosed();
-
-    try {
-      return nativeEngine.cleanupInstances();
-    } catch (final Exception e) {
-      throw new WasmException("Failed to cleanup inactive instances", e);
-    }
   }
 
   @Override

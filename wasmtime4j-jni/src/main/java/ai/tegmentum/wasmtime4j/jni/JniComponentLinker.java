@@ -27,7 +27,9 @@ import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
+import ai.tegmentum.wasmtime4j.util.StreamUtils;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
+import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -99,6 +101,20 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
     final long callbackId = registerHostFunctionCallback(implementation);
     hostFunctions.put(witPath, callbackId);
+
+    // Wire to native component linker
+    try {
+      nativeDefineHostFunction(nativeHandle, witPath, callbackId);
+    } catch (final Exception e) {
+      // Remove from local tracking if native call fails
+      hostFunctions.remove(witPath);
+      HOST_FUNCTION_CALLBACKS.remove(callbackId);
+      registeredCallbackIds.remove(callbackId);
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to define host function: " + e.getMessage(), e);
+    }
 
     // Track in defined interfaces
     final String interfaceKey = interfaceNamespace + ":" + interfaceName;
@@ -469,18 +485,13 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   }
 
   private void applyWasiConfig(final WasiPreview2Config config) {
-    // Apply inherit stdio
+    // Apply stdio configuration (WasiStdioConfig takes precedence over boolean flags)
     if (config.isInheritStdio()) {
       nativeSetWasiInheritStdio(nativeHandle, true);
-    }
-    if (config.isInheritStdin()) {
-      nativeSetWasiInheritStdin(nativeHandle, true);
-    }
-    if (config.isInheritStdout()) {
-      nativeSetWasiInheritStdout(nativeHandle, true);
-    }
-    if (config.isInheritStderr()) {
-      nativeSetWasiInheritStderr(nativeHandle, true);
+    } else {
+      applyStdinConfig(config);
+      applyStdoutConfig(config);
+      applyStderrConfig(config);
     }
 
     // Apply inherit env
@@ -558,6 +569,75 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     // Apply socket address check
     if (config.getSocketAddrCheck() != null) {
       nativeSetWasiSocketAddrCheck(nativeHandle, config.getSocketAddrCheck());
+    }
+  }
+
+  private void applyStdinConfig(final WasiPreview2Config config) {
+    final WasiStdioConfig stdinConfig = config.getStdinConfig();
+    if (stdinConfig != null) {
+      switch (stdinConfig.getType()) {
+        case INHERIT:
+          nativeSetWasiInheritStdin(nativeHandle, true);
+          break;
+        case INPUT_STREAM:
+          try {
+            final byte[] bytes = StreamUtils.readAllBytes(stdinConfig.getInputStream());
+            nativeSetWasiStdinBytes(nativeHandle, bytes);
+          } catch (java.io.IOException e) {
+            LOGGER.warning("Failed to read stdin InputStream: " + e.getMessage());
+          }
+          break;
+        case NULL:
+          // Don't inherit stdin — native layer defaults to empty stdin
+          nativeSetWasiStdinBytes(nativeHandle, new byte[0]);
+          break;
+        default:
+          LOGGER.warning(
+              "Unsupported stdin config type for component model: " + stdinConfig.getType());
+          break;
+      }
+    } else if (config.isInheritStdin()) {
+      nativeSetWasiInheritStdin(nativeHandle, true);
+    }
+  }
+
+  private void applyStdoutConfig(final WasiPreview2Config config) {
+    final WasiStdioConfig stdoutConfig = config.getStdoutConfig();
+    if (stdoutConfig != null) {
+      switch (stdoutConfig.getType()) {
+        case INHERIT:
+          nativeSetWasiInheritStdout(nativeHandle, true);
+          break;
+        case NULL:
+          // Don't inherit stdout — native layer defaults to discarding output
+          break;
+        default:
+          LOGGER.warning(
+              "Unsupported stdout config type for component model: " + stdoutConfig.getType());
+          break;
+      }
+    } else if (config.isInheritStdout()) {
+      nativeSetWasiInheritStdout(nativeHandle, true);
+    }
+  }
+
+  private void applyStderrConfig(final WasiPreview2Config config) {
+    final WasiStdioConfig stderrConfig = config.getStderrConfig();
+    if (stderrConfig != null) {
+      switch (stderrConfig.getType()) {
+        case INHERIT:
+          nativeSetWasiInheritStderr(nativeHandle, true);
+          break;
+        case NULL:
+          // Don't inherit stderr — native layer defaults to discarding output
+          break;
+        default:
+          LOGGER.warning(
+              "Unsupported stderr config type for component model: " + stderrConfig.getType());
+          break;
+      }
+    } else if (config.isInheritStderr()) {
+      nativeSetWasiInheritStderr(nativeHandle, true);
     }
   }
 
@@ -734,8 +814,6 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private native void nativeDefineHostFunctionAsync(
       long linkerHandle, String witPath, long callbackId);
 
-  private native void nativeSetAsyncSupport(long linkerHandle, boolean enabled);
-
   private native long nativeDefineResource(
       long linkerHandle,
       String interfaceNamespace,
@@ -758,6 +836,8 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private static native void nativeSetWasiInheritStdio(long linkerHandle, boolean inherit);
 
   private static native void nativeSetWasiInheritStdin(long linkerHandle, boolean inherit);
+
+  private static native void nativeSetWasiStdinBytes(long linkerHandle, byte[] data);
 
   private static native void nativeSetWasiInheritStdout(long linkerHandle, boolean inherit);
 

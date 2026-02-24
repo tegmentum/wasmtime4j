@@ -235,7 +235,11 @@ public interface Module extends Closeable {
    * Validates WebAssembly bytecode and returns detailed validation results.
    *
    * <p>This method performs comprehensive validation of WebAssembly bytecode without compiling it,
-   * providing detailed error and warning information.
+   * providing detailed error information.
+   *
+   * <p>This method performs header-level validation (magic number and version checks). For full
+   * structural and semantic validation, use {@link Engine#compileModule(byte[])} or {@link
+   * Engine#compileWat(String)} which will report any compilation errors.
    *
    * @param engine the engine to use for validation
    * @param wasmBytes the WebAssembly bytecode to validate
@@ -253,45 +257,29 @@ public interface Module extends Closeable {
       return ModuleValidationResult.failure(List.of("WebAssembly bytecode cannot be empty"));
     }
 
-    try {
-      // Basic WebAssembly magic number validation
-      if (wasmBytes.length < 8) {
-        return ModuleValidationResult.failure(
-            List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
-      }
-
-      // Check WebAssembly magic number (0x00 0x61 0x73 0x6D)
-      if (wasmBytes[0] != 0x00
-          || wasmBytes[1] != 0x61
-          || wasmBytes[2] != 0x73
-          || wasmBytes[3] != 0x6D) {
-        return ModuleValidationResult.failure(List.of("Invalid WebAssembly magic number"));
-      }
-
-      // Check WebAssembly version (0x01 0x00 0x00 0x00 for version 1)
-      if (wasmBytes[4] != 0x01
-          || wasmBytes[5] != 0x00
-          || wasmBytes[6] != 0x00
-          || wasmBytes[7] != 0x00) {
-        return ModuleValidationResult.failure(List.of("Unsupported WebAssembly version"));
-      }
-
-      // Basic structural validation - try to compile with engine
-      // This delegates to the actual engine implementation for deeper validation
-      try {
-        WasmRuntime runtime = engine.getRuntime();
-        Module testModule = runtime.compileModule(engine, wasmBytes);
-        testModule.close();
-        return ModuleValidationResult.success();
-      } catch (Exception e) {
-        // If compilation fails, return validation failure with the error message
-        return ModuleValidationResult.failure(
-            List.of("Compilation validation failed: " + e.getMessage()));
-      }
-
-    } catch (Exception e) {
-      return ModuleValidationResult.failure(List.of("Validation error: " + e.getMessage()));
+    // Basic WebAssembly magic number validation
+    if (wasmBytes.length < 8) {
+      return ModuleValidationResult.failure(
+          List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
     }
+
+    // Check WebAssembly magic number (0x00 0x61 0x73 0x6D)
+    if (wasmBytes[0] != 0x00
+        || wasmBytes[1] != 0x61
+        || wasmBytes[2] != 0x73
+        || wasmBytes[3] != 0x6D) {
+      return ModuleValidationResult.failure(List.of("Invalid WebAssembly magic number"));
+    }
+
+    // Check WebAssembly version (0x01 0x00 0x00 0x00 for version 1)
+    if (wasmBytes[4] != 0x01
+        || wasmBytes[5] != 0x00
+        || wasmBytes[6] != 0x00
+        || wasmBytes[7] != 0x00) {
+      return ModuleValidationResult.failure(List.of("Unsupported WebAssembly version"));
+    }
+
+    return ModuleValidationResult.success();
   }
 
   /**

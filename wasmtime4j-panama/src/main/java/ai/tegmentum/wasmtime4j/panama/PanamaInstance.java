@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Instance;
-import ai.tegmentum.wasmtime4j.InstanceState;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -124,7 +123,6 @@ public final class PanamaInstance implements Instance {
   private final PanamaModule module;
   private final PanamaStore store;
   private final MemorySegment nativeInstance;
-  private final long createdAtMicros;
   private final AtomicBoolean disposed = new AtomicBoolean(false);
   private final NativeResourceHandle resourceHandle;
 
@@ -159,7 +157,6 @@ public final class PanamaInstance implements Instance {
 
     this.module = module;
     this.store = store;
-    this.createdAtMicros = System.currentTimeMillis() * 1000L;
 
     // Create native instance via Panama FFI
     this.nativeInstance =
@@ -196,7 +193,6 @@ public final class PanamaInstance implements Instance {
     this.nativeInstance = nativeInstance;
     this.module = module;
     this.store = store;
-    this.createdAtMicros = System.currentTimeMillis() * 1000L;
 
     this.resourceHandle = createResourceHandle();
 
@@ -640,6 +636,80 @@ public final class PanamaInstance implements Instance {
     }
   }
 
+  @Override
+  public Optional<ai.tegmentum.wasmtime4j.Extern> getExport(
+      final ai.tegmentum.wasmtime4j.Store store,
+      final ai.tegmentum.wasmtime4j.ModuleExport moduleExport)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (moduleExport == null) {
+      throw new IllegalArgumentException("ModuleExport cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalStateException("Store must be a PanamaStore instance");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+
+    try (final Arena exportArena = Arena.ofConfined()) {
+      final MemorySegment outHandle = exportArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outType = exportArena.allocate(ValueLayout.JAVA_INT);
+
+      final MemorySegment moduleExportPtr =
+          MemorySegment.ofAddress(moduleExport.nativeHandle());
+
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.panamaInstanceGetModuleExport(
+              nativeInstance, panamaStore.getNativeStore(), moduleExportPtr, outHandle, outType);
+
+      if (result != 0) {
+        return Optional.empty();
+      }
+
+      final MemorySegment externHandle = outHandle.get(ValueLayout.ADDRESS, 0);
+      final int externType = outType.get(ValueLayout.JAVA_INT, 0);
+
+      if (externHandle.equals(MemorySegment.NULL) || externHandle.address() == 0
+          || externType < 0) {
+        return Optional.empty();
+      }
+
+      return Optional.of(createExternFromNative(externHandle, externType, panamaStore));
+    } catch (final Exception e) {
+      LOGGER.warning("Error getting module export: " + e.getMessage());
+      return Optional.empty();
+    }
+  }
+
+  /**
+   * Creates the appropriate Extern wrapper from a native handle and type code.
+   *
+   * @param handle the native extern handle
+   * @param nativeType the native type code (0=Func, 1=Global, 2=Table, 3=Memory)
+   * @param panamaStore the Panama store
+   * @return the Extern wrapper
+   */
+  private static ai.tegmentum.wasmtime4j.Extern createExternFromNative(
+      final MemorySegment handle, final int nativeType, final PanamaStore panamaStore) {
+    switch (nativeType) {
+      case 0:
+        return new PanamaExternFunc(handle, panamaStore);
+      case 1:
+        return new PanamaExternGlobal(handle, panamaStore);
+      case 2:
+        return new PanamaExternTable(handle, panamaStore);
+      case 3:
+        return new PanamaExternMemory(handle, panamaStore);
+      default:
+        LOGGER.warning("Unknown native extern type: " + nativeType);
+        return new PanamaExternFunc(handle, panamaStore);
+    }
+  }
+
   /**
    * Checks if the instance has a function export with the given name.
    *
@@ -1021,42 +1091,8 @@ public final class PanamaInstance implements Instance {
   }
 
   @Override
-  public InstanceState getState() {
-    if (resourceHandle.isClosed() || disposed.get()) {
-      return InstanceState.DISPOSED;
-    }
-    return InstanceState.CREATED;
-  }
-
-  @Override
   public boolean isValid() {
     return !resourceHandle.isClosed() && !disposed.get();
-  }
-
-  @Override
-  public boolean dispose() throws WasmException {
-    if (disposed.getAndSet(true)) {
-      return false;
-    }
-    close();
-    return true;
-  }
-
-  @Override
-  public boolean isDisposed() {
-    return disposed.get();
-  }
-
-  @Override
-  public long getCreatedAtMicros() {
-    return createdAtMicros;
-  }
-
-  @Override
-  public int getMetadataExportCount() {
-    ensureNotClosed();
-    final long count = NATIVE_ENGINE_BINDINGS.moduleExportCount(module.getNativeModule());
-    return (int) count;
   }
 
   @Override
@@ -1429,7 +1465,6 @@ public final class PanamaInstance implements Instance {
    * @return the resource handle
    */
   private NativeResourceHandle createResourceHandle() {
-    final MemorySegment instanceHandle = this.nativeInstance;
     return new NativeResourceHandle(
         "PanamaInstance",
         () -> {
@@ -1443,15 +1478,8 @@ public final class PanamaInstance implements Instance {
           if (callArena != null && callArena.scope().isAlive()) {
             callArena.close();
           }
-          if (nativeInstance != null && !nativeInstance.equals(MemorySegment.NULL)) {
-            NATIVE_INSTANCE_BINDINGS.instanceDestroy(nativeInstance);
-          }
-        },
-        this,
-        () -> {
-          if (instanceHandle != null && !instanceHandle.equals(MemorySegment.NULL)) {
-            NATIVE_INSTANCE_BINDINGS.instanceDestroy(instanceHandle);
-          }
+          // Note: Wasmtime Instance is a Copy type (index into Store slab).
+          // No native destructor is needed — the Store owns the instance data.
         });
   }
 

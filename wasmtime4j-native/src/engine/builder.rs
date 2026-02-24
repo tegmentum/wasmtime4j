@@ -136,6 +136,16 @@ pub struct EngineConfigSummary {
     pub module_version_strategy: String,
     /// Instance allocation strategy (e.g., "OnDemand", "Pooling")
     pub allocation_strategy: String,
+    /// Whether Cranelift compiler inlining is enabled
+    pub compiler_inlining: bool,
+    /// Whether debug adapter modules are enabled
+    pub debug_adapter_modules: bool,
+    /// Whether forced memfd memory initialization is enabled (Linux-specific)
+    pub force_memory_init_memfd: bool,
+    /// Whether Cranelift Wasmtime debug checks are enabled
+    pub cranelift_debug_checks: bool,
+    /// Whether the compiler is enabled (allows compiling new modules)
+    pub enable_compiler: bool,
 }
 
 impl Default for EngineConfigSummary {
@@ -200,14 +210,19 @@ impl Default for EngineConfigSummary {
             shared_memory: false,
             module_version_strategy: "WasmtimeVersion".to_string(),
             allocation_strategy: "OnDemand".to_string(),
+            compiler_inlining: true,
+            debug_adapter_modules: false,
+            force_memory_init_memfd: false,
+            cranelift_debug_checks: false,
+            enable_compiler: true,
         }
     }
 }
 
 impl EngineConfigSummary {
-    pub(crate) fn from_config(_config: &Config) -> Self {
-        // Note: Wasmtime Config doesn't expose all settings for introspection
-        // We track what we can and make reasonable assumptions
+    pub(crate) fn default_assumptions() -> Self {
+        // Note: Wasmtime Config doesn't expose settings for introspection.
+        // This returns hardcoded Wasmtime defaults — not the actual config.
         EngineConfigSummary {
             strategy: "Cranelift".to_string(),          // Default assumption
             opt_level: "Speed".to_string(),             // Default assumption
@@ -269,6 +284,11 @@ impl EngineConfigSummary {
             shared_memory: false,                  // Shared memory off by default
             module_version_strategy: "WasmtimeVersion".to_string(), // Use wasmtime version
             allocation_strategy: "OnDemand".to_string(), // On-demand allocation by default
+            compiler_inlining: true,            // Compiler inlining on by default
+            debug_adapter_modules: false,       // Debug adapter modules off by default
+            force_memory_init_memfd: false,     // Force memfd off by default
+            cranelift_debug_checks: false,      // Cranelift debug checks off by default
+            enable_compiler: true,              // Compiler enabled by default
         }
     }
 
@@ -390,6 +410,11 @@ impl EngineConfigSummary {
                     _ => "Unknown".to_string(),
                 })
                 .unwrap_or_else(|| "OnDemand".to_string()),
+            compiler_inlining: builder.compiler_inlining,
+            debug_adapter_modules: builder.debug_adapter_modules,
+            force_memory_init_memfd: builder.force_memory_init_memfd,
+            cranelift_debug_checks: builder.cranelift_debug_checks,
+            enable_compiler: builder.enable_compiler,
         }
     }
 }
@@ -482,6 +507,16 @@ pub struct EngineBuilder {
     pub(crate) profiling_strategy: wasmtime::ProfilingStrategy,
     // Native unwind info
     pub(crate) native_unwind_info: bool,
+    // Cranelift compiler inlining
+    pub(crate) compiler_inlining: bool,
+    // Debug adapter modules support
+    pub(crate) debug_adapter_modules: bool,
+    // Force memfd for memory initialization (Linux optimization)
+    pub(crate) force_memory_init_memfd: bool,
+    // Cranelift Wasmtime debug checks
+    pub(crate) cranelift_debug_checks: bool,
+    // Enable or disable the compiler (allows runtime-only engines)
+    pub(crate) enable_compiler: bool,
 }
 
 impl EngineBuilder {
@@ -581,6 +616,11 @@ impl EngineBuilder {
             allocation_strategy: None, // Allocation strategy - use wasmtime default (OnDemand)
             profiling_strategy: wasmtime::ProfilingStrategy::None, // No profiling by default
             native_unwind_info: true, // Native unwind info - on by default (wasmtime default)
+            compiler_inlining: true, // Compiler inlining - on by default (wasmtime default)
+            debug_adapter_modules: false, // Debug adapter modules - off by default
+            force_memory_init_memfd: false, // Force memfd - off by default (Linux-specific)
+            cranelift_debug_checks: false, // Cranelift debug checks - off by default
+            enable_compiler: true, // Compiler enabled - on by default
         }
     }
 
@@ -771,9 +811,7 @@ impl EngineBuilder {
 
     /// Enable or disable fuel consumption tracking
     pub fn fuel_enabled(mut self, enable: bool) -> Self {
-        if enable {
-            self.config.consume_fuel(true);
-        }
+        self.config.consume_fuel(enable);
         self.fuel_enabled = enable;
         self
     }
@@ -795,9 +833,7 @@ impl EngineBuilder {
 
     /// Enable or disable epoch-based interruption
     pub fn epoch_interruption(mut self, enable: bool) -> Self {
-        if enable {
-            self.config.epoch_interruption(true);
-        }
+        self.config.epoch_interruption(enable);
         self.epoch_interruption = enable;
         self
     }
@@ -1242,6 +1278,71 @@ impl EngineBuilder {
     pub fn native_unwind_info(mut self, enable: bool) -> Self {
         self.config.native_unwind_info(enable);
         self.native_unwind_info = enable;
+        self
+    }
+
+    /// Enable or disable Cranelift function inlining
+    ///
+    /// When enabled (the default), Cranelift may inline functions during compilation
+    /// for better runtime performance.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable compiler inlining
+    pub fn compiler_inlining(mut self, enable: bool) -> Self {
+        self.config.compiler_inlining(enable);
+        self.compiler_inlining = enable;
+        self
+    }
+
+    /// Enable or disable debug adapter modules
+    ///
+    /// When enabled, debug adapter modules are allowed for DAP-based debugging.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable debug adapter modules
+    pub fn debug_adapter_modules(mut self, enable: bool) -> Self {
+        self.config.debug_adapter_modules(enable);
+        self.debug_adapter_modules = enable;
+        self
+    }
+
+    /// Enable or disable forcing memfd for memory initialization (Linux)
+    ///
+    /// When enabled, Wasmtime will always use memfd for memory initialization,
+    /// even when copy-on-write initialization might not otherwise use it.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to force memfd memory initialization
+    pub fn force_memory_init_memfd(mut self, enable: bool) -> Self {
+        self.config.force_memory_init_memfd(enable);
+        self.force_memory_init_memfd = enable;
+        self
+    }
+
+    /// Enable or disable Cranelift Wasmtime-specific debug checks
+    ///
+    /// When enabled, additional runtime assertions are inserted into compiled code
+    /// to verify Wasmtime invariants. Primarily for Wasmtime development.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable Cranelift debug checks
+    pub fn cranelift_debug_checks(mut self, enable: bool) -> Self {
+        self.config.cranelift_wasmtime_debug_checks(enable);
+        self.cranelift_debug_checks = enable;
+        self
+    }
+
+    /// Enable or disable the compiler
+    ///
+    /// When disabled, the engine can only execute pre-compiled modules and cannot
+    /// compile new WebAssembly modules. This is useful for runtime-only deployments
+    /// where compilation is done ahead of time.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to enable the compiler (default: true)
+    pub fn enable_compiler(mut self, enable: bool) -> Self {
+        self.config.enable_compiler(enable);
+        self.enable_compiler = enable;
         self
     }
 

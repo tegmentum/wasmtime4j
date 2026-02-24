@@ -90,7 +90,7 @@ impl Engine {
         // This is enforced even for external configs to ensure JVM safety
         config.signals_based_traps(false);
 
-        let summary = EngineConfigSummary::from_config(&config);
+        let summary = EngineConfigSummary::default_assumptions();
 
         let engine = WasmtimeEngine::new(&config).map_err(|e| WasmtimeError::EngineConfig {
             message: format!("Failed to create Wasmtime engine: {}", e),
@@ -340,6 +340,8 @@ impl Engine {
         WeakEngine {
             inner: Arc::downgrade(&self.inner),
             config_summary: self.config_summary.clone(),
+            concurrent_ops_lock: Arc::clone(&self.concurrent_ops_lock),
+            is_closed: Arc::clone(&self.is_closed),
         }
     }
 
@@ -460,6 +462,8 @@ impl Default for Engine {
 pub struct WeakEngine {
     inner: std::sync::Weak<WasmtimeEngine>,
     config_summary: EngineConfigSummary,
+    concurrent_ops_lock: Arc<RwLock<()>>,
+    is_closed: Arc<AtomicBool>,
 }
 
 impl WeakEngine {
@@ -472,8 +476,8 @@ impl WeakEngine {
         Some(Engine {
             inner,
             config_summary: self.config_summary.clone(),
-            concurrent_ops_lock: Arc::new(RwLock::new(())),
-            is_closed: Arc::new(AtomicBool::new(false)),
+            concurrent_ops_lock: Arc::clone(&self.concurrent_ops_lock),
+            is_closed: Arc::clone(&self.is_closed),
         })
     }
 }
