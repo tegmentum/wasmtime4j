@@ -164,5 +164,4 @@ class RegallocAlgorithmTest {
           "toString should return value");
     }
   }
-
 }

@@ -58,9 +58,7 @@ public interface StreamWriter extends AutoCloseable {
    */
   void cancelWrite() throws WasmException;
 
-  /**
-   * Closes the stream, signaling to the reader that no more values will be produced.
-   */
+  /** Closes the stream, signaling to the reader that no more values will be produced. */
   @Override
   void close();
 }

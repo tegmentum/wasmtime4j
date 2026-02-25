@@ -1760,8 +1760,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Async memory growth failed", e);
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException("Async memory growth failed", e);
     }
   }
 

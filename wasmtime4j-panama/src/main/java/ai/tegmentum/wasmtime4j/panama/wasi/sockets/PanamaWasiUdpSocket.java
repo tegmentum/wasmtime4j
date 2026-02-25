@@ -19,8 +19,8 @@ package ai.tegmentum.wasmtime4j.panama.wasi.sockets;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiPollable;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpAddressFamily;
 import ai.tegmentum.wasmtime4j.wasi.sockets.IpSocketAddress;
@@ -408,7 +408,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     }
 
     try (final Arena arena = Arena.ofConfined()) {
-      final SocketAddressCodec.AddressParams params = SocketAddressCodec.encodeAddress(localAddress, arena);
+      final SocketAddressCodec.AddressParams params =
+          SocketAddressCodec.encodeAddress(localAddress, arena);
 
       final int result =
           (int)
@@ -471,7 +472,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
     }
 
     try (final Arena arena = Arena.ofConfined()) {
-      final SocketAddressCodec.AddressParams params = SocketAddressCodec.encodeAddress(remoteAddress, arena);
+      final SocketAddressCodec.AddressParams params =
+          SocketAddressCodec.encodeAddress(remoteAddress, arena);
 
       final int result =
           (int)
@@ -524,7 +526,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
         throw new WasmException("Failed to get local address");
       }
 
-      return SocketAddressCodec.decodeAddress(outIsIpv4, outAddrBuf, outPort, outFlowInfo, outScopeId);
+      return SocketAddressCodec.decodeAddress(
+          outIsIpv4, outAddrBuf, outPort, outFlowInfo, outScopeId);
 
     } catch (final WasmException e) {
       throw e;
@@ -561,7 +564,8 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
         throw new WasmException("Failed to get remote address");
       }
 
-      return SocketAddressCodec.decodeAddress(outIsIpv4, outAddrBuf, outPort, outFlowInfo, outScopeId);
+      return SocketAddressCodec.decodeAddress(
+          outIsIpv4, outAddrBuf, outPort, outFlowInfo, outScopeId);
 
     } catch (final WasmException e) {
       throw e;
@@ -957,5 +961,4 @@ public final class PanamaWasiUdpSocket implements WasiUdpSocket {
   public void close() throws WasmException {
     resourceHandle.close();
   }
-
 }

@@ -291,7 +291,8 @@ class PanamaModuleTest {
 
       // WAT-compiled modules don't store the original WASM bytes internally,
       // so getWasmBytes() returns null
-      assertNull(module.getWasmBytes(), "WAT-compiled module should return null for getWasmBytes()");
+      assertNull(
+          module.getWasmBytes(), "WAT-compiled module should return null for getWasmBytes()");
       LOGGER.info("WAT-compiled module correctly returns null for getWasmBytes()");
     }
   }

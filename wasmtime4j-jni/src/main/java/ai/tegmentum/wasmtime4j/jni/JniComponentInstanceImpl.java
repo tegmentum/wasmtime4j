@@ -6,12 +6,16 @@ import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ConcurrentCall;
+import ai.tegmentum.wasmtime4j.component.ConcurrentCallCodec;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitValue;
 import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -96,8 +100,9 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
 
       for (int i = 0; i < exportCount; i++) {
         final String name = JniComponent.nativeGetComponentExportName(componentHandle, i);
-        if (name != null && JniComponent.nativeComponentInstanceHasFunc(
-            engineHandle, instanceHandle, name) != 0) {
+        if (name != null
+            && JniComponent.nativeComponentInstanceHasFunc(engineHandle, instanceHandle, name)
+                != 0) {
           functions.add(name);
         }
       }
@@ -228,6 +233,32 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
       throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
     } catch (final Exception e) {
       throw new WasmException("Function invocation failed: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public List<List<ComponentVal>> runConcurrent(final List<ConcurrentCall> calls)
+      throws WasmException {
+    if (calls == null || calls.isEmpty()) {
+      throw new IllegalArgumentException("calls cannot be null or empty");
+    }
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+
+    try {
+      final String jsonInput = ConcurrentCallCodec.serializeCalls(calls);
+      final String jsonResult =
+          JniComponent.nativeRunConcurrentCalls(
+              component.getEngine().getNativeHandle(), nativeInstance.getNativeHandle(), jsonInput);
+      if (jsonResult == null) {
+        throw new WasmException("Native concurrent call returned null result");
+      }
+      return ConcurrentCallCodec.deserializeResults(jsonResult);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Concurrent call execution failed: " + e.getMessage(), e);
     }
   }
 

@@ -337,5 +337,4 @@ public final class ArenaResourceManager implements AutoCloseable {
       return "ManagedNativeResource{description='" + description + "', closed=" + closed + "}";
     }
   }
-
 }

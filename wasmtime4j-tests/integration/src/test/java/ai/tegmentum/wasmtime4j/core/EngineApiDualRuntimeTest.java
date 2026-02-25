@@ -56,17 +56,51 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @SuppressWarnings("deprecation")
 public class EngineApiDualRuntimeTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(EngineApiDualRuntimeTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(EngineApiDualRuntimeTest.class.getName());
 
   /** Minimal valid WASM binary: (func (export "add") (param i32 i32) (result i32)). */
   private static final byte[] ADD_WASM = {
-    0x00, 0x61, 0x73, 0x6D, // magic
-    0x01, 0x00, 0x00, 0x00, // version
-    0x01, 0x07, 0x01, 0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F, // type section
-    0x03, 0x02, 0x01, 0x00, // function section
-    0x07, 0x07, 0x01, 0x03, 0x61, 0x64, 0x64, 0x00, 0x00, // export "add"
-    0x0A, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x01, 0x6A, 0x0B // code
+    0x00,
+    0x61,
+    0x73,
+    0x6D, // magic
+    0x01,
+    0x00,
+    0x00,
+    0x00, // version
+    0x01,
+    0x07,
+    0x01,
+    0x60,
+    0x02,
+    0x7F,
+    0x7F,
+    0x01,
+    0x7F, // type section
+    0x03,
+    0x02,
+    0x01,
+    0x00, // function section
+    0x07,
+    0x07,
+    0x01,
+    0x03,
+    0x61,
+    0x64,
+    0x64,
+    0x00,
+    0x00, // export "add"
+    0x0A,
+    0x09,
+    0x01,
+    0x07,
+    0x00,
+    0x20,
+    0x00,
+    0x20,
+    0x01,
+    0x6A,
+    0x0B // code
   };
 
   private static final String SIMPLE_MODULE_WAT = "(module)";
@@ -496,8 +530,7 @@ public class EngineApiDualRuntimeTest extends DualRuntimeTest {
 
       // Wasmtime always supports bulk_memory and reference_types in recent versions
       assertTrue(
-          engine.supportsFeature(WasmFeature.BULK_MEMORY),
-          "BULK_MEMORY should be supported");
+          engine.supportsFeature(WasmFeature.BULK_MEMORY), "BULK_MEMORY should be supported");
       assertTrue(
           engine.supportsFeature(WasmFeature.REFERENCE_TYPES),
           "REFERENCE_TYPES should be supported");
@@ -670,10 +703,7 @@ public class EngineApiDualRuntimeTest extends DualRuntimeTest {
       final Engine engine = Engine.create();
       engine.close();
 
-      assertThrows(
-          Exception.class,
-          engine::createStore,
-          "createStore after close should throw");
+      assertThrows(Exception.class, engine::createStore, "createStore after close should throw");
       LOGGER.info("[" + runtime + "] createStore after close correctly rejected");
     }
 
@@ -692,7 +722,8 @@ public class EngineApiDualRuntimeTest extends DualRuntimeTest {
         engine.supportsFeature(WasmFeature.BULK_MEMORY);
         LOGGER.info("[" + runtime + "] supportsFeature returned cached value after close");
       } catch (final Exception e) {
-        LOGGER.info("[" + runtime + "] supportsFeature threw after close: " + e.getClass().getName());
+        LOGGER.info(
+            "[" + runtime + "] supportsFeature threw after close: " + e.getClass().getName());
       }
     }
   }
@@ -821,9 +852,7 @@ public class EngineApiDualRuntimeTest extends DualRuntimeTest {
       final Engine engine = Engine.create();
       resources.add(engine);
 
-      assertNull(
-          engine.detectPrecompiled(new byte[0]),
-          "Empty bytes should return null");
+      assertNull(engine.detectPrecompiled(new byte[0]), "Empty bytes should return null");
       LOGGER.info("[" + runtime + "] Empty bytes correctly returned null");
     }
 
@@ -839,8 +868,7 @@ public class EngineApiDualRuntimeTest extends DualRuntimeTest {
 
       final byte[] random = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
       assertNull(
-          engine.detectPrecompiled(random),
-          "Random bytes should return null (not precompiled)");
+          engine.detectPrecompiled(random), "Random bytes should return null (not precompiled)");
       LOGGER.info("[" + runtime + "] Random bytes correctly returned null");
     }
 
@@ -978,9 +1006,7 @@ public class EngineApiDualRuntimeTest extends DualRuntimeTest {
       engine.close();
 
       assertThrows(
-          Exception.class,
-          engine::incrementEpoch,
-          "incrementEpoch after close should throw");
+          Exception.class, engine::incrementEpoch, "incrementEpoch after close should throw");
       LOGGER.info("[" + runtime + "] incrementEpoch after close correctly rejected");
     }
   }

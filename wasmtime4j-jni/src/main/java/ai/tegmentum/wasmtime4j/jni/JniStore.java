@@ -692,8 +692,8 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
-  public Instance createInstance(final Module module, final ai.tegmentum.wasmtime4j.Extern[] imports)
-      throws WasmException {
+  public Instance createInstance(
+      final Module module, final ai.tegmentum.wasmtime4j.Extern[] imports) throws WasmException {
     Objects.requireNonNull(module, "Module cannot be null");
     Objects.requireNonNull(imports, "Imports cannot be null");
     ensureNotClosed();
@@ -764,8 +764,7 @@ public final class JniStore extends JniResource implements Store {
    * @param type the Java ExternType
    * @return the native type code
    */
-  private static int externTypeToNativeCode(
-      final ai.tegmentum.wasmtime4j.type.ExternType type) {
+  private static int externTypeToNativeCode(final ai.tegmentum.wasmtime4j.type.ExternType type) {
     switch (type) {
       case FUNC:
         return 0;
@@ -1406,8 +1405,7 @@ public final class JniStore extends JniResource implements Store {
           }
 
           @Override
-          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(
-              final boolean enabled) {
+          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(final boolean enabled) {
             nativeSetSingleStep(storeHandle, enabled);
             return this;
           }

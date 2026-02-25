@@ -185,6 +185,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateE
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeCreateEngineWithExtensions
+ * Signature: ([BLai/tegmentum/wasmtime4j/config/CacheStore;Lai/tegmentum/wasmtime4j/config/MemoryCreator;Lai/tegmentum/wasmtime4j/config/StackCreator;Lai/tegmentum/wasmtime4j/config/CustomCodeMemory;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithExtensions
+  (JNIEnv *, jclass, jbyteArray, jobject, jobject, jobject, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeClearHandleRegistries
  * Signature: ()I
  */

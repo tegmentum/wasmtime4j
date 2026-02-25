@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
-import ai.tegmentum.wasmtime4j.wit.WitS32;
 import ai.tegmentum.wasmtime4j.test.TestUtils;
+import ai.tegmentum.wasmtime4j.wit.WitS32;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,7 +98,6 @@ public final class ComponentFuncIntegrationTest {
         componentFuncAvailable,
         "ComponentFunc native implementation not available: " + unavailableReason);
   }
-
 
   private JniComponentEngine engine;
   private final List<AutoCloseable> resources = new ArrayList<>();

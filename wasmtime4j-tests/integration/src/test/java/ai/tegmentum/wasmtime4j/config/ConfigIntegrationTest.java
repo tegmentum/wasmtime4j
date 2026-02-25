@@ -87,7 +87,6 @@ public class ConfigIntegrationTest {
 
       LOGGER.info("CompilationStrategy enum values verified: " + strategies.length);
     }
-
   }
 
   @Nested

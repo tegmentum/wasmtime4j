@@ -167,9 +167,9 @@ public interface Instance extends Closeable {
   /**
    * Gets the default linear memory if the module exports one.
    *
-   * <p>This is a convenience method that first tries the conventional name "memory", then falls back
-   * to returning the first memory export found. This matches Wasmtime's behavior of returning the
-   * first exported memory.
+   * <p>This is a convenience method that first tries the conventional name "memory", then falls
+   * back to returning the first memory export found. This matches Wasmtime's behavior of returning
+   * the first exported memory.
    *
    * @return the default memory, or empty if no memory is exported
    */
@@ -191,8 +191,8 @@ public interface Instance extends Closeable {
    * Gets an exported shared memory by name.
    *
    * <p>Shared memories are memories that can be accessed concurrently from multiple threads. They
-   * are distinct from regular memories in that they use the {@code shared} attribute in their memory
-   * type definition.
+   * are distinct from regular memories in that they use the {@code shared} attribute in their
+   * memory type definition.
    *
    * <p>Requires that the engine was configured with {@code wasmThreads(true)}.
    *
@@ -360,13 +360,14 @@ public interface Instance extends Closeable {
    */
   static java.util.concurrent.CompletableFuture<Instance> createAsync(
       final Store store, final Module module) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-      try {
-        return store.createInstance(module);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return store.createInstance(module);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
@@ -384,12 +385,13 @@ public interface Instance extends Closeable {
    */
   static java.util.concurrent.CompletableFuture<Instance> createAsync(
       final Store store, final Module module, final Extern[] imports) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-      try {
-        return store.createInstance(module, imports);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return store.createInstance(module, imports);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 }

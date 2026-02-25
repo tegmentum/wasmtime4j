@@ -133,8 +133,7 @@ class I32ExitExceptionTest {
   void extendsWasiException() {
     final I32ExitException e = new I32ExitException(1);
 
-    assertInstanceOf(
-        WasiException.class, e, "I32ExitException should be a WasiException");
+    assertInstanceOf(WasiException.class, e, "I32ExitException should be a WasiException");
   }
 
   @Test
@@ -142,8 +141,7 @@ class I32ExitExceptionTest {
   void extendsWasmException() {
     final I32ExitException e = new I32ExitException(1);
 
-    assertInstanceOf(
-        WasmException.class, e, "I32ExitException should be a WasmException");
+    assertInstanceOf(WasmException.class, e, "I32ExitException should be a WasmException");
   }
 
   @Test
@@ -159,10 +157,7 @@ class I32ExitExceptionTest {
   void categoryIsSystem() {
     final I32ExitException e = new I32ExitException(0);
 
-    assertEquals(
-        WasiException.ErrorCategory.SYSTEM,
-        e.getCategory(),
-        "Category should be SYSTEM");
+    assertEquals(WasiException.ErrorCategory.SYSTEM, e.getCategory(), "Category should be SYSTEM");
   }
 
   @Test

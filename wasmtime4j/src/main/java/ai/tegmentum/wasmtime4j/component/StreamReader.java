@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -80,9 +79,7 @@ public interface StreamReader extends AutoCloseable {
    */
   boolean isClosed();
 
-  /**
-   * Closes this stream reader, releasing associated resources.
-   */
+  /** Closes this stream reader, releasing associated resources. */
   @Override
   void close();
 }

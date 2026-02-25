@@ -21,7 +21,7 @@ use wasmtime::{
         types::ComponentItem, Component as WasmtimeComponent,
         Instance as WasmtimeComponentInstance, Linker as ComponentLinker, ResourceTable, Type, Val,
     },
-    Engine, Store,
+    AsContextMut, Engine, Store,
 };
 
 #[cfg(feature = "wasi")]
@@ -87,6 +87,8 @@ pub struct ComponentInstanceHandle {
     pub last_accessed: Instant,
     /// Reference count
     pub ref_count: usize,
+    /// Original component bytes for re-compilation (e.g., with concurrent engine)
+    pub component_bytes: Arc<Vec<u8>>,
 }
 
 /// Component performance metrics
@@ -187,7 +189,7 @@ impl EnhancedComponentEngine {
             }
         }
 
-        Ok(Component::new(component, metadata))
+        Ok(Component::new(component, metadata, bytes.to_vec()))
     }
 
     /// Instantiate a component with full interface resolution
@@ -241,6 +243,7 @@ impl EnhancedComponentEngine {
             created_at: start_time,
             last_accessed: start_time,
             ref_count: 1,
+            component_bytes: Arc::clone(component.original_bytes()),
         };
 
         // Store the instance in the engine's HashMap to maintain Engine/Store/Instance ownership
@@ -859,6 +862,170 @@ impl EnhancedComponentEngine {
         Ok(active_instances)
     }
 
+    /// Execute multiple component function calls concurrently using Wasmtime's
+    /// native concurrent call support.
+    ///
+    /// This method re-compiles and re-instantiates the component with a
+    /// concurrent-capable engine (async + component-model-async), then uses
+    /// `StoreContextMut::run_concurrent` + `Func::call_concurrent` for true
+    /// Wasmtime-level concurrency within a single store.
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The instance whose component bytes will be used
+    /// * `calls` - List of (function_name, parameters) to execute concurrently
+    ///
+    /// # Returns
+    ///
+    /// Returns a vector of result vectors, one per call, in the same order as input.
+    ///
+    /// # Notes
+    ///
+    /// The concurrent instance is separate from the sync instance. State
+    /// modifications in concurrent calls are NOT visible to the sync instance.
+    pub fn run_concurrent_calls(
+        &self,
+        instance_id: u64,
+        calls: Vec<(String, Vec<Val>)>,
+    ) -> WasmtimeResult<Vec<Vec<Val>>> {
+        if calls.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        // Get the component bytes from the existing instance
+        let component_bytes = {
+            let instances =
+                self.instances
+                    .read()
+                    .map_err(|_| WasmtimeError::Concurrency {
+                        message: "Failed to acquire instances read lock".to_string(),
+                    })?;
+            let handle =
+                instances
+                    .get(&instance_id)
+                    .ok_or_else(|| WasmtimeError::InvalidParameter {
+                        message: format!("Instance {} not found", instance_id),
+                    })?;
+            Arc::clone(&handle.component_bytes)
+        };
+
+        // Get or create concurrent engine
+        let concurrent_engine =
+            crate::engine::get_shared_concurrent_component_engine();
+
+        // Compile component with concurrent engine
+        let component =
+            WasmtimeComponent::new(&concurrent_engine, component_bytes.as_slice()).map_err(|e| {
+                WasmtimeError::Compilation {
+                    message: format!(
+                        "Failed to compile component for concurrent execution: {}",
+                        e
+                    ),
+                }
+            })?;
+
+        // Use Tokio runtime for async operations
+        let runtime = crate::async_runtime::get_async_runtime();
+
+        runtime.block_on(async {
+            // Create store for concurrent execution
+            let store_data = ComponentStoreData {
+                instance_id: 0,
+                resource_table: ResourceTable::new(),
+                #[cfg(feature = "wasi")]
+                wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
+                start_time: Instant::now(),
+            };
+
+            let mut store = Store::new(&concurrent_engine, store_data);
+
+            // Create linker with async WASI support
+            let mut linker: ComponentLinker<ComponentStoreData> =
+                ComponentLinker::new(&concurrent_engine);
+
+            #[cfg(feature = "wasi")]
+            {
+                wasmtime_wasi::p2::add_to_linker_async(&mut linker).map_err(|e| {
+                    WasmtimeError::Instance {
+                        message: format!("Failed to add WASI to concurrent linker: {}", e),
+                    }
+                })?;
+            }
+
+            // Instantiate asynchronously (required for async engine)
+            let instance = linker
+                .instantiate_async(&mut store, &component)
+                .await
+                .map_err(|e| WasmtimeError::Instance {
+                    message: format!(
+                        "Failed to instantiate component for concurrent execution: {}",
+                        e
+                    ),
+                })?;
+
+            // Look up all functions and their result counts before entering concurrent scope
+            let mut funcs = Vec::with_capacity(calls.len());
+            let mut result_counts = Vec::with_capacity(calls.len());
+
+            for (name, _) in &calls {
+                let func =
+                    instance
+                        .get_func(&mut store, name)
+                        .ok_or_else(|| WasmtimeError::ImportExport {
+                            message: format!(
+                                "Function '{}' not found in concurrent instance",
+                                name
+                            ),
+                        })?;
+                let count = func.ty(&store).results().len();
+                funcs.push(func);
+                result_counts.push(count);
+            }
+
+            // Run concurrent scope using Wasmtime's native concurrent call support
+            let concurrent_results = store
+                .as_context_mut()
+                .run_concurrent(async |accessor| {
+                    let mut futures = Vec::with_capacity(calls.len());
+
+                    for (i, (func, (_, params))) in
+                        funcs.iter().zip(calls.iter()).enumerate()
+                    {
+                        let func = *func;
+                        let result_count = result_counts[i];
+                        let params = params.as_slice();
+                        let accessor = &accessor;
+
+                        futures.push(async move {
+                            let mut results = vec![Val::Bool(false); result_count];
+                            func.call_concurrent(accessor, params, &mut results)
+                                .await
+                                .map_err(|e| WasmtimeError::Runtime {
+                                    message: format!("Concurrent call failed: {}", e),
+                                    backtrace: None,
+                                })?;
+                            Ok::<Vec<Val>, WasmtimeError>(results)
+                        });
+                    }
+
+                    futures::future::join_all(futures).await
+                })
+                .await
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to run concurrent scope: {}", e),
+                    backtrace: None,
+                })?;
+
+            // Collect results, propagating any errors
+            let mut final_results = Vec::with_capacity(concurrent_results.len());
+            for result in concurrent_results {
+                final_results.push(result?);
+            }
+
+            Ok(final_results)
+        })
+    }
+
 }
 
 // Implement WasiView for ComponentStoreData to enable WASI Preview 2 component model
@@ -881,6 +1048,264 @@ impl Default for ComponentStoreData {
             wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
             start_time: Instant::now(),
         }
+    }
+}
+
+/// JSON serialization types for concurrent component calls.
+///
+/// These types enable simple JSON-based serialization of concurrent call
+/// batches across the FFI boundary. This is used instead of the binary
+/// WitValueFFI format because the concurrent call path already involves
+/// expensive operations (re-compilation, re-instantiation), making JSON
+/// overhead negligible.
+pub mod concurrent_call_json {
+    use serde::{Deserialize, Serialize};
+    use wasmtime::component::Val;
+
+    use crate::error::{WasmtimeError, WasmtimeResult};
+
+    /// A single concurrent call in JSON format
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct JsonConcurrentCall {
+        /// Function name to call
+        pub name: String,
+        /// Function arguments
+        pub args: Vec<JsonVal>,
+    }
+
+    /// A component value in JSON-serializable format
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    #[serde(tag = "type", content = "value")]
+    pub enum JsonVal {
+        /// Boolean value
+        Bool(bool),
+        /// Signed 8-bit integer
+        S8(i8),
+        /// Signed 16-bit integer
+        S16(i16),
+        /// Signed 32-bit integer
+        S32(i32),
+        /// Signed 64-bit integer
+        S64(i64),
+        /// Unsigned 8-bit integer
+        U8(u8),
+        /// Unsigned 16-bit integer
+        U16(u16),
+        /// Unsigned 32-bit integer
+        U32(u32),
+        /// Unsigned 64-bit integer
+        U64(u64),
+        /// 32-bit float
+        Float32(f32),
+        /// 64-bit float
+        Float64(f64),
+        /// Unicode character
+        Char(char),
+        /// String value
+        String(String),
+        /// List of values
+        List(Vec<JsonVal>),
+        /// Record (named fields in definition order)
+        Record(Vec<(String, JsonVal)>),
+        /// Tuple
+        Tuple(Vec<JsonVal>),
+        /// Variant (discriminant name + optional payload)
+        Variant {
+            discriminant: String,
+            value: Option<Box<JsonVal>>,
+        },
+        /// Enum (discriminant name)
+        Enum(String),
+        /// Optional value
+        Option(Option<Box<JsonVal>>),
+        /// Result value (ok or err)
+        Result {
+            ok: Option<Box<JsonVal>>,
+            err: Option<Box<JsonVal>>,
+            is_ok: bool,
+        },
+        /// Bit flags (set of active flag names)
+        Flags(Vec<String>),
+    }
+
+    impl JsonVal {
+        /// Convert a Wasmtime `Val` to a `JsonVal`
+        pub fn from_val(val: &Val) -> WasmtimeResult<Self> {
+            match val {
+                Val::Bool(v) => Ok(JsonVal::Bool(*v)),
+                Val::S8(v) => Ok(JsonVal::S8(*v)),
+                Val::S16(v) => Ok(JsonVal::S16(*v)),
+                Val::S32(v) => Ok(JsonVal::S32(*v)),
+                Val::S64(v) => Ok(JsonVal::S64(*v)),
+                Val::U8(v) => Ok(JsonVal::U8(*v)),
+                Val::U16(v) => Ok(JsonVal::U16(*v)),
+                Val::U32(v) => Ok(JsonVal::U32(*v)),
+                Val::U64(v) => Ok(JsonVal::U64(*v)),
+                Val::Float32(v) => Ok(JsonVal::Float32(*v)),
+                Val::Float64(v) => Ok(JsonVal::Float64(*v)),
+                Val::Char(v) => Ok(JsonVal::Char(*v)),
+                Val::String(v) => Ok(JsonVal::String(v.to_string())),
+                Val::List(items) => {
+                    let json_items: WasmtimeResult<Vec<JsonVal>> =
+                        items.iter().map(JsonVal::from_val).collect();
+                    Ok(JsonVal::List(json_items?))
+                }
+                Val::Record(fields) => {
+                    let json_fields: WasmtimeResult<Vec<(String, JsonVal)>> = fields
+                        .iter()
+                        .map(|(name, val)| {
+                            JsonVal::from_val(val).map(|jv| (name.clone(), jv))
+                        })
+                        .collect();
+                    Ok(JsonVal::Record(json_fields?))
+                }
+                Val::Tuple(elements) => {
+                    let json_elements: WasmtimeResult<Vec<JsonVal>> =
+                        elements.iter().map(JsonVal::from_val).collect();
+                    Ok(JsonVal::Tuple(json_elements?))
+                }
+                Val::Variant(discriminant, payload) => Ok(JsonVal::Variant {
+                    discriminant: discriminant.clone(),
+                    value: payload
+                        .as_ref()
+                        .map(|v| JsonVal::from_val(v).map(Box::new))
+                        .transpose()?,
+                }),
+                Val::Enum(discriminant) => Ok(JsonVal::Enum(discriminant.clone())),
+                Val::Option(opt) => Ok(JsonVal::Option(
+                    opt.as_ref()
+                        .map(|v| JsonVal::from_val(v).map(Box::new))
+                        .transpose()?,
+                )),
+                Val::Result(res) => match res {
+                    Ok(ok_val) => Ok(JsonVal::Result {
+                        ok: ok_val
+                            .as_ref()
+                            .map(|v| JsonVal::from_val(v).map(Box::new))
+                            .transpose()?,
+                        err: None,
+                        is_ok: true,
+                    }),
+                    Err(err_val) => Ok(JsonVal::Result {
+                        ok: None,
+                        err: err_val
+                            .as_ref()
+                            .map(|v| JsonVal::from_val(v).map(Box::new))
+                            .transpose()?,
+                        is_ok: false,
+                    }),
+                },
+                Val::Flags(v) => Ok(JsonVal::Flags(v.clone())),
+                Val::Resource(_) => Err(WasmtimeError::InvalidParameter {
+                    message: "Resource values cannot be serialized for concurrent calls"
+                        .to_string(),
+                }),
+                Val::Future(_) | Val::Stream(_) | Val::ErrorContext(_) => {
+                    Err(WasmtimeError::InvalidParameter {
+                        message: "Async values (future/stream/error-context) cannot be serialized for concurrent calls"
+                            .to_string(),
+                    })
+                }
+            }
+        }
+
+        /// Convert a `JsonVal` to a Wasmtime `Val`
+        pub fn to_val(&self) -> WasmtimeResult<Val> {
+            match self {
+                JsonVal::Bool(v) => Ok(Val::Bool(*v)),
+                JsonVal::S8(v) => Ok(Val::S8(*v)),
+                JsonVal::S16(v) => Ok(Val::S16(*v)),
+                JsonVal::S32(v) => Ok(Val::S32(*v)),
+                JsonVal::S64(v) => Ok(Val::S64(*v)),
+                JsonVal::U8(v) => Ok(Val::U8(*v)),
+                JsonVal::U16(v) => Ok(Val::U16(*v)),
+                JsonVal::U32(v) => Ok(Val::U32(*v)),
+                JsonVal::U64(v) => Ok(Val::U64(*v)),
+                JsonVal::Float32(v) => Ok(Val::Float32(*v)),
+                JsonVal::Float64(v) => Ok(Val::Float64(*v)),
+                JsonVal::Char(v) => Ok(Val::Char(*v)),
+                JsonVal::String(v) => Ok(Val::String(v.clone().into())),
+                JsonVal::List(items) => {
+                    let vals: WasmtimeResult<Vec<Val>> =
+                        items.iter().map(JsonVal::to_val).collect();
+                    Ok(Val::List(vals?.into()))
+                }
+                JsonVal::Record(fields) => {
+                    let vals: WasmtimeResult<Vec<(String, Val)>> = fields
+                        .iter()
+                        .map(|(name, jv)| jv.to_val().map(|v| (name.clone(), v)))
+                        .collect();
+                    Ok(Val::Record(vals?))
+                }
+                JsonVal::Tuple(elements) => {
+                    let vals: WasmtimeResult<Vec<Val>> =
+                        elements.iter().map(JsonVal::to_val).collect();
+                    Ok(Val::Tuple(vals?.into()))
+                }
+                JsonVal::Variant {
+                    discriminant,
+                    value,
+                } => Ok(Val::Variant(
+                    discriminant.clone(),
+                    value
+                        .as_ref()
+                        .map(|v| v.to_val().map(Box::new))
+                        .transpose()?,
+                )),
+                JsonVal::Enum(v) => Ok(Val::Enum(v.clone())),
+                JsonVal::Option(opt) => Ok(Val::Option(
+                    opt.as_ref()
+                        .map(|v| v.to_val().map(Box::new))
+                        .transpose()?,
+                )),
+                JsonVal::Result { ok, err, is_ok } => {
+                    if *is_ok {
+                        Ok(Val::Result(Ok(
+                            ok.as_ref()
+                                .map(|v| v.to_val().map(Box::new))
+                                .transpose()?,
+                        )))
+                    } else {
+                        Ok(Val::Result(Err(
+                            err.as_ref()
+                                .map(|v| v.to_val().map(Box::new))
+                                .transpose()?,
+                        )))
+                    }
+                }
+                JsonVal::Flags(v) => Ok(Val::Flags(v.clone())),
+            }
+        }
+    }
+
+    /// Deserialize a JSON batch of concurrent calls into the format expected by
+    /// `EnhancedComponentEngine::run_concurrent_calls`.
+    pub fn deserialize_calls(json: &str) -> WasmtimeResult<Vec<(String, Vec<Val>)>> {
+        let calls: Vec<JsonConcurrentCall> =
+            serde_json::from_str(json).map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to deserialize concurrent calls JSON: {}", e),
+            })?;
+
+        let mut result = Vec::with_capacity(calls.len());
+        for call in calls {
+            let params: WasmtimeResult<Vec<Val>> =
+                call.args.iter().map(JsonVal::to_val).collect();
+            result.push((call.name, params?));
+        }
+
+        Ok(result)
+    }
+
+    /// Serialize concurrent call results to JSON.
+    pub fn serialize_results(results: &[Vec<Val>]) -> WasmtimeResult<String> {
+        let json_results: WasmtimeResult<Vec<Vec<JsonVal>>> = results
+            .iter()
+            .map(|result_vals| result_vals.iter().map(JsonVal::from_val).collect())
+            .collect();
+
+        serde_json::to_string(&json_results?).map_err(|e| WasmtimeError::Internal {
+            message: format!("Failed to serialize concurrent call results: {}", e),
+        })
     }
 }
 

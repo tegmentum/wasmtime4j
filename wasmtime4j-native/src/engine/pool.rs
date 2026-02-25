@@ -165,6 +165,54 @@ pub fn get_shared_async_wasmtime_engine() -> WasmtimeEngine {
     }
 }
 
+/// Shared wasmtime::Engine with async + component model async support.
+/// Used for concurrent component function calls via `call_concurrent`.
+///
+/// Uses OnceLock with Result to prevent panics on initialization failure.
+pub(crate) static SHARED_CONCURRENT_COMPONENT_ENGINE: OnceLock<Result<WasmtimeEngine, String>> =
+    OnceLock::new();
+
+/// Internal helper to initialize the shared concurrent component engine safely.
+pub(crate) fn init_shared_concurrent_component_engine() -> Result<WasmtimeEngine, String> {
+    let mut config = safe_wasmtime_config();
+    config.wasm_component_model(true);
+    config.async_support(true);
+    config.wasm_component_model_async(true);
+    config.wasm_simd(true);
+    config.wasm_bulk_memory(true);
+    config.wasm_multi_value(true);
+    config.wasm_reference_types(true);
+    WasmtimeEngine::new(&config)
+        .map_err(|e| format!("Failed to create concurrent component engine: {}", e))
+}
+
+/// Returns a clone of the shared concurrent component wasmtime::Engine.
+/// Used for concurrent component function calls.
+///
+/// # Panics
+/// Logs an error and returns a fallback engine if initialization failed.
+pub fn get_shared_concurrent_component_engine() -> WasmtimeEngine {
+    let result = SHARED_CONCURRENT_COMPONENT_ENGINE
+        .get_or_init(init_shared_concurrent_component_engine);
+    match result {
+        Ok(engine) => engine.clone(),
+        Err(e) => {
+            log::error!(
+                "Concurrent component engine initialization failed: {}. Creating fallback.",
+                e
+            );
+            let mut config = safe_wasmtime_config();
+            config.wasm_component_model(true);
+            config.async_support(true);
+            config.wasm_component_model_async(true);
+            WasmtimeEngine::new(&config).unwrap_or_else(|_| {
+                WasmtimeEngine::new(&safe_wasmtime_config())
+                    .expect("Failed to create even basic fallback engine")
+            })
+        }
+    }
+}
+
 /// Returns a clone of the shared wasmtime::Engine.
 /// Defaults to the component engine which has commonly needed features.
 pub fn get_shared_wasmtime_engine() -> WasmtimeEngine {

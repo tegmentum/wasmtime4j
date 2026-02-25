@@ -6,8 +6,9 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
  * Represents a task that can execute concurrently within a WebAssembly store.
  *
  * <p>Concurrent tasks are part of the shared-everything-threads proposal, enabling multiple
- * WebAssembly computations to cooperatively interleave on the same store. Unlike simple thread-based
- * parallelism, concurrent tasks share the store's state and use cooperative scheduling.
+ * WebAssembly computations to cooperatively interleave on the same store. Unlike simple
+ * thread-based parallelism, concurrent tasks share the store's state and use cooperative
+ * scheduling.
  *
  * <p>Example usage:
  *
@@ -33,8 +34,8 @@ public interface ConcurrentTask<T> {
    * Executes the concurrent task within the given store context.
    *
    * <p>The store is exclusively available to this task during execution. The task should perform
-   * its work and return a result. If the task encounters an error, it should throw a
-   * {@link WasmException}.
+   * its work and return a result. If the task encounters an error, it should throw a {@link
+   * WasmException}.
    *
    * @param store the store context for this task's execution
    * @return the result of the task

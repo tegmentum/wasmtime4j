@@ -22,8 +22,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Writes a single value to a Component Model async future.
  *
- * <p>Futures represent a single asynchronous value in the Component Model async proposal.
- * A FutureWriter produces a value that is consumed by a corresponding {@link FutureReader}.
+ * <p>Futures represent a single asynchronous value in the Component Model async proposal. A
+ * FutureWriter produces a value that is consumed by a corresponding {@link FutureReader}.
  *
  * @since 1.1.0
  */
@@ -39,8 +39,8 @@ public interface FutureWriter extends AutoCloseable {
   /**
    * Asynchronously writes the value to this future, resolving the reader.
    *
-   * <p>The returned CompletableFuture completes when the value has been accepted. A future can
-   * only be written to once — subsequent writes will fail.
+   * <p>The returned CompletableFuture completes when the value has been accepted. A future can only
+   * be written to once — subsequent writes will fail.
    *
    * @param value the value to write
    * @return a future that completes when the value is accepted

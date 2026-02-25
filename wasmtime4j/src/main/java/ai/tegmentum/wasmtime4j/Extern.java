@@ -182,9 +182,9 @@ public interface Extern {
   /**
    * Gets the full type information for this extern as an {@link ExternTypeInfo}.
    *
-   * <p>This pairs the kind discriminant ({@link ExternType}) with the detailed type data
-   * ({@link WasmType}), providing type-safe access via methods like
-   * {@link ExternTypeInfo#asFuncType()}, {@link ExternTypeInfo#asTableType()}, etc.
+   * <p>This pairs the kind discriminant ({@link ExternType}) with the detailed type data ({@link
+   * WasmType}), providing type-safe access via methods like {@link ExternTypeInfo#asFuncType()},
+   * {@link ExternTypeInfo#asTableType()}, etc.
    *
    * @return the extern type info, or null if the detailed type is not available
    * @since 1.1.0

@@ -89,13 +89,14 @@ public interface ComponentInstancePre extends Closeable {
       throws WasmException {
     // Default: delegate to sync instantiation on ForkJoinPool.
     // Implementations should override to use native instantiate_async().
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiate();
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate();
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**

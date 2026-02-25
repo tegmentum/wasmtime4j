@@ -174,7 +174,6 @@ class PanamaFunctionTest {
       final WasmFunction func = getFunction(instance, "return_i32");
       assertThat(func).isInstanceOf(PanamaFunction.class);
     }
-
   }
 
   // ==================== Accessor Tests ====================

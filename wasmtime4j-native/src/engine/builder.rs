@@ -3,6 +3,7 @@
 //! This module provides the EngineBuilder and EngineConfigSummary types
 //! for creating and configuring Wasmtime engines with various options.
 
+use std::borrow::Cow;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
 
@@ -10,6 +11,440 @@ use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, St
 
 use super::{safe_wasmtime_config, Engine};
 use crate::error::{WasmtimeError, WasmtimeResult};
+
+/// Type alias for the C function pointer that implements CacheStore.get()
+///
+/// Parameters: callback_id, key_ptr, key_len, out_data_ptr, out_data_len
+/// Returns: 0 = cache miss (out_data_ptr not set), 1 = cache hit (out_data_ptr/len set)
+///
+/// When returning 1 (cache hit), the callback must allocate the output data using
+/// `malloc` or equivalent, and set *out_data_ptr and *out_data_len. The caller
+/// will free this memory after use.
+pub type CacheGetFn = unsafe extern "C" fn(
+    callback_id: i64,
+    key_ptr: *const u8,
+    key_len: usize,
+    out_data_ptr: *mut *mut u8,
+    out_data_len: *mut usize,
+) -> i32;
+
+/// Type alias for the C function pointer that implements CacheStore.insert()
+///
+/// Parameters: callback_id, key_ptr, key_len, value_ptr, value_len
+/// Returns: 1 = success, 0 = failure
+pub type CacheInsertFn = unsafe extern "C" fn(
+    callback_id: i64,
+    key_ptr: *const u8,
+    key_len: usize,
+    value_ptr: *const u8,
+    value_len: usize,
+) -> i32;
+
+/// Type alias for the function that frees memory allocated by the cache get callback
+pub type CacheFreeFn = unsafe extern "C" fn(ptr: *mut u8, len: usize);
+
+/// A CacheStore implementation that delegates to C function pointers (JNI or Panama callbacks)
+pub struct CallbackCacheStore {
+    callback_id: i64,
+    get_fn: CacheGetFn,
+    insert_fn: CacheInsertFn,
+    free_fn: CacheFreeFn,
+}
+
+// SAFETY: The callback functions are expected to be thread-safe (Java CacheStore is thread-safe)
+unsafe impl Send for CallbackCacheStore {}
+unsafe impl Sync for CallbackCacheStore {}
+
+impl std::fmt::Debug for CallbackCacheStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CallbackCacheStore")
+            .field("callback_id", &self.callback_id)
+            .finish()
+    }
+}
+
+impl CallbackCacheStore {
+    /// Create a new callback-based cache store
+    pub fn new(
+        callback_id: i64,
+        get_fn: CacheGetFn,
+        insert_fn: CacheInsertFn,
+        free_fn: CacheFreeFn,
+    ) -> Self {
+        Self {
+            callback_id,
+            get_fn,
+            insert_fn,
+            free_fn,
+        }
+    }
+}
+
+impl wasmtime::CacheStore for CallbackCacheStore {
+    fn get(&self, key: &[u8]) -> Option<Cow<'_, [u8]>> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut out_len: usize = 0;
+
+        let result = unsafe {
+            (self.get_fn)(
+                self.callback_id,
+                key.as_ptr(),
+                key.len(),
+                &mut out_ptr,
+                &mut out_len,
+            )
+        };
+
+        if result == 1 && !out_ptr.is_null() && out_len > 0 {
+            // Copy the data into an owned Vec and free the callback-allocated memory
+            let data = unsafe { std::slice::from_raw_parts(out_ptr, out_len) }.to_vec();
+            unsafe { (self.free_fn)(out_ptr, out_len) };
+            Some(Cow::Owned(data))
+        } else {
+            None
+        }
+    }
+
+    fn insert(&self, key: &[u8], value: Vec<u8>) -> bool {
+        let result = unsafe {
+            (self.insert_fn)(
+                self.callback_id,
+                key.as_ptr(),
+                key.len(),
+                value.as_ptr(),
+                value.len(),
+            )
+        };
+        result == 1
+    }
+}
+
+// ==================== MemoryCreator Extension Trait ====================
+
+/// C function pointer types for MemoryCreator callbacks (Panama FFI path)
+
+/// new_memory callback: creates a new linear memory.
+/// Returns: callback_id for the new LinearMemory, or 0 on failure.
+/// Parameters: creator_id, min_bytes, max_bytes (-1 = none), reserved_bytes (-1 = none), guard_bytes
+pub type MemCreatorNewMemoryFn = unsafe extern "C" fn(
+    creator_id: i64,
+    min_bytes: u64,
+    max_bytes: i64,
+    reserved_bytes: i64,
+    guard_bytes: u64,
+) -> i64;
+
+/// LinearMemory.byte_size callback
+pub type LinMemByteSizeFn = unsafe extern "C" fn(memory_id: i64) -> u64;
+
+/// LinearMemory.byte_capacity callback
+pub type LinMemByteCapacityFn = unsafe extern "C" fn(memory_id: i64) -> u64;
+
+/// LinearMemory.grow_to callback. Returns 0 on success, -1 on failure.
+pub type LinMemGrowToFn = unsafe extern "C" fn(memory_id: i64, new_size: u64) -> i32;
+
+/// LinearMemory.as_ptr callback
+pub type LinMemAsPtrFn = unsafe extern "C" fn(memory_id: i64) -> *mut u8;
+
+/// LinearMemory.drop callback (called when Wasmtime is done with the memory)
+pub type LinMemDropFn = unsafe extern "C" fn(memory_id: i64);
+
+/// A MemoryCreator that delegates to C function pointers (Panama callbacks)
+pub struct CallbackMemoryCreator {
+    creator_id: i64,
+    new_memory_fn: MemCreatorNewMemoryFn,
+    byte_size_fn: LinMemByteSizeFn,
+    byte_capacity_fn: LinMemByteCapacityFn,
+    grow_to_fn: LinMemGrowToFn,
+    as_ptr_fn: LinMemAsPtrFn,
+    drop_fn: LinMemDropFn,
+}
+
+unsafe impl Send for CallbackMemoryCreator {}
+unsafe impl Sync for CallbackMemoryCreator {}
+
+impl CallbackMemoryCreator {
+    /// Create a new callback-based memory creator
+    pub fn new(
+        creator_id: i64,
+        new_memory_fn: MemCreatorNewMemoryFn,
+        byte_size_fn: LinMemByteSizeFn,
+        byte_capacity_fn: LinMemByteCapacityFn,
+        grow_to_fn: LinMemGrowToFn,
+        as_ptr_fn: LinMemAsPtrFn,
+        drop_fn: LinMemDropFn,
+    ) -> Self {
+        Self {
+            creator_id,
+            new_memory_fn,
+            byte_size_fn,
+            byte_capacity_fn,
+            grow_to_fn,
+            as_ptr_fn,
+            drop_fn,
+        }
+    }
+}
+
+/// A LinearMemory backed by callback function pointers
+struct CallbackLinearMemory {
+    memory_id: i64,
+    byte_size_fn: LinMemByteSizeFn,
+    byte_capacity_fn: LinMemByteCapacityFn,
+    grow_to_fn: LinMemGrowToFn,
+    as_ptr_fn: LinMemAsPtrFn,
+    drop_fn: LinMemDropFn,
+}
+
+unsafe impl Send for CallbackLinearMemory {}
+unsafe impl Sync for CallbackLinearMemory {}
+
+unsafe impl wasmtime::LinearMemory for CallbackLinearMemory {
+    fn byte_size(&self) -> usize {
+        unsafe { (self.byte_size_fn)(self.memory_id) as usize }
+    }
+
+    fn byte_capacity(&self) -> usize {
+        unsafe { (self.byte_capacity_fn)(self.memory_id) as usize }
+    }
+
+    fn grow_to(&mut self, new_size: usize) -> anyhow::Result<()> {
+        let result = unsafe { (self.grow_to_fn)(self.memory_id, new_size as u64) };
+        if result == 0 {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("LinearMemory.growTo failed"))
+        }
+    }
+
+    fn as_ptr(&self) -> *mut u8 {
+        unsafe { (self.as_ptr_fn)(self.memory_id) }
+    }
+}
+
+impl Drop for CallbackLinearMemory {
+    fn drop(&mut self) {
+        unsafe { (self.drop_fn)(self.memory_id) };
+    }
+}
+
+unsafe impl wasmtime::MemoryCreator for CallbackMemoryCreator {
+    fn new_memory(
+        &self,
+        _ty: wasmtime::MemoryType,
+        minimum: usize,
+        maximum: Option<usize>,
+        reserved_size_in_bytes: Option<usize>,
+        guard_size_in_bytes: usize,
+    ) -> Result<Box<dyn wasmtime::LinearMemory>, String> {
+        let max_val = maximum.map(|m| m as i64).unwrap_or(-1);
+        let reserved_val = reserved_size_in_bytes.map(|r| r as i64).unwrap_or(-1);
+
+        let memory_id = unsafe {
+            (self.new_memory_fn)(
+                self.creator_id,
+                minimum as u64,
+                max_val,
+                reserved_val,
+                guard_size_in_bytes as u64,
+            )
+        };
+
+        if memory_id == 0 {
+            return Err("MemoryCreator.newMemory returned null".to_string());
+        }
+
+        Ok(Box::new(CallbackLinearMemory {
+            memory_id,
+            byte_size_fn: self.byte_size_fn,
+            byte_capacity_fn: self.byte_capacity_fn,
+            grow_to_fn: self.grow_to_fn,
+            as_ptr_fn: self.as_ptr_fn,
+            drop_fn: self.drop_fn,
+        }))
+    }
+}
+
+// ==================== StackCreator Extension Trait ====================
+
+/// StackCreator.new_stack callback.
+/// Returns: callback_id for the new StackMemory, or 0 on failure.
+pub type StkCreatorNewStackFn = unsafe extern "C" fn(creator_id: i64, size: u64, zeroed: i32) -> i64;
+
+/// StackMemory.top callback
+pub type StkMemTopFn = unsafe extern "C" fn(stack_id: i64) -> *mut u8;
+
+/// StackMemory.range callback: writes range_start and range_end
+pub type StkMemRangeFn = unsafe extern "C" fn(stack_id: i64, out_start: *mut u64, out_end: *mut u64);
+
+/// StackMemory.guard_range callback: writes guard_start and guard_end pointers
+pub type StkMemGuardRangeFn =
+    unsafe extern "C" fn(stack_id: i64, out_start: *mut *mut u8, out_end: *mut *mut u8);
+
+/// StackMemory.drop callback
+pub type StkMemDropFn = unsafe extern "C" fn(stack_id: i64);
+
+/// A StackCreator that delegates to C function pointers
+pub struct CallbackStackCreator {
+    creator_id: i64,
+    new_stack_fn: StkCreatorNewStackFn,
+    top_fn: StkMemTopFn,
+    range_fn: StkMemRangeFn,
+    guard_range_fn: StkMemGuardRangeFn,
+    drop_fn: StkMemDropFn,
+}
+
+unsafe impl Send for CallbackStackCreator {}
+unsafe impl Sync for CallbackStackCreator {}
+
+impl CallbackStackCreator {
+    /// Create a new callback-based stack creator
+    pub fn new(
+        creator_id: i64,
+        new_stack_fn: StkCreatorNewStackFn,
+        top_fn: StkMemTopFn,
+        range_fn: StkMemRangeFn,
+        guard_range_fn: StkMemGuardRangeFn,
+        drop_fn: StkMemDropFn,
+    ) -> Self {
+        Self {
+            creator_id,
+            new_stack_fn,
+            top_fn,
+            range_fn,
+            guard_range_fn,
+            drop_fn,
+        }
+    }
+}
+
+/// A StackMemory backed by callback function pointers
+struct CallbackStackMemory {
+    stack_id: i64,
+    top_fn: StkMemTopFn,
+    range_fn: StkMemRangeFn,
+    guard_range_fn: StkMemGuardRangeFn,
+    drop_fn: StkMemDropFn,
+}
+
+unsafe impl Send for CallbackStackMemory {}
+unsafe impl Sync for CallbackStackMemory {}
+
+unsafe impl wasmtime::StackMemory for CallbackStackMemory {
+    fn top(&self) -> *mut u8 {
+        unsafe { (self.top_fn)(self.stack_id) }
+    }
+
+    fn range(&self) -> std::ops::Range<usize> {
+        let mut start: u64 = 0;
+        let mut end: u64 = 0;
+        unsafe { (self.range_fn)(self.stack_id, &mut start, &mut end) };
+        (start as usize)..(end as usize)
+    }
+
+    fn guard_range(&self) -> std::ops::Range<*mut u8> {
+        let mut start: *mut u8 = std::ptr::null_mut();
+        let mut end: *mut u8 = std::ptr::null_mut();
+        unsafe { (self.guard_range_fn)(self.stack_id, &mut start, &mut end) };
+        start..end
+    }
+}
+
+impl Drop for CallbackStackMemory {
+    fn drop(&mut self) {
+        unsafe { (self.drop_fn)(self.stack_id) };
+    }
+}
+
+unsafe impl wasmtime::StackCreator for CallbackStackCreator {
+    fn new_stack(
+        &self,
+        size: usize,
+        zeroed: bool,
+    ) -> Result<Box<dyn wasmtime::StackMemory>, anyhow::Error> {
+        let stack_id = unsafe {
+            (self.new_stack_fn)(self.creator_id, size as u64, if zeroed { 1 } else { 0 })
+        };
+
+        if stack_id == 0 {
+            return Err(anyhow::anyhow!("StackCreator.newStack returned null"));
+        }
+
+        Ok(Box::new(CallbackStackMemory {
+            stack_id,
+            top_fn: self.top_fn,
+            range_fn: self.range_fn,
+            guard_range_fn: self.guard_range_fn,
+            drop_fn: self.drop_fn,
+        }))
+    }
+}
+
+// ==================== CustomCodeMemory Extension Trait ====================
+
+/// CustomCodeMemory.required_alignment callback
+pub type CodeMemAlignmentFn = unsafe extern "C" fn(code_mem_id: i64) -> u64;
+
+/// CustomCodeMemory.publish_executable callback. Returns 0 on success, -1 on failure.
+pub type CodeMemPublishFn = unsafe extern "C" fn(code_mem_id: i64, ptr: *const u8, len: u64) -> i32;
+
+/// CustomCodeMemory.unpublish_executable callback. Returns 0 on success, -1 on failure.
+pub type CodeMemUnpublishFn =
+    unsafe extern "C" fn(code_mem_id: i64, ptr: *const u8, len: u64) -> i32;
+
+/// A CustomCodeMemory that delegates to C function pointers
+pub struct CallbackCustomCodeMemory {
+    code_mem_id: i64,
+    alignment_fn: CodeMemAlignmentFn,
+    publish_fn: CodeMemPublishFn,
+    unpublish_fn: CodeMemUnpublishFn,
+}
+
+unsafe impl Send for CallbackCustomCodeMemory {}
+unsafe impl Sync for CallbackCustomCodeMemory {}
+
+impl CallbackCustomCodeMemory {
+    /// Create a new callback-based custom code memory
+    pub fn new(
+        code_mem_id: i64,
+        alignment_fn: CodeMemAlignmentFn,
+        publish_fn: CodeMemPublishFn,
+        unpublish_fn: CodeMemUnpublishFn,
+    ) -> Self {
+        Self {
+            code_mem_id,
+            alignment_fn,
+            publish_fn,
+            unpublish_fn,
+        }
+    }
+}
+
+impl wasmtime::CustomCodeMemory for CallbackCustomCodeMemory {
+    fn required_alignment(&self) -> usize {
+        unsafe { (self.alignment_fn)(self.code_mem_id) as usize }
+    }
+
+    fn publish_executable(&self, ptr: *const u8, len: usize) -> anyhow::Result<()> {
+        let result = unsafe { (self.publish_fn)(self.code_mem_id, ptr, len as u64) };
+        if result == 0 {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("CustomCodeMemory.publishExecutable failed"))
+        }
+    }
+
+    fn unpublish_executable(&self, ptr: *const u8, len: usize) -> anyhow::Result<()> {
+        let result = unsafe { (self.unpublish_fn)(self.code_mem_id, ptr, len as u64) };
+        if result == 0 {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!(
+                "CustomCodeMemory.unpublishExecutable failed"
+            ))
+        }
+    }
+}
 
 /// Summary of engine configuration for runtime introspection and FFI queries.
 ///
@@ -1168,6 +1603,54 @@ impl EngineBuilder {
         unsafe {
             self.config.cranelift_flag_enable(name);
         }
+        self
+    }
+
+    /// Enable incremental compilation with a callback-based cache store
+    ///
+    /// This enables Cranelift's incremental compilation cache using the provided
+    /// CacheStore implementation. The cache store is called during compilation
+    /// to retrieve and store intermediate compilation artifacts.
+    ///
+    /// # Arguments
+    /// * `cache_store` - An Arc-wrapped CacheStore implementation
+    pub fn enable_incremental_compilation(
+        mut self,
+        cache_store: Arc<dyn wasmtime::CacheStore>,
+    ) -> WasmtimeResult<Self> {
+        self.config
+            .enable_incremental_compilation(cache_store)
+            .map_err(|e| WasmtimeError::EngineConfig {
+                message: format!("Failed to enable incremental compilation: {}", e),
+            })?;
+        Ok(self)
+    }
+
+    /// Set a custom memory creator for linear memory allocation
+    pub fn with_host_memory(
+        mut self,
+        memory_creator: Arc<dyn wasmtime::MemoryCreator>,
+    ) -> Self {
+        self.config.with_host_memory(memory_creator);
+        self
+    }
+
+    /// Set a custom stack creator for async fiber stacks
+    pub fn with_host_stack(
+        mut self,
+        stack_creator: Arc<dyn wasmtime::StackCreator>,
+    ) -> Self {
+        self.config.with_host_stack(stack_creator);
+        self
+    }
+
+    /// Set a custom code memory manager
+    pub fn with_custom_code_memory(
+        mut self,
+        code_memory: Arc<dyn wasmtime::CustomCodeMemory>,
+    ) -> Self {
+        self.config
+            .with_custom_code_memory(Some(code_memory));
         self
     }
 

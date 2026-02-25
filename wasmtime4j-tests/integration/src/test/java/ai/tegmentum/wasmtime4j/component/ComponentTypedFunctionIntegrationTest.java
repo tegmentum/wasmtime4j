@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.jni.JniComponentEngine;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import ai.tegmentum.wasmtime4j.test.TestUtils;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;

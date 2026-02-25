@@ -91,30 +91,31 @@ public final class JniInstancePre implements InstancePre {
   @Override
   public CompletableFuture<Instance> instantiateAsync(final Store store) {
     Objects.requireNonNull(store, "store cannot be null");
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        ensureNotClosed();
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            ensureNotClosed();
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
 
-      if (!(store instanceof JniStore)) {
-        throw new java.util.concurrent.CompletionException(
-            new IllegalArgumentException(
-                "Store must be a JniStore instance for JNI InstancePre"));
-      }
+          if (!(store instanceof JniStore)) {
+            throw new java.util.concurrent.CompletionException(
+                new IllegalArgumentException(
+                    "Store must be a JniStore instance for JNI InstancePre"));
+          }
 
-      final JniStore jniStore = (JniStore) store;
-      final long instanceHandle =
-          nativeInstantiateAsync(nativeHandle, jniStore.getNativeHandle());
+          final JniStore jniStore = (JniStore) store;
+          final long instanceHandle =
+              nativeInstantiateAsync(nativeHandle, jniStore.getNativeHandle());
 
-      if (instanceHandle == 0) {
-        throw new java.util.concurrent.CompletionException(
-            new WasmException("Failed to async instantiate from InstancePre"));
-      }
+          if (instanceHandle == 0) {
+            throw new java.util.concurrent.CompletionException(
+                new WasmException("Failed to async instantiate from InstancePre"));
+          }
 
-      return new JniInstance(instanceHandle, module, store);
-    });
+          return new JniInstance(instanceHandle, module, store);
+        });
   }
 
   @Override

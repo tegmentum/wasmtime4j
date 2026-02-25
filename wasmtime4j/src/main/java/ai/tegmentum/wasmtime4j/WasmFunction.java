@@ -367,12 +367,12 @@ public interface WasmFunction {
   /**
    * Converts this function to its raw funcref pointer value.
    *
-   * <p>The returned value can be used to reconstruct the function via
-   * {@link #fromRawFuncRef(Store, long)}. This is useful for low-level table operations and
-   * passing function references through raw integer handles.
+   * <p>The returned value can be used to reconstruct the function via {@link #fromRawFuncRef(Store,
+   * long)}. This is useful for low-level table operations and passing function references through
+   * raw integer handles.
    *
-   * <p><b>Warning:</b> The raw value is only valid within the same store context. Using it
-   * with a different store will produce undefined behavior.
+   * <p><b>Warning:</b> The raw value is only valid within the same store context. Using it with a
+   * different store will produce undefined behavior.
    *
    * @return the raw funcref pointer value
    * @throws WasmException if the conversion fails

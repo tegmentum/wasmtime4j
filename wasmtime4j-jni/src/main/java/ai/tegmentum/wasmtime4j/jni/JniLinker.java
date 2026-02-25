@@ -88,8 +88,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
     // Create a callback wrapper that will be invoked from native code
-    final long callbackId =
-        registerHostFunctionCallback(moduleName, name, implementation);
+    final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
 
     try {
       final boolean success =
@@ -255,8 +254,8 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   }
 
   @Override
-  public void defineInstance(
-      final Store store, final String moduleName, final Instance instance) throws WasmException {
+  public void defineInstance(final Store store, final String moduleName, final Instance instance)
+      throws WasmException {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
@@ -574,11 +573,8 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    * @return callback ID for native code to invoke
    */
   private long registerHostFunctionCallback(
-      final String moduleName,
-      final String name,
-      final HostFunction implementation) {
-    final HostFunctionWrapper wrapper =
-        new HostFunctionWrapper(moduleName, name, implementation);
+      final String moduleName, final String name, final HostFunction implementation) {
+    final HostFunctionWrapper wrapper = new HostFunctionWrapper(moduleName, name, implementation);
     final long id = wrapper.getId();
     HOST_FUNCTION_CALLBACKS.put(id, wrapper);
     registeredCallbackIds.add(id);
@@ -764,8 +760,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
     // Register callback and get ID
-    final long callbackId =
-        registerHostFunctionCallback(moduleName, name, implementation);
+    final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
 
     try {
       final boolean success =
@@ -959,10 +954,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     try {
       final boolean success =
           nativeModule(
-              nativeHandle,
-              jniStore.getNativeHandle(),
-              moduleName,
-              jniModule.getNativeHandle());
+              nativeHandle, jniStore.getNativeHandle(), moduleName, jniModule.getNativeHandle());
 
       if (!success) {
         throw new WasmException("Failed to define module: " + moduleName);
@@ -1070,9 +1062,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     private final HostFunction implementation;
 
     HostFunctionWrapper(
-        final String moduleName,
-        final String name,
-        final HostFunction implementation) {
+        final String moduleName, final String name, final HostFunction implementation) {
       this.id = nextId.getAndIncrement();
       this.moduleName = moduleName;
       this.name = name;
@@ -1127,8 +1117,8 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   /**
    * Defines an unchecked host function in the linker.
    *
-   * <p>This uses {@code Func::new_unchecked} internally, which skips type-checking
-   * at call time for better performance.
+   * <p>This uses {@code Func::new_unchecked} internally, which skips type-checking at call time for
+   * better performance.
    *
    * @param linkerHandle the linker handle
    * @param moduleName the module name

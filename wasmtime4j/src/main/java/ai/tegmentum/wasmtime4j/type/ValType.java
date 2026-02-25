@@ -466,10 +466,7 @@ public interface ValType {
    */
   default RefType unwrapRef() {
     return asRef()
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    "Not a reference type: " + getValueType()));
+        .orElseThrow(() -> new IllegalStateException("Not a reference type: " + getValueType()));
   }
 
   /**

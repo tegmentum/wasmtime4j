@@ -186,5 +186,4 @@ class WasmBacktraceDetailsTest {
           "ENVIRONMENT should be enabled (backtraces may be collected)");
     }
   }
-
 }

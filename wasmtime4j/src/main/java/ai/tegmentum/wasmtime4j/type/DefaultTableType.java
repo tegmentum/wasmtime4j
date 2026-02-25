@@ -21,10 +21,7 @@ final class DefaultTableType implements TableType {
   private final boolean is64;
 
   private DefaultTableType(
-      final WasmValueType elementType,
-      final long minimum,
-      final Long maximum,
-      final boolean is64) {
+      final WasmValueType elementType, final long minimum, final Long maximum, final boolean is64) {
     this.elementType = elementType;
     this.minimum = minimum;
     this.maximum = maximum;

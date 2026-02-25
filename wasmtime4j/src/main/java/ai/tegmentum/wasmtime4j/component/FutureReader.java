@@ -23,9 +23,9 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Reads a single value from a Component Model async future.
  *
- * <p>Futures represent a single asynchronous value in the Component Model async proposal.
- * A FutureReader receives the value when it becomes available from a corresponding
- * {@link FutureWriter}.
+ * <p>Futures represent a single asynchronous value in the Component Model async proposal. A
+ * FutureReader receives the value when it becomes available from a corresponding {@link
+ * FutureWriter}.
  *
  * @since 1.1.0
  */
@@ -63,9 +63,7 @@ public interface FutureReader extends AutoCloseable {
    */
   boolean isResolved();
 
-  /**
-   * Closes this future reader, releasing associated resources.
-   */
+  /** Closes this future reader, releasing associated resources. */
   @Override
   void close();
 }

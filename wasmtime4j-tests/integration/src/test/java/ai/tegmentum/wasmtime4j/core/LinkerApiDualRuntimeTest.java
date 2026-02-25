@@ -58,8 +58,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @SuppressWarnings("deprecation")
 public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(LinkerApiDualRuntimeTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(LinkerApiDualRuntimeTest.class.getName());
 
   // ===== WAT Module Definitions =====
 
@@ -844,9 +843,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Linker<?> linker = Linker.create(engine);
         resources.add(linker);
 
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.validateImports((Module[]) null));
+        assertThrows(IllegalArgumentException.class, () -> linker.validateImports((Module[]) null));
         LOGGER.info("[" + runtime + "] Correctly rejected null modules for import validation");
       }
     }
@@ -872,8 +869,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(module);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineUnknownImportsAsTraps(null, module));
+            IllegalArgumentException.class, () -> linker.defineUnknownImportsAsTraps(null, module));
         LOGGER.info(
             "[" + runtime + "] Correctly rejected null store for defineUnknownImportsAsTraps");
       }
@@ -894,8 +890,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(store);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineUnknownImportsAsTraps(store, null));
+            IllegalArgumentException.class, () -> linker.defineUnknownImportsAsTraps(store, null));
         LOGGER.info(
             "[" + runtime + "] Correctly rejected null module for defineUnknownImportsAsTraps");
       }
@@ -919,7 +914,8 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         // Native function defines trap stubs for unknown imports
         assertDoesNotThrow(() -> linker.defineUnknownImportsAsTraps(store, module));
         LOGGER.info(
-            "[" + runtime
+            "["
+                + runtime
                 + "] defineUnknownImportsAsTraps successfully defined trap stubs"
                 + " for unknown imports");
       }
@@ -931,8 +927,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
     void shouldRejectNullStoreForDefaults(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       LOGGER.info(
-          "[" + runtime
-              + "] Testing null store rejection for defineUnknownImportsAsDefaultValues");
+          "[" + runtime + "] Testing null store rejection for defineUnknownImportsAsDefaultValues");
 
       try (Engine engine = Engine.create()) {
         final Linker<?> linker = Linker.create(engine);
@@ -944,7 +939,8 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
             IllegalArgumentException.class,
             () -> linker.defineUnknownImportsAsDefaultValues(null, module));
         LOGGER.info(
-            "[" + runtime
+            "["
+                + runtime
                 + "] Correctly rejected null store for defineUnknownImportsAsDefaultValues");
       }
     }
@@ -955,7 +951,8 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
     void shouldRejectNullModuleForDefaults(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       LOGGER.info(
-          "[" + runtime
+          "["
+              + runtime
               + "] Testing null module rejection for defineUnknownImportsAsDefaultValues");
 
       try (Engine engine = Engine.create()) {
@@ -968,7 +965,8 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
             IllegalArgumentException.class,
             () -> linker.defineUnknownImportsAsDefaultValues(store, null));
         LOGGER.info(
-            "[" + runtime
+            "["
+                + runtime
                 + "] Correctly rejected null module for defineUnknownImportsAsDefaultValues");
       }
     }
@@ -993,7 +991,8 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         // Native function defines default-value stubs for unknown imports
         assertDoesNotThrow(() -> linker.defineUnknownImportsAsDefaultValues(store, module));
         LOGGER.info(
-            "[" + runtime
+            "["
+                + runtime
                 + "] defineUnknownImportsAsDefaultValues successfully defined"
                 + " default-value stubs");
       }
@@ -1018,8 +1017,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.alias(null, "func", "other", "func"));
+            IllegalArgumentException.class, () -> linker.alias(null, "func", "other", "func"));
         LOGGER.info("[" + runtime + "] Correctly rejected null from module name");
       }
     }
@@ -1036,8 +1034,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.alias("env", null, "other", "func"));
+            IllegalArgumentException.class, () -> linker.alias("env", null, "other", "func"));
         LOGGER.info("[" + runtime + "] Correctly rejected null from name");
       }
     }
@@ -1054,8 +1051,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.alias("env", "func", null, "func"));
+            IllegalArgumentException.class, () -> linker.alias("env", "func", null, "func"));
         LOGGER.info("[" + runtime + "] Correctly rejected null to module name");
       }
     }
@@ -1072,8 +1068,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.alias("env", "func", "other", null));
+            IllegalArgumentException.class, () -> linker.alias("env", "func", "other", null));
         LOGGER.info("[" + runtime + "] Correctly rejected null to name");
       }
     }
@@ -1102,8 +1097,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Instance instance = linker.instantiate(store, module);
         resources.add(instance);
 
-        assertThrows(
-            IllegalArgumentException.class, () -> linker.defineInstance(null, instance));
+        assertThrows(IllegalArgumentException.class, () -> linker.defineInstance(null, instance));
         LOGGER.info("[" + runtime + "] Correctly rejected null module name for defineInstance");
       }
     }
@@ -1119,8 +1113,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Linker<?> linker = Linker.create(engine);
         resources.add(linker);
 
-        assertThrows(
-            IllegalArgumentException.class, () -> linker.defineInstance("test", null));
+        assertThrows(IllegalArgumentException.class, () -> linker.defineInstance("test", null));
         LOGGER.info("[" + runtime + "] Correctly rejected null instance for defineInstance");
       }
     }
@@ -1173,8 +1166,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         assertThrows(
             IllegalArgumentException.class,
             () -> linker.funcNewUnchecked(store, null, "func", funcType, impl));
-        LOGGER.info(
-            "[" + runtime + "] Correctly rejected null module name for funcNewUnchecked");
+        LOGGER.info("[" + runtime + "] Correctly rejected null module name for funcNewUnchecked");
       }
     }
 
@@ -1197,8 +1189,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         assertThrows(
             IllegalArgumentException.class,
             () -> linker.funcNewUnchecked(store, "env", null, funcType, impl));
-        LOGGER.info(
-            "[" + runtime + "] Correctly rejected null function name for funcNewUnchecked");
+        LOGGER.info("[" + runtime + "] Correctly rejected null function name for funcNewUnchecked");
       }
     }
   }
@@ -1223,8 +1214,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(store);
 
         // defineName checks parameters before reaching the unimplemented body
-        assertThrows(
-            IllegalArgumentException.class, () -> linker.defineName(store, "test", null));
+        assertThrows(IllegalArgumentException.class, () -> linker.defineName(store, "test", null));
         LOGGER.info("[" + runtime + "] defineName correctly rejects null extern");
       }
     }
@@ -1247,8 +1237,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Linker<?> linker = Linker.create(engine);
         resources.add(linker);
 
-        assertThrows(
-            IllegalArgumentException.class, () -> linker.getByImport(null, "env", "func"));
+        assertThrows(IllegalArgumentException.class, () -> linker.getByImport(null, "env", "func"));
         LOGGER.info("[" + runtime + "] Correctly rejected null store for getByImport");
       }
     }
@@ -1266,8 +1255,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Store store = engine.createStore();
         resources.add(store);
 
-        assertThrows(
-            IllegalArgumentException.class, () -> linker.getByImport(store, null, "func"));
+        assertThrows(IllegalArgumentException.class, () -> linker.getByImport(store, null, "func"));
         LOGGER.info("[" + runtime + "] Correctly rejected null module name for getByImport");
       }
     }
@@ -1285,8 +1273,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Store store = engine.createStore();
         resources.add(store);
 
-        assertThrows(
-            IllegalArgumentException.class, () -> linker.getByImport(store, "env", null));
+        assertThrows(IllegalArgumentException.class, () -> linker.getByImport(store, "env", null));
         LOGGER.info("[" + runtime + "] Correctly rejected null name for getByImport");
       }
     }
@@ -1309,8 +1296,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Linker<?> linker = Linker.create(engine);
         resources.add(linker);
 
-        assertThrows(
-            IllegalArgumentException.class, () -> linker.getDefault(null, "module"));
+        assertThrows(IllegalArgumentException.class, () -> linker.getDefault(null, "module"));
         LOGGER.info("[" + runtime + "] getDefault correctly rejected null store");
       }
     }
@@ -1328,8 +1314,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Store store = engine.createStore();
         resources.add(store);
 
-        assertThrows(
-            IllegalArgumentException.class, () -> linker.getDefault(store, null));
+        assertThrows(IllegalArgumentException.class, () -> linker.getDefault(store, null));
         LOGGER.info("[" + runtime + "] getDefault correctly rejected null module name");
       }
     }
@@ -1373,8 +1358,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineTable(null, "env", "table", null));
+            IllegalArgumentException.class, () -> linker.defineTable(null, "env", "table", null));
         LOGGER.info("[" + runtime + "] defineTable correctly rejected null store");
       }
     }
@@ -1393,8 +1377,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(store);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineTable(store, null, "table", null));
+            IllegalArgumentException.class, () -> linker.defineTable(store, null, "table", null));
         LOGGER.info("[" + runtime + "] defineTable correctly rejected null module name");
       }
     }
@@ -1411,8 +1394,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineGlobal(null, "env", "g", null));
+            IllegalArgumentException.class, () -> linker.defineGlobal(null, "env", "g", null));
         LOGGER.info("[" + runtime + "] defineGlobal correctly rejected null store");
       }
     }
@@ -1431,8 +1413,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(store);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineGlobal(store, null, "g", null));
+            IllegalArgumentException.class, () -> linker.defineGlobal(store, null, "g", null));
         LOGGER.info("[" + runtime + "] defineGlobal correctly rejected null module name");
       }
     }
@@ -1449,8 +1430,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineMemory(null, "env", "memory", null));
+            IllegalArgumentException.class, () -> linker.defineMemory(null, "env", "memory", null));
         LOGGER.info("[" + runtime + "] defineMemory correctly rejected null store");
       }
     }
@@ -1469,8 +1449,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(store);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineMemory(store, null, "memory", null));
+            IllegalArgumentException.class, () -> linker.defineMemory(store, null, "memory", null));
         LOGGER.info("[" + runtime + "] defineMemory correctly rejected null module name");
       }
     }
@@ -1493,8 +1472,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Linker<?> linker = Linker.create(engine);
         linker.close();
 
-        final FunctionType funcType =
-            new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+        final FunctionType funcType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
         final HostFunction impl = params -> null;
 
         assertThrows(
@@ -1547,8 +1525,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Linker<?> linker = Linker.create(engine);
         resources.add(linker);
 
-        final FunctionType funcType =
-            new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+        final FunctionType funcType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
         final HostFunction impl = params -> null;
 
         linker.defineHostFunction("env", "func", funcType, impl);
@@ -1571,8 +1548,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Linker<?> linker = Linker.create(engine);
         resources.add(linker);
 
-        final FunctionType funcType =
-            new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+        final FunctionType funcType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
         final HostFunction impl = params -> null;
 
         linker.defineHostFunction("env", "func", funcType, impl);

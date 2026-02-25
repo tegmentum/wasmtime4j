@@ -158,8 +158,7 @@ class WasmValueTypeTest {
     @Test
     @DisplayName("NULLCONTREF should be a GC reference type")
     void nullcontrefShouldBeGcReference() {
-      assertTrue(
-          WasmValueType.NULLCONTREF.isReference(), "NULLCONTREF should be a reference type");
+      assertTrue(WasmValueType.NULLCONTREF.isReference(), "NULLCONTREF should be a reference type");
       assertTrue(
           WasmValueType.NULLCONTREF.isGcReference(), "NULLCONTREF should be a GC reference type");
     }
@@ -167,8 +166,7 @@ class WasmValueTypeTest {
     @Test
     @DisplayName("NULLEXNREF should be a GC reference type")
     void nullexnrefShouldBeGcReference() {
-      assertTrue(
-          WasmValueType.NULLEXNREF.isReference(), "NULLEXNREF should be a reference type");
+      assertTrue(WasmValueType.NULLEXNREF.isReference(), "NULLEXNREF should be a reference type");
       assertTrue(
           WasmValueType.NULLEXNREF.isGcReference(), "NULLEXNREF should be a GC reference type");
     }
@@ -210,19 +208,15 @@ class WasmValueTypeTest {
     @Test
     @DisplayName("NULLEXNREF should be a nullable reference type")
     void nullexnrefShouldBeNullable() {
-      assertTrue(
-          WasmValueType.NULLEXNREF.isReference(), "NULLEXNREF should be a reference type");
-      assertTrue(
-          WasmValueType.NULLEXNREF.isNullableReference(), "NULLEXNREF should be nullable");
+      assertTrue(WasmValueType.NULLEXNREF.isReference(), "NULLEXNREF should be a reference type");
+      assertTrue(WasmValueType.NULLEXNREF.isNullableReference(), "NULLEXNREF should be nullable");
     }
 
     @Test
     @DisplayName("NULLCONTREF should be a nullable reference type")
     void nullcontrefShouldBeNullable() {
-      assertTrue(
-          WasmValueType.NULLCONTREF.isReference(), "NULLCONTREF should be a reference type");
-      assertTrue(
-          WasmValueType.NULLCONTREF.isNullableReference(), "NULLCONTREF should be nullable");
+      assertTrue(WasmValueType.NULLCONTREF.isReference(), "NULLCONTREF should be a reference type");
+      assertTrue(WasmValueType.NULLCONTREF.isNullableReference(), "NULLCONTREF should be nullable");
     }
 
     @Test
@@ -302,9 +296,7 @@ class WasmValueTypeTest {
       assertEquals(
           17, WasmValueType.CONTREF.toNativeTypeCode(), "CONTREF native code should be 17");
       assertEquals(
-          WasmValueType.CONTREF,
-          WasmValueType.fromNativeTypeCode(17),
-          "Code 17 should be CONTREF");
+          WasmValueType.CONTREF, WasmValueType.fromNativeTypeCode(17), "Code 17 should be CONTREF");
 
       assertEquals(
           18, WasmValueType.NULLCONTREF.toNativeTypeCode(), "NULLCONTREF native code should be 18");

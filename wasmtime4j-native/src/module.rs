@@ -546,6 +546,23 @@ impl Module {
         )
     }
 
+    /// Get the compiled machine code text section of this module.
+    ///
+    /// Returns a copy of the raw executable code bytes.
+    pub fn text(&self) -> Vec<u8> {
+        self.inner.text().to_vec()
+    }
+
+    /// Get the address map for this module, mapping compiled code offsets to
+    /// original WebAssembly bytecode offsets.
+    ///
+    /// Returns None if the engine was configured with `generateAddressMap(false)`.
+    /// Each entry is (code_offset, wasm_bytecode_offset) where the wasm offset
+    /// is None for code that doesn't correspond to any specific wasm instruction.
+    pub fn address_map(&self) -> Option<Vec<(usize, Option<u32>)>> {
+        self.inner.address_map().map(|iter| iter.collect())
+    }
+
     /// Get module serialization for caching
     pub fn serialize(&self) -> WasmtimeResult<Vec<u8>> {
         self.inner.serialize().map_err(|e| WasmtimeError::Internal {
@@ -1119,6 +1136,16 @@ pub mod core {
         module.metadata().functions.len()
     }
 
+    /// Core function to get compiled machine code text
+    pub fn get_module_text(module: &Module) -> Vec<u8> {
+        module.text()
+    }
+
+    /// Core function to get address map (code offset -> wasm offset)
+    pub fn get_module_address_map(module: &Module) -> Option<Vec<(usize, Option<u32>)>> {
+        module.address_map()
+    }
+
     /// Core function to check if module has specific import
     pub fn has_import(module: &Module, module_name: &str, name: &str) -> bool {
         module
@@ -1666,6 +1693,124 @@ pub unsafe extern "C" fn wasmtime4j_module_resources_required(
             0
         }
         Err(_) => -1,
+    }
+}
+
+/// Get compiled machine code text from module
+///
+/// # Safety
+///
+/// module_ptr must be valid. data_out and len_out must be non-null.
+/// The returned data pointer must be freed with wasmtime4j_free_byte_array.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_module_text(
+    module_ptr: *const c_void,
+    data_out: *mut *mut u8,
+    len_out: *mut usize,
+) -> i32 {
+    if module_ptr.is_null() || data_out.is_null() || len_out.is_null() {
+        return -1;
+    }
+
+    match core::get_module_ref(module_ptr) {
+        Ok(module) => {
+            let text = core::get_module_text(module);
+            let len = text.len();
+            let data = Box::into_raw(text.into_boxed_slice()) as *mut u8;
+            *data_out = data;
+            *len_out = len;
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Get address map from module
+///
+/// # Safety
+///
+/// module_ptr must be valid. All output pointers must be non-null.
+/// code_offsets and wasm_offsets arrays must be freed with wasmtime4j_free_address_map.
+/// Returns 0 on success, -1 on error, 1 if address map is not available.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_module_address_map(
+    module_ptr: *const c_void,
+    code_offsets_out: *mut *mut u64,
+    wasm_offsets_out: *mut *mut i64,
+    count_out: *mut usize,
+) -> i32 {
+    if module_ptr.is_null()
+        || code_offsets_out.is_null()
+        || wasm_offsets_out.is_null()
+        || count_out.is_null()
+    {
+        return -1;
+    }
+
+    match core::get_module_ref(module_ptr) {
+        Ok(module) => match core::get_module_address_map(module) {
+            Some(entries) => {
+                let count = entries.len();
+                let mut code_offsets = Vec::with_capacity(count);
+                let mut wasm_offsets = Vec::with_capacity(count);
+
+                for (code_offset, wasm_offset) in entries {
+                    code_offsets.push(code_offset as u64);
+                    wasm_offsets.push(wasm_offset.map(|o| o as i64).unwrap_or(-1));
+                }
+
+                *code_offsets_out =
+                    Box::into_raw(code_offsets.into_boxed_slice()) as *mut u64;
+                *wasm_offsets_out =
+                    Box::into_raw(wasm_offsets.into_boxed_slice()) as *mut i64;
+                *count_out = count;
+                0
+            }
+            None => {
+                *code_offsets_out = std::ptr::null_mut();
+                *wasm_offsets_out = std::ptr::null_mut();
+                *count_out = 0;
+                1 // Address map not available
+            }
+        },
+        Err(_) => -1,
+    }
+}
+
+/// Free byte array allocated by wasmtime4j_module_text
+///
+/// # Safety
+///
+/// data must have been allocated by wasmtime4j_module_text
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_free_byte_array(data: *mut u8, len: usize) {
+    if !data.is_null() && len > 0 {
+        drop(Box::from_raw(std::slice::from_raw_parts_mut(data, len)));
+    }
+}
+
+/// Free address map arrays allocated by wasmtime4j_module_address_map
+///
+/// # Safety
+///
+/// Pointers must have been allocated by wasmtime4j_module_address_map
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_free_address_map(
+    code_offsets: *mut u64,
+    wasm_offsets: *mut i64,
+    count: usize,
+) {
+    if !code_offsets.is_null() && count > 0 {
+        drop(Box::from_raw(std::slice::from_raw_parts_mut(
+            code_offsets,
+            count,
+        )));
+    }
+    if !wasm_offsets.is_null() && count > 0 {
+        drop(Box::from_raw(std::slice::from_raw_parts_mut(
+            wasm_offsets,
+            count,
+        )));
     }
 }
 

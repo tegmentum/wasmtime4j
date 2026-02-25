@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -179,7 +178,8 @@ class HeapTypeTest {
     @Test
     @DisplayName("NOCONT should have wasm name 'nocont'")
     void nocontShouldHaveWasmNameNocont() {
-      assertEquals("nocont", HeapType.NOCONT.getWasmName(), "NOCONT should have wasm name 'nocont'");
+      assertEquals(
+          "nocont", HeapType.NOCONT.getWasmName(), "NOCONT should have wasm name 'nocont'");
     }
 
     @Test

@@ -15,6 +15,7 @@ import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import ai.tegmentum.wasmtime4j.validation.ModuleValidationResult;
 import java.io.Closeable;
 import java.util.List;
+import java.util.OptionalInt;
 
 /**
  * Represents a compiled WebAssembly module.
@@ -162,8 +163,7 @@ public interface Module extends Closeable {
       return java.util.Optional.empty();
     }
     for (final ExportType export : getExports()) {
-      if (export.getName().equals(tableName)
-          && export.getType().getKind() == WasmTypeKind.TABLE) {
+      if (export.getName().equals(tableName) && export.getType().getKind() == WasmTypeKind.TABLE) {
         return java.util.Optional.of((TableType) export.getType());
       }
     }
@@ -404,9 +404,9 @@ public interface Module extends Closeable {
   /**
    * Pre-initializes this module's copy-on-write image for faster instantiation.
    *
-   * <p>When using copy-on-write memory initialization (the default), this method eagerly creates the
-   * memory-mapped image used to initialize linear memories during instantiation. Without this call,
-   * the image is created lazily on first instantiation.
+   * <p>When using copy-on-write memory initialization (the default), this method eagerly creates
+   * the memory-mapped image used to initialize linear memories during instantiation. Without this
+   * call, the image is created lazily on first instantiation.
    *
    * <p>Calling this is beneficial for server-side use cases where the first instantiation latency
    * matters and you want to front-load the cost during module compilation/loading.
@@ -457,6 +457,104 @@ public interface Module extends Closeable {
    * @return the module name, or null if unnamed
    */
   String getName();
+
+  /**
+   * Gets the compiled machine code text section of this module.
+   *
+   * <p>Returns a defensive copy of the raw executable code bytes produced by the compiler. This is
+   * useful for debugging, disassembly, or performance analysis.
+   *
+   * @return a copy of the compiled machine code bytes
+   * @throws WasmException if the module is no longer valid
+   * @since 1.1.0
+   */
+  byte[] text() throws WasmException;
+
+  /**
+   * Gets the address map for this module, mapping compiled code offsets to original WebAssembly
+   * bytecode offsets.
+   *
+   * <p>The address map is useful for debugging and profiling, allowing tools to correlate compiled
+   * native code positions back to positions in the original WebAssembly module.
+   *
+   * <p>Returns an empty list if the engine was configured with {@code generateAddressMap(false)}.
+   *
+   * @return an immutable list of address mappings from compiled code to wasm bytecode
+   * @throws WasmException if the module is no longer valid
+   * @since 1.1.0
+   */
+  List<AddressMapping> addressMap() throws WasmException;
+
+  /**
+   * Represents a mapping from a compiled code offset to an original WebAssembly bytecode offset.
+   *
+   * <p>Each entry maps a position in the compiled machine code (as returned by {@link #text()}) to
+   * a position in the original WebAssembly module bytecode.
+   *
+   * @since 1.1.0
+   */
+  final class AddressMapping {
+
+    private final long codeOffset;
+    private final OptionalInt wasmOffset;
+
+    /**
+     * Creates a new address mapping.
+     *
+     * @param codeOffset the offset in the compiled machine code
+     * @param wasmOffset the corresponding offset in the original WebAssembly bytecode, or empty if
+     *     the code does not correspond to a specific wasm instruction
+     */
+    public AddressMapping(final long codeOffset, final OptionalInt wasmOffset) {
+      this.codeOffset = codeOffset;
+      this.wasmOffset = wasmOffset;
+    }
+
+    /**
+     * Gets the offset in the compiled machine code.
+     *
+     * @return the code offset
+     */
+    public long getCodeOffset() {
+      return codeOffset;
+    }
+
+    /**
+     * Gets the corresponding offset in the original WebAssembly bytecode.
+     *
+     * @return the wasm bytecode offset, or empty if the code does not correspond to a specific wasm
+     *     instruction
+     */
+    public OptionalInt getWasmOffset() {
+      return wasmOffset;
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof AddressMapping)) {
+        return false;
+      }
+      AddressMapping other = (AddressMapping) obj;
+      return codeOffset == other.codeOffset && wasmOffset.equals(other.wasmOffset);
+    }
+
+    @Override
+    public int hashCode() {
+      return java.util.Objects.hash(codeOffset, wasmOffset);
+    }
+
+    @Override
+    public String toString() {
+      return "AddressMapping{codeOffset="
+          + codeOffset
+          + ", wasmOffset="
+          + (wasmOffset.isPresent() ? wasmOffset.getAsInt() : "none")
+          + "}";
+    }
+  }
 
   /**
    * Checks if the module is still valid and usable.
@@ -552,8 +650,8 @@ public interface Module extends Closeable {
   /**
    * Checks if this module and another module share the same underlying compiled code.
    *
-   * <p>Two modules are considered the "same" if they were cloned from the same original compilation.
-   * This is a pointer identity check on the underlying native module allocation.
+   * <p>Two modules are considered the "same" if they were cloned from the same original
+   * compilation. This is a pointer identity check on the underlying native module allocation.
    *
    * @param other the other module to compare against
    * @return true if both modules share the same underlying compiled code
@@ -633,5 +731,4 @@ public interface Module extends Closeable {
       throws WasmException {
     return engine.getRuntime().deserializeModuleFile(engine, path);
   }
-
 }

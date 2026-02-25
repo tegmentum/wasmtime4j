@@ -633,8 +633,7 @@ public final class JniTable extends JniResource implements WasmTable {
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Async table growth failed", e);
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException("Async table growth failed", e);
     }
   }
 

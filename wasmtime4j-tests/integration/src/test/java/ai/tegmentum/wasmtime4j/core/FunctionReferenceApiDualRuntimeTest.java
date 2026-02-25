@@ -19,7 +19,6 @@ package ai.tegmentum.wasmtime4j.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -310,7 +309,10 @@ public class FunctionReferenceApiDualRuntimeTest extends DualRuntimeTest {
         assertEquals(1, results.length, "Should have 1 result");
         assertEquals(300, results[0].asInt(), "100+200 should equal 300");
         LOGGER.info(
-            "[" + runtime + "] Store-created function call result (100+200): " + results[0].asInt());
+            "["
+                + runtime
+                + "] Store-created function call result (100+200): "
+                + results[0].asInt());
       }
     }
   }
@@ -333,10 +335,8 @@ public class FunctionReferenceApiDualRuntimeTest extends DualRuntimeTest {
 
         final FunctionType ft =
             FunctionType.of(
-                new WasmValueType[] {WasmValueType.I64},
-                new WasmValueType[] {WasmValueType.I64});
-        final HostFunction hf =
-            (params) -> new WasmValue[] {WasmValue.i64(params[0].asLong() * 2)};
+                new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.I64});
+        final HostFunction hf = (params) -> new WasmValue[] {WasmValue.i64(params[0].asLong() * 2)};
 
         final FunctionReference ref = store.createFunctionReference(hf, ft);
 
@@ -358,8 +358,7 @@ public class FunctionReferenceApiDualRuntimeTest extends DualRuntimeTest {
 
         final FunctionType ft =
             FunctionType.of(
-                new WasmValueType[] {WasmValueType.F32},
-                new WasmValueType[] {WasmValueType.F32});
+                new WasmValueType[] {WasmValueType.F32}, new WasmValueType[] {WasmValueType.F32});
         final HostFunction hf =
             (params) -> new WasmValue[] {WasmValue.f32(params[0].asFloat() + 1.0f)};
 
@@ -383,8 +382,7 @@ public class FunctionReferenceApiDualRuntimeTest extends DualRuntimeTest {
 
         final FunctionType ft =
             FunctionType.of(
-                new WasmValueType[] {WasmValueType.F64},
-                new WasmValueType[] {WasmValueType.F64});
+                new WasmValueType[] {WasmValueType.F64}, new WasmValueType[] {WasmValueType.F64});
         final HostFunction hf =
             (params) -> new WasmValue[] {WasmValue.f64(params[0].asDouble() * 0.5)};
 
@@ -456,8 +454,13 @@ public class FunctionReferenceApiDualRuntimeTest extends DualRuntimeTest {
           ref.call((WasmValue[]) null);
           LOGGER.info("[" + runtime + "] call(null) did not throw");
         } catch (final Exception e) {
-          LOGGER.info("[" + runtime + "] call(null) threw: "
-              + e.getClass().getName() + " - " + e.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] call(null) threw: "
+                  + e.getClass().getName()
+                  + " - "
+                  + e.getMessage());
         }
       }
     }

@@ -216,13 +216,14 @@ public interface ComponentFunc {
    * @since 1.1.0
    */
   default CompletableFuture<Void> postReturnAsync() {
-    return CompletableFuture.runAsync(() -> {
-      try {
-        postReturn();
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return CompletableFuture.runAsync(
+        () -> {
+          try {
+            postReturn();
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**

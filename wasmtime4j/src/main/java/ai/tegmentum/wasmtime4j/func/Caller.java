@@ -198,13 +198,14 @@ public interface Caller<T> {
    * @since 1.1.0
    */
   default java.util.concurrent.CompletableFuture<Void> gcAsync() {
-    return java.util.concurrent.CompletableFuture.runAsync(() -> {
-      try {
-        gc();
-      } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.runAsync(
+        () -> {
+          try {
+            gc();
+          } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
@@ -220,5 +221,4 @@ public interface Caller<T> {
    * @since 1.0.0
    */
   void setFuelAsyncYieldInterval(long interval) throws WasmException;
-
 }

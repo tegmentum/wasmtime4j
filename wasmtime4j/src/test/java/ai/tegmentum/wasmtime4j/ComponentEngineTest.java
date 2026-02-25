@@ -347,8 +347,7 @@ class ComponentEngineTest {
       for (Method method : methods) {
         int modifiers = method.getModifiers();
         assertTrue(
-            Modifier.isPublic(modifiers),
-            "Method " + method.getName() + " should be public");
+            Modifier.isPublic(modifiers), "Method " + method.getName() + " should be public");
         assertTrue(
             Modifier.isAbstract(modifiers) || method.isDefault(),
             "Method " + method.getName() + " should be abstract or default");

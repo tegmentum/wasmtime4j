@@ -17,8 +17,8 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.clocks;
 
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiPollable;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiMonotonicClock;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiPollable;
 import java.lang.foreign.Arena;

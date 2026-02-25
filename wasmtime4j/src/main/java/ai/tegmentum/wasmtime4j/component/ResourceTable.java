@@ -24,8 +24,8 @@ import java.util.Optional;
  *
  * <p>A resource table is a mapping from integer indices to host-side objects. When a component
  * creates a resource via a host constructor, the host pushes the underlying object into the
- * resource table and returns the index as the resource handle. When the component calls methods
- * on the resource, the host looks up the object by index.
+ * resource table and returns the index as the resource handle. When the component calls methods on
+ * the resource, the host looks up the object by index.
  *
  * <p>This interface corresponds to Wasmtime's {@code ResourceTable} type, which is stored
  * per-{@link ai.tegmentum.wasmtime4j.Store Store} in the component store data.

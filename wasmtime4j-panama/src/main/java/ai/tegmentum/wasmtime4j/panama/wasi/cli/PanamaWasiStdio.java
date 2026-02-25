@@ -17,9 +17,9 @@
 package ai.tegmentum.wasmtime4j.panama.wasi.cli;
 
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiInputStream;
 import ai.tegmentum.wasmtime4j.panama.wasi.io.PanamaWasiOutputStream;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wasi.cli.WasiStdio;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiInputStream;
 import ai.tegmentum.wasmtime4j.wasi.io.WasiOutputStream;

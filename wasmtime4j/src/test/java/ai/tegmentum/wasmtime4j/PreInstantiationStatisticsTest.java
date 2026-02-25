@@ -210,10 +210,7 @@ class PreInstantiationStatisticsTest {
       final Instant fixedTime = Instant.parse("2025-01-01T00:00:00Z");
 
       final PreInstantiationStatistics stats1 =
-          PreInstantiationStatistics.builder()
-              .creationTime(fixedTime)
-              .instancesCreated(5L)
-              .build();
+          PreInstantiationStatistics.builder().creationTime(fixedTime).instancesCreated(5L).build();
 
       final PreInstantiationStatistics stats2 =
           PreInstantiationStatistics.builder()
@@ -247,16 +244,10 @@ class PreInstantiationStatisticsTest {
       final Instant fixedTime = Instant.parse("2025-01-01T00:00:00Z");
 
       final PreInstantiationStatistics stats1 =
-          PreInstantiationStatistics.builder()
-              .creationTime(fixedTime)
-              .instancesCreated(5L)
-              .build();
+          PreInstantiationStatistics.builder().creationTime(fixedTime).instancesCreated(5L).build();
 
       final PreInstantiationStatistics stats2 =
-          PreInstantiationStatistics.builder()
-              .creationTime(fixedTime)
-              .instancesCreated(5L)
-              .build();
+          PreInstantiationStatistics.builder().creationTime(fixedTime).instancesCreated(5L).build();
 
       assertEquals(
           stats1.hashCode(), stats2.hashCode(), "Equal objects should have equal hash codes");
@@ -285,8 +276,7 @@ class PreInstantiationStatisticsTest {
 
       final String str = stats.toString();
 
-      assertTrue(
-          str.contains("instancesCreated"), "toString should contain 'instancesCreated'");
+      assertTrue(str.contains("instancesCreated"), "toString should contain 'instancesCreated'");
       assertTrue(str.contains("42"), "toString should contain instancesCreated value");
     }
   }

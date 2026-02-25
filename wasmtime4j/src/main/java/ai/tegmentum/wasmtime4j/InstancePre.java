@@ -47,13 +47,12 @@ public interface InstancePre extends Closeable {
   /**
    * Asynchronously creates a new instance from this pre-instantiated module.
    *
-   * <p>Requires the engine to be configured with {@code asyncSupport(true)}.
-   * This method uses the native async instantiation API which allows for cooperative
-   * yielding during instantiation.
+   * <p>Requires the engine to be configured with {@code asyncSupport(true)}. This method uses the
+   * native async instantiation API which allows for cooperative yielding during instantiation.
    *
-   * <p>The default implementation wraps the synchronous {@link #instantiate(Store)} method
-   * in a {@link CompletableFuture}. Implementations should override this to use
-   * native async instantiation when available.
+   * <p>The default implementation wraps the synchronous {@link #instantiate(Store)} method in a
+   * {@link CompletableFuture}. Implementations should override this to use native async
+   * instantiation when available.
    *
    * @param store the store to create the instance in
    * @return a CompletableFuture that completes with the new Instance
@@ -61,13 +60,14 @@ public interface InstancePre extends Closeable {
    * @since 1.1.0
    */
   default CompletableFuture<Instance> instantiateAsync(final Store store) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiate(store);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**

@@ -113,8 +113,7 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("should return unmodifiable sets")
     void shouldReturnUnmodifiableSets() {
-      final ComponentTypeInfo info =
-          new ComponentTypeInfo(setOf("import1"), setOf("export1"));
+      final ComponentTypeInfo info = new ComponentTypeInfo(setOf("import1"), setOf("export1"));
 
       assertThrows(
           UnsupportedOperationException.class,
@@ -139,17 +138,14 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("hasImport should return true for existing import")
     void hasImportShouldReturnTrueForExisting() {
-      assertTrue(
-          info.hasImport("wasi:cli/stdin@0.2.0"),
-          "Should find existing import");
+      assertTrue(info.hasImport("wasi:cli/stdin@0.2.0"), "Should find existing import");
     }
 
     @Test
     @DisplayName("hasImport should return false for non-existing import")
     void hasImportShouldReturnFalseForNonExisting() {
       assertFalse(
-          info.hasImport("wasi:filesystem/types@0.2.0"),
-          "Should not find non-existing import");
+          info.hasImport("wasi:filesystem/types@0.2.0"), "Should not find non-existing import");
     }
 
     @Test
@@ -170,9 +166,7 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("hasExport should return false for non-existing export")
     void hasExportShouldReturnFalseForNonExisting() {
-      assertFalse(
-          info.hasExport("nonexistent"),
-          "Should not find non-existing export");
+      assertFalse(info.hasExport("nonexistent"), "Should not find non-existing export");
     }
 
     @Test
@@ -244,8 +238,7 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("should be equal to itself")
     void shouldBeEqualToItself() {
-      final ComponentTypeInfo info =
-          new ComponentTypeInfo(setOf("import1"), setOf("export1"));
+      final ComponentTypeInfo info = new ComponentTypeInfo(setOf("import1"), setOf("export1"));
 
       assertEquals(info, info, "Should be equal to itself");
     }
@@ -253,10 +246,8 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("should be equal to another instance with same data")
     void shouldBeEqualToSameData() {
-      final ComponentTypeInfo info1 =
-          new ComponentTypeInfo(setOf("import1"), setOf("export1"));
-      final ComponentTypeInfo info2 =
-          new ComponentTypeInfo(setOf("import1"), setOf("export1"));
+      final ComponentTypeInfo info1 = new ComponentTypeInfo(setOf("import1"), setOf("export1"));
+      final ComponentTypeInfo info2 = new ComponentTypeInfo(setOf("import1"), setOf("export1"));
 
       assertEquals(info1, info2, "Should be equal with same imports and exports");
     }
@@ -264,10 +255,8 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("should not be equal when imports differ")
     void shouldNotBeEqualWhenImportsDiffer() {
-      final ComponentTypeInfo info1 =
-          new ComponentTypeInfo(setOf("import1"), setOf("export1"));
-      final ComponentTypeInfo info2 =
-          new ComponentTypeInfo(setOf("import2"), setOf("export1"));
+      final ComponentTypeInfo info1 = new ComponentTypeInfo(setOf("import1"), setOf("export1"));
+      final ComponentTypeInfo info2 = new ComponentTypeInfo(setOf("import2"), setOf("export1"));
 
       assertNotEquals(info1, info2, "Should not be equal with different imports");
     }
@@ -275,10 +264,8 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("should not be equal when exports differ")
     void shouldNotBeEqualWhenExportsDiffer() {
-      final ComponentTypeInfo info1 =
-          new ComponentTypeInfo(setOf("import1"), setOf("export1"));
-      final ComponentTypeInfo info2 =
-          new ComponentTypeInfo(setOf("import1"), setOf("export2"));
+      final ComponentTypeInfo info1 = new ComponentTypeInfo(setOf("import1"), setOf("export1"));
+      final ComponentTypeInfo info2 = new ComponentTypeInfo(setOf("import1"), setOf("export2"));
 
       assertNotEquals(info1, info2, "Should not be equal with different exports");
     }
@@ -304,14 +291,11 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("equal instances should have same hashCode")
     void equalInstancesShouldHaveSameHashCode() {
-      final ComponentTypeInfo info1 =
-          new ComponentTypeInfo(setOf("a", "b"), setOf("x", "y"));
-      final ComponentTypeInfo info2 =
-          new ComponentTypeInfo(setOf("a", "b"), setOf("x", "y"));
+      final ComponentTypeInfo info1 = new ComponentTypeInfo(setOf("a", "b"), setOf("x", "y"));
+      final ComponentTypeInfo info2 = new ComponentTypeInfo(setOf("a", "b"), setOf("x", "y"));
 
       assertEquals(
-          info1.hashCode(), info2.hashCode(),
-          "Equal instances should have the same hashCode");
+          info1.hashCode(), info2.hashCode(), "Equal instances should have the same hashCode");
     }
   }
 
@@ -333,8 +317,7 @@ class ComponentTypeInfoTest {
     @Test
     @DisplayName("toString should contain import and export counts")
     void toStringShouldContainCounts() {
-      final ComponentTypeInfo info =
-          new ComponentTypeInfo(setOf("i1", "i2"), setOf("e1"));
+      final ComponentTypeInfo info = new ComponentTypeInfo(setOf("i1", "i2"), setOf("e1"));
 
       final String str = info.toString();
 

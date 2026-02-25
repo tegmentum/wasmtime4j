@@ -19,11 +19,11 @@ package ai.tegmentum.wasmtime4j.core;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -54,17 +54,13 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @SuppressWarnings("deprecation")
 public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(MemoryApiDualRuntimeTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(MemoryApiDualRuntimeTest.class.getName());
 
   private static final int PAGE_SIZE = 65536;
 
   /** WAT module with 1 initial page and 10 max pages, plus an empty data segment at index 0. */
   private static final String MEMORY_WAT =
-      "(module\n"
-          + "  (memory (export \"memory\") 1 10)\n"
-          + "  (data (i32.const 0) \"\")\n"
-          + ")";
+      "(module\n" + "  (memory (export \"memory\") 1 10)\n" + "  (data (i32.const 0) \"\")\n" + ")";
 
   @AfterEach
   void cleanup() {
@@ -687,8 +683,7 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
 
         final WasmMemory memory = instance.getMemory("memory").orElseThrow();
         assertDoesNotThrow(
-            () -> memory.writeByte(0, (byte) 0xFF),
-            "writeByte should not throw for valid offset");
+            () -> memory.writeByte(0, (byte) 0xFF), "writeByte should not throw for valid offset");
         LOGGER.info("[" + runtime + "] writeByte without error verified");
       }
     }
@@ -741,8 +736,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.copy(100, 0, 5);
           LOGGER.info("[" + runtime + "] Non-overlapping copy succeeded");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Non-overlapping copy threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Non-overlapping copy threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -769,8 +769,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.copy(2, 0, 5);
           LOGGER.info("[" + runtime + "] Overlapping copy succeeded");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Overlapping copy threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Overlapping copy threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -793,8 +798,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.copy(0, 0, 0);
           LOGGER.info("[" + runtime + "] Zero-length copy succeeded");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Zero-length copy threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Zero-length copy threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -880,8 +890,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.copy(0, PAGE_SIZE - 2, 5);
           fail("Source past memory bounds should throw");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Copy OOB source threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Copy OOB source threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -904,8 +919,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.copy(PAGE_SIZE - 2, 0, 5);
           fail("Destination past memory bounds should throw");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Copy OOB dest threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Copy OOB dest threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -933,8 +953,8 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.fill(0, (byte) 0xAB, 100);
           LOGGER.info("[" + runtime + "] Fill without error verified");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Fill threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "[" + runtime + "] Fill threw: " + t.getClass().getName() + " - " + t.getMessage());
         }
       }
     }
@@ -957,8 +977,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.fill(0, (byte) 0xFF, 0);
           LOGGER.info("[" + runtime + "] Zero-length fill verified");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Zero-length fill threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Zero-length fill threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -1023,8 +1048,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.fill(PAGE_SIZE - 5, (byte) 0xFF, 10);
           fail("Fill past memory bounds should throw");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Fill OOB threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Fill OOB threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -1844,8 +1874,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           final long result = memory.grow64(-1L);
           LOGGER.info("[" + runtime + "] grow64(-1) returned: " + result + " (no throw)");
         } catch (final Exception e) {
-          LOGGER.info("[" + runtime + "] grow64(-1) threw: "
-              + e.getClass().getName() + " - " + e.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] grow64(-1) threw: "
+                  + e.getClass().getName()
+                  + " - "
+                  + e.getMessage());
         }
       }
     }
@@ -1915,8 +1950,7 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
         final WasmMemory memory = instance.getMemory("memory").orElseThrow();
         final byte[] empty = new byte[0];
         assertDoesNotThrow(
-            () -> memory.readBytes64(0L, empty, 0, 0),
-            "Zero-length 64-bit read should not throw");
+            () -> memory.readBytes64(0L, empty, 0, 0), "Zero-length 64-bit read should not throw");
         LOGGER.info("[" + runtime + "] readBytes64 zero length verified");
       }
     }
@@ -2260,8 +2294,13 @@ public class MemoryApiDualRuntimeTest extends DualRuntimeTest {
           memory.init(0, 0, 0, 0);
           LOGGER.info("[" + runtime + "] init zero length succeeded");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] init zero length threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] init zero length threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }

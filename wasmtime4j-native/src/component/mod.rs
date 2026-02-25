@@ -141,6 +141,8 @@ pub struct Component {
     component: WasmtimeComponent,
     /// Component metadata for introspection
     pub(crate) metadata: ComponentMetadata,
+    /// Original wasm bytes for re-compilation with different engines (e.g., concurrent)
+    pub(crate) original_bytes: Arc<Vec<u8>>,
 }
 
 /// Metadata about a compiled component
@@ -241,10 +243,7 @@ impl ComponentEngine {
 
         let metadata = self.extract_component_metadata(&component)?;
 
-        Ok(Component {
-            component,
-            metadata,
-        })
+        Ok(Component::new(component, metadata, bytes.to_vec()))
     }
 
     /// Load a component from a WebAssembly file
@@ -278,7 +277,9 @@ impl ComponentEngine {
             });
         }
 
-        let component = WasmtimeComponent::from_file(&self.engine, path).map_err(|e| {
+        let bytes = std::fs::read(path).map_err(|e| WasmtimeError::Io { source: e })?;
+
+        let component = WasmtimeComponent::new(&self.engine, &bytes).map_err(|e| {
             WasmtimeError::Compilation {
                 message: format!(
                     "Failed to load component from file {}: {}",
@@ -290,10 +291,7 @@ impl ComponentEngine {
 
         let metadata = self.extract_component_metadata(&component)?;
 
-        Ok(Component {
-            component,
-            metadata,
-        })
+        Ok(Component::new(component, metadata, bytes))
     }
 
     /// Instantiate a component with the current linker configuration
@@ -730,11 +728,21 @@ impl Component {
     /// # Returns
     ///
     /// Returns a new `Component` instance.
-    pub(crate) fn new(component: WasmtimeComponent, metadata: ComponentMetadata) -> Self {
+    pub(crate) fn new(
+        component: WasmtimeComponent,
+        metadata: ComponentMetadata,
+        original_bytes: Vec<u8>,
+    ) -> Self {
         Component {
             component,
             metadata,
+            original_bytes: Arc::new(original_bytes),
         }
+    }
+
+    /// Get the original wasm bytes for re-compilation with different engines
+    pub(crate) fn original_bytes(&self) -> &Arc<Vec<u8>> {
+        &self.original_bytes
     }
 
     /// Get the internal Wasmtime component
@@ -937,6 +945,7 @@ impl Component {
                 exports: Vec::new(),
                 size_bytes: bytes.len(),
             },
+            original_bytes: Arc::new(Vec::new()),
         })
     }
 
@@ -975,6 +984,7 @@ impl Component {
                 exports: Vec::new(),
                 size_bytes: 0,
             },
+            original_bytes: Arc::new(Vec::new()),
         })
     }
 

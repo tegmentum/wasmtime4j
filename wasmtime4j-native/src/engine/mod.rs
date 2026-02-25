@@ -18,12 +18,20 @@ pub mod pool;
 mod tests;
 
 // Re-export public types
-pub use builder::{EngineBuilder, EngineConfigSummary};
+pub use builder::{
+    CacheFreeFn, CacheGetFn, CacheInsertFn, CallbackCacheStore,
+    CallbackCustomCodeMemory, CallbackMemoryCreator, CallbackStackCreator,
+    CodeMemAlignmentFn, CodeMemPublishFn, CodeMemUnpublishFn,
+    EngineBuilder, EngineConfigSummary,
+    LinMemAsPtrFn, LinMemByteCapacityFn, LinMemByteSizeFn, LinMemDropFn, LinMemGrowToFn,
+    MemCreatorNewMemoryFn,
+    StkCreatorNewStackFn, StkMemDropFn, StkMemGuardRangeFn, StkMemRangeFn, StkMemTopFn,
+};
 pub use pool::{
     acquire_pooled_engine, engine_pool_cleanup, engine_pool_max_size, engine_pool_size,
-    get_shared_async_wasmtime_engine, get_shared_component_wasmtime_engine, get_shared_engine,
-    get_shared_gc_wasmtime_engine, get_shared_wasmtime_engine, release_pooled_engine,
-    wasmtime_full_cleanup, ManagedEngine,
+    get_shared_async_wasmtime_engine, get_shared_component_wasmtime_engine,
+    get_shared_concurrent_component_engine, get_shared_engine, get_shared_gc_wasmtime_engine,
+    get_shared_wasmtime_engine, release_pooled_engine, wasmtime_full_cleanup, ManagedEngine,
 };
 
 // Re-export FFI functions

@@ -57,10 +57,8 @@ final class PanamaGuestProfiler implements GuestProfiler {
 
       // Allocate arrays for module pointers and names
       final int count = modules.size();
-      final MemorySegment modulePtrs =
-          arena.allocate(ValueLayout.ADDRESS, count);
-      final MemorySegment moduleNamePtrs =
-          arena.allocate(ValueLayout.ADDRESS, count);
+      final MemorySegment modulePtrs = arena.allocate(ValueLayout.ADDRESS, count);
+      final MemorySegment moduleNamePtrs = arena.allocate(ValueLayout.ADDRESS, count);
 
       int idx = 0;
       for (final Map.Entry<String, Module> entry : modules.entrySet()) {

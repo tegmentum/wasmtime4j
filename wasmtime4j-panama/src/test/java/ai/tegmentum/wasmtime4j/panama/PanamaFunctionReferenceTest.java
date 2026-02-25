@@ -50,8 +50,8 @@ import org.junit.jupiter.api.Test;
  * upcall stubs, native registry, callback invocation, global callback stubs, toString output,
  * lifecycle management, and wasm function reference creation via Panama constructors.
  *
- * <p>Generic API tests (creation via Store, calling, multiple types) have been migrated to
- * {@code FunctionReferenceApiDualRuntimeTest} in the integration test module.
+ * <p>Generic API tests (creation via Store, calling, multiple types) have been migrated to {@code
+ * FunctionReferenceApiDualRuntimeTest} in the integration test module.
  */
 @DisplayName("PanamaFunctionReference Panama-Specific Tests")
 class PanamaFunctionReferenceTest {

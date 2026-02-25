@@ -196,8 +196,7 @@ public final class ConfigurationBuilderIntegrationTest {
 
         final StoreLimits limits = StoreLimits.builder().instances(expectedInstances).build();
 
-        assertEquals(
-            expectedInstances, limits.getInstances(), "Instances should be set correctly");
+        assertEquals(expectedInstances, limits.getInstances(), "Instances should be set correctly");
         LOGGER.info("Instances set to: " + expectedInstances);
       }
 
@@ -715,9 +714,7 @@ public final class ConfigurationBuilderIntegrationTest {
         assertSame(config, config.guestDebug(true), "guestDebug should return same config");
         assertSame(config, config.consumeFuel(true), "consumeFuel should return same config");
         assertSame(
-            config,
-            config.epochInterruption(true),
-            "epochInterruption should return same config");
+            config, config.epochInterruption(true), "epochInterruption should return same config");
         assertSame(
             config,
             config.parallelCompilation(true),

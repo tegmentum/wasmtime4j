@@ -6,16 +6,16 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Callback interface for handling debug events during WebAssembly execution.
  *
- * <p>Implement this interface and register it with
- * {@link ai.tegmentum.wasmtime4j.Store#setDebugHandler(DebugHandler)} to receive notifications
- * about debug events such as breakpoints, traps, and exceptions.
+ * <p>Implement this interface and register it with {@link
+ * ai.tegmentum.wasmtime4j.Store#setDebugHandler(DebugHandler)} to receive notifications about debug
+ * events such as breakpoints, traps, and exceptions.
  *
- * <p>The debug handler is invoked asynchronously and must return a {@link CompletableFuture}
- * that completes when the handler is done processing the event. The store requires async support
- * to be enabled (via {@code Config.asyncSupport(true)}).
+ * <p>The debug handler is invoked asynchronously and must return a {@link CompletableFuture} that
+ * completes when the handler is done processing the event. The store requires async support to be
+ * enabled (via {@code Config.asyncSupport(true)}).
  *
- * <p><strong>Important:</strong> The {@link FrameHandle} instances provided in the frames list
- * are only valid during the handler invocation. They become invalid after the returned future
+ * <p><strong>Important:</strong> The {@link FrameHandle} instances provided in the frames list are
+ * only valid during the handler invocation. They become invalid after the returned future
  * completes.
  *
  * <p>Example usage:

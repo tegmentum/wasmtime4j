@@ -19,9 +19,9 @@ package ai.tegmentum.wasmtime4j.wasi.sockets;
 /**
  * Describes the intended use of a socket address for use with socket address checks.
  *
- * <p>This enum is passed to {@link SocketAddrCheck} callbacks to indicate what operation
- * is being performed with the socket address, allowing fine-grained control over which
- * network operations are permitted.
+ * <p>This enum is passed to {@link SocketAddrCheck} callbacks to indicate what operation is being
+ * performed with the socket address, allowing fine-grained control over which network operations
+ * are permitted.
  *
  * @since 1.0.0
  */

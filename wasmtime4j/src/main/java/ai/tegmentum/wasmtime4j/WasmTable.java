@@ -313,9 +313,9 @@ public interface WasmTable {
   /**
    * Grows the table asynchronously by the specified number of elements.
    *
-   * <p>This method requires the engine to be configured with {@code asyncSupport(true)}.
-   * It goes through the async resource limiter if one is set on the store, allowing
-   * the limiter to asynchronously decide whether to permit the growth.
+   * <p>This method requires the engine to be configured with {@code asyncSupport(true)}. It goes
+   * through the async resource limiter if one is set on the store, allowing the limiter to
+   * asynchronously decide whether to permit the growth.
    *
    * @param elements the number of elements to add
    * @param initValue the initial value for new elements

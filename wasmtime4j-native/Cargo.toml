@@ -32,6 +32,7 @@ jni = { workspace = true, optional = true }
 # Async runtime for WASI and other async operations
 tokio.workspace = true
 async-trait.workspace = true
+futures.workspace = true
 
 # Serialization support for complex data structures
 serde.workspace = true

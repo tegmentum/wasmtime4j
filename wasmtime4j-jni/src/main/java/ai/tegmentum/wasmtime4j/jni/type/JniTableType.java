@@ -44,10 +44,7 @@ public final class JniTableType implements TableType {
    * @param is64 true if this table uses 64-bit indices
    */
   public JniTableType(
-      final WasmValueType elementType,
-      final long minimum,
-      final Long maximum,
-      final boolean is64) {
+      final WasmValueType elementType, final long minimum, final Long maximum, final boolean is64) {
     Validation.requireNonNull(elementType, "elementType");
     if (minimum < 0) {
       throw new IllegalArgumentException("Minimum element count cannot be negative: " + minimum);

@@ -119,6 +119,12 @@ public final class EngineConfig {
   private boolean cacheEnabled = false;
   private String cacheConfigPath = null; // null = use default cache config
 
+  // Callback-based extension traits (not serialized to JSON)
+  private transient CacheStore incrementalCacheStore = null;
+  private transient MemoryCreator memoryCreator = null;
+  private transient StackCreator stackCreator = null;
+  private transient CustomCodeMemory customCodeMemory = null;
+
   // Cranelift proof-carrying code validation
   private boolean craneliftPcc = false;
 
@@ -792,8 +798,7 @@ public final class EngineConfig {
    * @return a new configuration with component model experimental features enabled
    */
   public static EngineConfig forExperimentalComponents() {
-    return new EngineConfig()
-        .addWasmFeature(WasmFeature.COMPONENT_MODEL);
+    return new EngineConfig().addWasmFeature(WasmFeature.COMPONENT_MODEL);
   }
 
   /**
@@ -932,6 +937,11 @@ public final class EngineConfig {
     c.forceMemoryInitMemfd = this.forceMemoryInitMemfd;
     c.craneliftDebugChecks = this.craneliftDebugChecks;
     c.enableCompiler = this.enableCompiler;
+    // Transient fields (not serialized to JSON)
+    c.incrementalCacheStore = this.incrementalCacheStore;
+    c.memoryCreator = this.memoryCreator;
+    c.stackCreator = this.stackCreator;
+    c.customCodeMemory = this.customCodeMemory;
     return c;
   }
 
@@ -1623,8 +1633,9 @@ public final class EngineConfig {
   /**
    * Returns whether table lazy initialization is enabled.
    *
-   * <p>Table lazy initialization is enabled by default, matching the Wasmtime default. When enabled,
-   * tables are initialized lazily for faster instantiation but slightly slower indirect calls.
+   * <p>Table lazy initialization is enabled by default, matching the Wasmtime default. When
+   * enabled, tables are initialized lazily for faster instantiation but slightly slower indirect
+   * calls.
    *
    * @return true if table lazy initialization is enabled
    * @since 1.1.0
@@ -1706,8 +1717,7 @@ public final class EngineConfig {
   public EngineConfig moduleVersionCustom(final String version) {
     this.moduleVersionCustom = version;
     if (version != null) {
-      this.moduleVersionStrategy =
-          ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy.CUSTOM;
+      this.moduleVersionStrategy = ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy.CUSTOM;
     }
     return this;
   }
@@ -1876,8 +1886,8 @@ public final class EngineConfig {
   /**
    * Configures whether WebAssembly backtraces are collected on traps and errors.
    *
-   * <p>When enabled, Wasmtime collects stack trace information when a trap occurs.
-   * This is separate from {@link #backtraceDetails} which controls the level of detail.
+   * <p>When enabled, Wasmtime collects stack trace information when a trap occurs. This is separate
+   * from {@link #backtraceDetails} which controls the level of detail.
    *
    * <p>Default: {@code true}
    *
@@ -1904,8 +1914,8 @@ public final class EngineConfig {
    * Configures whether to generate address map information for compiled code.
    *
    * <p>Address maps provide mapping from native code addresses back to WebAssembly bytecode
-   * offsets, which is useful for debugging and profiling. Disabling this can reduce compiled
-   * module size.
+   * offsets, which is useful for debugging and profiling. Disabling this can reduce compiled module
+   * size.
    *
    * <p>Default: {@code true}
    *
@@ -1958,9 +1968,9 @@ public final class EngineConfig {
   /**
    * Enables compilation caching with the default cache configuration.
    *
-   * <p>When enabled, compiled modules are cached on disk to speed up subsequent compilations of
-   * the same module. The default cache location is platform-specific (typically
-   * {@code ~/.cache/wasmtime} on Linux/macOS).
+   * <p>When enabled, compiled modules are cached on disk to speed up subsequent compilations of the
+   * same module. The default cache location is platform-specific (typically {@code
+   * ~/.cache/wasmtime} on Linux/macOS).
    *
    * @return this configuration for method chaining
    * @since 1.1.0
@@ -2009,6 +2019,134 @@ public final class EngineConfig {
    */
   public String getCacheConfigPath() {
     return cacheConfigPath;
+  }
+
+  /**
+   * Enables incremental compilation with a custom cache store.
+   *
+   * <p>When enabled, Cranelift will use the provided {@link CacheStore} to cache intermediate
+   * compilation artifacts. This can significantly speed up compilation of modules that share code
+   * with previously compiled modules.
+   *
+   * <p>Unlike file-based caching ({@link #cacheConfigLoadDefault()}), this allows custom cache
+   * backends such as in-memory caches, Redis, databases, or shared memory.
+   *
+   * <p>The cache store must be thread-safe since Wasmtime may call it from multiple threads
+   * concurrently during parallel compilation.
+   *
+   * @param cacheStore the cache store implementation
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if cacheStore is null
+   * @since 1.1.0
+   */
+  public EngineConfig enableIncrementalCompilation(final CacheStore cacheStore) {
+    if (cacheStore == null) {
+      throw new IllegalArgumentException("cacheStore cannot be null");
+    }
+    this.incrementalCacheStore = cacheStore;
+    return this;
+  }
+
+  /**
+   * Returns the incremental compilation cache store, or null if not set.
+   *
+   * @return the cache store, or null
+   * @since 1.1.0
+   */
+  public CacheStore getIncrementalCacheStore() {
+    return incrementalCacheStore;
+  }
+
+  /**
+   * Sets a custom memory creator for WebAssembly linear memory allocation.
+   *
+   * <p>When set, Wasmtime will use this creator instead of its default memory allocation strategy
+   * whenever a new linear memory is needed during module instantiation.
+   *
+   * <p>This is an advanced feature. The memory creator must return {@link LinearMemory}
+   * implementations backed by native memory (not JVM heap memory).
+   *
+   * @param creator the memory creator implementation
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if creator is null
+   * @since 1.1.0
+   */
+  public EngineConfig withHostMemory(final MemoryCreator creator) {
+    if (creator == null) {
+      throw new IllegalArgumentException("creator cannot be null");
+    }
+    this.memoryCreator = creator;
+    return this;
+  }
+
+  /**
+   * Returns the custom memory creator, or null if not set.
+   *
+   * @return the memory creator, or null
+   * @since 1.1.0
+   */
+  public MemoryCreator getMemoryCreator() {
+    return memoryCreator;
+  }
+
+  /**
+   * Sets a custom stack creator for async fiber stack allocation.
+   *
+   * <p>When set, Wasmtime will use this creator instead of its default stack allocation strategy
+   * whenever a new fiber stack is needed for async execution.
+   *
+   * <p>This requires async support to be enabled in the engine configuration.
+   *
+   * @param creator the stack creator implementation
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if creator is null
+   * @since 1.1.0
+   */
+  public EngineConfig withHostStack(final StackCreator creator) {
+    if (creator == null) {
+      throw new IllegalArgumentException("creator cannot be null");
+    }
+    this.stackCreator = creator;
+    return this;
+  }
+
+  /**
+   * Returns the custom stack creator, or null if not set.
+   *
+   * @return the stack creator, or null
+   * @since 1.1.0
+   */
+  public StackCreator getStackCreator() {
+    return stackCreator;
+  }
+
+  /**
+   * Sets a custom code memory manager for JIT-compiled code.
+   *
+   * <p>When set, Wasmtime will call this interface to manage W^X (write XOR execute) permission
+   * transitions on JIT-compiled code memory regions.
+   *
+   * @param codeMemory the custom code memory implementation
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if codeMemory is null
+   * @since 1.1.0
+   */
+  public EngineConfig withCustomCodeMemory(final CustomCodeMemory codeMemory) {
+    if (codeMemory == null) {
+      throw new IllegalArgumentException("codeMemory cannot be null");
+    }
+    this.customCodeMemory = codeMemory;
+    return this;
+  }
+
+  /**
+   * Returns the custom code memory manager, or null if not set.
+   *
+   * @return the custom code memory, or null
+   * @since 1.1.0
+   */
+  public CustomCodeMemory getCustomCodeMemory() {
+    return customCodeMemory;
   }
 
   /**
@@ -2114,8 +2252,8 @@ public final class EngineConfig {
    * Enables or disables the WebAssembly memory checker (wmemcheck).
    *
    * <p>When enabled, runtime memory checking detects memory errors such as use of uninitialized
-   * memory, similar to Valgrind's memcheck. This adds significant runtime overhead and should
-   * only be used for debugging.
+   * memory, similar to Valgrind's memcheck. This adds significant runtime overhead and should only
+   * be used for debugging.
    *
    * <p>Note: This requires the Wasmtime native library to be built with wmemcheck support.
    *
@@ -2142,8 +2280,8 @@ public final class EngineConfig {
    * Enables or disables forcing memfd for memory initialization on Linux.
    *
    * <p>When enabled, Wasmtime will always use memfd for memory initialization, even when
-   * copy-on-write initialization might not otherwise use it. This is a Linux-specific
-   * optimization that can improve memory initialization performance.
+   * copy-on-write initialization might not otherwise use it. This is a Linux-specific optimization
+   * that can improve memory initialization performance.
    *
    * @param enable true to force memfd memory initialization
    * @return this configuration for method chaining
@@ -2168,8 +2306,8 @@ public final class EngineConfig {
    * Enables or disables Cranelift Wasmtime-specific debug checks.
    *
    * <p>When enabled, additional assertions are inserted into compiled code to verify runtime
-   * invariants maintained by Wasmtime. This is primarily useful for debugging Wasmtime itself
-   * and adds runtime overhead.
+   * invariants maintained by Wasmtime. This is primarily useful for debugging Wasmtime itself and
+   * adds runtime overhead.
    *
    * @param enable true to enable Cranelift debug checks
    * @return this configuration for method chaining
@@ -2194,8 +2332,8 @@ public final class EngineConfig {
    * Enables or disables the compiler in the engine.
    *
    * <p>When disabled, the engine can only execute pre-compiled modules and cannot compile new
-   * WebAssembly modules. This is useful for runtime-only deployments where compilation is done ahead
-   * of time, or for creating engines that should never compile (e.g., in test scenarios with
+   * WebAssembly modules. This is useful for runtime-only deployments where compilation is done
+   * ahead of time, or for creating engines that should never compile (e.g., in test scenarios with
    * multiple engines).
    *
    * @param enable true to enable the compiler (default: true)
@@ -2222,8 +2360,8 @@ public final class EngineConfig {
   /**
    * Serializes this configuration to JSON bytes for native FFI.
    *
-   * <p>The JSON format matches the Rust EngineConfigFfi struct with camelCase field names.
-   * Only non-default values are included to minimize payload size.
+   * <p>The JSON format matches the Rust EngineConfigFfi struct with camelCase field names. Only
+   * non-default values are included to minimize payload size.
    *
    * @return UTF-8 encoded JSON bytes
    * @since 1.0.0
@@ -2274,8 +2412,9 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "guardBeforeLinearMemory", guardBeforeLinearMemory);
     first = appendJsonBool(sb, first, "memoryInitCow", memoryInitCow);
     if (memoryGuaranteedDenseImageSize > 0) {
-      first = appendJsonLong(sb, first, "memoryGuaranteedDenseImageSize",
-          memoryGuaranteedDenseImageSize);
+      first =
+          appendJsonLong(
+              sb, first, "memoryGuaranteedDenseImageSize", memoryGuaranteedDenseImageSize);
     }
 
     // WASM features
@@ -2299,12 +2438,14 @@ public final class EngineConfig {
 
     // Component model extensions
     first = appendJsonBool(sb, first, "wasmComponentModelAsync", wasmComponentModelAsync);
-    first = appendJsonBool(sb, first, "wasmComponentModelAsyncBuiltins",
-        wasmComponentModelAsyncBuiltins);
-    first = appendJsonBool(sb, first, "wasmComponentModelAsyncStackful",
-        wasmComponentModelAsyncStackful);
-    first = appendJsonBool(sb, first, "wasmComponentModelErrorContext",
-        wasmComponentModelErrorContext);
+    first =
+        appendJsonBool(
+            sb, first, "wasmComponentModelAsyncBuiltins", wasmComponentModelAsyncBuiltins);
+    first =
+        appendJsonBool(
+            sb, first, "wasmComponentModelAsyncStackful", wasmComponentModelAsyncStackful);
+    first =
+        appendJsonBool(sb, first, "wasmComponentModelErrorContext", wasmComponentModelErrorContext);
     first = appendJsonBool(sb, first, "wasmComponentModelGc", wasmComponentModelGc);
     first = appendJsonBool(sb, first, "wasmComponentModelThreading", wasmComponentModelThreading);
 
@@ -2321,15 +2462,19 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "macosUseMachPorts", macosUseMachPorts);
     first = appendJsonBool(sb, first, "wasmBacktrace", wasmBacktrace);
     if (backtraceDetails != null) {
-      first = appendJsonField(sb, first, "backtraceDetails",
-          backtraceDetails.name().toLowerCase());
+      first = appendJsonField(sb, first, "backtraceDetails", backtraceDetails.name().toLowerCase());
     }
     first = appendJsonBool(sb, first, "generateAddressMap", generateAddressMap);
     first = appendJsonBool(sb, first, "sharedMemory", sharedMemory);
     if (regallocAlgorithm != null) {
-      first = appendJsonField(sb, first, "craneliftRegallocAlgorithm",
-          regallocAlgorithm == ai.tegmentum.wasmtime4j.config.RegallocAlgorithm.SINGLE_PASS
-              ? "single_pass" : "backtracking");
+      first =
+          appendJsonField(
+              sb,
+              first,
+              "craneliftRegallocAlgorithm",
+              regallocAlgorithm == ai.tegmentum.wasmtime4j.config.RegallocAlgorithm.SINGLE_PASS
+                  ? "single_pass"
+                  : "backtracking");
     }
 
     // Cranelift flags
@@ -2393,15 +2538,20 @@ public final class EngineConfig {
 
     // Profiling
     if (profilingStrategy != ProfilingStrategy.NONE) {
-      first = appendJsonField(sb, first, "profilingStrategy",
-          profilingStrategyToString(profilingStrategy));
+      first =
+          appendJsonField(
+              sb, first, "profilingStrategy", profilingStrategyToString(profilingStrategy));
     }
 
     // Module version strategy
-    if (moduleVersionStrategy != ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy
-        .WASMTIME_VERSION) {
-      first = appendJsonField(sb, first, "moduleVersionStrategy",
-          moduleVersionStrategyToString(moduleVersionStrategy));
+    if (moduleVersionStrategy
+        != ai.tegmentum.wasmtime4j.config.ModuleVersionStrategy.WASMTIME_VERSION) {
+      first =
+          appendJsonField(
+              sb,
+              first,
+              "moduleVersionStrategy",
+              moduleVersionStrategyToString(moduleVersionStrategy));
       if (moduleVersionCustom != null) {
         first = appendJsonField(sb, first, "moduleVersionCustom", moduleVersionCustom);
       }

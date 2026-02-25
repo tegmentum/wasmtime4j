@@ -439,7 +439,8 @@ public final class PanamaFunctionReference implements FunctionReference {
               resultOut);
 
       if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Failed to create native function reference");
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to create native function reference");
       }
 
       // Store the native registry ID
@@ -1056,20 +1057,23 @@ public final class PanamaFunctionReference implements FunctionReference {
       final PanamaFunctionReference funcRef = FUNCTION_REFERENCE_REGISTRY.get(callbackId);
       if (funcRef == null) {
         LOGGER.severe("Function reference not found in registry: " + callbackId);
-        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Function reference not found: " + callbackId);
+        PanamaErrorMapper.writeErrorMessage(
+            errorMsgPtr, errorMsgLen, "Function reference not found: " + callbackId);
         return -1;
       }
 
       if (funcRef.resourceHandle.isClosed()) {
         LOGGER.warning("Attempted to call closed function reference: " + funcRef.functionName);
-        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Closed function: " + funcRef.functionName);
+        PanamaErrorMapper.writeErrorMessage(
+            errorMsgPtr, errorMsgLen, "Closed function: " + funcRef.functionName);
         return -2;
       }
 
       if (funcRef.hostFunction == null) {
         LOGGER.severe(
             "Function reference callback called on non-host function: " + funcRef.functionName);
-        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Not a host function: " + funcRef.functionName);
+        PanamaErrorMapper.writeErrorMessage(
+            errorMsgPtr, errorMsgLen, "Not a host function: " + funcRef.functionName);
         return -3;
       }
 
@@ -1095,7 +1099,8 @@ public final class PanamaFunctionReference implements FunctionReference {
         marshalResultsToFfi(results, reinterpretedResults, resultsLen);
       } catch (final Exception e) {
         LOGGER.log(Level.SEVERE, "Error marshaling results in callback: " + callbackId, e);
-        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Marshal error: " + e.getMessage());
+        PanamaErrorMapper.writeErrorMessage(
+            errorMsgPtr, errorMsgLen, "Marshal error: " + e.getMessage());
         return -5;
       }
 
@@ -1107,7 +1112,6 @@ public final class PanamaFunctionReference implements FunctionReference {
       return -4;
     }
   }
-
 
   /**
    * Unmarshals parameters from native FFI format to WasmValue array.

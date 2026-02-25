@@ -53,10 +53,10 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 /**
  * Dual-runtime API tests for {@link WasmRuntime}.
  *
- * <p>Verifies engine creation, component engine creation, module compilation, store creation, linker
- * creation, instance creation, WASI support, runtime info, lifecycle management, WASI linker,
- * component linker, end-to-end workflows, and NN availability across both JNI and Panama runtimes
- * via the unified API.
+ * <p>Verifies engine creation, component engine creation, module compilation, store creation,
+ * linker creation, instance creation, WASI support, runtime info, lifecycle management, WASI
+ * linker, component linker, end-to-end workflows, and NN availability across both JNI and Panama
+ * runtimes via the unified API.
  *
  * @since 1.0.0
  */
@@ -136,8 +136,7 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] Testing createEngine with null config");
 
       try (WasmRuntime rt = WasmRuntimeFactory.create(runtime)) {
-        assertThrows(
-            Exception.class, () -> rt.createEngine(null), "Should throw for null config");
+        assertThrows(Exception.class, () -> rt.createEngine(null), "Should throw for null config");
         LOGGER.info("[" + runtime + "] Correctly threw for null config");
       }
     }
@@ -247,8 +246,7 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
 
         assertNotNull(bytesModule, "Module compiled from bytes should not be null");
         LOGGER.info(
-            "[" + runtime + "] Compiled module from minimal wasm bytes, size: "
-                + wasmBytes.length);
+            "[" + runtime + "] Compiled module from minimal wasm bytes, size: " + wasmBytes.length);
       }
     }
 
@@ -382,8 +380,7 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] Testing createStore with null engine");
 
       try (WasmRuntime rt = WasmRuntimeFactory.create(runtime)) {
-        assertThrows(
-            Exception.class, () -> rt.createStore(null), "Should throw for null engine");
+        assertThrows(Exception.class, () -> rt.createStore(null), "Should throw for null engine");
         LOGGER.info("[" + runtime + "] Correctly threw for null engine");
       }
     }
@@ -460,8 +457,7 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] Testing createLinker with null engine");
 
       try (WasmRuntime rt = WasmRuntimeFactory.create(runtime)) {
-        assertThrows(
-            Exception.class, () -> rt.createLinker(null), "Should throw for null engine");
+        assertThrows(Exception.class, () -> rt.createLinker(null), "Should throw for null engine");
         LOGGER.info("[" + runtime + "] Correctly threw for null engine");
       }
     }
@@ -510,8 +506,7 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] Testing instantiate with null module");
 
       try (WasmRuntime rt = WasmRuntimeFactory.create(runtime)) {
-        assertThrows(
-            Exception.class, () -> rt.instantiate(null), "Should throw for null module");
+        assertThrows(Exception.class, () -> rt.instantiate(null), "Should throw for null module");
         LOGGER.info("[" + runtime + "] Correctly threw for null module");
       }
     }
@@ -556,8 +551,7 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
         final WasiContext context = rt.createWasiContext();
 
         assertDoesNotThrow(
-            () -> rt.addWasiToLinker(linker, context),
-            "Should add WASI to linker without error");
+            () -> rt.addWasiToLinker(linker, context), "Should add WASI to linker without error");
         LOGGER.info("[" + runtime + "] Added WASI to linker successfully");
       }
     }
@@ -585,10 +579,16 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
         assertNotNull(info.getWasmtimeVersion(), "Wasmtime version should not be null");
         assertEquals(runtime, info.getRuntimeType(), "Runtime type should match requested type");
         LOGGER.info(
-            "[" + runtime + "] Runtime info: name=" + info.getRuntimeName()
-                + " version=" + info.getRuntimeVersion()
-                + " wasmtime=" + info.getWasmtimeVersion()
-                + " type=" + info.getRuntimeType());
+            "["
+                + runtime
+                + "] Runtime info: name="
+                + info.getRuntimeName()
+                + " version="
+                + info.getRuntimeVersion()
+                + " wasmtime="
+                + info.getWasmtimeVersion()
+                + " type="
+                + info.getRuntimeType());
       }
     }
 
@@ -673,9 +673,7 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
       rt.close();
 
       assertThrows(
-          Exception.class,
-          () -> rt.createStore(engine),
-          "Should throw on createStore after close");
+          Exception.class, () -> rt.createStore(engine), "Should throw on createStore after close");
       LOGGER.info("[" + runtime + "] Correctly threw on createStore after close");
     }
 
@@ -728,9 +726,7 @@ public class WasmRuntimeApiDualRuntimeTest extends DualRuntimeTest {
       rt.close();
 
       assertThrows(
-          Exception.class,
-          rt::createWasiContext,
-          "Should throw on createWasiContext after close");
+          Exception.class, rt::createWasiContext, "Should throw on createWasiContext after close");
       LOGGER.info("[" + runtime + "] Correctly threw on createWasiContext after close");
     }
 

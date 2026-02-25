@@ -233,7 +233,6 @@ class WasmFeatureTest {
           names.size(),
           "All WasmFeature values should have unique names");
     }
-
   }
 
   // ========================================================================
@@ -274,7 +273,6 @@ class WasmFeatureTest {
             "toString should return name for " + feature.name());
       }
     }
-
   }
 
   // ========================================================================
@@ -362,5 +360,4 @@ class WasmFeatureTest {
       assertTrue(count >= 2, "Should have at least 2 memory-related features");
     }
   }
-
 }

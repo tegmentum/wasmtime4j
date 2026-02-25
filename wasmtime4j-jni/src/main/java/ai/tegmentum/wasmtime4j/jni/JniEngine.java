@@ -98,8 +98,7 @@ public class JniEngine extends JniResource implements Engine {
       throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
     }
     if (maxPages < 1) {
-      throw new IllegalArgumentException(
-          "Shared memory requires a positive maximum page count");
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
     }
     if (maxPages < initialPages) {
       throw new IllegalArgumentException(
@@ -459,7 +458,22 @@ public class JniEngine extends JniResource implements Engine {
     }
 
     final byte[] jsonBytes = config.toJson();
-    final long handle = nativeCreateEngineFromJsonConfig(jsonBytes);
+    final long handle;
+
+    if (config.getIncrementalCacheStore() != null
+        || config.getMemoryCreator() != null
+        || config.getStackCreator() != null
+        || config.getCustomCodeMemory() != null) {
+      handle =
+          nativeCreateEngineWithExtensions(
+              jsonBytes,
+              config.getIncrementalCacheStore(),
+              config.getMemoryCreator(),
+              config.getStackCreator(),
+              config.getCustomCodeMemory());
+    } else {
+      handle = nativeCreateEngineFromJsonConfig(jsonBytes);
+    }
 
     if (handle == 0) {
       throw new WasmException("Failed to create engine with configuration");
@@ -469,6 +483,13 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   private static native long nativeCreateEngineFromJsonConfig(byte[] jsonConfig);
+
+  private static native long nativeCreateEngineWithExtensions(
+      byte[] jsonConfig,
+      ai.tegmentum.wasmtime4j.config.CacheStore cacheStore,
+      ai.tegmentum.wasmtime4j.config.MemoryCreator memoryCreator,
+      ai.tegmentum.wasmtime4j.config.StackCreator stackCreator,
+      ai.tegmentum.wasmtime4j.config.CustomCodeMemory customCodeMemory);
 
   /**
    * Clears the native handle registries used for memory and store validation.

@@ -396,10 +396,8 @@ public final class PoolingAllocatorIntegrationTest {
       assertTrue(stats.getStacks() >= 0, "Stacks should be non-negative");
       assertTrue(stats.getTables() >= 0, "Tables should be non-negative");
       assertTrue(stats.getGcHeaps() >= 0, "GC heaps should be non-negative");
-      assertTrue(
-          stats.getUnusedWarmStacks() >= 0, "Unused warm stacks should be non-negative");
-      assertTrue(
-          stats.getUnusedWarmTables() >= 0, "Unused warm tables should be non-negative");
+      assertTrue(stats.getUnusedWarmStacks() >= 0, "Unused warm stacks should be non-negative");
+      assertTrue(stats.getUnusedWarmTables() >= 0, "Unused warm tables should be non-negative");
 
       LOGGER.info(
           "Stacks="

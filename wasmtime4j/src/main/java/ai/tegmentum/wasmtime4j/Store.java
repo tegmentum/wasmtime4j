@@ -8,10 +8,10 @@ import ai.tegmentum.wasmtime4j.func.CallHook;
 import ai.tegmentum.wasmtime4j.func.CallHookHandler;
 import ai.tegmentum.wasmtime4j.func.CallbackRegistry;
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
-import ai.tegmentum.wasmtime4j.type.MemoryType;
-import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import ai.tegmentum.wasmtime4j.type.MemoryType;
+import ai.tegmentum.wasmtime4j.type.TableType;
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
 
@@ -347,9 +347,9 @@ public interface Store extends Closeable {
   /**
    * Performs garbage collection asynchronously.
    *
-   * <p>This is the async variant of {@link #gc()} that cooperatively yields during collection
-   * if async fuel yielding or epoch-based yielding is configured. This allows other async tasks
-   * to make progress during potentially long GC operations.
+   * <p>This is the async variant of {@link #gc()} that cooperatively yields during collection if
+   * async fuel yielding or epoch-based yielding is configured. This allows other async tasks to
+   * make progress during potentially long GC operations.
    *
    * <p>Requires the store to have async support enabled (via {@code Config.asyncSupport(true)}).
    *
@@ -360,13 +360,14 @@ public interface Store extends Closeable {
   default CompletableFuture<Void> gcAsync() {
     // Default implementation: delegate to sync gc on ForkJoinPool
     // Implementations should override to use real native async
-    return CompletableFuture.runAsync(() -> {
-      try {
-        gc();
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return CompletableFuture.runAsync(
+        () -> {
+          try {
+            gc();
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
@@ -382,13 +383,14 @@ public interface Store extends Closeable {
    * @since 1.1.0
    */
   default CompletableFuture<Instance> createInstanceAsync(final Module module) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return createInstance(module);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createInstance(module);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
@@ -403,13 +405,14 @@ public interface Store extends Closeable {
    * @since 1.1.0
    */
   default CompletableFuture<WasmMemory> createMemoryAsync(final MemoryType memoryType) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return createMemory(memoryType);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createMemory(memoryType);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
@@ -424,13 +427,14 @@ public interface Store extends Closeable {
    * @since 1.1.0
    */
   default CompletableFuture<WasmTable> createTableAsync(final TableType tableType) {
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return createTable(tableType);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createTable(tableType);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
@@ -536,8 +540,8 @@ public interface Store extends Closeable {
     /**
      * Creates an action to yield execution and resume later with a new deadline.
      *
-     * <p>This is used with async-enabled stores to cooperatively yield back to the async
-     * executor when the epoch deadline is reached, then resume with the specified delta.
+     * <p>This is used with async-enabled stores to cooperatively yield back to the async executor
+     * when the epoch deadline is reached, then resume with the specified delta.
      *
      * @param deltaTicks the ticks to add for the new deadline after resuming
      * @return the yield action
@@ -723,11 +727,11 @@ public interface Store extends Closeable {
    * Sets an asynchronous resource limiter for this store.
    *
    * <p>This is the async counterpart to {@link #setResourceLimiter(ResourceLimiter)}. The limiter's
-   * callbacks return {@link java.util.concurrent.CompletableFuture} to allow non-blocking decisions.
+   * callbacks return {@link java.util.concurrent.CompletableFuture} to allow non-blocking
+   * decisions.
    *
-   * <p>Requires the engine to be configured with {@code asyncSupport(true)}. Only one limiter
-   * (sync or async) can be active at a time. Setting a new limiter replaces any previously set
-   * limiter.
+   * <p>Requires the engine to be configured with {@code asyncSupport(true)}. Only one limiter (sync
+   * or async) can be active at a time. Setting a new limiter replaces any previously set limiter.
    *
    * @param limiter the async resource limiter to set
    * @throws WasmException if setting the limiter fails
@@ -741,8 +745,8 @@ public interface Store extends Closeable {
   /**
    * Gets the current stack frames for debugging.
    *
-   * <p>Returns frame handles from innermost (current function) to outermost (root caller).
-   * Frame handles provide access to function identity, program counter, locals, and stack values.
+   * <p>Returns frame handles from innermost (current function) to outermost (root caller). Frame
+   * handles provide access to function identity, program counter, locals, and stack values.
    *
    * <p>Requires the engine to be configured with {@code guestDebug(true)}.
    *
@@ -819,8 +823,8 @@ public interface Store extends Closeable {
   /**
    * Checks if single-step mode is active.
    *
-   * <p>When single-step mode is enabled, the debug handler is invoked before each
-   * WebAssembly instruction is executed.
+   * <p>When single-step mode is enabled, the debug handler is invoked before each WebAssembly
+   * instruction is executed.
    *
    * @return true if single-step mode is active
    * @since 1.1.0
@@ -832,11 +836,11 @@ public interface Store extends Closeable {
   /**
    * Sets a debug handler for this store.
    *
-   * <p>The handler will be invoked when debug events occur, such as breakpoints being hit,
-   * traps occurring, or exceptions being thrown.
+   * <p>The handler will be invoked when debug events occur, such as breakpoints being hit, traps
+   * occurring, or exceptions being thrown.
    *
-   * <p>Requires the engine to be configured with both {@code guestDebug(true)} and
-   * {@code asyncSupport(true)}.
+   * <p>Requires the engine to be configured with both {@code guestDebug(true)} and {@code
+   * asyncSupport(true)}.
    *
    * @param handler the debug handler to set
    * @throws UnsupportedOperationException if guest debugging or async support is not enabled
@@ -884,21 +888,22 @@ public interface Store extends Closeable {
       throw new IllegalArgumentException("task cannot be null");
     }
     final Store self = this;
-    return CompletableFuture.supplyAsync(() -> {
-      try {
-        return task.execute(self);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return task.execute(self);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
    * Spawns a concurrent task on this store, returning a handle to join its result.
    *
    * <p>Unlike {@link #runConcurrent(ConcurrentTask)}, which returns a plain {@link
-   * CompletableFuture}, this method returns a {@link JoinHandle} that provides cancellation
-   * support and blocking join semantics.
+   * CompletableFuture}, this method returns a {@link JoinHandle} that provides cancellation support
+   * and blocking join semantics.
    *
    * <p>The default implementation wraps the task in a {@link CompletableFuture} and provides a
    * default JoinHandle. Implementations should override to use native spawn support when available.
@@ -922,9 +927,9 @@ public interface Store extends Closeable {
   /**
    * Checks whether this store has async support enabled.
    *
-   * <p>Async-enabled stores are required for Wasmtime's async operations such as
-   * {@code callAsync()}, {@code instantiateAsync()}, and async host functions. The async flag
-   * is inherited from the Engine's {@code asyncSupport} configuration at store creation time.
+   * <p>Async-enabled stores are required for Wasmtime's async operations such as {@code
+   * callAsync()}, {@code instantiateAsync()}, and async host functions. The async flag is inherited
+   * from the Engine's {@code asyncSupport} configuration at store creation time.
    *
    * @return true if this store supports async operations
    * @since 1.1.0

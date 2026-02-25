@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
-import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfigBuilder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,21 +61,15 @@ class JniWasiHttpConfigBuilderTest {
     void booleanDefaultsShouldMatchExpected() {
       final WasiHttpConfig config = new JniWasiHttpConfigBuilder().build();
 
-      assertThat(config.isHttpsRequired())
-          .as("httpsRequired default should be false")
-          .isFalse();
+      assertThat(config.isHttpsRequired()).as("httpsRequired default should be false").isFalse();
       assertThat(config.isCertificateValidationEnabled())
           .as("certificateValidation default should be true")
           .isTrue();
-      assertThat(config.isHttp2Enabled())
-          .as("http2 default should be true")
-          .isTrue();
+      assertThat(config.isHttp2Enabled()).as("http2 default should be true").isTrue();
       assertThat(config.isConnectionPoolingEnabled())
           .as("connectionPooling default should be true")
           .isTrue();
-      assertThat(config.isFollowRedirects())
-          .as("followRedirects default should be true")
-          .isTrue();
+      assertThat(config.isFollowRedirects()).as("followRedirects default should be true").isTrue();
     }
   }
 
@@ -122,8 +115,7 @@ class JniWasiHttpConfigBuilderTest {
     @DisplayName("allowHosts(null) should throw NullPointerException")
     void allowHostsNullShouldThrow() {
       final JniWasiHttpConfigBuilder builder = new JniWasiHttpConfigBuilder();
-      assertThatThrownBy(() -> builder.allowHosts(null))
-          .isInstanceOf(NullPointerException.class);
+      assertThatThrownBy(() -> builder.allowHosts(null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -275,10 +267,7 @@ class JniWasiHttpConfigBuilderTest {
     @DisplayName("blockHost after allowAllHosts should populate both sets")
     void blockHostAfterAllowAllShouldPopulateBothSets() {
       final WasiHttpConfig config =
-          new JniWasiHttpConfigBuilder()
-              .allowAllHosts()
-              .blockHost("internal.com")
-              .build();
+          new JniWasiHttpConfigBuilder().allowAllHosts().blockHost("internal.com").build();
 
       assertThat(config.getAllowedHosts()).contains("*");
       assertThat(config.getBlockedHosts()).contains("internal.com");
@@ -319,9 +308,7 @@ class JniWasiHttpConfigBuilderTest {
     @DisplayName("allowHosts with empty collection should not add any hosts")
     void allowHostsEmptyCollectionShouldNotAdd() {
       final WasiHttpConfig config =
-          new JniWasiHttpConfigBuilder()
-              .allowHosts(Collections.emptyList())
-              .build();
+          new JniWasiHttpConfigBuilder().allowHosts(Collections.emptyList()).build();
 
       assertThat(config.getAllowedHosts()).isEmpty();
     }

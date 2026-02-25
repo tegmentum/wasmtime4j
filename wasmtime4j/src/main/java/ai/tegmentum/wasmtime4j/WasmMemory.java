@@ -974,9 +974,9 @@ public interface WasmMemory {
   /**
    * Grows memory asynchronously by the specified number of pages.
    *
-   * <p>This method requires the engine to be configured with {@code asyncSupport(true)}.
-   * It goes through the async resource limiter if one is set on the store, allowing
-   * the limiter to asynchronously decide whether to permit the growth.
+   * <p>This method requires the engine to be configured with {@code asyncSupport(true)}. It goes
+   * through the async resource limiter if one is set on the store, allowing the limiter to
+   * asynchronously decide whether to permit the growth.
    *
    * @param pages the number of additional pages to allocate
    * @return the previous number of pages before growth

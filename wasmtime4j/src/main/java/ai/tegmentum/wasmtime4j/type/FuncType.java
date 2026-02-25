@@ -50,8 +50,8 @@ public interface FuncType extends WasmType {
   /**
    * Gets the parameter types as a list of {@link ValType}.
    *
-   * <p>This provides richer type information than {@link #getParams()}, as {@link ValType}
-   * carries reference type details including heap type and nullability.
+   * <p>This provides richer type information than {@link #getParams()}, as {@link ValType} carries
+   * reference type details including heap type and nullability.
    *
    * @return an immutable list of parameter value types
    * @since 1.1.0
@@ -63,8 +63,8 @@ public interface FuncType extends WasmType {
   /**
    * Gets the result types as a list of {@link ValType}.
    *
-   * <p>This provides richer type information than {@link #getResults()}, as {@link ValType}
-   * carries reference type details including heap type and nullability.
+   * <p>This provides richer type information than {@link #getResults()}, as {@link ValType} carries
+   * reference type details including heap type and nullability.
    *
    * @return an immutable list of result value types
    * @since 1.1.0
@@ -129,12 +129,12 @@ public interface FuncType extends WasmType {
   }
 
   /**
-   * Creates a FuncType from {@link ValType} arrays, extracting the underlying
-   * {@link WasmValueType} from each.
+   * Creates a FuncType from {@link ValType} arrays, extracting the underlying {@link WasmValueType}
+   * from each.
    *
-   * <p>This overload is useful when working with the richer {@link ValType} representations.
-   * An {@link ai.tegmentum.wasmtime4j.Engine} may be used by implementations to create a
-   * canonicalized type via the native type system.
+   * <p>This overload is useful when working with the richer {@link ValType} representations. An
+   * {@link ai.tegmentum.wasmtime4j.Engine} may be used by implementations to create a canonicalized
+   * type via the native type system.
    *
    * @param params the parameter types
    * @param results the result types

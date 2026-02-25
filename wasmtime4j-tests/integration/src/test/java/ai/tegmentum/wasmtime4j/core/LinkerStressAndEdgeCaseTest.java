@@ -94,12 +94,9 @@ public class LinkerStressAndEdgeCaseTest extends DualRuntimeTest {
       final Module module = engine.compileWat(wat.toString());
       final Instance instance = linker.instantiate(store, module);
 
-      assertEquals(
-          0, instance.callFunction("call_0")[0].asInt(), "call_0 should return 0");
-      assertEquals(
-          50, instance.callFunction("call_50")[0].asInt(), "call_50 should return 50");
-      assertEquals(
-          99, instance.callFunction("call_99")[0].asInt(), "call_99 should return 99");
+      assertEquals(0, instance.callFunction("call_0")[0].asInt(), "call_0 should return 0");
+      assertEquals(50, instance.callFunction("call_50")[0].asInt(), "call_50 should return 50");
+      assertEquals(99, instance.callFunction("call_99")[0].asInt(), "call_99 should return 99");
       LOGGER.info(
           "[" + runtime + "] 100-import stress test passed: call_0=0, call_50=50, " + "call_99=99");
 

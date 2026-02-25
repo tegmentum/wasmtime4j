@@ -349,7 +349,8 @@ class ComponentTypeTest {
     void asyncTypesShouldNotBePrimitive() {
       assertFalse(ComponentType.FUTURE.isPrimitive(), "FUTURE should not be primitive");
       assertFalse(ComponentType.STREAM.isPrimitive(), "STREAM should not be primitive");
-      assertFalse(ComponentType.ERROR_CONTEXT.isPrimitive(), "ERROR_CONTEXT should not be primitive");
+      assertFalse(
+          ComponentType.ERROR_CONTEXT.isPrimitive(), "ERROR_CONTEXT should not be primitive");
     }
 
     @Test
@@ -444,5 +445,4 @@ class ComponentTypeTest {
           "valueOf with invalid name should throw IllegalArgumentException");
     }
   }
-
 }

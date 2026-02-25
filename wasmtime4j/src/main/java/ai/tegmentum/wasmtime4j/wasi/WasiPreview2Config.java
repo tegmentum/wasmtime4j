@@ -309,8 +309,8 @@ public final class WasiPreview2Config {
   /**
    * Gets the insecure random seed value.
    *
-   * <p>This provides a deterministic seed for insecure random number generation,
-   * useful for testing and reproducibility.
+   * <p>This provides a deterministic seed for insecure random number generation, useful for testing
+   * and reproducibility.
    *
    * @return the insecure random seed
    */
@@ -867,8 +867,8 @@ public final class WasiPreview2Config {
     /**
      * Sets a deterministic seed for insecure random number generation.
      *
-     * <p>This is useful for testing and reproducibility. The seed is a 64-bit value
-     * that will be used as the low bits of the 128-bit WASI insecure random seed.
+     * <p>This is useful for testing and reproducibility. The seed is a 64-bit value that will be
+     * used as the low bits of the 128-bit WASI insecure random seed.
      *
      * @param seed the insecure random seed
      * @return this builder
@@ -882,8 +882,8 @@ public final class WasiPreview2Config {
     /**
      * Sets a custom wall clock implementation.
      *
-     * <p>By default, the host's wall clock is used. This allows overriding with a
-     * custom implementation for testing or deterministic behavior.
+     * <p>By default, the host's wall clock is used. This allows overriding with a custom
+     * implementation for testing or deterministic behavior.
      *
      * @param clock the custom wall clock implementation
      * @return this builder
@@ -896,8 +896,8 @@ public final class WasiPreview2Config {
     /**
      * Sets a custom monotonic clock implementation.
      *
-     * <p>By default, the host's monotonic clock is used. This allows overriding with a
-     * custom implementation for testing or deterministic behavior.
+     * <p>By default, the host's monotonic clock is used. This allows overriding with a custom
+     * implementation for testing or deterministic behavior.
      *
      * @param clock the custom monotonic clock implementation
      * @return this builder
@@ -910,8 +910,8 @@ public final class WasiPreview2Config {
     /**
      * Sets a custom secure random source.
      *
-     * <p>By default, the host's secure random source is used. The provided source must
-     * generate cryptographically secure random data.
+     * <p>By default, the host's secure random source is used. The provided source must generate
+     * cryptographically secure random data.
      *
      * @param random the custom secure random source
      * @return this builder
@@ -924,8 +924,8 @@ public final class WasiPreview2Config {
     /**
      * Sets a custom insecure random source.
      *
-     * <p>By default, the host's insecure random source is used. This is useful for
-     * deterministic testing.
+     * <p>By default, the host's insecure random source is used. This is useful for deterministic
+     * testing.
      *
      * @param random the custom insecure random source
      * @return this builder
@@ -938,8 +938,8 @@ public final class WasiPreview2Config {
     /**
      * Sets a socket address check callback.
      *
-     * <p>This callback is invoked for each socket operation to determine whether it should
-     * be permitted. Returning {@code true} allows the operation, {@code false} denies it.
+     * <p>This callback is invoked for each socket operation to determine whether it should be
+     * permitted. Returning {@code true} allows the operation, {@code false} denies it.
      *
      * @param check the socket address check callback
      * @return this builder

@@ -140,8 +140,8 @@ public final class PanamaTable implements WasmTable {
   /**
    * Package-private constructor for extern tables with automatic element type detection.
    *
-   * <p>This constructor queries the native table handle to determine the element type,
-   * similar to the instance-based constructor but without requiring a PanamaInstance.
+   * <p>This constructor queries the native table handle to determine the element type, similar to
+   * the instance-based constructor but without requiring a PanamaInstance.
    *
    * @param nativeTable the native table pointer from Wasmtime
    * @param store the store that owns this table

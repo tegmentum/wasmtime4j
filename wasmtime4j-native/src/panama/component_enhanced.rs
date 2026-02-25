@@ -561,3 +561,101 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_destroy(engine_ptr
         }
     }
 }
+
+/// Run concurrent component function calls.
+///
+/// Takes a JSON string containing the batch of calls and returns a JSON string
+/// containing the results. The caller must free the result string using
+/// `wasmtime4j_panama_free_string`.
+///
+/// # Returns
+/// 0 on success, -1 on error (error message written to result_ptr)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_enhanced_component_run_concurrent(
+    engine_ptr: *mut c_void,
+    instance_id: c_ulong,
+    json_ptr: *const u8,
+    json_len: c_ulong,
+    result_ptr: *mut *mut u8,
+    result_len: *mut c_ulong,
+) -> c_int {
+    if engine_ptr.is_null() || json_ptr.is_null() || result_ptr.is_null() || result_len.is_null() {
+        return -1;
+    }
+
+    let engine = unsafe { &*(engine_ptr as *const EnhancedComponentEngine) };
+
+    let json_bytes = unsafe { std::slice::from_raw_parts(json_ptr, json_len as usize) };
+    let json_str = match std::str::from_utf8(json_bytes) {
+        Ok(s) => s,
+        Err(e) => {
+            log::error!("Invalid UTF-8 in concurrent calls JSON: {}", e);
+            return -1;
+        }
+    };
+
+    let calls =
+        match crate::component_core::concurrent_call_json::deserialize_calls(json_str) {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to deserialize concurrent calls: {}", e);
+                // Write error message as result
+                let err_msg = format!("{{\"error\":\"{}\"}}", e);
+                let err_bytes = err_msg.into_bytes();
+                let len = err_bytes.len();
+                let ptr = err_bytes.as_ptr();
+                std::mem::forget(err_bytes);
+                unsafe {
+                    *result_ptr = ptr as *mut u8;
+                    *result_len = len as c_ulong;
+                }
+                return -1;
+            }
+        };
+
+    match engine.run_concurrent_calls(instance_id as u64, calls) {
+        Ok(results) => {
+            match crate::component_core::concurrent_call_json::serialize_results(&results)
+            {
+                Ok(json_result) => {
+                    let result_bytes = json_result.into_bytes();
+                    let len = result_bytes.len();
+                    let boxed = result_bytes.into_boxed_slice();
+                    let ptr = Box::into_raw(boxed) as *mut u8;
+                    unsafe {
+                        *result_ptr = ptr;
+                        *result_len = len as c_ulong;
+                    }
+                    0
+                }
+                Err(e) => {
+                    log::error!("Failed to serialize concurrent results: {}", e);
+                    -1
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Concurrent calls failed: {}", e);
+            let err_msg = format!("{{\"error\":\"{}\"}}", e);
+            let err_bytes = err_msg.into_bytes();
+            let len = err_bytes.len();
+            let boxed = err_bytes.into_boxed_slice();
+            let ptr = Box::into_raw(boxed) as *mut u8;
+            unsafe {
+                *result_ptr = ptr;
+                *result_len = len as c_ulong;
+            }
+            -1
+        }
+    }
+}
+
+/// Free a string allocated by `wasmtime4j_panama_enhanced_component_run_concurrent`
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_free_concurrent_result(ptr: *mut u8, len: c_ulong) {
+    if !ptr.is_null() && len > 0 {
+        unsafe {
+            let _ = Box::from_raw(std::slice::from_raw_parts_mut(ptr, len as usize));
+        }
+    }
+}

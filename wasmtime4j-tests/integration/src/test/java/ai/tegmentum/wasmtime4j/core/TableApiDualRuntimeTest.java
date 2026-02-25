@@ -18,11 +18,11 @@ package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -53,8 +53,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @SuppressWarnings("deprecation")
 public class TableApiDualRuntimeTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(TableApiDualRuntimeTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TableApiDualRuntimeTest.class.getName());
 
   /** WAT module with a funcref table of 5 elements and no maximum. */
   private static final String TABLE_5_NO_MAX_WAT =
@@ -441,9 +440,7 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
 
         final WasmTable table = tableOpt.get();
         assertThrows(
-            Exception.class,
-            () -> table.set(100, null),
-            "Out-of-bounds index should throw");
+            Exception.class, () -> table.set(100, null), "Out-of-bounds index should throw");
         LOGGER.info("[" + runtime + "] set(100) correctly threw for out-of-bounds");
       }
     }
@@ -469,8 +466,13 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
           table.set(0, "not a valid table value");
           fail("String value should throw");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] set(String) threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] set(String) threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -575,8 +577,7 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
         assertTrue(tableOpt.isPresent(), "Table export should be present");
 
         final WasmTable table = tableOpt.get();
-        assertDoesNotThrow(
-            () -> table.fill(0, 3, null), "Filling with null should not throw");
+        assertDoesNotThrow(() -> table.fill(0, 3, null), "Filling with null should not throw");
         LOGGER.info("[" + runtime + "] Filled table range [0, 3) with null");
       }
     }
@@ -597,8 +598,7 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
         assertTrue(tableOpt.isPresent(), "Table export should be present");
 
         final WasmTable table = tableOpt.get();
-        assertDoesNotThrow(
-            () -> table.fill(0, 0, null), "Fill with zero count should not throw");
+        assertDoesNotThrow(() -> table.fill(0, 0, null), "Fill with zero count should not throw");
         LOGGER.info("[" + runtime + "] fill(0, 0, null) completed as no-op");
       }
     }
@@ -679,8 +679,13 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
           table.copy(0, 0, 0);
           LOGGER.info("[" + runtime + "] copy(0, 0, 0) completed as no-op");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] copy(0, 0, 0) threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] copy(0, 0, 0) threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -753,8 +758,7 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
             Exception.class,
             () -> table.copy(0, 0, -1),
             "Negative count should throw IllegalArgumentException");
-        LOGGER.info(
-            "[" + runtime + "] copy(0, 0, -1) correctly threw IllegalArgumentException");
+        LOGGER.info("[" + runtime + "] copy(0, 0, -1) correctly threw IllegalArgumentException");
       }
     }
 
@@ -779,8 +783,13 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
           table.copy(2, 0, 2);
           LOGGER.info("[" + runtime + "] Self-copy succeeded");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Self-copy threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Self-copy threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -802,9 +811,7 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
 
         final WasmTable table = tableOpt.get();
         assertThrows(
-            Exception.class,
-            () -> table.copy(0, null, 0, 1),
-            "Null source table should throw");
+            Exception.class, () -> table.copy(0, null, 0, 1), "Null source table should throw");
         LOGGER.info("[" + runtime + "] copy(null source) correctly threw IllegalArgumentException");
       }
     }
@@ -830,8 +837,13 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
           table.copy(0, table, 0, 0);
           LOGGER.info("[" + runtime + "] Cross-table copy(0 count) completed as no-op");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] Cross-table copy(0 count) threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Cross-table copy(0 count) threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -944,8 +956,13 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
           table.init(0, 0, 0, 0);
           LOGGER.info("[" + runtime + "] init(0, 0, 0, 0) completed as no-op");
         } catch (final Throwable t) {
-          LOGGER.info("[" + runtime + "] init(0, 0, 0, 0) threw: "
-              + t.getClass().getName() + " - " + t.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] init(0, 0, 0, 0) threw: "
+                  + t.getClass().getName()
+                  + " - "
+                  + t.getMessage());
         }
       }
     }
@@ -970,8 +987,7 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
             Exception.class,
             () -> table.init(-1, 0, 0, 1),
             "Negative destIndex should throw IndexOutOfBoundsException");
-        LOGGER.info(
-            "[" + runtime + "] init(-1, ...) correctly threw IndexOutOfBoundsException");
+        LOGGER.info("[" + runtime + "] init(-1, ...) correctly threw IndexOutOfBoundsException");
       }
     }
 
@@ -995,8 +1011,7 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
             Exception.class,
             () -> table.init(0, -1, 0, 1),
             "Negative element segment index should throw");
-        LOGGER.info(
-            "[" + runtime + "] init(0, -1, ...) correctly threw IllegalArgumentException");
+        LOGGER.info("[" + runtime + "] init(0, -1, ...) correctly threw IllegalArgumentException");
       }
     }
 
@@ -1041,12 +1056,8 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
         assertTrue(tableOpt.isPresent(), "Table export should be present");
 
         final WasmTable table = tableOpt.get();
-        assertThrows(
-            Exception.class,
-            () -> table.init(0, 0, 0, -1),
-            "Negative count should throw");
-        LOGGER.info(
-            "[" + runtime + "] init(0, 0, 0, -1) correctly threw IllegalArgumentException");
+        assertThrows(Exception.class, () -> table.init(0, 0, 0, -1), "Negative count should throw");
+        LOGGER.info("[" + runtime + "] init(0, 0, 0, -1) correctly threw IllegalArgumentException");
       }
     }
   }
@@ -1221,7 +1232,10 @@ public class TableApiDualRuntimeTest extends DualRuntimeTest {
         table.grow(1, null);
         assertEquals(7, table.getSize(), "After grow(1)");
         LOGGER.info(
-            "[" + runtime + "] Table grew from 1 to " + table.getSize()
+            "["
+                + runtime
+                + "] Table grew from 1 to "
+                + table.getSize()
                 + " through multiple grows");
       }
     }

@@ -321,10 +321,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
     } catch (final Exception e) {
       LOGGER.warning("Failed to check component compatibility: " + e.getMessage());
       return new WitCompatibilityResult(
-          false,
-          "Compatibility check failed: " + e.getMessage(),
-          Set.of(),
-          Set.of());
+          false, "Compatibility check failed: " + e.getMessage(), Set.of(), Set.of());
     }
   }
 
@@ -334,10 +331,20 @@ public final class PanamaComponentEngine implements ComponentEngine {
     return new WitSupportInfo(
         true,
         "1.0",
-        Set.of("interface", "world", "resource", "variant", "record", "enum", "flags", "tuple",
-            "option", "result"),
-        List.of("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64",
-            "char", "string"),
+        Set.of(
+            "interface",
+            "world",
+            "resource",
+            "variant",
+            "record",
+            "enum",
+            "flags",
+            "tuple",
+            "option",
+            "result"),
+        List.of(
+            "bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "char",
+            "string"),
         10);
   }
 
@@ -424,8 +431,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
               enhancedEngineHandle, bytesSegment, bytes.length, componentOut);
 
       if (errorCode != 0) {
-        throw new WasmException(
-            "Failed to deserialize component: native error code " + errorCode);
+        throw new WasmException("Failed to deserialize component: native error code " + errorCode);
       }
 
       final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
@@ -460,7 +466,10 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
       if (errorCode != 0) {
         throw new WasmException(
-            "Failed to deserialize component from file: " + path + " (error code " + errorCode
+            "Failed to deserialize component from file: "
+                + path
+                + " (error code "
+                + errorCode
                 + ")");
       }
 

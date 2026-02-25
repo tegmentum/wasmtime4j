@@ -82,8 +82,8 @@ public interface ComponentLinkerInstance {
   /**
    * Associates a core WebAssembly module with this linker instance scope.
    *
-   * <p>This corresponds to Wasmtime's {@code LinkerInstance::module()} which allows embedding
-   * a core WebAssembly module within a component linker definition. This is used when a component
+   * <p>This corresponds to Wasmtime's {@code LinkerInstance::module()} which allows embedding a
+   * core WebAssembly module within a component linker definition. This is used when a component
    * imports a core module.
    *
    * <p>The default implementation throws {@link UnsupportedOperationException}. Implementations
@@ -108,8 +108,9 @@ public interface ComponentLinkerInstance {
    * same store, enabling true concurrent component execution. This is part of the Component Model
    * async proposal.
    *
-   * <p>The default implementation delegates to {@link #funcNewAsync(String, ComponentHostFunction)}.
-   * Implementations should override to use native concurrent function support.
+   * <p>The default implementation delegates to {@link #funcNewAsync(String,
+   * ComponentHostFunction)}. Implementations should override to use native concurrent function
+   * support.
    *
    * @param name the function name within this scope
    * @param implementation the host function implementation
@@ -151,8 +152,8 @@ public interface ComponentLinkerInstance {
    * @throws IllegalArgumentException if name or definition is null or empty
    * @since 1.1.0
    */
-  default void resourceConcurrent(final String name, final ComponentResourceDefinition<?> definition)
-      throws WasmException {
+  default void resourceConcurrent(
+      final String name, final ComponentResourceDefinition<?> definition) throws WasmException {
     resourceAsync(name, definition);
   }
 

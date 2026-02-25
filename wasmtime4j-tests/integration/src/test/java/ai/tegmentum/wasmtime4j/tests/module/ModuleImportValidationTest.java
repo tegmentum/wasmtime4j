@@ -585,5 +585,4 @@ public class ModuleImportValidationTest extends DualRuntimeTest {
     assertFalse(validation.isValid(), "Validation should fail with wrong field name");
     assertEquals(1, validation.getIssues().size());
   }
-
 }

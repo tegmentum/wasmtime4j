@@ -26,8 +26,7 @@ public final class PanamaValidation {
    * @param handleName the handle name for error messages
    * @throws IllegalArgumentException if the handle is null or equals {@link MemorySegment#NULL}
    */
-  public static void requireValidHandle(
-      final MemorySegment handle, final String handleName) {
+  public static void requireValidHandle(final MemorySegment handle, final String handleName) {
     Validation.requireNonNull(handle, handleName);
     if (handle.equals(MemorySegment.NULL)) {
       throw new IllegalArgumentException(

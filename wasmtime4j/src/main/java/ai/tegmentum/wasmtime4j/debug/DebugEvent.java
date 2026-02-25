@@ -3,8 +3,8 @@ package ai.tegmentum.wasmtime4j.debug;
 /**
  * Events that can occur during guest debugging.
  *
- * <p>When a {@link DebugHandler} is set on a store, it will be invoked with these events
- * at various points during WebAssembly execution.
+ * <p>When a {@link DebugHandler} is set on a store, it will be invoked with these events at various
+ * points during WebAssembly execution.
  *
  * @since 1.1.0
  */
@@ -13,24 +13,24 @@ public enum DebugEvent {
   /**
    * A host call returned an error.
    *
-   * <p>This event fires when a host function call results in an error that would
-   * normally trap the WebAssembly instance.
+   * <p>This event fires when a host function call results in an error that would normally trap the
+   * WebAssembly instance.
    */
   HOSTCALL_ERROR(0),
 
   /**
    * A caught exception was thrown.
    *
-   * <p>This event fires when a WebAssembly exception is thrown and there is a
-   * matching catch handler in the call stack.
+   * <p>This event fires when a WebAssembly exception is thrown and there is a matching catch
+   * handler in the call stack.
    */
   CAUGHT_EXCEPTION_THROWN(1),
 
   /**
    * An uncaught exception was thrown.
    *
-   * <p>This event fires when a WebAssembly exception is thrown and there is no
-   * matching catch handler, which will cause a trap.
+   * <p>This event fires when a WebAssembly exception is thrown and there is no matching catch
+   * handler, which will cause a trap.
    */
   UNCAUGHT_EXCEPTION_THROWN(2),
 
@@ -52,8 +52,8 @@ public enum DebugEvent {
   /**
    * An epoch yield occurred.
    *
-   * <p>This event fires when the epoch deadline is reached and the store is configured
-   * to yield on epoch changes.
+   * <p>This event fires when the epoch deadline is reached and the store is configured to yield on
+   * epoch changes.
    */
   EPOCH_YIELD(5);
 

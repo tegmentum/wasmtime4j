@@ -15,9 +15,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link JniResource}.
  *
- * <p>Verifies constructor validation, close lifecycle idempotency, state after close, thread safety,
- * and static utility methods. Uses a concrete test subclass with a tracked {@code doClose()} to test
- * lifecycle without native calls.
+ * <p>Verifies constructor validation, close lifecycle idempotency, state after close, thread
+ * safety, and static utility methods. Uses a concrete test subclass with a tracked {@code
+ * doClose()} to test lifecycle without native calls.
  */
 @DisplayName("JniResource Tests")
 class JniResourceTest {

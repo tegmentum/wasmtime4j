@@ -119,6 +119,22 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeInit
 JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleResourcesRequired
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleText
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleText
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleAddressMap
+ * Signature: (J)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleAddressMap
+  (JNIEnv *, jobject, jlong);
+
 #ifdef __cplusplus
 }
 #endif

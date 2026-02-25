@@ -162,8 +162,7 @@ public final class LinkerSupport {
           validImportCount++;
 
           final ImportInfo.ImportKind infoType = mapImportTypeToImportKind(importType);
-          final Optional<String> typeSignature =
-              Optional.of(importType.getType().toString());
+          final Optional<String> typeSignature = Optional.of(importType.getType().toString());
 
           final ImportInfo info =
               new ImportInfo(
@@ -194,8 +193,7 @@ public final class LinkerSupport {
 
     final boolean valid = issues.isEmpty();
 
-    return new ImportValidation(
-        valid, issues, validatedImports, totalImports, validImportCount);
+    return new ImportValidation(valid, issues, validatedImports, totalImports, validImportCount);
   }
 
   /**

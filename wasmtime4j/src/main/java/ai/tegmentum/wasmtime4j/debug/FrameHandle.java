@@ -9,11 +9,11 @@ import java.util.Optional;
  * A handle to a paused WebAssembly stack frame for debugging.
  *
  * <p>FrameHandle provides access to the state of a WebAssembly frame during a debug event,
- * including locals, stack values, and function identification. Frame handles are obtained from
- * the store's {@code debugExitFrames()} method.
+ * including locals, stack values, and function identification. Frame handles are obtained from the
+ * store's {@code debugExitFrames()} method.
  *
- * <p>Frame handles are only valid while the debug handler is executing. After the handler
- * returns, frame handles become invalid.
+ * <p>Frame handles are only valid while the debug handler is executing. After the handler returns,
+ * frame handles become invalid.
  *
  * @since 1.1.0
  */
@@ -146,7 +146,7 @@ public final class FrameHandle {
    * @return an array of [functionIndex, pc]
    */
   public int[] getFunctionIndexAndPc() {
-    return new int[]{functionIndex, pc};
+    return new int[] {functionIndex, pc};
   }
 
   /**
@@ -211,10 +211,16 @@ public final class FrameHandle {
 
   @Override
   public String toString() {
-    return "FrameHandle{funcIndex=" + functionIndex
-        + ", pc=" + pc
-        + ", locals=" + numLocals
-        + ", stack=" + numStack
-        + ", valid=" + valid + "}";
+    return "FrameHandle{funcIndex="
+        + functionIndex
+        + ", pc="
+        + pc
+        + ", locals="
+        + numLocals
+        + ", stack="
+        + numStack
+        + ", valid="
+        + valid
+        + "}";
   }
 }

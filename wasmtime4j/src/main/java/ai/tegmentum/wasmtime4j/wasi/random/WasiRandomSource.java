@@ -22,8 +22,8 @@ package ai.tegmentum.wasmtime4j.wasi.random;
  * <p>This interface is used to override the default random number generation in WASI.
  * Implementations must fill the provided byte array with random data.
  *
- * <p>For secure random, the implementation must provide cryptographically secure
- * random bytes. For insecure random, any source of randomness is acceptable.
+ * <p>For secure random, the implementation must provide cryptographically secure random bytes. For
+ * insecure random, any source of randomness is acceptable.
  *
  * <p>Example usage with a deterministic source for testing:
  *

@@ -341,9 +341,7 @@ final class WasiPreview2ConfigTest {
           config.getStdoutConfig().getType(),
           "Stdout should be INHERIT");
       assertEquals(
-          WasiStdioConfig.Type.NULL,
-          config.getStderrConfig().getType(),
-          "Stderr should be NULL");
+          WasiStdioConfig.Type.NULL, config.getStderrConfig().getType(), "Stderr should be NULL");
     }
 
     @Test
@@ -374,14 +372,10 @@ final class WasiPreview2ConfigTest {
     @DisplayName("stdio config should override boolean inherit flags")
     void stdioConfigShouldWorkAlongsideBooleanFlags() {
       final WasiPreview2Config config =
-          WasiPreview2Config.builder()
-              .inheritStdio()
-              .stdin(WasiStdioConfig.nulled())
-              .build();
+          WasiPreview2Config.builder().inheritStdio().stdin(WasiStdioConfig.nulled()).build();
       // Both are set — implementations should prefer WasiStdioConfig when present
       assertTrue(config.isInheritStdio(), "Boolean inheritStdio should still be true");
-      assertNotNull(
-          config.getStdinConfig(), "WasiStdioConfig stdin should also be set");
+      assertNotNull(config.getStdinConfig(), "WasiStdioConfig stdin should also be set");
       assertEquals(
           WasiStdioConfig.Type.NULL,
           config.getStdinConfig().getType(),

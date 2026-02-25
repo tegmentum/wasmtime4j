@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -151,11 +152,11 @@ public interface ComponentInstance extends AutoCloseable {
     if (!(componentFunction instanceof ComponentFunc)) {
       throw new WasmException(
           "ComponentFunction does not implement ComponentFunc, "
-              + "cannot create typed function for: " + functionName);
+              + "cannot create typed function for: "
+              + functionName);
     }
 
-    return Optional.of(
-        ComponentTypedFunc.create((ComponentFunc) componentFunction, signature));
+    return Optional.of(ComponentTypedFunc.create((ComponentFunc) componentFunction, signature));
   }
 
   /**
@@ -178,8 +179,8 @@ public interface ComponentInstance extends AutoCloseable {
    * Gets the resource type definition exported by this component instance.
    *
    * <p>If the component exports a resource type with the given name, this method returns a handle
-   * representing that resource type. The handle can be used to create instances of the resource
-   * or to check resource type compatibility.
+   * representing that resource type. The handle can be used to create instances of the resource or
+   * to check resource type compatibility.
    *
    * @param resourceName the name of the resource to retrieve
    * @return an Optional containing the resource handle if found, or empty if not exported
@@ -202,8 +203,8 @@ public interface ComponentInstance extends AutoCloseable {
   /**
    * Looks up a core module exported by this component instance.
    *
-   * <p>Some components export core WebAssembly modules that can be instantiated separately.
-   * This method retrieves such a module by name.
+   * <p>Some components export core WebAssembly modules that can be instantiated separately. This
+   * method retrieves such a module by name.
    *
    * @param moduleName the name of the exported module
    * @return an Optional containing the module if found, or empty if not exported
@@ -224,8 +225,8 @@ public interface ComponentInstance extends AutoCloseable {
    * Gets the pre-instantiated template that this instance was created from, if any.
    *
    * <p>If this instance was created via {@link ComponentInstancePre#instantiate()}, this method
-   * returns the original pre-instantiated template. If the instance was created directly from
-   * a linker, this returns empty.
+   * returns the original pre-instantiated template. If the instance was created directly from a
+   * linker, this returns empty.
    *
    * @return the ComponentInstancePre this instance was created from, or empty
    * @since 1.1.0
@@ -233,6 +234,40 @@ public interface ComponentInstance extends AutoCloseable {
   default Optional<ComponentInstancePre> instancePre() {
     return Optional.empty();
   }
+
+  /**
+   * Executes multiple component function calls concurrently using Wasmtime's native concurrent call
+   * support.
+   *
+   * <p>Unlike {@link ComponentFunc#callAsync(ComponentVal...)}, which offloads calls to a thread
+   * pool, this method uses Wasmtime's {@code StoreContextMut::run_concurrent} and {@code
+   * Func::call_concurrent} APIs to achieve true cooperative interleaving of component operations
+   * within a single store.
+   *
+   * <p>The concurrent calls execute on a separate component instance compiled with a
+   * concurrent-capable engine. State modifications in concurrent calls are NOT visible to the
+   * original instance.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * List<ConcurrentCall> calls = List.of(
+   *     ConcurrentCall.of("add", ComponentVal.s32(1), ComponentVal.s32(2)),
+   *     ConcurrentCall.of("multiply", ComponentVal.s32(3), ComponentVal.s32(4))
+   * );
+   *
+   * List<List<ComponentVal>> results = instance.runConcurrent(calls);
+   * int sum = results.get(0).get(0).asS32();       // 3
+   * int product = results.get(1).get(0).asS32();   // 12
+   * }</pre>
+   *
+   * @param calls the list of concurrent calls to execute
+   * @return a list of result lists, one per call, in the same order as input
+   * @throws WasmException if any concurrent call fails or the concurrent engine cannot be created
+   * @throws IllegalArgumentException if calls is null or empty
+   * @since 1.1.0
+   */
+  List<List<ComponentVal>> runConcurrent(List<ConcurrentCall> calls) throws WasmException;
 
   /**
    * Checks if this component instance is still valid and usable.

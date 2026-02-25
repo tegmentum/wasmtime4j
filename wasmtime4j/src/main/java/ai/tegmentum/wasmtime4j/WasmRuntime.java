@@ -308,9 +308,9 @@ public interface WasmRuntime extends Closeable {
   /**
    * Adds WASI imports to the specified linker using async-compatible host functions.
    *
-   * <p>When used with async-enabled stores, the WASI host functions will cooperatively yield
-   * during I/O operations. This corresponds to Wasmtime's
-   * {@code wasmtime_wasi::p2::add_to_linker_async()}.
+   * <p>When used with async-enabled stores, the WASI host functions will cooperatively yield during
+   * I/O operations. This corresponds to Wasmtime's {@code
+   * wasmtime_wasi::p2::add_to_linker_async()}.
    *
    * <p>The default implementation delegates to {@link #addWasiToLinker(Linker, WasiContext)}.
    * Implementations should override to use native async WASI functions when available.

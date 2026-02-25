@@ -6,8 +6,8 @@ import java.util.Objects;
 /**
  * Represents a WebAssembly breakpoint at a specific instruction within a module.
  *
- * <p>Breakpoints are set using {@link BreakpointEditor} and cause the debug handler to be
- * invoked with {@link DebugEvent#BREAKPOINT} when execution reaches the specified program counter.
+ * <p>Breakpoints are set using {@link BreakpointEditor} and cause the debug handler to be invoked
+ * with {@link DebugEvent#BREAKPOINT} when execution reaches the specified program counter.
  *
  * @since 1.1.0
  */

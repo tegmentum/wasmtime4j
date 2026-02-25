@@ -37,8 +37,7 @@ import java.util.logging.Logger;
  */
 public final class PanamaComponentInstancePre implements ComponentInstancePre {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(PanamaComponentInstancePre.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(PanamaComponentInstancePre.class.getName());
   private static final NativeComponentBindings NATIVE_BINDINGS =
       NativeComponentBindings.getInstance();
 
@@ -71,8 +70,7 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
                 try {
                   NATIVE_BINDINGS.componentInstancePreDestroy(nativePreHandle);
                 } catch (final Throwable t) {
-                  throw new Exception(
-                      "Error closing PanamaComponentInstancePre native handle", t);
+                  throw new Exception("Error closing PanamaComponentInstancePre native handle", t);
                 }
               }
             },

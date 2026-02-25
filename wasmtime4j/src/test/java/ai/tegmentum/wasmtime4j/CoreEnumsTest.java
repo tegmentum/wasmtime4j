@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for core enums in the wasmtime4j package.
  *
- * <p>This test class verifies the enum structures, values, and functionality for
- * OptimizationLevel and ProfilingStrategy.
+ * <p>This test class verifies the enum structures, values, and functionality for OptimizationLevel
+ * and ProfilingStrategy.
  */
 @DisplayName("Core Enums Tests")
 class CoreEnumsTest {

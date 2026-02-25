@@ -26,7 +26,8 @@ class JniCallerContextProviderTest {
   }
 
   @Test
-  @DisplayName("getCurrentCaller() outside callback context should throw UnsupportedOperationException")
+  @DisplayName(
+      "getCurrentCaller() outside callback context should throw UnsupportedOperationException")
   void getCurrentCallerOutsideContextShouldThrow() {
     final JniCallerContextProvider provider = new JniCallerContextProvider();
 

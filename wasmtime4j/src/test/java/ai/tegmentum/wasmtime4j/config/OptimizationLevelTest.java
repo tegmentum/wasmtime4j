@@ -92,5 +92,4 @@ class OptimizationLevelTest {
       assertEquals("SPEED_AND_SIZE", speedAndSize.name(), "Name should be SPEED_AND_SIZE");
     }
   }
-
 }

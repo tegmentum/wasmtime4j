@@ -15,9 +15,7 @@ import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
-import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import ai.tegmentum.wasmtime4j.validation.ImportInfo;
-import ai.tegmentum.wasmtime4j.validation.ImportIssue;
 import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
@@ -26,12 +24,10 @@ import java.lang.foreign.ValueLayout;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -145,8 +141,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
     // Register callback and get ID
-    final long callbackId =
-        registerHostFunctionCallback(moduleName, name, implementation);
+    final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
 
     try {
       // Create upcall stub for the callback function
@@ -391,8 +386,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   }
 
   @Override
-  public void defineInstance(
-      final Store store, final String moduleName, final Instance instance) throws WasmException {
+  public void defineInstance(final Store store, final String moduleName, final Instance instance)
+      throws WasmException {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
@@ -427,8 +422,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             panamaInstance.getNativeInstance());
 
     if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result, "Failed to define instance: " + moduleName);
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to define instance: " + moduleName);
     }
 
     LOGGER.fine("Defined instance: " + moduleName);
@@ -534,8 +528,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             NATIVE_STORE_BINDINGS.storeSetWasiContext(
                 panamaStore.getNativeStore(), wasiContext.getNativeContext());
         if (result != 0) {
-          throw PanamaErrorMapper.mapNativeError(
-              result, "Failed to attach WASI context to store");
+          throw PanamaErrorMapper.mapNativeError(result, "Failed to attach WASI context to store");
         }
         LOGGER.fine("Attached WASI context to store before instantiation");
       }
@@ -831,7 +824,6 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     resourceHandle.ensureNotClosed();
   }
 
-
   /**
    * Registers a host function callback.
    *
@@ -841,11 +833,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
    * @return callback ID for native code to invoke
    */
   private long registerHostFunctionCallback(
-      final String moduleName,
-      final String name,
-      final HostFunction implementation) {
-    final HostFunctionWrapper wrapper =
-        new HostFunctionWrapper(moduleName, name, implementation);
+      final String moduleName, final String name, final HostFunction implementation) {
+    final HostFunctionWrapper wrapper = new HostFunctionWrapper(moduleName, name, implementation);
     final long id = wrapper.getId();
     HOST_FUNCTION_CALLBACKS.put(id, wrapper);
     registeredCallbackIds.add(id);
@@ -887,7 +876,8 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       final HostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
       if (wrapper == null) {
         LOGGER.severe("Host function callback not found for callbackId=" + callbackId);
-        PanamaErrorMapper.writeErrorMessage(errorMsgPtr, errorMsgLen, "Callback not found: " + callbackId);
+        PanamaErrorMapper.writeErrorMessage(
+            errorMsgPtr, errorMsgLen, "Callback not found: " + callbackId);
         return -1; // Error: callback not found
       }
 
@@ -942,7 +932,6 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
       IN_FLIGHT_CALLBACKS.decrementAndGet();
     }
   }
-
 
   @Override
   public ai.tegmentum.wasmtime4j.Linker<T> allowShadowing(final boolean allow) {
@@ -1062,8 +1051,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
     // Register callback and get ID
-    final long callbackId =
-        registerHostFunctionCallback(moduleName, name, implementation);
+    final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
 
     try {
       // Create upcall stub for the callback function
@@ -1363,10 +1351,12 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
     try (final Arena tempArena = Arena.ofConfined()) {
       final MemorySegment nameSegment = tempArena.allocateFrom(moduleName);
-      final MemorySegment funcHandle = NATIVE_INSTANCE_BINDINGS.linkerGetDefault(
-          nativeLinker, panamaStore.getNativeStore(), nameSegment);
+      final MemorySegment funcHandle =
+          NATIVE_INSTANCE_BINDINGS.linkerGetDefault(
+              nativeLinker, panamaStore.getNativeStore(), nameSegment);
 
-      if (funcHandle == null || funcHandle.equals(MemorySegment.NULL)
+      if (funcHandle == null
+          || funcHandle.equals(MemorySegment.NULL)
           || funcHandle.address() == 0) {
         return null;
       }
@@ -1385,9 +1375,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     private final HostFunction implementation;
 
     HostFunctionWrapper(
-        final String moduleName,
-        final String name,
-        final HostFunction implementation) {
+        final String moduleName, final String name, final HostFunction implementation) {
       this.id = nextId.getAndIncrement();
       this.moduleName = moduleName;
       this.name = name;

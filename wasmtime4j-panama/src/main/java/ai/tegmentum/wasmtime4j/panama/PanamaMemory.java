@@ -1,16 +1,15 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -97,9 +96,9 @@ public final class PanamaMemory implements WasmMemory {
   /**
    * Package-private constructor for standalone shared memories created from an Engine.
    *
-   * <p>Standalone shared memory does not require a Store or Instance. Operations that need
-   * a Store context (read, write, grow) will throw {@link IllegalStateException}.
-   * Store-independent operations (getSize, getMemoryType, isShared) will work.
+   * <p>Standalone shared memory does not require a Store or Instance. Operations that need a Store
+   * context (read, write, grow) will throw {@link IllegalStateException}. Store-independent
+   * operations (getSize, getMemoryType, isShared) will work.
    *
    * @param nativeMemory the native memory pointer from Wasmtime
    */
@@ -557,7 +556,6 @@ public final class PanamaMemory implements WasmMemory {
     }
   }
 
-
   /**
    * Gets a direct zero-copy memory segment for the WASM linear memory.
    *
@@ -704,136 +702,182 @@ public final class PanamaMemory implements WasmMemory {
 
   @Override
   public int atomicCompareAndSwapInt(final int offset, final int expected, final int newValue) {
-    return executeAtomicOp(offset, 4, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      checkAtomicResult(NATIVE_BINDINGS.memoryAtomicCompareAndSwapI32(
-          memPtr, storePtr, offset, expected, newValue, resultOut));
-      return resultOut.get(ValueLayout.JAVA_INT, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        4,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicCompareAndSwapI32(
+                  memPtr, storePtr, offset, expected, newValue, resultOut));
+          return resultOut.get(ValueLayout.JAVA_INT, 0);
+        });
   }
 
   @Override
   public long atomicCompareAndSwapLong(final int offset, final long expected, final long newValue) {
-    return executeAtomicOp(offset, 8, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-      checkAtomicResult(NATIVE_BINDINGS.memoryAtomicCompareAndSwapI64(
-          memPtr, storePtr, offset, expected, newValue, resultOut));
-      return resultOut.get(ValueLayout.JAVA_LONG, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        8,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicCompareAndSwapI64(
+                  memPtr, storePtr, offset, expected, newValue, resultOut));
+          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+        });
   }
 
   @Override
   public int atomicLoadInt(final int offset) {
-    return executeAtomicOp(offset, 4, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      checkAtomicResult(NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, resultOut));
-      return resultOut.get(ValueLayout.JAVA_INT, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        4,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, resultOut));
+          return resultOut.get(ValueLayout.JAVA_INT, 0);
+        });
   }
 
   @Override
   public long atomicLoadLong(final int offset) {
-    return executeAtomicOp(offset, 8, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-      checkAtomicResult(NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, resultOut));
-      return resultOut.get(ValueLayout.JAVA_LONG, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        8,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, resultOut));
+          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+        });
   }
 
   @Override
   public void atomicStoreInt(final int offset, final int value) {
-    executeAtomicOp(offset, 4, (MemorySegment memPtr, MemorySegment storePtr) -> {
-      checkAtomicResult(NATIVE_BINDINGS.memoryAtomicStoreI32(memPtr, storePtr, offset, value));
-      return null;
-    });
+    executeAtomicOp(
+        offset,
+        4,
+        (MemorySegment memPtr, MemorySegment storePtr) -> {
+          checkAtomicResult(NATIVE_BINDINGS.memoryAtomicStoreI32(memPtr, storePtr, offset, value));
+          return null;
+        });
   }
 
   @Override
   public void atomicStoreLong(final int offset, final long value) {
-    executeAtomicOp(offset, 8, (MemorySegment memPtr, MemorySegment storePtr) -> {
-      checkAtomicResult(NATIVE_BINDINGS.memoryAtomicStoreI64(memPtr, storePtr, offset, value));
-      return null;
-    });
+    executeAtomicOp(
+        offset,
+        8,
+        (MemorySegment memPtr, MemorySegment storePtr) -> {
+          checkAtomicResult(NATIVE_BINDINGS.memoryAtomicStoreI64(memPtr, storePtr, offset, value));
+          return null;
+        });
   }
 
   @Override
   public int atomicAddInt(final int offset, final int value) {
-    return executeAtomicOp(offset, 4, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      checkAtomicResult(
-          NATIVE_BINDINGS.memoryAtomicAddI32(memPtr, storePtr, offset, value, resultOut));
-      return resultOut.get(ValueLayout.JAVA_INT, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        4,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicAddI32(memPtr, storePtr, offset, value, resultOut));
+          return resultOut.get(ValueLayout.JAVA_INT, 0);
+        });
   }
 
   @Override
   public long atomicAddLong(final int offset, final long value) {
-    return executeAtomicOp(offset, 8, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-      checkAtomicResult(
-          NATIVE_BINDINGS.memoryAtomicAddI64(memPtr, storePtr, offset, value, resultOut));
-      return resultOut.get(ValueLayout.JAVA_LONG, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        8,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicAddI64(memPtr, storePtr, offset, value, resultOut));
+          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+        });
   }
 
   @Override
   public int atomicAndInt(final int offset, final int value) {
-    return executeAtomicOp(offset, 4, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      checkAtomicResult(
-          NATIVE_BINDINGS.memoryAtomicAndI32(memPtr, storePtr, offset, value, resultOut));
-      return resultOut.get(ValueLayout.JAVA_INT, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        4,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicAndI32(memPtr, storePtr, offset, value, resultOut));
+          return resultOut.get(ValueLayout.JAVA_INT, 0);
+        });
   }
 
   @Override
   public int atomicOrInt(final int offset, final int value) {
-    return executeAtomicOp(offset, 4, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      checkAtomicResult(
-          NATIVE_BINDINGS.memoryAtomicOrI32(memPtr, storePtr, offset, value, resultOut));
-      return resultOut.get(ValueLayout.JAVA_INT, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        4,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicOrI32(memPtr, storePtr, offset, value, resultOut));
+          return resultOut.get(ValueLayout.JAVA_INT, 0);
+        });
   }
 
   @Override
   public int atomicXorInt(final int offset, final int value) {
-    return executeAtomicOp(offset, 4, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      checkAtomicResult(
-          NATIVE_BINDINGS.memoryAtomicXorI32(memPtr, storePtr, offset, value, resultOut));
-      return resultOut.get(ValueLayout.JAVA_INT, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        4,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicXorI32(memPtr, storePtr, offset, value, resultOut));
+          return resultOut.get(ValueLayout.JAVA_INT, 0);
+        });
   }
 
   @Override
   public long atomicAndLong(final int offset, final long value) {
-    return executeAtomicOp(offset, 8, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-      checkAtomicResult(
-          NATIVE_BINDINGS.memoryAtomicAndI64(memPtr, storePtr, offset, value, resultOut));
-      return resultOut.get(ValueLayout.JAVA_LONG, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        8,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicAndI64(memPtr, storePtr, offset, value, resultOut));
+          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+        });
   }
 
   @Override
   public long atomicOrLong(final int offset, final long value) {
-    return executeAtomicOp(offset, 8, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-      checkAtomicResult(
-          NATIVE_BINDINGS.memoryAtomicOrI64(memPtr, storePtr, offset, value, resultOut));
-      return resultOut.get(ValueLayout.JAVA_LONG, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        8,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicOrI64(memPtr, storePtr, offset, value, resultOut));
+          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+        });
   }
 
   @Override
   public long atomicXorLong(final int offset, final long value) {
-    return executeAtomicOp(offset, 8, (memPtr, storePtr) -> {
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-      checkAtomicResult(
-          NATIVE_BINDINGS.memoryAtomicXorI64(memPtr, storePtr, offset, value, resultOut));
-      return resultOut.get(ValueLayout.JAVA_LONG, 0);
-    });
+    return executeAtomicOp(
+        offset,
+        8,
+        (memPtr, storePtr) -> {
+          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
+          checkAtomicResult(
+              NATIVE_BINDINGS.memoryAtomicXorI64(memPtr, storePtr, offset, value, resultOut));
+          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+        });
   }
 
   @Override
@@ -1280,7 +1324,6 @@ public final class PanamaMemory implements WasmMemory {
     }
     return ((PanamaStore) instance.getStore()).getNativeStore();
   }
-
 
   /**
    * Throws an appropriate exception for a failed atomic operation based on the native error code

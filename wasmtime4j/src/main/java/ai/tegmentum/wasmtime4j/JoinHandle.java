@@ -38,8 +38,8 @@ public interface JoinHandle<T> {
   /**
    * Blocks until the spawned task completes and returns its result.
    *
-   * <p>If the task has already completed, this returns immediately. If the task threw an
-   * exception, this method rethrows it as a {@link WasmException}.
+   * <p>If the task has already completed, this returns immediately. If the task threw an exception,
+   * this method rethrows it as a {@link WasmException}.
    *
    * @return the result of the spawned task
    * @throws WasmException if the task failed or was cancelled
@@ -50,8 +50,8 @@ public interface JoinHandle<T> {
   /**
    * Returns a {@link CompletableFuture} that completes with the task's result.
    *
-   * <p>The future completes normally with the task's result, or completes exceptionally if the
-   * task fails.
+   * <p>The future completes normally with the task's result, or completes exceptionally if the task
+   * fails.
    *
    * @return a future representing the task's eventual result
    */

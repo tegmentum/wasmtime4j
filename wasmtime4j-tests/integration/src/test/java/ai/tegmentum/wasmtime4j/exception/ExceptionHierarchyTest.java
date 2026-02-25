@@ -312,8 +312,7 @@ public final class ExceptionHierarchyTest {
       final TrapException exception =
           new TrapException(TrapException.TrapType.UNKNOWN, TEST_MESSAGE);
       // TrapException extends WasmException (part of the unified exception hierarchy)
-      assertTrue(
-          exception instanceof WasmException, "TrapException should extend WasmException");
+      assertTrue(exception instanceof WasmException, "TrapException should extend WasmException");
     }
 
     @Test

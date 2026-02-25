@@ -16,14 +16,11 @@
 
 package ai.tegmentum.wasmtime4j.debug;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.CallHook;
 import java.io.Closeable;
 import java.time.Duration;
-import java.util.Map;
 
 /**
  * Sampling-based guest profiler for WebAssembly execution.
@@ -45,8 +42,8 @@ import java.util.Map;
  * }</pre>
  *
  * <p>The profiler should be used in conjunction with epoch-based interrupts. Register an epoch
- * deadline callback on the store that calls {@link #sample(Store, Duration)} at each interrupt, then
- * call {@link #finish()} when profiling is complete.
+ * deadline callback on the store that calls {@link #sample(Store, Duration)} at each interrupt,
+ * then call {@link #finish()} when profiling is complete.
  *
  * <p>After {@link #finish()} is called, the profiler is consumed and further calls to {@link
  * #sample(Store, Duration)} or {@link #callHook(Store, CallHook)} will throw.

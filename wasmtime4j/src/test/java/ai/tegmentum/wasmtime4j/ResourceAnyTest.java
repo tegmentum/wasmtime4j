@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
  * class.
  *
  * <p>ResourceAny represents an opaque resource handle in the WebAssembly Component Model. The
- * DefaultResourceAny provides a host-side implementation for resource management with type tracking,
- * ownership semantics, and drop lifecycle.
+ * DefaultResourceAny provides a host-side implementation for resource management with type
+ * tracking, ownership semantics, and drop lifecycle.
  */
 @DisplayName("ResourceAny Tests")
 class ResourceAnyTest {
@@ -164,8 +164,7 @@ class ResourceAnyTest {
               "Should throw WasmException when accessing rep after drop");
       assertTrue(
           exception.getMessage().contains("dropped"),
-          "Exception message should indicate resource was dropped, got: "
-              + exception.getMessage());
+          "Exception message should indicate resource was dropped, got: " + exception.getMessage());
     }
   }
 

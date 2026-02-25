@@ -7,7 +7,6 @@ import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.ImportType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
-import java.util.Map;
 
 /**
  * JNI implementation of the Module interface.
@@ -279,6 +278,47 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  public byte[] text() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    try {
+      final byte[] result = nativeGetModuleText(nativeHandle);
+      if (result == null) {
+        return new byte[0];
+      }
+      return result;
+    } catch (final Throwable t) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to get module text: " + t.getMessage());
+    }
+  }
+
+  @Override
+  public java.util.List<AddressMapping> addressMap()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    try {
+      final long[] raw = nativeGetModuleAddressMap(nativeHandle);
+      if (raw == null) {
+        return java.util.Collections.emptyList();
+      }
+      final java.util.List<AddressMapping> result = new java.util.ArrayList<>(raw.length / 2);
+      for (int i = 0; i < raw.length; i += 2) {
+        final long codeOffset = raw[i];
+        final long wasmOffsetRaw = raw[i + 1];
+        final java.util.OptionalInt wasmOffset =
+            wasmOffsetRaw < 0
+                ? java.util.OptionalInt.empty()
+                : java.util.OptionalInt.of((int) wasmOffsetRaw);
+        result.add(new AddressMapping(codeOffset, wasmOffset));
+      }
+      return java.util.Collections.unmodifiableList(result);
+    } catch (final Throwable t) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to get module address map: " + t.getMessage());
+    }
+  }
+
+  @Override
   public boolean isValid() {
     return !isClosed();
   }
@@ -306,7 +346,6 @@ public class JniModule extends JniResource implements Module {
    * @return the native instance handle, or 0 on failure
    */
   private static native long nativeInstantiateModule(long moduleHandle, long storeHandle);
-
 
   private native byte[] nativeSerializeModule(long handle);
 
@@ -381,4 +420,23 @@ public class JniModule extends JniResource implements Module {
   private static native boolean nativeInitializeCopyOnWriteImage(long moduleHandle);
 
   private static native long[] nativeGetModuleResourcesRequired(long moduleHandle);
+
+  /**
+   * Native method to get compiled machine code text from module.
+   *
+   * @param moduleHandle the native module handle
+   * @return byte array of compiled machine code, or null on error
+   */
+  private native byte[] nativeGetModuleText(long moduleHandle);
+
+  /**
+   * Native method to get address map from module.
+   *
+   * <p>Returns interleaved long array [codeOffset0, wasmOffset0, codeOffset1, wasmOffset1, ...].
+   * wasmOffset is -1 if no corresponding wasm offset exists.
+   *
+   * @param moduleHandle the native module handle
+   * @return interleaved long array of address mappings, or null if not available
+   */
+  private native long[] nativeGetModuleAddressMap(long moduleHandle);
 }

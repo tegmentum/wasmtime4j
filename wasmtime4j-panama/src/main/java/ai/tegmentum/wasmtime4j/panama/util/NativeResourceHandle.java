@@ -172,5 +172,4 @@ public final class NativeResourceHandle implements AutoCloseable {
       }
     }
   }
-
 }

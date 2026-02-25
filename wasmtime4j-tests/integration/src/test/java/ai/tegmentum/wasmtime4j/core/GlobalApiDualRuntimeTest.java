@@ -50,26 +50,19 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @SuppressWarnings("deprecation")
 public class GlobalApiDualRuntimeTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(GlobalApiDualRuntimeTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(GlobalApiDualRuntimeTest.class.getName());
 
   /** WAT module with mutable i32 global initialized to 42. */
   private static final String GLOBAL_I32_WAT =
-      "(module\n"
-          + "  (global $g_i32 (export \"g_i32\") (mut i32) (i32.const 42))\n"
-          + ")";
+      "(module\n" + "  (global $g_i32 (export \"g_i32\") (mut i32) (i32.const 42))\n" + ")";
 
   /** WAT module with mutable i64 global initialized to 100. */
   private static final String GLOBAL_I64_WAT =
-      "(module\n"
-          + "  (global $g_i64 (export \"g_i64\") (mut i64) (i64.const 100))\n"
-          + ")";
+      "(module\n" + "  (global $g_i64 (export \"g_i64\") (mut i64) (i64.const 100))\n" + ")";
 
   /** WAT module with mutable f32 global initialized to approximately 3.14. */
   private static final String GLOBAL_F32_WAT =
-      "(module\n"
-          + "  (global $g_f32 (export \"g_f32\") (mut f32) (f32.const 3.14))\n"
-          + ")";
+      "(module\n" + "  (global $g_f32 (export \"g_f32\") (mut f32) (f32.const 3.14))\n" + ")";
 
   /** WAT module with mutable globals of all three types for multi-type tests. */
   private static final String GLOBAL_ALL_TYPES_WAT =
@@ -163,8 +156,7 @@ public class GlobalApiDualRuntimeTest extends DualRuntimeTest {
 
         final WasmValue value = global.get();
         assertEquals(WasmValueType.F32, value.getType(), "Value should be F32 type");
-        assertEquals(3.14f, value.asFloat(), 0.01f,
-            "Initial value should be approximately 3.14");
+        assertEquals(3.14f, value.asFloat(), 0.01f, "Initial value should be approximately 3.14");
         LOGGER.info("[" + runtime + "] F32 global value: " + value.asFloat());
       }
     }
@@ -243,8 +235,8 @@ public class GlobalApiDualRuntimeTest extends DualRuntimeTest {
         global.set(WasmValue.f32(1.23f));
 
         final WasmValue newValue = global.get();
-        assertEquals(1.23f, newValue.asFloat(), 0.01f,
-            "Value should be updated to approximately 1.23");
+        assertEquals(
+            1.23f, newValue.asFloat(), 0.01f, "Value should be updated to approximately 1.23");
         LOGGER.info("[" + runtime + "] F32 global updated to: " + newValue.asFloat());
       }
     }
@@ -392,8 +384,7 @@ public class GlobalApiDualRuntimeTest extends DualRuntimeTest {
         global.set(WasmValue.f32(-3.14f));
 
         final WasmValue value = global.get();
-        assertEquals(-3.14f, value.asFloat(), 0.01f,
-            "Value should be approximately -3.14");
+        assertEquals(-3.14f, value.asFloat(), 0.01f, "Value should be approximately -3.14");
         LOGGER.info("[" + runtime + "] Negative F32 value: " + value.asFloat());
       }
     }

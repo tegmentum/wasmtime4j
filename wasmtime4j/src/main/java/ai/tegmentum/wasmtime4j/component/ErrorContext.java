@@ -22,9 +22,9 @@ import java.util.Optional;
 /**
  * Represents a Component Model error context for async error propagation.
  *
- * <p>Error contexts carry structured error information across component boundaries in the
- * Component Model async proposal. They allow components to propagate error details when
- * streams or futures fail, providing richer diagnostics than simple error codes.
+ * <p>Error contexts carry structured error information across component boundaries in the Component
+ * Model async proposal. They allow components to propagate error details when streams or futures
+ * fail, providing richer diagnostics than simple error codes.
  *
  * @since 1.1.0
  */
@@ -40,8 +40,8 @@ public interface ErrorContext extends AutoCloseable {
   /**
    * Gets the debug message associated with this error context, if any.
    *
-   * <p>The debug message is a human-readable description of the error intended for logging
-   * and diagnostics. It may not be present for all error contexts.
+   * <p>The debug message is a human-readable description of the error intended for logging and
+   * diagnostics. It may not be present for all error contexts.
    *
    * @return the debug message, or empty if not available
    * @throws WasmException if retrieval fails
@@ -55,9 +55,7 @@ public interface ErrorContext extends AutoCloseable {
    */
   boolean isValid();
 
-  /**
-   * Closes this error context, releasing associated resources.
-   */
+  /** Closes this error context, releasing associated resources. */
   @Override
   void close();
 }

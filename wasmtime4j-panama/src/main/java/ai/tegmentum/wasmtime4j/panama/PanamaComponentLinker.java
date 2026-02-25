@@ -231,16 +231,12 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
 
     LOGGER.fine(
-        "Defined async component host function: "
-            + witPath
-            + " (callback ID: "
-            + callbackId
-            + ")");
+        "Defined async component host function: " + witPath + " (callback ID: " + callbackId + ")");
   }
 
   @Override
-  public void defineFunctionAsync(
-      final String witPath, final ComponentHostFunction implementation) throws WasmException {
+  public void defineFunctionAsync(final String witPath, final ComponentHostFunction implementation)
+      throws WasmException {
     if (witPath == null || witPath.isEmpty()) {
       throw new IllegalArgumentException("WIT path cannot be null or empty");
     }
@@ -306,22 +302,21 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     // Call native define_resource
     try (Arena tempArena = Arena.ofConfined()) {
       final byte[] pathBytes = interfacePath.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment pathSegment =
-          tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+      final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
 
       final byte[] nameBytes = resourceName.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+      final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
 
-      final int errorCode = NATIVE_BINDINGS.componentLinkerDefineResource(
-          nativeLinker,
-          pathSegment,
-          pathBytes.length,
-          nameSegment,
-          nameBytes.length,
-          resourceId,
-          MemorySegment.NULL, // No destructor function pointer for now
-          0L);
+      final int errorCode =
+          NATIVE_BINDINGS.componentLinkerDefineResource(
+              nativeLinker,
+              pathSegment,
+              pathBytes.length,
+              nameSegment,
+              nameBytes.length,
+              resourceId,
+              MemorySegment.NULL, // No destructor function pointer for now
+              0L);
 
       if (errorCode != 0) {
         throw PanamaErrorMapper.mapNativeError(
@@ -629,10 +624,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     applyStderrConfig(config, nativeLinker);
 
     // Apply granular network controls
-    NATIVE_BINDINGS.componentLinkerSetWasiAllowTcp(
-        nativeLinker, config.isAllowTcp() ? 1 : 0);
-    NATIVE_BINDINGS.componentLinkerSetWasiAllowUdp(
-        nativeLinker, config.isAllowUdp() ? 1 : 0);
+    NATIVE_BINDINGS.componentLinkerSetWasiAllowTcp(nativeLinker, config.isAllowTcp() ? 1 : 0);
+    NATIVE_BINDINGS.componentLinkerSetWasiAllowUdp(nativeLinker, config.isAllowUdp() ? 1 : 0);
     NATIVE_BINDINGS.componentLinkerSetWasiAllowIpNameLookup(
         nativeLinker, config.isAllowIpNameLookup() ? 1 : 0);
 
@@ -678,8 +671,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
    * @param config the WASI preview 2 configuration
    * @param nativeLinker the native linker memory segment
    */
-  private void applyStdinConfig(
-      final WasiPreview2Config config, final MemorySegment nativeLinker) {
+  private void applyStdinConfig(final WasiPreview2Config config, final MemorySegment nativeLinker) {
     final WasiStdioConfig stdinConfig = config.getStdinConfig();
     if (stdinConfig != null) {
       switch (stdinConfig.getType()) {
@@ -691,8 +683,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
             final byte[] bytes = stdinConfig.getInputStream().readAllBytes();
             try (Arena arena = Arena.ofConfined()) {
               final MemorySegment dataSeg = arena.allocateFrom(ValueLayout.JAVA_BYTE, bytes);
-              NATIVE_BINDINGS.componentLinkerSetWasiStdinBytes(
-                  nativeLinker, dataSeg, bytes.length);
+              NATIVE_BINDINGS.componentLinkerSetWasiStdinBytes(nativeLinker, dataSeg, bytes.length);
             }
           } catch (java.io.IOException e) {
             LOGGER.warning("Failed to read stdin InputStream: " + e.getMessage());
@@ -877,8 +868,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
               .findStatic(
                   PanamaComponentLinker.class,
                   "randomFillBytesCallback",
-                  MethodType.methodType(
-                      void.class, long.class, MemorySegment.class, long.class));
+                  MethodType.methodType(void.class, long.class, MemorySegment.class, long.class));
       final MemorySegment fillStub =
           java.lang.foreign.Linker.nativeLinker()
               .upcallStub(
@@ -1008,8 +998,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
         final byte[] ipBytes = new byte[(int) ipBytesLen];
         MemorySegment.copy(ipBytesPtr, ValueLayout.JAVA_BYTE, 0, ipBytes, 0, (int) ipBytesLen);
         final InetAddress addr = InetAddress.getByAddress(ipBytes);
-        final InetSocketAddress socketAddr =
-            new InetSocketAddress(addr, Short.toUnsignedInt(port));
+        final InetSocketAddress socketAddr = new InetSocketAddress(addr, Short.toUnsignedInt(port));
         final SocketAddrUse addrUse = SocketAddrUse.fromValue(useType);
         return ((SocketAddrCheck) obj).check(socketAddr, addrUse) ? 1 : 0;
       } catch (final Exception e) {
@@ -1169,8 +1158,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
       for (final String function : sourceFunctions) {
         final String fromPath =
             fromNamespace + ":" + fromInterface + "/" + fromInterface + "#" + function;
-        final String toPath =
-            toNamespace + ":" + toInterface + "/" + toInterface + "#" + function;
+        final String toPath = toNamespace + ":" + toInterface + "/" + toInterface + "#" + function;
         final Long callbackId = hostFunctions.get(fromPath);
         if (callbackId != null) {
           hostFunctions.put(toPath, callbackId);

@@ -28,7 +28,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,8 +38,8 @@ import org.junit.jupiter.api.Test;
  * class.
  *
  * <p>ComponentLinkerInstance provides a builder-pattern for defining host functions and resources
- * within a scoped interface path of a {@link ComponentLinker}. The Scoped implementation records the
- * interface path and delegates to the underlying linker.
+ * within a scoped interface path of a {@link ComponentLinker}. The Scoped implementation records
+ * the interface path and delegates to the underlying linker.
  */
 @DisplayName("ComponentLinkerInstance Tests")
 class ComponentLinkerInstanceTest {
@@ -53,8 +52,7 @@ class ComponentLinkerInstanceTest {
     @DisplayName("should create Scoped with empty scope path")
     void shouldCreateScopedWithEmptyScopePath() {
       final ComponentLinker<?> linker = new StubComponentLinker();
-      final ComponentLinkerInstance.Scoped scoped =
-          new ComponentLinkerInstance.Scoped(linker, "");
+      final ComponentLinkerInstance.Scoped scoped = new ComponentLinkerInstance.Scoped(linker, "");
 
       assertNotNull(scoped, "Scoped should be created");
       assertEquals("", scoped.getScopePath(), "Scope path should be empty for root");
@@ -68,7 +66,8 @@ class ComponentLinkerInstanceTest {
           new ComponentLinkerInstance.Scoped(linker, "wasi:cli/stdout@0.2.0");
 
       assertEquals(
-          "wasi:cli/stdout@0.2.0", scoped.getScopePath(),
+          "wasi:cli/stdout@0.2.0",
+          scoped.getScopePath(),
           "Scope path should be the interface path");
     }
 
@@ -101,13 +100,13 @@ class ComponentLinkerInstanceTest {
     @DisplayName("should build root-level WIT path when scope is empty")
     void shouldBuildRootLevelPath() throws WasmException {
       final RecordingComponentLinker linker = new RecordingComponentLinker();
-      final ComponentLinkerInstance instance =
-          new ComponentLinkerInstance.Scoped(linker, "");
+      final ComponentLinkerInstance instance = new ComponentLinkerInstance.Scoped(linker, "");
 
       instance.funcNew("my-function", StubComponentLinker.STUB_FUNC);
 
       assertEquals(
-          "my-function", linker.lastDefinedFunctionWitPath,
+          "my-function",
+          linker.lastDefinedFunctionWitPath,
           "Root scope should use function name directly as WIT path");
     }
 
@@ -121,7 +120,8 @@ class ComponentLinkerInstanceTest {
       instance.funcNew("print", StubComponentLinker.STUB_FUNC);
 
       assertEquals(
-          "wasi:cli/stdout@0.2.0#print", linker.lastDefinedFunctionWitPath,
+          "wasi:cli/stdout@0.2.0#print",
+          linker.lastDefinedFunctionWitPath,
           "Scoped path should be scope + '#' + function name");
     }
 
@@ -176,7 +176,8 @@ class ComponentLinkerInstanceTest {
       instance.funcNewAsync("handle", StubComponentLinker.STUB_FUNC);
 
       assertEquals(
-          "wasi:http/handler@0.2.0#handle", linker.lastDefinedAsyncFunctionWitPath,
+          "wasi:http/handler@0.2.0#handle",
+          linker.lastDefinedAsyncFunctionWitPath,
           "Async scoped path should be scope + '#' + function name");
     }
 
@@ -308,8 +309,7 @@ class ComponentLinkerInstanceTest {
     @DisplayName("should throw IllegalArgumentException when resource name is null")
     void shouldThrowWhenResourceNameNull() {
       final ComponentLinkerInstance instance =
-          new ComponentLinkerInstance.Scoped(
-              new StubComponentLinker(), "wasi:cli/stdout@0.2.0");
+          new ComponentLinkerInstance.Scoped(new StubComponentLinker(), "wasi:cli/stdout@0.2.0");
 
       assertThrows(
           IllegalArgumentException.class,
@@ -321,8 +321,7 @@ class ComponentLinkerInstanceTest {
     @DisplayName("should throw IllegalArgumentException when definition is null")
     void shouldThrowWhenDefinitionNull() {
       final ComponentLinkerInstance instance =
-          new ComponentLinkerInstance.Scoped(
-              new StubComponentLinker(), "wasi:cli/stdout@0.2.0");
+          new ComponentLinkerInstance.Scoped(new StubComponentLinker(), "wasi:cli/stdout@0.2.0");
 
       assertThrows(
           IllegalArgumentException.class,
@@ -341,11 +340,10 @@ class ComponentLinkerInstanceTest {
 
       assertEquals("wasi:cli", linker.lastResourceNamespace, "Namespace should be 'wasi:cli'");
       assertEquals(
-          "stdout", linker.lastResourceInterfaceName,
+          "stdout",
+          linker.lastResourceInterfaceName,
           "Interface name should be 'stdout' (version stripped)");
-      assertEquals(
-          "my-resource", linker.lastResourceName,
-          "Resource name should be 'my-resource'");
+      assertEquals("my-resource", linker.lastResourceName, "Resource name should be 'my-resource'");
     }
 
     @Test
@@ -357,11 +355,10 @@ class ComponentLinkerInstanceTest {
 
       instance.resource("res", StubComponentLinker.STUB_RESOURCE_DEF);
 
+      assertEquals("custom:pkg", linker.lastResourceNamespace, "Namespace should be 'custom:pkg'");
       assertEquals(
-          "custom:pkg", linker.lastResourceNamespace,
-          "Namespace should be 'custom:pkg'");
-      assertEquals(
-          "interface-name", linker.lastResourceInterfaceName,
+          "interface-name",
+          linker.lastResourceInterfaceName,
           "Interface name should be 'interface-name'");
     }
   }
@@ -383,8 +380,8 @@ class ComponentLinkerInstanceTest {
     String lastResourceName;
 
     @Override
-    public void defineFunction(
-        final String witPath, final ComponentHostFunction implementation) throws WasmException {
+    public void defineFunction(final String witPath, final ComponentHostFunction implementation)
+        throws WasmException {
       this.lastDefinedFunctionWitPath = witPath;
     }
 
@@ -408,8 +405,8 @@ class ComponentLinkerInstanceTest {
   }
 
   /**
-   * Minimal stub implementation of ComponentLinker for testing ComponentLinkerInstance.Scoped without
-   * needing a real native linker.
+   * Minimal stub implementation of ComponentLinker for testing ComponentLinkerInstance.Scoped
+   * without needing a real native linker.
    */
   @SuppressWarnings("unchecked")
   private static class StubComponentLinker implements ComponentLinker<Object> {
@@ -423,7 +420,8 @@ class ComponentLinkerInstanceTest {
           }
 
           @Override
-          public Optional<ComponentResourceDefinition.ResourceConstructor<Object>> getConstructor() {
+          public Optional<ComponentResourceDefinition.ResourceConstructor<Object>>
+              getConstructor() {
             return Optional.empty();
           }
 
@@ -443,18 +441,20 @@ class ComponentLinkerInstanceTest {
         final String interfaceNamespace,
         final String interfaceName,
         final String functionName,
-        final ComponentHostFunction implementation) throws WasmException {}
+        final ComponentHostFunction implementation)
+        throws WasmException {}
 
     @Override
-    public void defineFunction(
-        final String witPath, final ComponentHostFunction implementation) throws WasmException {}
+    public void defineFunction(final String witPath, final ComponentHostFunction implementation)
+        throws WasmException {}
 
     @Override
     public void defineFunctionAsync(
         final String interfaceNamespace,
         final String interfaceName,
         final String functionName,
-        final ComponentHostFunction implementation) throws WasmException {}
+        final ComponentHostFunction implementation)
+        throws WasmException {}
 
     @Override
     public void defineFunctionAsync(
@@ -464,30 +464,29 @@ class ComponentLinkerInstanceTest {
     public void defineInterface(
         final String interfaceNamespace,
         final String interfaceName,
-        final java.util.Map<String, ComponentHostFunction> functions) throws WasmException {}
+        final java.util.Map<String, ComponentHostFunction> functions)
+        throws WasmException {}
 
     @Override
     public void defineResource(
         final String interfaceNamespace,
         final String interfaceName,
         final String resourceName,
-        final ComponentResourceDefinition<?> resourceDefinition) throws WasmException {}
+        final ComponentResourceDefinition<?> resourceDefinition)
+        throws WasmException {}
 
     @Override
-    public void linkInstance(
-        final ai.tegmentum.wasmtime4j.component.ComponentInstance instance) {}
+    public void linkInstance(final ai.tegmentum.wasmtime4j.component.ComponentInstance instance) {}
 
     @Override
     public ai.tegmentum.wasmtime4j.component.ComponentInstance linkComponent(
-        final Store store,
-        final ai.tegmentum.wasmtime4j.component.Component component) {
+        final Store store, final ai.tegmentum.wasmtime4j.component.Component component) {
       return null;
     }
 
     @Override
     public ai.tegmentum.wasmtime4j.component.ComponentInstance instantiate(
-        final Store store,
-        final ai.tegmentum.wasmtime4j.component.Component component) {
+        final Store store, final ai.tegmentum.wasmtime4j.component.Component component) {
       return null;
     }
 
@@ -501,8 +500,7 @@ class ComponentLinkerInstanceTest {
     public void enableWasiPreview2() {}
 
     @Override
-    public void enableWasiPreview2(
-        final ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config config) {}
+    public void enableWasiPreview2(final ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config config) {}
 
     @Override
     public Engine getEngine() {
@@ -521,9 +519,7 @@ class ComponentLinkerInstanceTest {
 
     @Override
     public boolean hasFunction(
-        final String interfaceNamespace,
-        final String interfaceName,
-        final String functionName) {
+        final String interfaceNamespace, final String interfaceName, final String functionName) {
       return false;
     }
 

@@ -164,6 +164,14 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
             message: format!("Failed to parse engine config JSON: {}", e),
         })?;
 
+    build_engine_from_config(config)?.build().map(Box::new)
+}
+
+/// Build an EngineBuilder from a deserialized config, applying all settings.
+///
+/// This is the shared config-application logic used by both `create_engine_from_json_config`
+/// and `create_engine_from_json_config_with_cache_store`.
+fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBuilder> {
     let mut builder = Engine::builder();
 
     // Compilation strategy
@@ -405,6 +413,63 @@ pub fn create_engine_from_json_config(json_bytes: &[u8]) -> WasmtimeResult<Box<E
         for flag_name in enables {
             builder = builder.cranelift_flag_enable(flag_name);
         }
+    }
+
+    Ok(builder)
+}
+
+/// Create an engine from JSON configuration bytes with an incremental compilation cache store
+///
+/// This is the same as `create_engine_from_json_config` but additionally enables
+/// incremental compilation with the provided cache store.
+pub fn create_engine_from_json_config_with_cache_store(
+    json_bytes: &[u8],
+    cache_store: std::sync::Arc<dyn wasmtime::CacheStore>,
+) -> WasmtimeResult<Box<Engine>> {
+    let config: EngineConfigFfi =
+        serde_json::from_slice(json_bytes).map_err(|e| WasmtimeError::EngineConfig {
+            message: format!("Failed to parse engine config JSON: {}", e),
+        })?;
+
+    // Build the engine using the same config parsing as create_engine_from_json_config
+    // but add the cache store before building
+    let mut builder = build_engine_from_config(config)?;
+    builder = builder.enable_incremental_compilation(cache_store)?;
+    builder.build().map(Box::new)
+}
+
+/// Create an engine from JSON configuration bytes with extension traits.
+///
+/// This is the general version that can accept any combination of extension traits:
+/// - cache_store: Incremental compilation cache
+/// - memory_creator: Custom linear memory allocation
+/// - stack_creator: Custom async fiber stack allocation
+/// - code_memory: Custom JIT code memory management
+pub fn create_engine_from_json_config_with_extensions(
+    json_bytes: &[u8],
+    cache_store: Option<std::sync::Arc<dyn wasmtime::CacheStore>>,
+    memory_creator: Option<std::sync::Arc<dyn wasmtime::MemoryCreator>>,
+    stack_creator: Option<std::sync::Arc<dyn wasmtime::StackCreator>>,
+    code_memory: Option<std::sync::Arc<dyn wasmtime::CustomCodeMemory>>,
+) -> WasmtimeResult<Box<Engine>> {
+    let config: EngineConfigFfi =
+        serde_json::from_slice(json_bytes).map_err(|e| WasmtimeError::EngineConfig {
+            message: format!("Failed to parse engine config JSON: {}", e),
+        })?;
+
+    let mut builder = build_engine_from_config(config)?;
+
+    if let Some(cs) = cache_store {
+        builder = builder.enable_incremental_compilation(cs)?;
+    }
+    if let Some(mc) = memory_creator {
+        builder = builder.with_host_memory(mc);
+    }
+    if let Some(sc) = stack_creator {
+        builder = builder.with_host_stack(sc);
+    }
+    if let Some(cm) = code_memory {
+        builder = builder.with_custom_code_memory(cm);
     }
 
     builder.build().map(Box::new)

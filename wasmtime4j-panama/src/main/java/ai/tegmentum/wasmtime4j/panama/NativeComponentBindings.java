@@ -799,8 +799,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
 
     addFunctionBinding(
         "wasmtime4j_component_instance_pre_destroy",
-        FunctionDescriptor.ofVoid(
-            ValueLayout.ADDRESS)); // pre handle
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // pre handle
 
     // ===== Component Serialize/Deserialize =====
     addFunctionBinding(
@@ -866,6 +865,24 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // engine handle
             ValueLayout.JAVA_LONG, // instance id
             ValueLayout.ADDRESS)); // index_ptr
+
+    // ===== Concurrent Call Support =====
+    addFunctionBinding(
+        "wasmtime4j_panama_enhanced_component_run_concurrent",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 0=success, -1=error
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_LONG, // instance_id
+            ValueLayout.ADDRESS, // json_ptr (input bytes)
+            ValueLayout.JAVA_LONG, // json_len
+            ValueLayout.ADDRESS, // result_ptr (out: *mut *mut u8)
+            ValueLayout.ADDRESS)); // result_len (out: *mut usize)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_free_concurrent_result",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // ptr
+            ValueLayout.JAVA_LONG)); // len
   }
 
   // ===== Component Engine (legacy API) =====
@@ -2227,9 +2244,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    * @return 0 on success, non-zero on error
    */
   public int componentLinkerSetWasiSecureRandom(
-      final MemorySegment linkerPtr,
-      final MemorySegment fillBytesFn,
-      final long callbackId) {
+      final MemorySegment linkerPtr, final MemorySegment fillBytesFn, final long callbackId) {
     validatePointer(linkerPtr, "linkerPtr");
     return callNativeFunction(
         "wasmtime4j_component_linker_set_wasi_secure_random",
@@ -2248,9 +2263,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    * @return 0 on success, non-zero on error
    */
   public int componentLinkerSetWasiInsecureRandom(
-      final MemorySegment linkerPtr,
-      final MemorySegment fillBytesFn,
-      final long callbackId) {
+      final MemorySegment linkerPtr, final MemorySegment fillBytesFn, final long callbackId) {
     validatePointer(linkerPtr, "linkerPtr");
     return callNativeFunction(
         "wasmtime4j_component_linker_set_wasi_insecure_random",
@@ -2269,9 +2282,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    * @return 0 on success, non-zero on error
    */
   public int componentLinkerSetWasiSocketAddrCheck(
-      final MemorySegment linkerPtr,
-      final MemorySegment checkFn,
-      final long callbackId) {
+      final MemorySegment linkerPtr, final MemorySegment checkFn, final long callbackId) {
     validatePointer(linkerPtr, "linkerPtr");
     return callNativeFunction(
         "wasmtime4j_component_linker_set_wasi_socket_addr_check",
@@ -2404,8 +2415,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    */
   public void componentFreeSerializedData(final MemorySegment dataPtr, final long len) {
     if (dataPtr != null && !dataPtr.equals(MemorySegment.NULL) && len > 0) {
-      callNativeFunction(
-          "wasmtime4j_component_free_serialized_data", Void.class, dataPtr, len);
+      callNativeFunction("wasmtime4j_component_free_serialized_data", Void.class, dataPtr, len);
     }
   }
 
@@ -2521,11 +2531,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    */
   public void componentLinkerAllowShadowing(final MemorySegment linkerPtr, final int allow) {
     validatePointer(linkerPtr, "linkerPtr");
-    callNativeFunction(
-        "wasmtime4j_component_linker_allow_shadowing",
-        void.class,
-        linkerPtr,
-        allow);
+    callNativeFunction("wasmtime4j_component_linker_allow_shadowing", void.class, linkerPtr, allow);
   }
 
   /**
@@ -2596,10 +2602,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     validatePointer(prePtr, "prePtr");
     validatePointer(instanceOutPtr, "instanceOutPtr");
     return callNativeFunction(
-        "wasmtime4j_component_instance_pre_instantiate",
-        Integer.class,
-        prePtr,
-        instanceOutPtr);
+        "wasmtime4j_component_instance_pre_instantiate", Integer.class, prePtr, instanceOutPtr);
   }
 
   /**
@@ -2610,8 +2613,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    */
   public int componentInstancePreIsValid(final MemorySegment prePtr) {
     validatePointer(prePtr, "prePtr");
-    return callNativeFunction(
-        "wasmtime4j_component_instance_pre_is_valid", Integer.class, prePtr);
+    return callNativeFunction("wasmtime4j_component_instance_pre_is_valid", Integer.class, prePtr);
   }
 
   /**
@@ -2695,8 +2697,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    */
   public void componentExportIndexDestroy(final MemorySegment indexPtr) {
     if (indexPtr != null && !indexPtr.equals(MemorySegment.NULL)) {
-      callNativeFunction(
-          "wasmtime4j_panama_component_export_index_destroy", Void.class, indexPtr);
+      callNativeFunction("wasmtime4j_panama_component_export_index_destroy", Void.class, indexPtr);
     }
   }
 
@@ -2717,5 +2718,46 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         enginePtr,
         instanceId,
         indexPtr);
+  }
+
+  // ===== Concurrent Call Support =====
+
+  /**
+   * Executes concurrent component function calls via the enhanced component engine.
+   *
+   * @param enginePtr the enhanced engine pointer
+   * @param instanceId the component instance ID
+   * @param jsonPtr pointer to the JSON input bytes
+   * @param jsonLen length of the JSON input bytes
+   * @param resultPtr pointer to output result pointer (caller-allocated)
+   * @param resultLen pointer to output result length (caller-allocated)
+   * @return 0 on success, -1 on error
+   */
+  public int enhancedComponentRunConcurrent(
+      final MemorySegment enginePtr,
+      final long instanceId,
+      final MemorySegment jsonPtr,
+      final long jsonLen,
+      final MemorySegment resultPtr,
+      final MemorySegment resultLen) {
+    return callNativeFunction(
+        "wasmtime4j_panama_enhanced_component_run_concurrent",
+        Integer.class,
+        enginePtr,
+        instanceId,
+        jsonPtr,
+        jsonLen,
+        resultPtr,
+        resultLen);
+  }
+
+  /**
+   * Frees a result buffer allocated by the concurrent call function.
+   *
+   * @param ptr the pointer to the result buffer
+   * @param len the length of the result buffer
+   */
+  public void freeConcurrentResult(final MemorySegment ptr, final long len) {
+    callNativeFunction("wasmtime4j_panama_free_concurrent_result", Void.class, ptr, len);
   }
 }

@@ -2,9 +2,9 @@ package ai.tegmentum.wasmtime4j.panama.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.Optional;
@@ -128,10 +128,7 @@ public final class PanamaTableType implements TableType {
    * @param maximum the maximum number of elements (null if unlimited)
    */
   private PanamaTableType(
-      final WasmValueType elementType,
-      final long minimum,
-      final Long maximum,
-      final boolean is64) {
+      final WasmValueType elementType, final long minimum, final Long maximum, final boolean is64) {
     this.elementType = elementType;
     this.minimum = minimum;
     this.maximum = Optional.ofNullable(maximum);
@@ -169,8 +166,7 @@ public final class PanamaTableType implements TableType {
     final long minimum = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 8);
     final long maxValue = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 16);
     final Long maximum = maxValue == -1 ? null : maxValue;
-    final boolean is64 =
-        typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 24) != 0;
+    final boolean is64 = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 24) != 0;
 
     return new PanamaTableType(elementType, minimum, maximum, is64, arena, nativeHandle);
   }

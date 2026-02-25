@@ -79,9 +79,9 @@ public interface ResourceAny {
    * they are no longer needed. For host-defined resources, this triggers the destructor callback
    * registered during resource definition.
    *
-   * <p>This method executes synchronously. The Wasmtime API also provides an async variant
-   * ({@code resource_drop_async}) which is not currently supported. If async resource dropping is
-   * needed, perform the drop in a virtual thread or executor.
+   * <p>This method executes synchronously. The Wasmtime API also provides an async variant ({@code
+   * resource_drop_async}) which is not currently supported. If async resource dropping is needed,
+   * perform the drop in a virtual thread or executor.
    *
    * @param store the store that contains this resource
    * @throws WasmException if the resource cannot be dropped

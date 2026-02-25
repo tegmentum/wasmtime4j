@@ -23,8 +23,8 @@ import java.util.Optional;
  * A weak reference to an {@link Engine} that does not prevent the engine from being freed.
  *
  * <p>A {@code WeakEngine} is obtained by calling {@link Engine#weak()} and can be used to check
- * whether the engine is still alive without preventing garbage collection. The weak reference can be
- * upgraded to a strong {@link Engine} reference using {@link #upgrade()}.
+ * whether the engine is still alive without preventing garbage collection. The weak reference can
+ * be upgraded to a strong {@link Engine} reference using {@link #upgrade()}.
  *
  * <p>This is useful for caches and other data structures that want to reference an engine without
  * preventing it from being cleaned up.

@@ -138,8 +138,8 @@ public interface Engine extends Closeable {
   /**
    * Compiles a WebAssembly module from a file path.
    *
-   * <p>The file can contain either binary WebAssembly (.wasm) or WebAssembly Text (.wat) format. The
-   * format is auto-detected based on file contents.
+   * <p>The file can contain either binary WebAssembly (.wasm) or WebAssembly Text (.wat) format.
+   * The format is auto-detected based on file contents.
    *
    * @param path the path to the WebAssembly file
    * @return a compiled Module
@@ -199,8 +199,8 @@ public interface Engine extends Closeable {
    * LZCNT, POPCNT, etc. Feature names correspond to Cranelift ISA feature names.
    *
    * @param feature the CPU feature name to check (e.g., "sse4.2", "avx2")
-   * @return an Optional containing true if the feature is detected, false if not detected, or
-   *     empty if the feature name is not recognized
+   * @return an Optional containing true if the feature is detected, false if not detected, or empty
+   *     if the feature name is not recognized
    * @throws IllegalArgumentException if feature is null
    * @since 1.1.0
    */
@@ -429,9 +429,7 @@ public interface Engine extends Closeable {
    * @since 1.1.0
    */
   ai.tegmentum.wasmtime4j.debug.GuestProfiler createGuestProfiler(
-      String moduleName,
-      java.time.Duration interval,
-      java.util.Map<String, Module> modules)
+      String moduleName, java.time.Duration interval, java.util.Map<String, Module> modules)
       throws WasmException;
 
   /**

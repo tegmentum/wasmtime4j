@@ -232,19 +232,13 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    * @return 0 on success, negative error code on failure
    */
   public int panamaModuleGetModuleExport(
-      final MemorySegment modulePtr,
-      final MemorySegment namePtr,
-      final MemorySegment outPtr) {
+      final MemorySegment modulePtr, final MemorySegment namePtr, final MemorySegment outPtr) {
     validatePointer(modulePtr, "modulePtr");
     validatePointer(namePtr, "namePtr");
     validatePointer(outPtr, "outPtr");
 
     return callNativeFunction(
-        "wasmtime4j_panama_module_get_module_export",
-        Integer.class,
-        modulePtr,
-        namePtr,
-        outPtr);
+        "wasmtime4j_panama_module_get_module_export", Integer.class, modulePtr, namePtr, outPtr);
   }
 
   /**
@@ -254,8 +248,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    */
   public void panamaModuleExportDestroy(final MemorySegment moduleExportPtr) {
     validatePointer(moduleExportPtr, "moduleExportPtr");
-    callNativeFunction(
-        "wasmtime4j_panama_module_export_destroy", Void.class, moduleExportPtr);
+    callNativeFunction("wasmtime4j_panama_module_export_destroy", Void.class, moduleExportPtr);
   }
 
   /**
@@ -855,7 +848,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    */
   public int callerHasEpochDeadline(final MemorySegment callerPtr) {
     validatePointer(callerPtr, "callerPtr");
-    return callNativeFunction("wasmtime4j_panama_caller_has_epoch_deadline", Integer.class, callerPtr);
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_has_epoch_deadline", Integer.class, callerPtr);
   }
 
   /**
@@ -868,7 +862,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   public int callerHasExport(final MemorySegment callerPtr, final MemorySegment name) {
     validatePointer(callerPtr, "callerPtr");
     validatePointer(name, "name");
-    return callNativeFunction("wasmtime4j_panama_caller_has_export", Integer.class, callerPtr, name);
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_has_export", Integer.class, callerPtr, name);
   }
 
   /**
@@ -946,8 +941,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    * @param interval the yield interval, or 0 to disable
    * @return 0 on success, non-zero on error
    */
-  public int callerSetFuelAsyncYieldInterval(
-      final MemorySegment callerPtr, final long interval) {
+  public int callerSetFuelAsyncYieldInterval(final MemorySegment callerPtr, final long interval) {
     validatePointer(callerPtr, "callerPtr");
     return callNativeFunction(
         "wasmtime4j_panama_caller_set_fuel_async_yield_interval",
@@ -1046,12 +1040,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(name, "name");
     validatePointer(funcPtrOut, "funcPtrOut");
     return callNativeFunction(
-        "wasmtime4j_panama_func_get",
-        Integer.class,
-        instancePtr,
-        storePtr,
-        name,
-        funcPtrOut);
+        "wasmtime4j_panama_func_get", Integer.class, instancePtr, storePtr, name, funcPtrOut);
   }
 
   /**
@@ -1064,8 +1053,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   public long funcToRaw(final MemorySegment funcPtr, final MemorySegment storePtr) {
     validatePointer(funcPtr, "funcPtr");
     validatePointer(storePtr, "storePtr");
-    return callNativeFunction(
-        "wasmtime4j_panama_func_to_raw", Long.class, funcPtr, storePtr);
+    return callNativeFunction("wasmtime4j_panama_func_to_raw", Long.class, funcPtr, storePtr);
   }
 
   /**
@@ -1176,9 +1164,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   /**
    * Defines an unchecked host function in the linker (Panama FFI version).
    *
-   * <p>This uses {@code Func::new_unchecked} internally, which skips type-checking
-   * at call time for better performance. The caller is responsible for ensuring
-   * correct types.
+   * <p>This uses {@code Func::new_unchecked} internally, which skips type-checking at call time for
+   * better performance. The caller is responsible for ensuring correct types.
    *
    * @param linkerPtr pointer to the linker
    * @param moduleName pointer to the module name string
@@ -1813,8 +1800,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    */
   public int externGetType(final MemorySegment externPtr) {
     validatePointer(externPtr, "externPtr");
-    return callNativeFunction(
-        "wasmtime4j_panama_linker_get_extern_type", Integer.class, externPtr);
+    return callNativeFunction("wasmtime4j_panama_linker_get_extern_type", Integer.class, externPtr);
   }
 
   // =============================================================================
@@ -1894,10 +1880,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_module_get_module_export",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_panama_module_export_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
@@ -2273,10 +2256,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_linker_alias_module",
         FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS,
-            ValueLayout.ADDRESS));
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_linker_instantiate",

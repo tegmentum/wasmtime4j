@@ -866,3 +866,59 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         }
     })
 }
+
+/// Run concurrent component function calls.
+///
+/// Takes a JSON string containing the batch of calls and returns a JSON string
+/// containing the results.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeRunConcurrentCalls(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    json_input: JString,
+) -> jstring {
+    let result: Result<String, crate::error::WasmtimeError> = (|| {
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        let json_str: String = env
+            .get_string(&json_input)
+            .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Failed to get JSON string: {:?}", e),
+            })?
+            .into();
+
+        let calls =
+            crate::component_core::concurrent_call_json::deserialize_calls(&json_str)?;
+
+        let results = engine.run_concurrent_calls(instance_id as u64, calls)?;
+
+        crate::component_core::concurrent_call_json::serialize_results(&results)
+    })();
+
+    match result {
+        Ok(json_result) => match env.new_string(&json_result) {
+            Ok(s) => s.into_raw(),
+            Err(e) => {
+                log::error!("Failed to create Java result string: {:?}", e);
+                let _ = env.throw_new(
+                    "ai/tegmentum/wasmtime4j/exception/WasmException",
+                    format!("Failed to create result string: {:?}", e),
+                );
+                std::ptr::null_mut()
+            }
+        },
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("{}", e),
+            );
+            std::ptr::null_mut()
+        }
+    }
+}

@@ -134,18 +134,15 @@ public class EnginePoolingMetricsTest extends DualRuntimeTest {
         final PoolStatistics metrics = engine.getPoolingAllocatorMetrics();
 
         if (metrics != null) {
+          assertTrue(metrics.getCoreInstances() >= 0, "Core instances should be non-negative");
           assertTrue(
-              metrics.getCoreInstances() >= 0, "Core instances should be non-negative");
-          assertTrue(
-              metrics.getComponentInstances() >= 0,
-              "Component instances should be non-negative");
+              metrics.getComponentInstances() >= 0, "Component instances should be non-negative");
           assertTrue(metrics.getMemories() >= 0, "Memories should be non-negative");
           assertTrue(metrics.getTables() >= 0, "Tables should be non-negative");
           assertTrue(metrics.getStacks() >= 0, "Stacks should be non-negative");
           assertTrue(metrics.getGcHeaps() >= 0, "GC heaps should be non-negative");
           assertTrue(
-              metrics.getUnusedWarmMemories() >= 0,
-              "Unused warm memories should be non-negative");
+              metrics.getUnusedWarmMemories() >= 0, "Unused warm memories should be non-negative");
           assertTrue(
               metrics.getUnusedMemoryBytesResident() >= 0,
               "Unused memory bytes resident should be non-negative");

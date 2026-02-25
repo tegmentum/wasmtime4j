@@ -22,7 +22,6 @@ import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,8 +45,8 @@ public final class PanamaInstance implements Instance {
   /**
    * Thread-local arena pool for function calls — eliminates per-call Arena allocation.
    *
-   * <p><strong>Lifecycle:</strong> Each thread lazily creates a confined {@link Arena} on first WASM
-   * call. The arena is reused across all subsequent calls on that thread. Because {@code
+   * <p><strong>Lifecycle:</strong> Each thread lazily creates a confined {@link Arena} on first
+   * WASM call. The arena is reused across all subsequent calls on that thread. Because {@code
    * ThreadLocal} entries are only reclaimed when the thread terminates, long-lived threads (e.g.
    * thread-pool workers) retain their arena indefinitely. This is a deliberate performance
    * trade-off: the per-thread memory footprint is small (typically &lt;1 KB) and the allocation
@@ -500,8 +499,7 @@ public final class PanamaInstance implements Instance {
       final MemorySegment outHandle = exportArena.allocate(ValueLayout.ADDRESS);
       final MemorySegment outType = exportArena.allocate(ValueLayout.JAVA_INT);
 
-      final MemorySegment moduleExportPtr =
-          MemorySegment.ofAddress(moduleExport.nativeHandle());
+      final MemorySegment moduleExportPtr = MemorySegment.ofAddress(moduleExport.nativeHandle());
 
       final int result =
           NATIVE_INSTANCE_BINDINGS.panamaInstanceGetModuleExport(
@@ -514,7 +512,8 @@ public final class PanamaInstance implements Instance {
       final MemorySegment externHandle = outHandle.get(ValueLayout.ADDRESS, 0);
       final int externType = outType.get(ValueLayout.JAVA_INT, 0);
 
-      if (externHandle.equals(MemorySegment.NULL) || externHandle.address() == 0
+      if (externHandle.equals(MemorySegment.NULL)
+          || externHandle.address() == 0
           || externType < 0) {
         return Optional.empty();
       }
@@ -697,8 +696,7 @@ public final class PanamaInstance implements Instance {
     if (paramCount > 0) {
       paramsSegment = ctx.getParamsBuffer(paramCount);
       for (int i = 0; i < paramCount; i++) {
-        WasmValueMarshaller.marshalWasmValue(
-            params[i], paramsSegment, i, this::registerExternRef);
+        WasmValueMarshaller.marshalWasmValue(params[i], paramsSegment, i, this::registerExternRef);
       }
     } else {
       paramsSegment = MemorySegment.NULL;
@@ -729,7 +727,8 @@ public final class PanamaInstance implements Instance {
     final int count = (int) resultCount;
     final WasmValue[] results = new WasmValue[count];
     for (int i = 0; i < count; i++) {
-      results[i] = WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, EXTERN_REF_REGISTRY::get);
+      results[i] =
+          WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, EXTERN_REF_REGISTRY::get);
     }
 
     return results;
@@ -1184,7 +1183,6 @@ public final class PanamaInstance implements Instance {
     return ctx.resultsBuffer.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4);
   }
 
-
   @Override
   public void close() {
     resourceHandle.close();
@@ -1342,16 +1340,18 @@ public final class PanamaInstance implements Instance {
           tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
 
       // Get the native memory ptr from the instance export
-      final MemorySegment memPtr = NATIVE_INSTANCE_BINDINGS.instanceGetMemoryByName(
-          nativeInstance, store.getNativeStore(), nameSegment);
+      final MemorySegment memPtr =
+          NATIVE_INSTANCE_BINDINGS.instanceGetMemoryByName(
+              nativeInstance, store.getNativeStore(), nameSegment);
       if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
         return -1L;
       }
 
       final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_LONG);
       final NativeMemoryBindings memBindings = NativeMemoryBindings.getInstance();
-      final int result = memBindings.panamaMemoryGrowAsync(
-          memPtr, store.getNativeStore(), pages, previousPagesOut);
+      final int result =
+          memBindings.panamaMemoryGrowAsync(
+              memPtr, store.getNativeStore(), pages, previousPagesOut);
 
       if (result != 0) {
         return -1L;
@@ -1375,8 +1375,9 @@ public final class PanamaInstance implements Instance {
       final MemorySegment funcPtrOut = tempArena.allocate(ValueLayout.ADDRESS);
 
       // Get the func ptr from instance export
-      final int getResult = NATIVE_INSTANCE_BINDINGS.funcGet(
-          nativeInstance, store.getNativeStore(), nameSegment, funcPtrOut);
+      final int getResult =
+          NATIVE_INSTANCE_BINDINGS.funcGet(
+              nativeInstance, store.getNativeStore(), nameSegment, funcPtrOut);
       if (getResult != 0) {
         throw new ai.tegmentum.wasmtime4j.exception.WasmException(
             "Failed to get function pointer for: " + functionName);
@@ -1392,5 +1393,4 @@ public final class PanamaInstance implements Instance {
       }
     }
   }
-
 }

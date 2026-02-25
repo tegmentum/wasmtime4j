@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -199,8 +198,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
     assertTrue(
         funcType.isCompatibleWith(
             FunctionType.of(
-                new WasmValueType[] {WasmValueType.I32},
-                new WasmValueType[] {WasmValueType.F64})),
+                new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F64})),
         "Exact match should return true");
 
     LOGGER.info("[" + runtime + "] isCompatibleWith returned true for exact match");
@@ -220,8 +218,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
     assertFalse(
         funcType.isCompatibleWith(
             FunctionType.of(
-                new WasmValueType[] {WasmValueType.I64},
-                new WasmValueType[] {WasmValueType.F64})),
+                new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.F64})),
         "Param type mismatch should return false");
 
     LOGGER.info("[" + runtime + "] isCompatibleWith returned false for param mismatch");
@@ -241,8 +238,7 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
     assertFalse(
         funcType.isCompatibleWith(
             FunctionType.of(
-                new WasmValueType[] {WasmValueType.I32},
-                new WasmValueType[] {WasmValueType.F32})),
+                new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.F32})),
         "Return type mismatch should return false");
 
     LOGGER.info("[" + runtime + "] isCompatibleWith returned false for return mismatch");
@@ -263,5 +259,4 @@ public class FunctionTypeValidationTest extends DualRuntimeTest {
 
     LOGGER.info("[" + runtime + "] isCompatibleWith returned false for null argument");
   }
-
 }

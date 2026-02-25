@@ -1420,8 +1420,7 @@ public final class PanamaStore implements Store {
 
   @Override
   public ai.tegmentum.wasmtime4j.Instance createInstance(
-      final ai.tegmentum.wasmtime4j.Module module,
-      final ai.tegmentum.wasmtime4j.Extern[] imports)
+      final ai.tegmentum.wasmtime4j.Module module, final ai.tegmentum.wasmtime4j.Extern[] imports)
       throws WasmException {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
@@ -1441,10 +1440,8 @@ public final class PanamaStore implements Store {
     }
 
     try (final Arena importArena = Arena.ofConfined()) {
-      final MemorySegment externPtrs =
-          importArena.allocate(ValueLayout.ADDRESS, imports.length);
-      final MemorySegment externTypes =
-          importArena.allocate(ValueLayout.JAVA_INT, imports.length);
+      final MemorySegment externPtrs = importArena.allocate(ValueLayout.ADDRESS, imports.length);
+      final MemorySegment externTypes = importArena.allocate(ValueLayout.JAVA_INT, imports.length);
 
       for (int i = 0; i < imports.length; i++) {
         final ai.tegmentum.wasmtime4j.Extern ext = imports[i];
@@ -1459,8 +1456,12 @@ public final class PanamaStore implements Store {
 
       final int result =
           INSTANCE_BINDINGS.panamaInstanceCreateWithImports(
-              nativeStore, panamaModule.getNativeModule(),
-              externPtrs, externTypes, imports.length, instanceOut);
+              nativeStore,
+              panamaModule.getNativeModule(),
+              externPtrs,
+              externTypes,
+              imports.length,
+              instanceOut);
 
       if (result != 0) {
         throw new WasmException("Failed to create instance with imports");
@@ -1506,8 +1507,7 @@ public final class PanamaStore implements Store {
    * @param type the Java ExternType
    * @return the native type code
    */
-  private static int externTypeToNativeCode(
-      final ai.tegmentum.wasmtime4j.type.ExternType type) {
+  private static int externTypeToNativeCode(final ai.tegmentum.wasmtime4j.type.ExternType type) {
     switch (type) {
       case FUNC:
         return 0;
@@ -1620,8 +1620,7 @@ public final class PanamaStore implements Store {
     final int result =
         NATIVE_BINDINGS.storeEpochDeadlineAsyncYieldAndUpdate(nativeStore, deltaTicks);
     if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result, "Failed to set epoch deadline async yield");
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to set epoch deadline async yield");
     }
   }
 
@@ -1689,8 +1688,7 @@ public final class PanamaStore implements Store {
     }
 
     if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result, "Failed to configure epoch deadline callback");
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure epoch deadline callback");
     }
   }
 
@@ -1884,8 +1882,7 @@ public final class PanamaStore implements Store {
   public boolean isSingleStep() {
     ensureNotClosed();
     try {
-      final java.lang.invoke.MethodHandle handle =
-          NATIVE_BINDINGS.getStoreIsSingleStep();
+      final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreIsSingleStep();
       if (handle == null) {
         return false;
       }
@@ -1900,8 +1897,7 @@ public final class PanamaStore implements Store {
   public boolean isAsync() {
     ensureNotClosed();
     try {
-      final java.lang.invoke.MethodHandle handle =
-          NATIVE_BINDINGS.getStoreIsAsync();
+      final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreIsAsync();
       if (handle == null) {
         return false;
       }
@@ -1917,8 +1913,7 @@ public final class PanamaStore implements Store {
       breakpoints() {
     ensureNotClosed();
     try {
-      final java.lang.invoke.MethodHandle handle =
-          NATIVE_BINDINGS.getStoreBreakpointCount();
+      final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreBreakpointCount();
       if (handle == null) {
         return java.util.Optional.empty();
       }
@@ -1939,12 +1934,9 @@ public final class PanamaStore implements Store {
   @Override
   public java.util.Optional<ai.tegmentum.wasmtime4j.debug.BreakpointEditor> editBreakpoints() {
     ensureNotClosed();
-    final java.lang.invoke.MethodHandle addHandle =
-        NATIVE_BINDINGS.getStoreAddBreakpoint();
-    final java.lang.invoke.MethodHandle removeHandle =
-        NATIVE_BINDINGS.getStoreRemoveBreakpoint();
-    final java.lang.invoke.MethodHandle singleStepHandle =
-        NATIVE_BINDINGS.getStoreSetSingleStep();
+    final java.lang.invoke.MethodHandle addHandle = NATIVE_BINDINGS.getStoreAddBreakpoint();
+    final java.lang.invoke.MethodHandle removeHandle = NATIVE_BINDINGS.getStoreRemoveBreakpoint();
+    final java.lang.invoke.MethodHandle singleStepHandle = NATIVE_BINDINGS.getStoreSetSingleStep();
     if (addHandle == null || removeHandle == null || singleStepHandle == null) {
       return java.util.Optional.empty();
     }
@@ -1986,8 +1978,7 @@ public final class PanamaStore implements Store {
           }
 
           @Override
-          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(
-              final boolean enabled) {
+          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(final boolean enabled) {
             try {
               singleStepHandle.invoke(storeRef, enabled ? 1 : 0);
             } catch (final Throwable e) {

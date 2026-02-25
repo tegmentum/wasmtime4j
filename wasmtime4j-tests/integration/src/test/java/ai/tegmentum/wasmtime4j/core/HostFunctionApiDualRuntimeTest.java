@@ -32,13 +32,11 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -51,9 +49,9 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * DualRuntime tests for host function API covering type variations, function interface accessors,
  * resource management, and multi-function independence.
  *
- * <p>These tests exercise the unified API ({@link Engine}, {@link Linker}, {@link Store},
- * {@link Module}, {@link Instance}, {@link HostFunction}, {@link FunctionType}, {@link WasmValue})
- * across both JNI and Panama runtimes.
+ * <p>These tests exercise the unified API ({@link Engine}, {@link Linker}, {@link Store}, {@link
+ * Module}, {@link Instance}, {@link HostFunction}, {@link FunctionType}, {@link WasmValue}) across
+ * both JNI and Panama runtimes.
  *
  * @since 1.0.0
  */
@@ -151,12 +149,11 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing i32 -> i32 host function through linker");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {WasmValue.i32(params[0].asInt() * 2)};
+      final HostFunction impl = (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() * 2)};
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -181,12 +178,11 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing i64 -> i64 host function through linker");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I64},
-          new WasmValueType[] {WasmValueType.I64});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {WasmValueType.I64});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {WasmValue.i64(params[0].asLong() * 2)};
+      final HostFunction impl = (params) -> new WasmValue[] {WasmValue.i64(params[0].asLong() * 2)};
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -211,12 +207,12 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing f32 -> f32 host function through linker");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.F32},
-          new WasmValueType[] {WasmValueType.F32});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.F32}, new WasmValueType[] {WasmValueType.F32});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {WasmValue.f32(params[0].asFloat() * 2.0f)};
+      final HostFunction impl =
+          (params) -> new WasmValue[] {WasmValue.f32(params[0].asFloat() * 2.0f)};
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -241,12 +237,12 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing f64 -> f64 host function through linker");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.F64},
-          new WasmValueType[] {WasmValueType.F64});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.F64}, new WasmValueType[] {WasmValueType.F64});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {WasmValue.f64(params[0].asDouble() * 2.0)};
+      final HostFunction impl =
+          (params) -> new WasmValue[] {WasmValue.f64(params[0].asDouble() * 2.0)};
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -299,14 +295,16 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing multi-param host function through linker");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32, WasmValueType.I64, WasmValueType.F64},
-          new WasmValueType[] {WasmValueType.F64});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.I64, WasmValueType.F64},
+              new WasmValueType[] {WasmValueType.F64});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {
-            WasmValue.f64(params[0].asInt() + params[1].asLong() + params[2].asDouble())
-          };
+      final HostFunction impl =
+          (params) ->
+              new WasmValue[] {
+                WasmValue.f64(params[0].asInt() + params[1].asLong() + params[2].asDouble())
+              };
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -319,8 +317,7 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
           final WasmFunction callFn = instance.getFunction("call_fn").orElseThrow();
           final WasmValue[] results =
               callFn.call(WasmValue.i32(10), WasmValue.i64(20L), WasmValue.f64(30.5));
-          assertEquals(60.5, results[0].asDouble(), 0.001,
-              "10 + 20 + 30.5 should equal 60.5");
+          assertEquals(60.5, results[0].asDouble(), 0.001, "10 + 20 + 30.5 should equal 60.5");
           LOGGER.info("[" + runtime + "] multi-param result: " + results[0].asDouble());
         }
       }
@@ -348,12 +345,11 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing FunctionType preservation through linker");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {WasmValue.i32(params[0].asInt())};
+      final HostFunction impl = (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt())};
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -369,17 +365,21 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
           final WasmFunction callFn = callFnOpt.get();
           final FunctionType exportedType = callFn.getFunctionType();
           assertNotNull(exportedType, "Exported function type should not be null");
-          assertEquals(1, exportedType.getParams().size(),
-              "Exported function should have 1 param");
-          assertEquals(WasmValueType.I32, exportedType.getParams().get(0),
-              "Param type should be I32");
-          assertEquals(1, exportedType.getResults().size(),
-              "Exported function should have 1 result");
-          assertEquals(WasmValueType.I32, exportedType.getResults().get(0),
-              "Result type should be I32");
+          assertEquals(1, exportedType.getParams().size(), "Exported function should have 1 param");
+          assertEquals(
+              WasmValueType.I32, exportedType.getParams().get(0), "Param type should be I32");
+          assertEquals(
+              1, exportedType.getResults().size(), "Exported function should have 1 result");
+          assertEquals(
+              WasmValueType.I32, exportedType.getResults().get(0), "Result type should be I32");
 
-          LOGGER.info("[" + runtime + "] FunctionType preserved: params="
-              + exportedType.getParams().size() + ", results=" + exportedType.getResults().size());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] FunctionType preserved: params="
+                  + exportedType.getParams().size()
+                  + ", results="
+                  + exportedType.getResults().size());
         }
       }
     }
@@ -391,12 +391,11 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing function name retrieval from export");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {WasmValue.i32(params[0].asInt())};
+      final HostFunction impl = (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt())};
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -423,12 +422,11 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing ValidationException on direct HostFunction.execute()");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {WasmValue.i32(params[0].asInt() * 2)};
+      final HostFunction impl = (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() * 2)};
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -471,22 +469,24 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       LOGGER.info("[" + runtime + "] Testing resource close without error");
 
       final FunctionType type = FunctionType.of(new WasmValueType[0], new WasmValueType[0]);
-      final HostFunction impl = HostFunction.voidFunction((params) -> { });
+      final HostFunction impl = HostFunction.voidFunction((params) -> {});
 
-      assertDoesNotThrow(() -> {
-        try (Engine engine = Engine.create();
-            Linker<Void> linker = Linker.create(engine);
-            Store store = engine.createStore();
-            Module module = engine.compileWat(VOID_WAT)) {
+      assertDoesNotThrow(
+          () -> {
+            try (Engine engine = Engine.create();
+                Linker<Void> linker = Linker.create(engine);
+                Store store = engine.createStore();
+                Module module = engine.compileWat(VOID_WAT)) {
 
-          linker.defineHostFunction("env", "fn", type, impl);
+              linker.defineHostFunction("env", "fn", type, impl);
 
-          try (Instance instance = linker.instantiate(store, module)) {
-            final WasmFunction callFn = instance.getFunction("call_fn").orElseThrow();
-            callFn.call();
-          }
-        }
-      }, "Full lifecycle create -> use -> close should not throw");
+              try (Instance instance = linker.instantiate(store, module)) {
+                final WasmFunction callFn = instance.getFunction("call_fn").orElseThrow();
+                callFn.call();
+              }
+            }
+          },
+          "Full lifecycle create -> use -> close should not throw");
 
       LOGGER.info("[" + runtime + "] Resource close without error verified");
     }
@@ -516,9 +516,7 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
     /**
      * WAT module importing three host functions with different signatures.
      *
-     * <p>- env.fn_i32: (i32) -> (i32)
-     * - env.fn_void: () -> ()
-     * - env.fn_add: (i32, i32) -> (i32)
+     * <p>- env.fn_i32: (i32) -> (i32) - env.fn_void: () -> () - env.fn_add: (i32, i32) -> (i32)
      */
     private static final String MULTI_FN_WAT =
         """
@@ -544,14 +542,14 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing multiple independent host functions");
 
-      final FunctionType i32Type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
-      final FunctionType voidType = FunctionType.of(
-          new WasmValueType[0], new WasmValueType[0]);
-      final FunctionType addType = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
+      final FunctionType i32Type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+      final FunctionType voidType = FunctionType.of(new WasmValueType[0], new WasmValueType[0]);
+      final FunctionType addType =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32, WasmValueType.I32},
+              new WasmValueType[] {WasmValueType.I32});
 
       final AtomicInteger voidCallCount = new AtomicInteger(0);
 
@@ -560,14 +558,21 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
           Store store = engine.createStore();
           Module module = engine.compileWat(MULTI_FN_WAT)) {
 
-        linker.defineHostFunction("env", "fn_i32", i32Type,
+        linker.defineHostFunction(
+            "env",
+            "fn_i32",
+            i32Type,
             (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() * 3)});
-        linker.defineHostFunction("env", "fn_void", voidType,
+        linker.defineHostFunction(
+            "env",
+            "fn_void",
+            voidType,
             HostFunction.voidFunction((params) -> voidCallCount.incrementAndGet()));
-        linker.defineHostFunction("env", "fn_add", addType,
-            (params) -> new WasmValue[] {
-              WasmValue.i32(params[0].asInt() + params[1].asInt())
-            });
+        linker.defineHostFunction(
+            "env",
+            "fn_add",
+            addType,
+            (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt() + params[1].asInt())});
 
         try (Instance instance = linker.instantiate(store, module)) {
           // Test fn_i32
@@ -582,14 +587,19 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
 
           // Test fn_add
           final WasmFunction callAdd = instance.getFunction("call_add").orElseThrow();
-          final WasmValue[] addResults =
-              callAdd.call(WasmValue.i32(10), WasmValue.i32(20));
+          final WasmValue[] addResults = callAdd.call(WasmValue.i32(10), WasmValue.i32(20));
           assertEquals(30, addResults[0].asInt(), "10 + 20 should equal 30");
 
-          LOGGER.info("[" + runtime + "] Multiple independent host functions verified: "
-              + "i32=" + i32Results[0].asInt()
-              + ", voidCalls=" + voidCallCount.get()
-              + ", add=" + addResults[0].asInt());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Multiple independent host functions verified: "
+                  + "i32="
+                  + i32Results[0].asInt()
+                  + ", voidCalls="
+                  + voidCallCount.get()
+                  + ", add="
+                  + addResults[0].asInt());
         }
       }
     }
@@ -610,15 +620,16 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
               call $fn))
           """;
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
       final AtomicInteger callCount = new AtomicInteger(0);
-      final HostFunction impl = (params) -> {
-        callCount.incrementAndGet();
-        return new WasmValue[] {WasmValue.i32(params[0].asInt() + 1)};
-      };
+      final HostFunction impl =
+          (params) -> {
+            callCount.incrementAndGet();
+            return new WasmValue[] {WasmValue.i32(params[0].asInt() + 1)};
+          };
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);
@@ -663,12 +674,11 @@ public class HostFunctionApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing toString on exported function");
 
-      final FunctionType type = FunctionType.of(
-          new WasmValueType[] {WasmValueType.I32},
-          new WasmValueType[] {WasmValueType.I32});
+      final FunctionType type =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      final HostFunction impl = (params) ->
-          new WasmValue[] {WasmValue.i32(params[0].asInt())};
+      final HostFunction impl = (params) -> new WasmValue[] {WasmValue.i32(params[0].asInt())};
 
       try (Engine engine = Engine.create();
           Linker<Void> linker = Linker.create(engine);

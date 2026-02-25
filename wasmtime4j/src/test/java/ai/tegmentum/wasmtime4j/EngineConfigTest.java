@@ -132,7 +132,8 @@ class EngineConfigTest {
   void shouldSerializeEnableCompilerToJson() {
     final EngineConfig config = new EngineConfig().enableCompiler(false);
     final String json = new String(config.toJson(), java.nio.charset.StandardCharsets.UTF_8);
-    assertTrue(json.contains("\"enableCompiler\":false"),
+    assertTrue(
+        json.contains("\"enableCompiler\":false"),
         "JSON should contain enableCompiler:false but was: " + json);
   }
 }

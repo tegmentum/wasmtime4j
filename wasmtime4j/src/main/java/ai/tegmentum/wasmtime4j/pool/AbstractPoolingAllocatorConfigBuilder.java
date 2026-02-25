@@ -94,8 +94,7 @@ public abstract class AbstractPoolingAllocatorConfigBuilder
   protected boolean memoryProtectionKeysEnabled = false;
 
   /** Maximum memory protection keys. */
-  protected int maxMemoryProtectionKeys =
-      PoolingAllocatorConfig.DEFAULT_MAX_MEMORY_PROTECTION_KEYS;
+  protected int maxMemoryProtectionKeys = PoolingAllocatorConfig.DEFAULT_MAX_MEMORY_PROTECTION_KEYS;
 
   /** Pagemap scan enabled. */
   protected boolean pagemapScanEnabled = false;

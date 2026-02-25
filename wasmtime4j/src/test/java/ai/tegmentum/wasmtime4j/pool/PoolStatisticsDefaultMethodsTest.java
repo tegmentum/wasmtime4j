@@ -111,7 +111,8 @@ class PoolStatisticsDefaultMethodsTest {
   @DisplayName("should return sum of core and component instances")
   void shouldReturnSumOfInstances() {
     final PoolStatistics stats = new TestPoolStatistics(5, 3);
-    assertEquals(8, stats.getTotalInstances(), "Total instances should be 8 (5 core + 3 component)");
+    assertEquals(
+        8, stats.getTotalInstances(), "Total instances should be 8 (5 core + 3 component)");
   }
 
   @Test

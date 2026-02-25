@@ -556,8 +556,8 @@ public final class WasmValue {
   /**
    * Creates a null funcref bottom type value.
    *
-   * <p>This is used in WebAssembly GC for the null bottom type in the funcref hierarchy. NULLFUNCREF
-   * can only hold null and is a subtype of all nullable function reference types.
+   * <p>This is used in WebAssembly GC for the null bottom type in the funcref hierarchy.
+   * NULLFUNCREF can only hold null and is a subtype of all nullable function reference types.
    *
    * @return a new WasmValue representing null funcref bottom type
    */
@@ -639,7 +639,8 @@ public final class WasmValue {
   /**
    * Creates a null contref bottom type value.
    *
-   * <p>NULLCONTREF can only hold null and is a subtype of all nullable continuation reference types.
+   * <p>NULLCONTREF can only hold null and is a subtype of all nullable continuation reference
+   * types.
    *
    * @return a new WasmValue representing null contref bottom type
    */
@@ -753,8 +754,7 @@ public final class WasmValue {
           return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullExnRef());
         }
         if (value instanceof ExnRef) {
-          return java.util.Optional.of(
-              ai.tegmentum.wasmtime4j.type.Ref.fromExn((ExnRef) value));
+          return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.fromExn((ExnRef) value));
         }
         return java.util.Optional.of(ai.tegmentum.wasmtime4j.type.Ref.nullExnRef());
       case NULLEXNREF:
@@ -787,10 +787,10 @@ public final class WasmValue {
   /**
    * Checks if this value's type matches the expected ValType.
    *
-   * <p>Unlike {@link #validateType(WasmValueType)} which checks for exact type equality,
-   * this method uses {@link ValType#matches(ValType)} which accounts for the subtyping
-   * relationship between reference types. For example, a NULLREF value matches ANYREF
-   * because NULLREF is a subtype of ANYREF.
+   * <p>Unlike {@link #validateType(WasmValueType)} which checks for exact type equality, this
+   * method uses {@link ValType#matches(ValType)} which accounts for the subtyping relationship
+   * between reference types. For example, a NULLREF value matches ANYREF because NULLREF is a
+   * subtype of ANYREF.
    *
    * @param expected the expected ValType to check against
    * @return true if this value's type matches the expected type, false otherwise

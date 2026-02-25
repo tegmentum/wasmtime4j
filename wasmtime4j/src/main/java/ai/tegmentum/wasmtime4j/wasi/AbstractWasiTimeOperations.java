@@ -36,12 +36,10 @@ public abstract class AbstractWasiTimeOperations {
   public static final int WASI_CLOCK_MONOTONIC = WasiClockId.MONOTONIC.getValue();
 
   /** Clock ID for process CPU time. */
-  public static final int WASI_CLOCK_PROCESS_CPUTIME_ID =
-      WasiClockId.PROCESS_CPUTIME_ID.getValue();
+  public static final int WASI_CLOCK_PROCESS_CPUTIME_ID = WasiClockId.PROCESS_CPUTIME_ID.getValue();
 
   /** Clock ID for thread CPU time. */
-  public static final int WASI_CLOCK_THREAD_CPUTIME_ID =
-      WasiClockId.THREAD_CPUTIME_ID.getValue();
+  public static final int WASI_CLOCK_THREAD_CPUTIME_ID = WasiClockId.THREAD_CPUTIME_ID.getValue();
 
   /** Maximum valid clock ID value. */
   protected static final int MAX_CLOCK_ID = WasiClockId.MAX_CLOCK_ID;
@@ -71,7 +69,8 @@ public abstract class AbstractWasiTimeOperations {
   /**
    * Gets the current time for the specified clock with maximum precision.
    *
-   * <p>Convenience method equivalent to calling {@link #getCurrentTime(int, long)} with precision 0.
+   * <p>Convenience method equivalent to calling {@link #getCurrentTime(int, long)} with precision
+   * 0.
    *
    * @param clockId the clock identifier (one of the WASI_CLOCK_* constants)
    * @return the current time in nanoseconds since the clock's epoch

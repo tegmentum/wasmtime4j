@@ -193,8 +193,7 @@ public abstract class AbstractCallbackRegistry implements CallbackRegistry {
       closeFunctionReference(entry.getFunctionReference());
 
       if (LOGGER.isLoggable(Level.FINE)) {
-        LOGGER.fine(
-            "Unregistered callback '" + handle.getName() + "' with ID: " + handle.getId());
+        LOGGER.fine("Unregistered callback '" + handle.getName() + "' with ID: " + handle.getId());
       }
 
     } catch (Exception e) {
@@ -259,8 +258,7 @@ public abstract class AbstractCallbackRegistry implements CallbackRegistry {
           try {
             final CompletableFuture<WasmValue[]> future =
                 entry.getAsyncCallback().executeAsync(params);
-            final WasmValue[] result =
-                future.get(handle.getTimeoutMillis(), TimeUnit.MILLISECONDS);
+            final WasmValue[] result = future.get(handle.getTimeoutMillis(), TimeUnit.MILLISECONDS);
             final long executionTime = System.nanoTime() - startTime;
             metrics.recordInvocation(executionTime);
             return result;
@@ -292,11 +290,11 @@ public abstract class AbstractCallbackRegistry implements CallbackRegistry {
   @Override
   public boolean hasCallback(final String name) {
     Objects.requireNonNull(name, "Callback name cannot be null");
-    return callbacks.values().stream()
-        .anyMatch(entry -> name.equals(entry.getHandle().getName()));
+    return callbacks.values().stream().anyMatch(entry -> name.equals(entry.getHandle().getName()));
   }
 
-  private void validateCallbackName(final String name, final String operation) throws WasmException {
+  private void validateCallbackName(final String name, final String operation)
+      throws WasmException {
     if (name == null) {
       throw new WasmException("Failed to " + operation + ": Callback name cannot be null");
     }

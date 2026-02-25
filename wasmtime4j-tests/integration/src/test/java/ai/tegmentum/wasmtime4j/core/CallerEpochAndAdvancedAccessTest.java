@@ -24,7 +24,6 @@ import ai.tegmentum.wasmtime4j.Extern;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
-import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
@@ -34,6 +33,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.Caller;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.List;
 import java.util.Optional;
@@ -137,12 +137,7 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
               if (name != null) {
                 exportResult.set(caller.getExport(name));
                 LOGGER.info(
-                    "["
-                        + runtime
-                        + "] Caller.getExport("
-                        + name
-                        + "): "
-                        + exportResult.get());
+                    "[" + runtime + "] Caller.getExport(" + name + "): " + exportResult.get());
               } else {
                 LOGGER.warning(
                     "[" + runtime + "] No export name was set before host function call");
@@ -188,14 +183,9 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
     }
 
     assertNotNull(exportResult.get(), "getExport() result should not be null");
-    assertTrue(
-        exportResult.get().isPresent(),
-        "getExport() should find the 'memory' export");
+    assertTrue(exportResult.get().isPresent(), "getExport() should find the 'memory' export");
     LOGGER.info(
-        "["
-            + runtime
-            + "] Verified: getExport() found memory export: "
-            + exportResult.get().get());
+        "[" + runtime + "] Verified: getExport() found memory export: " + exportResult.get().get());
   }
 
   @ParameterizedTest
@@ -252,13 +242,11 @@ public class CallerEpochAndAdvancedAccessTest extends DualRuntimeTest {
 
     assertTrue(
         threwException.get(),
-        "getExport(null) should throw IllegalArgumentException or "
-            + "NullPointerException");
+        "getExport(null) should throw IllegalArgumentException or " + "NullPointerException");
     LOGGER.info(
         "["
             + runtime
             + "] Verified: null argument correctly rejected with "
             + caughtException.get().getClass().getSimpleName());
   }
-
 }

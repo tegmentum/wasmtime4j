@@ -192,11 +192,9 @@ public final class JniComponentImpl implements Component {
     ensureValid();
 
     try {
-      final long parentPtr =
-          instanceIndex != null ? instanceIndex.getNativeHandle() : 0;
+      final long parentPtr = instanceIndex != null ? instanceIndex.getNativeHandle() : 0;
       final long indexPtr =
-          JniComponent.nativeGetExportIndex(
-              nativeComponent.getNativeHandle(), parentPtr, name);
+          JniComponent.nativeGetExportIndex(nativeComponent.getNativeHandle(), parentPtr, name);
       if (indexPtr == 0) {
         return Optional.empty();
       }

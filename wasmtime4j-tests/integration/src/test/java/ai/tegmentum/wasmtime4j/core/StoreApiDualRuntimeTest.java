@@ -44,8 +44,8 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * Dual-runtime API tests for {@link Store}.
  *
  * <p>Verifies user data, lifecycle management, fuel validation, host function creation, global
- * creation, table creation, memory creation, instance creation, epoch handling, and fuel async yield
- * interval across both JNI and Panama runtimes via the unified API.
+ * creation, table creation, memory creation, instance creation, epoch handling, and fuel async
+ * yield interval across both JNI and Panama runtimes via the unified API.
  *
  * @since 1.0.0
  */
@@ -53,8 +53,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @SuppressWarnings("deprecation")
 public class StoreApiDualRuntimeTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(StoreApiDualRuntimeTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(StoreApiDualRuntimeTest.class.getName());
 
   /** Resources to close after each test, in reverse order. */
   private final List<AutoCloseable> resources = new ArrayList<>();
@@ -297,9 +296,7 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
             Exception.class,
             () ->
                 store.createHostFunction(
-                    "test",
-                    FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {}),
-                    null));
+                    "test", FunctionType.of(new WasmValueType[] {}, new WasmValueType[] {}), null));
         LOGGER.info("[" + runtime + "] Correctly rejected null implementation");
       }
     }
@@ -344,9 +341,7 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
       try (Engine engine = Engine.create();
           Store store = Store.create(engine)) {
 
-        assertThrows(
-            Exception.class,
-            () -> store.createGlobal(null, true, WasmValue.i32(0)));
+        assertThrows(Exception.class, () -> store.createGlobal(null, true, WasmValue.i32(0)));
         LOGGER.info("[" + runtime + "] Correctly rejected null value type");
       }
     }
@@ -361,9 +356,7 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
       try (Engine engine = Engine.create();
           Store store = Store.create(engine)) {
 
-        assertThrows(
-            Exception.class,
-            () -> store.createGlobal(WasmValueType.I32, true, null));
+        assertThrows(Exception.class, () -> store.createGlobal(WasmValueType.I32, true, null));
         LOGGER.info("[" + runtime + "] Correctly rejected null initial value");
       }
     }
@@ -379,8 +372,7 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
           Store store = Store.create(engine)) {
 
         assertThrows(
-            Exception.class,
-            () -> store.createGlobal(WasmValueType.I64, true, WasmValue.i32(42)));
+            Exception.class, () -> store.createGlobal(WasmValueType.I64, true, WasmValue.i32(42)));
         LOGGER.info("[" + runtime + "] Correctly rejected mismatched value type");
       }
     }
@@ -417,9 +409,7 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
       try (Engine engine = Engine.create();
           Store store = Store.create(engine)) {
 
-        assertThrows(
-            Exception.class,
-            () -> store.createTable(WasmValueType.FUNCREF, -1, 10));
+        assertThrows(Exception.class, () -> store.createTable(WasmValueType.FUNCREF, -1, 10));
         LOGGER.info("[" + runtime + "] Correctly rejected negative initial size");
       }
     }
@@ -434,9 +424,7 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
       try (Engine engine = Engine.create();
           Store store = Store.create(engine)) {
 
-        assertThrows(
-            Exception.class,
-            () -> store.createTable(WasmValueType.FUNCREF, 1, -2));
+        assertThrows(Exception.class, () -> store.createTable(WasmValueType.FUNCREF, 1, -2));
         LOGGER.info("[" + runtime + "] Correctly rejected invalid max size");
       }
     }
@@ -559,9 +547,7 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
       try (Engine engine = Engine.create();
           Store store = Store.create(engine)) {
 
-        assertThrows(
-            Exception.class,
-            () -> store.epochDeadlineAsyncYieldAndUpdate(-1));
+        assertThrows(Exception.class, () -> store.epochDeadlineAsyncYieldAndUpdate(-1));
         LOGGER.info("[" + runtime + "] Correctly rejected negative delta ticks");
       }
     }
@@ -618,8 +604,7 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
       try (Engine engine = Engine.create();
           Store store = Store.create(engine)) {
 
-        assertThrows(
-            Exception.class, () -> store.setFuelAsyncYieldInterval(-1));
+        assertThrows(Exception.class, () -> store.setFuelAsyncYieldInterval(-1));
         LOGGER.info("[" + runtime + "] Correctly rejected negative interval");
       }
     }

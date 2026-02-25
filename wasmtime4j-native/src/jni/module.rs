@@ -719,6 +719,65 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyM
     }
 }
 
+/// Get compiled machine code text from module
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleText(
+    mut env: JNIEnv,
+    _class: JClass,
+    module_ptr: jlong,
+) -> jbyteArray {
+    if module_ptr == 0 {
+        return std::ptr::null_mut();
+    }
+
+    match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+        Ok(module) => {
+            let text = core::get_module_text(module);
+            match env.byte_array_from_slice(&text) {
+                Ok(jarray) => jarray.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Get module address map as a long array of pairs [codeOffset, wasmOffset, ...]
+/// wasmOffset is -1 when there is no corresponding wasm offset.
+/// Returns null if address map is not available.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleAddressMap(
+    mut env: JNIEnv,
+    _class: JClass,
+    module_ptr: jlong,
+) -> jlongArray {
+    if module_ptr == 0 {
+        return std::ptr::null_mut();
+    }
+
+    match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
+        Ok(module) => match core::get_module_address_map(module) {
+            Some(entries) => {
+                // Pack as interleaved pairs: [code0, wasm0, code1, wasm1, ...]
+                let mut flat = Vec::with_capacity(entries.len() * 2);
+                for (code_offset, wasm_offset) in entries {
+                    flat.push(code_offset as i64);
+                    flat.push(wasm_offset.map(|o| o as i64).unwrap_or(-1));
+                }
+                match env.new_long_array(flat.len() as i32) {
+                    Ok(arr) => {
+                        let _ = env.set_long_array_region(&arr, 0, &flat);
+                        arr.into_raw()
+                    }
+                    Err(_) => std::ptr::null_mut(),
+                }
+            }
+            None => std::ptr::null_mut(),
+        },
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
 /// Destroy a module
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModule(

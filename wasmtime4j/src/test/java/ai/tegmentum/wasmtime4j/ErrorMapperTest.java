@@ -36,9 +36,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link ErrorMapper}.
  *
- * <p>Validates that native error codes are correctly mapped to the appropriate Java exception types.
- * Focuses on the WASI_EXIT code path and the parseI32Exit logic that extracts exit codes from
- * native error messages.
+ * <p>Validates that native error codes are correctly mapped to the appropriate Java exception
+ * types. Focuses on the WASI_EXIT code path and the parseI32Exit logic that extracts exit codes
+ * from native error messages.
  */
 @DisplayName("ErrorMapper")
 class ErrorMapperTest {

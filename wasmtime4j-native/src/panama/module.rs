@@ -492,6 +492,88 @@ pub extern "C" fn wasmtime4j_panama_module_initialize_cow_image(
     }
 }
 
+/// Get compiled machine code text from module (Panama FFI version)
+///
+/// Returns 0 on success, data_ptr and len_ptr are set.
+/// Caller must free data_ptr with wasmtime4j_free_byte_array.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_text(
+    module_ptr: *mut c_void,
+    data_ptr: *mut *mut u8,
+    len_ptr: *mut usize,
+) -> c_int {
+    if module_ptr.is_null() || data_ptr.is_null() || len_ptr.is_null() {
+        return -1;
+    }
+
+    match unsafe { crate::module::core::get_module_ref(module_ptr) } {
+        Ok(module) => {
+            let text = crate::module::core::get_module_text(module);
+            let len = text.len();
+            let data = Box::into_raw(text.into_boxed_slice()) as *mut u8;
+            unsafe {
+                *data_ptr = data;
+                *len_ptr = len;
+            }
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Get address map from module (Panama FFI version)
+///
+/// Returns 0 on success, 1 if address map not available, -1 on error.
+/// code_offsets and wasm_offsets arrays must be freed with wasmtime4j_free_address_map.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_address_map(
+    module_ptr: *mut c_void,
+    code_offsets_out: *mut *mut u64,
+    wasm_offsets_out: *mut *mut i64,
+    count_out: *mut usize,
+) -> c_int {
+    if module_ptr.is_null()
+        || code_offsets_out.is_null()
+        || wasm_offsets_out.is_null()
+        || count_out.is_null()
+    {
+        return -1;
+    }
+
+    match unsafe { crate::module::core::get_module_ref(module_ptr) } {
+        Ok(module) => match crate::module::core::get_module_address_map(module) {
+            Some(entries) => {
+                let count = entries.len();
+                let mut code_offsets = Vec::with_capacity(count);
+                let mut wasm_offsets = Vec::with_capacity(count);
+
+                for (code_offset, wasm_offset) in entries {
+                    code_offsets.push(code_offset as u64);
+                    wasm_offsets.push(wasm_offset.map(|o| o as i64).unwrap_or(-1));
+                }
+
+                unsafe {
+                    *code_offsets_out =
+                        Box::into_raw(code_offsets.into_boxed_slice()) as *mut u64;
+                    *wasm_offsets_out =
+                        Box::into_raw(wasm_offsets.into_boxed_slice()) as *mut i64;
+                    *count_out = count;
+                }
+                0
+            }
+            None => {
+                unsafe {
+                    *code_offsets_out = std::ptr::null_mut();
+                    *wasm_offsets_out = std::ptr::null_mut();
+                    *count_out = 0;
+                }
+                1
+            }
+        },
+        Err(_) => -1,
+    }
+}
+
 /// Destroy a WebAssembly module (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_module_destroy(module_ptr: *mut c_void) {

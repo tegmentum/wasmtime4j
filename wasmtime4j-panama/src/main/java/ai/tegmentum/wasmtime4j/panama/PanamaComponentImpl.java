@@ -157,23 +157,21 @@ final class PanamaComponentImpl implements Component {
     ensureNotClosed();
 
     try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment instanceIdOut = tempArena.allocate(
-          java.lang.foreign.ValueLayout.JAVA_LONG);
+      final MemorySegment instanceIdOut =
+          tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_LONG);
 
       final int errorCode =
           NATIVE_BINDINGS.enhancedComponentInstantiate(
               engine.getNativeHandle(), componentHandle, instanceIdOut);
 
       if (errorCode != 0) {
-        throw new WasmException(
-            "Failed to instantiate component: native error code " + errorCode);
+        throw new WasmException("Failed to instantiate component: native error code " + errorCode);
       }
 
       final long instanceId = instanceIdOut.get(java.lang.foreign.ValueLayout.JAVA_LONG, 0);
 
       if (instanceId == 0) {
-        throw new WasmException(
-            "Failed to instantiate component: invalid instance ID returned");
+        throw new WasmException("Failed to instantiate component: invalid instance ID returned");
       }
 
       return new PanamaComponentInstance(engine.getNativeHandle(), instanceId, this, null);
@@ -245,7 +243,8 @@ final class PanamaComponentImpl implements Component {
               : MemorySegment.NULL;
 
       final int result =
-          NATIVE_BINDINGS.componentGetExportIndex(componentHandle, parentPtr, nameSegment, indexOut);
+          NATIVE_BINDINGS.componentGetExportIndex(
+              componentHandle, parentPtr, nameSegment, indexOut);
 
       if (result != 0) {
         // 1 = not found, -1 = error
@@ -303,8 +302,9 @@ final class PanamaComponentImpl implements Component {
       final MemorySegment numTablesOut = arena.allocate(ValueLayout.JAVA_INT);
       final MemorySegment maxTableOut = arena.allocate(ValueLayout.JAVA_LONG);
 
-      final int errorCode = NATIVE_BINDINGS.panamaComponentResourcesRequired(
-          componentHandle, numMemoriesOut, maxMemoryOut, numTablesOut, maxTableOut);
+      final int errorCode =
+          NATIVE_BINDINGS.panamaComponentResourcesRequired(
+              componentHandle, numMemoriesOut, maxMemoryOut, numTablesOut, maxTableOut);
 
       if (errorCode != 0) {
         throw new WasmException(

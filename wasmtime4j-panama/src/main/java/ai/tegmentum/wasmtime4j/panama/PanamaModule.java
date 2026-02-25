@@ -8,23 +8,13 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.type.ExportType;
-import ai.tegmentum.wasmtime4j.type.FuncType;
-import ai.tegmentum.wasmtime4j.type.GlobalType;
 import ai.tegmentum.wasmtime4j.type.ImportType;
-import ai.tegmentum.wasmtime4j.type.MemoryType;
-import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Logger;
 
 /**
@@ -281,8 +271,7 @@ public final class PanamaModule implements Module {
     ensureNotClosed();
     final List<ImportType> imports = getImports();
     for (final ImportType importType : imports) {
-      if (importType.getModuleName().equals(moduleName)
-          && importType.getName().equals(fieldName)) {
+      if (importType.getModuleName().equals(moduleName) && importType.getName().equals(fieldName)) {
         return true;
       }
     }
@@ -419,9 +408,17 @@ public final class PanamaModule implements Module {
       final MemorySegment numGlobOut = localArena.allocate(ValueLayout.JAVA_INT);
       final MemorySegment numFuncOut = localArena.allocate(ValueLayout.JAVA_INT);
 
-      final int result = NATIVE_BINDINGS.moduleResourcesRequired(
-          nativeModule, minMemOut, maxMemOut, minTabOut, maxTabOut,
-          numMemOut, numTabOut, numGlobOut, numFuncOut);
+      final int result =
+          NATIVE_BINDINGS.moduleResourcesRequired(
+              nativeModule,
+              minMemOut,
+              maxMemOut,
+              minTabOut,
+              maxTabOut,
+              numMemOut,
+              numTabOut,
+              numGlobOut,
+              numFuncOut);
 
       if (result != 0) {
         // Fall back to default implementation on error
@@ -438,6 +435,94 @@ public final class PanamaModule implements Module {
           numTabOut.get(ValueLayout.JAVA_INT, 0),
           numGlobOut.get(ValueLayout.JAVA_INT, 0),
           numFuncOut.get(ValueLayout.JAVA_INT, 0));
+    }
+  }
+
+  @Override
+  public byte[] text() throws WasmException {
+    ensureNotClosed();
+
+    try (final Arena localArena = Arena.ofConfined()) {
+      final MemorySegment dataPtrPtr = localArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment lenPtr = localArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result = NATIVE_BINDINGS.moduleText(nativeModule, dataPtrPtr, lenPtr);
+      if (result != 0) {
+        throw new WasmException("Failed to get module text");
+      }
+
+      final long length = lenPtr.get(ValueLayout.JAVA_LONG, 0);
+      final MemorySegment rawDataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
+
+      if (rawDataPtr == null || rawDataPtr.equals(MemorySegment.NULL) || length == 0) {
+        return new byte[0];
+      }
+
+      try {
+        final MemorySegment dataPtr = rawDataPtr.reinterpret(length);
+        final byte[] textBytes = new byte[(int) length];
+        MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, textBytes, 0, (int) length);
+        return textBytes;
+      } finally {
+        NATIVE_BINDINGS.freeByteArray(rawDataPtr, length);
+      }
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable t) {
+      throw new WasmException("Failed to get module text: " + t.getMessage());
+    }
+  }
+
+  @Override
+  public java.util.List<AddressMapping> addressMap() throws WasmException {
+    ensureNotClosed();
+
+    try (final Arena localArena = Arena.ofConfined()) {
+      final MemorySegment codeOffsetsOut = localArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment wasmOffsetsOut = localArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment countOut = localArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          NATIVE_BINDINGS.moduleAddressMap(nativeModule, codeOffsetsOut, wasmOffsetsOut, countOut);
+
+      if (result == 1) {
+        // Address map not available
+        return Collections.emptyList();
+      }
+      if (result != 0) {
+        throw new WasmException("Failed to get module address map");
+      }
+
+      final long count = countOut.get(ValueLayout.JAVA_LONG, 0);
+      if (count == 0) {
+        return Collections.emptyList();
+      }
+
+      final MemorySegment codeOffsetsPtr = codeOffsetsOut.get(ValueLayout.ADDRESS, 0);
+      final MemorySegment wasmOffsetsPtr = wasmOffsetsOut.get(ValueLayout.ADDRESS, 0);
+
+      try {
+        final MemorySegment codeOffsets = codeOffsetsPtr.reinterpret(count * Long.BYTES);
+        final MemorySegment wasmOffsets = wasmOffsetsPtr.reinterpret(count * Long.BYTES);
+
+        final java.util.List<AddressMapping> mappings = new java.util.ArrayList<>((int) count);
+        for (int i = 0; i < count; i++) {
+          final long codeOffset = codeOffsets.getAtIndex(ValueLayout.JAVA_LONG, i);
+          final long wasmOffsetRaw = wasmOffsets.getAtIndex(ValueLayout.JAVA_LONG, i);
+          final java.util.OptionalInt wasmOffset =
+              wasmOffsetRaw < 0
+                  ? java.util.OptionalInt.empty()
+                  : java.util.OptionalInt.of((int) wasmOffsetRaw);
+          mappings.add(new AddressMapping(codeOffset, wasmOffset));
+        }
+        return Collections.unmodifiableList(mappings);
+      } finally {
+        NATIVE_BINDINGS.freeAddressMap(codeOffsetsPtr, wasmOffsetsPtr, count);
+      }
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable t) {
+      throw new WasmException("Failed to get module address map: " + t.getMessage());
     }
   }
 

@@ -37,10 +37,7 @@ public class AsyncCallbackHandleImpl extends CallbackHandleImpl
    * @param timeoutMillis the initial timeout in milliseconds
    */
   public AsyncCallbackHandleImpl(
-      final long id,
-      final String name,
-      final FunctionType functionType,
-      final long timeoutMillis) {
+      final long id, final String name, final FunctionType functionType, final long timeoutMillis) {
     super(id, name, functionType);
     this.timeoutMillis = timeoutMillis;
   }

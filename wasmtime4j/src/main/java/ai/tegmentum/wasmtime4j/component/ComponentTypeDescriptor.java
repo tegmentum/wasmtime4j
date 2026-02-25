@@ -126,6 +126,38 @@ public interface ComponentTypeDescriptor {
    */
   String getResourceTypeName();
 
+  /**
+   * Gets the resource type ID for resource handle types (own/borrow).
+   *
+   * @return the opaque resource type identifier
+   * @throws IllegalStateException if this is not a resource handle type
+   */
+  long getResourceTypeId();
+
+  /**
+   * Returns true if this is an owned resource handle (own type).
+   *
+   * @return true for OWN, false for BORROW
+   * @throws IllegalStateException if this is not a resource handle type
+   */
+  boolean isResourceOwned();
+
+  /**
+   * Gets the payload type for future types.
+   *
+   * @return the optional payload type (empty if future has no payload)
+   * @throws IllegalStateException if this is not a future type
+   */
+  Optional<ComponentTypeDescriptor> getFuturePayloadType();
+
+  /**
+   * Gets the element type for stream types.
+   *
+   * @return the optional element type (empty if stream has no element type)
+   * @throws IllegalStateException if this is not a stream type
+   */
+  Optional<ComponentTypeDescriptor> getStreamElementType();
+
   // ========== Factory methods for primitive types ==========
 
   /** Creates a bool type descriptor. */
@@ -236,6 +268,57 @@ public interface ComponentTypeDescriptor {
     return new ResultImpl(okType, errType);
   }
 
+  /**
+   * Creates a future type descriptor.
+   *
+   * @param payloadType the optional payload type (null for void future)
+   * @return a new future type descriptor
+   */
+  static ComponentTypeDescriptor future(final ComponentTypeDescriptor payloadType) {
+    return new FutureImpl(payloadType);
+  }
+
+  /**
+   * Creates a stream type descriptor.
+   *
+   * @param elementType the optional element type (null for void stream)
+   * @return a new stream type descriptor
+   */
+  static ComponentTypeDescriptor stream(final ComponentTypeDescriptor elementType) {
+    return new StreamImpl(elementType);
+  }
+
+  /**
+   * Creates an own resource handle type descriptor.
+   *
+   * @param resourceTypeName the resource type name
+   * @param resourceTypeId the opaque resource type identifier
+   * @return a new own resource handle type descriptor
+   */
+  static ComponentTypeDescriptor own(final String resourceTypeName, final long resourceTypeId) {
+    return new ResourceHandleImpl(ComponentType.OWN, resourceTypeName, resourceTypeId, true);
+  }
+
+  /**
+   * Creates a borrow resource handle type descriptor.
+   *
+   * @param resourceTypeName the resource type name
+   * @param resourceTypeId the opaque resource type identifier
+   * @return a new borrow resource handle type descriptor
+   */
+  static ComponentTypeDescriptor borrow(final String resourceTypeName, final long resourceTypeId) {
+    return new ResourceHandleImpl(ComponentType.BORROW, resourceTypeName, resourceTypeId, false);
+  }
+
+  /**
+   * Creates an error-context type descriptor.
+   *
+   * @return a new error-context type descriptor
+   */
+  static ComponentTypeDescriptor errorContext() {
+    return new PrimitiveImpl(ComponentType.ERROR_CONTEXT, null);
+  }
+
   /** Primitive type descriptor implementation. */
   final class PrimitiveImpl implements ComponentTypeDescriptor {
     private final ComponentType type;
@@ -304,6 +387,26 @@ public interface ComponentTypeDescriptor {
     @Override
     public String getResourceTypeName() {
       throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public long getResourceTypeId() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      throw new IllegalStateException("Not a future type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      throw new IllegalStateException("Not a stream type");
     }
 
     @Override
@@ -383,6 +486,26 @@ public interface ComponentTypeDescriptor {
     }
 
     @Override
+    public long getResourceTypeId() {
+      return inner.getResourceTypeId();
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      return inner.isResourceOwned();
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      return inner.getFuturePayloadType();
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      return inner.getStreamElementType();
+    }
+
+    @Override
     public String toString() {
       return name + ": " + inner;
     }
@@ -457,6 +580,26 @@ public interface ComponentTypeDescriptor {
     }
 
     @Override
+    public long getResourceTypeId() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      throw new IllegalStateException("Not a future type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      throw new IllegalStateException("Not a stream type");
+    }
+
+    @Override
     public String toString() {
       return "list<" + elementType + ">";
     }
@@ -528,6 +671,26 @@ public interface ComponentTypeDescriptor {
     @Override
     public String getResourceTypeName() {
       throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public long getResourceTypeId() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      throw new IllegalStateException("Not a future type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      throw new IllegalStateException("Not a stream type");
     }
 
     @Override
@@ -607,10 +770,322 @@ public interface ComponentTypeDescriptor {
     }
 
     @Override
+    public long getResourceTypeId() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      throw new IllegalStateException("Not a future type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      throw new IllegalStateException("Not a stream type");
+    }
+
+    @Override
     public String toString() {
       final String ok = okType != null ? okType.toString() : "_";
       final String err = errType != null ? errType.toString() : "_";
       return "result<" + ok + ", " + err + ">";
+    }
+  }
+
+  /** Future type descriptor. */
+  final class FutureImpl implements ComponentTypeDescriptor {
+    private final ComponentTypeDescriptor payloadType;
+
+    FutureImpl(final ComponentTypeDescriptor payloadType) {
+      this.payloadType = payloadType;
+    }
+
+    @Override
+    public ComponentType getType() {
+      return ComponentType.FUTURE;
+    }
+
+    @Override
+    public Optional<String> getName() {
+      return Optional.empty();
+    }
+
+    @Override
+    public ComponentTypeDescriptor getElementType() {
+      throw new IllegalStateException("Not a list type");
+    }
+
+    @Override
+    public Map<String, ComponentTypeDescriptor> getRecordFields() {
+      throw new IllegalStateException("Not a record type");
+    }
+
+    @Override
+    public List<ComponentTypeDescriptor> getTupleElements() {
+      throw new IllegalStateException("Not a tuple type");
+    }
+
+    @Override
+    public Map<String, Optional<ComponentTypeDescriptor>> getVariantCases() {
+      throw new IllegalStateException("Not a variant type");
+    }
+
+    @Override
+    public List<String> getEnumCases() {
+      throw new IllegalStateException("Not an enum type");
+    }
+
+    @Override
+    public ComponentTypeDescriptor getOptionType() {
+      throw new IllegalStateException("Not an option type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultOkType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultErrType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public List<String> getFlagNames() {
+      throw new IllegalStateException("Not a flags type");
+    }
+
+    @Override
+    public String getResourceTypeName() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public long getResourceTypeId() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      return Optional.ofNullable(payloadType);
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      throw new IllegalStateException("Not a stream type");
+    }
+
+    @Override
+    public String toString() {
+      return payloadType != null ? "future<" + payloadType + ">" : "future";
+    }
+  }
+
+  /** Stream type descriptor. */
+  final class StreamImpl implements ComponentTypeDescriptor {
+    private final ComponentTypeDescriptor elementType;
+
+    StreamImpl(final ComponentTypeDescriptor elementType) {
+      this.elementType = elementType;
+    }
+
+    @Override
+    public ComponentType getType() {
+      return ComponentType.STREAM;
+    }
+
+    @Override
+    public Optional<String> getName() {
+      return Optional.empty();
+    }
+
+    @Override
+    public ComponentTypeDescriptor getElementType() {
+      throw new IllegalStateException("Not a list type");
+    }
+
+    @Override
+    public Map<String, ComponentTypeDescriptor> getRecordFields() {
+      throw new IllegalStateException("Not a record type");
+    }
+
+    @Override
+    public List<ComponentTypeDescriptor> getTupleElements() {
+      throw new IllegalStateException("Not a tuple type");
+    }
+
+    @Override
+    public Map<String, Optional<ComponentTypeDescriptor>> getVariantCases() {
+      throw new IllegalStateException("Not a variant type");
+    }
+
+    @Override
+    public List<String> getEnumCases() {
+      throw new IllegalStateException("Not an enum type");
+    }
+
+    @Override
+    public ComponentTypeDescriptor getOptionType() {
+      throw new IllegalStateException("Not an option type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultOkType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultErrType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public List<String> getFlagNames() {
+      throw new IllegalStateException("Not a flags type");
+    }
+
+    @Override
+    public String getResourceTypeName() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public long getResourceTypeId() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      throw new IllegalStateException("Not a future type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      return Optional.ofNullable(elementType);
+    }
+
+    @Override
+    public String toString() {
+      return elementType != null ? "stream<" + elementType + ">" : "stream";
+    }
+  }
+
+  /** Resource handle type descriptor (for own and borrow types). */
+  final class ResourceHandleImpl implements ComponentTypeDescriptor {
+    private final ComponentType type;
+    private final String resourceTypeName;
+    private final long resourceTypeId;
+    private final boolean owned;
+
+    ResourceHandleImpl(
+        final ComponentType type,
+        final String resourceTypeName,
+        final long resourceTypeId,
+        final boolean owned) {
+      this.type = type;
+      this.resourceTypeName = resourceTypeName;
+      this.resourceTypeId = resourceTypeId;
+      this.owned = owned;
+    }
+
+    @Override
+    public ComponentType getType() {
+      return type;
+    }
+
+    @Override
+    public Optional<String> getName() {
+      return Optional.empty();
+    }
+
+    @Override
+    public ComponentTypeDescriptor getElementType() {
+      throw new IllegalStateException("Not a list type");
+    }
+
+    @Override
+    public Map<String, ComponentTypeDescriptor> getRecordFields() {
+      throw new IllegalStateException("Not a record type");
+    }
+
+    @Override
+    public List<ComponentTypeDescriptor> getTupleElements() {
+      throw new IllegalStateException("Not a tuple type");
+    }
+
+    @Override
+    public Map<String, Optional<ComponentTypeDescriptor>> getVariantCases() {
+      throw new IllegalStateException("Not a variant type");
+    }
+
+    @Override
+    public List<String> getEnumCases() {
+      throw new IllegalStateException("Not an enum type");
+    }
+
+    @Override
+    public ComponentTypeDescriptor getOptionType() {
+      throw new IllegalStateException("Not an option type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultOkType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultErrType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public List<String> getFlagNames() {
+      throw new IllegalStateException("Not a flags type");
+    }
+
+    @Override
+    public String getResourceTypeName() {
+      return resourceTypeName;
+    }
+
+    @Override
+    public long getResourceTypeId() {
+      return resourceTypeId;
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      return owned;
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      throw new IllegalStateException("Not a future type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      throw new IllegalStateException("Not a stream type");
+    }
+
+    @Override
+    public String toString() {
+      return (owned ? "own<" : "borrow<") + resourceTypeName + ">";
     }
   }
 }

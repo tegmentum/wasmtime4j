@@ -14,8 +14,7 @@ import java.util.logging.Logger;
  */
 final class PanamaComponentExportIndex implements ComponentExportIndex {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(PanamaComponentExportIndex.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(PanamaComponentExportIndex.class.getName());
 
   private static final NativeComponentBindings NATIVE_BINDINGS =
       NativeComponentBindings.getInstance();

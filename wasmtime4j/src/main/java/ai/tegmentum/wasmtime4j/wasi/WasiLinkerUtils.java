@@ -99,9 +99,9 @@ public final class WasiLinkerUtils {
   /**
    * Adds all WASI imports to the specified linker using async-compatible host functions.
    *
-   * <p>When used with async-enabled stores, the WASI host functions will cooperatively yield
-   * during I/O operations, allowing other async tasks to make progress. This corresponds to
-   * Wasmtime's {@code wasmtime_wasi::p2::add_to_linker_async()}.
+   * <p>When used with async-enabled stores, the WASI host functions will cooperatively yield during
+   * I/O operations, allowing other async tasks to make progress. This corresponds to Wasmtime's
+   * {@code wasmtime_wasi::p2::add_to_linker_async()}.
    *
    * <p>The default implementation delegates to {@link #addToLinker(Linker, WasiContext)}. Runtime
    * implementations may override the underlying runtime method to use native async WASI functions.

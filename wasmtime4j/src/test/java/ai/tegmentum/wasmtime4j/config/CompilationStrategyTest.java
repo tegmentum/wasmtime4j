@@ -117,5 +117,4 @@ class CompilationStrategyTest {
       assertEquals("DEFAULT", defaultValue.name(), "Name should be DEFAULT");
     }
   }
-
 }

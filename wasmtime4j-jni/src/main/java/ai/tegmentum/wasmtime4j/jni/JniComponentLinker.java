@@ -186,8 +186,8 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   }
 
   @Override
-  public void defineFunctionAsync(
-      final String witPath, final ComponentHostFunction implementation) throws WasmException {
+  public void defineFunctionAsync(final String witPath, final ComponentHostFunction implementation)
+      throws WasmException {
     if (witPath == null) {
       throw new IllegalArgumentException("WIT path cannot be null");
     }
@@ -744,8 +744,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     ensureNotClosed();
 
     if (!(component instanceof JniComponentImpl)) {
-      throw new WasmException(
-          "Component must be a JniComponentImpl for JNI ComponentLinker");
+      throw new WasmException("Component must be a JniComponentImpl for JNI ComponentLinker");
     }
 
     final JniComponentImpl jniComponent = (JniComponentImpl) component;

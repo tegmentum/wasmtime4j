@@ -84,9 +84,7 @@ class JniCallbackRegistryTest {
     @Test
     @DisplayName("New registry should have zero callback count")
     void newRegistryShouldHaveZeroCallbackCount() {
-      assertThat(registry.getCallbackCount())
-          .as("New registry should have no callbacks")
-          .isZero();
+      assertThat(registry.getCallbackCount()).as("New registry should have no callbacks").isZero();
     }
 
     @Test
@@ -118,8 +116,7 @@ class JniCallbackRegistryTest {
     void registerWithNullNameShouldThrow() {
       final FunctionType funcType =
           new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
       assertThatThrownBy(() -> registry.registerCallback(null, params -> params, funcType))
           .isInstanceOf(WasmException.class)
@@ -131,8 +128,7 @@ class JniCallbackRegistryTest {
     void registerWithNullCallbackShouldThrow() {
       final FunctionType funcType =
           new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
       assertThatThrownBy(() -> registry.registerCallback("test", null, funcType))
           .isInstanceOf(WasmException.class)
@@ -157,8 +153,7 @@ class JniCallbackRegistryTest {
     void registerAsyncWithNullNameShouldThrow() {
       final FunctionType funcType =
           new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
       assertThatThrownBy(
               () ->
@@ -175,8 +170,7 @@ class JniCallbackRegistryTest {
     void registerAsyncWithNullCallbackShouldThrow() {
       final FunctionType funcType =
           new FunctionType(
-              new WasmValueType[] {WasmValueType.I32},
-              new WasmValueType[] {WasmValueType.I32});
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
       assertThatThrownBy(() -> registry.registerAsyncCallback("test", null, funcType))
           .isInstanceOf(WasmException.class)
@@ -315,7 +309,6 @@ class JniCallbackRegistryTest {
 
   private FunctionType createSimpleFunctionType() {
     return new FunctionType(
-        new WasmValueType[] {WasmValueType.I32},
-        new WasmValueType[] {WasmValueType.I32});
+        new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
   }
 }

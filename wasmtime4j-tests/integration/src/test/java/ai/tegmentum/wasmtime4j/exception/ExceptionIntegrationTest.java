@@ -350,8 +350,7 @@ public class ExceptionIntegrationTest {
 
       assertTrue(
           WasmException.class.isAssignableFrom(trapClass),
-          "TrapException should extend WasmException, but superclass is "
-              + superClass.getName());
+          "TrapException should extend WasmException, but superclass is " + superClass.getName());
 
       LOGGER.info("TrapException inheritance verified");
     }

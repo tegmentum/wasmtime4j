@@ -23,8 +23,8 @@ import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfigBuilder;
 /**
  * Panama implementation of {@link WasiHttpConfigBuilder}.
  *
- * <p>This builder provides a fluent API for constructing {@link PanamaWasiHttpConfig} instances with
- * various security and performance settings.
+ * <p>This builder provides a fluent API for constructing {@link PanamaWasiHttpConfig} instances
+ * with various security and performance settings.
  *
  * @since 1.0.0
  */

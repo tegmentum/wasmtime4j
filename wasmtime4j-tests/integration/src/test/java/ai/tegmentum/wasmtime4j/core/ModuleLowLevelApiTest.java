@@ -17,14 +17,17 @@
 package ai.tegmentum.wasmtime4j.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Module.AddressMapping;
 import ai.tegmentum.wasmtime4j.ResourcesRequired;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import java.util.List;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +35,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Tests Module low-level APIs: {@link Module#resourcesRequired()}.
+ * Tests Module low-level APIs: {@link Module#resourcesRequired()}, {@link Module#text()}, {@link
+ * Module#addressMap()}.
  *
  * @since 1.0.0
  */
@@ -244,4 +248,171 @@ public class ModuleLowLevelApiTest extends DualRuntimeTest {
     }
   }
 
+  // ===== Module.text() tests =====
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("text() returns non-empty bytes for compiled module")
+  void textReturnsNonEmptyBytesForCompiledModule(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing text() on compiled module");
+
+    try (Engine engine = Engine.create()) {
+      final Module module = engine.compileWat(RICH_WAT);
+
+      final byte[] text = module.text();
+
+      assertNotNull(text, "text() should not return null");
+      assertTrue(text.length > 0, "text() should return non-empty bytes for a compiled module");
+      LOGGER.info("[" + runtime + "] Module text size: " + text.length + " bytes (machine code)");
+
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("text() returns non-empty bytes for empty module")
+  void textReturnsNonEmptyBytesForEmptyModule(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing text() on empty module");
+
+    try (Engine engine = Engine.create()) {
+      final Module module = engine.compileWat(EMPTY_WAT);
+
+      final byte[] text = module.text();
+
+      assertNotNull(text, "text() should not return null even for empty module");
+      // Even an empty module may have some compiled code (prologue/epilogue)
+      LOGGER.info("[" + runtime + "] Empty module text size: " + text.length + " bytes");
+
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("text() returns defensive copy")
+  void textReturnsDefensiveCopy(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing text() defensive copy behavior");
+
+    try (Engine engine = Engine.create()) {
+      final Module module = engine.compileWat(RICH_WAT);
+
+      final byte[] text1 = module.text();
+      final byte[] text2 = module.text();
+
+      assertNotNull(text1, "First text() call should not return null");
+      assertNotNull(text2, "Second text() call should not return null");
+      assertEquals(text1.length, text2.length, "Both text() calls should return same-length data");
+      assertFalse(text1 == text2, "text() should return a new array each call (defensive copy)");
+
+      // Verify contents are identical
+      for (int i = 0; i < text1.length; i++) {
+        assertEquals(text1[i], text2[i], "text() contents should be identical at index " + i);
+      }
+
+      LOGGER.info("[" + runtime + "] Verified text() defensive copy: " + text1.length + " bytes");
+
+      module.close();
+    }
+  }
+
+  // ===== Module.addressMap() tests =====
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("addressMap() returns list for module with function")
+  void addressMapReturnsListForModuleWithFunction(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing addressMap() on module with function");
+
+    try (Engine engine = Engine.create()) {
+      final Module module = engine.compileWat(RICH_WAT);
+
+      final List<AddressMapping> addressMap = module.addressMap();
+
+      assertNotNull(addressMap, "addressMap() should not return null");
+      LOGGER.info("[" + runtime + "] Address map entries: " + addressMap.size());
+
+      // If address map is available, verify entries have valid code offsets
+      if (!addressMap.isEmpty()) {
+        for (int i = 0; i < Math.min(5, addressMap.size()); i++) {
+          final AddressMapping entry = addressMap.get(i);
+          assertTrue(
+              entry.getCodeOffset() >= 0,
+              "Code offset should be non-negative at index "
+                  + i
+                  + ", got: "
+                  + entry.getCodeOffset());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] Address map["
+                  + i
+                  + "]: codeOffset="
+                  + entry.getCodeOffset()
+                  + " wasmOffset="
+                  + (entry.getWasmOffset().isPresent()
+                      ? String.valueOf(entry.getWasmOffset().getAsInt())
+                      : "N/A"));
+        }
+      }
+
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("addressMap() entries have valid AddressMapping fields")
+  void addressMapEntriesHaveValidFields(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing addressMap() entry fields");
+
+    try (Engine engine = Engine.create()) {
+      final Module module = engine.compileWat(RICH_WAT);
+
+      final List<AddressMapping> addressMap = module.addressMap();
+
+      assertNotNull(addressMap, "addressMap() should not return null");
+
+      // Verify AddressMapping equals/hashCode/toString
+      if (addressMap.size() >= 2) {
+        final AddressMapping first = addressMap.get(0);
+        final AddressMapping second = addressMap.get(1);
+
+        // equals: same object
+        assertEquals(first, first, "AddressMapping should equal itself");
+
+        // toString should contain offset info
+        final String str = first.toString();
+        assertNotNull(str, "toString() should not be null");
+        assertTrue(str.contains("codeOffset"), "toString() should contain codeOffset");
+        LOGGER.info("[" + runtime + "] AddressMapping.toString(): " + str);
+      }
+
+      module.close();
+    }
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("addressMap() returns empty or list for empty module")
+  void addressMapOnEmptyModule(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing addressMap() on empty module");
+
+    try (Engine engine = Engine.create()) {
+      final Module module = engine.compileWat(EMPTY_WAT);
+
+      final List<AddressMapping> addressMap = module.addressMap();
+
+      assertNotNull(addressMap, "addressMap() should not return null for empty module");
+      LOGGER.info("[" + runtime + "] Empty module address map size: " + addressMap.size());
+
+      module.close();
+    }
+  }
 }

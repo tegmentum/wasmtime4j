@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.type;
 
+import ai.tegmentum.wasmtime4j.ContRef;
 import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Store;
@@ -16,8 +17,8 @@ import java.util.Optional;
  * exception references, and continuation references.
  *
  * <p>A {@code Ref} can be either non-null (carrying an actual reference) or null (representing the
- * null value for that reference kind). Use {@link #isNull()} and {@link #isNonNull()} to check,
- * and the type-specific extractors ({@link #asFunc()}, {@link #asExtern()}, etc.) to retrieve the
+ * null value for that reference kind). Use {@link #isNull()} and {@link #isNonNull()} to check, and
+ * the type-specific extractors ({@link #asFunc()}, {@link #asExtern()}, etc.) to retrieve the
  * underlying value.
  *
  * <p>Example usage:
@@ -120,6 +121,20 @@ public final class Ref {
       throw new IllegalArgumentException("ref cannot be null");
     }
     return new Ref(Kind.EXN, ref);
+  }
+
+  /**
+   * Creates a non-null continuation reference.
+   *
+   * @param ref the continuation reference
+   * @return a non-null cont ref
+   * @throws IllegalArgumentException if ref is null
+   */
+  public static Ref fromCont(final ContRef ref) {
+    if (ref == null) {
+      throw new IllegalArgumentException("ref cannot be null");
+    }
+    return new Ref(Kind.CONT, ref);
   }
 
   // --- Null reference factories ---
@@ -296,6 +311,18 @@ public final class Ref {
     return Optional.empty();
   }
 
+  /**
+   * Extracts the continuation reference if this is a non-null continuation reference.
+   *
+   * @return the continuation reference, or empty if this is null or not a contref
+   */
+  public Optional<ContRef> asCont() {
+    if (kind == Kind.CONT && value instanceof ContRef) {
+      return Optional.of((ContRef) value);
+    }
+    return Optional.empty();
+  }
+
   // --- Type operations ---
 
   /**
@@ -339,8 +366,8 @@ public final class Ref {
    * Gets the {@link RefType} for this reference within a store context.
    *
    * <p>This matches Wasmtime's {@code Ref::ty(&self, store)} signature. For abstract reference
-   * types, the store is not needed and this delegates to {@link #ty()}. Future implementations
-   * with concrete GC types may use the store for type resolution.
+   * types, the store is not needed and this delegates to {@link #ty()}. Future implementations with
+   * concrete GC types may use the store for type resolution.
    *
    * @param store the store context
    * @return the reference type

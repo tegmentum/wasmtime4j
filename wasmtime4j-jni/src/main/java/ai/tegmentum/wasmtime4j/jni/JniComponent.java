@@ -398,8 +398,7 @@ public final class JniComponent {
    * @param name the export name
    * @return the export index pointer, or 0 if not found
    */
-  static native long nativeGetExportIndex(
-      long componentHandle, long instanceIndexPtr, String name);
+  static native long nativeGetExportIndex(long componentHandle, long instanceIndexPtr, String name);
 
   /**
    * Destroys a component export index.
@@ -418,6 +417,19 @@ public final class JniComponent {
    */
   static native int nativeComponentInstanceHasFuncByIndex(
       long engineHandle, long instanceId, long indexPtr);
+
+  /**
+   * Executes multiple component function calls concurrently using native Wasmtime support.
+   *
+   * <p>The input and output are JSON strings matching the Rust {@code concurrent_call_json} format.
+   *
+   * @param engineHandle the engine handle
+   * @param instanceId the instance ID
+   * @param jsonInput JSON array of concurrent calls
+   * @return JSON array of result arrays
+   */
+  static native String nativeRunConcurrentCalls(
+      long engineHandle, long instanceId, String jsonInput);
 
   /**
    * JNI wrapper for component engine operations.

@@ -6,6 +6,9 @@ import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ConcurrentCall;
+import ai.tegmentum.wasmtime4j.component.ConcurrentCallCodec;
 import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
@@ -23,6 +26,7 @@ import ai.tegmentum.wasmtime4j.wit.WitValueMarshaller.MarshalledValue;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -302,6 +306,77 @@ final class PanamaComponentInstance implements ComponentInstance {
   }
 
   @Override
+  public List<List<ComponentVal>> runConcurrent(final List<ConcurrentCall> calls)
+      throws WasmException {
+    if (calls == null || calls.isEmpty()) {
+      throw new IllegalArgumentException("calls cannot be null or empty");
+    }
+    ensureNotClosed();
+
+    final String jsonInput = ConcurrentCallCodec.serializeCalls(calls);
+    final byte[] jsonBytes = jsonInput.getBytes(StandardCharsets.UTF_8);
+
+    try (final Arena arena = Arena.ofConfined()) {
+      // Allocate input JSON bytes
+      final MemorySegment jsonSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, jsonBytes);
+
+      // Allocate output parameters
+      final MemorySegment resultPtrOut = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment resultLenOut = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int errorCode =
+          NATIVE_BINDINGS.enhancedComponentRunConcurrent(
+              enhancedEngineHandle,
+              instanceId,
+              jsonSegment,
+              jsonBytes.length,
+              resultPtrOut,
+              resultLenOut);
+
+      // Read result pointer and length
+      final MemorySegment resultPtr = resultPtrOut.get(ValueLayout.ADDRESS, 0);
+      final long resultLen = resultLenOut.get(ValueLayout.JAVA_LONG, 0);
+
+      try {
+        if (errorCode != 0) {
+          // On error, the result buffer contains an error message
+          if (resultPtr != null && !resultPtr.equals(MemorySegment.NULL) && resultLen > 0) {
+            final MemorySegment resultWithSize = resultPtr.reinterpret(resultLen);
+            final byte[] errorBytes = new byte[(int) resultLen];
+            MemorySegment.copy(
+                resultWithSize, ValueLayout.JAVA_BYTE, 0, errorBytes, 0, (int) resultLen);
+            final String errorMsg = new String(errorBytes, StandardCharsets.UTF_8);
+            throw new WasmException("Concurrent call failed: " + errorMsg);
+          }
+          throw new WasmException("Concurrent call failed with error code: " + errorCode);
+        }
+
+        if (resultPtr == null || resultPtr.equals(MemorySegment.NULL) || resultLen == 0) {
+          throw new WasmException("Native concurrent call returned null result");
+        }
+
+        // Read result JSON
+        final MemorySegment resultWithSize = resultPtr.reinterpret(resultLen);
+        final byte[] resultBytes = new byte[(int) resultLen];
+        MemorySegment.copy(
+            resultWithSize, ValueLayout.JAVA_BYTE, 0, resultBytes, 0, (int) resultLen);
+        final String jsonResult = new String(resultBytes, StandardCharsets.UTF_8);
+
+        return ConcurrentCallCodec.deserializeResults(jsonResult);
+      } finally {
+        // Always free the result buffer
+        if (resultPtr != null && !resultPtr.equals(MemorySegment.NULL) && resultLen > 0) {
+          NATIVE_BINDINGS.freeConcurrentResult(resultPtr, resultLen);
+        }
+      }
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Concurrent call execution failed: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public boolean hasResource(final String resourceName) throws WasmException {
     Objects.requireNonNull(resourceName, "resourceName cannot be null");
     ensureNotClosed();
@@ -360,8 +435,7 @@ final class PanamaComponentInstance implements ComponentInstance {
     ensureNotClosed();
 
     try {
-      final MemorySegment indexPtr =
-          MemorySegment.ofAddress(exportIndex.getNativeHandle());
+      final MemorySegment indexPtr = MemorySegment.ofAddress(exportIndex.getNativeHandle());
       final int found =
           NATIVE_BINDINGS.enhancedComponentInstanceHasFuncByIndex(
               enhancedEngineHandle, instanceId, indexPtr);

@@ -36,7 +36,6 @@ import ai.tegmentum.wasmtime4j.type.MemoryType;
 import ai.tegmentum.wasmtime4j.type.TableType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -58,8 +57,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 @SuppressWarnings("deprecation")
 public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ModuleApiDualRuntimeTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleApiDualRuntimeTest.class.getName());
 
   // ===== WAT Module Definitions =====
 
@@ -78,9 +76,7 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
           + ")";
 
   private static final String MEMORY_MODULE_WAT =
-      "(module\n"
-          + "  (memory (export \"memory\") 1 10)\n"
-          + ")";
+      "(module\n" + "  (memory (export \"memory\") 1 10)\n" + ")";
 
   private static final String GLOBAL_MODULE_WAT =
       "(module\n"
@@ -89,9 +85,7 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
           + ")";
 
   private static final String TABLE_MODULE_WAT =
-      "(module\n"
-          + "  (table (export \"table\") 1 funcref)\n"
-          + ")";
+      "(module\n" + "  (table (export \"table\") 1 funcref)\n" + ")";
 
   private static final String MULTI_EXPORT_MODULE_WAT =
       "(module\n"
@@ -168,9 +162,7 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         final ExportType memExport = exports.get(0);
         assertEquals("memory", memExport.getName(), "Export name should be 'memory'");
         assertEquals(
-            WasmTypeKind.MEMORY,
-            memExport.getType().getKind(),
-            "Export type should be MEMORY");
+            WasmTypeKind.MEMORY, memExport.getType().getKind(), "Export type should be MEMORY");
         LOGGER.info("[" + runtime + "] Found memory export: " + memExport.getName());
       }
     }
@@ -223,9 +215,7 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         final ExportType tableExport = exports.get(0);
         assertEquals("table", tableExport.getName(), "Export name should be 'table'");
         assertEquals(
-            WasmTypeKind.TABLE,
-            tableExport.getType().getKind(),
-            "Export type should be TABLE");
+            WasmTypeKind.TABLE, tableExport.getType().getKind(), "Export type should be TABLE");
         LOGGER.info("[" + runtime + "] Found table export: " + tableExport.getName());
       }
     }
@@ -244,21 +234,13 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         assertEquals(4, exports.size(), "Should have exactly 4 exports");
 
         final long functionCount =
-            exports.stream()
-                .filter(e -> e.getType().getKind() == WasmTypeKind.FUNCTION)
-                .count();
+            exports.stream().filter(e -> e.getType().getKind() == WasmTypeKind.FUNCTION).count();
         final long memoryCount =
-            exports.stream()
-                .filter(e -> e.getType().getKind() == WasmTypeKind.MEMORY)
-                .count();
+            exports.stream().filter(e -> e.getType().getKind() == WasmTypeKind.MEMORY).count();
         final long globalCount =
-            exports.stream()
-                .filter(e -> e.getType().getKind() == WasmTypeKind.GLOBAL)
-                .count();
+            exports.stream().filter(e -> e.getType().getKind() == WasmTypeKind.GLOBAL).count();
         final long tableCount =
-            exports.stream()
-                .filter(e -> e.getType().getKind() == WasmTypeKind.TABLE)
-                .count();
+            exports.stream().filter(e -> e.getType().getKind() == WasmTypeKind.TABLE).count();
 
         assertEquals(1, functionCount, "Should have 1 function export");
         assertEquals(1, memoryCount, "Should have 1 memory export");
@@ -435,12 +417,7 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         assertTrue(mt.getMaximum().isPresent(), "Memory should have a maximum");
         assertEquals(10L, mt.getMaximum().get(), "Memory maximum should be 10 pages");
         LOGGER.info(
-            "["
-                + runtime
-                + "] Memory type: min="
-                + mt.getMinimum()
-                + ", max="
-                + mt.getMaximum());
+            "[" + runtime + "] Memory type: min=" + mt.getMinimum() + ", max=" + mt.getMaximum());
       }
     }
 
@@ -581,18 +558,12 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
           Module module = engine.compileWat(FUNCTION_MODULE_WAT)) {
 
         assertTrue(
-            module.getMemoryTypes().isEmpty(),
-            "Function module should have no memory types");
+            module.getMemoryTypes().isEmpty(), "Function module should have no memory types");
         assertTrue(
-            module.getGlobalTypes().isEmpty(),
-            "Function module should have no global types");
-        assertTrue(
-            module.getTableTypes().isEmpty(),
-            "Function module should have no table types");
+            module.getGlobalTypes().isEmpty(), "Function module should have no global types");
+        assertTrue(module.getTableTypes().isEmpty(), "Function module should have no table types");
         LOGGER.info(
-            "["
-                + runtime
-                + "] Function-only module correctly has no memory/global/table types");
+            "[" + runtime + "] Function-only module correctly has no memory/global/table types");
       }
     }
   }
@@ -678,8 +649,7 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
       try (Engine engine = Engine.create();
           Module module = engine.compileWat(IMPORT_MODULE_WAT)) {
 
-        assertFalse(
-            module.hasImport("env", "nonexistent"), "Should not find env.nonexistent");
+        assertFalse(module.hasImport("env", "nonexistent"), "Should not find env.nonexistent");
         assertFalse(module.hasImport("other", "log"), "Should not find other.log");
         LOGGER.info("[" + runtime + "] Correctly did not find nonexistent imports");
       }
@@ -755,13 +725,9 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         module.close();
 
         assertThrows(
-            Exception.class,
-            module::getExports,
-            "getExports on closed module should throw");
+            Exception.class, module::getExports, "getExports on closed module should throw");
         assertThrows(
-            Exception.class,
-            module::getImports,
-            "getImports on closed module should throw");
+            Exception.class, module::getImports, "getImports on closed module should throw");
         assertThrows(
             Exception.class,
             () -> module.hasExport("add"),
@@ -775,7 +741,8 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
           module.getName();
           LOGGER.info("[" + runtime + "] getName on closed module returned cached value");
         } catch (final Exception e) {
-          LOGGER.info("[" + runtime + "] getName on closed module threw: " + e.getClass().getName());
+          LOGGER.info(
+              "[" + runtime + "] getName on closed module threw: " + e.getClass().getName());
         }
         LOGGER.info("[" + runtime + "] All operations correctly throw on closed module");
       }
@@ -816,8 +783,7 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         final byte[] serialized = module.serialize();
         assertNotNull(serialized, "Serialized data should not be null");
         assertTrue(serialized.length > 0, "Serialized data should not be empty");
-        LOGGER.info(
-            "[" + runtime + "] Serialized module to " + serialized.length + " bytes");
+        LOGGER.info("[" + runtime + "] Serialized module to " + serialized.length + " bytes");
       }
     }
 
@@ -835,11 +801,7 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         assertNotNull(serialized, "Serialized data should not be null");
         assertTrue(serialized.length > 0, "Serialized data should not be empty");
         LOGGER.info(
-            "["
-                + runtime
-                + "] Serialized multi-export module to "
-                + serialized.length
-                + " bytes");
+            "[" + runtime + "] Serialized multi-export module to " + serialized.length + " bytes");
       }
     }
 
@@ -857,11 +819,20 @@ public class ModuleApiDualRuntimeTest extends DualRuntimeTest {
         // Behavior varies by runtime: some runtimes may return cached serialization
         try {
           final byte[] result = module.serialize();
-          LOGGER.info("[" + runtime + "] serialize() on closed module returned "
-              + (result != null ? result.length + " bytes" : "null") + " (no throw)");
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] serialize() on closed module returned "
+                  + (result != null ? result.length + " bytes" : "null")
+                  + " (no throw)");
         } catch (final Exception e) {
-          LOGGER.info("[" + runtime + "] serialize() on closed module threw: "
-              + e.getClass().getName() + " - " + e.getMessage());
+          LOGGER.info(
+              "["
+                  + runtime
+                  + "] serialize() on closed module threw: "
+                  + e.getClass().getName()
+                  + " - "
+                  + e.getMessage());
         }
       }
     }

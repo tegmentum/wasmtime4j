@@ -2,9 +2,9 @@ package ai.tegmentum.wasmtime4j.panama.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaValidation;
-import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.type.FuncType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.util.Validation;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.Arrays;

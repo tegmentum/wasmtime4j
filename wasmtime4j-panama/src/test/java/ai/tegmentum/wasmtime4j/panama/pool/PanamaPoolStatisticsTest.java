@@ -96,7 +96,8 @@ class PanamaPoolStatisticsTest {
       assertEquals(0, stats.getStacks(), "stacks should be 0");
       assertEquals(0, stats.getGcHeaps(), "gcHeaps should be 0");
       assertEquals(0, stats.getUnusedWarmMemories(), "unusedWarmMemories should be 0");
-      assertEquals(0, stats.getUnusedMemoryBytesResident(), "unusedMemoryBytesResident should be 0");
+      assertEquals(
+          0, stats.getUnusedMemoryBytesResident(), "unusedMemoryBytesResident should be 0");
       assertEquals(0, stats.getUnusedWarmTables(), "unusedWarmTables should be 0");
       assertEquals(0, stats.getUnusedTableBytesResident(), "unusedTableBytesResident should be 0");
       assertEquals(0, stats.getUnusedWarmStacks(), "unusedWarmStacks should be 0");
@@ -122,14 +123,14 @@ class PanamaPoolStatisticsTest {
       assertEquals(8, stats.getStacks(), "stacks should match");
       assertEquals(3, stats.getGcHeaps(), "gcHeaps should match");
       assertEquals(4, stats.getUnusedWarmMemories(), "unusedWarmMemories should match");
-      assertEquals(4096, stats.getUnusedMemoryBytesResident(),
-          "unusedMemoryBytesResident should match");
+      assertEquals(
+          4096, stats.getUnusedMemoryBytesResident(), "unusedMemoryBytesResident should match");
       assertEquals(2, stats.getUnusedWarmTables(), "unusedWarmTables should match");
-      assertEquals(2048, stats.getUnusedTableBytesResident(),
-          "unusedTableBytesResident should match");
+      assertEquals(
+          2048, stats.getUnusedTableBytesResident(), "unusedTableBytesResident should match");
       assertEquals(1, stats.getUnusedWarmStacks(), "unusedWarmStacks should match");
-      assertEquals(1024, stats.getUnusedStackBytesResident(),
-          "unusedStackBytesResident should match");
+      assertEquals(
+          1024, stats.getUnusedStackBytesResident(), "unusedStackBytesResident should match");
     }
 
     @Test
@@ -175,7 +176,9 @@ class PanamaPoolStatisticsTest {
       final long[] metrics = createMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1);
       final PanamaPoolStatistics stats = new PanamaPoolStatistics(metrics);
 
-      assertEquals(-1, stats.getUnusedStackBytesResident(),
+      assertEquals(
+          -1,
+          stats.getUnusedStackBytesResident(),
           "unusedStackBytesResident should be -1 when unavailable");
     }
   }
@@ -214,8 +217,8 @@ class PanamaPoolStatisticsTest {
       java.util.Arrays.fill(metrics, Long.MAX_VALUE);
       final PanamaPoolStatistics stats = new PanamaPoolStatistics(metrics);
 
-      assertEquals(Long.MAX_VALUE, stats.getCoreInstances(),
-          "Should handle max long for coreInstances");
+      assertEquals(
+          Long.MAX_VALUE, stats.getCoreInstances(), "Should handle max long for coreInstances");
     }
 
     @Test

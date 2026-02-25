@@ -73,8 +73,15 @@ public final class PanamaEngine implements Engine {
     this.runtime = runtime;
     this.arena = Arena.ofShared();
 
-    // Create native engine via Panama FFI with config
-    this.nativeEngine = NATIVE_BINDINGS.engineCreateWithConfig(config);
+    // Create native engine via Panama FFI with config (with optional extension traits)
+    if (config.getIncrementalCacheStore() != null
+        || config.getMemoryCreator() != null
+        || config.getStackCreator() != null
+        || config.getCustomCodeMemory() != null) {
+      this.nativeEngine = NATIVE_BINDINGS.engineCreateWithExtensions(config);
+    } else {
+      this.nativeEngine = NATIVE_BINDINGS.engineCreateWithConfig(config);
+    }
 
     if (this.nativeEngine == null || this.nativeEngine.equals(MemorySegment.NULL)) {
       arena.close();
@@ -114,7 +121,9 @@ public final class PanamaEngine implements Engine {
    * @param existingNativeEngine an already-created native engine pointer (ownership transferred)
    */
   PanamaEngine(
-      final EngineConfig config, final WasmRuntime runtime, final MemorySegment existingNativeEngine)
+      final EngineConfig config,
+      final WasmRuntime runtime,
+      final MemorySegment existingNativeEngine)
       throws WasmException {
     if (existingNativeEngine == null || existingNativeEngine.equals(MemorySegment.NULL)) {
       throw new WasmException("existingNativeEngine cannot be null");
@@ -384,7 +393,6 @@ public final class PanamaEngine implements Engine {
     return System.identityHashCode(this);
   }
 
-
   /**
    * Ensures the engine is not closed.
    *
@@ -393,7 +401,6 @@ public final class PanamaEngine implements Engine {
   private void ensureNotClosed() {
     resourceHandle.ensureNotClosed();
   }
-
 
   @Override
   public boolean isPulley() {
@@ -477,8 +484,7 @@ public final class PanamaEngine implements Engine {
       throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
     }
     if (maxPages < 1) {
-      throw new IllegalArgumentException(
-          "Shared memory requires a positive maximum page count");
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
     }
     if (maxPages < initialPages) {
       throw new IllegalArgumentException(
@@ -486,8 +492,8 @@ public final class PanamaEngine implements Engine {
     }
     ensureNotClosed();
 
-    final MemorySegment memoryPtr = NATIVE_BINDINGS.engineCreateSharedMemory(
-        nativeEngine, initialPages, maxPages);
+    final MemorySegment memoryPtr =
+        NATIVE_BINDINGS.engineCreateSharedMemory(nativeEngine, initialPages, maxPages);
     if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
       throw new WasmException("Failed to create shared memory");
     }

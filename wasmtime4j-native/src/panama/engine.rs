@@ -4,8 +4,17 @@
 //! and managing Wasmtime engines through the Panama Foreign Function Interface.
 
 use std::os::raw::{c_char, c_int, c_long, c_void};
+use std::sync::Arc;
 
 use crate::engine::core;
+use crate::engine::{
+    CacheFreeFn, CacheGetFn, CacheInsertFn, CallbackCacheStore,
+    CallbackCustomCodeMemory, CallbackMemoryCreator, CallbackStackCreator,
+    CodeMemAlignmentFn, CodeMemPublishFn, CodeMemUnpublishFn,
+    LinMemAsPtrFn, LinMemByteCapacityFn, LinMemByteSizeFn, LinMemDropFn, LinMemGrowToFn,
+    MemCreatorNewMemoryFn,
+    StkCreatorNewStackFn, StkMemDropFn, StkMemGuardRangeFn, StkMemRangeFn, StkMemTopFn,
+};
 use crate::error::ffi_utils;
 use crate::ffi_common::{error_handling, parameter_conversion};
 
@@ -618,6 +627,199 @@ pub extern "C" fn wasmtime4j_panama_engine_create_from_json_config(
         Ok(engine) => Box::into_raw(engine) as *mut c_void,
         Err(e) => {
             log::error!("Failed to create engine from JSON config: {}", e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Create a new engine from JSON configuration with an incremental compilation cache store
+///
+/// The cache store is provided via C function pointers that the engine will call
+/// during compilation to retrieve/store cached artifacts.
+///
+/// # Arguments
+/// * `json_ptr` - Pointer to JSON configuration bytes
+/// * `json_len` - Length of JSON bytes
+/// * `callback_id` - Identifier for the Java-side CacheStore (used by trampolines)
+/// * `get_fn` - Function pointer for CacheStore.get()
+/// * `insert_fn` - Function pointer for CacheStore.insert()
+/// * `free_fn` - Function pointer to free memory allocated by get_fn
+///
+/// Returns engine pointer on success, null on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_create_with_cache_store(
+    json_ptr: *const u8,
+    json_len: u64,
+    callback_id: i64,
+    get_fn: CacheGetFn,
+    insert_fn: CacheInsertFn,
+    free_fn: CacheFreeFn,
+) -> *mut c_void {
+    if json_ptr.is_null() || json_len == 0 {
+        return std::ptr::null_mut();
+    }
+
+    let json_bytes = unsafe { std::slice::from_raw_parts(json_ptr, json_len as usize) };
+    let cache_store = Arc::new(CallbackCacheStore::new(
+        callback_id, get_fn, insert_fn, free_fn,
+    ));
+
+    match core::create_engine_from_json_config_with_cache_store(json_bytes, cache_store) {
+        Ok(engine) => Box::into_raw(engine) as *mut c_void,
+        Err(e) => {
+            log::error!(
+                "Failed to create engine from JSON config with cache store: {}",
+                e
+            );
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Create a new engine from JSON configuration with all extension traits
+///
+/// Supports: CacheStore, MemoryCreator, StackCreator, CustomCodeMemory.
+/// Each extension is optional — pass 0 for callback_id and null for function
+/// pointers to skip an extension.
+///
+/// # MemoryCreator arguments
+/// * `mc_id` - Callback ID for the MemoryCreator (0 = none)
+/// * `mc_new_memory_fn` - MemoryCreator.newMemory
+/// * `lm_byte_size_fn` - LinearMemory.byteSize
+/// * `lm_byte_capacity_fn` - LinearMemory.byteCapacity
+/// * `lm_grow_to_fn` - LinearMemory.growTo
+/// * `lm_as_ptr_fn` - LinearMemory.basePointer
+/// * `lm_drop_fn` - LinearMemory.close
+///
+/// # StackCreator arguments
+/// * `sc_id` - Callback ID for the StackCreator (0 = none)
+/// * `sc_new_stack_fn` - StackCreator.newStack
+/// * `sm_top_fn` - StackMemory.top
+/// * `sm_range_fn` - StackMemory.range
+/// * `sm_guard_range_fn` - StackMemory.guardRange
+/// * `sm_drop_fn` - StackMemory.close
+///
+/// # CustomCodeMemory arguments
+/// * `ccm_id` - Callback ID for the CustomCodeMemory (0 = none)
+/// * `ccm_alignment_fn` - CustomCodeMemory.requiredAlignment
+/// * `ccm_publish_fn` - CustomCodeMemory.publishExecutable
+/// * `ccm_unpublish_fn` - CustomCodeMemory.unpublishExecutable
+///
+/// Returns engine pointer on success, null on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_create_with_extensions(
+    // JSON config
+    json_ptr: *const u8,
+    json_len: u64,
+    // CacheStore
+    cs_callback_id: i64,
+    cs_get_fn: Option<CacheGetFn>,
+    cs_insert_fn: Option<CacheInsertFn>,
+    cs_free_fn: Option<CacheFreeFn>,
+    // MemoryCreator
+    mc_id: i64,
+    mc_new_memory_fn: Option<MemCreatorNewMemoryFn>,
+    lm_byte_size_fn: Option<LinMemByteSizeFn>,
+    lm_byte_capacity_fn: Option<LinMemByteCapacityFn>,
+    lm_grow_to_fn: Option<LinMemGrowToFn>,
+    lm_as_ptr_fn: Option<LinMemAsPtrFn>,
+    lm_drop_fn: Option<LinMemDropFn>,
+    // StackCreator
+    sc_id: i64,
+    sc_new_stack_fn: Option<StkCreatorNewStackFn>,
+    sm_top_fn: Option<StkMemTopFn>,
+    sm_range_fn: Option<StkMemRangeFn>,
+    sm_guard_range_fn: Option<StkMemGuardRangeFn>,
+    sm_drop_fn: Option<StkMemDropFn>,
+    // CustomCodeMemory
+    ccm_id: i64,
+    ccm_alignment_fn: Option<CodeMemAlignmentFn>,
+    ccm_publish_fn: Option<CodeMemPublishFn>,
+    ccm_unpublish_fn: Option<CodeMemUnpublishFn>,
+) -> *mut c_void {
+    if json_ptr.is_null() || json_len == 0 {
+        return std::ptr::null_mut();
+    }
+
+    let json_bytes = unsafe { std::slice::from_raw_parts(json_ptr, json_len as usize) };
+
+    // Build CacheStore if all function pointers provided
+    let cache_store: Option<Arc<dyn wasmtime::CacheStore>> =
+        if let (Some(get_fn), Some(insert_fn), Some(free_fn)) =
+            (cs_get_fn, cs_insert_fn, cs_free_fn)
+        {
+            Some(Arc::new(CallbackCacheStore::new(
+                cs_callback_id, get_fn, insert_fn, free_fn,
+            )))
+        } else {
+            None
+        };
+
+    // Build MemoryCreator if all function pointers provided
+    let memory_creator: Option<Arc<dyn wasmtime::MemoryCreator>> =
+        if let (
+            Some(new_mem_fn),
+            Some(bs_fn),
+            Some(bc_fn),
+            Some(gt_fn),
+            Some(ap_fn),
+            Some(dr_fn),
+        ) = (
+            mc_new_memory_fn,
+            lm_byte_size_fn,
+            lm_byte_capacity_fn,
+            lm_grow_to_fn,
+            lm_as_ptr_fn,
+            lm_drop_fn,
+        ) {
+            Some(Arc::new(CallbackMemoryCreator::new(
+                mc_id, new_mem_fn, bs_fn, bc_fn, gt_fn, ap_fn, dr_fn,
+            )))
+        } else {
+            None
+        };
+
+    // Build StackCreator if all function pointers provided
+    let stack_creator: Option<Arc<dyn wasmtime::StackCreator>> =
+        if let (Some(ns_fn), Some(top_fn), Some(rng_fn), Some(gr_fn), Some(dr_fn)) = (
+            sc_new_stack_fn,
+            sm_top_fn,
+            sm_range_fn,
+            sm_guard_range_fn,
+            sm_drop_fn,
+        ) {
+            Some(Arc::new(CallbackStackCreator::new(
+                sc_id, ns_fn, top_fn, rng_fn, gr_fn, dr_fn,
+            )))
+        } else {
+            None
+        };
+
+    // Build CustomCodeMemory if all function pointers provided
+    let code_memory: Option<Arc<dyn wasmtime::CustomCodeMemory>> =
+        if let (Some(al_fn), Some(pub_fn), Some(unpub_fn)) =
+            (ccm_alignment_fn, ccm_publish_fn, ccm_unpublish_fn)
+        {
+            Some(Arc::new(CallbackCustomCodeMemory::new(
+                ccm_id, al_fn, pub_fn, unpub_fn,
+            )))
+        } else {
+            None
+        };
+
+    match core::create_engine_from_json_config_with_extensions(
+        json_bytes,
+        cache_store,
+        memory_creator,
+        stack_creator,
+        code_memory,
+    ) {
+        Ok(engine) => Box::into_raw(engine) as *mut c_void,
+        Err(e) => {
+            log::error!(
+                "Failed to create engine from JSON config with extensions: {}",
+                e
+            );
             std::ptr::null_mut()
         }
     }

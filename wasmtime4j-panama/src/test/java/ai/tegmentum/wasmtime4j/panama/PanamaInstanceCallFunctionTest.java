@@ -223,5 +223,4 @@ public class PanamaInstanceCallFunctionTest {
     module.close();
     engine.close();
   }
-
 }

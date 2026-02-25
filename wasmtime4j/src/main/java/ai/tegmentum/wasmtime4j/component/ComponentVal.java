@@ -424,9 +424,8 @@ public interface ComponentVal {
   /**
    * Gets this value as a future handle.
    *
-   * <p>Future handles are opaque identifiers for in-flight async operations in the
-   * Component Model async extension. They can be passed back to component functions
-   * that expect future parameters.
+   * <p>Future handles are opaque identifiers for in-flight async operations in the Component Model
+   * async extension. They can be passed back to component functions that expect future parameters.
    *
    * @return the opaque future handle ID
    * @throws IllegalStateException if this is not a future value
@@ -436,8 +435,8 @@ public interface ComponentVal {
   /**
    * Gets this value as a stream handle.
    *
-   * <p>Stream handles are opaque identifiers for async data streams in the
-   * Component Model async extension.
+   * <p>Stream handles are opaque identifiers for async data streams in the Component Model async
+   * extension.
    *
    * @return the opaque stream handle ID
    * @throws IllegalStateException if this is not a stream value
@@ -447,8 +446,8 @@ public interface ComponentVal {
   /**
    * Gets this value as an error context handle.
    *
-   * <p>Error context handles are opaque identifiers for error information in the
-   * Component Model async extension.
+   * <p>Error context handles are opaque identifiers for error information in the Component Model
+   * async extension.
    *
    * @return the opaque error context handle ID
    * @throws IllegalStateException if this is not an error context value
@@ -877,9 +876,9 @@ public interface ComponentVal {
   /**
    * Deserializes a component value from the WAVE (WebAssembly Value Encoding) text format.
    *
-   * <p>This is the inverse of {@link #toWave()}. The default implementation throws
-   * {@link UnsupportedOperationException} because correct parsing requires type information
-   * that is only available through the native Wasmtime {@code Val::from_wave()} implementation.
+   * <p>This is the inverse of {@link #toWave()}. The default implementation throws {@link
+   * UnsupportedOperationException} because correct parsing requires type information that is only
+   * available through the native Wasmtime {@code Val::from_wave()} implementation.
    *
    * <p>Implementations should override to use native Wasmtime's WAVE parser.
    *

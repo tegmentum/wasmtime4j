@@ -1,6 +1,9 @@
 //! JNI bindings for Engine operations
 
-use jni::objects::{JByteArray, JClass, JString};
+use std::borrow::Cow;
+use std::sync::Arc;
+
+use jni::objects::{JByteArray, JClass, JObject, JString};
 use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray};
 use jni::JNIEnv;
 
@@ -276,6 +279,556 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
 
     jni_utils::jni_try_ptr(&mut env, || {
         core::create_engine_from_json_config(&bytes)
+    }) as jlong
+}
+
+/// A CacheStore implementation that calls back into Java via JNI
+struct JniCacheStore {
+    jvm: Arc<jni::JavaVM>,
+    cache_store_global: jni::objects::GlobalRef,
+}
+
+// SAFETY: JavaVM is Send+Sync, GlobalRef is Send+Sync
+unsafe impl Send for JniCacheStore {}
+unsafe impl Sync for JniCacheStore {}
+
+impl std::fmt::Debug for JniCacheStore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("JniCacheStore").finish()
+    }
+}
+
+impl wasmtime::CacheStore for JniCacheStore {
+    fn get(&self, key: &[u8]) -> Option<Cow<'_, [u8]>> {
+        let mut env = self.jvm.attach_current_thread().ok()?;
+
+        // Create Java byte array from key
+        let key_array = env.byte_array_from_slice(key).ok()?;
+
+        // Call CacheStore.get(byte[]) -> byte[]
+        let result = env
+            .call_method(
+                self.cache_store_global.as_obj(),
+                "get",
+                "([B)[B",
+                &[(&key_array).into()],
+            )
+            .ok()?;
+
+        // Check for exceptions
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return None;
+        }
+
+        let obj = result.l().ok()?;
+        if obj.is_null() {
+            return None;
+        }
+
+        // Convert returned byte array
+        let byte_array = JByteArray::from(obj);
+        let bytes = env.convert_byte_array(&byte_array).ok()?;
+        Some(Cow::Owned(bytes))
+    }
+
+    fn insert(&self, key: &[u8], value: Vec<u8>) -> bool {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return false;
+        };
+
+        // Create Java byte arrays from key and value
+        let Ok(key_array) = env.byte_array_from_slice(key) else {
+            return false;
+        };
+        let Ok(value_array) = env.byte_array_from_slice(&value) else {
+            return false;
+        };
+
+        // Call CacheStore.insert(byte[], byte[]) -> boolean
+        let result = env.call_method(
+            self.cache_store_global.as_obj(),
+            "insert",
+            "([B[B)Z",
+            &[(&key_array).into(), (&value_array).into()],
+        );
+
+        // Check for exceptions
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return false;
+        }
+
+        result.ok().and_then(|v| v.z().ok()).unwrap_or(false)
+    }
+}
+
+// ==================== JNI MemoryCreator/LinearMemory ====================
+
+/// JNI wrapper for MemoryCreator that calls back into Java
+struct JniMemoryCreator {
+    jvm: Arc<jni::JavaVM>,
+    creator_global: jni::objects::GlobalRef,
+}
+
+unsafe impl Send for JniMemoryCreator {}
+unsafe impl Sync for JniMemoryCreator {}
+
+/// JNI wrapper for LinearMemory that calls back into Java
+struct JniLinearMemory {
+    jvm: Arc<jni::JavaVM>,
+    memory_global: jni::objects::GlobalRef,
+}
+
+unsafe impl Send for JniLinearMemory {}
+unsafe impl Sync for JniLinearMemory {}
+
+unsafe impl wasmtime::LinearMemory for JniLinearMemory {
+    fn byte_size(&self) -> usize {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return 0;
+        };
+        let result = env.call_method(self.memory_global.as_obj(), "byteSize", "()J", &[]);
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return 0;
+        }
+        result.ok().and_then(|v| v.j().ok()).unwrap_or(0) as usize
+    }
+
+    fn byte_capacity(&self) -> usize {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return 0;
+        };
+        let result = env.call_method(self.memory_global.as_obj(), "byteCapacity", "()J", &[]);
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return 0;
+        }
+        result.ok().and_then(|v| v.j().ok()).unwrap_or(0) as usize
+    }
+
+    fn grow_to(&mut self, new_size: usize) -> anyhow::Result<()> {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return Err(anyhow::anyhow!("Failed to attach JNI thread"));
+        };
+        let result = env.call_method(
+            self.memory_global.as_obj(),
+            "growTo",
+            "(J)V",
+            &[jni::objects::JValue::Long(new_size as i64)],
+        );
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return Err(anyhow::anyhow!("LinearMemory.growTo threw exception"));
+        }
+        result
+            .map(|_| ())
+            .map_err(|e| anyhow::anyhow!("LinearMemory.growTo failed: {}", e))
+    }
+
+    fn as_ptr(&self) -> *mut u8 {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return std::ptr::null_mut();
+        };
+        let result = env.call_method(self.memory_global.as_obj(), "basePointer", "()J", &[]);
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return std::ptr::null_mut();
+        }
+        result
+            .ok()
+            .and_then(|v| v.j().ok())
+            .map(|p| p as *mut u8)
+            .unwrap_or(std::ptr::null_mut())
+    }
+}
+
+impl Drop for JniLinearMemory {
+    fn drop(&mut self) {
+        if let Ok(mut env) = self.jvm.attach_current_thread() {
+            let _ = env.call_method(self.memory_global.as_obj(), "close", "()V", &[]);
+            if env.exception_check().unwrap_or(false) {
+                let _ = env.exception_clear();
+            }
+        }
+    }
+}
+
+unsafe impl wasmtime::MemoryCreator for JniMemoryCreator {
+    fn new_memory(
+        &self,
+        _ty: wasmtime::MemoryType,
+        minimum: usize,
+        maximum: Option<usize>,
+        reserved_size_in_bytes: Option<usize>,
+        guard_size_in_bytes: usize,
+    ) -> Result<Box<dyn wasmtime::LinearMemory>, String> {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return Err("Failed to attach JNI thread".to_string());
+        };
+
+        // Build OptionalLong for maximum and reserved size
+        let max_obj = optional_long_to_jobject(&mut env, maximum.map(|m| m as i64))
+            .map_err(|e| format!("Failed to create OptionalLong for max: {}", e))?;
+        let reserved_obj =
+            optional_long_to_jobject(&mut env, reserved_size_in_bytes.map(|r| r as i64))
+                .map_err(|e| format!("Failed to create OptionalLong for reserved: {}", e))?;
+
+        // Call MemoryCreator.newMemory(MemoryType, long, OptionalLong, OptionalLong, long)
+        // We pass null for MemoryType since the Java interface receives it but we don't have
+        // a Java MemoryType object in the JNI path. The minimum/maximum/reserved/guard
+        // parameters already carry all the needed information.
+        let result = env.call_method(
+            self.creator_global.as_obj(),
+            "newMemory",
+            "(Lai/tegmentum/wasmtime4j/type/MemoryType;JLjava/util/OptionalLong;Ljava/util/OptionalLong;J)Lai/tegmentum/wasmtime4j/config/LinearMemory;",
+            &[
+                (&JObject::null()).into(),
+                jni::objects::JValue::Long(minimum as i64),
+                (&max_obj).into(),
+                (&reserved_obj).into(),
+                jni::objects::JValue::Long(guard_size_in_bytes as i64),
+            ],
+        );
+
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return Err("MemoryCreator.newMemory threw exception".to_string());
+        }
+
+        let obj = result
+            .map_err(|e| format!("Failed to call newMemory: {}", e))?
+            .l()
+            .map_err(|e| format!("Failed to get LinearMemory object: {}", e))?;
+
+        if obj.is_null() {
+            return Err("MemoryCreator.newMemory returned null".to_string());
+        }
+
+        let memory_global = env
+            .new_global_ref(obj)
+            .map_err(|e| format!("Failed to create global ref: {}", e))?;
+
+        Ok(Box::new(JniLinearMemory {
+            jvm: self.jvm.clone(),
+            memory_global,
+        }))
+    }
+}
+
+/// Helper to create a Java OptionalLong from an Option<i64>
+fn optional_long_to_jobject<'a>(
+    env: &mut JNIEnv<'a>,
+    value: Option<i64>,
+) -> Result<JObject<'a>, jni::errors::Error> {
+    match value {
+        Some(v) => env
+            .call_static_method(
+                "java/util/OptionalLong",
+                "of",
+                "(J)Ljava/util/OptionalLong;",
+                &[jni::objects::JValue::Long(v)],
+            )?
+            .l(),
+        None => env
+            .call_static_method(
+                "java/util/OptionalLong",
+                "empty",
+                "()Ljava/util/OptionalLong;",
+                &[],
+            )?
+            .l(),
+    }
+}
+
+// ==================== JNI StackCreator/StackMemory ====================
+
+/// JNI wrapper for StackCreator
+struct JniStackCreator {
+    jvm: Arc<jni::JavaVM>,
+    creator_global: jni::objects::GlobalRef,
+}
+
+unsafe impl Send for JniStackCreator {}
+unsafe impl Sync for JniStackCreator {}
+
+/// JNI wrapper for StackMemory
+struct JniStackMemory {
+    jvm: Arc<jni::JavaVM>,
+    stack_global: jni::objects::GlobalRef,
+}
+
+unsafe impl Send for JniStackMemory {}
+unsafe impl Sync for JniStackMemory {}
+
+unsafe impl wasmtime::StackMemory for JniStackMemory {
+    fn top(&self) -> *mut u8 {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return std::ptr::null_mut();
+        };
+        let result = env.call_method(self.stack_global.as_obj(), "top", "()J", &[]);
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return std::ptr::null_mut();
+        }
+        result
+            .ok()
+            .and_then(|v| v.j().ok())
+            .map(|p| p as *mut u8)
+            .unwrap_or(std::ptr::null_mut())
+    }
+
+    fn range(&self) -> std::ops::Range<usize> {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return 0..0;
+        };
+        let start = env
+            .call_method(self.stack_global.as_obj(), "rangeStart", "()J", &[])
+            .ok()
+            .and_then(|v| v.j().ok())
+            .unwrap_or(0) as usize;
+        let end = env
+            .call_method(self.stack_global.as_obj(), "rangeEnd", "()J", &[])
+            .ok()
+            .and_then(|v| v.j().ok())
+            .unwrap_or(0) as usize;
+        if env.exception_check().unwrap_or(false) {
+            let _ = env.exception_clear();
+        }
+        start..end
+    }
+
+    fn guard_range(&self) -> std::ops::Range<*mut u8> {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return std::ptr::null_mut()..std::ptr::null_mut();
+        };
+        let start = env
+            .call_method(self.stack_global.as_obj(), "guardRangeStart", "()J", &[])
+            .ok()
+            .and_then(|v| v.j().ok())
+            .unwrap_or(0) as *mut u8;
+        let end = env
+            .call_method(self.stack_global.as_obj(), "guardRangeEnd", "()J", &[])
+            .ok()
+            .and_then(|v| v.j().ok())
+            .unwrap_or(0) as *mut u8;
+        if env.exception_check().unwrap_or(false) {
+            let _ = env.exception_clear();
+        }
+        start..end
+    }
+}
+
+impl Drop for JniStackMemory {
+    fn drop(&mut self) {
+        if let Ok(mut env) = self.jvm.attach_current_thread() {
+            let _ = env.call_method(self.stack_global.as_obj(), "close", "()V", &[]);
+            if env.exception_check().unwrap_or(false) {
+                let _ = env.exception_clear();
+            }
+        }
+    }
+}
+
+unsafe impl wasmtime::StackCreator for JniStackCreator {
+    fn new_stack(
+        &self,
+        size: usize,
+        zeroed: bool,
+    ) -> Result<Box<dyn wasmtime::StackMemory>, anyhow::Error> {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return Err(anyhow::anyhow!("Failed to attach JNI thread"));
+        };
+
+        let result = env.call_method(
+            self.creator_global.as_obj(),
+            "newStack",
+            "(JZ)Lai/tegmentum/wasmtime4j/config/StackMemory;",
+            &[
+                jni::objects::JValue::Long(size as i64),
+                jni::objects::JValue::Bool(if zeroed { 1 } else { 0 }),
+            ],
+        );
+
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return Err(anyhow::anyhow!("StackCreator.newStack threw exception"));
+        }
+
+        let obj = result?.l()?;
+        if obj.is_null() {
+            return Err(anyhow::anyhow!("StackCreator.newStack returned null"));
+        }
+
+        let stack_global = env.new_global_ref(obj)?;
+
+        Ok(Box::new(JniStackMemory {
+            jvm: self.jvm.clone(),
+            stack_global,
+        }))
+    }
+}
+
+// ==================== JNI CustomCodeMemory ====================
+
+/// JNI wrapper for CustomCodeMemory
+struct JniCustomCodeMemory {
+    jvm: Arc<jni::JavaVM>,
+    code_mem_global: jni::objects::GlobalRef,
+}
+
+unsafe impl Send for JniCustomCodeMemory {}
+unsafe impl Sync for JniCustomCodeMemory {}
+
+impl wasmtime::CustomCodeMemory for JniCustomCodeMemory {
+    fn required_alignment(&self) -> usize {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return 1;
+        };
+        let result = env.call_method(
+            self.code_mem_global.as_obj(),
+            "requiredAlignment",
+            "()J",
+            &[],
+        );
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return 1;
+        }
+        result.ok().and_then(|v| v.j().ok()).unwrap_or(1) as usize
+    }
+
+    fn publish_executable(&self, ptr: *const u8, len: usize) -> anyhow::Result<()> {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return Err(anyhow::anyhow!("Failed to attach JNI thread"));
+        };
+        let result = env.call_method(
+            self.code_mem_global.as_obj(),
+            "publishExecutable",
+            "(JJ)V",
+            &[
+                jni::objects::JValue::Long(ptr as i64),
+                jni::objects::JValue::Long(len as i64),
+            ],
+        );
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return Err(anyhow::anyhow!(
+                "CustomCodeMemory.publishExecutable threw exception"
+            ));
+        }
+        result
+            .map(|_| ())
+            .map_err(|e| anyhow::anyhow!("publishExecutable failed: {}", e))
+    }
+
+    fn unpublish_executable(&self, ptr: *const u8, len: usize) -> anyhow::Result<()> {
+        let Ok(mut env) = self.jvm.attach_current_thread() else {
+            return Err(anyhow::anyhow!("Failed to attach JNI thread"));
+        };
+        let result = env.call_method(
+            self.code_mem_global.as_obj(),
+            "unpublishExecutable",
+            "(JJ)V",
+            &[
+                jni::objects::JValue::Long(ptr as i64),
+                jni::objects::JValue::Long(len as i64),
+            ],
+        );
+        if env.exception_check().unwrap_or(true) {
+            let _ = env.exception_clear();
+            return Err(anyhow::anyhow!(
+                "CustomCodeMemory.unpublishExecutable threw exception"
+            ));
+        }
+        result
+            .map(|_| ())
+            .map_err(|e| anyhow::anyhow!("unpublishExecutable failed: {}", e))
+    }
+}
+
+// ==================== JNI Engine Creation with Extensions ====================
+
+/// Create engine with JSON config and optional extension traits (all-in-one)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEngineWithExtensions(
+    mut env: JNIEnv,
+    _class: JClass,
+    json_bytes: JByteArray,
+    cache_store: JObject,
+    memory_creator: JObject,
+    stack_creator: JObject,
+    custom_code_memory: JObject,
+) -> jlong {
+    let bytes = match env.convert_byte_array(&json_bytes) {
+        Ok(b) => b,
+        Err(_) => return 0,
+    };
+
+    let jvm = match env.get_java_vm() {
+        Ok(jvm) => Arc::new(jvm),
+        Err(_) => return 0,
+    };
+
+    // Create cache store if provided
+    let cs: Option<Arc<dyn wasmtime::CacheStore>> = if !cache_store.is_null() {
+        let global = match env.new_global_ref(cache_store) {
+            Ok(g) => g,
+            Err(_) => return 0,
+        };
+        Some(Arc::new(JniCacheStore {
+            jvm: jvm.clone(),
+            cache_store_global: global,
+        }))
+    } else {
+        None
+    };
+
+    // Create memory creator if provided
+    let mc: Option<Arc<dyn wasmtime::MemoryCreator>> = if !memory_creator.is_null() {
+        let global = match env.new_global_ref(memory_creator) {
+            Ok(g) => g,
+            Err(_) => return 0,
+        };
+        Some(Arc::new(JniMemoryCreator {
+            jvm: jvm.clone(),
+            creator_global: global,
+        }))
+    } else {
+        None
+    };
+
+    // Create stack creator if provided
+    let sc: Option<Arc<dyn wasmtime::StackCreator>> = if !stack_creator.is_null() {
+        let global = match env.new_global_ref(stack_creator) {
+            Ok(g) => g,
+            Err(_) => return 0,
+        };
+        Some(Arc::new(JniStackCreator {
+            jvm: jvm.clone(),
+            creator_global: global,
+        }))
+    } else {
+        None
+    };
+
+    // Create custom code memory if provided
+    let ccm: Option<Arc<dyn wasmtime::CustomCodeMemory>> = if !custom_code_memory.is_null() {
+        let global = match env.new_global_ref(custom_code_memory) {
+            Ok(g) => g,
+            Err(_) => return 0,
+        };
+        Some(Arc::new(JniCustomCodeMemory {
+            jvm: jvm.clone(),
+            code_mem_global: global,
+        }))
+    } else {
+        None
+    };
+
+    jni_utils::jni_try_ptr(&mut env, || {
+        core::create_engine_from_json_config_with_extensions(&bytes, cs, mc, sc, ccm)
     }) as jlong
 }
 

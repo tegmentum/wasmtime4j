@@ -81,17 +81,21 @@ public interface Linker<T> extends Closeable {
       throws WasmException {
     // Default: wrap async implementation as a synchronous host function that blocks on the future.
     // JNI/Panama implementations should override to use Func::new_async() for true async.
-    defineHostFunction(moduleName, name, functionType, (params) -> {
-      try {
-        return implementation.execute(null, params).join();
-      } catch (final java.util.concurrent.CompletionException e) {
-        if (e.getCause() instanceof WasmException) {
-          throw (WasmException) e.getCause();
-        }
-        throw new WasmException("Async host function failed: " + e.getCause().getMessage(),
-            e.getCause());
-      }
-    });
+    defineHostFunction(
+        moduleName,
+        name,
+        functionType,
+        (params) -> {
+          try {
+            return implementation.execute(null, params).join();
+          } catch (final java.util.concurrent.CompletionException e) {
+            if (e.getCause() instanceof WasmException) {
+              throw (WasmException) e.getCause();
+            }
+            throw new WasmException(
+                "Async host function failed: " + e.getCause().getMessage(), e.getCause());
+          }
+        });
   }
 
   /**
@@ -163,8 +167,8 @@ public interface Linker<T> extends Closeable {
   /**
    * Defines an instance that can be imported by WebAssembly modules.
    *
-   * <p>This is a convenience overload that extracts the store from the instance. Prefer
-   * {@link #defineInstance(Store, String, Instance)} for explicit store context.
+   * <p>This is a convenience overload that extracts the store from the instance. Prefer {@link
+   * #defineInstance(Store, String, Instance)} for explicit store context.
    *
    * @param moduleName the module name for the import
    * @param instance the WebAssembly instance whose exports should be provided
@@ -201,8 +205,8 @@ public interface Linker<T> extends Closeable {
    * Defines a module in the linker by instantiating it and registering all its exports.
    *
    * <p>This corresponds to Wasmtime's {@code Linker::module()} API. It instantiates the given
-   * module and defines all of its exports into the linker under the given module name. This
-   * handles WASI command modules specially by automatically running the {@code _start} function.
+   * module and defines all of its exports into the linker under the given module name. This handles
+   * WASI command modules specially by automatically running the {@code _start} function.
    *
    * <p>This is different from {@link #instantiate(Store, String, Module)} in that it uses
    * Wasmtime's native module-level linking which properly handles WASI commands.
@@ -235,8 +239,8 @@ public interface Linker<T> extends Closeable {
   /**
    * Aliases all definitions from one module name to another.
    *
-   * <p>This copies all linker definitions under {@code module} to also be available under
-   * {@code asModule}. This is useful for providing the same module under multiple names.
+   * <p>This copies all linker definitions under {@code module} to also be available under {@code
+   * asModule}. This is useful for providing the same module under multiple names.
    *
    * @param module the source module name
    * @param asModule the destination module name to alias to
@@ -568,13 +572,14 @@ public interface Linker<T> extends Closeable {
    */
   default java.util.concurrent.CompletableFuture<Instance> instantiateAsync(
       final Store store, final Module module) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiate(store, module);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store, module);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
@@ -593,13 +598,14 @@ public interface Linker<T> extends Closeable {
    */
   default java.util.concurrent.CompletableFuture<Void> moduleAsync(
       final Store store, final String moduleName, final Module module) {
-    return java.util.concurrent.CompletableFuture.runAsync(() -> {
-      try {
-        module(store, moduleName, module);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.runAsync(
+        () -> {
+          try {
+            module(store, moduleName, module);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**

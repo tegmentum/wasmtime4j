@@ -253,21 +253,22 @@ public interface ComponentLinker<T> extends Closeable {
       final Store store, final Component component) throws WasmException {
     // Default: delegate to sync instantiation on ForkJoinPool.
     // Implementations should override to use native linker.instantiate_async().
-    return java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-      try {
-        return instantiate(store, component);
-      } catch (final WasmException e) {
-        throw new java.util.concurrent.CompletionException(e);
-      }
-    });
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return instantiate(store, component);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
   }
 
   /**
    * Returns the component type with all imports substituted by the linker's definitions.
    *
    * <p>This method computes a {@link ComponentTypeInfo} reflecting the component's type after the
-   * linker has filled in all available imports. The result shows which imports are still unsatisfied
-   * and which exports will be available.
+   * linker has filled in all available imports. The result shows which imports are still
+   * unsatisfied and which exports will be available.
    *
    * <p>This is useful for checking link-time compatibility before instantiation, or for generating
    * documentation about a component's effective interface after imports are resolved.

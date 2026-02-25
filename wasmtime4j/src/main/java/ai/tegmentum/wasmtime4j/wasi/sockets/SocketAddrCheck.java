@@ -22,8 +22,7 @@ import java.net.InetSocketAddress;
  * Callback interface for validating socket addresses before use.
  *
  * <p>This callback is invoked for each socket operation to determine whether it should be
- * permitted. Returning {@code true} allows the operation, while returning {@code false}
- * denies it.
+ * permitted. Returning {@code true} allows the operation, while returning {@code false} denies it.
  *
  * <p>Example usage:
  *

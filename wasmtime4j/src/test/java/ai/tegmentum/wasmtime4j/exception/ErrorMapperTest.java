@@ -238,8 +238,7 @@ class ErrorMapperTest {
     @DisplayName("All WasmErrorCode values should be handled")
     void allWasmErrorCodesShouldBeHandled() {
       for (final WasmErrorCode errorCode : WasmErrorCode.values()) {
-        final WasmException ex =
-            ErrorMapper.mapErrorCode(errorCode.getCode(), "coverage test");
+        final WasmException ex = ErrorMapper.mapErrorCode(errorCode.getCode(), "coverage test");
         assertNotNull(
             ex,
             "WasmErrorCode."

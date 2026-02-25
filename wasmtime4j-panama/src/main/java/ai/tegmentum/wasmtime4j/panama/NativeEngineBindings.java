@@ -88,7 +88,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     if (moduleValidateBinding != null) {
       this.mhModuleValidate = moduleValidateBinding.getMethodHandle().orElse(null);
     }
-
   }
 
   // ===== Binding Registrations =====
@@ -104,6 +103,49 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // return engine_ptr
             ValueLayout.ADDRESS, // json_ptr
             ValueLayout.JAVA_LONG)); // json_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_create_with_cache_store",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return engine_ptr
+            ValueLayout.ADDRESS, // json_ptr
+            ValueLayout.JAVA_LONG, // json_len
+            ValueLayout.JAVA_LONG, // callback_id
+            ValueLayout.ADDRESS, // get_fn pointer
+            ValueLayout.ADDRESS, // insert_fn pointer
+            ValueLayout.ADDRESS)); // free_fn pointer
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_create_with_extensions",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return engine_ptr
+            ValueLayout.ADDRESS, // json_ptr
+            ValueLayout.JAVA_LONG, // json_len
+            // CacheStore (3 params)
+            ValueLayout.JAVA_LONG, // cs_callback_id
+            ValueLayout.ADDRESS, // cs_get_fn
+            ValueLayout.ADDRESS, // cs_insert_fn
+            ValueLayout.ADDRESS, // cs_free_fn
+            // MemoryCreator (7 params)
+            ValueLayout.JAVA_LONG, // mc_id
+            ValueLayout.ADDRESS, // mc_new_memory_fn
+            ValueLayout.ADDRESS, // lm_byte_size_fn
+            ValueLayout.ADDRESS, // lm_byte_capacity_fn
+            ValueLayout.ADDRESS, // lm_grow_to_fn
+            ValueLayout.ADDRESS, // lm_as_ptr_fn
+            ValueLayout.ADDRESS, // lm_drop_fn
+            // StackCreator (6 params)
+            ValueLayout.JAVA_LONG, // sc_id
+            ValueLayout.ADDRESS, // sc_new_stack_fn
+            ValueLayout.ADDRESS, // sm_top_fn
+            ValueLayout.ADDRESS, // sm_range_fn
+            ValueLayout.ADDRESS, // sm_guard_range_fn
+            ValueLayout.ADDRESS, // sm_drop_fn
+            // CustomCodeMemory (4 params)
+            ValueLayout.JAVA_LONG, // ccm_id
+            ValueLayout.ADDRESS, // ccm_alignment_fn
+            ValueLayout.ADDRESS, // ccm_publish_fn
+            ValueLayout.ADDRESS)); // ccm_unpublish_fn
 
     addFunctionBinding("wasmtime4j_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
@@ -569,6 +611,35 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // num_globals_out (i32 ptr)
             ValueLayout.ADDRESS)); // num_functions_out (i32 ptr)
 
+    addFunctionBinding(
+        "wasmtime4j_panama_module_text",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // data_ptr_ptr (output)
+            ValueLayout.ADDRESS)); // len_ptr (output)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_module_address_map",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, 1 if unavailable, -1 on error
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // code_offsets_out (output)
+            ValueLayout.ADDRESS, // wasm_offsets_out (output)
+            ValueLayout.ADDRESS)); // count_out (output)
+
+    addFunctionBinding(
+        "wasmtime4j_free_byte_array",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // data_ptr
+            ValueLayout.JAVA_LONG)); // len
+
+    addFunctionBinding(
+        "wasmtime4j_free_address_map",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // code_offsets_ptr
+            ValueLayout.ADDRESS, // wasm_offsets_ptr
+            ValueLayout.JAVA_LONG)); // count
   }
 
   // ===========================================================================================
@@ -645,6 +716,825 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     } catch (Exception e) {
       LOGGER.severe("Exception during engine creation with JSON config: " + e.getMessage());
       return null;
+    }
+  }
+
+  // ============================================================================
+  // CacheStore callback support for incremental compilation
+  // ============================================================================
+
+  private static final java.util.concurrent.ConcurrentHashMap<
+          Long, ai.tegmentum.wasmtime4j.config.CacheStore>
+      CACHE_STORES = new java.util.concurrent.ConcurrentHashMap<>();
+  private static final java.util.concurrent.atomic.AtomicLong CACHE_STORE_ID_COUNTER =
+      new java.util.concurrent.atomic.AtomicLong(1);
+
+  // Static Arena for upcall stubs that must outlive the engine
+  private static final Arena CACHE_STORE_ARENA = Arena.ofAuto();
+
+  /**
+   * CacheStore.get() upcall stub.
+   *
+   * <p>Called from Rust: (callbackId, keyPtr, keyLen, outDataPtr, outDataLen) -> int
+   */
+  private static int cacheStoreGetStub(
+      final long callbackId,
+      final MemorySegment keyPtr,
+      final long keyLen,
+      final MemorySegment outDataPtr,
+      final MemorySegment outDataLen) {
+    final ai.tegmentum.wasmtime4j.config.CacheStore store = CACHE_STORES.get(callbackId);
+    if (store == null) {
+      return 0;
+    }
+    try {
+      final byte[] key = keyPtr.reinterpret(keyLen).toArray(ValueLayout.JAVA_BYTE);
+      final byte[] result = store.get(key);
+      if (result == null || result.length == 0) {
+        return 0;
+      }
+
+      // Allocate native memory for the result and copy data
+      final MemorySegment resultSeg =
+          CACHE_STORE_ARENA.allocate(ValueLayout.JAVA_BYTE, result.length);
+      resultSeg.copyFrom(MemorySegment.ofArray(result));
+
+      // Write output pointers
+      outDataPtr.reinterpret(ValueLayout.ADDRESS.byteSize()).set(ValueLayout.ADDRESS, 0, resultSeg);
+      outDataLen
+          .reinterpret(ValueLayout.JAVA_LONG.byteSize())
+          .set(ValueLayout.JAVA_LONG, 0, result.length);
+
+      return 1;
+    } catch (Exception e) {
+      LOGGER.warning("CacheStore.get() callback failed: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  /**
+   * CacheStore.insert() upcall stub.
+   *
+   * <p>Called from Rust: (callbackId, keyPtr, keyLen, valuePtr, valueLen) -> int
+   */
+  private static int cacheStoreInsertStub(
+      final long callbackId,
+      final MemorySegment keyPtr,
+      final long keyLen,
+      final MemorySegment valuePtr,
+      final long valueLen) {
+    final ai.tegmentum.wasmtime4j.config.CacheStore store = CACHE_STORES.get(callbackId);
+    if (store == null) {
+      return 0;
+    }
+    try {
+      final byte[] key = keyPtr.reinterpret(keyLen).toArray(ValueLayout.JAVA_BYTE);
+      final byte[] value = valuePtr.reinterpret(valueLen).toArray(ValueLayout.JAVA_BYTE);
+      return store.insert(key, value) ? 1 : 0;
+    } catch (Exception e) {
+      LOGGER.warning("CacheStore.insert() callback failed: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  /** Free stub - no-op since Arena manages memory. */
+  private static void cacheStoreFreeStub(final MemorySegment ptr, final long len) {
+    // Memory allocated by CACHE_STORE_ARENA is managed by GC, no manual free needed
+  }
+
+  /**
+   * Creates a new engine with JSON configuration and a CacheStore for incremental compilation.
+   *
+   * @param config the engine configuration (must have an incremental cache store set)
+   * @return memory segment pointer to the engine, or null on failure
+   */
+  public MemorySegment engineCreateWithConfigAndCacheStore(
+      final ai.tegmentum.wasmtime4j.config.EngineConfig config) {
+    try {
+      if (!isInitialized()) {
+        LOGGER.severe("NativeEngineBindings not initialized, cannot create engine");
+        return null;
+      }
+
+      final ai.tegmentum.wasmtime4j.config.CacheStore cacheStore =
+          config.getIncrementalCacheStore();
+      if (cacheStore == null) {
+        LOGGER.severe("No cache store in config, falling back to non-cached creation");
+        return engineCreateWithConfig(config);
+      }
+
+      // Register cache store
+      final long callbackId = CACHE_STORE_ID_COUNTER.getAndIncrement();
+      CACHE_STORES.put(callbackId, cacheStore);
+
+      // Create upcall stubs
+      final MemorySegment getStub;
+      final MemorySegment insertStub;
+      final MemorySegment freeStub;
+
+      try {
+        final java.lang.invoke.MethodHandle getHandle =
+            java.lang.invoke.MethodHandles.lookup()
+                .findStatic(
+                    NativeEngineBindings.class,
+                    "cacheStoreGetStub",
+                    java.lang.invoke.MethodType.methodType(
+                        int.class,
+                        long.class,
+                        MemorySegment.class,
+                        long.class,
+                        MemorySegment.class,
+                        MemorySegment.class));
+
+        final java.lang.invoke.MethodHandle insertHandle =
+            java.lang.invoke.MethodHandles.lookup()
+                .findStatic(
+                    NativeEngineBindings.class,
+                    "cacheStoreInsertStub",
+                    java.lang.invoke.MethodType.methodType(
+                        int.class,
+                        long.class,
+                        MemorySegment.class,
+                        long.class,
+                        MemorySegment.class,
+                        long.class));
+
+        final java.lang.invoke.MethodHandle freeHandle =
+            java.lang.invoke.MethodHandles.lookup()
+                .findStatic(
+                    NativeEngineBindings.class,
+                    "cacheStoreFreeStub",
+                    java.lang.invoke.MethodType.methodType(
+                        void.class, MemorySegment.class, long.class));
+
+        getStub =
+            java.lang.foreign.Linker.nativeLinker()
+                .upcallStub(
+                    getHandle,
+                    FunctionDescriptor.of(
+                        ValueLayout.JAVA_INT, // return
+                        ValueLayout.JAVA_LONG, // callback_id
+                        ValueLayout.ADDRESS, // key_ptr
+                        ValueLayout.JAVA_LONG, // key_len
+                        ValueLayout.ADDRESS, // out_data_ptr
+                        ValueLayout.ADDRESS), // out_data_len
+                    CACHE_STORE_ARENA);
+
+        insertStub =
+            java.lang.foreign.Linker.nativeLinker()
+                .upcallStub(
+                    insertHandle,
+                    FunctionDescriptor.of(
+                        ValueLayout.JAVA_INT, // return
+                        ValueLayout.JAVA_LONG, // callback_id
+                        ValueLayout.ADDRESS, // key_ptr
+                        ValueLayout.JAVA_LONG, // key_len
+                        ValueLayout.ADDRESS, // value_ptr
+                        ValueLayout.JAVA_LONG), // value_len
+                    CACHE_STORE_ARENA);
+
+        freeStub =
+            java.lang.foreign.Linker.nativeLinker()
+                .upcallStub(
+                    freeHandle,
+                    FunctionDescriptor.ofVoid(
+                        ValueLayout.ADDRESS, // ptr
+                        ValueLayout.JAVA_LONG), // len
+                    CACHE_STORE_ARENA);
+      } catch (Exception e) {
+        LOGGER.severe("Failed to create upcall stubs for CacheStore: " + e.getMessage());
+        CACHE_STORES.remove(callbackId);
+        return null;
+      }
+
+      final byte[] jsonBytes = config.toJson();
+
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment jsonSeg = arena.allocate(jsonBytes.length);
+        jsonSeg.copyFrom(MemorySegment.ofArray(jsonBytes));
+
+        final MemorySegment result =
+            callNativeFunction(
+                "wasmtime4j_panama_engine_create_with_cache_store",
+                MemorySegment.class,
+                jsonSeg,
+                (long) jsonBytes.length,
+                callbackId,
+                getStub,
+                insertStub,
+                freeStub);
+
+        if (result == null || result.equals(MemorySegment.NULL)) {
+          LOGGER.warning("Engine creation with cache store returned null");
+          CACHE_STORES.remove(callbackId);
+        } else {
+          LOGGER.fine("Engine created with cache store successfully: " + result);
+        }
+        return result;
+      }
+    } catch (Exception e) {
+      LOGGER.severe("Exception during engine creation with cache store: " + e.getMessage());
+      return null;
+    }
+  }
+
+  // ============================================================================
+  // Extension Traits callback support (MemoryCreator, StackCreator, CustomCodeMemory)
+  // ============================================================================
+
+  private static final java.util.concurrent.ConcurrentHashMap<
+          Long, ai.tegmentum.wasmtime4j.config.MemoryCreator>
+      MEMORY_CREATORS = new java.util.concurrent.ConcurrentHashMap<>();
+  private static final java.util.concurrent.atomic.AtomicLong MEMORY_CREATOR_ID_COUNTER =
+      new java.util.concurrent.atomic.AtomicLong(1);
+
+  private static final java.util.concurrent.ConcurrentHashMap<
+          Long, ai.tegmentum.wasmtime4j.config.LinearMemory>
+      LINEAR_MEMORIES = new java.util.concurrent.ConcurrentHashMap<>();
+  private static final java.util.concurrent.atomic.AtomicLong LINEAR_MEMORY_ID_COUNTER =
+      new java.util.concurrent.atomic.AtomicLong(1);
+
+  private static final java.util.concurrent.ConcurrentHashMap<
+          Long, ai.tegmentum.wasmtime4j.config.StackCreator>
+      STACK_CREATORS = new java.util.concurrent.ConcurrentHashMap<>();
+  private static final java.util.concurrent.atomic.AtomicLong STACK_CREATOR_ID_COUNTER =
+      new java.util.concurrent.atomic.AtomicLong(1);
+
+  private static final java.util.concurrent.ConcurrentHashMap<
+          Long, ai.tegmentum.wasmtime4j.config.StackMemory>
+      STACK_MEMORIES = new java.util.concurrent.ConcurrentHashMap<>();
+  private static final java.util.concurrent.atomic.AtomicLong STACK_MEMORY_ID_COUNTER =
+      new java.util.concurrent.atomic.AtomicLong(1);
+
+  private static final java.util.concurrent.ConcurrentHashMap<
+          Long, ai.tegmentum.wasmtime4j.config.CustomCodeMemory>
+      CODE_MEMORIES = new java.util.concurrent.ConcurrentHashMap<>();
+  private static final java.util.concurrent.atomic.AtomicLong CODE_MEMORY_ID_COUNTER =
+      new java.util.concurrent.atomic.AtomicLong(1);
+
+  private static final Arena EXTENSION_ARENA = Arena.ofAuto();
+
+  // ---- MemoryCreator stubs ----
+
+  /**
+   * MemoryCreator.newMemory upcall stub.
+   *
+   * <p>Called from Rust: (creator_id, min_bytes, max_bytes, reserved_bytes, guard_bytes) -> i64
+   *
+   * <p>max_bytes and reserved_bytes use -1 to represent "no limit" (maps to OptionalLong.empty()).
+   */
+  private static long memoryCreatorNewMemoryStub(
+      final long creatorId,
+      final long minBytes,
+      final long maxBytes,
+      final long reservedBytes,
+      final long guardBytes) {
+    final ai.tegmentum.wasmtime4j.config.MemoryCreator creator = MEMORY_CREATORS.get(creatorId);
+    if (creator == null) {
+      return 0;
+    }
+    try {
+      final java.util.OptionalLong max =
+          maxBytes < 0 ? java.util.OptionalLong.empty() : java.util.OptionalLong.of(maxBytes);
+      final java.util.OptionalLong reserved =
+          reservedBytes < 0
+              ? java.util.OptionalLong.empty()
+              : java.util.OptionalLong.of(reservedBytes);
+      final ai.tegmentum.wasmtime4j.config.LinearMemory mem =
+          creator.newMemory(null, minBytes, max, reserved, guardBytes);
+      if (mem == null) {
+        return 0;
+      }
+      final long memId = LINEAR_MEMORY_ID_COUNTER.getAndIncrement();
+      LINEAR_MEMORIES.put(memId, mem);
+      return memId;
+    } catch (Exception e) {
+      LOGGER.warning("MemoryCreator.newMemory() callback failed: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  /** LinearMemory.byteSize upcall stub. */
+  private static long linearMemoryByteSizeStub(final long memoryId) {
+    final ai.tegmentum.wasmtime4j.config.LinearMemory mem = LINEAR_MEMORIES.get(memoryId);
+    return mem != null ? mem.byteSize() : 0;
+  }
+
+  /** LinearMemory.byteCapacity upcall stub. */
+  private static long linearMemoryByteCapacityStub(final long memoryId) {
+    final ai.tegmentum.wasmtime4j.config.LinearMemory mem = LINEAR_MEMORIES.get(memoryId);
+    return mem != null ? mem.byteCapacity() : 0;
+  }
+
+  /** LinearMemory.growTo upcall stub. Returns 0 on success, -1 on failure. */
+  private static int linearMemoryGrowToStub(final long memoryId, final long newSize) {
+    final ai.tegmentum.wasmtime4j.config.LinearMemory mem = LINEAR_MEMORIES.get(memoryId);
+    if (mem == null) {
+      return -1;
+    }
+    try {
+      mem.growTo(newSize);
+      return 0;
+    } catch (Exception e) {
+      LOGGER.warning("LinearMemory.growTo() callback failed: " + e.getMessage());
+      return -1;
+    }
+  }
+
+  /** LinearMemory.basePointer (as_ptr) upcall stub. */
+  private static MemorySegment linearMemoryAsPtrStub(final long memoryId) {
+    final ai.tegmentum.wasmtime4j.config.LinearMemory mem = LINEAR_MEMORIES.get(memoryId);
+    if (mem == null) {
+      return MemorySegment.NULL;
+    }
+    return MemorySegment.ofAddress(mem.basePointer());
+  }
+
+  /** LinearMemory.close (drop) upcall stub. */
+  private static void linearMemoryDropStub(final long memoryId) {
+    final ai.tegmentum.wasmtime4j.config.LinearMemory mem = LINEAR_MEMORIES.remove(memoryId);
+    if (mem != null) {
+      try {
+        mem.close();
+      } catch (Exception e) {
+        LOGGER.warning("LinearMemory.close() callback failed: " + e.getMessage());
+      }
+    }
+  }
+
+  // ---- StackCreator stubs ----
+
+  /**
+   * StackCreator.newStack upcall stub.
+   *
+   * <p>Called from Rust: (creator_id, size, zeroed) -> i64
+   */
+  private static long stackCreatorNewStackStub(
+      final long creatorId, final long size, final int zeroed) {
+    final ai.tegmentum.wasmtime4j.config.StackCreator creator = STACK_CREATORS.get(creatorId);
+    if (creator == null) {
+      return 0;
+    }
+    try {
+      final ai.tegmentum.wasmtime4j.config.StackMemory stack = creator.newStack(size, zeroed != 0);
+      if (stack == null) {
+        return 0;
+      }
+      final long stackId = STACK_MEMORY_ID_COUNTER.getAndIncrement();
+      STACK_MEMORIES.put(stackId, stack);
+      return stackId;
+    } catch (Exception e) {
+      LOGGER.warning("StackCreator.newStack() callback failed: " + e.getMessage());
+      return 0;
+    }
+  }
+
+  /** StackMemory.top upcall stub. */
+  private static MemorySegment stackMemoryTopStub(final long stackId) {
+    final ai.tegmentum.wasmtime4j.config.StackMemory stack = STACK_MEMORIES.get(stackId);
+    if (stack == null) {
+      return MemorySegment.NULL;
+    }
+    return MemorySegment.ofAddress(stack.top());
+  }
+
+  /** StackMemory.range upcall stub: writes range_start and range_end. */
+  private static void stackMemoryRangeStub(
+      final long stackId, final MemorySegment outStart, final MemorySegment outEnd) {
+    final ai.tegmentum.wasmtime4j.config.StackMemory stack = STACK_MEMORIES.get(stackId);
+    if (stack != null) {
+      outStart
+          .reinterpret(ValueLayout.JAVA_LONG.byteSize())
+          .set(ValueLayout.JAVA_LONG, 0, stack.rangeStart());
+      outEnd
+          .reinterpret(ValueLayout.JAVA_LONG.byteSize())
+          .set(ValueLayout.JAVA_LONG, 0, stack.rangeEnd());
+    }
+  }
+
+  /** StackMemory.guardRange upcall stub: writes guard_start and guard_end pointers. */
+  private static void stackMemoryGuardRangeStub(
+      final long stackId, final MemorySegment outStart, final MemorySegment outEnd) {
+    final ai.tegmentum.wasmtime4j.config.StackMemory stack = STACK_MEMORIES.get(stackId);
+    if (stack != null) {
+      outStart
+          .reinterpret(ValueLayout.ADDRESS.byteSize())
+          .set(ValueLayout.ADDRESS, 0, MemorySegment.ofAddress(stack.guardRangeStart()));
+      outEnd
+          .reinterpret(ValueLayout.ADDRESS.byteSize())
+          .set(ValueLayout.ADDRESS, 0, MemorySegment.ofAddress(stack.guardRangeEnd()));
+    }
+  }
+
+  /** StackMemory.close (drop) upcall stub. */
+  private static void stackMemoryDropStub(final long stackId) {
+    final ai.tegmentum.wasmtime4j.config.StackMemory stack = STACK_MEMORIES.remove(stackId);
+    if (stack != null) {
+      try {
+        stack.close();
+      } catch (Exception e) {
+        LOGGER.warning("StackMemory.close() callback failed: " + e.getMessage());
+      }
+    }
+  }
+
+  // ---- CustomCodeMemory stubs ----
+
+  /** CustomCodeMemory.requiredAlignment upcall stub. */
+  private static long codeMemoryAlignmentStub(final long codeMemId) {
+    final ai.tegmentum.wasmtime4j.config.CustomCodeMemory ccm = CODE_MEMORIES.get(codeMemId);
+    return ccm != null ? ccm.requiredAlignment() : 1;
+  }
+
+  /** CustomCodeMemory.publishExecutable upcall stub. Returns 0 on success, -1 on failure. */
+  private static int codeMemoryPublishStub(
+      final long codeMemId, final MemorySegment ptr, final long len) {
+    final ai.tegmentum.wasmtime4j.config.CustomCodeMemory ccm = CODE_MEMORIES.get(codeMemId);
+    if (ccm == null) {
+      return -1;
+    }
+    try {
+      ccm.publishExecutable(ptr.address(), len);
+      return 0;
+    } catch (Exception e) {
+      LOGGER.warning("CustomCodeMemory.publishExecutable() callback failed: " + e.getMessage());
+      return -1;
+    }
+  }
+
+  /** CustomCodeMemory.unpublishExecutable upcall stub. Returns 0 on success, -1 on failure. */
+  private static int codeMemoryUnpublishStub(
+      final long codeMemId, final MemorySegment ptr, final long len) {
+    final ai.tegmentum.wasmtime4j.config.CustomCodeMemory ccm = CODE_MEMORIES.get(codeMemId);
+    if (ccm == null) {
+      return -1;
+    }
+    try {
+      ccm.unpublishExecutable(ptr.address(), len);
+      return 0;
+    } catch (Exception e) {
+      LOGGER.warning("CustomCodeMemory.unpublishExecutable() callback failed: " + e.getMessage());
+      return -1;
+    }
+  }
+
+  /**
+   * Creates a new engine with JSON configuration and all optional extension traits.
+   *
+   * @param config the engine configuration (may have cache store, memory creator, stack creator,
+   *     and/or custom code memory set)
+   * @return memory segment pointer to the engine, or null on failure
+   */
+  @SuppressWarnings("MethodLength")
+  public MemorySegment engineCreateWithExtensions(
+      final ai.tegmentum.wasmtime4j.config.EngineConfig config) {
+    try {
+      if (!isInitialized()) {
+        LOGGER.severe("NativeEngineBindings not initialized, cannot create engine");
+        return null;
+      }
+
+      // Register extensions and build upcall stubs
+      long csCallbackId = 0;
+      MemorySegment csGetStub = MemorySegment.NULL;
+      MemorySegment csInsertStub = MemorySegment.NULL;
+      MemorySegment csFreeStub = MemorySegment.NULL;
+
+      long mcId = 0;
+      MemorySegment mcNewMemoryStub = MemorySegment.NULL;
+      MemorySegment lmByteSizeStub = MemorySegment.NULL;
+      MemorySegment lmByteCapacityStub = MemorySegment.NULL;
+      MemorySegment lmGrowToStub = MemorySegment.NULL;
+      MemorySegment lmAsPtrStub = MemorySegment.NULL;
+      MemorySegment lmDropStub = MemorySegment.NULL;
+
+      long scId = 0;
+      MemorySegment scNewStackStub = MemorySegment.NULL;
+      MemorySegment smTopStub = MemorySegment.NULL;
+      MemorySegment smRangeStub = MemorySegment.NULL;
+      MemorySegment smGuardRangeStub = MemorySegment.NULL;
+      MemorySegment smDropStub = MemorySegment.NULL;
+
+      long ccmId = 0;
+      MemorySegment ccmAlignmentStub = MemorySegment.NULL;
+      MemorySegment ccmPublishStub = MemorySegment.NULL;
+      MemorySegment ccmUnpublishStub = MemorySegment.NULL;
+
+      final java.lang.foreign.Linker linker = java.lang.foreign.Linker.nativeLinker();
+      final java.lang.invoke.MethodHandles.Lookup lookup = java.lang.invoke.MethodHandles.lookup();
+
+      try {
+        // CacheStore stubs
+        if (config.getIncrementalCacheStore() != null) {
+          csCallbackId = CACHE_STORE_ID_COUNTER.getAndIncrement();
+          CACHE_STORES.put(csCallbackId, config.getIncrementalCacheStore());
+
+          csGetStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "cacheStoreGetStub",
+                      java.lang.invoke.MethodType.methodType(
+                          int.class,
+                          long.class,
+                          MemorySegment.class,
+                          long.class,
+                          MemorySegment.class,
+                          MemorySegment.class)),
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_INT,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.ADDRESS),
+                  EXTENSION_ARENA);
+
+          csInsertStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "cacheStoreInsertStub",
+                      java.lang.invoke.MethodType.methodType(
+                          int.class,
+                          long.class,
+                          MemorySegment.class,
+                          long.class,
+                          MemorySegment.class,
+                          long.class)),
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_INT,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          csFreeStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "cacheStoreFreeStub",
+                      java.lang.invoke.MethodType.methodType(
+                          void.class, MemorySegment.class, long.class)),
+                  FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+        }
+
+        // MemoryCreator stubs
+        if (config.getMemoryCreator() != null) {
+          mcId = MEMORY_CREATOR_ID_COUNTER.getAndIncrement();
+          MEMORY_CREATORS.put(mcId, config.getMemoryCreator());
+
+          mcNewMemoryStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "memoryCreatorNewMemoryStub",
+                      java.lang.invoke.MethodType.methodType(
+                          long.class, long.class, long.class, long.class, long.class, long.class)),
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          lmByteSizeStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "linearMemoryByteSizeStub",
+                      java.lang.invoke.MethodType.methodType(long.class, long.class)),
+                  FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          lmByteCapacityStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "linearMemoryByteCapacityStub",
+                      java.lang.invoke.MethodType.methodType(long.class, long.class)),
+                  FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          lmGrowToStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "linearMemoryGrowToStub",
+                      java.lang.invoke.MethodType.methodType(int.class, long.class, long.class)),
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          lmAsPtrStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "linearMemoryAsPtrStub",
+                      java.lang.invoke.MethodType.methodType(MemorySegment.class, long.class)),
+                  FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          lmDropStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "linearMemoryDropStub",
+                      java.lang.invoke.MethodType.methodType(void.class, long.class)),
+                  FunctionDescriptor.ofVoid(ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+        }
+
+        // StackCreator stubs
+        if (config.getStackCreator() != null) {
+          scId = STACK_CREATOR_ID_COUNTER.getAndIncrement();
+          STACK_CREATORS.put(scId, config.getStackCreator());
+
+          scNewStackStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "stackCreatorNewStackStub",
+                      java.lang.invoke.MethodType.methodType(
+                          long.class, long.class, long.class, int.class)),
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.JAVA_INT),
+                  EXTENSION_ARENA);
+
+          smTopStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "stackMemoryTopStub",
+                      java.lang.invoke.MethodType.methodType(MemorySegment.class, long.class)),
+                  FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          smRangeStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "stackMemoryRangeStub",
+                      java.lang.invoke.MethodType.methodType(
+                          void.class, long.class, MemorySegment.class, MemorySegment.class)),
+                  FunctionDescriptor.ofVoid(
+                      ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+                  EXTENSION_ARENA);
+
+          smGuardRangeStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "stackMemoryGuardRangeStub",
+                      java.lang.invoke.MethodType.methodType(
+                          void.class, long.class, MemorySegment.class, MemorySegment.class)),
+                  FunctionDescriptor.ofVoid(
+                      ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+                  EXTENSION_ARENA);
+
+          smDropStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "stackMemoryDropStub",
+                      java.lang.invoke.MethodType.methodType(void.class, long.class)),
+                  FunctionDescriptor.ofVoid(ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+        }
+
+        // CustomCodeMemory stubs
+        if (config.getCustomCodeMemory() != null) {
+          ccmId = CODE_MEMORY_ID_COUNTER.getAndIncrement();
+          CODE_MEMORIES.put(ccmId, config.getCustomCodeMemory());
+
+          ccmAlignmentStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "codeMemoryAlignmentStub",
+                      java.lang.invoke.MethodType.methodType(long.class, long.class)),
+                  FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          ccmPublishStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "codeMemoryPublishStub",
+                      java.lang.invoke.MethodType.methodType(
+                          int.class, long.class, MemorySegment.class, long.class)),
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_INT,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+
+          ccmUnpublishStub =
+              linker.upcallStub(
+                  lookup.findStatic(
+                      NativeEngineBindings.class,
+                      "codeMemoryUnpublishStub",
+                      java.lang.invoke.MethodType.methodType(
+                          int.class, long.class, MemorySegment.class, long.class)),
+                  FunctionDescriptor.of(
+                      ValueLayout.JAVA_INT,
+                      ValueLayout.JAVA_LONG,
+                      ValueLayout.ADDRESS,
+                      ValueLayout.JAVA_LONG),
+                  EXTENSION_ARENA);
+        }
+      } catch (Exception e) {
+        LOGGER.severe("Failed to create upcall stubs for extensions: " + e.getMessage());
+        if (csCallbackId != 0) {
+          CACHE_STORES.remove(csCallbackId);
+        }
+        if (mcId != 0) {
+          MEMORY_CREATORS.remove(mcId);
+        }
+        if (scId != 0) {
+          STACK_CREATORS.remove(scId);
+        }
+        if (ccmId != 0) {
+          CODE_MEMORIES.remove(ccmId);
+        }
+        return null;
+      }
+
+      final byte[] jsonBytes = config.toJson();
+
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment jsonSeg = arena.allocate(jsonBytes.length);
+        jsonSeg.copyFrom(MemorySegment.ofArray(jsonBytes));
+
+        final MemorySegment result =
+            callNativeFunction(
+                "wasmtime4j_panama_engine_create_with_extensions",
+                MemorySegment.class,
+                jsonSeg,
+                (long) jsonBytes.length,
+                // CacheStore
+                csCallbackId,
+                csGetStub,
+                csInsertStub,
+                csFreeStub,
+                // MemoryCreator
+                mcId,
+                mcNewMemoryStub,
+                lmByteSizeStub,
+                lmByteCapacityStub,
+                lmGrowToStub,
+                lmAsPtrStub,
+                lmDropStub,
+                // StackCreator
+                scId,
+                scNewStackStub,
+                smTopStub,
+                smRangeStub,
+                smGuardRangeStub,
+                smDropStub,
+                // CustomCodeMemory
+                ccmId,
+                ccmAlignmentStub,
+                ccmPublishStub,
+                ccmUnpublishStub);
+
+        if (result == null || result.equals(MemorySegment.NULL)) {
+          LOGGER.warning("Engine creation with extensions returned null");
+          cleanupExtensionRegistries(csCallbackId, mcId, scId, ccmId);
+        } else {
+          LOGGER.fine("Engine created with extensions successfully: " + result);
+        }
+        return result;
+      }
+    } catch (Exception e) {
+      LOGGER.severe("Exception during engine creation with extensions: " + e.getMessage());
+      return null;
+    }
+  }
+
+  /** Clean up extension registries when engine creation fails. */
+  private static void cleanupExtensionRegistries(
+      final long csId, final long mcId, final long scId, final long ccmId) {
+    if (csId != 0) {
+      CACHE_STORES.remove(csId);
+    }
+    if (mcId != 0) {
+      MEMORY_CREATORS.remove(mcId);
+    }
+    if (scId != 0) {
+      STACK_CREATORS.remove(scId);
+    }
+    if (ccmId != 0) {
+      CODE_MEMORIES.remove(ccmId);
     }
   }
 
@@ -816,8 +1706,7 @@ public final class NativeEngineBindings extends NativeBindingsBase {
    */
   public boolean engineSame(final MemorySegment enginePtr1, final MemorySegment enginePtr2) {
     final int result =
-        callNativeFunction(
-            "wasmtime4j_panama_engine_same", Integer.class, enginePtr1, enginePtr2);
+        callNativeFunction("wasmtime4j_panama_engine_same", Integer.class, enginePtr1, enginePtr2);
     return result == 1;
   }
 
@@ -861,15 +1750,11 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment featureNameSegment = arena.allocateFrom(featureName);
       return callNativeFunction(
-          "wasmtime4j_panama_engine_detect_host_feature",
-          Integer.class,
-          featureNameSegment);
+          "wasmtime4j_panama_engine_detect_host_feature", Integer.class, featureNameSegment);
     }
   }
 
-  /**
-   * Eagerly initializes Wasmtime's thread-local state for the current thread.
-   */
+  /** Eagerly initializes Wasmtime's thread-local state for the current thread. */
   public void tlsEagerInitialize() {
     callNativeFunction("wasmtime4j_panama_engine_tls_eager_initialize", Void.class);
   }
@@ -1079,8 +1964,7 @@ public final class NativeEngineBindings extends NativeBindingsBase {
 
     try (Arena tempArena = Arena.ofConfined()) {
       // Allocate buffer for 12 i64 values
-      final MemorySegment outMetrics =
-          tempArena.allocate(ValueLayout.JAVA_LONG, 12);
+      final MemorySegment outMetrics = tempArena.allocate(ValueLayout.JAVA_LONG, 12);
 
       final int result =
           callNativeFunction(
@@ -1312,8 +2196,7 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     validatePointer(modulePtr2, "modulePtr2");
 
     final int result =
-        callNativeFunction(
-            "wasmtime4j_panama_module_same", Integer.class, modulePtr1, modulePtr2);
+        callNativeFunction("wasmtime4j_panama_module_same", Integer.class, modulePtr1, modulePtr2);
     return result == 1;
   }
 
@@ -1528,6 +2411,81 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Gets compiled machine code text from a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param dataPtrPtr output pointer for the data pointer
+   * @param lenPtr output pointer for the data length
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleText(
+      final MemorySegment modulePtr, final MemorySegment dataPtrPtr, final MemorySegment lenPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(dataPtrPtr, "dataPtrPtr");
+    validatePointer(lenPtr, "lenPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_text", Integer.class, modulePtr, dataPtrPtr, lenPtr);
+  }
+
+  /**
+   * Gets address map from a module.
+   *
+   * @param modulePtr pointer to the module
+   * @param codeOffsetsOut output pointer for code offsets array
+   * @param wasmOffsetsOut output pointer for wasm offsets array
+   * @param countOut output pointer for the number of entries
+   * @return 0 on success, 1 if address map not available, -1 on error
+   */
+  public int moduleAddressMap(
+      final MemorySegment modulePtr,
+      final MemorySegment codeOffsetsOut,
+      final MemorySegment wasmOffsetsOut,
+      final MemorySegment countOut) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(codeOffsetsOut, "codeOffsetsOut");
+    validatePointer(wasmOffsetsOut, "wasmOffsetsOut");
+    validatePointer(countOut, "countOut");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_address_map",
+        Integer.class,
+        modulePtr,
+        codeOffsetsOut,
+        wasmOffsetsOut,
+        countOut);
+  }
+
+  /**
+   * Frees a byte array allocated by native code.
+   *
+   * @param dataPtr pointer to the data
+   * @param len length of the data
+   */
+  public void freeByteArray(final MemorySegment dataPtr, final long len) {
+    if (dataPtr != null && !dataPtr.equals(MemorySegment.NULL) && len > 0) {
+      callNativeFunction("wasmtime4j_free_byte_array", Void.class, dataPtr, len);
+    }
+  }
+
+  /**
+   * Frees address map arrays allocated by native code.
+   *
+   * @param codeOffsetsPtr pointer to the code offsets array
+   * @param wasmOffsetsPtr pointer to the wasm offsets array
+   * @param count number of entries
+   */
+  public void freeAddressMap(
+      final MemorySegment codeOffsetsPtr, final MemorySegment wasmOffsetsPtr, final long count) {
+    if (count > 0) {
+      if (codeOffsetsPtr != null && !codeOffsetsPtr.equals(MemorySegment.NULL)) {
+        callNativeFunction(
+            "wasmtime4j_free_address_map", Void.class, codeOffsetsPtr, wasmOffsetsPtr, count);
+      }
+    }
+  }
+
+  /**
    * Gets the name of a module.
    *
    * @param modulePtr pointer to the module
@@ -1537,8 +2495,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     validatePointer(modulePtr, "modulePtr");
     return callNativeFunction("wasmtime4j_module_get_name", MemorySegment.class, modulePtr);
   }
-
-
 
   /**
    * Gets the number of exports in a module.
@@ -1884,5 +2840,4 @@ public final class NativeEngineBindings extends NativeBindingsBase {
       callNativeFunction("wasmtime4j_guest_profiler_destroy", Void.class, profilerPtr);
     }
   }
-
 }

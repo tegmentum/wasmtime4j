@@ -83,8 +83,7 @@ class SocketAddressCodecTest {
     @Test
     @DisplayName("Should encode [::1]:8080 correctly")
     void shouldEncodeLoopbackAddress() {
-      final Ipv6Address addr =
-          new Ipv6Address(new short[] {0, 0, 0, 0, 0, 0, 0, 1});
+      final Ipv6Address addr = new Ipv6Address(new short[] {0, 0, 0, 0, 0, 0, 0, 1});
       final IpSocketAddress socketAddr =
           IpSocketAddress.ipv6(new Ipv6SocketAddress(8080, 0, addr, 0));
 
@@ -108,8 +107,7 @@ class SocketAddressCodecTest {
     @Test
     @DisplayName("Should preserve flowInfo and scopeId")
     void shouldPreserveFlowInfoAndScopeId() {
-      final Ipv6Address addr =
-          new Ipv6Address(new short[] {(short) 0xFE80, 0, 0, 0, 0, 0, 0, 1});
+      final Ipv6Address addr = new Ipv6Address(new short[] {(short) 0xFE80, 0, 0, 0, 0, 0, 0, 1});
       final IpSocketAddress socketAddr =
           IpSocketAddress.ipv6(new Ipv6SocketAddress(443, 12345, addr, 42));
 
@@ -126,9 +124,7 @@ class SocketAddressCodecTest {
       // Segment 0 = 0x2001, Segment 1 = 0x0DB8
       final Ipv6Address addr =
           new Ipv6Address(
-              new short[] {
-                (short) 0x2001, (short) 0x0DB8, 0, 0, 0, 0, 0, (short) 0x0001
-              });
+              new short[] {(short) 0x2001, (short) 0x0DB8, 0, 0, 0, 0, 0, (short) 0x0001});
       final IpSocketAddress socketAddr =
           IpSocketAddress.ipv6(new Ipv6SocketAddress(80, 0, addr, 0));
 
@@ -186,7 +182,14 @@ class SocketAddressCodecTest {
       // Format: [is_ipv4=0, seg0..seg7, port, flow_info, scope_id]
       final long[] encoded = {
         0, // is_ipv4 = false
-        0x2001, 0x0DB8, 0, 0, 0, 0, 0, 0x0001, // 8 segments
+        0x2001,
+        0x0DB8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0x0001, // 8 segments
         443, // port
         99, // flowInfo
         7 // scopeId
@@ -214,7 +217,8 @@ class SocketAddressCodecTest {
     @DisplayName("IPv4 encode then decode should return equivalent address")
     void ipv4RoundTrip() {
       final Ipv4Address originalAddr = new Ipv4Address(new byte[] {10, 20, 30, 40});
-      final IpSocketAddress original = IpSocketAddress.ipv4(new Ipv4SocketAddress(9090, originalAddr));
+      final IpSocketAddress original =
+          IpSocketAddress.ipv4(new Ipv4SocketAddress(9090, originalAddr));
 
       final SocketAddressCodec.AddressParams encoded = SocketAddressCodec.encodeAddress(original);
 
@@ -243,9 +247,7 @@ class SocketAddressCodecTest {
     void ipv6RoundTrip() {
       final Ipv6Address originalAddr =
           new Ipv6Address(
-              new short[] {
-                (short) 0xFE80, 0, 0, 0, (short) 0xDEAD, (short) 0xBEEF, 0, 1
-              });
+              new short[] {(short) 0xFE80, 0, 0, 0, (short) 0xDEAD, (short) 0xBEEF, 0, 1});
       final IpSocketAddress original =
           IpSocketAddress.ipv6(new Ipv6SocketAddress(8443, 42, originalAddr, 3));
 

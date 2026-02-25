@@ -309,7 +309,8 @@ public final class JniInstance extends JniResource implements Instance {
 
     try {
       final long externHandle =
-          nativeGetModuleExport(getNativeHandle(), storeHandle, moduleExport.nativeHandle(), outType);
+          nativeGetModuleExport(
+              getNativeHandle(), storeHandle, moduleExport.nativeHandle(), outType);
 
       if (externHandle == 0) {
         return Optional.empty();
@@ -522,5 +523,4 @@ public final class JniInstance extends JniResource implements Instance {
    */
   private static native Object[] nativeCallFunction(
       long instanceHandle, long storeHandle, String functionName, Object[] params);
-
 }

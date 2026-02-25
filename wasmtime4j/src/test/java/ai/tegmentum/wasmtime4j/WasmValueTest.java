@@ -865,23 +865,26 @@ class WasmValueTest {
     @Test
     @DisplayName("should return null for reference types")
     void shouldReturnNullForReferenceTypes() {
-      assertNull(WasmValue.defaultForType(WasmValueType.FUNCREF).getValue(),
-          "FUNCREF default is null");
-      assertNull(WasmValue.defaultForType(WasmValueType.EXTERNREF).getValue(),
+      assertNull(
+          WasmValue.defaultForType(WasmValueType.FUNCREF).getValue(), "FUNCREF default is null");
+      assertNull(
+          WasmValue.defaultForType(WasmValueType.EXTERNREF).getValue(),
           "EXTERNREF default is null");
-      assertNull(WasmValue.defaultForType(WasmValueType.ANYREF).getValue(),
-          "ANYREF default is null");
-      assertNull(WasmValue.defaultForType(WasmValueType.EXNREF).getValue(),
-          "EXNREF default is null");
-      assertNull(WasmValue.defaultForType(WasmValueType.CONTREF).getValue(),
-          "CONTREF default is null");
+      assertNull(
+          WasmValue.defaultForType(WasmValueType.ANYREF).getValue(), "ANYREF default is null");
+      assertNull(
+          WasmValue.defaultForType(WasmValueType.EXNREF).getValue(), "EXNREF default is null");
+      assertNull(
+          WasmValue.defaultForType(WasmValueType.CONTREF).getValue(), "CONTREF default is null");
     }
 
     @Test
     @DisplayName("should throw for null type")
     void shouldThrowForNullType() {
-      assertThrows(IllegalArgumentException.class,
-          () -> WasmValue.defaultForType(null), "Should throw for null type");
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WasmValue.defaultForType(null),
+          "Should throw for null type");
     }
 
     @Test
@@ -890,8 +893,7 @@ class WasmValueTest {
       for (final WasmValueType type : WasmValueType.values()) {
         final WasmValue value = WasmValue.defaultForType(type);
         assertNotNull(value, "Default for " + type + " should not be null");
-        assertEquals(type, value.getType(),
-            "Default for " + type + " should have correct type");
+        assertEquals(type, value.getType(), "Default for " + type + " should have correct type");
       }
     }
   }

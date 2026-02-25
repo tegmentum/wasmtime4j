@@ -519,7 +519,8 @@ public final class PanamaHostFunction implements WasmFunction {
 
     final PanamaHostFunction hostFunction = hostFunctionRegistry.get(callbackId);
     if (hostFunction == null) {
-      PanamaErrorMapper.writeErrorMessage(errorMessagePtr, errorMessageLen, "Host function not found: " + callbackId);
+      PanamaErrorMapper.writeErrorMessage(
+          errorMessagePtr, errorMessageLen, "Host function not found: " + callbackId);
       return 1;
     }
 
@@ -719,7 +720,6 @@ public final class PanamaHostFunction implements WasmFunction {
       default -> throw new IllegalArgumentException("Unsupported type: " + value.getType());
     }
   }
-
 
   /**
    * Creates a method handle for the callback wrapper method.

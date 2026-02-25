@@ -62,7 +62,6 @@ class WitPackageTest {
       assertTrue(Modifier.isAbstract(modifiers), "WitValue should be abstract");
       assertFalse(WitValue.class.isInterface(), "WitValue should not be an interface");
     }
-
   }
 
   // ========== WitPrimitiveValue Base Class Tests ==========
@@ -452,7 +451,6 @@ class WitPackageTest {
       assertTrue(some.isSome(), "of(present) should create some");
       assertTrue(none.isNone(), "of(empty) should create none");
     }
-
   }
 
   // ========== WitList Tests ==========
@@ -1366,7 +1364,6 @@ class WitPackageTest {
       assertTrue(
           WitValue.class.isAssignableFrom(WitResult.class), "WitResult should extend WitValue");
     }
-
   }
 
   // ========================================================================
@@ -1391,7 +1388,6 @@ class WitPackageTest {
       assertTrue(
           WitValue.class.isAssignableFrom(WitVariant.class), "WitVariant should extend WitValue");
     }
-
   }
 
   // ========================================================================
@@ -1415,7 +1411,6 @@ class WitPackageTest {
     void witEnumShouldExtendWitValue() {
       assertTrue(WitValue.class.isAssignableFrom(WitEnum.class), "WitEnum should extend WitValue");
     }
-
   }
 
   // ========================================================================
@@ -1501,7 +1496,6 @@ class WitPackageTest {
           WitPrimitiveValue.class.isAssignableFrom(WitU16.class),
           "WitU16 should extend WitPrimitiveValue");
     }
-
   }
 
   // ========================================================================
@@ -1527,7 +1521,6 @@ class WitPackageTest {
           WitPrimitiveValue.class.isAssignableFrom(WitU32.class),
           "WitU32 should extend WitPrimitiveValue");
     }
-
   }
 
   // ========================================================================
@@ -1553,7 +1546,6 @@ class WitPackageTest {
           WitPrimitiveValue.class.isAssignableFrom(WitU64.class),
           "WitU64 should extend WitPrimitiveValue");
     }
-
   }
 
   // ========================================================================
@@ -1611,7 +1603,6 @@ class WitPackageTest {
           WitPrimitiveValue.class.isAssignableFrom(WitS16.class),
           "WitS16 should extend WitPrimitiveValue");
     }
-
   }
 
   // ========================================================================
@@ -1637,7 +1628,6 @@ class WitPackageTest {
           WitPrimitiveValue.class.isAssignableFrom(WitS64.class),
           "WitS64 should extend WitPrimitiveValue");
     }
-
   }
 
   // ========================================================================
@@ -1699,6 +1689,5 @@ class WitPackageTest {
           Double.isInfinite(value.getValue()) && value.getValue() < 0,
           "getValue should return negative infinity");
     }
-
   }
 }

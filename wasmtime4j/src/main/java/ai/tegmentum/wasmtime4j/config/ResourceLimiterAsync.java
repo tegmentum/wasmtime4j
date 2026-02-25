@@ -69,24 +69,23 @@ public interface ResourceLimiterAsync {
    * @param desiredBytes the desired new size of the memory in bytes
    * @param maximumBytes the maximum size of the memory in bytes as declared by the WebAssembly
    *     module, or {@link Long#MAX_VALUE} if no maximum is specified
-   * @return a CompletableFuture that completes with {@code true} to allow the growth, {@code
-   *     false} to deny it
+   * @return a CompletableFuture that completes with {@code true} to allow the growth, {@code false}
+   *     to deny it
    */
-  CompletableFuture<Boolean> memoryGrowing(
-      long currentBytes, long desiredBytes, long maximumBytes);
+  CompletableFuture<Boolean> memoryGrowing(long currentBytes, long desiredBytes, long maximumBytes);
 
   /**
    * Called asynchronously when a WebAssembly table is about to grow.
    *
-   * <p>This method is invoked by the Wasmtime runtime each time a {@code table.grow} instruction
-   * is executed or when the runtime needs to grow a table for other reasons.
+   * <p>This method is invoked by the Wasmtime runtime each time a {@code table.grow} instruction is
+   * executed or when the runtime needs to grow a table for other reasons.
    *
    * @param currentElements the current number of elements in the table
    * @param desiredElements the desired new number of elements
-   * @param maximumElements the maximum number of elements as declared by the WebAssembly module,
-   *     or {@link Integer#MAX_VALUE} if no maximum is specified
-   * @return a CompletableFuture that completes with {@code true} to allow the growth, {@code
-   *     false} to deny it
+   * @param maximumElements the maximum number of elements as declared by the WebAssembly module, or
+   *     {@link Integer#MAX_VALUE} if no maximum is specified
+   * @return a CompletableFuture that completes with {@code true} to allow the growth, {@code false}
+   *     to deny it
    */
   CompletableFuture<Boolean> tableGrowing(
       int currentElements, int desiredElements, int maximumElements);

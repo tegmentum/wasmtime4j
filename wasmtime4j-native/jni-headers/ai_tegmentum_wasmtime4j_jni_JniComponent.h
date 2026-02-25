@@ -303,6 +303,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestr
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceHasFuncByIndex
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeRunConcurrentCalls
+ * Signature: (JJLjava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeRunConcurrentCalls
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
 #ifdef __cplusplus
 }
 #endif
