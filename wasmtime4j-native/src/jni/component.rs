@@ -922,3 +922,90 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeRunCo
         }
     }
 }
+
+/// JNI: Get full component type as JSON string.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetFullComponentTypeJson(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+    engine_ptr: jlong,
+) -> jstring {
+    let result: Result<String, crate::error::WasmtimeError> = (|| {
+        let component = unsafe {
+            crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
+        };
+        let engine = unsafe {
+            crate::component::core::get_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+        crate::component::core::get_full_component_type_json(component, &engine.engine)
+    })();
+
+    match result {
+        Ok(json) => match env.new_string(&json) {
+            Ok(s) => s.into_raw(),
+            Err(e) => {
+                log::error!("Failed to create Java result string: {:?}", e);
+                let _ = env.throw_new(
+                    "ai/tegmentum/wasmtime4j/exception/WasmException",
+                    format!("Failed to create result string: {:?}", e),
+                );
+                std::ptr::null_mut()
+            }
+        },
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("{}", e),
+            );
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// JNI: Get substituted component type as JSON string.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetSubstitutedComponentTypeJson(
+    mut env: JNIEnv,
+    _class: JClass,
+    linker_ptr: jlong,
+    component_ptr: jlong,
+) -> jstring {
+    let result: Result<String, crate::error::WasmtimeError> = (|| {
+        let linker = unsafe {
+            if linker_ptr == 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Linker pointer cannot be null".to_string(),
+                });
+            }
+            &*(linker_ptr as *const crate::component::ComponentLinker)
+        };
+        let component = unsafe {
+            crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
+        };
+        crate::component::core::get_substituted_component_type_json(linker, component)
+    })();
+
+    match result {
+        Ok(json) => match env.new_string(&json) {
+            Ok(s) => s.into_raw(),
+            Err(e) => {
+                log::error!("Failed to create Java result string: {:?}", e);
+                let _ = env.throw_new(
+                    "ai/tegmentum/wasmtime4j/exception/WasmException",
+                    format!("Failed to create result string: {:?}", e),
+                );
+                std::ptr::null_mut()
+            }
+        },
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                format!("{}", e),
+            );
+            std::ptr::null_mut()
+        }
+    }
+}

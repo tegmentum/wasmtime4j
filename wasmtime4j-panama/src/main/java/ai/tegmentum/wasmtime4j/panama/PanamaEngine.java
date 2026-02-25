@@ -183,6 +183,49 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public Module compileModuleWithDwarf(final byte[] wasmBytes, final byte[] dwarfPackage)
+      throws WasmException {
+    if (wasmBytes == null || wasmBytes.length == 0) {
+      throw new IllegalArgumentException("WASM bytes cannot be null or empty");
+    }
+    if (dwarfPackage == null || dwarfPackage.length == 0) {
+      throw new IllegalArgumentException("DWARF package cannot be null or empty");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment wasmSegment = tempArena.allocate(wasmBytes.length);
+      wasmSegment.copyFrom(MemorySegment.ofArray(wasmBytes));
+
+      final MemorySegment dwarfSegment = tempArena.allocate(dwarfPackage.length);
+      dwarfSegment.copyFrom(MemorySegment.ofArray(dwarfPackage));
+
+      final MemorySegment modulePtr = tempArena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          NATIVE_BINDINGS.moduleCompileWithDwarf(
+              nativeEngine,
+              wasmSegment,
+              wasmBytes.length,
+              dwarfSegment,
+              dwarfPackage.length,
+              modulePtr);
+
+      if (result != 0) {
+        final String nativeError = PanamaErrorMapper.retrieveNativeErrorMessage();
+        if (nativeError != null && !nativeError.isEmpty()) {
+          throw new WasmException("Failed to compile module with DWARF: " + nativeError);
+        }
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to compile module with DWARF package");
+      }
+
+      final MemorySegment nativeModule = modulePtr.get(ValueLayout.ADDRESS, 0);
+      return new PanamaModule(this, nativeModule);
+    }
+  }
+
+  @Override
   public Module compileWat(final String wat) throws WasmException {
     if (wat == null) {
       throw new IllegalArgumentException("wat cannot be null");

@@ -252,6 +252,73 @@ impl Module {
         })
     }
 
+    /// Compile WebAssembly module with an associated DWARF debug package.
+    ///
+    /// The DWARF package (`.dwp` file contents) provides additional debug
+    /// information that is merged into the compiled module for enhanced
+    /// debugging and profiling.
+    pub fn compile_with_dwarf(
+        engine: &Engine,
+        wasm_bytes: &[u8],
+        dwarf_package: &[u8],
+    ) -> WasmtimeResult<Self> {
+        if wasm_bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "WebAssembly bytes cannot be empty".to_string(),
+            });
+        }
+        if dwarf_package.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "DWARF package bytes cannot be empty".to_string(),
+            });
+        }
+
+        const MAX_MODULE_SIZE: usize = 100 * 1024 * 1024;
+        if wasm_bytes.len() > MAX_MODULE_SIZE {
+            return Err(WasmtimeError::Validation {
+                message: format!(
+                    "Module size {} exceeds maximum {}",
+                    wasm_bytes.len(),
+                    MAX_MODULE_SIZE
+                ),
+            });
+        }
+
+        engine.validate()?;
+        let _compile_guard = engine.acquire_compile_lock();
+
+        // Use CodeBuilder to compile with DWARF package
+        let serialized = wasmtime::CodeBuilder::new(engine.inner())
+            .wasm_binary(wasm_bytes, None)
+            .map_err(|e| WasmtimeError::from_compilation_error(e))?
+            .dwarf_package(dwarf_package)
+            .map_err(|e| WasmtimeError::from_compilation_error(e))?
+            .compile_module_serialized()
+            .map_err(|e| WasmtimeError::from_compilation_error(e))?;
+
+        // Deserialize to get a Module
+        let module = unsafe { WasmtimeModule::deserialize(engine.inner(), &serialized) }
+            .map_err(|e| WasmtimeError::from_compilation_error(e))?;
+
+        let metadata = ModuleMetadata::extract(&module, wasm_bytes.len(), wasm_bytes)?;
+        let element_segments = parse_element_segments(wasm_bytes).unwrap_or_else(|e| {
+            log::warn!("Failed to parse element segments: {:?}", e);
+            Vec::new()
+        });
+        let data_segments = parse_data_segments(wasm_bytes).unwrap_or_else(|e| {
+            log::warn!("Failed to parse data segments: {:?}", e);
+            Vec::new()
+        });
+
+        Ok(Module {
+            inner: Arc::new(module),
+            engine: engine.clone(),
+            metadata,
+            element_segments,
+            data_segments,
+        })
+    }
+
     /// Compile module from WebAssembly Text format (WAT)
     pub fn compile_wat(engine: &Engine, wat: &str) -> WasmtimeResult<Self> {
         if wat.is_empty() {

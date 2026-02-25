@@ -210,4 +210,87 @@ public final class NativeMethodBindings {
 
   /** Performs native library initialization (optional method). */
   private static native void nativeInitialize();
+
+  // ===== Coredump Native Methods =====
+
+  /**
+   * Frees a coredump entry from the native registry.
+   *
+   * @param coredumpId the coredump ID
+   * @return 0 on success, -1 if not found
+   */
+  public static native int nativeCoredumpFree(long coredumpId);
+
+  /**
+   * Gets the frame count for a coredump.
+   *
+   * @param coredumpId the coredump ID
+   * @return frame count, or -1 if not found
+   */
+  public static native int nativeCoredumpGetFrameCount(long coredumpId);
+
+  /**
+   * Gets the trap message for a coredump.
+   *
+   * @param coredumpId the coredump ID
+   * @return the trap message, or null if not found
+   */
+  public static native String nativeCoredumpGetTrapMessage(long coredumpId);
+
+  /**
+   * Gets the name of a coredump.
+   *
+   * @param coredumpId the coredump ID
+   * @return the name, or null if not available
+   */
+  public static native String nativeCoredumpGetName(long coredumpId);
+
+  /**
+   * Gets all frames as a JSON array string.
+   *
+   * @param coredumpId the coredump ID
+   * @return JSON array string, or null if not found
+   */
+  public static native String nativeCoredumpGetAllFrames(long coredumpId);
+
+  /**
+   * Gets frame info for a specific frame as a JSON string.
+   *
+   * @param coredumpId the coredump ID
+   * @param frameIndex the frame index
+   * @return JSON string, or null if not found
+   */
+  public static native String nativeCoredumpGetFrameInfo(long coredumpId, int frameIndex);
+
+  /**
+   * Serializes a coredump to binary format.
+   *
+   * @param coredumpId the coredump ID
+   * @param storeHandle the store handle
+   * @param name the coredump name
+   * @return serialized bytes, or null on error
+   */
+  public static native byte[] nativeCoredumpSerialize(
+      long coredumpId, long storeHandle, String name);
+
+  /**
+   * Gets the total count of coredumps in the registry.
+   *
+   * @return the count
+   */
+  public static native int nativeCoredumpGetCount();
+
+  /**
+   * Gets all coredump IDs as a JSON array string.
+   *
+   * @return JSON array of IDs, or null on error
+   */
+  public static native String nativeCoredumpGetAllIds();
+
+  /**
+   * Clears all coredumps from the registry.
+   *
+   * @return 0 on success
+   */
+  public static native int nativeCoredumpClearAll();
 }

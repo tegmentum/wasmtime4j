@@ -1074,6 +1074,41 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileM
     }) as jlong
 }
 
+/// Compile WebAssembly module with DWARF debug package
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileModuleWithDwarf(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    wasm_bytes: jbyteArray,
+    dwarf_bytes: jbyteArray,
+) -> jlong {
+    let wasm_data = match env
+        .convert_byte_array(unsafe { JByteArray::from_raw(wasm_bytes) })
+        .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+            message: format!("Failed to convert WASM byte array: {}", e),
+        }) {
+        Ok(data) => data,
+        Err(_) => return 0 as jlong,
+    };
+
+    let dwarf_data = match env
+        .convert_byte_array(unsafe { JByteArray::from_raw(dwarf_bytes) })
+        .map_err(|e| crate::error::WasmtimeError::InvalidParameter {
+            message: format!("Failed to convert DWARF byte array: {}", e),
+        }) {
+        Ok(data) => data,
+        Err(_) => return 0 as jlong,
+    };
+
+    jni_utils::jni_try_ptr(&mut env, || {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        let module =
+            crate::module::Module::compile_with_dwarf(engine, &wasm_data, &dwarf_data)?;
+        Ok(Box::new(module))
+    }) as jlong
+}
+
 /// Compile WAT to module
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileWat(

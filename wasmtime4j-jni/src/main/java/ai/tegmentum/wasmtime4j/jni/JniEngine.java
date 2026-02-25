@@ -185,6 +185,24 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   @Override
+  public Module compileModuleWithDwarf(final byte[] wasmBytes, final byte[] dwarfPackage)
+      throws WasmException {
+    if (wasmBytes == null || wasmBytes.length == 0) {
+      throw new IllegalArgumentException("wasmBytes cannot be null or empty");
+    }
+    if (dwarfPackage == null || dwarfPackage.length == 0) {
+      throw new IllegalArgumentException("dwarfPackage cannot be null or empty");
+    }
+    ensureNotClosed();
+
+    final long moduleHandle = nativeCompileModuleWithDwarf(nativeHandle, wasmBytes, dwarfPackage);
+    if (moduleHandle == 0) {
+      throw new WasmException("Failed to compile module with DWARF package");
+    }
+    return new JniModule(moduleHandle, this);
+  }
+
+  @Override
   public Module compileWat(final String wat) throws WasmException {
     if (wat == null) {
       throw new IllegalArgumentException("wat cannot be null");
@@ -280,6 +298,9 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   private native long nativeCompileModule(long engineHandle, byte[] wasmBytes);
+
+  private native long nativeCompileModuleWithDwarf(
+      long engineHandle, byte[] wasmBytes, byte[] dwarfPackage);
 
   private native long nativeCompileWat(long engineHandle, String wat);
 

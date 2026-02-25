@@ -5,6 +5,7 @@
 
 pub mod caller;
 pub mod component_enhanced;
+pub mod coredump;
 pub mod engine;
 pub mod function;
 pub mod global;

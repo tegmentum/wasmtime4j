@@ -24,6 +24,8 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeCodec;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
@@ -1193,6 +1195,45 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
             nativeLinker, panamaComponent.getNativeHandle());
     if (result != 0) {
       throw new WasmException("Failed to define unknown imports as traps");
+    }
+  }
+
+  @Override
+  public ComponentTypeInfo substitutedComponentType(final Component component)
+      throws WasmException {
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(component instanceof PanamaComponentImpl)) {
+      return component.componentType();
+    }
+
+    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment jsonOut = tempArena.allocate(ValueLayout.ADDRESS);
+      final int errorCode =
+          NATIVE_BINDINGS.componentLinkerSubstitutedTypeJson(
+              nativeLinker, panamaComponent.getNativeHandle(), jsonOut);
+
+      if (errorCode != 0) {
+        return component.componentType();
+      }
+
+      final MemorySegment jsonPtr = jsonOut.get(ValueLayout.ADDRESS, 0);
+      if (jsonPtr == null || jsonPtr.equals(MemorySegment.NULL)) {
+        return component.componentType();
+      }
+
+      try {
+        final MemorySegment unbounded = jsonPtr.reinterpret(Long.MAX_VALUE);
+        final String json = unbounded.getString(0);
+        return ComponentTypeCodec.deserialize(json);
+      } finally {
+        NATIVE_BINDINGS.componentFreeString(jsonPtr);
+      }
     }
   }
 

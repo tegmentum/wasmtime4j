@@ -123,6 +123,43 @@ pub extern "C" fn wasmtime4j_panama_module_compile_wat(
     })
 }
 
+/// Compile a WebAssembly module with DWARF debug package (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_compile_with_dwarf(
+    engine_ptr: *mut c_void,
+    wasm_bytes: *const u8,
+    wasm_size: usize,
+    dwarf_bytes: *const u8,
+    dwarf_size: usize,
+    module_ptr: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+
+        if wasm_bytes.is_null() || wasm_size == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "WASM bytes cannot be null or empty".to_string(),
+            });
+        }
+        if dwarf_bytes.is_null() || dwarf_size == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "DWARF package bytes cannot be null or empty".to_string(),
+            });
+        }
+
+        let wasm = unsafe { std::slice::from_raw_parts(wasm_bytes, wasm_size) };
+        let dwarf = unsafe { std::slice::from_raw_parts(dwarf_bytes, dwarf_size) };
+
+        let module = crate::module::Module::compile_with_dwarf(engine, wasm, dwarf)?;
+
+        unsafe {
+            *module_ptr = Box::into_raw(Box::new(module)) as *mut c_void;
+        }
+
+        Ok(())
+    })
+}
+
 /// Validate WebAssembly bytecode without compiling
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_module_validate(

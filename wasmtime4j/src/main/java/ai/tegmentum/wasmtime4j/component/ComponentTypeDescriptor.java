@@ -16,6 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -308,6 +309,57 @@ public interface ComponentTypeDescriptor {
    */
   static ComponentTypeDescriptor borrow(final String resourceTypeName, final long resourceTypeId) {
     return new ResourceHandleImpl(ComponentType.BORROW, resourceTypeName, resourceTypeId, false);
+  }
+
+  /**
+   * Creates a record type descriptor.
+   *
+   * @param fields the record fields as name-to-type map
+   * @return a new record type descriptor
+   */
+  static ComponentTypeDescriptor record(final Map<String, ComponentTypeDescriptor> fields) {
+    return new RecordImpl(fields);
+  }
+
+  /**
+   * Creates a tuple type descriptor.
+   *
+   * @param elements the tuple element types
+   * @return a new tuple type descriptor
+   */
+  static ComponentTypeDescriptor tuple(final List<ComponentTypeDescriptor> elements) {
+    return new TupleImpl(elements);
+  }
+
+  /**
+   * Creates a variant type descriptor.
+   *
+   * @param cases the variant cases as name-to-optional-payload map
+   * @return a new variant type descriptor
+   */
+  static ComponentTypeDescriptor variant(
+      final Map<String, Optional<ComponentTypeDescriptor>> cases) {
+    return new VariantImpl(cases);
+  }
+
+  /**
+   * Creates an enum type descriptor.
+   *
+   * @param cases the enum case names
+   * @return a new enum type descriptor
+   */
+  static ComponentTypeDescriptor enum_(final List<String> cases) {
+    return new EnumImpl(cases);
+  }
+
+  /**
+   * Creates a flags type descriptor.
+   *
+   * @param names the flag names
+   * @return a new flags type descriptor
+   */
+  static ComponentTypeDescriptor flags(final List<String> names) {
+    return new FlagsImpl(names);
   }
 
   /**
@@ -1086,6 +1138,198 @@ public interface ComponentTypeDescriptor {
     @Override
     public String toString() {
       return (owned ? "own<" : "borrow<") + resourceTypeName + ">";
+    }
+  }
+
+  /** Record type descriptor implementation. */
+  final class RecordImpl extends AbstractCompoundImpl {
+    private final Map<String, ComponentTypeDescriptor> fields;
+
+    RecordImpl(final Map<String, ComponentTypeDescriptor> fields) {
+      super(ComponentType.RECORD);
+      this.fields = Collections.unmodifiableMap(new java.util.LinkedHashMap<>(fields));
+    }
+
+    @Override
+    public Map<String, ComponentTypeDescriptor> getRecordFields() {
+      return fields;
+    }
+
+    @Override
+    public String toString() {
+      return "record{" + fields.size() + " fields}";
+    }
+  }
+
+  /** Tuple type descriptor implementation. */
+  final class TupleImpl extends AbstractCompoundImpl {
+    private final List<ComponentTypeDescriptor> elements;
+
+    TupleImpl(final List<ComponentTypeDescriptor> elements) {
+      super(ComponentType.TUPLE);
+      this.elements = List.copyOf(elements);
+    }
+
+    @Override
+    public List<ComponentTypeDescriptor> getTupleElements() {
+      return elements;
+    }
+
+    @Override
+    public String toString() {
+      return "tuple<" + elements.size() + ">";
+    }
+  }
+
+  /** Variant type descriptor implementation. */
+  final class VariantImpl extends AbstractCompoundImpl {
+    private final Map<String, Optional<ComponentTypeDescriptor>> cases;
+
+    VariantImpl(final Map<String, Optional<ComponentTypeDescriptor>> cases) {
+      super(ComponentType.VARIANT);
+      this.cases = Collections.unmodifiableMap(new java.util.LinkedHashMap<>(cases));
+    }
+
+    @Override
+    public Map<String, Optional<ComponentTypeDescriptor>> getVariantCases() {
+      return cases;
+    }
+
+    @Override
+    public String toString() {
+      return "variant{" + cases.size() + " cases}";
+    }
+  }
+
+  /** Enum type descriptor implementation. */
+  final class EnumImpl extends AbstractCompoundImpl {
+    private final List<String> cases;
+
+    EnumImpl(final List<String> cases) {
+      super(ComponentType.ENUM);
+      this.cases = List.copyOf(cases);
+    }
+
+    @Override
+    public List<String> getEnumCases() {
+      return cases;
+    }
+
+    @Override
+    public String toString() {
+      return "enum{" + cases.size() + " cases}";
+    }
+  }
+
+  /** Flags type descriptor implementation. */
+  final class FlagsImpl extends AbstractCompoundImpl {
+    private final List<String> names;
+
+    FlagsImpl(final List<String> names) {
+      super(ComponentType.FLAGS);
+      this.names = List.copyOf(names);
+    }
+
+    @Override
+    public List<String> getFlagNames() {
+      return names;
+    }
+
+    @Override
+    public String toString() {
+      return "flags{" + names.size() + "}";
+    }
+  }
+
+  /**
+   * Abstract base for compound type descriptors that throws on all accessors by default. Subclasses
+   * override only the methods relevant to their type.
+   */
+  abstract class AbstractCompoundImpl implements ComponentTypeDescriptor {
+    private final ComponentType type;
+
+    AbstractCompoundImpl(final ComponentType type) {
+      this.type = type;
+    }
+
+    @Override
+    public ComponentType getType() {
+      return type;
+    }
+
+    @Override
+    public Optional<String> getName() {
+      return Optional.empty();
+    }
+
+    @Override
+    public ComponentTypeDescriptor getElementType() {
+      throw new IllegalStateException("Not a list type");
+    }
+
+    @Override
+    public Map<String, ComponentTypeDescriptor> getRecordFields() {
+      throw new IllegalStateException("Not a record type");
+    }
+
+    @Override
+    public List<ComponentTypeDescriptor> getTupleElements() {
+      throw new IllegalStateException("Not a tuple type");
+    }
+
+    @Override
+    public Map<String, Optional<ComponentTypeDescriptor>> getVariantCases() {
+      throw new IllegalStateException("Not a variant type");
+    }
+
+    @Override
+    public List<String> getEnumCases() {
+      throw new IllegalStateException("Not an enum type");
+    }
+
+    @Override
+    public ComponentTypeDescriptor getOptionType() {
+      throw new IllegalStateException("Not an option type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultOkType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getResultErrType() {
+      throw new IllegalStateException("Not a result type");
+    }
+
+    @Override
+    public List<String> getFlagNames() {
+      throw new IllegalStateException("Not a flags type");
+    }
+
+    @Override
+    public String getResourceTypeName() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public long getResourceTypeId() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public boolean isResourceOwned() {
+      throw new IllegalStateException("Not a resource type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getFuturePayloadType() {
+      throw new IllegalStateException("Not a future type");
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getStreamElementType() {
+      throw new IllegalStateException("Not a stream type");
     }
   }
 }

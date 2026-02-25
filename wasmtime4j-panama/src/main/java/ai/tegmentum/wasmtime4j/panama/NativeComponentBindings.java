@@ -202,6 +202,23 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_component_free_string", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
+    // ===== Full Component Type JSON =====
+    addFunctionBinding(
+        "wasmtime4j_component_get_full_type_json",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // component_ptr
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS)); // json_out
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_substituted_type_json",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // component_ptr
+            ValueLayout.ADDRESS)); // json_out
+
     // ===== Panama Component Functions =====
     addFunctionBinding(
         "wasmtime4j_panama_component_get_exported_functions",
@@ -1247,6 +1264,52 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     if (stringPtr != null && !stringPtr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasmtime4j_component_free_string", Void.class, stringPtr);
     }
+  }
+
+  /**
+   * Gets the full component type as a JSON string with complete type information.
+   *
+   * @param componentHandle the component handle
+   * @param engineHandle the engine handle
+   * @param jsonOut pointer to receive the JSON string
+   * @return 0 on success, non-zero on error
+   */
+  public int componentGetFullTypeJson(
+      final MemorySegment componentHandle,
+      final MemorySegment engineHandle,
+      final MemorySegment jsonOut) {
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(jsonOut, "jsonOut");
+    return callNativeFunction(
+        "wasmtime4j_component_get_full_type_json",
+        Integer.class,
+        componentHandle,
+        engineHandle,
+        jsonOut);
+  }
+
+  /**
+   * Gets the substituted component type as a JSON string.
+   *
+   * @param linkerHandle the linker handle
+   * @param componentHandle the component handle
+   * @param jsonOut pointer to receive the JSON string
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSubstitutedTypeJson(
+      final MemorySegment linkerHandle,
+      final MemorySegment componentHandle,
+      final MemorySegment jsonOut) {
+    validatePointer(linkerHandle, "linkerHandle");
+    validatePointer(componentHandle, "componentHandle");
+    validatePointer(jsonOut, "jsonOut");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_substituted_type_json",
+        Integer.class,
+        linkerHandle,
+        componentHandle,
+        jsonOut);
   }
 
   /**

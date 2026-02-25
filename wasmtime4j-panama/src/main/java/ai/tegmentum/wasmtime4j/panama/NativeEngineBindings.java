@@ -418,6 +418,17 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // module_ptr (output)
 
     addFunctionBinding(
+        "wasmtime4j_panama_module_compile_with_dwarf",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS, // wasm_bytes
+            ValueLayout.JAVA_LONG, // wasm_size
+            ValueLayout.ADDRESS, // dwarf_bytes
+            ValueLayout.JAVA_LONG, // dwarf_size
+            ValueLayout.ADDRESS)); // module_ptr (output)
+
+    addFunctionBinding(
         "wasmtime4j_panama_module_get_import_count",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return import count
@@ -2073,6 +2084,42 @@ public final class NativeEngineBindings extends NativeBindingsBase {
 
     return callNativeFunction(
         "wasmtime4j_module_compile", Integer.class, enginePtr, wasmBytes, wasmSize, modulePtr);
+  }
+
+  /**
+   * Compiles a WebAssembly module with DWARF debug package.
+   *
+   * @param enginePtr pointer to the engine
+   * @param wasmBytes pointer to the WASM bytes
+   * @param wasmSize size of the WASM bytes
+   * @param dwarfBytes pointer to the DWARF package bytes
+   * @param dwarfSize size of the DWARF package bytes
+   * @param modulePtr pointer to store the compiled module
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleCompileWithDwarf(
+      final MemorySegment enginePtr,
+      final MemorySegment wasmBytes,
+      final long wasmSize,
+      final MemorySegment dwarfBytes,
+      final long dwarfSize,
+      final MemorySegment modulePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(wasmBytes, "wasmBytes");
+    validateSize(wasmSize, "wasmSize");
+    validatePointer(dwarfBytes, "dwarfBytes");
+    validateSize(dwarfSize, "dwarfSize");
+    validatePointer(modulePtr, "modulePtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_compile_with_dwarf",
+        Integer.class,
+        enginePtr,
+        wasmBytes,
+        wasmSize,
+        dwarfBytes,
+        dwarfSize,
+        modulePtr);
   }
 
   /**

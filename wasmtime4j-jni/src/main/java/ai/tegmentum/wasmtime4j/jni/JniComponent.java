@@ -432,6 +432,25 @@ public final class JniComponent {
       long engineHandle, long instanceId, String jsonInput);
 
   /**
+   * Gets the full component type as a JSON string with complete type information.
+   *
+   * @param componentHandle the component handle
+   * @param engineHandle the engine handle
+   * @return JSON string with full type info, or null on error
+   */
+  static native String nativeGetFullComponentTypeJson(long componentHandle, long engineHandle);
+
+  /**
+   * Gets the substituted component type as a JSON string.
+   *
+   * @param linkerHandle the linker handle
+   * @param componentHandle the component handle
+   * @return JSON string with substituted type info, or null on error
+   */
+  static native String nativeGetSubstitutedComponentTypeJson(
+      long linkerHandle, long componentHandle);
+
+  /**
    * JNI wrapper for component engine operations.
    *
    * <p>Manages the lifecycle of a native component engine and provides methods for loading and

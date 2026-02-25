@@ -639,6 +639,16 @@ pub struct ComponentLinker {
 }
 
 impl ComponentLinker {
+    /// Get a reference to the inner Wasmtime component linker.
+    pub fn linker(&self) -> &Linker<ComponentStoreData> {
+        &self.linker
+    }
+
+    /// Get a reference to the engine used by this linker.
+    pub fn engine(&self) -> &WasmtimeEngine {
+        &self.engine
+    }
+
     /// Create a new component linker for the given engine
     pub fn new(engine: &WasmtimeEngine) -> WasmtimeResult<Self> {
         let linker = Linker::new(engine);
@@ -1517,11 +1527,6 @@ impl ComponentLinker {
             self.disposed = true;
             log::debug!("ComponentLinker disposed");
         }
-    }
-
-    /// Get the engine
-    pub fn engine(&self) -> &WasmtimeEngine {
-        &self.engine
     }
 
     /// Get number of defined host functions

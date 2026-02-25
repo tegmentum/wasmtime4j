@@ -5,6 +5,8 @@ import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeCodec;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
@@ -136,6 +138,25 @@ public final class JniComponentImpl implements Component {
       return imports;
     } catch (final Exception e) {
       throw new WasmException("Failed to get imported interfaces", e);
+    }
+  }
+
+  @Override
+  public ComponentTypeInfo componentType() throws WasmException {
+    ensureValid();
+    try {
+      final String json =
+          JniComponent.nativeGetFullComponentTypeJson(
+              nativeComponent.getNativeHandle(), engine.getNativeHandle());
+      if (json == null) {
+        return Component.super.componentType();
+      }
+      return ComponentTypeCodec.deserialize(json);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      LOGGER.log(Level.FINE, "Full component type not available, falling back to name-only", e);
+      return Component.super.componentType();
     }
   }
 

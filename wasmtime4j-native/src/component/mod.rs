@@ -1232,6 +1232,395 @@ pub mod core {
         }
     }
 
+    /// Core function to get the full component type as JSON with all ComponentItem variants.
+    ///
+    /// Traverses the component's imports and exports and serializes them to JSON
+    /// with full type information including function signatures, nested instances, etc.
+    pub fn get_full_component_type_json(
+        component: &Component,
+        engine: &wasmtime::Engine,
+    ) -> WasmtimeResult<String> {
+        use wasmtime::component::types::ComponentItem;
+
+        let component_type = component.component.component_type();
+        let mut json = String::with_capacity(1024);
+        json.push_str("{\"imports\":{");
+
+        let mut first = true;
+        for (name, item) in component_type.imports(engine) {
+            if !first {
+                json.push(',');
+            }
+            first = false;
+            append_json_string(&mut json, name);
+            json.push(':');
+            component_item_to_json(&mut json, &item, engine, 0);
+        }
+
+        json.push_str("},\"exports\":{");
+
+        let mut first = true;
+        for (name, item) in component_type.exports(engine) {
+            if !first {
+                json.push(',');
+            }
+            first = false;
+            append_json_string(&mut json, name);
+            json.push(':');
+            component_item_to_json(&mut json, &item, engine, 0);
+        }
+
+        json.push_str("}}");
+        Ok(json)
+    }
+
+    /// Core function to get the substituted component type as JSON.
+    ///
+    /// Uses the linker to compute which imports have been satisfied and returns
+    /// the remaining type information. The engine is extracted from the linker.
+    pub fn get_substituted_component_type_json(
+        linker: &ComponentLinker,
+        component: &Component,
+    ) -> WasmtimeResult<String> {
+        use wasmtime::component::types::ComponentItem;
+
+        let sub_type = linker.linker().substituted_component_type(
+            &component.component,
+        ).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to get substituted component type: {}", e),
+            backtrace: None,
+        })?;
+
+        let engine = linker.engine();
+
+        let mut json = String::with_capacity(1024);
+        json.push_str("{\"imports\":{");
+
+        let mut first = true;
+        for (name, item) in sub_type.imports(engine) {
+            if !first {
+                json.push(',');
+            }
+            first = false;
+            append_json_string(&mut json, name);
+            json.push(':');
+            component_item_to_json(&mut json, &item, engine, 0);
+        }
+
+        json.push_str("},\"exports\":{");
+
+        let mut first = true;
+        for (name, item) in sub_type.exports(engine) {
+            if !first {
+                json.push(',');
+            }
+            first = false;
+            append_json_string(&mut json, name);
+            json.push(':');
+            component_item_to_json(&mut json, &item, engine, 0);
+        }
+
+        json.push_str("}}");
+        Ok(json)
+    }
+
+    /// Maximum recursion depth for nested component type traversal.
+    const MAX_TYPE_DEPTH: usize = 10;
+
+    /// Serialize a ComponentItem to JSON.
+    fn component_item_to_json(
+        json: &mut String,
+        item: &wasmtime::component::types::ComponentItem,
+        engine: &wasmtime::Engine,
+        depth: usize,
+    ) {
+        use wasmtime::component::types::ComponentItem;
+
+        if depth > MAX_TYPE_DEPTH {
+            json.push_str("{\"kind\":\"truncated\"}");
+            return;
+        }
+
+        match item {
+            ComponentItem::ComponentFunc(func) => {
+                json.push_str("{\"kind\":\"component_func\",\"params\":[");
+                let mut first = true;
+                for (name, ty) in func.params() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    json.push_str("{\"name\":");
+                    append_json_string(json, name);
+                    json.push_str(",\"type\":");
+                    type_to_json(json, &ty);
+                    json.push('}');
+                }
+                json.push_str("],\"results\":[");
+                let mut first = true;
+                for result_ty in func.results() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    type_to_json(json, &result_ty);
+                }
+                json.push_str("]}");
+            }
+            ComponentItem::CoreFunc(core_func) => {
+                json.push_str("{\"kind\":\"core_func\",\"params\":[");
+                let mut first = true;
+                for param in core_func.params() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    append_json_string(json, &format!("{:?}", param));
+                }
+                json.push_str("],\"results\":[");
+                let mut first = true;
+                for result in core_func.results() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    append_json_string(json, &format!("{:?}", result));
+                }
+                json.push_str("]}");
+            }
+            ComponentItem::Module(module_ty) => {
+                json.push_str("{\"kind\":\"module\",\"imports\":[");
+                let mut first = true;
+                for ((module_name, import_name), _extern_type) in module_ty.imports(engine) {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    json.push('{');
+                    json.push_str("\"module\":");
+                    append_json_string(json, module_name);
+                    json.push_str(",\"name\":");
+                    append_json_string(json, import_name);
+                    json.push('}');
+                }
+                json.push_str("],\"exports\":[");
+                let mut first = true;
+                for (export_name, _extern_type) in module_ty.exports(engine) {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    json.push('{');
+                    json.push_str("\"name\":");
+                    append_json_string(json, export_name);
+                    json.push('}');
+                }
+                json.push_str("]}");
+            }
+            ComponentItem::Component(comp_ty) => {
+                json.push_str("{\"kind\":\"component\",\"imports\":{");
+                let mut first = true;
+                for (name, sub_item) in comp_ty.imports(engine) {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    append_json_string(json, name);
+                    json.push(':');
+                    component_item_to_json(json, &sub_item, engine, depth + 1);
+                }
+                json.push_str("},\"exports\":{");
+                let mut first = true;
+                for (name, sub_item) in comp_ty.exports(engine) {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    append_json_string(json, name);
+                    json.push(':');
+                    component_item_to_json(json, &sub_item, engine, depth + 1);
+                }
+                json.push_str("}}");
+            }
+            ComponentItem::ComponentInstance(instance_ty) => {
+                json.push_str("{\"kind\":\"component_instance\",\"exports\":{");
+                let mut first = true;
+                for (name, sub_item) in instance_ty.exports(engine) {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    append_json_string(json, name);
+                    json.push(':');
+                    component_item_to_json(json, &sub_item, engine, depth + 1);
+                }
+                json.push_str("}}");
+            }
+            ComponentItem::Type(type_def) => {
+                json.push_str("{\"kind\":\"type\",\"descriptor\":");
+                type_to_json(json, &type_def);
+                json.push('}');
+            }
+            ComponentItem::Resource(_resource_ty) => {
+                json.push_str("{\"kind\":\"resource\"");
+                // Resource types don't have a name directly accessible from ComponentItem::Resource
+                // but they have a unique identity through ResourceType
+                json.push('}');
+            }
+        }
+    }
+
+    /// Serialize a component model Type to JSON string representation.
+    fn type_to_json(json: &mut String, ty: &wasmtime::component::types::Type) {
+        use wasmtime::component::types::Type;
+
+        match ty {
+            Type::Bool => json.push_str("\"bool\""),
+            Type::S8 => json.push_str("\"s8\""),
+            Type::U8 => json.push_str("\"u8\""),
+            Type::S16 => json.push_str("\"s16\""),
+            Type::U16 => json.push_str("\"u16\""),
+            Type::S32 => json.push_str("\"s32\""),
+            Type::U32 => json.push_str("\"u32\""),
+            Type::S64 => json.push_str("\"s64\""),
+            Type::U64 => json.push_str("\"u64\""),
+            Type::Float32 => json.push_str("\"f32\""),
+            Type::Float64 => json.push_str("\"f64\""),
+            Type::Char => json.push_str("\"char\""),
+            Type::String => json.push_str("\"string\""),
+            Type::List(list) => {
+                json.push_str("{\"type\":\"list\",\"element\":");
+                type_to_json(json, &list.ty());
+                json.push('}');
+            }
+            Type::Record(record) => {
+                json.push_str("{\"type\":\"record\",\"fields\":[");
+                let mut first = true;
+                for field in record.fields() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    json.push_str("{\"name\":");
+                    append_json_string(json, field.name);
+                    json.push_str(",\"type\":");
+                    type_to_json(json, &field.ty);
+                    json.push('}');
+                }
+                json.push_str("]}");
+            }
+            Type::Tuple(tuple) => {
+                json.push_str("{\"type\":\"tuple\",\"elements\":[");
+                let mut first = true;
+                for elem_ty in tuple.types() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    type_to_json(json, &elem_ty);
+                }
+                json.push_str("]}");
+            }
+            Type::Variant(variant) => {
+                json.push_str("{\"type\":\"variant\",\"cases\":[");
+                let mut first = true;
+                for case in variant.cases() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    json.push_str("{\"name\":");
+                    append_json_string(json, case.name);
+                    if let Some(payload) = &case.ty {
+                        json.push_str(",\"type\":");
+                        type_to_json(json, payload);
+                    }
+                    json.push('}');
+                }
+                json.push_str("]}");
+            }
+            Type::Enum(enum_ty) => {
+                json.push_str("{\"type\":\"enum\",\"names\":[");
+                let mut first = true;
+                for name in enum_ty.names() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    append_json_string(json, name);
+                }
+                json.push_str("]}");
+            }
+            Type::Option(opt) => {
+                json.push_str("{\"type\":\"option\",\"inner\":");
+                type_to_json(json, &opt.ty());
+                json.push('}');
+            }
+            Type::Result(result) => {
+                json.push_str("{\"type\":\"result\"");
+                if let Some(ok_ty) = result.ok() {
+                    json.push_str(",\"ok\":");
+                    type_to_json(json, &ok_ty);
+                }
+                if let Some(err_ty) = result.err() {
+                    json.push_str(",\"err\":");
+                    type_to_json(json, &err_ty);
+                }
+                json.push('}');
+            }
+            Type::Flags(flags) => {
+                json.push_str("{\"type\":\"flags\",\"names\":[");
+                let mut first = true;
+                for name in flags.names() {
+                    if !first {
+                        json.push(',');
+                    }
+                    first = false;
+                    append_json_string(json, name);
+                }
+                json.push_str("]}");
+            }
+            Type::Own(_) => json.push_str("{\"type\":\"own\"}"),
+            Type::Borrow(_) => json.push_str("{\"type\":\"borrow\"}"),
+            Type::Future(future_ty) => {
+                json.push_str("{\"type\":\"future\"");
+                if let Some(inner) = future_ty.ty() {
+                    json.push_str(",\"payload\":");
+                    type_to_json(json, &inner);
+                }
+                json.push('}');
+            }
+            Type::Stream(stream_ty) => {
+                json.push_str("{\"type\":\"stream\"");
+                if let Some(inner) = stream_ty.ty() {
+                    json.push_str(",\"payload\":");
+                    type_to_json(json, &inner);
+                }
+                json.push('}');
+            }
+            Type::ErrorContext => json.push_str("{\"type\":\"error_context\"}"),
+        }
+    }
+
+    /// Append a JSON-escaped string to the buffer.
+    fn append_json_string(json: &mut String, s: &str) {
+        json.push('"');
+        for c in s.chars() {
+            match c {
+                '"' => json.push_str("\\\""),
+                '\\' => json.push_str("\\\\"),
+                '\n' => json.push_str("\\n"),
+                '\r' => json.push_str("\\r"),
+                '\t' => json.push_str("\\t"),
+                c if c < '\x20' => {
+                    json.push_str(&format!("\\u{:04x}", c as u32));
+                }
+                c => json.push(c),
+            }
+        }
+        json.push('"');
+    }
+
     /// Core function to get component resources required
     ///
     /// Returns resource information as (num_memories, max_initial_memory_size, num_tables, max_initial_table_size).
@@ -1691,4 +2080,78 @@ pub unsafe extern "C" fn wasmtime4j_component_get_export_index(
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_component_export_index_destroy(index_ptr: *mut c_void) {
     core::destroy_export_index(index_ptr);
+}
+
+/// Get the full component type as a JSON string with complete type information.
+///
+/// Returns a JSON string via `json_out` containing all imports and exports with their
+/// full type descriptors. The caller must free the returned string with
+/// `wasmtime4j_component_free_string`.
+///
+/// JSON format:
+/// ```json
+/// {
+///   "imports": {"name": {"kind":"component_func", "params":[...], "results":[...]}},
+///   "exports": {"name": {"kind":"component_instance", "exports":{...}}}
+/// }
+/// ```
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_get_full_type_json(
+    component_ptr: *const c_void,
+    engine_ptr: *const c_void,
+    json_out: *mut *mut c_char,
+) -> c_int {
+    if component_ptr.is_null() || engine_ptr.is_null() || json_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let component = &*(component_ptr as *const Component);
+    let engine = &*(engine_ptr as *const ComponentEngine);
+
+    match core::get_full_component_type_json(component, &engine.engine) {
+        Ok(json) => match CString::new(json) {
+            Ok(c_string) => {
+                *json_out = c_string.into_raw();
+                FFI_SUCCESS
+            }
+            Err(_) => FFI_ERROR,
+        },
+        Err(e) => {
+            log::error!("Failed to get full component type: {}", e);
+            FFI_ERROR
+        }
+    }
+}
+
+/// Get the substituted component type as a JSON string.
+///
+/// Uses a linker to compute which imports have been satisfied and returns the
+/// remaining (substituted) type. The caller must free the returned string with
+/// `wasmtime4j_component_free_string`.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_substituted_type_json(
+    linker_ptr: *const c_void,
+    component_ptr: *const c_void,
+    json_out: *mut *mut c_char,
+) -> c_int {
+    if linker_ptr.is_null() || component_ptr.is_null() || json_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &*(linker_ptr as *const ComponentLinker);
+    let component = &*(component_ptr as *const Component);
+
+    match core::get_substituted_component_type_json(linker, component) {
+        Ok(json) => match CString::new(json) {
+            Ok(c_string) => {
+                *json_out = c_string.into_raw();
+                FFI_SUCCESS
+            }
+            Err(_) => FFI_ERROR,
+        },
+        Err(e) => {
+            log::error!("Failed to get substituted component type: {}", e);
+            FFI_ERROR
+        }
+    }
 }

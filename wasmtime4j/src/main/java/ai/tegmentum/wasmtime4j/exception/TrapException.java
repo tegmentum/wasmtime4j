@@ -41,6 +41,9 @@ public class TrapException extends WasmException {
   /** Recovery suggestion for this trap type. */
   private final String recoverySuggestion;
 
+  /** Coredump ID in the native registry, or -1 if no coredump is available. */
+  private final long coredumpId;
+
   /** Enumeration of WebAssembly trap types matching Wasmtime 41.0.3 Trap codes. */
   public enum TrapType {
     /** The current stack space was exhausted. */
@@ -124,6 +127,9 @@ public class TrapException extends WasmException {
     }
   }
 
+  /** Prefix used by the native layer to embed coredump IDs in error messages. */
+  private static final String COREDUMP_PREFIX = "[coredump:";
+
   /**
    * Creates a new trap exception with the specified trap type and message.
    *
@@ -131,7 +137,7 @@ public class TrapException extends WasmException {
    * @param message the error message
    */
   public TrapException(final TrapType trapType, final String message) {
-    this(trapType, message, null, null, null, null);
+    this(trapType, message, null, null, null, null, -1L);
   }
 
   /**
@@ -142,7 +148,7 @@ public class TrapException extends WasmException {
    * @param cause the underlying cause
    */
   public TrapException(final TrapType trapType, final String message, final Throwable cause) {
-    this(trapType, message, null, null, null, cause);
+    this(trapType, message, null, null, null, cause, -1L);
   }
 
   /**
@@ -162,12 +168,70 @@ public class TrapException extends WasmException {
       final String functionName,
       final Integer instructionOffset,
       final Throwable cause) {
+    this(trapType, message, wasmBacktrace, functionName, instructionOffset, cause, -1L);
+  }
+
+  /**
+   * Creates a new trap exception with detailed trap information and coredump reference.
+   *
+   * @param trapType the specific trap type
+   * @param message the error message
+   * @param wasmBacktrace WebAssembly backtrace (may be null)
+   * @param functionName function where trap occurred (may be null)
+   * @param instructionOffset instruction offset where trap occurred (may be null)
+   * @param cause the underlying cause (may be null)
+   * @param coredumpId the coredump ID in the native registry, or -1 if not available
+   */
+  public TrapException(
+      final TrapType trapType,
+      final String message,
+      final String wasmBacktrace,
+      final String functionName,
+      final Integer instructionOffset,
+      final Throwable cause,
+      final long coredumpId) {
     super(formatMessage(trapType, message, functionName, instructionOffset), cause);
     this.trapType = trapType != null ? trapType : TrapType.UNKNOWN;
     this.wasmBacktrace = wasmBacktrace;
     this.functionName = functionName;
     this.instructionOffset = instructionOffset;
     this.recoverySuggestion = generateRecoverySuggestion(this.trapType);
+    this.coredumpId = coredumpId;
+  }
+
+  /**
+   * Creates a TrapException from a native error message, automatically parsing any embedded
+   * coredump ID prefix.
+   *
+   * <p>The native layer embeds coredump IDs in error messages using the format {@code
+   * [coredump:ID]message}. This factory method parses that prefix and creates a TrapException with
+   * the coredump ID set appropriately.
+   *
+   * @param trapType the specific trap type
+   * @param nativeMessage the raw error message from the native layer (may contain coredump prefix)
+   * @return a new TrapException with coredump ID parsed from the message
+   */
+  public static TrapException fromNativeMessage(
+      final TrapType trapType, final String nativeMessage) {
+    if (nativeMessage == null) {
+      return new TrapException(trapType, "Unknown trap");
+    }
+    long parsedCoredumpId = -1L;
+    String cleanMessage = nativeMessage;
+
+    if (nativeMessage.startsWith(COREDUMP_PREFIX)) {
+      final int closeBracket = nativeMessage.indexOf(']', COREDUMP_PREFIX.length());
+      if (closeBracket > 0) {
+        try {
+          parsedCoredumpId =
+              Long.parseLong(nativeMessage.substring(COREDUMP_PREFIX.length(), closeBracket));
+          cleanMessage = nativeMessage.substring(closeBracket + 1);
+        } catch (NumberFormatException ignored) {
+          // Not a valid coredump prefix, use message as-is
+        }
+      }
+    }
+    return new TrapException(trapType, cleanMessage, null, null, null, null, parsedCoredumpId);
   }
 
   /**
@@ -213,6 +277,31 @@ public class TrapException extends WasmException {
    */
   public String getRecoverySuggestion() {
     return recoverySuggestion;
+  }
+
+  /**
+   * Gets the coredump ID in the native registry.
+   *
+   * <p>This ID can be used to retrieve detailed coredump information (stack frames, memory
+   * snapshots, etc.) from the native coredump registry. The coredump must be explicitly freed when
+   * no longer needed.
+   *
+   * @return the coredump ID, or -1 if no coredump is available
+   */
+  public long getCoredumpId() {
+    return coredumpId;
+  }
+
+  /**
+   * Checks whether a coredump is available for this trap.
+   *
+   * <p>A coredump is available when the engine was configured with {@code coredumpOnTrap(true)} and
+   * a trap occurred during WebAssembly execution.
+   *
+   * @return true if a coredump is available
+   */
+  public boolean hasCoreDump() {
+    return coredumpId >= 0;
   }
 
   /**

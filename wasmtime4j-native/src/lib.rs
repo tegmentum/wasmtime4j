@@ -61,6 +61,9 @@ pub mod table;
 pub mod typed_func; // Typed function wrapper for zero-cost calls
 pub mod wast_runner; // WAST test execution
 
+// Coredump registry for trap diagnostics
+pub mod coredump;
+
 // Additional core functionality for comprehensive API coverage
 
 // Shared FFI architecture with trait-based conversions

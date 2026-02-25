@@ -39,6 +39,86 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBi
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeInitialize
   (JNIEnv *, jclass);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpFree
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpFree
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpGetFrameCount
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpGetFrameCount
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpGetTrapMessage
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpGetTrapMessage
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpGetName
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpGetName
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpGetAllFrames
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpGetAllFrames
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpGetFrameInfo
+ * Signature: (JI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpGetFrameInfo
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpSerialize
+ * Signature: (JJLjava/lang/String;)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpSerialize
+  (JNIEnv *, jclass, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpGetCount
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpGetCount
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpGetAllIds
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpGetAllIds
+  (JNIEnv *, jclass);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings
+ * Method:    nativeCoredumpClearAll
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCoredumpClearAll
+  (JNIEnv *, jclass);
+
 #ifdef __cplusplus
 }
 #endif

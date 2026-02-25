@@ -585,6 +585,38 @@ public interface Module extends Closeable {
   }
 
   /**
+   * Compiles WebAssembly bytecode into a Module with an associated DWARF debug package.
+   *
+   * <p>The DWARF package ({@code .dwp} file contents) provides additional debug information that is
+   * merged into the compiled module. This enables enhanced debugging and profiling capabilities.
+   *
+   * <p>The WASM bytes are compiled using Wasmtime's {@code CodeBuilder} with the DWARF package
+   * attached, then serialized and deserialized internally. The engine must have debug info enabled
+   * for the DWARF data to take effect.
+   *
+   * @param engine the engine to use for compilation
+   * @param wasmBytes the WebAssembly bytecode
+   * @param dwarfPackage the DWARF debug package bytes ({@code .dwp} file contents)
+   * @return a compiled Module with debug information
+   * @throws WasmException if compilation fails
+   * @throws IllegalArgumentException if any argument is null or empty
+   * @since 1.1.0
+   */
+  static Module compile(final Engine engine, final byte[] wasmBytes, final byte[] dwarfPackage)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (wasmBytes == null || wasmBytes.length == 0) {
+      throw new IllegalArgumentException("wasmBytes cannot be null or empty");
+    }
+    if (dwarfPackage == null || dwarfPackage.length == 0) {
+      throw new IllegalArgumentException("dwarfPackage cannot be null or empty");
+    }
+    return engine.compileModuleWithDwarf(wasmBytes, dwarfPackage);
+  }
+
+  /**
    * Compiles a WebAssembly module from binary wasm bytes.
    *
    * <p>Unlike {@link #compile(Engine, byte[])} which auto-detects and accepts both binary wasm and

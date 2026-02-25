@@ -525,6 +525,11 @@ impl WasmtimeError {
     /// This method checks if the error is a WASI I32Exit before converting to a
     /// generic Runtime error. This allows Java callers to distinguish between a
     /// clean WASI exit and a crash.
+    ///
+    /// When `coredump_on_trap(true)` is configured and a trap produces a WasmCoreDump,
+    /// this method registers the coredump in the global registry and embeds the
+    /// coredump ID as a `[coredump:ID]` prefix in the error message. The Java error
+    /// mappers parse this prefix to attach the coredump ID to TrapException.
     pub fn from_wasmtime_error(error: wasmtime::Error) -> Self {
         // Check for WASI I32Exit (only when wasi feature is enabled)
         #[cfg(feature = "wasi")]
@@ -533,10 +538,23 @@ impl WasmtimeError {
                 exit_code: exit.0,
             };
         }
-        // Check for trap
-        if let Some(trap) = error.downcast_ref::<wasmtime::Trap>() {
+        // Extract trap message before potentially moving the error into the coredump registry
+        let trap_msg = error
+            .downcast_ref::<Trap>()
+            .map(|t| format!("WebAssembly trap: {}", t));
+        let has_coredump = error.downcast_ref::<wasmtime::WasmCoreDump>().is_some();
+
+        if let Some(msg) = trap_msg {
+            if has_coredump {
+                // Register the error (which contains the WasmCoreDump) in the coredump registry
+                let coredump_id = crate::coredump::register_error(error, msg.clone());
+                return WasmtimeError::Runtime {
+                    message: format!("[coredump:{}]{}", coredump_id, msg),
+                    backtrace: None,
+                };
+            }
             return WasmtimeError::Runtime {
-                message: format!("WebAssembly trap: {}", trap),
+                message: msg,
                 backtrace: None,
             };
         }
@@ -545,6 +563,15 @@ impl WasmtimeError {
             message: error.to_string(),
             backtrace: None,
         }
+    }
+
+    /// Create a Runtime error from a wasmtime::Error, with coredump extraction.
+    ///
+    /// This is a convenience function for `.map_err()` call sites that convert
+    /// a wasmtime::Error into WasmtimeError::Runtime. It checks for WasmCoreDump
+    /// in the error chain and registers it if present.
+    pub fn runtime_from_wasmtime(error: wasmtime::Error) -> Self {
+        Self::from_wasmtime_error(error)
     }
 
     /// Create from Wasmtime compilation error

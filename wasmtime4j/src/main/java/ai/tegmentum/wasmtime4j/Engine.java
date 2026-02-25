@@ -66,6 +66,22 @@ public interface Engine extends Closeable {
   Module compileModule(final byte[] wasmBytes) throws WasmException;
 
   /**
+   * Compiles WebAssembly bytecode into a module with an associated DWARF debug package.
+   *
+   * <p>The DWARF package ({@code .dwp} file contents) provides additional debug information that is
+   * merged into the compiled module for enhanced debugging and profiling.
+   *
+   * @param wasmBytes the WebAssembly bytecode to compile
+   * @param dwarfPackage the DWARF debug package bytes ({@code .dwp} file contents)
+   * @return a compiled Module with debug information
+   * @throws WasmException if compilation fails
+   * @throws IllegalArgumentException if any argument is null or empty
+   * @since 1.1.0
+   */
+  Module compileModuleWithDwarf(final byte[] wasmBytes, final byte[] dwarfPackage)
+      throws WasmException;
+
+  /**
    * Compiles WebAssembly Text format (WAT) into a module using this engine.
    *
    * <p>This method parses the WAT text format and compiles it into a WebAssembly module. The
@@ -380,6 +396,25 @@ public interface Engine extends Closeable {
       }
     }
     return detectPrecompiled(header);
+  }
+
+  /**
+   * Detects whether the given bytes represent a WebAssembly module or component.
+   *
+   * <p>This method inspects the header of the binary to determine the type of source WebAssembly
+   * bytecode. Unlike {@link #detectPrecompiled(byte[])} which identifies precompiled artifacts,
+   * this method identifies source WASM binaries before compilation.
+   *
+   * <p>This is a pure Java operation that does not require any native calls. It checks the first 8
+   * bytes of the input for the WASM magic number and version.
+   *
+   * @param bytes the bytes to inspect
+   * @return the detected binary kind
+   * @throws IllegalArgumentException if bytes is null
+   * @since 1.1.0
+   */
+  default WasmBinaryKind detectWasmType(final byte[] bytes) {
+    return WasmBinaryKind.detect(bytes);
   }
 
   /**

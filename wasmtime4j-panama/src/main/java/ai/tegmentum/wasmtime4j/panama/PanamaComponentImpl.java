@@ -5,6 +5,8 @@ import ai.tegmentum.wasmtime4j.component.Component;
 import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeCodec;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
@@ -142,6 +144,35 @@ final class PanamaComponentImpl implements Component {
     }
 
     return Set.copyOf(imports);
+  }
+
+  @Override
+  public ComponentTypeInfo componentType() throws WasmException {
+    ensureNotClosed();
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment jsonOut = arena.allocate(ValueLayout.ADDRESS);
+      final int errorCode =
+          NATIVE_BINDINGS.componentGetFullTypeJson(
+              componentHandle, engine.getNativeHandle(), jsonOut);
+
+      if (errorCode != 0) {
+        // Fall back to name-only default
+        return Component.super.componentType();
+      }
+
+      final MemorySegment jsonPtr = jsonOut.get(ValueLayout.ADDRESS, 0);
+      if (jsonPtr == null || jsonPtr.equals(MemorySegment.NULL)) {
+        return Component.super.componentType();
+      }
+
+      try {
+        final MemorySegment unbounded = jsonPtr.reinterpret(Long.MAX_VALUE);
+        final String json = unbounded.getString(0);
+        return ComponentTypeCodec.deserialize(json);
+      } finally {
+        NATIVE_BINDINGS.componentFreeString(jsonPtr);
+      }
+    }
   }
 
   @Override

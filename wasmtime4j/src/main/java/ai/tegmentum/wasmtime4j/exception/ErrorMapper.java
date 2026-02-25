@@ -104,7 +104,7 @@ public final class ErrorMapper {
       case INVALID_DATA:
       case UNSUPPORTED_OPERATION:
       case WOULD_BLOCK:
-        return new WasmRuntimeException(message);
+        return parseTrapOrRuntime(message);
 
       default:
         LOGGER.warning("Unhandled WasmErrorCode: " + wasmErrorCode);
@@ -120,6 +120,29 @@ public final class ErrorMapper {
    */
   public static WasmException mapErrorCode(final int errorCode) {
     return mapErrorCode(errorCode, null);
+  }
+
+  /**
+   * Checks if the message indicates a WebAssembly trap and creates the appropriate exception.
+   *
+   * <p>Messages from the native layer that indicate a trap have the format "WebAssembly trap: ..."
+   * and may optionally be prefixed with "[coredump:ID]" when coredump data is available.
+   *
+   * @param message the error message
+   * @return a TrapException if the message indicates a trap, otherwise a WasmRuntimeException
+   */
+  private static WasmException parseTrapOrRuntime(final String message) {
+    if (message == null) {
+      return new WasmRuntimeException("Unknown runtime error");
+    }
+
+    // Check for coredump prefix and/or trap indicator
+    String workingMessage = message;
+    if (workingMessage.startsWith("[coredump:") || workingMessage.contains("WebAssembly trap:")) {
+      return TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, workingMessage);
+    }
+
+    return new WasmRuntimeException(message);
   }
 
   /**

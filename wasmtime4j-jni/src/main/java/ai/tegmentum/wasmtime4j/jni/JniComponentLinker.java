@@ -25,6 +25,8 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
 import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeCodec;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeInfo;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.util.StreamUtils;
@@ -753,6 +755,34 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     final int result = nativeDefineUnknownImportsAsTraps(nativeHandle, componentHandle);
     if (result != 0) {
       throw new WasmException("Failed to define unknown imports as traps");
+    }
+  }
+
+  @Override
+  public ComponentTypeInfo substitutedComponentType(final Component component)
+      throws WasmException {
+    if (component == null) {
+      throw new IllegalArgumentException("Component cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(component instanceof JniComponentImpl)) {
+      return component.componentType();
+    }
+
+    final JniComponentImpl jniComponent = (JniComponentImpl) component;
+    try {
+      final String json =
+          JniComponent.nativeGetSubstitutedComponentTypeJson(
+              nativeHandle, jniComponent.getNativeHandle());
+      if (json == null) {
+        return component.componentType();
+      }
+      return ComponentTypeCodec.deserialize(json);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      return component.componentType();
     }
   }
 
