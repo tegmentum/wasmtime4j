@@ -532,6 +532,22 @@ fn convert_wasm_value_to_java<'a>(
                 })
             }
         },
+        WasmValue::ContRef => {
+            // ContRef is always null/opaque - call WasmValue.nullContRef()
+            env.call_static_method(
+                wasm_value_class,
+                "nullContRef",
+                "()Lai/tegmentum/wasmtime4j/WasmValue;",
+                &[],
+            )
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to create WasmValue.nullContRef: {}", e),
+            })?
+            .l()
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get WasmValue.nullContRef result: {}", e),
+            })
+        }
         _ => Ok(JObject::null()), // Skip unsupported types
     }
 }

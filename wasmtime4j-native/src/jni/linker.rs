@@ -488,6 +488,10 @@ fn java_to_wasm_value(
             // ExternRef - not fully supported yet, return None
             Ok(WasmValue::ExternRef(None))
         }
+        "CONTREF" => {
+            // ContRef is always null/opaque
+            Ok(WasmValue::ContRef)
+        }
         _ => Err(WasmtimeError::Runtime {
             message: format!("Unsupported type: {}", type_name),
             backtrace: None,

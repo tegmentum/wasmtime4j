@@ -50,6 +50,7 @@ pub enum WasmValueType {
     V128 = 4,
     FuncRef = 5,
     ExternRef = 6,
+    ContRef = 7,
 }
 
 impl From<u8> for WasmValueType {
@@ -61,6 +62,7 @@ impl From<u8> for WasmValueType {
             3 => WasmValueType::F64,
             4 => WasmValueType::V128,
             5 => WasmValueType::FuncRef,
+            7 => WasmValueType::ContRef,
             _ => WasmValueType::ExternRef,
         }
     }

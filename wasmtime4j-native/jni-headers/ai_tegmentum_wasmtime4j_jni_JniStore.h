@@ -303,6 +303,14 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeRemoveBre
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetSingleStep
   (JNIEnv *, jclass, jlong, jboolean);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeDebugExitFrames
+ * Signature: (J)[I
+ */
+JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDebugExitFrames
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

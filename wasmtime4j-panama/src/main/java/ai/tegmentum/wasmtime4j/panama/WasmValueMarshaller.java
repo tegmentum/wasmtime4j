@@ -16,7 +16,7 @@ import java.util.function.Function;
  * holding the value. The value at offset+4 may not be naturally aligned, so unaligned layouts are
  * used for 8-byte reads/writes.
  *
- * <p>Tag values: 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF.
+ * <p>Tag values: 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF, 7=CONTREF.
  *
  * @since 1.0.0
  */
@@ -88,6 +88,9 @@ final class WasmValueMarshaller {
           }
         }
         return WasmValue.externref(externId);
+
+      case 7: // CONTREF
+        return WasmValue.nullContRef();
 
       default:
         throw new IllegalArgumentException("Unknown WasmValue tag: " + tag);
@@ -178,6 +181,11 @@ final class WasmValueMarshaller {
           }
           ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + VALUE_OFFSET, externId);
         }
+        break;
+
+      case CONTREF:
+        ptr.set(ValueLayout.JAVA_INT, offset, 7);
+        ptr.set(ValueLayout.JAVA_LONG_UNALIGNED, offset + VALUE_OFFSET, 0L);
         break;
 
       default:

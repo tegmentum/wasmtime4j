@@ -266,6 +266,14 @@ public final class NativeStoreBindings extends NativeBindingsBase {
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
 
     addFunctionBinding(
+        "wasmtime4j_store_debug_exit_frames",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 0=success, -1=not enabled, negative=error
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // out_data (i32 array buffer)
+            ValueLayout.ADDRESS)); // out_count (pointer to i32 for frame count)
+
+    addFunctionBinding(
         "wasmtime4j_panama_store_epoch_deadline_async_yield_and_update",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
@@ -882,5 +890,14 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    */
   public MethodHandle getStoreIsAsync() {
     return resolveHandle("wasmtime4j_store_is_async");
+  }
+
+  /**
+   * Gets the method handle for retrieving debug exit frames.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreDebugExitFrames() {
+    return resolveHandle("wasmtime4j_store_debug_exit_frames");
   }
 }

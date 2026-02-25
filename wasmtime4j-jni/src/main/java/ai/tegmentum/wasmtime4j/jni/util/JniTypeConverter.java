@@ -109,6 +109,8 @@ public final class JniTypeConverter {
       case FUNCREF:
       case EXTERNREF:
         return value.getValue(); // References are passed as-is
+      case CONTREF:
+        return null; // ContRef is always null/opaque
       default:
         throw new IllegalArgumentException("Unsupported WebAssembly type: " + type);
     }
@@ -200,6 +202,8 @@ public final class JniTypeConverter {
         return WasmValue.funcref(result); // May be null
       case EXTERNREF:
         return WasmValue.externref(result); // May be null
+      case CONTREF:
+        return WasmValue.nullContRef(); // ContRef is always null/opaque
       default:
         throw new IllegalArgumentException("Unsupported return type: " + expectedType);
     }
@@ -455,6 +459,8 @@ public final class JniTypeConverter {
         return WasmValue.funcref(null);
       case EXTERNREF:
         return WasmValue.externref(null);
+      case CONTREF:
+        return WasmValue.nullContRef();
       default:
         throw new IllegalArgumentException("Unsupported value type: " + valueType);
     }
@@ -488,7 +494,8 @@ public final class JniTypeConverter {
         return offset + 16;
       case FUNCREF:
       case EXTERNREF:
-        // Both reference types use the same null representation
+      case CONTREF:
+        // Reference types use the same null representation
         writeLong(buffer, offset, 0);
         return offset + 8;
       default:

@@ -1417,6 +1417,32 @@ public final class JniStore extends JniResource implements Store {
         });
   }
 
+  @Override
+  public java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    final int[] frameData = nativeDebugExitFrames(getNativeHandle());
+    if (frameData == null) {
+      return java.util.Collections.emptyList();
+    }
+    final int frameCount = frameData.length / 4;
+    final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
+        new java.util.ArrayList<>(frameCount);
+    for (int i = 0; i < frameCount; i++) {
+      final int base = i * 4;
+      frames.add(
+          new ai.tegmentum.wasmtime4j.debug.FrameHandle(
+              0L, // no native ptr for snapshot approach
+              frameData[base], // functionIndex
+              frameData[base + 1], // pc
+              frameData[base + 2], // numLocals
+              frameData[base + 3], // numStack
+              null, // instance (not available in snapshot)
+              null)); // module (not available in snapshot)
+    }
+    return frames;
+  }
+
   // Debugging native methods
   private static native boolean nativeIsSingleStep(long storeHandle);
 
@@ -1429,4 +1455,6 @@ public final class JniStore extends JniResource implements Store {
   private static native int nativeRemoveBreakpoint(long storeHandle, long moduleHandle, int pc);
 
   private static native int nativeSetSingleStep(long storeHandle, boolean enabled);
+
+  private static native int[] nativeDebugExitFrames(long storeHandle);
 }

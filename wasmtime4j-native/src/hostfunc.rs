@@ -14,7 +14,7 @@ use crate::table::core::{
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use wasmtime::{Func, FuncType, RefType, Val, ValRaw, ValType};
+use wasmtime::{Func, FuncType, HeapType, RefType, Val, ValRaw, ValType};
 
 /// Compare ValType values since they don't implement PartialEq
 fn valtype_eq(a: &ValType, b: &ValType) -> bool {
@@ -578,7 +578,7 @@ fn marshal_params_from_wasmtime(
             }
             Val::AnyRef(_) => WasmValue::ExternRef(None),
             Val::ExnRef(_) => WasmValue::ExternRef(None),
-            Val::ContRef(_) => WasmValue::ExternRef(None),
+            Val::ContRef(_) => WasmValue::ContRef,
         };
         wasm_params.push(wasm_value);
     }
@@ -635,6 +635,10 @@ fn marshal_results_to_wasmtime(
                 // ExternRef creation requires Store context
                 // Always return NULL for now
                 Val::ExternRef(None)
+            }
+            WasmValue::ContRef => {
+                // ContRef values are opaque with no public API
+                Val::ContRef(None)
             }
         };
     }
@@ -721,6 +725,10 @@ fn marshal_results_to_valraw(
             WasmValue::ExternRef(_) => {
                 *raw = ValRaw::externref(0);
             }
+            WasmValue::ContRef => {
+                // ContRef is opaque - use null externref as raw representation
+                *raw = ValRaw::externref(0);
+            }
         }
     }
 
@@ -753,6 +761,7 @@ pub fn validate_parameter_types(
             WasmValue::V128(_) => ValType::V128,
             WasmValue::FuncRef(_) => ValType::Ref(RefType::FUNCREF),
             WasmValue::ExternRef(_) => ValType::Ref(RefType::EXTERNREF),
+            WasmValue::ContRef => ValType::Ref(RefType::new(true, HeapType::Cont)),
         };
 
         if !valtype_eq(&param_type, expected_type) {
@@ -795,6 +804,7 @@ pub fn validate_return_types(
             WasmValue::V128(_) => ValType::V128,
             WasmValue::FuncRef(_) => ValType::Ref(RefType::FUNCREF),
             WasmValue::ExternRef(_) => ValType::Ref(RefType::EXTERNREF),
+            WasmValue::ContRef => ValType::Ref(RefType::new(true, HeapType::Cont)),
         };
 
         if !valtype_eq(&result_type, expected_type) {

@@ -1894,6 +1894,63 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
+      throws WasmException {
+    ensureNotClosed();
+    try {
+      final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreDebugExitFrames();
+      if (handle == null) {
+        throw new WasmException("Panama store debug exit frames function not available");
+      }
+
+      // Phase 1: get frame count with null data pointer
+      final java.lang.foreign.MemorySegment countSegment = arena.allocate(ValueLayout.JAVA_INT);
+      final int countResult =
+          (int) handle.invoke(nativeStore, java.lang.foreign.MemorySegment.NULL, countSegment);
+      if (countResult == -1) {
+        return java.util.Collections.emptyList(); // debugging not enabled
+      }
+      if (countResult < 0) {
+        throw new WasmException("Failed to get debug exit frames: error code " + countResult);
+      }
+      final int frameCount = countSegment.get(ValueLayout.JAVA_INT, 0);
+      if (frameCount <= 0) {
+        return java.util.Collections.emptyList();
+      }
+
+      // Phase 2: allocate buffer and get frame data
+      final java.lang.foreign.MemorySegment dataSegment =
+          arena.allocate(ValueLayout.JAVA_INT, (long) frameCount * 4);
+      final int dataResult = (int) handle.invoke(nativeStore, dataSegment, countSegment);
+      if (dataResult < 0) {
+        throw new WasmException("Failed to get debug exit frame data: error code " + dataResult);
+      }
+
+      // Parse frame data: 4 ints per frame [func_index, pc, num_locals, num_stacks]
+      final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
+          new java.util.ArrayList<>(frameCount);
+      for (int i = 0; i < frameCount; i++) {
+        final long base = (long) i * 4 * ValueLayout.JAVA_INT.byteSize();
+        frames.add(
+            new ai.tegmentum.wasmtime4j.debug.FrameHandle(
+                0L, // no native ptr for snapshot approach
+                dataSegment.get(ValueLayout.JAVA_INT, base), // functionIndex
+                dataSegment.get(ValueLayout.JAVA_INT, base + ValueLayout.JAVA_INT.byteSize()), // pc
+                dataSegment.get(ValueLayout.JAVA_INT, base + 2 * ValueLayout.JAVA_INT.byteSize()),
+                dataSegment.get(ValueLayout.JAVA_INT, base + 3 * ValueLayout.JAVA_INT.byteSize()),
+                null, // instance (not available in snapshot)
+                null)); // module (not available in snapshot)
+      }
+      return frames;
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error getting debug exit frames: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public boolean isAsync() {
     ensureNotClosed();
     try {

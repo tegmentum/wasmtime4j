@@ -1,7 +1,7 @@
 //! JNI bindings for Store operations
 
 use jni::objects::{JClass, JObject, JValue};
-use jni::sys::{jboolean, jint, jlong, jobjectArray};
+use jni::sys::{jboolean, jint, jintArray, jlong, jobjectArray, jsize};
 use jni::JNIEnv;
 
 use crate::error::jni_utils;
@@ -1649,5 +1649,50 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetSingle
             }
         }
         Err(_) => -1,
+    }
+}
+
+/// Get debug exit frames as a flat int array [func_idx, pc, num_locals, num_stacks, ...]
+///
+/// Returns null if debugging is not enabled or no frames are available.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDebugExitFrames(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) -> jintArray {
+    let null_array = std::ptr::null_mut();
+    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
+        Ok(store) => match store.debug_exit_frames() {
+            Ok(Some(frames)) => {
+                if frames.is_empty() {
+                    env.new_int_array(0)
+                        .map(|a| a.into_raw())
+                        .unwrap_or(null_array)
+                } else {
+                    let flat_len = frames.len() * 4;
+                    let mut flat_data: Vec<jint> = Vec::with_capacity(flat_len);
+                    for frame in &frames {
+                        flat_data.push(frame[0]);
+                        flat_data.push(frame[1]);
+                        flat_data.push(frame[2]);
+                        flat_data.push(frame[3]);
+                    }
+                    match env.new_int_array(flat_len as jsize) {
+                        Ok(array) => {
+                            if env.set_int_array_region(&array, 0, &flat_data).is_ok() {
+                                array.into_raw()
+                            } else {
+                                null_array
+                            }
+                        }
+                        Err(_) => null_array,
+                    }
+                }
+            }
+            Ok(None) => null_array,
+            Err(_) => null_array,
+        },
+        Err(_) => null_array,
     }
 }

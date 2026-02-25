@@ -609,4 +609,52 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
       }
     }
   }
+
+  // ===== Debug Exit Frames Tests =====
+
+  @Nested
+  @DisplayName("Debug Exit Frames Tests")
+  class DebugExitFramesTests {
+
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
+    @DisplayName("Should return empty list when guest debugging not enabled")
+    void shouldReturnEmptyWhenDebugNotEnabled(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("[" + runtime + "] Testing debugExitFrames without guest debugging");
+
+      try (Engine engine = Engine.create();
+          Store store = Store.create(engine)) {
+
+        final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
+            store.debugExitFrames();
+        assertNotNull(frames, "debugExitFrames should return non-null list");
+        assertTrue(frames.isEmpty(), "debugExitFrames should return empty list "
+            + "when guest debugging is not enabled");
+        LOGGER.info("[" + runtime + "] debugExitFrames returned empty list as expected");
+      }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
+    @DisplayName("Should return empty list with guest debugging enabled but no active call")
+    void shouldReturnEmptyWithDebugEnabledNoCall(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("[" + runtime + "] Testing debugExitFrames with guest debugging but no call");
+
+      final ai.tegmentum.wasmtime4j.config.EngineConfig config =
+          ai.tegmentum.wasmtime4j.config.EngineConfig.forDebug();
+
+      try (Engine engine = Engine.create(config);
+          Store store = Store.create(engine)) {
+
+        final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
+            store.debugExitFrames();
+        assertNotNull(frames, "debugExitFrames should return non-null list");
+        assertTrue(frames.isEmpty(), "debugExitFrames should return empty list "
+            + "when no wasm call is active");
+        LOGGER.info("[" + runtime + "] debugExitFrames returned empty list with debug enabled");
+      }
+    }
+  }
 }

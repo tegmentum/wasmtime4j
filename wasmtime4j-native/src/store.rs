@@ -474,6 +474,33 @@ impl Store {
         Ok(has_debug)
     }
 
+    /// Snapshot all debug exit frames from the store.
+    ///
+    /// Returns None if guest debugging is not enabled, or an empty vec if no frames.
+    /// Each frame is represented as [func_index, pc, num_locals, num_stacks].
+    pub fn debug_exit_frames(&self) -> WasmtimeResult<Option<Vec<[i32; 4]>>> {
+        let mut store = self.try_lock_store()?;
+        let cursor = store.debug_frames();
+        let Some(mut cursor) = cursor else {
+            return Ok(None);
+        };
+        let mut frames = Vec::new();
+        loop {
+            cursor.move_to_parent();
+            if cursor.done() {
+                break;
+            }
+            let (func_index, pc) = cursor
+                .wasm_function_index_and_pc()
+                .map(|(fi, pc)| (fi.as_u32() as i32, pc as i32))
+                .unwrap_or((-1, -1));
+            let num_locals = cursor.num_locals() as i32;
+            let num_stacks = cursor.num_stacks() as i32;
+            frames.push([func_index, pc, num_locals, num_stacks]);
+        }
+        Ok(Some(frames))
+    }
+
     /// Check if the store has been closed.
     ///
     /// Returns an error if the store is closed, preventing use-after-close bugs.
@@ -2884,6 +2911,57 @@ pub unsafe extern "C" fn wasmtime4j_store_remove_breakpoint(
                 Err(_) => FFI_ERROR,
             }
         }
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Snapshot debug exit frames from the store.
+///
+/// # Returns
+///
+/// 0 on success, -1 if debugging not enabled, -2 on error.
+/// Frame count is written to out_count. If out_data is non-null, frame data
+/// is written as a flat array of i32s: [func_index, pc, num_locals, num_stacks]
+/// per frame.
+///
+/// To use: call once with out_data=null to get count, allocate,
+/// then call again with out_data pointing to a buffer of count*4 i32s.
+///
+/// # Safety
+///
+/// store_ptr must be a valid pointer from wasmtime4j_store_new.
+/// out_data, if non-null, must point to a buffer of at least count*4 i32s.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_debug_exit_frames(
+    store_ptr: *const c_void,
+    out_data: *mut i32,
+    out_count: *mut i32,
+) -> c_int {
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => match store.debug_exit_frames() {
+            Ok(Some(frames)) => {
+                if !out_count.is_null() {
+                    *out_count = frames.len() as i32;
+                }
+                if !out_data.is_null() {
+                    for (i, frame) in frames.iter().enumerate() {
+                        let base = i * 4;
+                        *out_data.add(base) = frame[0];
+                        *out_data.add(base + 1) = frame[1];
+                        *out_data.add(base + 2) = frame[2];
+                        *out_data.add(base + 3) = frame[3];
+                    }
+                }
+                FFI_SUCCESS
+            }
+            Ok(None) => {
+                if !out_count.is_null() {
+                    *out_count = 0;
+                }
+                -1 // debugging not enabled
+            }
+            Err(_) => FFI_ERROR,
+        },
         Err(_) => FFI_ERROR,
     }
 }

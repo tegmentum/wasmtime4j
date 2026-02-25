@@ -143,6 +143,9 @@ pub struct EngineConfigFfi {
     // Guest debugging instrumentation
     pub guest_debug: Option<bool>,
 
+    // Cranelift IR output directory
+    pub emit_clif: Option<String>,
+
     // Cranelift flag enables (single-flag variant, sets flag to "true")
     pub cranelift_flag_enables: Option<Vec<String>>,
 }
@@ -406,6 +409,11 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     // Guest debugging instrumentation
     if let Some(v) = config.guest_debug {
         builder = builder.guest_debug(v);
+    }
+
+    // Cranelift IR output directory
+    if let Some(ref path) = config.emit_clif {
+        builder = builder.emit_clif(path);
     }
 
     // Cranelift flag enables (single-flag variant)

@@ -128,6 +128,9 @@ public final class EngineConfig {
   // Cranelift proof-carrying code validation
   private boolean craneliftPcc = false;
 
+  // Cranelift IR output directory (null = disabled)
+  private String emitClif = null;
+
   // GC collector: "auto", "deferred_reference_counting", "null"
   private String collector = "auto";
 
@@ -937,6 +940,7 @@ public final class EngineConfig {
     c.forceMemoryInitMemfd = this.forceMemoryInitMemfd;
     c.craneliftDebugChecks = this.craneliftDebugChecks;
     c.enableCompiler = this.enableCompiler;
+    c.emitClif = this.emitClif;
     // Transient fields (not serialized to JSON)
     c.incrementalCacheStore = this.incrementalCacheStore;
     c.memoryCreator = this.memoryCreator;
@@ -2355,6 +2359,34 @@ public final class EngineConfig {
     return enableCompiler;
   }
 
+  /**
+   * Sets the directory path where Cranelift IR (CLIF) will be written during compilation.
+   *
+   * <p>When set to a non-null path, the engine will dump Cranelift intermediate representation
+   * files to the specified directory during compilation. This is useful for debugging compilation
+   * issues or inspecting generated code.
+   *
+   * <p>Setting to null disables CLIF output (default).
+   *
+   * @param path the directory path for CLIF output, or null to disable
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig emitClif(final String path) {
+    this.emitClif = path;
+    return this;
+  }
+
+  /**
+   * Returns the directory path where Cranelift IR (CLIF) will be written, or null if disabled.
+   *
+   * @return the CLIF output directory path, or null if disabled
+   * @since 1.0.0
+   */
+  public String getEmitClif() {
+    return emitClif;
+  }
+
   // ===== JSON Serialization =====
 
   /**
@@ -2459,6 +2491,9 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "forceMemoryInitMemfd", forceMemoryInitMemfd);
     first = appendJsonBool(sb, first, "craneliftDebugChecks", craneliftDebugChecks);
     first = appendJsonBool(sb, first, "enableCompiler", enableCompiler);
+    if (emitClif != null) {
+      first = appendJsonField(sb, first, "emitClif", emitClif);
+    }
     first = appendJsonBool(sb, first, "macosUseMachPorts", macosUseMachPorts);
     first = appendJsonBool(sb, first, "wasmBacktrace", wasmBacktrace);
     if (backtraceDetails != null) {

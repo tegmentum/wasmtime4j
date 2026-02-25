@@ -1579,6 +1579,19 @@ impl EngineBuilder {
         Ok(self)
     }
 
+    /// Set the directory path for Cranelift IR (CLIF) output
+    ///
+    /// When set, compiled Cranelift intermediate representation files will be
+    /// written to the specified directory during compilation. This is useful for
+    /// debugging compilation issues or inspecting generated code.
+    ///
+    /// # Arguments
+    /// * `path` - Directory path where CLIF files will be written
+    pub fn emit_clif(mut self, path: &str) -> Self {
+        self.config.emit_clif(std::path::Path::new(path));
+        self
+    }
+
     /// Enable or disable guest debugging instrumentation
     ///
     /// When enabled, compiled code includes extra instrumentation to support
