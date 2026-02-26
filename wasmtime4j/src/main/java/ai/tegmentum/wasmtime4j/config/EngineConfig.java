@@ -131,8 +131,8 @@ public final class EngineConfig {
   // Cranelift IR output directory (null = disabled)
   private String emitClif = null;
 
-  // GC collector: "auto", "deferred_reference_counting", "null"
-  private String collector = "auto";
+  // GC collector strategy
+  private Collector collector = Collector.AUTO;
 
   // Memory guaranteed dense image size in bytes
   private long memoryGuaranteedDenseImageSize = 0;
@@ -2156,24 +2156,39 @@ public final class EngineConfig {
   /**
    * Sets the GC collector implementation.
    *
-   * <p>Valid values are "auto", "deferred_reference_counting", "null".
-   *
-   * @param collector the collector name
+   * @param collector the collector strategy
    * @return this configuration for method chaining
-   * @since 1.0.0
+   * @since 1.1.0
    */
-  public EngineConfig collector(final String collector) {
+  public EngineConfig collector(final Collector collector) {
+    if (collector == null) {
+      throw new IllegalArgumentException("Collector cannot be null");
+    }
     this.collector = collector;
     return this;
   }
 
   /**
-   * Returns the GC collector implementation name.
+   * Sets the GC collector implementation by name.
    *
-   * @return the collector name
+   * @param collector the collector name ("auto", "deferred_reference_counting", "null")
+   * @return this configuration for method chaining
+   * @deprecated Use {@link #collector(Collector)} instead
    * @since 1.0.0
    */
-  public String getCollector() {
+  @Deprecated
+  public EngineConfig collector(final String collector) {
+    this.collector = Collector.fromString(collector);
+    return this;
+  }
+
+  /**
+   * Returns the GC collector strategy.
+   *
+   * @return the collector strategy
+   * @since 1.1.0
+   */
+  public Collector getCollector() {
     return collector;
   }
 
@@ -2556,8 +2571,8 @@ public final class EngineConfig {
 
     // GC settings
     first = appendJsonBool(sb, first, "gcSupport", gcSupport);
-    if (collector != null && !"auto".equals(collector)) {
-      first = appendJsonField(sb, first, "collector", collector);
+    if (collector != null && collector != Collector.AUTO) {
+      first = appendJsonField(sb, first, "collector", collector.getRustName());
     }
 
     // Table

@@ -276,6 +276,12 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.CodeBuilder codeBuilder() throws WasmException {
+    ensureNotClosed();
+    return new PanamaCodeBuilder(nativeEngine);
+  }
+
+  @Override
   public byte[] precompileComponent(final byte[] wasmBytes) throws WasmException {
     if (wasmBytes == null) {
       throw new IllegalArgumentException("wasmBytes cannot be null");

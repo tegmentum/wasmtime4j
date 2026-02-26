@@ -86,6 +86,21 @@ public final class ErrorMapper {
       case SECURITY_VIOLATION:
         return new WasmSecurityException(message);
 
+      case MEMORY_ACCESS_ERROR:
+        return new MemoryAccessException(message);
+
+      case GC_HEAP_OOM:
+        return new GcHeapOutOfMemoryException(message);
+
+      case POOL_CONCURRENCY_LIMIT:
+        return new PoolConcurrencyLimitException(message);
+
+      case UNKNOWN_IMPORT:
+        return new UnknownImportException(message);
+
+      case RESOURCE_TABLE_ERROR:
+        return new ResourceTableException(ResourceTableException.ErrorKind.NOT_PRESENT, message);
+
       case RUNTIME_ERROR:
       case ENGINE_CONFIG_ERROR:
       case STORE_ERROR:

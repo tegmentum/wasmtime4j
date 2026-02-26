@@ -443,6 +443,16 @@ pub enum ErrorCode {
     WouldBlock = -26,
     /// WASI proc_exit was called
     WasiExit = -27,
+    /// Out-of-bounds or invalid memory access
+    MemoryAccessError = -28,
+    /// GC heap out of memory
+    GcHeapOom = -29,
+    /// Pooling allocator concurrency limit exceeded
+    PoolConcurrencyLimit = -30,
+    /// Unknown import could not be resolved
+    UnknownImport = -31,
+    /// Resource table operation failed
+    ResourceTableError = -32,
 }
 
 // The impl WasmtimeError block is defined below to avoid duplication

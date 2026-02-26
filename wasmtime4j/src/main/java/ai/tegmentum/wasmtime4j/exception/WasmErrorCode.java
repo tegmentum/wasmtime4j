@@ -98,7 +98,22 @@ public enum WasmErrorCode {
   WOULD_BLOCK(-26, "Operation would block"),
 
   /** WASI proc_exit was called. */
-  WASI_EXIT(-27, "WASI proc_exit called");
+  WASI_EXIT(-27, "WASI proc_exit called"),
+
+  /** Out-of-bounds or invalid memory access. */
+  MEMORY_ACCESS_ERROR(-28, "Memory access error"),
+
+  /** GC heap out of memory. */
+  GC_HEAP_OOM(-29, "GC heap out of memory"),
+
+  /** Pooling allocator concurrency limit exceeded. */
+  POOL_CONCURRENCY_LIMIT(-30, "Pool concurrency limit exceeded"),
+
+  /** Unknown import could not be resolved. */
+  UNKNOWN_IMPORT(-31, "Unknown import"),
+
+  /** Resource table operation failed. */
+  RESOURCE_TABLE_ERROR(-32, "Resource table error");
 
   private final int code;
   private final String description;

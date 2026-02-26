@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.gc;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.type.StorageType;
+import ai.tegmentum.wasmtime4j.type.ValType;
 import java.util.Locale;
 
 /**
@@ -294,6 +296,90 @@ public final class FieldType {
     }
 
     return true;
+  }
+
+  /**
+   * Converts this field type to a {@link StorageType}.
+   *
+   * <p>Packed field types (PACKED_I8, PACKED_I16) map to packed storage types. All other field
+   * types map to VAL storage types wrapping the corresponding ValType.
+   *
+   * @return the corresponding storage type
+   * @throws IllegalStateException if this is a reference type that cannot be converted
+   */
+  public StorageType toStorageType() {
+    switch (kind) {
+      case PACKED_I8:
+        return StorageType.i8();
+      case PACKED_I16:
+        return StorageType.i16();
+      case I32:
+        return StorageType.val(ValType.i32());
+      case I64:
+        return StorageType.val(ValType.i64());
+      case F32:
+        return StorageType.val(ValType.f32());
+      case F64:
+        return StorageType.val(ValType.f64());
+      case V128:
+        return StorageType.val(ValType.v128());
+      case REFERENCE:
+        throw new IllegalStateException(
+            "Reference field types require manual StorageType conversion");
+      default:
+        throw new IllegalStateException("Unknown field type kind: " + kind);
+    }
+  }
+
+  /**
+   * Creates a FieldType from a {@link StorageType} and mutability flag.
+   *
+   * <p>Note: The mutability flag is not stored in FieldType directly but is used by the caller
+   * (e.g., FieldDefinition) to track field mutability.
+   *
+   * @param storageType the storage type
+   * @param mutable whether the field is mutable (informational, not stored in FieldType)
+   * @return the corresponding field type
+   * @throws IllegalArgumentException if storageType is null
+   */
+  public static FieldType fromStorageType(final StorageType storageType, final boolean mutable) {
+    if (storageType == null) {
+      throw new IllegalArgumentException("StorageType cannot be null");
+    }
+    switch (storageType.getKind()) {
+      case I8:
+        return packedI8();
+      case I16:
+        return packedI16();
+      case VAL:
+        return fromValType(storageType.asValType());
+      default:
+        throw new IllegalStateException("Unknown storage type kind: " + storageType.getKind());
+    }
+  }
+
+  /**
+   * Creates a FieldType from a ValType.
+   *
+   * @param valType the value type
+   * @return the corresponding field type
+   */
+  private static FieldType fromValType(final ValType valType) {
+    switch (valType.getValueType()) {
+      case I32:
+        return i32();
+      case I64:
+        return i64();
+      case F32:
+        return f32();
+      case F64:
+        return f64();
+      case V128:
+        return v128();
+      default:
+        throw new IllegalArgumentException(
+            "Cannot create FieldType from ValType: " + valType.getValueType());
+    }
   }
 
   @Override

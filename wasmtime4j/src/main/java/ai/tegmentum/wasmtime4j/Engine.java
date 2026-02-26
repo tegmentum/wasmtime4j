@@ -133,6 +133,28 @@ public interface Engine extends Closeable {
   byte[] precompileComponent(final byte[] wasmBytes) throws WasmException;
 
   /**
+   * Creates a new {@link CodeBuilder} for this engine.
+   *
+   * <p>CodeBuilder provides a stateful builder pattern for WebAssembly compilation with
+   * fine-grained control over the compilation process, including DWARF debug packages, compilation
+   * hints, and both module and component compilation.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * try (CodeBuilder builder = engine.codeBuilder()) {
+   *     builder.wasmBinary(wasmBytes);
+   *     Module module = builder.compileModule();
+   * }
+   * }</pre>
+   *
+   * @return a new CodeBuilder instance
+   * @throws WasmException if the code builder cannot be created
+   * @since 1.1.0
+   */
+  CodeBuilder codeBuilder() throws WasmException;
+
+  /**
    * Compiles WebAssembly bytecode from an input stream into a module using this engine.
    *
    * <p>This method reads the entire stream contents and then compiles the WebAssembly bytecode. The

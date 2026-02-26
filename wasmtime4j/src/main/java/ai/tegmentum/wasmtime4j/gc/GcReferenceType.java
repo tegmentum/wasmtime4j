@@ -11,6 +11,7 @@ package ai.tegmentum.wasmtime4j.gc;
  *   <li>{@link #I31_REF} - Immediate 31-bit integer references
  *   <li>{@link #STRUCT_REF} - References to struct instances
  *   <li>{@link #ARRAY_REF} - References to array instances
+ *   <li>{@link #EXN_REF} - References to exception instances
  * </ul>
  *
  * @since 1.0.0
@@ -30,6 +31,9 @@ public enum GcReferenceType {
 
   /** References to array instances with element type information. */
   ARRAY_REF("arrayref"),
+
+  /** References to exception instances (exception handling proposal). */
+  EXN_REF("exnref"),
 
   /** The null reference type - bottom type for nullable references. */
   NULL_REF("nullref"),
@@ -77,6 +81,9 @@ public enum GcReferenceType {
         return supertype == ANY_REF || supertype == EQ_REF || supertype == STRUCT_REF;
       case ARRAY_REF:
         return supertype == ANY_REF || supertype == EQ_REF || supertype == ARRAY_REF;
+      case EXN_REF:
+        // exnref is not part of the anyref/eqref hierarchy
+        return supertype == EXN_REF;
       case NULL_REF:
         // nullref is a subtype of all nullable GC reference types
         return supertype == ANY_REF
@@ -102,6 +109,10 @@ public enum GcReferenceType {
    * @return true if this type supports equality comparison
    */
   public boolean supportsEquality() {
+    // exnref is outside the anyref/eqref hierarchy and does not support ref.eq
+    if (this == EXN_REF) {
+      return false;
+    }
     return isSubtypeOf(EQ_REF);
   }
 

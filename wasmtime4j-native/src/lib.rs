@@ -44,6 +44,7 @@ use std::os::raw::c_char;
 
 // Core modules - foundational WebAssembly runtime components
 pub mod caller;
+pub mod code_builder; // CodeBuilder stateful compilation API
 pub mod data_segment; // Data segment management for memory.init()
 pub mod element_segment; // Element segment management for table.init()
 pub mod element_segment_parser; // Element and data segment parser using wasmparser

@@ -16,6 +16,8 @@ use jni::JNIEnv;
 #[cfg(feature = "jni-bindings")]
 pub mod caller;
 #[cfg(feature = "jni-bindings")]
+pub mod code_builder;
+#[cfg(feature = "jni-bindings")]
 pub mod component;
 #[cfg(feature = "jni-bindings")]
 pub mod component_linker;

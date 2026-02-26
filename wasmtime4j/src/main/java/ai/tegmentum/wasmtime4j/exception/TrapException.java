@@ -108,6 +108,16 @@ public class TrapException extends WasmException {
     INVALID_DISCRIMINANT("Invalid discriminant for variant"),
     /** Component passed an unaligned pointer when lifting or lowering. */
     UNALIGNED_POINTER("Unaligned pointer in component operation"),
+    /** Debug assertion: string encoding not finished. */
+    DEBUG_ASSERT_STRING_ENCODING_FINISHED("Debug assertion failed: string encoding not finished"),
+    /** Debug assertion: code units are not equal. */
+    DEBUG_ASSERT_EQUAL_CODE_UNITS("Debug assertion failed: code units are not equal"),
+    /** Debug assertion: may_enter flag was not unset. */
+    DEBUG_ASSERT_MAY_ENTER_UNSET("Debug assertion failed: may_enter flag was not unset"),
+    /** Debug assertion: pointer is not properly aligned. */
+    DEBUG_ASSERT_POINTER_ALIGNED("Debug assertion failed: pointer is not aligned"),
+    /** Debug assertion: upper bits are not unset. */
+    DEBUG_ASSERT_UPPER_BITS_UNSET("Debug assertion failed: upper bits are not unset"),
     /** Unknown or unspecified trap condition. */
     UNKNOWN("Unknown trap condition");
 
@@ -367,6 +377,22 @@ public class TrapException extends WasmException {
   }
 
   /**
+   * Checks if this trap represents a debug assertion failure.
+   *
+   * <p>Debug assertion traps are internal consistency checks in the component model implementation.
+   * They typically indicate a bug in the component model runtime rather than user error.
+   *
+   * @return true if this is a debug assertion error, false otherwise
+   */
+  public boolean isDebugAssertError() {
+    return trapType == TrapType.DEBUG_ASSERT_STRING_ENCODING_FINISHED
+        || trapType == TrapType.DEBUG_ASSERT_EQUAL_CODE_UNITS
+        || trapType == TrapType.DEBUG_ASSERT_MAY_ENTER_UNSET
+        || trapType == TrapType.DEBUG_ASSERT_POINTER_ALIGNED
+        || trapType == TrapType.DEBUG_ASSERT_UPPER_BITS_UNSET;
+  }
+
+  /**
    * Formats the exception message with trap details.
    *
    * @param trapType the trap type
@@ -473,6 +499,16 @@ public class TrapException extends WasmException {
         return "Ensure variant discriminants are within valid range";
       case UNALIGNED_POINTER:
         return "Ensure pointers are properly aligned for their type";
+      case DEBUG_ASSERT_STRING_ENCODING_FINISHED:
+        return "Debug assertion in component model string encoding; report as a bug";
+      case DEBUG_ASSERT_EQUAL_CODE_UNITS:
+        return "Debug assertion in component model string transcoding; report as a bug";
+      case DEBUG_ASSERT_MAY_ENTER_UNSET:
+        return "Debug assertion in component model reentrance guard; report as a bug";
+      case DEBUG_ASSERT_POINTER_ALIGNED:
+        return "Debug assertion for pointer alignment in component model; report as a bug";
+      case DEBUG_ASSERT_UPPER_BITS_UNSET:
+        return "Debug assertion for value bit-width in component model; report as a bug";
       case UNKNOWN:
       default:
         return "Review WebAssembly code for potential runtime issues";

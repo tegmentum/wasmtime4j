@@ -4,6 +4,7 @@
 //! functions for use by the wasmtime4j-panama Java module.
 
 pub mod caller;
+pub mod code_builder;
 pub mod component_enhanced;
 pub mod coredump;
 pub mod engine;

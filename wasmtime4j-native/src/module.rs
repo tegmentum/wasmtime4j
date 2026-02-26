@@ -757,7 +757,7 @@ impl Module {
 }
 
 impl ModuleMetadata {
-    fn extract(
+    pub(crate) fn extract(
         module: &WasmtimeModule,
         size_bytes: usize,
         wasm_bytes: &[u8],

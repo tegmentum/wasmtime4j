@@ -2887,4 +2887,235 @@ public final class NativeEngineBindings extends NativeBindingsBase {
       callNativeFunction("wasmtime4j_guest_profiler_destroy", Void.class, profilerPtr);
     }
   }
+
+  // ==================== CodeBuilder Operations ====================
+
+  /**
+   * Creates a new CodeBuilder for the given engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @return pointer to the new CodeBuilder
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if creation fails
+   */
+  public MemorySegment codeBuilderCreate(final MemorySegment enginePtr)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_code_builder_create", MemorySegment.class, enginePtr);
+  }
+
+  /**
+   * Sets wasm binary bytes on the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @param wasmBytes the wasm bytes
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if setting bytes fails
+   */
+  public void codeBuilderWasmBinary(final MemorySegment builderPtr, final byte[] wasmBytes)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(builderPtr, "builderPtr");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_code_builder_wasm_binary",
+              Integer.class,
+              builderPtr,
+              bytesSegment,
+              wasmBytes.length);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to set wasm binary");
+      }
+    }
+  }
+
+  /**
+   * Sets wasm binary or text bytes on the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @param wasmBytes the wasm or WAT bytes
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if setting bytes fails
+   */
+  public void codeBuilderWasmBinaryOrText(final MemorySegment builderPtr, final byte[] wasmBytes)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(builderPtr, "builderPtr");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_code_builder_wasm_binary_or_text",
+              Integer.class,
+              builderPtr,
+              bytesSegment,
+              wasmBytes.length);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to set wasm binary or text");
+      }
+    }
+  }
+
+  /**
+   * Sets DWARF package bytes on the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @param dwarfBytes the DWARF package bytes
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if setting bytes fails
+   */
+  public void codeBuilderDwarfPackage(final MemorySegment builderPtr, final byte[] dwarfBytes)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(builderPtr, "builderPtr");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, dwarfBytes);
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_code_builder_dwarf_package",
+              Integer.class,
+              builderPtr,
+              bytesSegment,
+              dwarfBytes.length);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to set DWARF package");
+      }
+    }
+  }
+
+  /**
+   * Sets hint on the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @param hintOrdinal the hint ordinal (0=MODULE, 1=COMPONENT)
+   */
+  public void codeBuilderHint(final MemorySegment builderPtr, final int hintOrdinal) {
+    validatePointer(builderPtr, "builderPtr");
+    callNativeFunction("wasmtime4j_panama_code_builder_hint", Void.class, builderPtr, hintOrdinal);
+  }
+
+  /**
+   * Compiles a module from the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @return pointer to the compiled module
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if compilation fails
+   */
+  public MemorySegment codeBuilderCompileModule(final MemorySegment builderPtr)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_code_builder_compile_module", MemorySegment.class, builderPtr);
+  }
+
+  /**
+   * Compiles a module to serialized bytes from the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @return the serialized module bytes
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if compilation fails
+   */
+  public byte[] codeBuilderCompileModuleSerialized(final MemorySegment builderPtr)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(builderPtr, "builderPtr");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment outDataPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outLenPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_code_builder_compile_module_serialized",
+              Integer.class,
+              builderPtr,
+              outDataPtr,
+              outLenPtr);
+
+      if (result != 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to compile module serialized via CodeBuilder");
+      }
+
+      final MemorySegment dataPtr = outDataPtr.get(ValueLayout.ADDRESS, 0);
+      final long dataLen = outLenPtr.get(ValueLayout.JAVA_LONG, 0);
+
+      if (dataPtr.equals(MemorySegment.NULL) || dataLen <= 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Serialized compilation returned invalid data");
+      }
+
+      final MemorySegment dataSegment = dataPtr.reinterpret(dataLen);
+      final byte[] serializedBytes = dataSegment.toArray(ValueLayout.JAVA_BYTE);
+
+      // Free the native memory
+      serializerFreeBuffer(dataPtr, dataLen);
+
+      return serializedBytes;
+    }
+  }
+
+  /**
+   * Compiles a component from the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @return pointer to the compiled component
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if compilation fails
+   */
+  public MemorySegment codeBuilderCompileComponent(final MemorySegment builderPtr)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(builderPtr, "builderPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_code_builder_compile_component", MemorySegment.class, builderPtr);
+  }
+
+  /**
+   * Compiles a component to serialized bytes from the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @return the serialized component bytes
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if compilation fails
+   */
+  public byte[] codeBuilderCompileComponentSerialized(final MemorySegment builderPtr)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    validatePointer(builderPtr, "builderPtr");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment outDataPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outLenPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result =
+          callNativeFunction(
+              "wasmtime4j_panama_code_builder_compile_component_serialized",
+              Integer.class,
+              builderPtr,
+              outDataPtr,
+              outLenPtr);
+
+      if (result != 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to compile component serialized via CodeBuilder");
+      }
+
+      final MemorySegment dataPtr = outDataPtr.get(ValueLayout.ADDRESS, 0);
+      final long dataLen = outLenPtr.get(ValueLayout.JAVA_LONG, 0);
+
+      if (dataPtr.equals(MemorySegment.NULL) || dataLen <= 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Serialized compilation returned invalid data");
+      }
+
+      final MemorySegment dataSegment = dataPtr.reinterpret(dataLen);
+      final byte[] serializedBytes = dataSegment.toArray(ValueLayout.JAVA_BYTE);
+
+      // Free the native memory
+      serializerFreeBuffer(dataPtr, dataLen);
+
+      return serializedBytes;
+    }
+  }
+
+  /**
+   * Destroys a code builder.
+   *
+   * @param builderPtr pointer to the code builder to destroy
+   */
+  public void codeBuilderDestroy(final MemorySegment builderPtr) {
+    if (builderPtr != null && !builderPtr.equals(MemorySegment.NULL)) {
+      callNativeFunction("wasmtime4j_panama_code_builder_destroy", Void.class, builderPtr);
+    }
+  }
 }
