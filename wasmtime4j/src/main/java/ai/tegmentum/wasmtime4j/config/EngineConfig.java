@@ -2056,6 +2056,238 @@ public final class EngineConfig {
   }
 
   /**
+   * Enables or disables the reference types proposal.
+   *
+   * <p>When enabled, modules can use reference types (externref, funcref) as first-class values.
+   *
+   * <p>Default: true
+   *
+   * @param enable true to enable reference types
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmReferenceTypes(final boolean enable) {
+    this.wasmReferenceTypes = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the SIMD proposal.
+   *
+   * <p>When enabled, modules can use 128-bit SIMD vector operations.
+   *
+   * <p>Default: true
+   *
+   * @param enable true to enable SIMD
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmSimd(final boolean enable) {
+    this.wasmSimd = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the relaxed SIMD proposal.
+   *
+   * <p>When enabled, modules can use relaxed SIMD instructions that have non-deterministic behavior
+   * on different hardware.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable relaxed SIMD
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmRelaxedSimd(final boolean enable) {
+    this.wasmRelaxedSimd = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the multi-value proposal.
+   *
+   * <p>When enabled, functions can return multiple values and blocks can produce multiple results.
+   *
+   * <p>Default: true
+   *
+   * @param enable true to enable multi-value
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmMultiValue(final boolean enable) {
+    this.wasmMultiValue = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the bulk memory operations proposal.
+   *
+   * <p>When enabled, modules can use bulk memory operations like memory.copy and memory.fill.
+   *
+   * <p>Default: true
+   *
+   * @param enable true to enable bulk memory operations
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmBulkMemory(final boolean enable) {
+    this.wasmBulkMemory = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the threads proposal.
+   *
+   * <p>When enabled, modules can use shared memories and atomic operations for multi-threaded
+   * WebAssembly execution.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable threads
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmThreads(final boolean enable) {
+    this.wasmThreads = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the tail call proposal.
+   *
+   * <p>When enabled, modules can use the return_call and return_call_indirect instructions for
+   * guaranteed tail call optimization.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable tail calls
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmTailCall(final boolean enable) {
+    this.wasmTailCall = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the multi-memory proposal.
+   *
+   * <p>When enabled, modules can define and use multiple linear memories.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable multi-memory
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmMultiMemory(final boolean enable) {
+    this.wasmMultiMemory = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the memory64 proposal.
+   *
+   * <p>When enabled, modules can use 64-bit linear memories with addresses beyond the 4 GiB limit.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable memory64
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmMemory64(final boolean enable) {
+    this.wasmMemory64 = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the stack switching proposal.
+   *
+   * <p>When enabled, modules can use continuation-based stack switching for coroutines and
+   * lightweight concurrency.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable stack switching
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmStackSwitching(final boolean enable) {
+    this.wasmStackSwitching = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the extended constant expressions proposal.
+   *
+   * <p>When enabled, modules can use more complex expressions in constant contexts such as global
+   * initializers and element offsets.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable extended constant expressions
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmExtendedConstExpressions(final boolean enable) {
+    this.wasmExtendedConstExpressions = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the custom page sizes proposal.
+   *
+   * <p>When enabled, modules can specify custom page sizes for linear memories instead of the
+   * standard 64 KiB page size.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable custom page sizes
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmCustomPageSizes(final boolean enable) {
+    this.wasmCustomPageSizes = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the shared-everything-threads proposal.
+   *
+   * <p>When enabled, all WebAssembly objects (memories, tables, globals, functions) can be shared
+   * across threads.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable shared-everything-threads
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmSharedEverythingThreads(final boolean enable) {
+    this.wasmSharedEverythingThreads = enable;
+    return this;
+  }
+
+  /**
+   * Enables or disables the WebAssembly Component Model.
+   *
+   * <p>When enabled, the engine supports compiling and instantiating WebAssembly components using
+   * the component model specification.
+   *
+   * <p>Default: false
+   *
+   * @param enable true to enable the component model
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig wasmComponentModel(final boolean enable) {
+    this.wasmComponentModel = enable;
+    return this;
+  }
+
+  /**
    * Returns whether table lazy initialization is enabled.
    *
    * <p>Table lazy initialization is enabled by default, matching the Wasmtime default. When
