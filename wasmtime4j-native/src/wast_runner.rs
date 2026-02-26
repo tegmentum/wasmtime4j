@@ -3,7 +3,7 @@
 /// This module provides functionality to execute WAST (WebAssembly Test) files
 /// using Wasmtime's native WAST parser and test runner. This ensures 100%
 /// compatibility with Wasmtime's own test execution behavior.
-use anyhow::{Context, Result};
+use wasmtime::error::Context;
 use serde::Serialize;
 use std::path::Path;
 use wasmtime::*;
@@ -44,7 +44,7 @@ impl WastExecutionResult {
 }
 
 /// Execute a WAST file and return detailed results
-pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
+pub fn execute_wast_file(file_path: &str) -> wasmtime::Result<WastExecutionResult> {
     let path = Path::new(file_path);
 
     if !path.exists() {
@@ -132,7 +132,7 @@ pub fn execute_wast_file(file_path: &str) -> Result<WastExecutionResult> {
 }
 
 /// Execute WAST content from a string buffer
-pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> Result<WastExecutionResult> {
+pub fn execute_wast_buffer(filename: &str, content: &[u8]) -> wasmtime::Result<WastExecutionResult> {
     // Create Wasmtime engine with default configuration
     // Note: async_support is disabled for synchronous WAST execution
     let mut config = crate::engine::safe_wasmtime_config();

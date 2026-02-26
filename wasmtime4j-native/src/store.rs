@@ -290,19 +290,19 @@ pub struct CallbackResourceLimiter {
 }
 
 impl CallbackResourceLimiter {
-    fn do_memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+    fn do_memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
         let max_val = maximum.map(|m| m as u64).unwrap_or(u64::MAX);
         let result = (self.memory_growing_fn)(self.callback_id, current as u64, desired as u64, max_val);
         Ok(result != 0)
     }
 
-    fn do_table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+    fn do_table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
         let max_val = maximum.map(|m| m as u32).unwrap_or(u32::MAX);
         let result = (self.table_growing_fn)(self.callback_id, current as u32, desired as u32, max_val);
         Ok(result != 0)
     }
 
-    fn do_memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+    fn do_memory_grow_failed(&mut self, error: wasmtime::Error) -> wasmtime::Result<()> {
         if let Some(callback) = self.memory_grow_failed_fn {
             if let Ok(c_msg) = CString::new(error.to_string()) {
                 callback(self.callback_id, c_msg.as_ptr());
@@ -311,7 +311,7 @@ impl CallbackResourceLimiter {
         Ok(())
     }
 
-    fn do_table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+    fn do_table_grow_failed(&mut self, error: wasmtime::Error) -> wasmtime::Result<()> {
         if let Some(callback) = self.table_grow_failed_fn {
             if let Ok(c_msg) = CString::new(error.to_string()) {
                 callback(self.callback_id, c_msg.as_ptr());
@@ -322,19 +322,19 @@ impl CallbackResourceLimiter {
 }
 
 impl wasmtime::ResourceLimiter for CallbackResourceLimiter {
-    fn memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+    fn memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
         self.do_memory_growing(current, desired, maximum)
     }
 
-    fn table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+    fn table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
         self.do_table_growing(current, desired, maximum)
     }
 
-    fn memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+    fn memory_grow_failed(&mut self, error: wasmtime::Error) -> wasmtime::Result<()> {
         self.do_memory_grow_failed(error)
     }
 
-    fn table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+    fn table_grow_failed(&mut self, error: wasmtime::Error) -> wasmtime::Result<()> {
         self.do_table_grow_failed(error)
     }
 }
@@ -344,19 +344,19 @@ pub type CallbackResourceLimiterAsync = CallbackResourceLimiter;
 
 #[async_trait::async_trait]
 impl wasmtime::ResourceLimiterAsync for CallbackResourceLimiter {
-    async fn memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+    async fn memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
         self.do_memory_growing(current, desired, maximum)
     }
 
-    async fn table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> anyhow::Result<bool> {
+    async fn table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
         self.do_table_growing(current, desired, maximum)
     }
 
-    fn memory_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+    fn memory_grow_failed(&mut self, error: wasmtime::Error) -> wasmtime::Result<()> {
         self.do_memory_grow_failed(error)
     }
 
-    fn table_grow_failed(&mut self, error: wasmtime::Error) -> anyhow::Result<()> {
+    fn table_grow_failed(&mut self, error: wasmtime::Error) -> wasmtime::Result<()> {
         self.do_table_grow_failed(error)
     }
 }
@@ -769,7 +769,7 @@ impl Store {
         self.check_not_closed()?;
         let mut store = self.inner.lock();
 
-        store.gc(None); // Pass None for manual GC trigger
+        let _ = store.gc(None); // Pass None for manual GC trigger
         Ok(())
     }
 
@@ -901,7 +901,7 @@ impl Store {
             } else {
                 // Return an error to trap execution
                 log::trace!("Trapping execution");
-                Err(anyhow::anyhow!("Epoch deadline callback requested trap"))
+                Err(wasmtime::Error::msg("Epoch deadline callback requested trap"))
             }
         });
 
@@ -1273,7 +1273,7 @@ impl Store {
             if result == 0 {
                 Ok(())
             } else {
-                Err(anyhow::anyhow!("Call hook requested trap (result={})", result))
+                Err(wasmtime::Error::msg(format!("Call hook requested trap (result={})", result)))
             }
         });
 

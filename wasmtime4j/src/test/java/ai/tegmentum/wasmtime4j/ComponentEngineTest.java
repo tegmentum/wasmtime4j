@@ -345,6 +345,9 @@ class ComponentEngineTest {
       Method[] methods = ComponentEngine.class.getDeclaredMethods();
 
       for (Method method : methods) {
+        if (method.isSynthetic() || method.getName().contains("$")) {
+          continue; // Skip synthetic methods injected by instrumentation (e.g., JaCoCo)
+        }
         int modifiers = method.getModifiers();
         assertTrue(
             Modifier.isPublic(modifiers), "Method " + method.getName() + " should be public");

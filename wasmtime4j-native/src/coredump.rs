@@ -90,9 +90,15 @@ pub fn all_ids() -> Vec<u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    /// Mutex to serialize coredump tests that share the global REGISTRY.
+    static TEST_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
     #[test]
     fn test_register_and_retrieve() {
+        let _lock = TEST_LOCK.lock().unwrap();
+
         // Create a simple error (without actual WasmCoreDump)
         let error = wasmtime::Error::msg("test trap error");
         let id = register_error(error, "test trap".to_string());
@@ -111,6 +117,9 @@ mod tests {
 
     #[test]
     fn test_clear_all() {
+        let _lock = TEST_LOCK.lock().unwrap();
+        clear_all(); // Start clean
+
         let e1 = wasmtime::Error::msg("error 1");
         let e2 = wasmtime::Error::msg("error 2");
         let id1 = register_error(e1, "trap 1".to_string());
@@ -124,7 +133,9 @@ mod tests {
 
     #[test]
     fn test_all_ids() {
+        let _lock = TEST_LOCK.lock().unwrap();
         clear_all();
+
         let e1 = wasmtime::Error::msg("a");
         let e2 = wasmtime::Error::msg("b");
         let id1 = register_error(e1, "a".to_string());

@@ -46,7 +46,6 @@ pub(crate) static SHARED_COMPONENT_WASMTIME_ENGINE: OnceLock<Result<WasmtimeEngi
 pub(crate) fn init_shared_component_wasmtime_engine() -> Result<WasmtimeEngine, String> {
     let mut config = safe_wasmtime_config();
     config.wasm_component_model(true);
-    config.async_support(false);
     config.wasm_simd(true);
     config.wasm_bulk_memory(true);
     config.wasm_multi_value(true);
@@ -82,7 +81,6 @@ pub(crate) static SHARED_ASYNC_WASMTIME_ENGINE: OnceLock<Result<WasmtimeEngine, 
 /// Internal helper to initialize the shared async wasmtime engine safely.
 pub(crate) fn init_shared_async_wasmtime_engine() -> Result<WasmtimeEngine, String> {
     let mut config = safe_wasmtime_config();
-    config.async_support(true);
     config.wasm_component_model(true);
     WasmtimeEngine::new(&config)
         .map_err(|e| format!("Failed to create shared async wasmtime engine: {}", e))
@@ -155,7 +153,6 @@ pub fn get_shared_async_wasmtime_engine() -> WasmtimeEngine {
                 e
             );
             let mut config = safe_wasmtime_config();
-            config.async_support(true);
             config.wasm_component_model(true);
             WasmtimeEngine::new(&config).unwrap_or_else(|_| {
                 WasmtimeEngine::new(&safe_wasmtime_config())
@@ -176,8 +173,8 @@ pub(crate) static SHARED_CONCURRENT_COMPONENT_ENGINE: OnceLock<Result<WasmtimeEn
 pub(crate) fn init_shared_concurrent_component_engine() -> Result<WasmtimeEngine, String> {
     let mut config = safe_wasmtime_config();
     config.wasm_component_model(true);
-    config.async_support(true);
     config.wasm_component_model_async(true);
+    config.concurrency_support(true);
     config.wasm_simd(true);
     config.wasm_bulk_memory(true);
     config.wasm_multi_value(true);
@@ -203,8 +200,8 @@ pub fn get_shared_concurrent_component_engine() -> WasmtimeEngine {
             );
             let mut config = safe_wasmtime_config();
             config.wasm_component_model(true);
-            config.async_support(true);
             config.wasm_component_model_async(true);
+            config.concurrency_support(true);
             WasmtimeEngine::new(&config).unwrap_or_else(|_| {
                 WasmtimeEngine::new(&safe_wasmtime_config())
                     .expect("Failed to create even basic fallback engine")

@@ -54,7 +54,7 @@ class GcReferenceTypeTest {
     @DisplayName("should have correct total count of enum values")
     void shouldHaveCorrectTotalCountOfEnumValues() {
       final GcReferenceType[] values = GcReferenceType.values();
-      assertEquals(8, values.length, "Should have exactly 8 reference types");
+      assertEquals(9, values.length, "Should have exactly 9 reference types");
     }
   }
 

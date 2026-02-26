@@ -33,6 +33,7 @@ public final class EngineConfig {
   private long maxWasmStack = 0; // 0 means unlimited
   private long asyncStackSize = 0; // 0 means unlimited
   private boolean asyncSupport = false;
+  private boolean concurrencySupport = false;
   private long fuelAsyncYieldInterval = 0; // 0 means disabled
   private boolean epochInterruption = false;
   private boolean coredumpOnTrap = false;
@@ -325,6 +326,23 @@ public final class EngineConfig {
    */
   public EngineConfig asyncSupport(final boolean asyncSupport) {
     this.asyncSupport = asyncSupport;
+    return this;
+  }
+
+  /**
+   * Configures whether concurrency support is enabled for the engine.
+   *
+   * <p>When enabled, allows usage of {@code *_concurrent} APIs for concurrent component model
+   * execution. This replaces the async-based concurrency model from earlier Wasmtime versions.
+   *
+   * <p>Note: This option was introduced in Wasmtime 42.0.0.
+   *
+   * @param concurrencySupport true to enable concurrency support
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig concurrencySupport(final boolean concurrencySupport) {
+    this.concurrencySupport = concurrencySupport;
     return this;
   }
 
@@ -625,6 +643,16 @@ public final class EngineConfig {
     return asyncSupport;
   }
 
+  /**
+   * Returns whether concurrency support is enabled.
+   *
+   * @return true if concurrency support is enabled
+   * @since 1.0.0
+   */
+  public boolean isConcurrencySupport() {
+    return concurrencySupport;
+  }
+
   public boolean isEpochInterruption() {
     return epochInterruption;
   }
@@ -872,6 +900,7 @@ public final class EngineConfig {
     c.maxWasmStack = this.maxWasmStack;
     c.asyncStackSize = this.asyncStackSize;
     c.asyncSupport = this.asyncSupport;
+    c.concurrencySupport = this.concurrencySupport;
     c.fuelAsyncYieldInterval = this.fuelAsyncYieldInterval;
     c.epochInterruption = this.epochInterruption;
     c.coredumpOnTrap = this.coredumpOnTrap;
@@ -2503,6 +2532,7 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "fuelEnabled", consumeFuel);
     first = appendJsonBool(sb, first, "epochInterruption", epochInterruption);
     first = appendJsonBool(sb, first, "asyncSupport", asyncSupport);
+    first = appendJsonBool(sb, first, "concurrencySupport", concurrencySupport);
     first = appendJsonBool(sb, first, "coredumpOnTrap", coredumpOnTrap);
     first = appendJsonBool(sb, first, "parallelCompilation", parallelCompilation);
     first = appendJsonBool(sb, first, "nativeUnwindInfo", nativeUnwindInfo);

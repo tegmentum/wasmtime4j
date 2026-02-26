@@ -996,7 +996,7 @@ impl ComponentLinker {
 
                 // Invoke the host callback
                 let cv_results = entry.callback.execute(&cv_params).map_err(|e| {
-                    anyhow::anyhow!("Host function callback failed: {}", e)
+                    wasmtime::Error::msg(format!("Host function callback failed: {}", e))
                 })?;
 
                 // Convert ComponentValue results back to wasmtime Val
@@ -1051,7 +1051,7 @@ impl ComponentLinker {
 
                     // Invoke the host callback
                     let cv_results = entry.callback.execute(&cv_params).map_err(|e| {
-                        anyhow::anyhow!("Host function callback failed: {}", e)
+                        wasmtime::Error::msg(format!("Host function callback failed: {}", e))
                     })?;
 
                     // Convert ComponentValue results back to wasmtime Val
@@ -1242,7 +1242,7 @@ impl ComponentLinker {
             })?
             .resource(resource_name, resource_type, move |_store_ctx, rep| {
                 destructor.destroy(rep).map_err(|e| {
-                    anyhow::anyhow!("Resource destructor failed: {}", e)
+                    wasmtime::Error::msg(format!("Resource destructor failed: {}", e))
                 })
             })
             .map_err(|e| WasmtimeError::Linker {

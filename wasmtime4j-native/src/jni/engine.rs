@@ -408,9 +408,9 @@ unsafe impl wasmtime::LinearMemory for JniLinearMemory {
         result.ok().and_then(|v| v.j().ok()).unwrap_or(0) as usize
     }
 
-    fn grow_to(&mut self, new_size: usize) -> anyhow::Result<()> {
+    fn grow_to(&mut self, new_size: usize) -> wasmtime::Result<()> {
         let Ok(mut env) = self.jvm.attach_current_thread() else {
-            return Err(anyhow::anyhow!("Failed to attach JNI thread"));
+            return Err(wasmtime::Error::msg("Failed to attach JNI thread"));
         };
         let result = env.call_method(
             self.memory_global.as_obj(),
@@ -420,11 +420,11 @@ unsafe impl wasmtime::LinearMemory for JniLinearMemory {
         );
         if env.exception_check().unwrap_or(true) {
             let _ = env.exception_clear();
-            return Err(anyhow::anyhow!("LinearMemory.growTo threw exception"));
+            return Err(wasmtime::Error::msg("LinearMemory.growTo threw exception"));
         }
         result
             .map(|_| ())
-            .map_err(|e| anyhow::anyhow!("LinearMemory.growTo failed: {}", e))
+            .map_err(|e| wasmtime::Error::msg(format!("LinearMemory.growTo failed: {}", e)))
     }
 
     fn as_ptr(&self) -> *mut u8 {
@@ -636,9 +636,9 @@ unsafe impl wasmtime::StackCreator for JniStackCreator {
         &self,
         size: usize,
         zeroed: bool,
-    ) -> Result<Box<dyn wasmtime::StackMemory>, anyhow::Error> {
+    ) -> Result<Box<dyn wasmtime::StackMemory>, wasmtime::Error> {
         let Ok(mut env) = self.jvm.attach_current_thread() else {
-            return Err(anyhow::anyhow!("Failed to attach JNI thread"));
+            return Err(wasmtime::Error::msg("Failed to attach JNI thread"));
         };
 
         let result = env.call_method(
@@ -653,15 +653,15 @@ unsafe impl wasmtime::StackCreator for JniStackCreator {
 
         if env.exception_check().unwrap_or(true) {
             let _ = env.exception_clear();
-            return Err(anyhow::anyhow!("StackCreator.newStack threw exception"));
+            return Err(wasmtime::Error::msg("StackCreator.newStack threw exception"));
         }
 
-        let obj = result?.l()?;
+        let obj = result.map_err(|e| wasmtime::Error::msg(format!("{}", e)))?.l().map_err(|e| wasmtime::Error::msg(format!("{}", e)))?;
         if obj.is_null() {
-            return Err(anyhow::anyhow!("StackCreator.newStack returned null"));
+            return Err(wasmtime::Error::msg("StackCreator.newStack returned null"));
         }
 
-        let stack_global = env.new_global_ref(obj)?;
+        let stack_global = env.new_global_ref(obj).map_err(|e| wasmtime::Error::msg(format!("{}", e)))?;
 
         Ok(Box::new(JniStackMemory {
             jvm: self.jvm.clone(),
@@ -699,9 +699,9 @@ impl wasmtime::CustomCodeMemory for JniCustomCodeMemory {
         result.ok().and_then(|v| v.j().ok()).unwrap_or(1) as usize
     }
 
-    fn publish_executable(&self, ptr: *const u8, len: usize) -> anyhow::Result<()> {
+    fn publish_executable(&self, ptr: *const u8, len: usize) -> wasmtime::Result<()> {
         let Ok(mut env) = self.jvm.attach_current_thread() else {
-            return Err(anyhow::anyhow!("Failed to attach JNI thread"));
+            return Err(wasmtime::Error::msg("Failed to attach JNI thread"));
         };
         let result = env.call_method(
             self.code_mem_global.as_obj(),
@@ -714,18 +714,18 @@ impl wasmtime::CustomCodeMemory for JniCustomCodeMemory {
         );
         if env.exception_check().unwrap_or(true) {
             let _ = env.exception_clear();
-            return Err(anyhow::anyhow!(
-                "CustomCodeMemory.publishExecutable threw exception"
+            return Err(wasmtime::Error::msg(
+                "CustomCodeMemory.publishExecutable threw exception",
             ));
         }
         result
             .map(|_| ())
-            .map_err(|e| anyhow::anyhow!("publishExecutable failed: {}", e))
+            .map_err(|e| wasmtime::Error::msg(format!("publishExecutable failed: {}", e)))
     }
 
-    fn unpublish_executable(&self, ptr: *const u8, len: usize) -> anyhow::Result<()> {
+    fn unpublish_executable(&self, ptr: *const u8, len: usize) -> wasmtime::Result<()> {
         let Ok(mut env) = self.jvm.attach_current_thread() else {
-            return Err(anyhow::anyhow!("Failed to attach JNI thread"));
+            return Err(wasmtime::Error::msg("Failed to attach JNI thread"));
         };
         let result = env.call_method(
             self.code_mem_global.as_obj(),
@@ -738,13 +738,13 @@ impl wasmtime::CustomCodeMemory for JniCustomCodeMemory {
         );
         if env.exception_check().unwrap_or(true) {
             let _ = env.exception_clear();
-            return Err(anyhow::anyhow!(
-                "CustomCodeMemory.unpublishExecutable threw exception"
+            return Err(wasmtime::Error::msg(
+                "CustomCodeMemory.unpublishExecutable threw exception",
             ));
         }
         result
             .map(|_| ())
-            .map_err(|e| anyhow::anyhow!("unpublishExecutable failed: {}", e))
+            .map_err(|e| wasmtime::Error::msg(format!("unpublishExecutable failed: {}", e)))
     }
 }
 

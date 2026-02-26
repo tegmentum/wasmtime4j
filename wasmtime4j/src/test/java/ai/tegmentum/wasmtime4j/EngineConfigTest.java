@@ -195,4 +195,117 @@ class EngineConfigTest {
     assertTrue(config.isDebugInfo(), "debugInfo should be enabled");
     assertTrue(config.isEnableCompiler(), "enableCompiler should be enabled");
   }
+
+  // ===== x86FloatAbiOk tests =====
+
+  @Test
+  @DisplayName("Should have x86FloatAbiOk disabled by default")
+  void shouldHaveX86FloatAbiOkDisabledByDefault() {
+    final EngineConfig config = new EngineConfig();
+    assertFalse(config.isX86FloatAbiOk(), "x86FloatAbiOk should be disabled by default");
+  }
+
+  @Test
+  @DisplayName("Should enable x86FloatAbiOk when set to true")
+  void shouldEnableX86FloatAbiOkWhenSetToTrue() {
+    final EngineConfig config = new EngineConfig().x86FloatAbiOk(true);
+    assertTrue(config.isX86FloatAbiOk(), "x86FloatAbiOk should be enabled");
+  }
+
+  @Test
+  @DisplayName("Should preserve x86FloatAbiOk in copy")
+  void shouldPreserveX86FloatAbiOkInCopy() {
+    final EngineConfig config = new EngineConfig().x86FloatAbiOk(true);
+    final EngineConfig copy = config.copy();
+    assertTrue(copy.isX86FloatAbiOk(), "copy should preserve x86FloatAbiOk=true");
+  }
+
+  @Test
+  @DisplayName("Should serialize x86FloatAbiOk to JSON")
+  void shouldSerializeX86FloatAbiOkToJson() {
+    final EngineConfig config = new EngineConfig().x86FloatAbiOk(true);
+    final String json = new String(config.toJson(), java.nio.charset.StandardCharsets.UTF_8);
+    assertTrue(
+        json.contains("\"x86FloatAbiOk\":true"),
+        "JSON should contain x86FloatAbiOk:true but was: " + json);
+  }
+
+  // ===== signalsBasedTraps tests =====
+
+  @Test
+  @DisplayName("Should have signalsBasedTraps disabled by default")
+  void shouldHaveSignalsBasedTrapsDisabledByDefault() {
+    final EngineConfig config = new EngineConfig();
+    assertFalse(config.isSignalsBasedTraps(), "signalsBasedTraps should be disabled by default");
+  }
+
+  @Test
+  @DisplayName("Should accept signalsBasedTraps(true) even though native overrides it")
+  void shouldAcceptSignalsBasedTrapsTrue() {
+    final EngineConfig config = new EngineConfig().signalsBasedTraps(true);
+    assertTrue(
+        config.isSignalsBasedTraps(),
+        "signalsBasedTraps should reflect the set value on the Java side");
+  }
+
+  @Test
+  @DisplayName("Should preserve signalsBasedTraps in copy")
+  void shouldPreserveSignalsBasedTrapsInCopy() {
+    final EngineConfig config = new EngineConfig().signalsBasedTraps(true);
+    final EngineConfig copy = config.copy();
+    assertTrue(copy.isSignalsBasedTraps(), "copy should preserve signalsBasedTraps=true");
+  }
+
+  @Test
+  @DisplayName("Should serialize signalsBasedTraps to JSON")
+  void shouldSerializeSignalsBasedTrapsToJson() {
+    final EngineConfig config = new EngineConfig().signalsBasedTraps(true);
+    final String json = new String(config.toJson(), java.nio.charset.StandardCharsets.UTF_8);
+    assertTrue(
+        json.contains("\"signalsBasedTraps\":true"),
+        "JSON should contain signalsBasedTraps:true but was: " + json);
+  }
+
+  @Test
+  @DisplayName("Should support method chaining for new config options")
+  void shouldSupportMethodChainingForNewConfigOptions() {
+    final EngineConfig config =
+        new EngineConfig().x86FloatAbiOk(true).signalsBasedTraps(false).enableCompiler(true);
+
+    assertTrue(config.isX86FloatAbiOk(), "x86FloatAbiOk should be enabled");
+    assertFalse(config.isSignalsBasedTraps(), "signalsBasedTraps should be disabled");
+    assertTrue(config.isEnableCompiler(), "enableCompiler should be enabled");
+  }
+
+  @Test
+  @DisplayName("Should have concurrencySupport disabled by default")
+  void shouldHaveConcurrencySupportDisabledByDefault() {
+    final EngineConfig config = new EngineConfig();
+    assertFalse(config.isConcurrencySupport(), "concurrencySupport should be disabled by default");
+  }
+
+  @Test
+  @DisplayName("Should enable concurrencySupport when set to true")
+  void shouldEnableConcurrencySupportWhenSetToTrue() {
+    final EngineConfig config = new EngineConfig().concurrencySupport(true);
+    assertTrue(config.isConcurrencySupport(), "concurrencySupport should be enabled");
+  }
+
+  @Test
+  @DisplayName("Should preserve concurrencySupport in copy")
+  void shouldPreserveConcurrencySupportInCopy() {
+    final EngineConfig original = new EngineConfig().concurrencySupport(true);
+    final EngineConfig copied = original.copy();
+    assertTrue(copied.isConcurrencySupport(), "copied config should preserve concurrencySupport");
+  }
+
+  @Test
+  @DisplayName("Should serialize concurrencySupport to JSON")
+  void shouldSerializeConcurrencySupportToJson() {
+    final EngineConfig config = new EngineConfig().concurrencySupport(true);
+    final String json = new String(config.toJson(), java.nio.charset.StandardCharsets.UTF_8);
+    assertTrue(
+        json.contains("\"concurrencySupport\":true"),
+        "JSON should contain concurrencySupport:true, got: " + json);
+  }
 }

@@ -17,13 +17,13 @@ use wasmtime::{
     Val, ValType as WasmtimeValType,
 };
 
-/// Extracts the full error chain from an anyhow::Error to capture nested error messages.
+/// Extracts the full error chain from a wasmtime::Error to capture nested error messages.
 ///
 /// When a host function traps, Wasmtime wraps the error in a Trap. The top-level message
 /// is just "error while executing at wasm backtrace", but the actual error message from
 /// the host function is nested in the error chain. This function extracts all messages
 /// to ensure the original error (like "test-panic") is included.
-fn extract_error_chain(e: &anyhow::Error) -> String {
+fn extract_error_chain(e: &wasmtime::Error) -> String {
     use std::fmt::Write;
 
     let mut message = String::new();

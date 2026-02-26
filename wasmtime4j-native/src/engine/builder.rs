@@ -208,12 +208,12 @@ unsafe impl wasmtime::LinearMemory for CallbackLinearMemory {
         unsafe { (self.byte_capacity_fn)(self.memory_id) as usize }
     }
 
-    fn grow_to(&mut self, new_size: usize) -> anyhow::Result<()> {
+    fn grow_to(&mut self, new_size: usize) -> wasmtime::Result<()> {
         let result = unsafe { (self.grow_to_fn)(self.memory_id, new_size as u64) };
         if result == 0 {
             Ok(())
         } else {
-            Err(anyhow::anyhow!("LinearMemory.growTo failed"))
+            Err(wasmtime::Error::msg("LinearMemory.growTo failed"))
         }
     }
 
@@ -361,13 +361,13 @@ unsafe impl wasmtime::StackCreator for CallbackStackCreator {
         &self,
         size: usize,
         zeroed: bool,
-    ) -> Result<Box<dyn wasmtime::StackMemory>, anyhow::Error> {
+    ) -> Result<Box<dyn wasmtime::StackMemory>, wasmtime::Error> {
         let stack_id = unsafe {
             (self.new_stack_fn)(self.creator_id, size as u64, if zeroed { 1 } else { 0 })
         };
 
         if stack_id == 0 {
-            return Err(anyhow::anyhow!("StackCreator.newStack returned null"));
+            return Err(wasmtime::Error::msg("StackCreator.newStack returned null"));
         }
 
         Ok(Box::new(CallbackStackMemory {
@@ -425,22 +425,22 @@ impl wasmtime::CustomCodeMemory for CallbackCustomCodeMemory {
         unsafe { (self.alignment_fn)(self.code_mem_id) as usize }
     }
 
-    fn publish_executable(&self, ptr: *const u8, len: usize) -> anyhow::Result<()> {
+    fn publish_executable(&self, ptr: *const u8, len: usize) -> wasmtime::Result<()> {
         let result = unsafe { (self.publish_fn)(self.code_mem_id, ptr, len as u64) };
         if result == 0 {
             Ok(())
         } else {
-            Err(anyhow::anyhow!("CustomCodeMemory.publishExecutable failed"))
+            Err(wasmtime::Error::msg("CustomCodeMemory.publishExecutable failed"))
         }
     }
 
-    fn unpublish_executable(&self, ptr: *const u8, len: usize) -> anyhow::Result<()> {
+    fn unpublish_executable(&self, ptr: *const u8, len: usize) -> wasmtime::Result<()> {
         let result = unsafe { (self.unpublish_fn)(self.code_mem_id, ptr, len as u64) };
         if result == 0 {
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "CustomCodeMemory.unpublishExecutable failed"
+            Err(wasmtime::Error::msg(
+                "CustomCodeMemory.unpublishExecutable failed",
             ))
         }
     }
@@ -491,6 +491,7 @@ pub struct EngineConfigSummary {
     // ===== Introspection mirrors (Engine accessor methods) =====
     pub max_stack_size: Option<usize>,
     pub async_support: bool,
+    pub concurrency_support: bool,
     pub coredump_on_trap: bool,
 
     // ===== FFI getter fields =====
@@ -532,6 +533,7 @@ impl Default for EngineConfigSummary {
             epoch_interruption: false,
             max_stack_size: None,
             async_support: false,
+            concurrency_support: false,
             coredump_on_trap: false,
             memory_reservation: None,
             memory_guard_size: None,
@@ -576,6 +578,7 @@ impl EngineConfigSummary {
             epoch_interruption: false,
             max_stack_size: None,
             async_support: false,
+            concurrency_support: false,
             coredump_on_trap: false,
             memory_reservation: None,
             memory_guard_size: None,
@@ -615,6 +618,7 @@ impl EngineConfigSummary {
             epoch_interruption: builder.epoch_interruption,
             max_stack_size: builder.max_stack_size,
             async_support: builder.async_support,
+            concurrency_support: builder.concurrency_support,
             coredump_on_trap: builder.coredump_on_trap,
             memory_reservation: builder.memory_reservation,
             memory_guard_size: builder.memory_guard_size,
@@ -662,6 +666,7 @@ pub struct EngineBuilder {
     pub(crate) wasm_component_model_error_context: bool,
     pub(crate) wasm_component_model_gc: bool,
     pub(crate) async_support: bool,
+    pub(crate) concurrency_support: bool,
     pub(crate) coredump_on_trap: bool,
     // Memory configuration options
     pub(crate) memory_reservation: Option<u64>,
@@ -791,6 +796,7 @@ impl EngineBuilder {
             wasm_component_model_error_context: false, // Component model extension - off by default
             wasm_component_model_gc: false,            // Component model extension - off by default
             async_support: false,                      // Async execution support - off by default
+            concurrency_support: false,                // Concurrency support - off by default
             coredump_on_trap: false,                   // Coredump on trap - off by default
             memory_reservation: None,                  // Memory reservation - use Wasmtime default
             memory_guard_size: None,                   // Memory guard size - use Wasmtime default
@@ -1037,9 +1043,23 @@ impl EngineBuilder {
     }
 
     /// Enable or disable async execution support
+    ///
+    /// Note: In Wasmtime 42.0.0+, `Config::async_support()` was removed.
+    /// This method now only sets the internal tracking flag used by the
+    /// engine to decide between sync and async code paths.
     pub fn async_support(mut self, enable: bool) -> Self {
-        self.config.async_support(enable);
         self.async_support = enable;
+        self
+    }
+
+    /// Enable or disable concurrency support for `*_concurrent` APIs
+    ///
+    /// When enabled, the `run_concurrent` and `call_concurrent` APIs are available
+    /// for concurrent component function calls. Requires the `component-model-async`
+    /// crate feature.
+    pub fn concurrency_support(mut self, enable: bool) -> Self {
+        self.config.concurrency_support(enable);
+        self.concurrency_support = enable;
         self
     }
 

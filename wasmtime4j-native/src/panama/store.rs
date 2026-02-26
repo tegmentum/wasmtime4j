@@ -632,7 +632,7 @@ pub extern "C" fn wasmtime4j_panama_store_gc(store_ptr: *mut c_void) -> c_int {
         let mut store_lock = store.inner.lock();
         // Wasmtime's gc() method takes Option<&GcHeapOutOfMemory<()>>
         // Passing None means we're not in an OOM recovery scenario
-        store_lock.gc(None);
+        let _ = store_lock.gc(None);
         Ok(())
     })
 }

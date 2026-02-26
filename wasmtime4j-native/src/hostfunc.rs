@@ -13,6 +13,7 @@ use crate::table::core::{
     remove_function_reference,
 };
 use std::collections::HashMap;
+use std::mem::MaybeUninit;
 use std::sync::{Arc, Mutex};
 use wasmtime::{Func, FuncType, HeapType, RefType, Val, ValRaw, ValType};
 
@@ -233,7 +234,7 @@ impl HostFunction {
             let host_function = {
                 let registry = get_host_function_registry().lock().map_err(|e| {
                     log::error!("[HOSTFUNC] Failed to lock registry: {}", e);
-                    anyhow::anyhow!("Failed to lock host function registry: {}", e)
+                    wasmtime::Error::msg(format!("Failed to lock host function registry: {}", e))
                 })?;
 
                 registry.get(&host_func_id).cloned().ok_or_else(|| {
@@ -241,7 +242,7 @@ impl HostFunction {
                         "[HOSTFUNC] Host function not found in registry: {}",
                         host_func_id
                     );
-                    anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
+                    wasmtime::Error::msg(format!("Host function not found in registry: {}", host_func_id))
                 })?
             };
 
@@ -261,7 +262,7 @@ impl HostFunction {
                     marshal_params_from_wasmtime(params, store_id)?;
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
                     log::error!("[HOSTFUNC] Callback execution failed: {}", e);
-                    anyhow::anyhow!("Host function execution failed: {}", e)
+                    wasmtime::Error::msg(format!("Host function execution failed: {}", e))
                 })?;
                 // Clean up temporary funcref registrations from param marshalling
                 cleanup_temp_funcref_ids(&temp_ids);
@@ -283,12 +284,12 @@ impl HostFunction {
                 let _context =
                     create_optimized_caller_context(&mut caller, usage).map_err(|e| {
                         log::error!("[HOSTFUNC] Failed to create caller context: {}", e);
-                        anyhow::anyhow!("Failed to create caller context: {}", e)
+                        wasmtime::Error::msg(format!("Failed to create caller context: {}", e))
                     })?;
 
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
                     log::error!("[HOSTFUNC] Callback execution failed: {}", e);
-                    anyhow::anyhow!("Host function execution failed: {}", e)
+                    wasmtime::Error::msg(format!("Host function execution failed: {}", e))
                 })?;
                 // Clean up temporary funcref registrations from param marshalling
                 cleanup_temp_funcref_ids(&temp_ids);
@@ -333,10 +334,10 @@ impl HostFunction {
                 // Look up the host function in the registry
                 let host_function = {
                     let registry = get_host_function_registry().lock().map_err(|e| {
-                        anyhow::anyhow!("Failed to lock host function registry: {}", e)
+                        wasmtime::Error::msg(format!("Failed to lock host function registry: {}", e))
                     })?;
                     registry.get(&host_func_id).cloned().ok_or_else(|| {
-                        anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
+                        wasmtime::Error::msg(format!("Host function not found in registry: {}", host_func_id))
                     })?
                 };
 
@@ -346,7 +347,7 @@ impl HostFunction {
 
                 // Execute the callback
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                    anyhow::anyhow!("Host function execution failed: {}", e)
+                    wasmtime::Error::msg(format!("Host function execution failed: {}", e))
                 })?;
 
                 // Clean up temporary funcref registrations
@@ -385,11 +386,11 @@ impl HostFunction {
                     // Look up the host function in the registry
                     let host_function = {
                         let registry = get_host_function_registry().lock().map_err(|e| {
-                            anyhow::anyhow!("Failed to lock host function registry: {}", e)
+                            wasmtime::Error::msg(format!("Failed to lock host function registry: {}", e))
                         })?;
 
                         registry.get(&host_func_id).cloned().ok_or_else(|| {
-                            anyhow::anyhow!("Host function not found in registry: {}", host_func_id)
+                            wasmtime::Error::msg(format!("Host function not found in registry: {}", host_func_id))
                         })?
                     };
 
@@ -400,7 +401,7 @@ impl HostFunction {
                             marshal_params_from_wasmtime(params, store_id)?;
                         let wasm_results =
                             host_function.callback.execute(&wasm_params).map_err(|e| {
-                                anyhow::anyhow!("Host function execution failed: {}", e)
+                                wasmtime::Error::msg(format!("Host function execution failed: {}", e))
                             })?;
                         cleanup_temp_funcref_ids(&temp_ids);
                         marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
@@ -414,7 +415,7 @@ impl HostFunction {
 
                         let wasm_results =
                             host_function.callback.execute(&wasm_params).map_err(|e| {
-                                anyhow::anyhow!("Host function execution failed: {}", e)
+                                wasmtime::Error::msg(format!("Host function execution failed: {}", e))
                             })?;
                         cleanup_temp_funcref_ids(&temp_ids);
 
@@ -422,7 +423,7 @@ impl HostFunction {
                     }
 
                     Ok(())
-                }) as Box<dyn Future<Output = Result<(), anyhow::Error>> + Send>
+                }) as Box<dyn Future<Output = Result<(), wasmtime::Error>> + Send>
             },
         );
 
@@ -544,7 +545,7 @@ impl HostFunctionBuilder {
 fn marshal_params_from_wasmtime(
     params: &[Val],
     store_id: u64,
-) -> Result<(Vec<WasmValue>, Vec<u64>), anyhow::Error> {
+) -> Result<(Vec<WasmValue>, Vec<u64>), wasmtime::Error> {
     let mut wasm_params = Vec::with_capacity(params.len());
     let mut temp_funcref_ids = Vec::new();
 
@@ -598,13 +599,13 @@ fn marshal_results_to_wasmtime(
     wasm_results: &[WasmValue],
     results: &mut [Val],
     store_id: u64,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), wasmtime::Error> {
     if wasm_results.len() != results.len() {
-        return Err(anyhow::anyhow!(
+        return Err(wasmtime::Error::msg(format!(
             "Host function returned {} values, expected {}",
             wasm_results.len(),
             results.len()
-        ));
+        )));
     }
 
     for (wasm_result, wasmtime_result) in wasm_results.iter().zip(results.iter_mut()) {
@@ -624,8 +625,8 @@ fn marshal_results_to_wasmtime(
                 // with store affinity validation
                 if let Some(id) = ref_id {
                     let func = get_function_reference_with_store_check(*id as u64, store_id)
-                        .map_err(|e| anyhow::anyhow!("Failed to get function reference: {:?}", e))?
-                        .ok_or_else(|| anyhow::anyhow!("Invalid function reference ID: {}", id))?;
+                        .map_err(|e| wasmtime::Error::msg(format!("Failed to get function reference: {:?}", e)))?
+                        .ok_or_else(|| wasmtime::Error::msg(format!("Invalid function reference ID: {}", id)))?;
                     Val::FuncRef(Some(func))
                 } else {
                     Val::FuncRef(None)
@@ -651,25 +652,25 @@ fn marshal_results_to_wasmtime(
 /// Reads params from the `args_and_results` buffer using the provided type information.
 /// Must be called BEFORE writing results since params and results share the buffer.
 fn marshal_params_from_valraw(
-    args_and_results: &mut [ValRaw],
+    args_and_results: &mut [MaybeUninit<ValRaw>],
     param_types: &[ValType],
     store_id: u64,
-) -> Result<(Vec<WasmValue>, Vec<u64>), anyhow::Error> {
+) -> Result<(Vec<WasmValue>, Vec<u64>), wasmtime::Error> {
     let mut wasm_params = Vec::with_capacity(param_types.len());
     let mut temp_funcref_ids = Vec::new();
 
     for (i, param_type) in param_types.iter().enumerate() {
-        let raw = &args_and_results[i];
+        let raw = unsafe { args_and_results[i].assume_init_ref() };
         let wasm_value = match param_type {
-            ValType::I32 => WasmValue::I32(unsafe { raw.get_i32() }),
-            ValType::I64 => WasmValue::I64(unsafe { raw.get_i64() }),
-            ValType::F32 => WasmValue::F32(f32::from_bits(unsafe { raw.get_f32() })),
-            ValType::F64 => WasmValue::F64(f64::from_bits(unsafe { raw.get_f64() })),
-            ValType::V128 => WasmValue::V128(unsafe { raw.get_v128() }.to_le_bytes()),
+            ValType::I32 => WasmValue::I32(raw.get_i32()),
+            ValType::I64 => WasmValue::I64(raw.get_i64()),
+            ValType::F32 => WasmValue::F32(f32::from_bits(raw.get_f32())),
+            ValType::F64 => WasmValue::F64(f64::from_bits(raw.get_f64())),
+            ValType::V128 => WasmValue::V128(raw.get_v128().to_le_bytes()),
             ValType::Ref(ref_type) => {
                 if ref_type.heap_type().is_func() {
                     // FuncRef handling
-                    let ptr = unsafe { raw.get_funcref() };
+                    let ptr = raw.get_funcref();
                     if ptr.is_null() {
                         WasmValue::FuncRef(None)
                     } else {
@@ -694,40 +695,40 @@ fn marshal_params_from_valraw(
 /// Writes results to the beginning of the `args_and_results` buffer.
 fn marshal_results_to_valraw(
     wasm_results: &[WasmValue],
-    args_and_results: &mut [ValRaw],
+    args_and_results: &mut [MaybeUninit<ValRaw>],
     result_types: &[ValType],
     _store_id: u64,
-) -> Result<(), anyhow::Error> {
+) -> Result<(), wasmtime::Error> {
     if wasm_results.len() != result_types.len() {
-        return Err(anyhow::anyhow!(
+        return Err(wasmtime::Error::msg(format!(
             "Host function returned {} values, expected {}",
             wasm_results.len(),
             result_types.len()
-        ));
+        )));
     }
 
     for (i, wasm_result) in wasm_results.iter().enumerate() {
         let raw = &mut args_and_results[i];
         match wasm_result {
-            WasmValue::I32(v) => *raw = ValRaw::i32(*v),
-            WasmValue::I64(v) => *raw = ValRaw::i64(*v),
-            WasmValue::F32(v) => *raw = ValRaw::f32(v.to_bits()),
-            WasmValue::F64(v) => *raw = ValRaw::f64(v.to_bits()),
-            WasmValue::V128(v) => *raw = ValRaw::v128(u128::from_le_bytes(*v)),
+            WasmValue::I32(v) => *raw = MaybeUninit::new(ValRaw::i32(*v)),
+            WasmValue::I64(v) => *raw = MaybeUninit::new(ValRaw::i64(*v)),
+            WasmValue::F32(v) => *raw = MaybeUninit::new(ValRaw::f32(v.to_bits())),
+            WasmValue::F64(v) => *raw = MaybeUninit::new(ValRaw::f64(v.to_bits())),
+            WasmValue::V128(v) => *raw = MaybeUninit::new(ValRaw::v128(u128::from_le_bytes(*v))),
             WasmValue::FuncRef(ref_id) => {
                 if ref_id.is_some() {
                     // For safety, null funcrefs when going through unchecked path
-                    *raw = ValRaw::funcref(std::ptr::null_mut());
+                    *raw = MaybeUninit::new(ValRaw::funcref(std::ptr::null_mut()));
                 } else {
-                    *raw = ValRaw::funcref(std::ptr::null_mut());
+                    *raw = MaybeUninit::new(ValRaw::funcref(std::ptr::null_mut()));
                 }
             }
             WasmValue::ExternRef(_) => {
-                *raw = ValRaw::externref(0);
+                *raw = MaybeUninit::new(ValRaw::externref(0));
             }
             WasmValue::ContRef => {
                 // ContRef is opaque - use null externref as raw representation
-                *raw = ValRaw::externref(0);
+                *raw = MaybeUninit::new(ValRaw::externref(0));
             }
         }
     }
@@ -916,7 +917,7 @@ pub mod core {
 fn create_optimized_caller_context<T>(
     _caller: &mut wasmtime::Caller<'_, T>,
     usage: CallerContextUsage,
-) -> Result<(), anyhow::Error>
+) -> Result<(), wasmtime::Error>
 where
     T: Send + 'static,
 {

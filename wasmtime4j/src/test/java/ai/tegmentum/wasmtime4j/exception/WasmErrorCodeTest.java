@@ -20,12 +20,12 @@ class WasmErrorCodeTest {
   class EnumValueTests {
 
     @Test
-    @DisplayName("Should have exactly 28 variants (SUCCESS + 27 error codes)")
+    @DisplayName("Should have exactly 33 variants (SUCCESS + 32 error codes)")
     void shouldHaveCorrectNumberOfVariants() {
       assertEquals(
-          28,
+          33,
           WasmErrorCode.values().length,
-          "Should have 28 variants matching Rust ErrorCode enum");
+          "Should have 33 variants matching Rust ErrorCode enum");
     }
 
     @ParameterizedTest(name = "WasmErrorCode.{0} should have code {1}")
@@ -128,7 +128,7 @@ class WasmErrorCodeTest {
     }
 
     @ParameterizedTest(name = "fromCode({0}) should return null for unknown code")
-    @ValueSource(ints = {1, 2, -28, -100, -999, Integer.MIN_VALUE, Integer.MAX_VALUE})
+    @ValueSource(ints = {1, 2, -100, -999, Integer.MIN_VALUE, Integer.MAX_VALUE})
     @DisplayName("Should return null for unknown codes")
     void shouldReturnNullForUnknownCodes(final int code) {
       assertNull(

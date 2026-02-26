@@ -34,6 +34,7 @@ pub struct EngineConfigFfi {
     pub fuel_enabled: Option<bool>,
     pub epoch_interruption: Option<bool>,
     pub async_support: Option<bool>,
+    pub concurrency_support: Option<bool>,
     pub coredump_on_trap: Option<bool>,
     pub parallel_compilation: Option<bool>,
     pub native_unwind_info: Option<bool>,
@@ -207,6 +208,7 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     if let Some(v) = config.fuel_enabled { builder = builder.fuel_enabled(v); }
     if let Some(v) = config.epoch_interruption { builder = builder.epoch_interruption(v); }
     if let Some(v) = config.async_support { builder = builder.async_support(v); }
+    if let Some(v) = config.concurrency_support { builder = builder.concurrency_support(v); }
     if let Some(v) = config.coredump_on_trap { builder = builder.coredump_on_trap(v); }
     if let Some(v) = config.parallel_compilation { builder = builder.parallel_compilation(v); }
     if let Some(v) = config.native_unwind_info { builder = builder.native_unwind_info(v); }
