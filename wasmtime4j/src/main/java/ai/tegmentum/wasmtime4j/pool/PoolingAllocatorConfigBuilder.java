@@ -72,6 +72,19 @@ public interface PoolingAllocatorConfigBuilder {
   PoolingAllocatorConfigBuilder maxTablesPerInstance(int count);
 
   /**
+   * Sets the maximum number of tables per component.
+   *
+   * <p>This limits the total number of tables that any single component can define when using the
+   * pooling allocator.
+   *
+   * @param count the maximum tables per component
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if count is negative
+   * @since 1.1.0
+   */
+  PoolingAllocatorConfigBuilder maxTablesPerComponent(int count);
+
+  /**
    * Sets the maximum total tables in the pool.
    *
    * @param count the maximum tables

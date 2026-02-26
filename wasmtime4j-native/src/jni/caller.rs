@@ -1,7 +1,7 @@
 //! JNI bindings for Caller context operations
 
 use jni::objects::{JClass, JString};
-use jni::sys::{jboolean, jlong};
+use jni::sys::{jboolean, jint, jintArray, jlong, jsize};
 use jni::JNIEnv;
 
 use wasmtime::Caller as WasmtimeCaller;
@@ -245,4 +245,50 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetTable
             None => Err(crate::error::WasmtimeError::ExportNotFound { name: name_str }),
         }
     }) as jlong
+}
+
+/// Get debug exit frames from the caller (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeDebugExitFrames(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+) -> jintArray {
+    let null_array = std::ptr::null_mut();
+    if caller_handle == 0 {
+        return null_array;
+    }
+
+    let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+
+    match core::caller_debug_exit_frames(caller) {
+        Ok(Some(frames)) => {
+            if frames.is_empty() {
+                env.new_int_array(0)
+                    .map(|a| a.into_raw())
+                    .unwrap_or(null_array)
+            } else {
+                let flat_len = frames.len() * 4;
+                let mut flat_data: Vec<jint> = Vec::with_capacity(flat_len);
+                for frame in &frames {
+                    flat_data.push(frame[0]);
+                    flat_data.push(frame[1]);
+                    flat_data.push(frame[2]);
+                    flat_data.push(frame[3]);
+                }
+                match env.new_int_array(flat_len as jsize) {
+                    Ok(array) => {
+                        if env.set_int_array_region(&array, 0, &flat_data).is_ok() {
+                            array.into_raw()
+                        } else {
+                            null_array
+                        }
+                    }
+                    Err(_) => null_array,
+                }
+            }
+        }
+        Ok(None) => null_array,
+        Err(_) => null_array,
+    }
 }

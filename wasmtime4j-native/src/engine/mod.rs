@@ -259,6 +259,28 @@ impl Engine {
             WasmFeature::ComponentModelFixedLengthLists => {
                 self.config_summary.wasm_component_model_fixed_length_lists
             }
+            WasmFeature::MutableGlobal => self.config_summary.wasm_mutable_global,
+            WasmFeature::SaturatingFloatToInt => {
+                self.config_summary.wasm_saturating_float_to_int
+            }
+            WasmFeature::SignExtension => self.config_summary.wasm_sign_extension,
+            WasmFeature::Floats => self.config_summary.wasm_floats,
+            WasmFeature::MemoryControl => self.config_summary.wasm_memory_control,
+            WasmFeature::LegacyExceptions => self.config_summary.wasm_legacy_exceptions,
+            WasmFeature::GcTypes => self.config_summary.wasm_gc_types,
+            WasmFeature::ComponentModelValues => {
+                self.config_summary.wasm_component_model_values
+            }
+            WasmFeature::ComponentModelNestedNames => {
+                self.config_summary.wasm_component_model_nested_names
+            }
+            WasmFeature::ComponentModelMap => self.config_summary.wasm_component_model_map,
+            WasmFeature::CallIndirectOverlong => {
+                self.config_summary.wasm_call_indirect_overlong
+            }
+            WasmFeature::BulkMemoryOpt => self.config_summary.wasm_bulk_memory_opt,
+            WasmFeature::CustomDescriptors => self.config_summary.wasm_custom_descriptors,
+            WasmFeature::CompactImports => self.config_summary.wasm_compact_imports,
         }
     }
 
@@ -372,6 +394,29 @@ impl Engine {
     pub fn increment_epoch(&self) {
         self.inner.increment_epoch();
     }
+
+    /// Unloads process-level signal handlers installed by Wasmtime.
+    ///
+    /// # Safety
+    ///
+    /// This is an unsafe, destructive operation. The engine must be the last
+    /// remaining reference to the underlying Wasmtime engine. After this call,
+    /// no further WebAssembly execution should occur.
+    pub fn unload_process_handlers(self) -> WasmtimeResult<()> {
+        // Try to unwrap the Arc - this will only succeed if we hold the only reference
+        match Arc::try_unwrap(self.inner) {
+            Ok(engine) => {
+                // SAFETY: We have the only reference, so it's safe to unload handlers.
+                // This is gated on has_native_signals at the Wasmtime level.
+                unsafe { engine.unload_process_handlers() };
+                Ok(())
+            }
+            Err(_) => Err(WasmtimeError::EngineConfig {
+                message: "Cannot unload process handlers: other references to this engine exist"
+                    .to_string(),
+            }),
+        }
+    }
 }
 
 /// WebAssembly features that can be queried
@@ -427,6 +472,34 @@ pub enum WasmFeature {
     ComponentModelThreading,
     /// WebAssembly component model fixed-length lists support
     ComponentModelFixedLengthLists,
+    /// WebAssembly mutable global proposal (MVP default, always on)
+    MutableGlobal,
+    /// WebAssembly saturating float-to-int conversions (MVP default, always on)
+    SaturatingFloatToInt,
+    /// WebAssembly sign extension operations (MVP default, always on)
+    SignExtension,
+    /// WebAssembly floating point support (core, always on by default)
+    Floats,
+    /// WebAssembly memory control proposal (experimental)
+    MemoryControl,
+    /// WebAssembly legacy exception handling (deprecated)
+    LegacyExceptions,
+    /// WebAssembly GC structural types (GC types only)
+    GcTypes,
+    /// WebAssembly component model values
+    ComponentModelValues,
+    /// WebAssembly component model nested names
+    ComponentModelNestedNames,
+    /// WebAssembly component model map type (new in 42.0.1)
+    ComponentModelMap,
+    /// WebAssembly call_indirect overlong encoding (legacy compatibility)
+    CallIndirectOverlong,
+    /// WebAssembly bulk memory optimized operations
+    BulkMemoryOpt,
+    /// WebAssembly custom descriptors
+    CustomDescriptors,
+    /// WebAssembly component model compact imports (new in 42.0.1)
+    CompactImports,
 }
 
 impl Default for Engine {

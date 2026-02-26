@@ -4,6 +4,7 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Represents a WebAssembly function type.
@@ -17,6 +18,8 @@ public final class FunctionType implements FuncType {
 
   private final WasmValueType[] paramTypes;
   private final WasmValueType[] returnTypes;
+  private final Finality finality;
+  private final FuncType supertype;
 
   /**
    * Creates a new function type.
@@ -50,6 +53,56 @@ public final class FunctionType implements FuncType {
 
     this.paramTypes = paramTypes.clone();
     this.returnTypes = returnTypes.clone();
+    this.finality = null;
+    this.supertype = null;
+  }
+
+  /**
+   * Creates a new function type with finality and supertype metadata.
+   *
+   * <p>This constructor supports the GC proposal's type hierarchy, where function types can be
+   * final or non-final, and can optionally declare a supertype.
+   *
+   * @param paramTypes the parameter types (must not be null)
+   * @param returnTypes the return types (must not be null)
+   * @param finality the finality of this type (must not be null)
+   * @param supertype the supertype, or null if this type has no supertype
+   * @throws IllegalArgumentException if paramTypes, returnTypes, or finality is null, or contains
+   *     null elements
+   */
+  public FunctionType(
+      final WasmValueType[] paramTypes,
+      final WasmValueType[] returnTypes,
+      final Finality finality,
+      final FuncType supertype) {
+    if (paramTypes == null) {
+      throw new IllegalArgumentException("Parameter types cannot be null");
+    }
+    if (returnTypes == null) {
+      throw new IllegalArgumentException("Return types cannot be null");
+    }
+    if (finality == null) {
+      throw new IllegalArgumentException("Finality cannot be null");
+    }
+
+    // Validate parameter types
+    for (int i = 0; i < paramTypes.length; i++) {
+      if (paramTypes[i] == null) {
+        throw new IllegalArgumentException("Parameter type at index " + i + " cannot be null");
+      }
+    }
+
+    // Validate return types
+    for (int i = 0; i < returnTypes.length; i++) {
+      if (returnTypes[i] == null) {
+        throw new IllegalArgumentException("Return type at index " + i + " cannot be null");
+      }
+    }
+
+    this.paramTypes = paramTypes.clone();
+    this.returnTypes = returnTypes.clone();
+    this.finality = finality;
+    this.supertype = supertype;
   }
 
   /**
@@ -232,6 +285,16 @@ public final class FunctionType implements FuncType {
     }
 
     return true;
+  }
+
+  @Override
+  public Optional<Finality> getFinality() {
+    return Optional.ofNullable(finality);
+  }
+
+  @Override
+  public Optional<FuncType> getSupertype() {
+    return Optional.ofNullable(supertype);
   }
 
   @Override

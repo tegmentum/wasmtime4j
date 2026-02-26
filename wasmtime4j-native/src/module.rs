@@ -1395,6 +1395,97 @@ mod tests {
     }
 
     #[test]
+    fn test_gc_compilation_with_full_java_config() {
+        // Full JSON config exactly as Java WastTestRunner would produce
+        let json = r#"{
+            "optLevel": "speed",
+            "debugInfo": false,
+            "fuelEnabled": false,
+            "epochInterruption": false,
+            "asyncSupport": false,
+            "concurrencySupport": false,
+            "coredumpOnTrap": false,
+            "parallelCompilation": true,
+            "nativeUnwindInfo": true,
+            "guestDebug": false,
+            "asyncStackZeroing": false,
+            "memoryMayMove": true,
+            "guardBeforeLinearMemory": true,
+            "memoryInitCow": true,
+            "wasmThreads": true,
+            "wasmReferenceTypes": true,
+            "wasmSimd": true,
+            "wasmBulkMemory": true,
+            "wasmMultiValue": true,
+            "wasmMultiMemory": true,
+            "wasmTailCall": true,
+            "wasmRelaxedSimd": false,
+            "wasmFunctionReferences": true,
+            "wasmGc": true,
+            "wasmExceptions": true,
+            "wasmMemory64": true,
+            "wasmExtendedConst": false,
+            "wasmCustomPageSizes": true,
+            "wasmWideArithmetic": true,
+            "wasmStackSwitching": false,
+            "wasmSharedEverythingThreads": false,
+            "wasmComponentModelAsync": false,
+            "wasmComponentModelAsyncBuiltins": false,
+            "wasmComponentModelAsyncStackful": false,
+            "wasmComponentModelErrorContext": false,
+            "wasmComponentModelGc": false,
+            "wasmComponentModelThreading": false,
+            "wasmComponentModelFixedLengthLists": false,
+            "wasmMutableGlobal": true,
+            "wasmSaturatingFloatToInt": true,
+            "wasmSignExtension": true,
+            "wasmFloats": true,
+            "wasmMemoryControl": false,
+            "wasmLegacyExceptions": false,
+            "wasmGcTypes": false,
+            "wasmComponentModelValues": false,
+            "wasmComponentModelNestedNames": false,
+            "wasmComponentModelMap": false,
+            "wasmCallIndirectOverlong": false,
+            "wasmBulkMemoryOpt": false,
+            "wasmCustomDescriptors": false,
+            "wasmCompactImports": false,
+            "craneliftDebugVerifier": false,
+            "craneliftNanCanonicalization": false,
+            "craneliftPcc": false,
+            "compilerInlining": true,
+            "debugAdapterModules": false,
+            "wmemcheck": false,
+            "forceMemoryInitMemfd": false,
+            "craneliftDebugChecks": false,
+            "enableCompiler": true,
+            "x86FloatAbiOk": false,
+            "signalsBasedTraps": false,
+            "macosUseMachPorts": true,
+            "wasmBacktrace": true,
+            "backtraceDetails": "enable",
+            "generateAddressMap": true,
+            "sharedMemory": "yes",
+            "gcSupport": "yes",
+            "tableLazyInit": true,
+            "relaxedSimdDeterministic": false
+        }"#;
+        let engine = *crate::engine::core::create_engine_from_json_config(json.as_bytes())
+            .expect("Failed to create engine from JSON config");
+
+        let wat = r#"(module
+  (func (export "get_u-null") (result i32)
+    (i31.get_u (ref.null i31))
+  )
+  (func (export "get_s-null") (result i32)
+    (i31.get_u (ref.null i31))
+  )
+)"#;
+        let result = Module::compile_wat(&engine, wat);
+        assert!(result.is_ok(), "Full Java config should compile i31ref WAT after wasm_features fix: {:?}", result.err());
+    }
+
+    #[test]
     fn test_module_metadata() {
         let engine = shared_engine();
         let wat = "(module 

@@ -1808,6 +1808,18 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Unloads process-level signal handlers installed by Wasmtime.
+   *
+   * @param enginePtr pointer to the engine (consumed by this call)
+   * @return 0 on success, -1 on failure
+   */
+  public int engineUnloadProcessHandlers(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_engine_unload_process_handlers", Integer.class, enginePtr);
+  }
+
+  /**
    * Checks if the Pulley interpreter is being used.
    *
    * @param enginePtr pointer to the engine

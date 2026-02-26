@@ -78,6 +78,7 @@ impl JniPoolingAllocatorWrapper {
         _stack_size: usize,
         max_stacks: u32,
         max_tables_per_instance: u32,
+        max_tables_per_component: u32,
         max_tables: u32,
         memory_decommit_enabled: bool,
         pool_warming_enabled: bool,
@@ -92,6 +93,7 @@ impl JniPoolingAllocatorWrapper {
         config.total_stacks(max_stacks);
         config.total_tables(max_tables);
         config.max_tables_per_module(max_tables_per_instance);
+        config.max_tables_per_component(max_tables_per_component);
 
         // Configure memory behavior
         if memory_decommit_enabled {
@@ -324,6 +326,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator
     stack_size: jint,
     max_stacks: jint,
     max_tables_per_instance: jint,
+    max_tables_per_component: jint,
     max_tables: jint,
     memory_decommit_enabled: jboolean,
     pool_warming_enabled: jboolean,
@@ -335,6 +338,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator
         stack_size as usize,
         max_stacks as u32,
         max_tables_per_instance as u32,
+        max_tables_per_component as u32,
         max_tables as u32,
         memory_decommit_enabled != JNI_FALSE,
         pool_warming_enabled != JNI_FALSE,
@@ -523,6 +527,7 @@ mod tests {
             1 << 16, // stack_size (64KB)
             100,     // max_stacks
             10,      // max_tables_per_instance
+            10,      // max_tables_per_component
             1000,    // max_tables
             true,    // memory_decommit_enabled
             true,    // pool_warming_enabled
@@ -537,7 +542,7 @@ mod tests {
     #[test]
     fn test_allocate_and_release_instance() {
         let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
                 .unwrap();
 
         // Allocate an instance
@@ -561,7 +566,7 @@ mod tests {
     #[test]
     fn test_reuse_instance() {
         let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
                 .unwrap();
 
         // Allocate an instance
@@ -591,7 +596,7 @@ mod tests {
     #[test]
     fn test_warm_pools() {
         let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, true, 0.1)
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, true, 0.1)
                 .unwrap();
 
         // Warm pools
@@ -606,7 +611,7 @@ mod tests {
     #[test]
     fn test_reset_statistics() {
         let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
                 .unwrap();
 
         // Allocate some instances
@@ -628,7 +633,7 @@ mod tests {
     #[test]
     fn test_closed_allocator_rejects_operations() {
         let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
                 .unwrap();
 
         // Close the allocator
@@ -643,7 +648,7 @@ mod tests {
     #[test]
     fn test_get_allocation_strategy() {
         let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 1000, true, false, 0.0)
+            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
                 .unwrap();
 
         let strategy = wrapper.get_allocation_strategy();

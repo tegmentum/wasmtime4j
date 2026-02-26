@@ -73,6 +73,20 @@ pub enum FfiWasmFeature {
     ComponentModelGc = 22,
     ComponentModelThreading = 23,
     ComponentModelFixedLengthLists = 24,
+    MutableGlobal = 25,
+    SaturatingFloatToInt = 26,
+    SignExtension = 27,
+    Floats = 28,
+    MemoryControl = 29,
+    LegacyExceptions = 30,
+    GcTypes = 31,
+    ComponentModelValues = 32,
+    ComponentModelNestedNames = 33,
+    ComponentModelMap = 34,
+    CallIndirectOverlong = 35,
+    BulkMemoryOpt = 36,
+    CustomDescriptors = 37,
+    CompactImports = 38,
 }
 
 impl FfiWasmFeature {
@@ -104,8 +118,22 @@ impl FfiWasmFeature {
             22 => Ok(WasmFeature::ComponentModelGc),
             23 => Ok(WasmFeature::ComponentModelThreading),
             24 => Ok(WasmFeature::ComponentModelFixedLengthLists),
+            25 => Ok(WasmFeature::MutableGlobal),
+            26 => Ok(WasmFeature::SaturatingFloatToInt),
+            27 => Ok(WasmFeature::SignExtension),
+            28 => Ok(WasmFeature::Floats),
+            29 => Ok(WasmFeature::MemoryControl),
+            30 => Ok(WasmFeature::LegacyExceptions),
+            31 => Ok(WasmFeature::GcTypes),
+            32 => Ok(WasmFeature::ComponentModelValues),
+            33 => Ok(WasmFeature::ComponentModelNestedNames),
+            34 => Ok(WasmFeature::ComponentModelMap),
+            35 => Ok(WasmFeature::CallIndirectOverlong),
+            36 => Ok(WasmFeature::BulkMemoryOpt),
+            37 => Ok(WasmFeature::CustomDescriptors),
+            38 => Ok(WasmFeature::CompactImports),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-24", value),
+                message: format!("Invalid WASM feature: {}. Expected 0-38", value),
             }),
         }
     }
@@ -113,9 +141,9 @@ impl FfiWasmFeature {
     /// Validate FFI value without conversion (for early parameter checking)
     pub fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
-            0..=24 => Ok(()),
+            0..=38 => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-24", value),
+                message: format!("Invalid WASM feature: {}. Expected 0-38", value),
             }),
         }
     }
@@ -148,6 +176,20 @@ impl FfiWasmFeature {
             FfiWasmFeature::ComponentModelGc => WasmFeature::ComponentModelGc,
             FfiWasmFeature::ComponentModelThreading => WasmFeature::ComponentModelThreading,
             FfiWasmFeature::ComponentModelFixedLengthLists => WasmFeature::ComponentModelFixedLengthLists,
+            FfiWasmFeature::MutableGlobal => WasmFeature::MutableGlobal,
+            FfiWasmFeature::SaturatingFloatToInt => WasmFeature::SaturatingFloatToInt,
+            FfiWasmFeature::SignExtension => WasmFeature::SignExtension,
+            FfiWasmFeature::Floats => WasmFeature::Floats,
+            FfiWasmFeature::MemoryControl => WasmFeature::MemoryControl,
+            FfiWasmFeature::LegacyExceptions => WasmFeature::LegacyExceptions,
+            FfiWasmFeature::GcTypes => WasmFeature::GcTypes,
+            FfiWasmFeature::ComponentModelValues => WasmFeature::ComponentModelValues,
+            FfiWasmFeature::ComponentModelNestedNames => WasmFeature::ComponentModelNestedNames,
+            FfiWasmFeature::ComponentModelMap => WasmFeature::ComponentModelMap,
+            FfiWasmFeature::CallIndirectOverlong => WasmFeature::CallIndirectOverlong,
+            FfiWasmFeature::BulkMemoryOpt => WasmFeature::BulkMemoryOpt,
+            FfiWasmFeature::CustomDescriptors => WasmFeature::CustomDescriptors,
+            FfiWasmFeature::CompactImports => WasmFeature::CompactImports,
         }
     }
 
@@ -179,6 +221,20 @@ impl FfiWasmFeature {
             WasmFeature::ComponentModelGc => FfiWasmFeature::ComponentModelGc,
             WasmFeature::ComponentModelThreading => FfiWasmFeature::ComponentModelThreading,
             WasmFeature::ComponentModelFixedLengthLists => FfiWasmFeature::ComponentModelFixedLengthLists,
+            WasmFeature::MutableGlobal => FfiWasmFeature::MutableGlobal,
+            WasmFeature::SaturatingFloatToInt => FfiWasmFeature::SaturatingFloatToInt,
+            WasmFeature::SignExtension => FfiWasmFeature::SignExtension,
+            WasmFeature::Floats => FfiWasmFeature::Floats,
+            WasmFeature::MemoryControl => FfiWasmFeature::MemoryControl,
+            WasmFeature::LegacyExceptions => FfiWasmFeature::LegacyExceptions,
+            WasmFeature::GcTypes => FfiWasmFeature::GcTypes,
+            WasmFeature::ComponentModelValues => FfiWasmFeature::ComponentModelValues,
+            WasmFeature::ComponentModelNestedNames => FfiWasmFeature::ComponentModelNestedNames,
+            WasmFeature::ComponentModelMap => FfiWasmFeature::ComponentModelMap,
+            WasmFeature::CallIndirectOverlong => FfiWasmFeature::CallIndirectOverlong,
+            WasmFeature::BulkMemoryOpt => FfiWasmFeature::BulkMemoryOpt,
+            WasmFeature::CustomDescriptors => FfiWasmFeature::CustomDescriptors,
+            WasmFeature::CompactImports => FfiWasmFeature::CompactImports,
         }
     }
 }
@@ -736,8 +792,8 @@ mod tests {
 
     #[test]
     fn test_wasm_feature_all_values() {
-        // Test all valid WasmFeature values (0-24)
-        for i in 0..=24 {
+        // Test all valid WasmFeature values (0-38)
+        for i in 0..=38 {
             let result = FfiWasmFeature::from_ffi(i);
             assert!(result.is_ok(), "Feature {} should be valid", i);
         }
@@ -745,8 +801,8 @@ mod tests {
 
     #[test]
     fn test_wasm_feature_invalid_values() {
-        // Test invalid feature values (valid range is 0-23)
-        for invalid in [25, 100, -1, i32::MAX, i32::MIN] {
+        // Test invalid feature values (valid range is 0-38)
+        for invalid in [39, 100, -1, i32::MAX, i32::MIN] {
             assert!(
                 FfiWasmFeature::from_ffi(invalid).is_err(),
                 "Feature {} should be invalid",
@@ -1004,6 +1060,21 @@ mod tests {
             WasmFeature::ComponentModelErrorContext,
             WasmFeature::ComponentModelGc,
             WasmFeature::ComponentModelThreading,
+            WasmFeature::ComponentModelFixedLengthLists,
+            WasmFeature::MutableGlobal,
+            WasmFeature::SaturatingFloatToInt,
+            WasmFeature::SignExtension,
+            WasmFeature::Floats,
+            WasmFeature::MemoryControl,
+            WasmFeature::LegacyExceptions,
+            WasmFeature::GcTypes,
+            WasmFeature::ComponentModelValues,
+            WasmFeature::ComponentModelNestedNames,
+            WasmFeature::ComponentModelMap,
+            WasmFeature::CallIndirectOverlong,
+            WasmFeature::BulkMemoryOpt,
+            WasmFeature::CustomDescriptors,
+            WasmFeature::CompactImports,
         ];
 
         for feature in features {
@@ -1018,6 +1089,7 @@ mod tests {
         assert_eq!(FfiWasmFeature::Threads as i32, 0);
         assert_eq!(FfiWasmFeature::ComponentModelGc as i32, 22);
         assert_eq!(FfiWasmFeature::ComponentModelThreading as i32, 23);
+        assert_eq!(FfiWasmFeature::CompactImports as i32, 38);
     }
 
     #[test]

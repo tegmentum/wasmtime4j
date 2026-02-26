@@ -190,6 +190,21 @@ pub extern "C" fn wasmtime4j_panama_engine_supports_feature(
         "COMPONENT_MODEL_ERROR_CONTEXT" => WasmFeature::ComponentModelErrorContext,
         "COMPONENT_MODEL_GC" => WasmFeature::ComponentModelGc,
         "COMPONENT_MODEL_THREADING" => WasmFeature::ComponentModelThreading,
+        "COMPONENT_MODEL_FIXED_LENGTH_LISTS" => WasmFeature::ComponentModelFixedLengthLists,
+        "MUTABLE_GLOBAL" => WasmFeature::MutableGlobal,
+        "SATURATING_FLOAT_TO_INT" => WasmFeature::SaturatingFloatToInt,
+        "SIGN_EXTENSION" => WasmFeature::SignExtension,
+        "FLOATS" => WasmFeature::Floats,
+        "MEMORY_CONTROL" => WasmFeature::MemoryControl,
+        "LEGACY_EXCEPTIONS" => WasmFeature::LegacyExceptions,
+        "GC_TYPES" => WasmFeature::GcTypes,
+        "COMPONENT_MODEL_VALUES" => WasmFeature::ComponentModelValues,
+        "COMPONENT_MODEL_NESTED_NAMES" => WasmFeature::ComponentModelNestedNames,
+        "COMPONENT_MODEL_MAP" => WasmFeature::ComponentModelMap,
+        "CALL_INDIRECT_OVERLONG" => WasmFeature::CallIndirectOverlong,
+        "BULK_MEMORY_OPT" => WasmFeature::BulkMemoryOpt,
+        "CUSTOM_DESCRIPTORS" => WasmFeature::CustomDescriptors,
+        "COMPACT_IMPORTS" => WasmFeature::CompactImports,
         _ => return -1,
     };
 
@@ -241,6 +256,28 @@ pub extern "C" fn wasmtime4j_panama_engine_increment_epoch(engine_ptr: *mut c_vo
         }
         Err(e) => {
             log::error!("Failed to increment epoch: {:?}", e);
+        }
+    }
+}
+
+/// Unload process-level signal handlers (Panama FFI version)
+///
+/// Returns 0 on success, -1 on failure (e.g. other engine references still exist).
+/// After this call, the engine pointer is invalidated and must not be used.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_unload_process_handlers(
+    engine_ptr: *mut c_void,
+) -> c_int {
+    if engine_ptr.is_null() {
+        return -1;
+    }
+    // Take ownership of the engine by reconstructing the Box
+    let engine = unsafe { *Box::from_raw(engine_ptr as *mut crate::engine::Engine) };
+    match engine.unload_process_handlers() {
+        Ok(()) => 0,
+        Err(e) => {
+            log::error!("Failed to unload process handlers: {:?}", e);
+            -1
         }
     }
 }
@@ -579,6 +616,7 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extended_config(
         Ok(engine) => Box::into_raw(engine) as *mut c_void,
         Err(e) => {
             log::error!("Failed to create engine with extended config: {:?}", e);
+            ffi_utils::set_last_error(e);
             std::ptr::null_mut()
         }
     }
@@ -627,6 +665,7 @@ pub extern "C" fn wasmtime4j_panama_engine_create_from_json_config(
         Ok(engine) => Box::into_raw(engine) as *mut c_void,
         Err(e) => {
             log::error!("Failed to create engine from JSON config: {}", e);
+            ffi_utils::set_last_error(e);
             std::ptr::null_mut()
         }
     }
@@ -671,6 +710,7 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_cache_store(
                 "Failed to create engine from JSON config with cache store: {}",
                 e
             );
+            ffi_utils::set_last_error(e);
             std::ptr::null_mut()
         }
     }
@@ -820,6 +860,7 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extensions(
                 "Failed to create engine from JSON config with extensions: {}",
                 e
             );
+            ffi_utils::set_last_error(e);
             std::ptr::null_mut()
         }
     }

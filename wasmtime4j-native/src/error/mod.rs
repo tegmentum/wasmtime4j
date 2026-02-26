@@ -586,8 +586,17 @@ impl WasmtimeError {
 
     /// Create from Wasmtime compilation error
     pub fn from_compilation_error(error: wasmtime::Error) -> Self {
+        // Use anyhow's chain to get all error causes
+        let mut msg = String::new();
+        for (i, cause) in error.chain().enumerate() {
+            if i == 0 {
+                msg.push_str(&format!("{}", cause));
+            } else {
+                msg.push_str(&format!("\n  Caused by: {}", cause));
+            }
+        }
         WasmtimeError::Compilation {
-            message: error.to_string(),
+            message: msg,
         }
     }
 

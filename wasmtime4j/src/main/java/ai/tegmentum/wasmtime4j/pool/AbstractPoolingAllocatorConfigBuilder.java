@@ -27,6 +27,9 @@ public abstract class AbstractPoolingAllocatorConfigBuilder
   /** Maximum tables per instance. */
   protected int maxTablesPerInstance = PoolingAllocatorConfig.DEFAULT_MAX_TABLES_PER_INSTANCE;
 
+  /** Maximum tables per component. */
+  protected int maxTablesPerComponent = PoolingAllocatorConfig.DEFAULT_MAX_TABLES_PER_COMPONENT;
+
   /** Maximum tables. */
   protected int maxTables = PoolingAllocatorConfig.DEFAULT_MAX_TABLES;
 
@@ -143,6 +146,15 @@ public abstract class AbstractPoolingAllocatorConfigBuilder
       throw new IllegalArgumentException("maxTablesPerInstance cannot be negative");
     }
     this.maxTablesPerInstance = count;
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder maxTablesPerComponent(final int count) {
+    if (count < 0) {
+      throw new IllegalArgumentException("maxTablesPerComponent cannot be negative");
+    }
+    this.maxTablesPerComponent = count;
     return this;
   }
 

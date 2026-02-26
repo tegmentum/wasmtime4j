@@ -107,6 +107,22 @@ public final class EngineConfig {
   private boolean wasmComponentModelThreading = false;
   private boolean wasmComponentModelFixedLengthLists = false;
 
+  // Features settable only via WasmFeatures bitflags (no individual Config method)
+  private boolean wasmMutableGlobal = true; // MVP default - always on
+  private boolean wasmSaturatingFloatToInt = true; // MVP default - always on
+  private boolean wasmSignExtension = true; // MVP default - always on
+  private boolean wasmFloats = true; // Core feature - always on
+  private boolean wasmMemoryControl = false; // Experimental
+  private boolean wasmLegacyExceptions = false; // Deprecated
+  private boolean wasmGcTypes = false; // Structural types only
+  private boolean wasmComponentModelValues = false; // Component model
+  private boolean wasmComponentModelNestedNames = false; // Component model
+  private boolean wasmComponentModelMap = false; // Component model (new in 42.0.1)
+  private boolean wasmCallIndirectOverlong = false; // Legacy compatibility
+  private boolean wasmBulkMemoryOpt = false; // Core
+  private boolean wasmCustomDescriptors = false; // Core
+  private boolean wasmCompactImports = false; // Component (new in 42.0.1)
+
   // Platform-specific configuration
   private boolean macosUseMachPorts = true;
 
@@ -452,6 +468,21 @@ public final class EngineConfig {
     this.wasmComponentModelThreading = features.contains(WasmFeature.COMPONENT_MODEL_THREADING);
     this.wasmComponentModelFixedLengthLists =
         features.contains(WasmFeature.COMPONENT_MODEL_FIXED_LENGTH_LISTS);
+    this.wasmMutableGlobal = features.contains(WasmFeature.MUTABLE_GLOBAL);
+    this.wasmSaturatingFloatToInt = features.contains(WasmFeature.SATURATING_FLOAT_TO_INT);
+    this.wasmSignExtension = features.contains(WasmFeature.SIGN_EXTENSION);
+    this.wasmFloats = features.contains(WasmFeature.FLOATS);
+    this.wasmMemoryControl = features.contains(WasmFeature.MEMORY_CONTROL);
+    this.wasmLegacyExceptions = features.contains(WasmFeature.LEGACY_EXCEPTIONS);
+    this.wasmGcTypes = features.contains(WasmFeature.GC_TYPES);
+    this.wasmComponentModelValues = features.contains(WasmFeature.COMPONENT_MODEL_VALUES);
+    this.wasmComponentModelNestedNames =
+        features.contains(WasmFeature.COMPONENT_MODEL_NESTED_NAMES);
+    this.wasmComponentModelMap = features.contains(WasmFeature.COMPONENT_MODEL_MAP);
+    this.wasmCallIndirectOverlong = features.contains(WasmFeature.CALL_INDIRECT_OVERLONG);
+    this.wasmBulkMemoryOpt = features.contains(WasmFeature.BULK_MEMORY_OPT);
+    this.wasmCustomDescriptors = features.contains(WasmFeature.CUSTOM_DESCRIPTORS);
+    this.wasmCompactImports = features.contains(WasmFeature.COMPACT_IMPORTS);
 
     return this;
   }
@@ -543,6 +574,48 @@ public final class EngineConfig {
         break;
       case COMPONENT_MODEL_FIXED_LENGTH_LISTS:
         this.wasmComponentModelFixedLengthLists = true;
+        break;
+      case MUTABLE_GLOBAL:
+        this.wasmMutableGlobal = true;
+        break;
+      case SATURATING_FLOAT_TO_INT:
+        this.wasmSaturatingFloatToInt = true;
+        break;
+      case SIGN_EXTENSION:
+        this.wasmSignExtension = true;
+        break;
+      case FLOATS:
+        this.wasmFloats = true;
+        break;
+      case MEMORY_CONTROL:
+        this.wasmMemoryControl = true;
+        break;
+      case LEGACY_EXCEPTIONS:
+        this.wasmLegacyExceptions = true;
+        break;
+      case GC_TYPES:
+        this.wasmGcTypes = true;
+        break;
+      case COMPONENT_MODEL_VALUES:
+        this.wasmComponentModelValues = true;
+        break;
+      case COMPONENT_MODEL_NESTED_NAMES:
+        this.wasmComponentModelNestedNames = true;
+        break;
+      case COMPONENT_MODEL_MAP:
+        this.wasmComponentModelMap = true;
+        break;
+      case CALL_INDIRECT_OVERLONG:
+        this.wasmCallIndirectOverlong = true;
+        break;
+      case BULK_MEMORY_OPT:
+        this.wasmBulkMemoryOpt = true;
+        break;
+      case CUSTOM_DESCRIPTORS:
+        this.wasmCustomDescriptors = true;
+        break;
+      case COMPACT_IMPORTS:
+        this.wasmCompactImports = true;
         break;
       default:
         break;
@@ -708,6 +781,20 @@ public final class EngineConfig {
     if (wasmComponentModelThreading) features.add(WasmFeature.COMPONENT_MODEL_THREADING);
     if (wasmComponentModelFixedLengthLists)
       features.add(WasmFeature.COMPONENT_MODEL_FIXED_LENGTH_LISTS);
+    if (wasmMutableGlobal) features.add(WasmFeature.MUTABLE_GLOBAL);
+    if (wasmSaturatingFloatToInt) features.add(WasmFeature.SATURATING_FLOAT_TO_INT);
+    if (wasmSignExtension) features.add(WasmFeature.SIGN_EXTENSION);
+    if (wasmFloats) features.add(WasmFeature.FLOATS);
+    if (wasmMemoryControl) features.add(WasmFeature.MEMORY_CONTROL);
+    if (wasmLegacyExceptions) features.add(WasmFeature.LEGACY_EXCEPTIONS);
+    if (wasmGcTypes) features.add(WasmFeature.GC_TYPES);
+    if (wasmComponentModelValues) features.add(WasmFeature.COMPONENT_MODEL_VALUES);
+    if (wasmComponentModelNestedNames) features.add(WasmFeature.COMPONENT_MODEL_NESTED_NAMES);
+    if (wasmComponentModelMap) features.add(WasmFeature.COMPONENT_MODEL_MAP);
+    if (wasmCallIndirectOverlong) features.add(WasmFeature.CALL_INDIRECT_OVERLONG);
+    if (wasmBulkMemoryOpt) features.add(WasmFeature.BULK_MEMORY_OPT);
+    if (wasmCustomDescriptors) features.add(WasmFeature.CUSTOM_DESCRIPTORS);
+    if (wasmCompactImports) features.add(WasmFeature.COMPACT_IMPORTS);
     return features;
   }
 
@@ -727,6 +814,246 @@ public final class EngineConfig {
 
   public boolean isWasmSharedEverythingThreads() {
     return wasmSharedEverythingThreads;
+  }
+
+  // ===== WasmFeatures-only flags (setters and getters) =====
+
+  /**
+   * Enables or disables WebAssembly mutable global support (MVP default, always on).
+   *
+   * @param enable true to enable mutable global support
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmMutableGlobal(final boolean enable) {
+    this.wasmMutableGlobal = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly mutable global support is enabled. */
+  public boolean isWasmMutableGlobal() {
+    return wasmMutableGlobal;
+  }
+
+  /**
+   * Enables or disables WebAssembly saturating float-to-int conversions (MVP default, always on).
+   *
+   * @param enable true to enable saturating float-to-int conversions
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmSaturatingFloatToInt(final boolean enable) {
+    this.wasmSaturatingFloatToInt = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly saturating float-to-int conversions are enabled. */
+  public boolean isWasmSaturatingFloatToInt() {
+    return wasmSaturatingFloatToInt;
+  }
+
+  /**
+   * Enables or disables WebAssembly sign extension operations (MVP default, always on).
+   *
+   * @param enable true to enable sign extension operations
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmSignExtension(final boolean enable) {
+    this.wasmSignExtension = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly sign extension operations are enabled. */
+  public boolean isWasmSignExtension() {
+    return wasmSignExtension;
+  }
+
+  /**
+   * Enables or disables WebAssembly floating point support.
+   *
+   * @param enable true to enable floating point support
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmFloats(final boolean enable) {
+    this.wasmFloats = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly floating point support is enabled. */
+  public boolean isWasmFloats() {
+    return wasmFloats;
+  }
+
+  /**
+   * Enables or disables WebAssembly memory control support (experimental).
+   *
+   * @param enable true to enable memory control support
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmMemoryControl(final boolean enable) {
+    this.wasmMemoryControl = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly memory control support is enabled. */
+  public boolean isWasmMemoryControl() {
+    return wasmMemoryControl;
+  }
+
+  /**
+   * Enables or disables WebAssembly legacy exception handling support (deprecated).
+   *
+   * @param enable true to enable legacy exception handling
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmLegacyExceptions(final boolean enable) {
+    this.wasmLegacyExceptions = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly legacy exception handling is enabled. */
+  public boolean isWasmLegacyExceptions() {
+    return wasmLegacyExceptions;
+  }
+
+  /**
+   * Enables or disables WebAssembly GC structural types support.
+   *
+   * @param enable true to enable GC structural types
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmGcTypes(final boolean enable) {
+    this.wasmGcTypes = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly GC structural types support is enabled. */
+  public boolean isWasmGcTypes() {
+    return wasmGcTypes;
+  }
+
+  /**
+   * Enables or disables WebAssembly Component Model values support.
+   *
+   * @param enable true to enable Component Model values
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelValues(final boolean enable) {
+    this.wasmComponentModelValues = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly Component Model values support is enabled. */
+  public boolean isWasmComponentModelValues() {
+    return wasmComponentModelValues;
+  }
+
+  /**
+   * Enables or disables WebAssembly Component Model nested names support.
+   *
+   * @param enable true to enable Component Model nested names
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelNestedNames(final boolean enable) {
+    this.wasmComponentModelNestedNames = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly Component Model nested names support is enabled. */
+  public boolean isWasmComponentModelNestedNames() {
+    return wasmComponentModelNestedNames;
+  }
+
+  /**
+   * Enables or disables WebAssembly Component Model map type support (new in 42.0.1).
+   *
+   * @param enable true to enable Component Model map type
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelMap(final boolean enable) {
+    this.wasmComponentModelMap = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly Component Model map type support is enabled. */
+  public boolean isWasmComponentModelMap() {
+    return wasmComponentModelMap;
+  }
+
+  /**
+   * Enables or disables WebAssembly call_indirect overlong encoding support.
+   *
+   * @param enable true to enable call_indirect overlong encoding
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmCallIndirectOverlong(final boolean enable) {
+    this.wasmCallIndirectOverlong = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly call_indirect overlong encoding support is enabled. */
+  public boolean isWasmCallIndirectOverlong() {
+    return wasmCallIndirectOverlong;
+  }
+
+  /**
+   * Enables or disables WebAssembly bulk memory optimized operations support.
+   *
+   * @param enable true to enable bulk memory optimized operations
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmBulkMemoryOpt(final boolean enable) {
+    this.wasmBulkMemoryOpt = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly bulk memory optimized operations support is enabled. */
+  public boolean isWasmBulkMemoryOpt() {
+    return wasmBulkMemoryOpt;
+  }
+
+  /**
+   * Enables or disables WebAssembly custom descriptors support.
+   *
+   * @param enable true to enable custom descriptors
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmCustomDescriptors(final boolean enable) {
+    this.wasmCustomDescriptors = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly custom descriptors support is enabled. */
+  public boolean isWasmCustomDescriptors() {
+    return wasmCustomDescriptors;
+  }
+
+  /**
+   * Enables or disables WebAssembly Component Model compact imports support (new in 42.0.1).
+   *
+   * @param enable true to enable compact imports
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmCompactImports(final boolean enable) {
+    this.wasmCompactImports = enable;
+    return this;
+  }
+
+  /** Returns whether WebAssembly Component Model compact imports support is enabled. */
+  public boolean isWasmCompactImports() {
+    return wasmCompactImports;
   }
 
   // ===== Register Allocation and Backtrace Configuration =====
@@ -967,6 +1294,21 @@ public final class EngineConfig {
     c.wasmComponentModelGc = this.wasmComponentModelGc;
     c.wasmComponentModelThreading = this.wasmComponentModelThreading;
     c.wasmComponentModelFixedLengthLists = this.wasmComponentModelFixedLengthLists;
+    // WasmFeatures-only flags
+    c.wasmMutableGlobal = this.wasmMutableGlobal;
+    c.wasmSaturatingFloatToInt = this.wasmSaturatingFloatToInt;
+    c.wasmSignExtension = this.wasmSignExtension;
+    c.wasmFloats = this.wasmFloats;
+    c.wasmMemoryControl = this.wasmMemoryControl;
+    c.wasmLegacyExceptions = this.wasmLegacyExceptions;
+    c.wasmGcTypes = this.wasmGcTypes;
+    c.wasmComponentModelValues = this.wasmComponentModelValues;
+    c.wasmComponentModelNestedNames = this.wasmComponentModelNestedNames;
+    c.wasmComponentModelMap = this.wasmComponentModelMap;
+    c.wasmCallIndirectOverlong = this.wasmCallIndirectOverlong;
+    c.wasmBulkMemoryOpt = this.wasmBulkMemoryOpt;
+    c.wasmCustomDescriptors = this.wasmCustomDescriptors;
+    c.wasmCompactImports = this.wasmCompactImports;
     // Platform-specific
     c.macosUseMachPorts = this.macosUseMachPorts;
     // Backtrace and debugging
@@ -2726,6 +3068,23 @@ public final class EngineConfig {
     first =
         appendJsonBool(
             sb, first, "wasmComponentModelFixedLengthLists", wasmComponentModelFixedLengthLists);
+
+    // WasmFeatures-only flags
+    first = appendJsonBool(sb, first, "wasmMutableGlobal", wasmMutableGlobal);
+    first = appendJsonBool(sb, first, "wasmSaturatingFloatToInt", wasmSaturatingFloatToInt);
+    first = appendJsonBool(sb, first, "wasmSignExtension", wasmSignExtension);
+    first = appendJsonBool(sb, first, "wasmFloats", wasmFloats);
+    first = appendJsonBool(sb, first, "wasmMemoryControl", wasmMemoryControl);
+    first = appendJsonBool(sb, first, "wasmLegacyExceptions", wasmLegacyExceptions);
+    first = appendJsonBool(sb, first, "wasmGcTypes", wasmGcTypes);
+    first = appendJsonBool(sb, first, "wasmComponentModelValues", wasmComponentModelValues);
+    first =
+        appendJsonBool(sb, first, "wasmComponentModelNestedNames", wasmComponentModelNestedNames);
+    first = appendJsonBool(sb, first, "wasmComponentModelMap", wasmComponentModelMap);
+    first = appendJsonBool(sb, first, "wasmCallIndirectOverlong", wasmCallIndirectOverlong);
+    first = appendJsonBool(sb, first, "wasmBulkMemoryOpt", wasmBulkMemoryOpt);
+    first = appendJsonBool(sb, first, "wasmCustomDescriptors", wasmCustomDescriptors);
+    first = appendJsonBool(sb, first, "wasmCompactImports", wasmCompactImports);
 
     // Cranelift settings
     first = appendJsonBool(sb, first, "craneliftDebugVerifier", craneliftDebugVerifier);

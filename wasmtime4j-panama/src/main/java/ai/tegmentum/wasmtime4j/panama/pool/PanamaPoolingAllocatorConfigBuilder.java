@@ -36,6 +36,7 @@ public final class PanamaPoolingAllocatorConfigBuilder
             stackSize,
             maxStacks,
             maxTablesPerInstance,
+            maxTablesPerComponent,
             maxTables,
             memoryDecommitEnabled,
             poolWarmingEnabled,

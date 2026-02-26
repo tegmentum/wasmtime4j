@@ -966,6 +966,26 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIncremen
     });
 }
 
+/// Unload process-level signal handlers (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeUnloadProcessHandlers(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+) {
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        if engine_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Engine pointer is null".to_string(),
+            });
+        }
+        // Take ownership of the engine by reconstructing the Box
+        let engine =
+            unsafe { *Box::from_raw(engine_ptr as *mut crate::engine::Engine) };
+        engine.unload_process_handlers()
+    });
+}
+
 /// Get stack size limit in bytes
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetStackSizeLimit(
@@ -1036,6 +1056,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSupports
             }
             "COMPONENT_MODEL_GC" => crate::engine::WasmFeature::ComponentModelGc,
             "COMPONENT_MODEL_THREADING" => crate::engine::WasmFeature::ComponentModelThreading,
+            "COMPONENT_MODEL_FIXED_LENGTH_LISTS" => {
+                crate::engine::WasmFeature::ComponentModelFixedLengthLists
+            }
+            "MUTABLE_GLOBAL" => crate::engine::WasmFeature::MutableGlobal,
+            "SATURATING_FLOAT_TO_INT" => crate::engine::WasmFeature::SaturatingFloatToInt,
+            "SIGN_EXTENSION" => crate::engine::WasmFeature::SignExtension,
+            "FLOATS" => crate::engine::WasmFeature::Floats,
+            "MEMORY_CONTROL" => crate::engine::WasmFeature::MemoryControl,
+            "LEGACY_EXCEPTIONS" => crate::engine::WasmFeature::LegacyExceptions,
+            "GC_TYPES" => crate::engine::WasmFeature::GcTypes,
+            "COMPONENT_MODEL_VALUES" => crate::engine::WasmFeature::ComponentModelValues,
+            "COMPONENT_MODEL_NESTED_NAMES" => crate::engine::WasmFeature::ComponentModelNestedNames,
+            "COMPONENT_MODEL_MAP" => crate::engine::WasmFeature::ComponentModelMap,
+            "CALL_INDIRECT_OVERLONG" => crate::engine::WasmFeature::CallIndirectOverlong,
+            "BULK_MEMORY_OPT" => crate::engine::WasmFeature::BulkMemoryOpt,
+            "CUSTOM_DESCRIPTORS" => crate::engine::WasmFeature::CustomDescriptors,
+            "COMPACT_IMPORTS" => crate::engine::WasmFeature::CompactImports,
             _ => {
                 return Err(WasmtimeError::InvalidParameter {
                     message: format!("Unknown feature: {}", feature_str),

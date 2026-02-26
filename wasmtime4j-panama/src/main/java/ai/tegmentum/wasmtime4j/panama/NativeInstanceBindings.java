@@ -1074,6 +1074,26 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         interval);
   }
 
+  /**
+   * Gets debug exit frames from the caller.
+   *
+   * <p>Two-phase protocol: first call with outData=NULL to get count, second call with allocated
+   * buffer to get data.
+   *
+   * @param callerPtr pointer to the caller context
+   * @param countOut pointer to store the frame count
+   * @param outData pointer to frame data buffer (NULL for phase 1)
+   * @return 0 on success, -1 if debugging not enabled, -2 on error
+   * @since 1.1.0
+   */
+  public int callerDebugExitFrames(
+      final MemorySegment callerPtr, final MemorySegment countOut, final MemorySegment outData) {
+    validatePointer(callerPtr, "callerPtr");
+    validatePointer(countOut, "countOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_caller_debug_exit_frames", Integer.class, callerPtr, countOut, outData);
+  }
+
   // =============================================================================
   // Panama Function FFI Operations
   // =============================================================================
@@ -2215,6 +2235,11 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_caller_set_fuel_async_yield_interval",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_caller_debug_exit_frames",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
   }
 
   private void initializeFunctionBindings() {

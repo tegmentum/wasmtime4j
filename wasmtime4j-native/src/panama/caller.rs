@@ -7,7 +7,7 @@
 use crate::caller::core;
 use crate::error::ffi_utils;
 use crate::store::StoreData;
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_long, c_ulong, c_void};
 use wasmtime::Caller as WasmtimeCaller;
 
 /// Get fuel remaining in the caller if fuel metering is enabled (Panama FFI version)
@@ -280,4 +280,55 @@ pub extern "C" fn wasmtime4j_panama_caller_get_table(
             }
         }
     })
+}
+
+/// Get debug exit frames from the caller (Panama FFI version)
+///
+/// Two-phase protocol:
+/// - First call with out_data=null: writes frame count to count_out, returns 0 on success
+/// - Second call with out_data pointing to buffer: writes frame data, returns 0 on success
+/// - Returns -1 if debugging not enabled, -2 on error
+///
+/// # Safety
+/// - caller_ptr must be a valid pointer to a WasmtimeCaller
+/// - count_out must be a valid pointer to a c_int
+/// - out_data (if non-null) must point to a buffer of at least count*4 c_int elements
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_caller_debug_exit_frames(
+    caller_ptr: *mut c_void,
+    count_out: *mut c_int,
+    out_data: *mut c_int,
+) -> c_int {
+    if caller_ptr.is_null() || count_out.is_null() {
+        return -2; // Error: null pointer
+    }
+
+    let caller = unsafe { &mut *(caller_ptr as *mut WasmtimeCaller<'_, StoreData>) };
+
+    match core::caller_debug_exit_frames(caller) {
+        Ok(Some(frames)) => {
+            let count = frames.len() as c_int;
+            unsafe {
+                *count_out = count;
+            }
+            if out_data.is_null() {
+                // Phase 1: just return count
+                0
+            } else {
+                // Phase 2: write frame data
+                for (i, frame) in frames.iter().enumerate() {
+                    let base = i * 4;
+                    unsafe {
+                        *out_data.add(base) = frame[0];
+                        *out_data.add(base + 1) = frame[1];
+                        *out_data.add(base + 2) = frame[2];
+                        *out_data.add(base + 3) = frame[3];
+                    }
+                }
+                0
+            }
+        }
+        Ok(None) => -1, // Debugging not enabled
+        Err(_) => -2,   // Error
+    }
 }

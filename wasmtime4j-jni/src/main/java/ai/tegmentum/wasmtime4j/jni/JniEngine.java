@@ -168,6 +168,12 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   @Override
+  public void unloadProcessHandlers() throws WasmException {
+    ensureNotClosed();
+    nativeUnloadProcessHandlers(nativeHandle);
+  }
+
+  @Override
   public Module compileModule(final byte[] wasmBytes) throws WasmException {
     if (wasmBytes == null) {
       throw new IllegalArgumentException("wasmBytes cannot be null");
@@ -521,6 +527,8 @@ public class JniEngine extends JniResource implements Engine {
   private native boolean nativeIsReplaying(long engineHandle);
 
   private native void nativeIncrementEpoch(long engineHandle);
+
+  private native void nativeUnloadProcessHandlers(long engineHandle);
 
   private static native long nativeCreateWeakEngine(long engineHandle);
 

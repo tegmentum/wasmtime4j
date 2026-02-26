@@ -85,6 +85,10 @@ public final class PanamaEngine implements Engine {
 
     if (this.nativeEngine == null || this.nativeEngine.equals(MemorySegment.NULL)) {
       arena.close();
+      final String nativeError = PanamaErrorMapper.retrieveNativeErrorMessage();
+      if (nativeError != null && !nativeError.isEmpty()) {
+        throw new WasmException("Failed to create native engine: " + nativeError);
+      }
       throw new WasmException("Failed to create native engine");
     }
 
@@ -426,6 +430,16 @@ public final class PanamaEngine implements Engine {
   public void incrementEpoch() {
     ensureNotClosed();
     NATIVE_BINDINGS.engineIncrementEpoch(nativeEngine);
+  }
+
+  @Override
+  public void unloadProcessHandlers() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    int result = NATIVE_BINDINGS.engineUnloadProcessHandlers(nativeEngine);
+    if (result != 0) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to unload process handlers: other references to this engine may still exist");
+    }
   }
 
   @Override

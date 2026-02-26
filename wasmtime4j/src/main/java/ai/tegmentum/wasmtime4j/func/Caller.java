@@ -221,4 +221,22 @@ public interface Caller<T> {
    * @since 1.0.0
    */
   void setFuelAsyncYieldInterval(long interval) throws WasmException;
+
+  /**
+   * Gets the debug exit frames from the caller's execution context.
+   *
+   * <p>This provides a snapshot of the WebAssembly call stack, including function indices, program
+   * counters, local variable counts, and operand stack depths. Requires the engine to be configured
+   * with {@code guestDebug(true)}.
+   *
+   * @return a list of frame handles, innermost first
+   * @throws UnsupportedOperationException if guest debugging is not enabled
+   * @throws WasmException if frame retrieval fails
+   * @since 1.1.0
+   */
+  default java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "debugExitFrames requires guest debugging to be enabled via Config.guestDebug(true)");
+  }
 }

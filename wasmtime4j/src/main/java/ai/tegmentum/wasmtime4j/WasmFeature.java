@@ -84,5 +84,49 @@ public enum WasmFeature {
   COMPONENT_MODEL_THREADING,
 
   /** WebAssembly Component Model fixed-length lists support. */
-  COMPONENT_MODEL_FIXED_LENGTH_LISTS
+  COMPONENT_MODEL_FIXED_LENGTH_LISTS,
+
+  // Features settable only via WasmFeatures bitflags (no individual Config method)
+
+  /** WebAssembly mutable global proposal support (MVP default, always on). */
+  MUTABLE_GLOBAL,
+
+  /** WebAssembly saturating float-to-int conversions (MVP default, always on). */
+  SATURATING_FLOAT_TO_INT,
+
+  /** WebAssembly sign extension operations (MVP default, always on). */
+  SIGN_EXTENSION,
+
+  /** WebAssembly floating point support (core feature, always on by default). */
+  FLOATS,
+
+  /** WebAssembly memory control proposal support (experimental). */
+  MEMORY_CONTROL,
+
+  /** WebAssembly legacy exception handling proposal support (deprecated). */
+  LEGACY_EXCEPTIONS,
+
+  /** WebAssembly GC structural types support (GC types only, no full GC). */
+  GC_TYPES,
+
+  /** WebAssembly Component Model values support. */
+  COMPONENT_MODEL_VALUES,
+
+  /** WebAssembly Component Model nested names support. */
+  COMPONENT_MODEL_NESTED_NAMES,
+
+  /** WebAssembly Component Model map type support (new in 42.0.1). */
+  COMPONENT_MODEL_MAP,
+
+  /** WebAssembly call_indirect overlong encoding support (legacy compatibility). */
+  CALL_INDIRECT_OVERLONG,
+
+  /** WebAssembly bulk memory optimized operations support. */
+  BULK_MEMORY_OPT,
+
+  /** WebAssembly custom descriptors proposal support. */
+  CUSTOM_DESCRIPTORS,
+
+  /** WebAssembly Component Model compact imports support (new in 42.0.1). */
+  COMPACT_IMPORTS
 }

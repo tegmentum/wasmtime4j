@@ -483,6 +483,22 @@ pub struct EngineConfigSummary {
     pub wasm_component_model_threading: bool,
     pub wasm_component_model_fixed_length_lists: bool,
 
+    // ===== WasmFeatures-only flags (no individual Config method) =====
+    pub wasm_mutable_global: bool,
+    pub wasm_saturating_float_to_int: bool,
+    pub wasm_sign_extension: bool,
+    pub wasm_floats: bool,
+    pub wasm_memory_control: bool,
+    pub wasm_legacy_exceptions: bool,
+    pub wasm_gc_types: bool,
+    pub wasm_component_model_values: bool,
+    pub wasm_component_model_nested_names: bool,
+    pub wasm_component_model_map: bool,
+    pub wasm_call_indirect_overlong: bool,
+    pub wasm_bulk_memory_opt: bool,
+    pub wasm_custom_descriptors: bool,
+    pub wasm_compact_imports: bool,
+
     // ===== Runtime-essential fields =====
     /// Whether fuel consumption is enabled (drives store fuel initialization)
     pub fuel_enabled: bool,
@@ -531,6 +547,20 @@ impl Default for EngineConfigSummary {
             wasm_component_model_gc: false,
             wasm_component_model_threading: false,
             wasm_component_model_fixed_length_lists: false,
+            wasm_mutable_global: true,
+            wasm_saturating_float_to_int: true,
+            wasm_sign_extension: true,
+            wasm_floats: true,
+            wasm_memory_control: false,
+            wasm_legacy_exceptions: false,
+            wasm_gc_types: false,
+            wasm_component_model_values: false,
+            wasm_component_model_nested_names: false,
+            wasm_component_model_map: false,
+            wasm_call_indirect_overlong: false,
+            wasm_bulk_memory_opt: false,
+            wasm_custom_descriptors: false,
+            wasm_compact_imports: false,
             fuel_enabled: false,
             epoch_interruption: false,
             max_stack_size: None,
@@ -577,6 +607,20 @@ impl EngineConfigSummary {
             wasm_component_model_gc: false,
             wasm_component_model_threading: false,
             wasm_component_model_fixed_length_lists: false,
+            wasm_mutable_global: true,
+            wasm_saturating_float_to_int: true,
+            wasm_sign_extension: true,
+            wasm_floats: true,
+            wasm_memory_control: false,
+            wasm_legacy_exceptions: false,
+            wasm_gc_types: false,
+            wasm_component_model_values: false,
+            wasm_component_model_nested_names: false,
+            wasm_component_model_map: false,
+            wasm_call_indirect_overlong: false,
+            wasm_bulk_memory_opt: false,
+            wasm_custom_descriptors: false,
+            wasm_compact_imports: false,
             fuel_enabled: false, // Wasmtime default: consume_fuel is off
             epoch_interruption: false,
             max_stack_size: None,
@@ -618,6 +662,20 @@ impl EngineConfigSummary {
             wasm_component_model_gc: builder.wasm_component_model_gc,
             wasm_component_model_threading: builder.wasm_component_model_threading,
             wasm_component_model_fixed_length_lists: builder.wasm_component_model_fixed_length_lists,
+            wasm_mutable_global: builder.wasm_mutable_global,
+            wasm_saturating_float_to_int: builder.wasm_saturating_float_to_int,
+            wasm_sign_extension: builder.wasm_sign_extension,
+            wasm_floats: builder.wasm_floats,
+            wasm_memory_control: builder.wasm_memory_control,
+            wasm_legacy_exceptions: builder.wasm_legacy_exceptions,
+            wasm_gc_types: builder.wasm_gc_types,
+            wasm_component_model_values: builder.wasm_component_model_values,
+            wasm_component_model_nested_names: builder.wasm_component_model_nested_names,
+            wasm_component_model_map: builder.wasm_component_model_map,
+            wasm_call_indirect_overlong: builder.wasm_call_indirect_overlong,
+            wasm_bulk_memory_opt: builder.wasm_bulk_memory_opt,
+            wasm_custom_descriptors: builder.wasm_custom_descriptors,
+            wasm_compact_imports: builder.wasm_compact_imports,
             fuel_enabled: builder.fuel_enabled,
             epoch_interruption: builder.epoch_interruption,
             max_stack_size: builder.max_stack_size,
@@ -670,6 +728,21 @@ pub struct EngineBuilder {
     pub(crate) wasm_component_model_error_context: bool,
     pub(crate) wasm_component_model_gc: bool,
     pub(crate) wasm_component_model_fixed_length_lists: bool,
+    // Features settable only via WasmFeatures bitflags (no individual Config method)
+    pub(crate) wasm_mutable_global: bool,
+    pub(crate) wasm_saturating_float_to_int: bool,
+    pub(crate) wasm_sign_extension: bool,
+    pub(crate) wasm_floats: bool,
+    pub(crate) wasm_memory_control: bool,
+    pub(crate) wasm_legacy_exceptions: bool,
+    pub(crate) wasm_gc_types: bool,
+    pub(crate) wasm_component_model_values: bool,
+    pub(crate) wasm_component_model_nested_names: bool,
+    pub(crate) wasm_component_model_map: bool,
+    pub(crate) wasm_call_indirect_overlong: bool,
+    pub(crate) wasm_bulk_memory_opt: bool,
+    pub(crate) wasm_custom_descriptors: bool,
+    pub(crate) wasm_compact_imports: bool,
     pub(crate) async_support: bool,
     pub(crate) concurrency_support: bool,
     pub(crate) coredump_on_trap: bool,
@@ -804,6 +877,21 @@ impl EngineBuilder {
             wasm_component_model_error_context: false, // Component model extension - off by default
             wasm_component_model_gc: false,            // Component model extension - off by default
             wasm_component_model_fixed_length_lists: false, // Component model extension - off by default
+            // Features settable only via WasmFeatures bitflags
+            wasm_mutable_global: true,             // MVP default - always on
+            wasm_saturating_float_to_int: true,    // MVP default - always on
+            wasm_sign_extension: true,             // MVP default - always on
+            wasm_floats: true,                     // Core feature - always on
+            wasm_memory_control: false,            // Experimental - off by default
+            wasm_legacy_exceptions: false,         // Deprecated - off by default
+            wasm_gc_types: false,                  // Structural types only - off by default
+            wasm_component_model_values: false,    // Component model - off by default
+            wasm_component_model_nested_names: false, // Component model - off by default
+            wasm_component_model_map: false,       // Component model (new in 42.0.1) - off by default
+            wasm_call_indirect_overlong: false,    // Legacy compatibility - off by default
+            wasm_bulk_memory_opt: false,           // Core - off by default
+            wasm_custom_descriptors: false,        // Core - off by default
+            wasm_compact_imports: false,           // Component (new in 42.0.1) - off by default
             async_support: false,                      // Async execution support - off by default
             concurrency_support: false,                // Concurrency support - off by default
             coredump_on_trap: false,                   // Coredump on trap - off by default
@@ -1036,6 +1124,147 @@ impl EngineBuilder {
     pub fn wasm_component_model_fixed_length_lists(mut self, enable: bool) -> Self {
         self.config.wasm_component_model_fixed_length_lists(enable);
         self.wasm_component_model_fixed_length_lists = enable;
+        self
+    }
+
+    /// Configure WebAssembly mutable global support (MVP default, always on)
+    ///
+    /// Note: Only enables the feature when `enable` is true. In Wasmtime 42+,
+    /// calling `wasm_features(FLAG, false)` can reset unrelated features due to
+    /// how the feature configuration is tracked internally.
+    pub fn wasm_mutable_global(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::MUTABLE_GLOBAL, true);
+        }
+        self.wasm_mutable_global = enable;
+        self
+    }
+
+    /// Configure WebAssembly saturating float-to-int conversions (MVP default, always on)
+    pub fn wasm_saturating_float_to_int(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::SATURATING_FLOAT_TO_INT, true);
+        }
+        self.wasm_saturating_float_to_int = enable;
+        self
+    }
+
+    /// Configure WebAssembly sign extension operations (MVP default, always on)
+    pub fn wasm_sign_extension(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::SIGN_EXTENSION, true);
+        }
+        self.wasm_sign_extension = enable;
+        self
+    }
+
+    /// Configure WebAssembly floating point support
+    pub fn wasm_floats(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::FLOATS, true);
+        }
+        self.wasm_floats = enable;
+        self
+    }
+
+    /// Configure WebAssembly memory control support (experimental)
+    pub fn wasm_memory_control(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::MEMORY_CONTROL, true);
+        }
+        self.wasm_memory_control = enable;
+        self
+    }
+
+    /// Configure WebAssembly legacy exception handling support (deprecated)
+    pub fn wasm_legacy_exceptions(mut self, enable: bool) -> Self {
+        self.config.wasm_legacy_exceptions(enable);
+        self.wasm_legacy_exceptions = enable;
+        self
+    }
+
+    /// Configure WebAssembly GC structural types support
+    pub fn wasm_gc_types(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::GC_TYPES, true);
+        }
+        self.wasm_gc_types = enable;
+        self
+    }
+
+    /// Configure WebAssembly Component Model values support
+    pub fn wasm_component_model_values(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CM_VALUES, true);
+        }
+        self.wasm_component_model_values = enable;
+        self
+    }
+
+    /// Configure WebAssembly Component Model nested names support
+    pub fn wasm_component_model_nested_names(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CM_NESTED_NAMES, true);
+        }
+        self.wasm_component_model_nested_names = enable;
+        self
+    }
+
+    /// Configure WebAssembly Component Model map type support
+    pub fn wasm_component_model_map(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CM_MAP, true);
+        }
+        self.wasm_component_model_map = enable;
+        self
+    }
+
+    /// Configure WebAssembly call_indirect overlong encoding support
+    pub fn wasm_call_indirect_overlong(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CALL_INDIRECT_OVERLONG, true);
+        }
+        self.wasm_call_indirect_overlong = enable;
+        self
+    }
+
+    /// Configure WebAssembly bulk memory optimized operations support
+    pub fn wasm_bulk_memory_opt(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::BULK_MEMORY_OPT, true);
+        }
+        self.wasm_bulk_memory_opt = enable;
+        self
+    }
+
+    /// Configure WebAssembly custom descriptors support
+    pub fn wasm_custom_descriptors(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CUSTOM_DESCRIPTORS, true);
+        }
+        self.wasm_custom_descriptors = enable;
+        self
+    }
+
+    /// Configure WebAssembly Component Model compact imports support
+    pub fn wasm_compact_imports(mut self, enable: bool) -> Self {
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::COMPACT_IMPORTS, true);
+        }
+        self.wasm_compact_imports = enable;
         self
     }
 

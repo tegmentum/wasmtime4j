@@ -353,6 +353,62 @@ final class PanamaCaller<T> implements Caller<T> {
   }
 
   @Override
+  public java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    try (final java.lang.foreign.Arena localArena = java.lang.foreign.Arena.ofConfined()) {
+      // Phase 1: get frame count
+      final java.lang.foreign.MemorySegment countSegment =
+          localArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+      final int countResult =
+          bindings.callerDebugExitFrames(
+              callerPtr, countSegment, java.lang.foreign.MemorySegment.NULL);
+      if (countResult == -1) {
+        return java.util.Collections.emptyList(); // debugging not enabled
+      }
+      if (countResult < 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to get debug exit frames: error code " + countResult);
+      }
+      final int frameCount = countSegment.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+      if (frameCount <= 0) {
+        return java.util.Collections.emptyList();
+      }
+
+      // Phase 2: allocate buffer and get frame data
+      final java.lang.foreign.MemorySegment dataSegment =
+          localArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT, (long) frameCount * 4);
+      final int dataResult = bindings.callerDebugExitFrames(callerPtr, countSegment, dataSegment);
+      if (dataResult < 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to get debug exit frame data: error code " + dataResult);
+      }
+
+      // Parse frame data: 4 ints per frame [func_index, pc, num_locals, num_stacks]
+      final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
+          new java.util.ArrayList<>(frameCount);
+      for (int i = 0; i < frameCount; i++) {
+        final long base = (long) i * 4 * java.lang.foreign.ValueLayout.JAVA_INT.byteSize();
+        frames.add(
+            new ai.tegmentum.wasmtime4j.debug.FrameHandle(
+                0L, // no native ptr for snapshot approach
+                dataSegment.get(java.lang.foreign.ValueLayout.JAVA_INT, base),
+                dataSegment.get(
+                    java.lang.foreign.ValueLayout.JAVA_INT,
+                    base + java.lang.foreign.ValueLayout.JAVA_INT.byteSize()),
+                dataSegment.get(
+                    java.lang.foreign.ValueLayout.JAVA_INT,
+                    base + 2 * java.lang.foreign.ValueLayout.JAVA_INT.byteSize()),
+                dataSegment.get(
+                    java.lang.foreign.ValueLayout.JAVA_INT,
+                    base + 3 * java.lang.foreign.ValueLayout.JAVA_INT.byteSize()),
+                null, // instance (not available in snapshot)
+                null)); // module (not available in snapshot)
+      }
+      return frames;
+    }
+  }
+
+  @Override
   public String toString() {
     return String.format("PanamaCaller{handle=0x%x}", callerHandle);
   }

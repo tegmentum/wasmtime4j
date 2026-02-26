@@ -18,6 +18,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_create() -> *mut c_void {
         1 << 16, // stack_size (64KB)
         100,     // max_stacks
         10,      // max_tables_per_instance
+        10,      // max_tables_per_component
         1000,    // max_tables
         true,    // memory_decommit_enabled
         false,   // pool_warming_enabled
@@ -39,6 +40,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_create_with_config(
     stack_size: c_int,
     max_stacks: c_int,
     max_tables_per_instance: c_int,
+    max_tables_per_component: c_int,
     max_tables: c_int,
     memory_decommit_enabled: c_int,
     pool_warming_enabled: c_int,
@@ -50,6 +52,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_create_with_config(
         stack_size as usize,
         max_stacks as u32,
         max_tables_per_instance as u32,
+        max_tables_per_component as u32,
         max_tables as u32,
         memory_decommit_enabled != 0,
         pool_warming_enabled != 0,

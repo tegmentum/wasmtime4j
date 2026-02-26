@@ -161,6 +161,65 @@ public interface FuncType extends WasmType {
   }
 
   /**
+   * Creates a FuncType with finality and supertype metadata for the GC proposal.
+   *
+   * <p>This factory method creates a function type with GC subtyping metadata. In the GC proposal,
+   * function types can be declared as final (cannot be subtyped) or non-final (can be subtyped),
+   * and can optionally declare a supertype.
+   *
+   * @param finality the finality of this type
+   * @param supertype the supertype, or null if no supertype
+   * @param params the parameter types
+   * @param results the result types
+   * @return a new FuncType with finality and supertype
+   * @throws IllegalArgumentException if finality, params, or results is null
+   * @since 1.1.0
+   */
+  static FuncType withFinalityAndSupertype(
+      final Finality finality,
+      final FuncType supertype,
+      final WasmValueType[] params,
+      final WasmValueType[] results) {
+    return new FunctionType(params, results, finality, supertype);
+  }
+
+  /**
+   * Creates a FuncType with finality and supertype metadata for the GC proposal, using {@link
+   * ValType} arrays.
+   *
+   * <p>This overload extracts the underlying {@link WasmValueType} from each {@link ValType}.
+   *
+   * @param finality the finality of this type
+   * @param supertype the supertype, or null if no supertype
+   * @param params the parameter types
+   * @param results the result types
+   * @return a new FuncType with finality and supertype
+   * @throws IllegalArgumentException if finality, params, or results is null
+   * @since 1.1.0
+   */
+  static FuncType withFinalityAndSupertype(
+      final Finality finality,
+      final FuncType supertype,
+      final ValType[] params,
+      final ValType[] results) {
+    if (params == null) {
+      throw new IllegalArgumentException("params cannot be null");
+    }
+    if (results == null) {
+      throw new IllegalArgumentException("results cannot be null");
+    }
+    final WasmValueType[] paramTypes = new WasmValueType[params.length];
+    for (int i = 0; i < params.length; i++) {
+      paramTypes[i] = params[i].getValueType();
+    }
+    final WasmValueType[] resultTypes = new WasmValueType[results.length];
+    for (int i = 0; i < results.length; i++) {
+      resultTypes[i] = results[i].getValueType();
+    }
+    return new FunctionType(paramTypes, resultTypes, finality, supertype);
+  }
+
+  /**
    * Gets the finality of this function type, if available.
    *
    * <p>In the GC proposal, types can be final (default) or non-final. The finality determines

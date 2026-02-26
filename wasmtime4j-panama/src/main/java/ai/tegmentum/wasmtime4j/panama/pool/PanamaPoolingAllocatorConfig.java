@@ -81,13 +81,14 @@ public final class PanamaPoolingAllocatorConfig extends AbstractPoolingAllocator
   }
 
   /**
-   * Creates a new PanamaPoolingAllocatorConfig with all 28 parameters.
+   * Creates a new PanamaPoolingAllocatorConfig with all 29 parameters.
    *
    * @param instancePoolSize the number of instances in the pool
    * @param maxMemoryPerInstance maximum memory per instance in bytes
    * @param stackSize stack size for WebAssembly execution in bytes
    * @param maxStacks maximum number of stacks in the pool
    * @param maxTablesPerInstance maximum tables per instance
+   * @param maxTablesPerComponent maximum tables per component
    * @param maxTables maximum total tables in the pool
    * @param memoryDecommitEnabled whether memory decommit optimization is enabled
    * @param poolWarmingEnabled whether pool warming is enabled on startup
@@ -119,6 +120,7 @@ public final class PanamaPoolingAllocatorConfig extends AbstractPoolingAllocator
       final int stackSize,
       final int maxStacks,
       final int maxTablesPerInstance,
+      final int maxTablesPerComponent,
       final int maxTables,
       final boolean memoryDecommitEnabled,
       final boolean poolWarmingEnabled,
@@ -148,6 +150,7 @@ public final class PanamaPoolingAllocatorConfig extends AbstractPoolingAllocator
         stackSize,
         maxStacks,
         maxTablesPerInstance,
+        maxTablesPerComponent,
         maxTables,
         memoryDecommitEnabled,
         poolWarmingEnabled,

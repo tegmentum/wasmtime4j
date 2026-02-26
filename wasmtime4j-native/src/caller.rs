@@ -170,6 +170,34 @@ pub mod core {
             })
     }
 
+    /// Snapshot all debug exit frames from the caller.
+    ///
+    /// Returns None if guest debugging is not enabled, or an empty vec if no frames.
+    /// Each frame is represented as [func_index, pc, num_locals, num_stacks].
+    pub fn caller_debug_exit_frames(
+        caller: &mut WasmtimeCaller<'_, crate::store::StoreData>,
+    ) -> WasmtimeResult<Option<Vec<[i32; 4]>>> {
+        let cursor = caller.as_context_mut().debug_frames();
+        let Some(mut cursor) = cursor else {
+            return Ok(None);
+        };
+        let mut frames = Vec::new();
+        loop {
+            cursor.move_to_parent();
+            if cursor.done() {
+                break;
+            }
+            let (func_index, pc) = cursor
+                .wasm_function_index_and_pc()
+                .map(|(fi, pc)| (fi.as_u32() as i32, pc as i32))
+                .unwrap_or((-1, -1));
+            let num_locals = cursor.num_locals() as i32;
+            let num_stacks = cursor.num_stacks() as i32;
+            frames.push([func_index, pc, num_locals, num_stacks]);
+        }
+        Ok(Some(frames))
+    }
+
     /// Check if caller has an export with the given name
     pub fn caller_has_export<T>(
         caller: &mut WasmtimeCaller<'_, T>,

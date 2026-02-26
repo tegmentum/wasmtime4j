@@ -545,6 +545,21 @@ public interface Engine extends Closeable {
   void close();
 
   /**
+   * Unloads process-level signal handlers installed by Wasmtime.
+   *
+   * <p>This is an unsafe, destructive operation that should only be called when no other Wasmtime
+   * engines exist and no further WebAssembly execution will occur. After calling this method, the
+   * engine is consumed and should not be used.
+   *
+   * <p>This is primarily useful for library unloading scenarios where Wasmtime's signal handlers
+   * need to be removed before the process continues without Wasmtime.
+   *
+   * @throws WasmException if the operation fails
+   * @since 1.0.0
+   */
+  void unloadProcessHandlers() throws WasmException;
+
+  /**
    * Creates a new Engine with default configuration.
    *
    * @return a new Engine instance

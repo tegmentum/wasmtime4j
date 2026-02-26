@@ -193,6 +193,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIncremen
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
+ * Method:    nativeUnloadProcessHandlers
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeUnloadProcessHandlers
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniEngine
  * Method:    nativeCreateWeakEngine
  * Signature: (J)J
  */

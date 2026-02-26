@@ -35,6 +35,7 @@ public final class JniPoolingAllocatorConfigBuilder extends AbstractPoolingAlloc
             stackSize,
             maxStacks,
             maxTablesPerInstance,
+            maxTablesPerComponent,
             maxTables,
             memoryDecommitEnabled,
             poolWarmingEnabled,

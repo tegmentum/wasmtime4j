@@ -373,4 +373,31 @@ final class JniCaller<T> implements Caller<T> {
    * @param interval the yield interval, or 0 to disable
    */
   private static native void nativeSetFuelAsyncYieldInterval(long callerHandle, long interval);
+
+  @Override
+  public java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    final int[] frameData = nativeDebugExitFrames(callerHandle);
+    if (frameData == null) {
+      return java.util.Collections.emptyList();
+    }
+    final int frameCount = frameData.length / 4;
+    final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
+        new java.util.ArrayList<>(frameCount);
+    for (int i = 0; i < frameCount; i++) {
+      final int base = i * 4;
+      frames.add(
+          new ai.tegmentum.wasmtime4j.debug.FrameHandle(
+              0L, // no native ptr for snapshot approach
+              frameData[base], // functionIndex
+              frameData[base + 1], // pc
+              frameData[base + 2], // numLocals
+              frameData[base + 3], // numStack
+              null, // instance (not available in snapshot)
+              null)); // module (not available in snapshot)
+    }
+    return frames;
+  }
+
+  private static native int[] nativeDebugExitFrames(long callerHandle);
 }

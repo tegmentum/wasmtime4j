@@ -266,7 +266,7 @@ pub unsafe extern "C" fn wasmtime4j_version() -> *const c_char {
 /// The returned pointer is valid for the lifetime of the program and should not be freed.
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_wasmtime_version() -> *const c_char {
-    concat!("41.0.3", "\0").as_ptr() as *const c_char
+    concat!("42.0.1", "\0").as_ptr() as *const c_char
 }
 
 /// Cleanup and shutdown the native library

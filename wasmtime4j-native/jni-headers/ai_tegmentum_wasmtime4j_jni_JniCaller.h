@@ -79,6 +79,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetFuel
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeSetFuelAsyncYieldInterval
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniCaller
+ * Method:    nativeDebugExitFrames
+ * Signature: (J)[I
+ */
+JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeDebugExitFrames
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

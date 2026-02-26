@@ -54,6 +54,9 @@ public interface PoolingAllocatorConfig {
   /** Default maximum tables per instance. */
   int DEFAULT_MAX_TABLES_PER_INSTANCE = 10;
 
+  /** Default maximum tables per component. */
+  int DEFAULT_MAX_TABLES_PER_COMPONENT = 10;
+
   /** Default maximum total tables. */
   int DEFAULT_MAX_TABLES = 10000;
 
@@ -428,6 +431,17 @@ public interface PoolingAllocatorConfig {
    * @since 1.1.0
    */
   ai.tegmentum.wasmtime4j.config.Enabled getPagemapScan();
+
+  /**
+   * Gets the maximum number of tables per component.
+   *
+   * <p>This limits the total number of tables that any single component can define when using the
+   * pooling allocator.
+   *
+   * @return the maximum tables per component
+   * @since 1.1.0
+   */
+  int getMaxTablesPerComponent();
 
   /**
    * Validates this configuration for consistency.

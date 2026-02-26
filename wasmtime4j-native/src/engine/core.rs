@@ -81,6 +81,22 @@ pub struct EngineConfigFfi {
     pub wasm_component_model_threading: Option<bool>,
     pub wasm_component_model_fixed_length_lists: Option<bool>,
 
+    // Features settable only via WasmFeatures bitflags (no individual Config method)
+    pub wasm_mutable_global: Option<bool>,
+    pub wasm_saturating_float_to_int: Option<bool>,
+    pub wasm_sign_extension: Option<bool>,
+    pub wasm_floats: Option<bool>,
+    pub wasm_memory_control: Option<bool>,
+    pub wasm_legacy_exceptions: Option<bool>,
+    pub wasm_gc_types: Option<bool>,
+    pub wasm_component_model_values: Option<bool>,
+    pub wasm_component_model_nested_names: Option<bool>,
+    pub wasm_component_model_map: Option<bool>,
+    pub wasm_call_indirect_overlong: Option<bool>,
+    pub wasm_bulk_memory_opt: Option<bool>,
+    pub wasm_custom_descriptors: Option<bool>,
+    pub wasm_compact_imports: Option<bool>,
+
     // Cranelift settings
     pub cranelift_debug_verifier: Option<bool>,
     pub cranelift_nan_canonicalization: Option<bool>,
@@ -281,6 +297,34 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     if let Some(v) = config.wasm_component_model_fixed_length_lists {
         builder = builder.wasm_component_model_fixed_length_lists(v);
     }
+
+    // WasmFeatures-only flags
+    if let Some(v) = config.wasm_mutable_global { builder = builder.wasm_mutable_global(v); }
+    if let Some(v) = config.wasm_saturating_float_to_int {
+        builder = builder.wasm_saturating_float_to_int(v);
+    }
+    if let Some(v) = config.wasm_sign_extension { builder = builder.wasm_sign_extension(v); }
+    if let Some(v) = config.wasm_floats { builder = builder.wasm_floats(v); }
+    if let Some(v) = config.wasm_memory_control { builder = builder.wasm_memory_control(v); }
+    if let Some(v) = config.wasm_legacy_exceptions { builder = builder.wasm_legacy_exceptions(v); }
+    if let Some(v) = config.wasm_gc_types { builder = builder.wasm_gc_types(v); }
+    if let Some(v) = config.wasm_component_model_values {
+        builder = builder.wasm_component_model_values(v);
+    }
+    if let Some(v) = config.wasm_component_model_nested_names {
+        builder = builder.wasm_component_model_nested_names(v);
+    }
+    if let Some(v) = config.wasm_component_model_map {
+        builder = builder.wasm_component_model_map(v);
+    }
+    if let Some(v) = config.wasm_call_indirect_overlong {
+        builder = builder.wasm_call_indirect_overlong(v);
+    }
+    if let Some(v) = config.wasm_bulk_memory_opt { builder = builder.wasm_bulk_memory_opt(v); }
+    if let Some(v) = config.wasm_custom_descriptors {
+        builder = builder.wasm_custom_descriptors(v);
+    }
+    if let Some(v) = config.wasm_compact_imports { builder = builder.wasm_compact_imports(v); }
 
     // Cranelift settings
     if let Some(v) = config.cranelift_debug_verifier {

@@ -19,6 +19,7 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
   private final int stackSize;
   private final int maxStacks;
   private final int maxTablesPerInstance;
+  private final int maxTablesPerComponent;
   private final int maxTables;
   private final boolean memoryDecommitEnabled;
   private final boolean poolWarmingEnabled;
@@ -51,6 +52,7 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
         DEFAULT_STACK_SIZE,
         DEFAULT_MAX_STACKS,
         DEFAULT_MAX_TABLES_PER_INSTANCE,
+        DEFAULT_MAX_TABLES_PER_COMPONENT,
         DEFAULT_MAX_TABLES,
         true,
         true,
@@ -116,6 +118,7 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
         stackSize,
         maxStacks,
         maxTablesPerInstance,
+        DEFAULT_MAX_TABLES_PER_COMPONENT,
         maxTables,
         memoryDecommitEnabled,
         poolWarmingEnabled,
@@ -142,13 +145,14 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
   }
 
   /**
-   * Creates a new configuration with all 28 parameters.
+   * Creates a new configuration with all 29 parameters.
    *
    * @param instancePoolSize the number of instances in the pool
    * @param maxMemoryPerInstance maximum memory per instance in bytes
    * @param stackSize stack size for WebAssembly execution in bytes
    * @param maxStacks maximum number of stacks in the pool
    * @param maxTablesPerInstance maximum tables per instance
+   * @param maxTablesPerComponent maximum tables per component
    * @param maxTables maximum total tables in the pool
    * @param memoryDecommitEnabled whether memory decommit optimization is enabled
    * @param poolWarmingEnabled whether pool warming is enabled on startup
@@ -179,6 +183,7 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
       final int stackSize,
       final int maxStacks,
       final int maxTablesPerInstance,
+      final int maxTablesPerComponent,
       final int maxTables,
       final boolean memoryDecommitEnabled,
       final boolean poolWarmingEnabled,
@@ -207,6 +212,7 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
     this.stackSize = stackSize;
     this.maxStacks = maxStacks;
     this.maxTablesPerInstance = maxTablesPerInstance;
+    this.maxTablesPerComponent = maxTablesPerComponent;
     this.maxTables = maxTables;
     this.memoryDecommitEnabled = memoryDecommitEnabled;
     this.poolWarmingEnabled = poolWarmingEnabled;
@@ -255,6 +261,11 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
   @Override
   public int getMaxTablesPerInstance() {
     return maxTablesPerInstance;
+  }
+
+  @Override
+  public int getMaxTablesPerComponent() {
+    return maxTablesPerComponent;
   }
 
   @Override
@@ -399,6 +410,9 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
     if (maxTablesPerInstance < 0) {
       throw new IllegalArgumentException("maxTablesPerInstance cannot be negative");
     }
+    if (maxTablesPerComponent < 0) {
+      throw new IllegalArgumentException("maxTablesPerComponent cannot be negative");
+    }
     if (maxTables <= 0) {
       throw new IllegalArgumentException("maxTables must be positive");
     }
@@ -436,6 +450,8 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
         + maxStacks
         + ", maxTablesPerInstance="
         + maxTablesPerInstance
+        + ", maxTablesPerComponent="
+        + maxTablesPerComponent
         + ", maxTables="
         + maxTables
         + ", memoryDecommitEnabled="
