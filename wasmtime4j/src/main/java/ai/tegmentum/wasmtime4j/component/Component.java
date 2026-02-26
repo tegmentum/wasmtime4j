@@ -246,6 +246,36 @@ public interface Component extends AutoCloseable {
   }
 
   /**
+   * Gets the memory address range of the compiled image for this component.
+   *
+   * <p>This returns the range in the process's virtual address space where the compiled machine
+   * code for this component resides. This is useful for tools that need to identify which addresses
+   * belong to JIT-compiled WebAssembly code.
+   *
+   * @return the image range containing start and end addresses
+   * @throws WasmException if the component is no longer valid or the operation fails
+   * @since 1.1.0
+   */
+  ai.tegmentum.wasmtime4j.ImageRange imageRange() throws WasmException;
+
+  /**
+   * Pre-initializes this component's copy-on-write image for faster instantiation.
+   *
+   * <p>When using copy-on-write memory initialization (the default), this method eagerly creates
+   * the memory-mapped image used to initialize linear memories during instantiation. Without this
+   * call, the image is created lazily on first instantiation.
+   *
+   * <p>Calling this is beneficial for server-side use cases where the first instantiation latency
+   * matters and you want to front-load the cost during component compilation/loading.
+   *
+   * @throws WasmException if creating the copy-on-write image fails
+   * @since 1.1.0
+   */
+  default void initializeCopyOnWriteImage() throws WasmException {
+    // Default no-op; runtime implementations override with native calls
+  }
+
+  /**
    * Gets the component type description for this component.
    *
    * <p>This method corresponds to Wasmtime's {@code Component::component_type()} and returns a

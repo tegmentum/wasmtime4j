@@ -248,6 +248,22 @@ public final class JniComponent {
   static native byte[] nativeSerializeComponent(long componentHandle);
 
   /**
+   * Gets the image range of a compiled component.
+   *
+   * @param componentHandle the native component handle
+   * @return long[2] = [start, end] or null on failure
+   */
+  static native long[] nativeGetComponentImageRange(long componentHandle);
+
+  /**
+   * Pre-initializes a component's copy-on-write image for faster instantiation.
+   *
+   * @param componentHandle the native component handle
+   * @return true on success, false on failure
+   */
+  static native boolean nativeInitializeCopyOnWriteImage(long componentHandle);
+
+  /**
    * Deserializes a component from previously serialized bytes.
    *
    * @param engineHandle the native component engine handle

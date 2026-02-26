@@ -321,6 +321,19 @@ public interface PoolingAllocatorConfigBuilder {
   PoolingAllocatorConfigBuilder memoryProtectionKeysEnabled(boolean enabled);
 
   /**
+   * Sets memory protection keys using a tri-state Enabled value.
+   *
+   * <p>Using {@link ai.tegmentum.wasmtime4j.config.Enabled#AUTO} lets the runtime decide based on
+   * platform capabilities.
+   *
+   * @param enabled the tri-state enabled value
+   * @return this builder for method chaining
+   * @since 1.1.0
+   */
+  PoolingAllocatorConfigBuilder memoryProtectionKeysEnabled(
+      ai.tegmentum.wasmtime4j.config.Enabled enabled);
+
+  /**
    * Sets the maximum number of memory protection keys to use.
    *
    * <p>This is only relevant on Linux/x86 systems that support MPK. A value of 0 means MPK is
@@ -343,6 +356,18 @@ public interface PoolingAllocatorConfigBuilder {
    * @since 1.1.0
    */
   PoolingAllocatorConfigBuilder pagemapScanEnabled(boolean enabled);
+
+  /**
+   * Sets PAGEMAP_SCAN using a tri-state Enabled value.
+   *
+   * <p>Using {@link ai.tegmentum.wasmtime4j.config.Enabled#AUTO} lets the runtime decide based on
+   * platform capabilities.
+   *
+   * @param enabled the tri-state enabled value
+   * @return this builder for method chaining
+   * @since 1.1.0
+   */
+  PoolingAllocatorConfigBuilder pagemapScanEnabled(ai.tegmentum.wasmtime4j.config.Enabled enabled);
 
   /**
    * Builds the configuration with the specified settings.

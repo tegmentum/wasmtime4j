@@ -58,7 +58,7 @@ public final class EngineConfig {
 
   // GC configuration
   private boolean wasmGc = false;
-  private boolean gcSupport = true;
+  private Enabled gcSupport = Enabled.YES;
 
   // Memory configuration (0 = use platform default)
   private long memoryReservation = 0;
@@ -115,7 +115,7 @@ public final class EngineConfig {
   private boolean generateAddressMap = true;
 
   // Shared memory (independent of wasm threads)
-  private boolean sharedMemory = false;
+  private Enabled sharedMemory = Enabled.NO;
 
   // Cache configuration
   private boolean cacheEnabled = false;
@@ -1033,7 +1033,7 @@ public final class EngineConfig {
   public EngineConfig wasmGc(final boolean enable) {
     this.wasmGc = enable;
     if (enable) {
-      this.gcSupport = true;
+      this.gcSupport = Enabled.YES;
     }
     return this;
   }
@@ -1049,7 +1049,26 @@ public final class EngineConfig {
    * @since 1.0.0
    */
   public EngineConfig gcSupport(final boolean enable) {
-    this.gcSupport = enable;
+    this.gcSupport = Enabled.fromBoolean(enable);
+    return this;
+  }
+
+  /**
+   * Sets GC support using a tri-state Enabled value.
+   *
+   * <p>This gates the entire GC infrastructure including heap allocation and collection. Using
+   * {@link Enabled#AUTO} allows the runtime to determine the appropriate setting based on other
+   * configuration options.
+   *
+   * @param enabled the tri-state enabled value
+   * @return this configuration for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig gcSupport(final Enabled enabled) {
+    if (enabled == null) {
+      throw new IllegalArgumentException("enabled cannot be null");
+    }
+    this.gcSupport = enabled;
     return this;
   }
 
@@ -1066,10 +1085,20 @@ public final class EngineConfig {
   /**
    * Returns whether GC support is enabled.
    *
-   * @return true if GC support is enabled
+   * @return true if GC support is explicitly enabled (YES)
    * @since 1.0.0
    */
   public boolean isGcSupport() {
+    return gcSupport == Enabled.YES;
+  }
+
+  /**
+   * Returns the GC support setting as a tri-state Enabled value.
+   *
+   * @return the GC support Enabled setting
+   * @since 1.1.0
+   */
+  public Enabled getGcSupport() {
     return gcSupport;
   }
 
@@ -2030,17 +2059,45 @@ public final class EngineConfig {
    * @since 1.1.0
    */
   public EngineConfig sharedMemory(final boolean enable) {
-    this.sharedMemory = enable;
+    this.sharedMemory = Enabled.fromBoolean(enable);
+    return this;
+  }
+
+  /**
+   * Sets shared memory using a tri-state Enabled value.
+   *
+   * <p>Using {@link Enabled#AUTO} allows the runtime to determine the appropriate setting based on
+   * other configuration options (e.g., threads proposal).
+   *
+   * @param enabled the tri-state enabled value
+   * @return this config for chaining
+   * @since 1.1.0
+   */
+  public EngineConfig sharedMemory(final Enabled enabled) {
+    if (enabled == null) {
+      throw new IllegalArgumentException("enabled cannot be null");
+    }
+    this.sharedMemory = enabled;
     return this;
   }
 
   /**
    * Returns whether shared memory is enabled.
    *
-   * @return true if shared memory is enabled
+   * @return true if shared memory is explicitly enabled (YES)
    * @since 1.1.0
    */
   public boolean isSharedMemory() {
+    return sharedMemory == Enabled.YES;
+  }
+
+  /**
+   * Returns the shared memory setting as a tri-state Enabled value.
+   *
+   * @return the shared memory Enabled setting
+   * @since 1.1.0
+   */
+  public Enabled getSharedMemory() {
     return sharedMemory;
   }
 
@@ -2694,7 +2751,7 @@ public final class EngineConfig {
       first = appendJsonField(sb, first, "backtraceDetails", backtraceDetails.name().toLowerCase());
     }
     first = appendJsonBool(sb, first, "generateAddressMap", generateAddressMap);
-    first = appendJsonBool(sb, first, "sharedMemory", sharedMemory);
+    first = appendJsonField(sb, first, "sharedMemory", sharedMemory.toJsonValue());
     if (regallocAlgorithm != null) {
       first =
           appendJsonField(
@@ -2749,7 +2806,7 @@ public final class EngineConfig {
     }
 
     // GC settings
-    first = appendJsonBool(sb, first, "gcSupport", gcSupport);
+    first = appendJsonField(sb, first, "gcSupport", gcSupport.toJsonValue());
     if (collector != null && collector != Collector.AUTO) {
       first = appendJsonField(sb, first, "collector", collector.getRustName());
     }
@@ -2887,6 +2944,8 @@ public final class EngineConfig {
         return "vtune";
       case PERF_MAP:
         return "perfmap";
+      case PULLEY:
+        return "pulley";
       default:
         return "none";
     }

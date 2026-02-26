@@ -367,6 +367,36 @@ final class PanamaComponentImpl implements Component {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.ImageRange imageRange() throws WasmException {
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment startPtr = arena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment endPtr = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int errorCode = NATIVE_BINDINGS.componentImageRange(componentHandle, startPtr, endPtr);
+      if (errorCode != 0) {
+        throw new WasmException(
+            "Failed to get component image range: native error code " + errorCode);
+      }
+
+      return new ai.tegmentum.wasmtime4j.ImageRange(
+          startPtr.get(ValueLayout.JAVA_LONG, 0), endPtr.get(ValueLayout.JAVA_LONG, 0));
+    }
+  }
+
+  @Override
+  public void initializeCopyOnWriteImage() throws WasmException {
+    ensureNotClosed();
+
+    final int errorCode = NATIVE_BINDINGS.componentInitializeCowImage(componentHandle);
+    if (errorCode != 0) {
+      throw new WasmException(
+          "Failed to initialize copy-on-write image: native error code " + errorCode);
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.component.ComponentEngine getComponentEngine() {
     return engine;
   }

@@ -48,10 +48,10 @@ class ProfilingStrategyTest {
     }
 
     @Test
-    @DisplayName("should have exactly 4 values")
+    @DisplayName("should have exactly 5 values")
     void shouldHaveExactValueCount() {
       assertEquals(
-          4, ProfilingStrategy.values().length, "ProfilingStrategy should have exactly 4 values");
+          5, ProfilingStrategy.values().length, "ProfilingStrategy should have exactly 5 values");
     }
   }
 
@@ -177,6 +177,9 @@ class ProfilingStrategyTest {
             break;
           case VTUNE:
             result = "vtune";
+            break;
+          case PULLEY:
+            result = "pulley";
             break;
           default:
             result = "unknown";

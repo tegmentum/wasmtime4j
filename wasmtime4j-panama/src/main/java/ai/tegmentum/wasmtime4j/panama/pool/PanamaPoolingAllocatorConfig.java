@@ -139,9 +139,9 @@ public final class PanamaPoolingAllocatorConfig extends AbstractPoolingAllocator
       final int maxMemoriesPerModule,
       final int maxMemoriesPerComponent,
       final int tableElements,
-      final boolean memoryProtectionKeysEnabled,
+      final ai.tegmentum.wasmtime4j.config.Enabled memoryProtectionKeysEnabled,
       final int maxMemoryProtectionKeys,
-      final boolean pagemapScanEnabled) {
+      final ai.tegmentum.wasmtime4j.config.Enabled pagemapScanEnabled) {
     super(
         instancePoolSize,
         maxMemoryPerInstance,

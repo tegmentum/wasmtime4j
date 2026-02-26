@@ -1001,6 +1001,26 @@ impl Component {
     pub fn resources_required(&self) -> Option<wasmtime::ResourcesRequired> {
         self.component.resources_required()
     }
+
+    /// Get the memory address range of the compiled image for this component.
+    ///
+    /// Returns the start and end addresses of the range as `(usize, usize)`.
+    pub fn image_range(&self) -> (usize, usize) {
+        let range = self.component.image_range();
+        (range.start as usize, range.end as usize)
+    }
+
+    /// Pre-initialize copy-on-write image for faster instantiation.
+    ///
+    /// When using CoW memory initialization (the default), this eagerly creates the
+    /// memory-mapped image, avoiding the lazy initialization cost on first instantiation.
+    pub fn initialize_copy_on_write_image(&self) -> WasmtimeResult<()> {
+        self.component
+            .initialize_copy_on_write_image()
+            .map_err(|e| WasmtimeError::Internal {
+                message: format!("Failed to initialize copy-on-write image: {}", e),
+            })
+    }
 }
 
 impl Default for ComponentEngine {
@@ -1172,6 +1192,18 @@ pub mod core {
     /// Core function to get number of imports in component
     pub fn get_import_count(component: &Component) -> usize {
         component.metadata().imports.len()
+    }
+
+    /// Core function to get the image range of a compiled component
+    pub fn get_component_image_range(component: &Component) -> (usize, usize) {
+        component.image_range()
+    }
+
+    /// Core function to initialize copy-on-write image for a component
+    pub fn initialize_copy_on_write_image(
+        component: &Component,
+    ) -> WasmtimeResult<()> {
+        component.initialize_copy_on_write_image()
     }
 
     /// Core function to serialize a component

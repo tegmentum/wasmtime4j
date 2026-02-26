@@ -39,9 +39,9 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
   private final int maxMemoriesPerModule;
   private final int maxMemoriesPerComponent;
   private final int tableElements;
-  private final boolean memoryProtectionKeysEnabled;
+  private final ai.tegmentum.wasmtime4j.config.Enabled memoryProtectionKeysEnabled;
   private final int maxMemoryProtectionKeys;
-  private final boolean pagemapScanEnabled;
+  private final ai.tegmentum.wasmtime4j.config.Enabled pagemapScanEnabled;
 
   /** Creates a new configuration with default values. */
   protected AbstractPoolingAllocatorConfig() {
@@ -71,9 +71,9 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
         DEFAULT_MAX_MEMORIES_PER_MODULE,
         DEFAULT_MAX_MEMORIES_PER_COMPONENT,
         DEFAULT_TABLE_ELEMENTS,
-        false,
+        ai.tegmentum.wasmtime4j.config.Enabled.NO,
         DEFAULT_MAX_MEMORY_PROTECTION_KEYS,
-        false);
+        ai.tegmentum.wasmtime4j.config.Enabled.NO);
   }
 
   /**
@@ -136,9 +136,9 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
         DEFAULT_MAX_MEMORIES_PER_MODULE,
         DEFAULT_MAX_MEMORIES_PER_COMPONENT,
         DEFAULT_TABLE_ELEMENTS,
-        false,
+        ai.tegmentum.wasmtime4j.config.Enabled.NO,
         DEFAULT_MAX_MEMORY_PROTECTION_KEYS,
-        false);
+        ai.tegmentum.wasmtime4j.config.Enabled.NO);
   }
 
   /**
@@ -199,9 +199,9 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
       final int maxMemoriesPerModule,
       final int maxMemoriesPerComponent,
       final int tableElements,
-      final boolean memoryProtectionKeysEnabled,
+      final ai.tegmentum.wasmtime4j.config.Enabled memoryProtectionKeysEnabled,
       final int maxMemoryProtectionKeys,
-      final boolean pagemapScanEnabled) {
+      final ai.tegmentum.wasmtime4j.config.Enabled pagemapScanEnabled) {
     this.instancePoolSize = instancePoolSize;
     this.maxMemoryPerInstance = maxMemoryPerInstance;
     this.stackSize = stackSize;
@@ -359,6 +359,11 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
 
   @Override
   public boolean isMemoryProtectionKeysEnabled() {
+    return memoryProtectionKeysEnabled == ai.tegmentum.wasmtime4j.config.Enabled.YES;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.config.Enabled getMemoryProtectionKeys() {
     return memoryProtectionKeysEnabled;
   }
 
@@ -369,6 +374,11 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
 
   @Override
   public boolean isPagemapScanEnabled() {
+    return pagemapScanEnabled == ai.tegmentum.wasmtime4j.config.Enabled.YES;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.config.Enabled getPagemapScan() {
     return pagemapScanEnabled;
   }
 

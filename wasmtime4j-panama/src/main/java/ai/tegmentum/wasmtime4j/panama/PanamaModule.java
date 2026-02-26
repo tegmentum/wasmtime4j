@@ -396,6 +396,21 @@ public final class PanamaModule implements Module {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.ImageRange imageRange() throws WasmException {
+    ensureNotClosed();
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment startPtr = localArena.allocate(ValueLayout.JAVA_LONG);
+      final MemorySegment endPtr = localArena.allocate(ValueLayout.JAVA_LONG);
+      final int result = NATIVE_BINDINGS.moduleImageRange(nativeModule, startPtr, endPtr);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to get module image range");
+      }
+      return new ai.tegmentum.wasmtime4j.ImageRange(
+          startPtr.get(ValueLayout.JAVA_LONG, 0), endPtr.get(ValueLayout.JAVA_LONG, 0));
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.ResourcesRequired resourcesRequired() {
     ensureNotClosed();
     try (Arena localArena = Arena.ofConfined()) {

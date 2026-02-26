@@ -110,10 +110,10 @@ class CoreEnumsTest {
     }
 
     @Test
-    @DisplayName("ProfilingStrategy should have exactly 4 values")
-    void shouldHaveExactlyFourValues() {
+    @DisplayName("ProfilingStrategy should have exactly 5 values")
+    void shouldHaveExactlyFiveValues() {
       ProfilingStrategy[] values = ProfilingStrategy.values();
-      assertEquals(4, values.length, "ProfilingStrategy should have exactly 4 values");
+      assertEquals(5, values.length, "ProfilingStrategy should have exactly 5 values");
     }
 
     @Test
@@ -129,7 +129,7 @@ class CoreEnumsTest {
     @DisplayName("Enum should work with Arrays.asList")
     void enumShouldWorkWithArraysList() {
       var list = Arrays.asList(ProfilingStrategy.values());
-      assertEquals(4, list.size(), "List should contain 4 elements");
+      assertEquals(5, list.size(), "List should contain 5 elements");
       assertTrue(list.contains(ProfilingStrategy.JIT_DUMP), "List should contain JIT_DUMP");
     }
   }

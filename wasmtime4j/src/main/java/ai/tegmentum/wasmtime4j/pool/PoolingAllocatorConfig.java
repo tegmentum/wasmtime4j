@@ -385,6 +385,18 @@ public interface PoolingAllocatorConfig {
   boolean isMemoryProtectionKeysEnabled();
 
   /**
+   * Gets the memory protection keys setting as a tri-state Enabled value.
+   *
+   * <p>This is only relevant on Linux/x86 systems that support MPK. Using {@link
+   * ai.tegmentum.wasmtime4j.config.Enabled#AUTO} lets the runtime decide based on platform
+   * capabilities.
+   *
+   * @return the memory protection keys Enabled setting
+   * @since 1.1.0
+   */
+  ai.tegmentum.wasmtime4j.config.Enabled getMemoryProtectionKeys();
+
+  /**
    * Gets the maximum number of memory protection keys to use.
    *
    * <p>This is only relevant on Linux/x86 systems that support MPK. A value of 0 means MPK is
@@ -404,6 +416,18 @@ public interface PoolingAllocatorConfig {
    * @since 1.1.0
    */
   boolean isPagemapScanEnabled();
+
+  /**
+   * Gets the pagemap scan setting as a tri-state Enabled value.
+   *
+   * <p>This is a Linux 6.7+ feature that enables more efficient memory tracking. Using {@link
+   * ai.tegmentum.wasmtime4j.config.Enabled#AUTO} lets the runtime decide based on platform
+   * capabilities.
+   *
+   * @return the pagemap scan Enabled setting
+   * @since 1.1.0
+   */
+  ai.tegmentum.wasmtime4j.config.Enabled getPagemapScan();
 
   /**
    * Validates this configuration for consistency.

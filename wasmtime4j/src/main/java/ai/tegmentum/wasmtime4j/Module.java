@@ -557,6 +557,19 @@ public interface Module extends Closeable {
   }
 
   /**
+   * Gets the memory address range of the compiled image for this module.
+   *
+   * <p>This returns the range in the process's virtual address space where the compiled machine
+   * code for this module resides. This is useful for tools that need to identify which addresses
+   * belong to JIT-compiled WebAssembly code.
+   *
+   * @return the image range containing start and end addresses
+   * @throws WasmException if the module is no longer valid or the operation fails
+   * @since 1.1.0
+   */
+  ImageRange imageRange() throws WasmException;
+
+  /**
    * Checks if the module is still valid and usable.
    *
    * @return true if the module is valid, false otherwise

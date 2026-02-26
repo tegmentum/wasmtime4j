@@ -280,6 +280,31 @@ public final class JniComponentImpl implements Component {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.ImageRange imageRange() throws WasmException {
+    ensureValid();
+
+    try {
+      final long[] range =
+          JniComponent.nativeGetComponentImageRange(nativeComponent.getNativeHandle());
+      if (range == null || range.length < 2) {
+        throw new WasmException("Failed to get component image range");
+      }
+      return new ai.tegmentum.wasmtime4j.ImageRange(range[0], range[1]);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get component image range", e);
+    }
+  }
+
+  @Override
+  public void initializeCopyOnWriteImage() throws WasmException {
+    ensureValid();
+
+    JniComponent.nativeInitializeCopyOnWriteImage(nativeComponent.getNativeHandle());
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.component.ComponentEngine getComponentEngine() {
     return engine;
   }

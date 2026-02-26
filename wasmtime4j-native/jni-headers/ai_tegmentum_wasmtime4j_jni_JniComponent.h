@@ -169,6 +169,22 @@ JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeGetComponentImageRange
+ * Signature: (J)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentImageRange
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeInitializeCopyOnWriteImage
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInitializeCopyOnWriteImage
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
  * Method:    nativeDeserializeComponent
  * Signature: (J[B)J
  */

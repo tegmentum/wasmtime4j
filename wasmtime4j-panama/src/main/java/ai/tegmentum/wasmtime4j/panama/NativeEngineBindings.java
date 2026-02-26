@@ -2308,6 +2308,24 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Gets the image range of a compiled module.
+   *
+   * @param modulePtr pointer to the module
+   * @param startPtr output pointer for the start address (u64)
+   * @param endPtr output pointer for the end address (u64)
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleImageRange(
+      final MemorySegment modulePtr, final MemorySegment startPtr, final MemorySegment endPtr) {
+    validatePointer(modulePtr, "modulePtr");
+    validatePointer(startPtr, "startPtr");
+    validatePointer(endPtr, "endPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_image_range", Integer.class, modulePtr, startPtr, endPtr);
+  }
+
+  /**
    * Gets the resources required to instantiate a module.
    *
    * @param modulePtr pointer to the module

@@ -145,6 +145,14 @@ JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGe
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleImageRange
+ * Signature: (J)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleImageRange
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
  * Method:    nativeGetModuleText
  * Signature: (J)[B
  */

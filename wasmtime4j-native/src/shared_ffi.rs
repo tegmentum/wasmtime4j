@@ -453,6 +453,16 @@ pub mod module {
         core::initialize_copy_on_write_image(module)
     }
 
+    /// Shared implementation for getting the image range of a compiled module
+    ///
+    /// Returns the start and end addresses as `(usize, usize)`.
+    pub fn image_range_shared(module_ptr: *mut c_void) -> WasmtimeResult<(usize, usize)> {
+        validation::validate_not_null(module_ptr, "module")?;
+
+        let module = unsafe { core::get_module_ref(module_ptr)? };
+        Ok(core::get_module_image_range(module))
+    }
+
     /// Shared implementation for module deserialization
     ///
     /// Deserializes a module from bytes using shared logic.

@@ -259,6 +259,25 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.ImageRange imageRange()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    try {
+      final long[] range = nativeGetModuleImageRange(nativeHandle);
+      if (range == null || range.length < 2) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to get module image range");
+      }
+      return new ai.tegmentum.wasmtime4j.ImageRange(range[0], range[1]);
+    } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+      throw e;
+    } catch (final Throwable t) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to get module image range: " + t.getMessage());
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.ResourcesRequired resourcesRequired() {
     ensureNotClosed();
     final long[] data = nativeGetModuleResourcesRequired(nativeHandle);
@@ -447,6 +466,8 @@ public class JniModule extends JniResource implements Module {
   private static native boolean nativeInitializeCopyOnWriteImage(long moduleHandle);
 
   private static native long[] nativeGetModuleResourcesRequired(long moduleHandle);
+
+  private static native long[] nativeGetModuleImageRange(long moduleHandle);
 
   /**
    * Native method to get compiled machine code text from module.

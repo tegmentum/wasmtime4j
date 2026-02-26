@@ -19,5 +19,8 @@ public enum ProfilingStrategy {
   PERF_MAP,
 
   /** VTune profiling - integration with Intel VTune profiler. */
-  VTUNE
+  VTUNE,
+
+  /** Pulley profiling - profiling for the Pulley interpreter backend. */
+  PULLEY
 }

@@ -2566,6 +2566,35 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         maxTableOut);
   }
 
+  /**
+   * Gets the image range of a compiled component.
+   *
+   * @param componentPtr pointer to the component
+   * @param startPtr output pointer for the start address (u64)
+   * @param endPtr output pointer for the end address (u64)
+   * @return 0 on success, negative error code on failure
+   */
+  public int componentImageRange(
+      final MemorySegment componentPtr, final MemorySegment startPtr, final MemorySegment endPtr) {
+    validatePointer(componentPtr, "componentPtr");
+    validatePointer(startPtr, "startPtr");
+    validatePointer(endPtr, "endPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_component_image_range", Integer.class, componentPtr, startPtr, endPtr);
+  }
+
+  /**
+   * Pre-initializes a component's copy-on-write image for faster instantiation.
+   *
+   * @param componentPtr pointer to the component
+   * @return 0 on success, negative error code on failure
+   */
+  public int componentInitializeCowImage(final MemorySegment componentPtr) {
+    validatePointer(componentPtr, "componentPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_component_initialize_cow_image", Integer.class, componentPtr);
+  }
+
   // ===== ComponentInstancePre =====
 
   /**

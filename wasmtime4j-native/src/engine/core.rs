@@ -90,8 +90,8 @@ pub struct EngineConfigFfi {
     // Key-value pairs for arbitrary cranelift flags
     pub cranelift_flags: Option<Vec<CraneliftFlag>>,
 
-    // GC settings
-    pub gc_support: Option<bool>,
+    // GC settings: "auto", "yes", "no" (tri-state Enabled)
+    pub gc_support: Option<String>,
     // "auto", "deferred_reference_counting", "null"
     pub collector: Option<String>,
 
@@ -121,8 +121,8 @@ pub struct EngineConfigFfi {
     pub backtrace_details: Option<String>,
     pub generate_address_map: Option<bool>,
 
-    // Shared memory (independent of wasm threads)
-    pub shared_memory: Option<bool>,
+    // Shared memory (independent of wasm threads): "auto", "yes", "no" (tri-state Enabled)
+    pub shared_memory: Option<String>,
 
     // Target triple for cross-compilation
     pub target: Option<String>,
@@ -303,7 +303,13 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     }
 
     // GC settings
-    if let Some(v) = config.gc_support { builder = builder.gc_support(v); }
+    if let Some(ref v) = config.gc_support {
+        builder = builder.gc_support(match v.as_str() {
+            "yes" | "true" => true,
+            "no" | "false" => false,
+            _ => true, // auto defaults to enabled
+        });
+    }
     if let Some(ref c) = config.collector {
         builder = builder.collector(match c.as_str() {
             "deferred_reference_counting" => wasmtime::Collector::DeferredReferenceCounting,
@@ -335,6 +341,7 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
             "jitdump" => wasmtime::ProfilingStrategy::JitDump,
             "vtune" => wasmtime::ProfilingStrategy::VTune,
             "perfmap" => wasmtime::ProfilingStrategy::PerfMap,
+            "pulley" => wasmtime::ProfilingStrategy::Pulley,
             _ => wasmtime::ProfilingStrategy::None,
         });
     }
@@ -378,8 +385,12 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     }
 
     // Shared memory (independent of wasm threads)
-    if let Some(v) = config.shared_memory {
-        builder = builder.shared_memory(v);
+    if let Some(ref v) = config.shared_memory {
+        builder = builder.shared_memory(match v.as_str() {
+            "yes" | "true" => true,
+            "no" | "false" => false,
+            _ => false, // auto defaults to disabled
+        });
     }
 
     // Target triple for cross-compilation

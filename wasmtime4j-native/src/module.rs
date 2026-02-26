@@ -545,6 +545,14 @@ impl Module {
             })
     }
 
+    /// Get the memory address range of the compiled image for this module.
+    ///
+    /// Returns the start and end addresses of the range as `(usize, usize)`.
+    pub fn image_range(&self) -> (usize, usize) {
+        let range = self.inner.image_range();
+        (range.start as usize, range.end as usize)
+    }
+
     /// Get the resources required to instantiate this module.
     ///
     /// Returns a tuple of 8 values:
@@ -1283,6 +1291,11 @@ pub mod core {
     /// Core function to initialize copy-on-write image
     pub fn initialize_copy_on_write_image(module: &Module) -> WasmtimeResult<()> {
         module.initialize_copy_on_write_image()
+    }
+
+    /// Core function to get the image range of a compiled module
+    pub fn get_module_image_range(module: &Module) -> (usize, usize) {
+        module.image_range()
     }
 
     /// Core function to get module size in bytes

@@ -659,3 +659,54 @@ pub extern "C" fn wasmtime4j_panama_free_concurrent_result(ptr: *mut u8, len: c_
         }
     }
 }
+
+/// Get image range from component (Panama FFI version)
+///
+/// Returns 0 on success, start_ptr and end_ptr are set.
+/// Returns -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_component_image_range(
+    component_ptr: *mut c_void,
+    start_ptr: *mut u64,
+    end_ptr: *mut u64,
+) -> c_int {
+    if component_ptr.is_null() || start_ptr.is_null() || end_ptr.is_null() {
+        return -1;
+    }
+
+    match unsafe {
+        crate::component::core::get_component_ref(component_ptr)
+    } {
+        Ok(component) => {
+            let (start, end) = crate::component::core::get_component_image_range(component);
+            unsafe {
+                *start_ptr = start as u64;
+                *end_ptr = end as u64;
+            }
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Initialize copy-on-write image for faster instantiation (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_component_initialize_cow_image(
+    component_ptr: *mut c_void,
+) -> c_int {
+    if component_ptr.is_null() {
+        return -1;
+    }
+
+    match unsafe {
+        crate::component::core::get_component_ref(component_ptr)
+    } {
+        Ok(component) => {
+            match crate::component::core::initialize_copy_on_write_image(component) {
+                Ok(()) => 0,
+                Err(_) => -1,
+            }
+        }
+        Err(_) => -1,
+    }
+}

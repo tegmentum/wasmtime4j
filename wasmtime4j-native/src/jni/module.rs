@@ -1409,3 +1409,45 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         }
     }
 }
+
+/// JNI binding for Module.imageRange() - returns long[2] = [start, end]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleImageRange(
+    mut env: JNIEnv,
+    _class: JClass,
+    module_ptr: jlong,
+) -> jlongArray {
+    if module_ptr == 0 {
+        let _ = jni_utils::throw_jni_exception(
+            &mut env,
+            &crate::error::WasmtimeError::InvalidParameter {
+                message: "Module pointer cannot be null".to_string(),
+            },
+        );
+        return std::ptr::null_mut();
+    }
+
+    let data = (|| -> crate::error::WasmtimeResult<[i64; 2]> {
+        let (start, end) = crate::shared_ffi::module::image_range_shared(
+            module_ptr as *mut std::os::raw::c_void,
+        )?;
+        Ok([start as i64, end as i64])
+    })();
+
+    match data {
+        Ok(values) => {
+            let result = env.new_long_array(2);
+            match result {
+                Ok(arr) => {
+                    let _ = env.set_long_array_region(&arr, 0, &values);
+                    arr.into_raw()
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(e) => {
+            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+    }
+}

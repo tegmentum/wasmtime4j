@@ -696,6 +696,32 @@ pub extern "C" fn wasmtime4j_panama_module_address_map(
     }
 }
 
+/// Get image range from module (Panama FFI version)
+///
+/// Returns 0 on success, start_ptr and end_ptr are set.
+/// Returns -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_image_range(
+    module_ptr: *mut c_void,
+    start_ptr: *mut u64,
+    end_ptr: *mut u64,
+) -> c_int {
+    if module_ptr.is_null() || start_ptr.is_null() || end_ptr.is_null() {
+        return -1;
+    }
+
+    match crate::shared_ffi::module::image_range_shared(module_ptr) {
+        Ok((start, end)) => {
+            unsafe {
+                *start_ptr = start as u64;
+                *end_ptr = end as u64;
+            }
+            0
+        }
+        Err(_) => -1,
+    }
+}
+
 /// Destroy a WebAssembly module (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_module_destroy(module_ptr: *mut c_void) {

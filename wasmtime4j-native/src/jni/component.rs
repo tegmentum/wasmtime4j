@@ -1009,3 +1009,77 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetSu
         }
     }
 }
+
+/// JNI binding for Component.imageRange() - returns long[2] = [start, end]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentImageRange(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+) -> jlongArray {
+    if component_ptr == 0 {
+        let _ = jni_utils::throw_jni_exception(
+            &mut env,
+            &crate::error::WasmtimeError::InvalidParameter {
+                message: "Component pointer cannot be null".to_string(),
+            },
+        );
+        return std::ptr::null_mut();
+    }
+
+    let data = (|| -> crate::error::WasmtimeResult<[i64; 2]> {
+        let component = unsafe {
+            crate::component::core::get_component_ref(
+                component_ptr as *const std::os::raw::c_void,
+            )?
+        };
+        let (start, end) = crate::component::core::get_component_image_range(component);
+        Ok([start as i64, end as i64])
+    })();
+
+    match data {
+        Ok(values) => {
+            let result = env.new_long_array(2);
+            match result {
+                Ok(arr) => {
+                    let _ = env.set_long_array_region(&arr, 0, &values);
+                    arr.into_raw()
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(e) => {
+            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// JNI binding for Component.initializeCopyOnWriteImage()
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInitializeCopyOnWriteImage(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+) -> jboolean {
+    if component_ptr == 0 {
+        return 0;
+    }
+
+    let result = (|| -> crate::error::WasmtimeResult<()> {
+        let component = unsafe {
+            crate::component::core::get_component_ref(
+                component_ptr as *const std::os::raw::c_void,
+            )?
+        };
+        crate::component::core::initialize_copy_on_write_image(component)
+    })();
+
+    match result {
+        Ok(()) => 1,
+        Err(e) => {
+            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+            0
+        }
+    }
+}

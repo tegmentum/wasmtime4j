@@ -91,13 +91,15 @@ public abstract class AbstractPoolingAllocatorConfigBuilder
   protected int tableElements = PoolingAllocatorConfig.DEFAULT_TABLE_ELEMENTS;
 
   /** Memory protection keys enabled. */
-  protected boolean memoryProtectionKeysEnabled = false;
+  protected ai.tegmentum.wasmtime4j.config.Enabled memoryProtectionKeysEnabled =
+      ai.tegmentum.wasmtime4j.config.Enabled.NO;
 
   /** Maximum memory protection keys. */
   protected int maxMemoryProtectionKeys = PoolingAllocatorConfig.DEFAULT_MAX_MEMORY_PROTECTION_KEYS;
 
   /** Pagemap scan enabled. */
-  protected boolean pagemapScanEnabled = false;
+  protected ai.tegmentum.wasmtime4j.config.Enabled pagemapScanEnabled =
+      ai.tegmentum.wasmtime4j.config.Enabled.NO;
 
   @Override
   public PoolingAllocatorConfigBuilder instancePoolSize(final int size) {
@@ -320,6 +322,16 @@ public abstract class AbstractPoolingAllocatorConfigBuilder
 
   @Override
   public PoolingAllocatorConfigBuilder memoryProtectionKeysEnabled(final boolean enabled) {
+    this.memoryProtectionKeysEnabled = ai.tegmentum.wasmtime4j.config.Enabled.fromBoolean(enabled);
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder memoryProtectionKeysEnabled(
+      final ai.tegmentum.wasmtime4j.config.Enabled enabled) {
+    if (enabled == null) {
+      throw new IllegalArgumentException("enabled cannot be null");
+    }
     this.memoryProtectionKeysEnabled = enabled;
     return this;
   }
@@ -335,6 +347,16 @@ public abstract class AbstractPoolingAllocatorConfigBuilder
 
   @Override
   public PoolingAllocatorConfigBuilder pagemapScanEnabled(final boolean enabled) {
+    this.pagemapScanEnabled = ai.tegmentum.wasmtime4j.config.Enabled.fromBoolean(enabled);
+    return this;
+  }
+
+  @Override
+  public PoolingAllocatorConfigBuilder pagemapScanEnabled(
+      final ai.tegmentum.wasmtime4j.config.Enabled enabled) {
+    if (enabled == null) {
+      throw new IllegalArgumentException("enabled cannot be null");
+    }
     this.pagemapScanEnabled = enabled;
     return this;
   }
