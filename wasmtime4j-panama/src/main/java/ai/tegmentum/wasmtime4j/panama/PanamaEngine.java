@@ -161,6 +161,17 @@ public final class PanamaEngine implements Engine {
     return new PanamaStore(this);
   }
 
+  /**
+   * Tries to create a store using OOM-safe allocation.
+   *
+   * @return a new PanamaStore
+   * @throws WasmException if allocation fails
+   */
+  Store tryCreateStore() throws WasmException {
+    ensureNotClosed();
+    return PanamaStore.tryCreate(this);
+  }
+
   @Override
   public Store createStore(final Object data) throws WasmException {
     final Store store = createStore();
@@ -527,6 +538,22 @@ public final class PanamaEngine implements Engine {
   }
 
   @Override
+  public boolean isRecording() {
+    if (resourceHandle.isClosed()) {
+      return false;
+    }
+    return NATIVE_BINDINGS.engineIsRecording(nativeEngine);
+  }
+
+  @Override
+  public boolean isReplaying() {
+    if (resourceHandle.isClosed()) {
+      return false;
+    }
+    return NATIVE_BINDINGS.engineIsReplaying(nativeEngine);
+  }
+
+  @Override
   public WasmMemory createSharedMemory(final int initialPages, final int maxPages)
       throws WasmException {
     if (initialPages < 0) {
@@ -567,6 +594,42 @@ public final class PanamaEngine implements Engine {
     ensureNotClosed();
 
     return new PanamaGuestProfiler(nativeEngine, moduleName, interval.toNanos(), modules);
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.debug.GuestProfiler createComponentGuestProfiler(
+      final String componentName,
+      final java.time.Duration interval,
+      final ai.tegmentum.wasmtime4j.component.Component component,
+      final java.util.Map<String, ai.tegmentum.wasmtime4j.Module> extraModules)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (componentName == null || componentName.isEmpty()) {
+      throw new IllegalArgumentException("componentName cannot be null or empty");
+    }
+    if (interval == null) {
+      throw new IllegalArgumentException("interval cannot be null");
+    }
+    if (component == null) {
+      throw new IllegalArgumentException("component cannot be null");
+    }
+    if (!(component instanceof PanamaComponentImpl)) {
+      throw new IllegalArgumentException("Component must be a Panama component");
+    }
+    ensureNotClosed();
+
+    final java.lang.foreign.MemorySegment componentPtr =
+        ((PanamaComponentImpl) component).getNativeHandle();
+    if (componentPtr == null || componentPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Component has invalid native handle");
+    }
+
+    return new PanamaGuestProfiler(
+        nativeEngine,
+        componentName,
+        interval.toNanos(),
+        componentPtr,
+        extraModules != null ? extraModules : java.util.Collections.emptyMap());
   }
 
   @Override

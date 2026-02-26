@@ -244,6 +244,14 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
 
     addFunctionBinding(
+        "wasmtime4j_panama_engine_is_recording",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_engine_is_replaying",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
         "wasmtime4j_panama_engine_precompile_compatibility_hash",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
@@ -1734,6 +1742,30 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Checks if the engine is configured for execution recording.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if recording is enabled, false otherwise
+   */
+  public boolean engineIsRecording(final MemorySegment enginePtr) {
+    final int result =
+        callNativeFunction("wasmtime4j_panama_engine_is_recording", Integer.class, enginePtr);
+    return result == 1;
+  }
+
+  /**
+   * Checks if the engine is configured for execution replaying.
+   *
+   * @param enginePtr pointer to the engine
+   * @return true if replaying is enabled, false otherwise
+   */
+  public boolean engineIsReplaying(final MemorySegment enginePtr) {
+    final int result =
+        callNativeFunction("wasmtime4j_panama_engine_is_replaying", Integer.class, enginePtr);
+    return result == 1;
+  }
+
+  /**
    * Gets the reference count.
    *
    * @param enginePtr pointer to the engine
@@ -2504,6 +2536,78 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Loads a module from a trusted file, skipping code integrity validation.
+   *
+   * @param enginePtr pointer to the engine
+   * @param pathPtr pointer to the file path (null-terminated string)
+   * @param modulePtrPtr pointer to store the loaded module pointer
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleFromTrustedFile(
+      final MemorySegment enginePtr,
+      final MemorySegment pathPtr,
+      final MemorySegment modulePtrPtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(pathPtr, "pathPtr");
+    validatePointer(modulePtrPtr, "modulePtrPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_from_trusted_file",
+        Integer.class,
+        enginePtr,
+        pathPtr,
+        modulePtrPtr);
+  }
+
+  /**
+   * Deserializes a module from raw bytes (no file format wrapper).
+   *
+   * @param enginePtr pointer to the engine
+   * @param dataPtr pointer to the raw module bytes
+   * @param len length of the raw data
+   * @param modulePtrPtr pointer to store the deserialized module pointer
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleDeserializeRaw(
+      final MemorySegment enginePtr,
+      final MemorySegment dataPtr,
+      final long len,
+      final MemorySegment modulePtrPtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(dataPtr, "dataPtr");
+    validatePointer(modulePtrPtr, "modulePtrPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_deserialize_raw",
+        Integer.class,
+        enginePtr,
+        dataPtr,
+        len,
+        modulePtrPtr);
+  }
+
+  /**
+   * Deserializes a module from an open file descriptor (Unix only).
+   *
+   * @param enginePtr pointer to the engine
+   * @param fd the file descriptor
+   * @param modulePtrPtr pointer to store the deserialized module pointer
+   * @return 0 on success, negative error code on failure
+   */
+  public int moduleDeserializeOpenFile(
+      final MemorySegment enginePtr, final int fd, final MemorySegment modulePtrPtr) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(modulePtrPtr, "modulePtrPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_module_deserialize_open_file",
+        Integer.class,
+        enginePtr,
+        fd,
+        modulePtrPtr);
+  }
+
+  /**
    * Frees a byte array allocated by native code.
    *
    * @param dataPtr pointer to the data
@@ -2817,6 +2921,41 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Creates a new guest profiler for a component.
+   *
+   * @param enginePtr pointer to the engine
+   * @param componentNamePtr pointer to component name C string
+   * @param intervalNanos sampling interval in nanoseconds
+   * @param componentPtr pointer to the component
+   * @param extraModulePtrs pointer to array of extra module pointers
+   * @param extraModuleNamePtrs pointer to array of extra module name C strings
+   * @param extraModuleCount number of extra modules
+   * @return pointer to the profiler, or NULL on failure
+   */
+  public MemorySegment guestProfilerNewComponent(
+      final MemorySegment enginePtr,
+      final MemorySegment componentNamePtr,
+      final long intervalNanos,
+      final MemorySegment componentPtr,
+      final MemorySegment extraModulePtrs,
+      final MemorySegment extraModuleNamePtrs,
+      final int extraModuleCount) {
+    validatePointer(enginePtr, "enginePtr");
+    validatePointer(componentNamePtr, "componentNamePtr");
+    validatePointer(componentPtr, "componentPtr");
+    return callNativeFunction(
+        "wasmtime4j_guest_profiler_new_component",
+        MemorySegment.class,
+        enginePtr,
+        componentNamePtr,
+        intervalNanos,
+        componentPtr,
+        extraModulePtrs,
+        extraModuleNamePtrs,
+        extraModuleCount);
+  }
+
+  /**
    * Collects a stack sample.
    *
    * @param profilerPtr pointer to the profiler
@@ -3105,6 +3244,77 @@ public final class NativeEngineBindings extends NativeBindingsBase {
       serializerFreeBuffer(dataPtr, dataLen);
 
       return serializedBytes;
+    }
+  }
+
+  /**
+   * Adds compile-time builtins from binary bytes to the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @param name the name of the builtin component
+   * @param wasmBytes the wasm binary bytes
+   */
+  public void codeBuilderCompileTimeBuiltinsBinary(
+      final MemorySegment builderPtr, final String name, final byte[] wasmBytes) {
+    validatePointer(builderPtr, "builderPtr");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final byte[] nameBytes = name.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+      final MemorySegment wasmSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
+      callNativeFunction(
+          "wasmtime4j_panama_code_builder_compile_time_builtins_binary",
+          Void.class,
+          builderPtr,
+          nameSegment,
+          nameBytes.length,
+          wasmSegment,
+          wasmBytes.length);
+    }
+  }
+
+  /**
+   * Adds compile-time builtins from binary or text bytes to the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @param name the name of the builtin component
+   * @param wasmBytes the wasm binary or WAT text bytes
+   */
+  public void codeBuilderCompileTimeBuiltinsBinaryOrText(
+      final MemorySegment builderPtr, final String name, final byte[] wasmBytes) {
+    validatePointer(builderPtr, "builderPtr");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final byte[] nameBytes = name.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+      final MemorySegment wasmSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
+      callNativeFunction(
+          "wasmtime4j_panama_code_builder_compile_time_builtins_binary_or_text",
+          Void.class,
+          builderPtr,
+          nameSegment,
+          nameBytes.length,
+          wasmSegment,
+          wasmBytes.length);
+    }
+  }
+
+  /**
+   * Exposes unsafe intrinsics at the given import name on the code builder.
+   *
+   * @param builderPtr pointer to the code builder
+   * @param importName the import name for unsafe intrinsics
+   */
+  public void codeBuilderExposeUnsafeIntrinsics(
+      final MemorySegment builderPtr, final String importName) {
+    validatePointer(builderPtr, "builderPtr");
+    try (Arena tempArena = Arena.ofConfined()) {
+      final byte[] nameBytes = importName.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+      callNativeFunction(
+          "wasmtime4j_panama_code_builder_expose_unsafe_intrinsics",
+          Void.class,
+          builderPtr,
+          nameSegment,
+          nameBytes.length);
     }
   }
 

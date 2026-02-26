@@ -72,6 +72,7 @@ pub enum FfiWasmFeature {
     ComponentModelErrorContext = 21,
     ComponentModelGc = 22,
     ComponentModelThreading = 23,
+    ComponentModelFixedLengthLists = 24,
 }
 
 impl FfiWasmFeature {
@@ -102,8 +103,9 @@ impl FfiWasmFeature {
             21 => Ok(WasmFeature::ComponentModelErrorContext),
             22 => Ok(WasmFeature::ComponentModelGc),
             23 => Ok(WasmFeature::ComponentModelThreading),
+            24 => Ok(WasmFeature::ComponentModelFixedLengthLists),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-23", value),
+                message: format!("Invalid WASM feature: {}. Expected 0-24", value),
             }),
         }
     }
@@ -111,9 +113,9 @@ impl FfiWasmFeature {
     /// Validate FFI value without conversion (for early parameter checking)
     pub fn validate(value: i32) -> WasmtimeResult<()> {
         match value {
-            0..=23 => Ok(()),
+            0..=24 => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
-                message: format!("Invalid WASM feature: {}. Expected 0-23", value),
+                message: format!("Invalid WASM feature: {}. Expected 0-24", value),
             }),
         }
     }
@@ -145,6 +147,7 @@ impl FfiWasmFeature {
             FfiWasmFeature::ComponentModelErrorContext => WasmFeature::ComponentModelErrorContext,
             FfiWasmFeature::ComponentModelGc => WasmFeature::ComponentModelGc,
             FfiWasmFeature::ComponentModelThreading => WasmFeature::ComponentModelThreading,
+            FfiWasmFeature::ComponentModelFixedLengthLists => WasmFeature::ComponentModelFixedLengthLists,
         }
     }
 
@@ -175,6 +178,7 @@ impl FfiWasmFeature {
             WasmFeature::ComponentModelErrorContext => FfiWasmFeature::ComponentModelErrorContext,
             WasmFeature::ComponentModelGc => FfiWasmFeature::ComponentModelGc,
             WasmFeature::ComponentModelThreading => FfiWasmFeature::ComponentModelThreading,
+            WasmFeature::ComponentModelFixedLengthLists => FfiWasmFeature::ComponentModelFixedLengthLists,
         }
     }
 }
@@ -722,8 +726,8 @@ mod tests {
 
     #[test]
     fn test_wasm_feature_all_values() {
-        // Test all valid WasmFeature values (0-23)
-        for i in 0..=23 {
+        // Test all valid WasmFeature values (0-24)
+        for i in 0..=24 {
             let result = FfiWasmFeature::from_ffi(i);
             assert!(result.is_ok(), "Feature {} should be valid", i);
         }
@@ -731,8 +735,8 @@ mod tests {
 
     #[test]
     fn test_wasm_feature_invalid_values() {
-        // Test invalid feature values (valid range is 0-22)
-        for invalid in [24, 100, -1, i32::MAX, i32::MIN] {
+        // Test invalid feature values (valid range is 0-23)
+        for invalid in [25, 100, -1, i32::MAX, i32::MIN] {
             assert!(
                 FfiWasmFeature::from_ffi(invalid).is_err(),
                 "Feature {} should be invalid",

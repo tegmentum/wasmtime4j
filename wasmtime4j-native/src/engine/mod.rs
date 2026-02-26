@@ -256,6 +256,9 @@ impl Engine {
             WasmFeature::ComponentModelThreading => {
                 self.config_summary.wasm_component_model_threading
             }
+            WasmFeature::ComponentModelFixedLengthLists => {
+                self.config_summary.wasm_component_model_fixed_length_lists
+            }
         }
     }
 
@@ -343,6 +346,18 @@ impl Engine {
         }
     }
 
+    /// Check if the engine is configured for execution recording
+    #[cfg(feature = "rr")]
+    pub fn is_recording(&self) -> bool {
+        self.inner.is_recording()
+    }
+
+    /// Check if the engine is configured for execution replaying
+    #[cfg(feature = "rr")]
+    pub fn is_replaying(&self) -> bool {
+        self.inner.is_replaying()
+    }
+
     /// Increment the epoch counter
     ///
     /// This method is signal-safe and performs only an atomic increment operation.
@@ -410,6 +425,8 @@ pub enum WasmFeature {
     ComponentModelGc,
     /// WebAssembly component model threading support
     ComponentModelThreading,
+    /// WebAssembly component model fixed-length lists support
+    ComponentModelFixedLengthLists,
 }
 
 impl Default for Engine {

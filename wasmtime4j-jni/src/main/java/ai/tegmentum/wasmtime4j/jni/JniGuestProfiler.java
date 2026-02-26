@@ -74,6 +74,67 @@ final class JniGuestProfiler implements GuestProfiler {
     this.finished = false;
   }
 
+  /**
+   * Creates a new JNI guest profiler for a component.
+   *
+   * @param engineHandle the native engine handle
+   * @param componentName the profile label
+   * @param intervalNanos sampling interval hint in nanoseconds
+   * @param componentHandle the native component handle
+   * @param extraModules map of extra module names to modules
+   * @throws WasmException if profiler creation fails
+   */
+  JniGuestProfiler(
+      final long engineHandle,
+      final String componentName,
+      final long intervalNanos,
+      final long componentHandle,
+      final Map<String, Module> extraModules)
+      throws WasmException {
+    if (engineHandle == 0) {
+      throw new IllegalArgumentException("engineHandle cannot be 0");
+    }
+    if (componentName == null || componentName.isEmpty()) {
+      throw new IllegalArgumentException("componentName cannot be null or empty");
+    }
+    if (componentHandle == 0) {
+      throw new IllegalArgumentException("componentHandle cannot be 0");
+    }
+
+    // Extract extra native module handles and names
+    final int extraCount = extraModules != null ? extraModules.size() : 0;
+    final long[] moduleHandles = new long[extraCount];
+    final String[] moduleNames = new String[extraCount];
+    if (extraModules != null) {
+      int idx = 0;
+      for (final Map.Entry<String, Module> entry : extraModules.entrySet()) {
+        moduleNames[idx] = entry.getKey();
+        if (!(entry.getValue() instanceof JniModule)) {
+          throw new WasmException("Module '" + entry.getKey() + "' must be a JNI module");
+        }
+        moduleHandles[idx] = ((JniModule) entry.getValue()).getNativeHandle();
+        if (moduleHandles[idx] == 0) {
+          throw new WasmException("Module '" + entry.getKey() + "' has invalid native handle");
+        }
+        idx++;
+      }
+    }
+
+    this.nativeHandle =
+        nativeGuestProfilerCreateComponent(
+            engineHandle,
+            componentName,
+            intervalNanos,
+            componentHandle,
+            moduleHandles,
+            moduleNames);
+    if (this.nativeHandle == 0) {
+      throw new WasmException(
+          "Failed to create component GuestProfiler (is guest debugging enabled on the engine?)");
+    }
+    this.finished = false;
+  }
+
   @Override
   public void sample(final Store store, final Duration delta) throws WasmException {
     if (store == null) {
@@ -183,6 +244,25 @@ final class JniGuestProfiler implements GuestProfiler {
       long intervalNanos,
       long[] moduleHandles,
       String[] moduleNames);
+
+  /**
+   * Creates a new guest profiler for a component.
+   *
+   * @param engineHandle the native engine handle
+   * @param componentName the profile label
+   * @param intervalNanos sampling interval in nanoseconds
+   * @param componentHandle the native component handle
+   * @param extraModuleHandles array of extra native module handles
+   * @param extraModuleNames array of extra module names
+   * @return the native profiler handle, or 0 on failure
+   */
+  private static native long nativeGuestProfilerCreateComponent(
+      long engineHandle,
+      String componentName,
+      long intervalNanos,
+      long componentHandle,
+      long[] extraModuleHandles,
+      String[] extraModuleNames);
 
   /**
    * Collects a stack sample.

@@ -222,6 +222,116 @@ public final class JniInstance extends JniResource implements Instance {
     }
   }
 
+  @Override
+  public Optional<WasmFunction> debugFunction(final int functionIndex) {
+    ensureNotClosed();
+    try {
+      final JniStore jniStore = (JniStore) store;
+      final long functionHandle =
+          nativeDebugFunction(getNativeHandle(), jniStore.getNativeHandle(), functionIndex);
+      if (functionHandle == 0) {
+        return Optional.empty();
+      }
+      final long moduleHandle =
+          (module instanceof JniModule) ? ((JniModule) module).getNativeHandle() : 0;
+      return Optional.of(new JniFunction(functionHandle, "", moduleHandle, jniStore));
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in debugFunction: " + functionIndex, e);
+    }
+  }
+
+  @Override
+  public Optional<WasmGlobal> debugGlobal(final int globalIndex) {
+    ensureNotClosed();
+    try {
+      final long globalHandle =
+          nativeDebugGlobal(getNativeHandle(), ((JniStore) store).getNativeHandle(), globalIndex);
+      if (globalHandle == 0) {
+        return Optional.empty();
+      }
+      return Optional.of(new JniGlobal(globalHandle, (JniStore) store));
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in debugGlobal: " + globalIndex, e);
+    }
+  }
+
+  @Override
+  public Optional<WasmMemory> debugMemory(final int memoryIndex) {
+    ensureNotClosed();
+    try {
+      final long memoryHandle =
+          nativeDebugMemory(getNativeHandle(), ((JniStore) store).getNativeHandle(), memoryIndex);
+      if (memoryHandle == 0) {
+        return Optional.empty();
+      }
+      final JniMemory memory = new JniMemory(memoryHandle, (JniStore) store);
+      memory.setInstanceHandle(getNativeHandle());
+      return Optional.of(memory);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in debugMemory: " + memoryIndex, e);
+    }
+  }
+
+  @Override
+  public Optional<WasmMemory> debugSharedMemory(final int memoryIndex) {
+    ensureNotClosed();
+    try {
+      final long memoryHandle =
+          nativeDebugSharedMemory(
+              getNativeHandle(), ((JniStore) store).getNativeHandle(), memoryIndex);
+      if (memoryHandle == 0) {
+        return Optional.empty();
+      }
+      final JniMemory memory = new JniMemory(memoryHandle, (JniStore) store);
+      memory.setInstanceHandle(getNativeHandle());
+      return Optional.of(memory);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in debugSharedMemory: " + memoryIndex, e);
+    }
+  }
+
+  @Override
+  public Optional<WasmTable> debugTable(final int tableIndex) {
+    ensureNotClosed();
+    try {
+      final long tableHandle =
+          nativeDebugTable(getNativeHandle(), ((JniStore) store).getNativeHandle(), tableIndex);
+      if (tableHandle == 0) {
+        return Optional.empty();
+      }
+      return Optional.of(new JniTable(tableHandle, (JniStore) store));
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in debugTable: " + tableIndex, e);
+    }
+  }
+
+  @Override
+  public Optional<Tag> debugTag(final int tagIndex) {
+    ensureNotClosed();
+    try {
+      final long tagHandle =
+          nativeDebugTag(getNativeHandle(), ((JniStore) store).getNativeHandle(), tagIndex);
+      if (tagHandle == 0) {
+        return Optional.empty();
+      }
+      return Optional.of(new JniTag(tagHandle, ((JniStore) store).getNativeHandle()));
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException("Unexpected error in debugTag: " + tagIndex, e);
+    }
+  }
+
   /**
    * Checks if this instance has an export with the given name.
    *
@@ -491,6 +601,23 @@ public final class JniInstance extends JniResource implements Instance {
   private static native long nativeGetGlobal(long instanceHandle, long storeHandle, String name);
 
   private static native long nativeGetTag(long instanceHandle, long storeHandle, String name);
+
+  private static native long nativeDebugFunction(
+      long instanceHandle, long storeHandle, int functionIndex);
+
+  private static native long nativeDebugGlobal(
+      long instanceHandle, long storeHandle, int globalIndex);
+
+  private static native long nativeDebugMemory(
+      long instanceHandle, long storeHandle, int memoryIndex);
+
+  private static native long nativeDebugSharedMemory(
+      long instanceHandle, long storeHandle, int memoryIndex);
+
+  private static native long nativeDebugTable(
+      long instanceHandle, long storeHandle, int tableIndex);
+
+  private static native long nativeDebugTag(long instanceHandle, long storeHandle, int tagIndex);
 
   /**
    * Checks if an instance has an export with the given name.

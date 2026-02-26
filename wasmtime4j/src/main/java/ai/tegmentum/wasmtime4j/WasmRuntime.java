@@ -101,6 +101,20 @@ public interface WasmRuntime extends Closeable {
   Store createStore(final Engine engine) throws WasmException;
 
   /**
+   * Tries to create a new store, returning the store or throwing on allocation failure.
+   *
+   * <p>Unlike {@link #createStore(Engine)}, this method uses OOM-safe allocation internally.
+   * Returns the store on success, or throws WasmException if allocation fails.
+   *
+   * @param engine the engine to create the store for
+   * @return a new Store instance
+   * @throws WasmException if store allocation fails
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.1.0
+   */
+  Store tryCreateStore(final Engine engine) throws WasmException;
+
+  /**
    * Creates a new store with custom configuration.
    *
    * <p>This method allows creating a store with specific fuel limits, memory limits, and execution
@@ -504,6 +518,52 @@ public interface WasmRuntime extends Closeable {
    * @since 1.0.0
    */
   Module deserializeModuleFile(Engine engine, java.nio.file.Path path) throws WasmException;
+
+  /**
+   * Loads a module from a trusted file, skipping code integrity validation.
+   *
+   * <p><strong>Warning:</strong> This method is unsafe. It trusts that the file content has not
+   * been tampered with. Only use this with files that you control and trust.
+   *
+   * @param engine the engine to use for loading
+   * @param path the path to the trusted module file
+   * @return the loaded Module
+   * @throws WasmException if loading fails
+   * @throws IllegalArgumentException if engine or path is null
+   * @since 1.0.0
+   */
+  Module moduleFromTrustedFile(Engine engine, java.nio.file.Path path) throws WasmException;
+
+  /**
+   * Deserializes a module from raw bytes without the file format wrapper.
+   *
+   * <p><strong>Warning:</strong> This method is unsafe. The input bytes must be from a trusted
+   * source as no validation is performed. Only use with bytes from a trusted compilation.
+   *
+   * @param engine the engine to use for deserialization
+   * @param bytes the raw serialized module bytes
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   * @throws IllegalArgumentException if engine or bytes is null
+   * @since 1.0.0
+   */
+  Module deserializeModuleRaw(Engine engine, byte[] bytes) throws WasmException;
+
+  /**
+   * Deserializes a module from an already-open file descriptor.
+   *
+   * <p><strong>Warning:</strong> This method is unsafe and platform-specific (Unix only). The file
+   * descriptor must refer to a trusted serialized module. The file descriptor is consumed by this
+   * operation.
+   *
+   * @param engine the engine to use for deserialization
+   * @param fd the open file descriptor
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.0.0
+   */
+  Module deserializeModuleOpenFile(Engine engine, int fd) throws WasmException;
 
   /**
    * Eagerly initializes thread-local state needed for Wasmtime on the current thread.

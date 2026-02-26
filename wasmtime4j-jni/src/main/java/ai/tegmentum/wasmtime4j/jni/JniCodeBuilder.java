@@ -101,6 +101,42 @@ final class JniCodeBuilder implements CodeBuilder {
   }
 
   @Override
+  public CodeBuilder compileTimeBuiltinsBinary(final String name, final byte[] bytes) {
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("name cannot be null or empty");
+    }
+    if (bytes == null || bytes.length == 0) {
+      throw new IllegalArgumentException("bytes cannot be null or empty");
+    }
+    ensureNotClosed();
+    nativeCompileTimeBuiltinsBinary(nativeHandle, name, bytes);
+    return this;
+  }
+
+  @Override
+  public CodeBuilder compileTimeBuiltinsBinaryOrText(final String name, final byte[] bytes) {
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("name cannot be null or empty");
+    }
+    if (bytes == null || bytes.length == 0) {
+      throw new IllegalArgumentException("bytes cannot be null or empty");
+    }
+    ensureNotClosed();
+    nativeCompileTimeBuiltinsBinaryOrText(nativeHandle, name, bytes);
+    return this;
+  }
+
+  @Override
+  public CodeBuilder exposeUnsafeIntrinsics(final String importName) {
+    if (importName == null || importName.isEmpty()) {
+      throw new IllegalArgumentException("importName cannot be null or empty");
+    }
+    ensureNotClosed();
+    nativeExposeUnsafeIntrinsics(nativeHandle, importName);
+    return this;
+  }
+
+  @Override
   public Module compileModule() throws WasmException {
     ensureNotClosed();
     final long moduleHandle = nativeCompileModule(nativeHandle);
@@ -167,6 +203,14 @@ final class JniCodeBuilder implements CodeBuilder {
   private static native int nativeDwarfPackage(long builderHandle, byte[] bytes);
 
   private static native void nativeHint(long builderHandle, int hintOrdinal);
+
+  private static native void nativeCompileTimeBuiltinsBinary(
+      long builderHandle, String name, byte[] bytes);
+
+  private static native void nativeCompileTimeBuiltinsBinaryOrText(
+      long builderHandle, String name, byte[] bytes);
+
+  private static native void nativeExposeUnsafeIntrinsics(long builderHandle, String importName);
 
   private static native long nativeCompileModule(long builderHandle);
 

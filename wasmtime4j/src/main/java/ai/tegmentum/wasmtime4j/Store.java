@@ -99,6 +99,34 @@ public interface Store extends Closeable {
   long consumeFuel(final long fuel) throws WasmException;
 
   /**
+   * Gets the hostcall fuel limit for this store.
+   *
+   * <p>Hostcall fuel limits the amount of data a guest component may transfer to the host in a
+   * single call, serving as a denial-of-service mitigation mechanism. The default is 128 MiB. This
+   * fuel is reset for each host call and does not limit host-to-guest data transfers.
+   *
+   * @return the current hostcall fuel limit
+   * @throws WasmException if retrieval fails
+   * @since 1.1.0
+   */
+  long hostcallFuel() throws WasmException;
+
+  /**
+   * Sets the hostcall fuel limit for this store.
+   *
+   * <p>Configures the fuel limit for data transfers during guest-to-host component calls. The fuel
+   * value roughly corresponds to the maximum number of bytes a guest may transfer to the host in a
+   * single call. The default is 128 MiB. This fuel is reset for each host call and does not limit
+   * host-to-guest data transfers.
+   *
+   * @param fuel the hostcall fuel limit to set
+   * @throws WasmException if setting the fuel fails
+   * @throws IllegalArgumentException if fuel is negative
+   * @since 1.1.0
+   */
+  void setHostcallFuel(final long fuel) throws WasmException;
+
+  /**
    * Creates a host function that can be imported by WebAssembly modules.
    *
    * <p>The created function will be bound to this store and can be added to import maps for module
@@ -957,6 +985,26 @@ public interface Store extends Closeable {
    */
   static Store create(final Engine engine) throws WasmException {
     return engine.getRuntime().createStore(engine);
+  }
+
+  /**
+   * Tries to create a new Store for the given engine, returning empty on allocation failure.
+   *
+   * <p>Unlike {@link #create(Engine)}, this method returns an empty Optional instead of throwing if
+   * the store allocation fails (e.g., out of memory). This is useful in memory-constrained
+   * environments where OOM should be handled gracefully rather than crashing.
+   *
+   * @param engine the engine to create the store for
+   * @return an Optional containing the new Store, or empty if allocation failed
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.1.0
+   */
+  static java.util.Optional<Store> tryCreate(final Engine engine) {
+    try {
+      return java.util.Optional.of(engine.getRuntime().tryCreateStore(engine));
+    } catch (final WasmException e) {
+      return java.util.Optional.empty();
+    }
   }
 
   /**

@@ -301,6 +301,42 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public long hostcallFuel() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      final long fuel = nativeGetHostcallFuel(getNativeHandle());
+      if (fuel < 0) {
+        throw new WasmException("Failed to get hostcall fuel");
+      }
+      return fuel;
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Unexpected error getting hostcall fuel", e);
+    }
+  }
+
+  @Override
+  public void setHostcallFuel(final long fuel) throws WasmException {
+    Validation.requireNonNegative(fuel, "fuel");
+    ensureNotClosed();
+
+    try {
+      final boolean success = nativeSetHostcallFuel(getNativeHandle(), fuel);
+      if (!success) {
+        throw new WasmException("Failed to set hostcall fuel to " + fuel);
+      }
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Unexpected error setting hostcall fuel", e);
+    }
+  }
+
+  @Override
   public WasmFunction createHostFunction(
       final String name, final FunctionType functionType, final HostFunction implementation)
       throws WasmException {
@@ -868,6 +904,37 @@ public final class JniStore extends JniResource implements Store {
    * @return remaining fuel or -1 if fuel is not enabled/available
    */
   private static native long nativeGetFuelRemaining(long storeHandle);
+
+  /**
+   * Tries to create a store, returning 0 on allocation failure.
+   *
+   * @param engineHandle the native engine handle
+   * @return the native store handle, or 0 on allocation failure
+   */
+  /**
+   * Package-private static helper for tryCreate.
+   *
+   * @param engineHandle the native engine handle
+   * @return the native store handle, or 0 on allocation failure
+   */
+  static native long nativeTryCreateStore(long engineHandle);
+
+  /**
+   * Gets the hostcall fuel limit.
+   *
+   * @param storeHandle the native store handle
+   * @return the hostcall fuel limit, or -1 on failure
+   */
+  private static native long nativeGetHostcallFuel(long storeHandle);
+
+  /**
+   * Sets the hostcall fuel limit.
+   *
+   * @param storeHandle the native store handle
+   * @param fuel the hostcall fuel limit to set
+   * @return true on success, false on failure
+   */
+  private static native boolean nativeSetHostcallFuel(long storeHandle, long fuel);
 
   /**
    * Sets the epoch deadline for a store.

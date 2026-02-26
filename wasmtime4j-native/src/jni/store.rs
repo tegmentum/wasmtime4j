@@ -153,6 +153,51 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetFuelAs
     });
 }
 
+/// Try to create a store, returning 0 on allocation failure instead of panicking
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeTryCreateStore(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+) -> jlong {
+    jni_utils::jni_try_ptr(&mut env, || {
+        let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
+        let store = core::try_create_store(engine)?;
+        let store_ptr = store.as_ref() as *const _ as *const c_void;
+        crate::memory::core::register_store_handle(store_ptr)?;
+        Ok(store)
+    }) as jlong
+}
+
+/// Get hostcall fuel limit
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetHostcallFuel(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        let fuel = core::get_hostcall_fuel(store)?;
+        Ok(fuel as jlong)
+    })
+}
+
+/// Set hostcall fuel limit
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetHostcallFuel(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+    fuel: jlong,
+) -> jboolean {
+    jni_utils::jni_try_bool(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        core::set_hostcall_fuel(store, fuel as usize)?;
+        Ok(true)
+    }) as jboolean
+}
+
 /// Set epoch deadline for interruption
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetEpochDeadline(

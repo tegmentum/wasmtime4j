@@ -81,5 +81,8 @@ public enum WasmFeature {
   COMPONENT_MODEL_GC,
 
   /** WebAssembly Component Model threading support. */
-  COMPONENT_MODEL_THREADING
+  COMPONENT_MODEL_THREADING,
+
+  /** WebAssembly Component Model fixed-length lists support. */
+  COMPONENT_MODEL_FIXED_LENGTH_LISTS
 }

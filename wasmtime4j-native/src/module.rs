@@ -754,6 +754,113 @@ impl Module {
             data_segments,
         })
     }
+
+    /// Load a module from a trusted file (skips validation).
+    ///
+    /// # Safety
+    /// This skips WebAssembly validation, so the file must be trusted.
+    pub fn from_trusted_file(
+        engine: &Engine,
+        path: impl AsRef<std::path::Path>,
+    ) -> WasmtimeResult<Self> {
+        let path = path.as_ref();
+        if !path.exists() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("File does not exist: {}", path.display()),
+            });
+        }
+        engine.validate()?;
+
+        let module =
+            unsafe { WasmtimeModule::from_trusted_file(engine.inner(), path) }.map_err(|e| {
+                WasmtimeError::Compilation {
+                    message: format!("Module from trusted file failed: {}", e),
+                }
+            })?;
+
+        let wasm_bytes = std::fs::read(path).unwrap_or_default();
+        let metadata = match ModuleMetadata::extract(&module, wasm_bytes.len(), &wasm_bytes) {
+            Ok(m) => m,
+            Err(_) => ModuleMetadata::empty(),
+        };
+
+        Ok(Module {
+            inner: Arc::new(module),
+            engine: engine.clone(),
+            metadata,
+            element_segments: Vec::new(),
+            data_segments: Vec::new(),
+        })
+    }
+
+    /// Deserialize a module from raw bytes without the file format wrapper.
+    ///
+    /// # Safety
+    /// The raw bytes must be a valid serialized module from the same version of Wasmtime.
+    pub fn deserialize_raw(engine: &Engine, bytes: &[u8]) -> WasmtimeResult<Self> {
+        if bytes.is_empty() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Raw bytes cannot be empty".to_string(),
+            });
+        }
+        engine.validate()?;
+
+        let ptr = std::ptr::NonNull::new(bytes.as_ptr() as *mut u8)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: "Failed to create NonNull pointer from bytes".to_string(),
+            })?;
+        let non_null_slice = std::ptr::NonNull::slice_from_raw_parts(ptr, bytes.len());
+
+        let module =
+            unsafe { WasmtimeModule::deserialize_raw(engine.inner(), non_null_slice) }.map_err(
+                |e| WasmtimeError::Compilation {
+                    message: format!("Module raw deserialization failed: {}", e),
+                },
+            )?;
+
+        let metadata = ModuleMetadata::empty();
+
+        Ok(Module {
+            inner: Arc::new(module),
+            engine: engine.clone(),
+            metadata,
+            element_segments: Vec::new(),
+            data_segments: Vec::new(),
+        })
+    }
+
+    /// Deserialize a module from an already-open file descriptor.
+    ///
+    /// # Safety
+    /// The file must contain a valid serialized module from the same version of Wasmtime.
+    #[cfg(unix)]
+    pub fn deserialize_open_file(
+        engine: &Engine,
+        fd: i32,
+    ) -> WasmtimeResult<Self> {
+        use std::os::unix::io::FromRawFd;
+        engine.validate()?;
+
+        // Safety: Caller guarantees the file descriptor is valid
+        let file = unsafe { std::fs::File::from_raw_fd(fd) };
+
+        let module =
+            unsafe { WasmtimeModule::deserialize_open_file(engine.inner(), file) }.map_err(
+                |e| WasmtimeError::Compilation {
+                    message: format!("Module deserialization from open file failed: {}", e),
+                },
+            )?;
+
+        let metadata = ModuleMetadata::empty();
+
+        Ok(Module {
+            inner: Arc::new(module),
+            engine: engine.clone(),
+            metadata,
+            element_segments: Vec::new(),
+            data_segments: Vec::new(),
+        })
+    }
 }
 
 impl ModuleMetadata {

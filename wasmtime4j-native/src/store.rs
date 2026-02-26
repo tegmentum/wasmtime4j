@@ -393,6 +393,14 @@ impl Store {
         StoreBuilder::new().build(engine)
     }
 
+    /// Create store with default configuration, returning an error on allocation failure.
+    ///
+    /// Unlike `new`, this method uses `wasmtime::Store::try_new` internally, which
+    /// returns an error instead of panicking if the store allocation fails (e.g., out of memory).
+    pub fn try_new(engine: &Engine) -> WasmtimeResult<Self> {
+        StoreBuilder::new().try_build(engine)
+    }
+
     /// Create store that is compatible with the given module
     ///
     /// CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Arc
@@ -719,6 +727,37 @@ impl Store {
         // Silently ignore errors (e.g., async support not enabled) since the
         // interval is tracked Java-side for configuration purposes.
         let _ = store.fuel_async_yield_interval(interval_opt);
+        Ok(())
+    }
+
+    /// Get the hostcall fuel limit.
+    ///
+    /// Returns the configured amount of "hostcall fuel" for guest-to-host
+    /// component calls, either the default value (128 MiB) or the last value
+    /// set via `set_hostcall_fuel`.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn hostcall_fuel(&self) -> WasmtimeResult<usize> {
+        self.check_not_closed()?;
+        let store = self.inner.lock();
+        Ok(store.hostcall_fuel())
+    }
+
+    /// Set the hostcall fuel limit.
+    ///
+    /// Configures the fuel limit for data transfers during guest-to-host
+    /// component calls. The fuel value roughly corresponds to the maximum
+    /// number of bytes a guest may transfer to the host in a single call,
+    /// serving as a denial-of-service mitigation mechanism.
+    /// The default is 128 MiB.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn set_hostcall_fuel(&self, fuel: usize) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+        store.set_hostcall_fuel(fuel);
         Ok(())
     }
 
@@ -1441,6 +1480,57 @@ impl StoreBuilder {
         })
     }
 
+    /// Build store with current configuration using try_new for OOM-safe allocation.
+    ///
+    /// Unlike `build`, this method uses `wasmtime::Store::try_new` internally, which
+    /// returns an error instead of panicking if the store allocation fails.
+    pub fn try_build(self, engine: &Engine) -> WasmtimeResult<Store> {
+        engine.validate()?;
+
+        let _compile_guard = engine.acquire_compile_lock();
+
+        let store_id = {
+            let mut counter = STORE_ID_COUNTER.lock().map_err(|e| WasmtimeError::Store {
+                message: format!("Failed to acquire store ID counter: {}", e),
+            })?;
+            let id = *counter;
+            *counter += 1;
+            id
+        };
+
+        let resource_limits = self.resource_limits.clone();
+        let mut store_data = StoreData::new(store_id, self.resource_limits);
+        store_data.epoch_interruption_enabled = engine.epoch_interruption_enabled();
+        store_data.async_enabled = engine.async_support_enabled();
+        let mut wasmtime_store =
+            WasmtimeStore::try_new(engine.inner(), store_data).map_err(|e| {
+                WasmtimeError::Store {
+                    message: format!("Failed to allocate store: {}", e),
+                }
+            })?;
+
+        apply_resource_limits(&mut wasmtime_store, &resource_limits);
+
+        if engine.fuel_enabled() {
+            let fuel = self.fuel_limit.unwrap_or(u64::MAX);
+            wasmtime_store
+                .set_fuel(fuel)
+                .map_err(|e| WasmtimeError::Store {
+                    message: format!("Failed to set initial fuel: {}", e),
+                })?;
+        }
+
+        let metadata =
+            StoreMetadata::new(self.fuel_limit, self.memory_limit_bytes, self.execution_timeout);
+
+        Ok(Store {
+            id: store_id,
+            inner: Arc::new(ReentrantLock::new(wasmtime_store)),
+            engine: engine.clone(),
+            metadata,
+        })
+    }
+
     /// Build store using the wasmtime Engine from a Module
     ///
     /// CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Arc
@@ -1625,6 +1715,14 @@ pub mod core {
         builder.build(engine).map(Box::new)
     }
 
+    /// Core function to create a store with OOM-safe allocation
+    ///
+    /// Unlike `create_store`, this returns an error instead of panicking on allocation failure.
+    pub fn try_create_store(engine: &Engine) -> WasmtimeResult<Box<Store>> {
+        let store = Store::try_new(engine)?;
+        Ok(Box::new(store))
+    }
+
     /// Core function to create a store compatible with a specific module
     ///
     /// CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Arc
@@ -1670,6 +1768,16 @@ pub mod core {
     /// Core function to set fuel async yield interval
     pub fn set_fuel_async_yield_interval(store: &Store, interval: u64) -> WasmtimeResult<()> {
         store.set_fuel_async_yield_interval(interval)
+    }
+
+    /// Core function to get hostcall fuel limit
+    pub fn get_hostcall_fuel(store: &Store) -> WasmtimeResult<usize> {
+        store.hostcall_fuel()
+    }
+
+    /// Core function to set hostcall fuel limit
+    pub fn set_hostcall_fuel(store: &Store, fuel: usize) -> WasmtimeResult<()> {
+        store.set_hostcall_fuel(fuel)
     }
 
     /// Core function to set epoch deadline for interruption

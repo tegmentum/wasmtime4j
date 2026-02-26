@@ -91,6 +91,42 @@ final class PanamaCodeBuilder implements CodeBuilder {
   }
 
   @Override
+  public CodeBuilder compileTimeBuiltinsBinary(final String name, final byte[] bytes) {
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("name cannot be null or empty");
+    }
+    if (bytes == null || bytes.length == 0) {
+      throw new IllegalArgumentException("bytes cannot be null or empty");
+    }
+    resourceHandle.ensureNotClosed();
+    NATIVE_BINDINGS.codeBuilderCompileTimeBuiltinsBinary(nativeHandle, name, bytes);
+    return this;
+  }
+
+  @Override
+  public CodeBuilder compileTimeBuiltinsBinaryOrText(final String name, final byte[] bytes) {
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("name cannot be null or empty");
+    }
+    if (bytes == null || bytes.length == 0) {
+      throw new IllegalArgumentException("bytes cannot be null or empty");
+    }
+    resourceHandle.ensureNotClosed();
+    NATIVE_BINDINGS.codeBuilderCompileTimeBuiltinsBinaryOrText(nativeHandle, name, bytes);
+    return this;
+  }
+
+  @Override
+  public CodeBuilder exposeUnsafeIntrinsics(final String importName) {
+    if (importName == null || importName.isEmpty()) {
+      throw new IllegalArgumentException("importName cannot be null or empty");
+    }
+    resourceHandle.ensureNotClosed();
+    NATIVE_BINDINGS.codeBuilderExposeUnsafeIntrinsics(nativeHandle, importName);
+    return this;
+  }
+
+  @Override
   public Module compileModule() throws WasmException {
     resourceHandle.ensureNotClosed();
     final MemorySegment moduleHandle = NATIVE_BINDINGS.codeBuilderCompileModule(nativeHandle);

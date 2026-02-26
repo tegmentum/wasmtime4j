@@ -490,6 +490,52 @@ public interface Engine extends Closeable {
       throws WasmException;
 
   /**
+   * Creates a guest profiler for component model workloads.
+   *
+   * <p>This creates a profiler that automatically instruments all constituent modules within the
+   * given component, plus any additional extra modules. This is the preferred way to profile
+   * component model execution.
+   *
+   * @param componentName a label for the profile
+   * @param interval the expected sampling interval (used as a hint by the profile format)
+   * @param component the component to profile
+   * @param extraModules optional additional modules to include in the profile (may be empty)
+   * @return a new GuestProfiler instance
+   * @throws WasmException if profiler creation fails (e.g., guest debugging is enabled)
+   * @since 1.1.0
+   */
+  ai.tegmentum.wasmtime4j.debug.GuestProfiler createComponentGuestProfiler(
+      String componentName,
+      java.time.Duration interval,
+      ai.tegmentum.wasmtime4j.component.Component component,
+      java.util.Map<String, Module> extraModules)
+      throws WasmException;
+
+  /**
+   * Checks if the engine is configured for execution recording.
+   *
+   * <p>When recording is enabled, stores created from this engine will record execution traces for
+   * deterministic debugging. Recording requires the "rr" feature and specific determinism settings
+   * (NaN canonicalization, deterministic relaxed SIMD).
+   *
+   * @return true if execution recording is enabled
+   * @since 1.1.0
+   */
+  boolean isRecording();
+
+  /**
+   * Checks if the engine is configured for execution replaying.
+   *
+   * <p>When replaying is enabled, stores created from this engine will replay recorded execution
+   * traces for deterministic debugging. Replaying requires the "rr" feature and specific
+   * determinism settings (NaN canonicalization, deterministic relaxed SIMD).
+   *
+   * @return true if execution replaying is enabled
+   * @since 1.1.0
+   */
+  boolean isReplaying();
+
+  /**
    * Closes the engine and releases associated resources.
    *
    * <p>After closing, the engine becomes invalid and should not be used. Any stores or modules

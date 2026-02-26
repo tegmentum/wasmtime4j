@@ -1,6 +1,6 @@
 //! JNI bindings for CodeBuilder operations
 
-use jni::objects::{JByteArray, JClass};
+use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jbyteArray, jint, jlong};
 use jni::JNIEnv;
 
@@ -153,6 +153,64 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCodeBuilder_nativeCom
         Ok(array) => array.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
+}
+
+/// Add compile-time builtins from binary bytes.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCodeBuilder_nativeCompileTimeBuiltinsBinary(
+    mut env: JNIEnv,
+    _class: JClass,
+    builder_handle: jlong,
+    name: JString,
+    wasm_bytes: JByteArray,
+) {
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return,
+    };
+    let bytes = match env.convert_byte_array(&wasm_bytes) {
+        Ok(b) => b,
+        Err(_) => return,
+    };
+    let builder = unsafe { &mut *(builder_handle as *mut code_builder::CodeBuilderState) };
+    code_builder::code_builder_compile_time_builtins_binary(builder, name_str, bytes);
+}
+
+/// Add compile-time builtins from binary or text bytes.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCodeBuilder_nativeCompileTimeBuiltinsBinaryOrText(
+    mut env: JNIEnv,
+    _class: JClass,
+    builder_handle: jlong,
+    name: JString,
+    wasm_bytes: JByteArray,
+) {
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return,
+    };
+    let bytes = match env.convert_byte_array(&wasm_bytes) {
+        Ok(b) => b,
+        Err(_) => return,
+    };
+    let builder = unsafe { &mut *(builder_handle as *mut code_builder::CodeBuilderState) };
+    code_builder::code_builder_compile_time_builtins_binary_or_text(builder, name_str, bytes);
+}
+
+/// Set expose unsafe intrinsics import name on the builder.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCodeBuilder_nativeExposeUnsafeIntrinsics(
+    mut env: JNIEnv,
+    _class: JClass,
+    builder_handle: jlong,
+    import_name: JString,
+) {
+    let name_str: String = match env.get_string(&import_name) {
+        Ok(s) => s.into(),
+        Err(_) => return,
+    };
+    let builder = unsafe { &mut *(builder_handle as *mut code_builder::CodeBuilderState) };
+    code_builder::code_builder_expose_unsafe_intrinsics(builder, name_str);
 }
 
 /// Destroy the code builder.

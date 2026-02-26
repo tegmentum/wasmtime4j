@@ -396,6 +396,33 @@ public class JniModule extends JniResource implements Module {
   static native long nativeCompileFromFile(long engineHandle, String path);
 
   /**
+   * Native method to load a module from a trusted file, skipping validation.
+   *
+   * @param engineHandle the native engine handle
+   * @param path the file path
+   * @return the native module handle, or 0 on failure
+   */
+  static native long nativeFromTrustedFile(long engineHandle, String path);
+
+  /**
+   * Native method to deserialize a module from raw bytes (no file format wrapper).
+   *
+   * @param engineHandle the native engine handle
+   * @param bytes the raw bytes
+   * @return the native module handle, or 0 on failure
+   */
+  static native long nativeDeserializeRaw(long engineHandle, byte[] bytes);
+
+  /**
+   * Native method to deserialize a module from an open file descriptor (Unix only).
+   *
+   * @param engineHandle the native engine handle
+   * @param fd the file descriptor
+   * @return the native module handle, or 0 on failure
+   */
+  static native long nativeDeserializeOpenFile(long engineHandle, int fd);
+
+  /**
    * Native method to check if two modules share the same underlying compiled code.
    *
    * @param moduleHandle1 the first native module handle

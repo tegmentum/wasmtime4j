@@ -786,6 +786,130 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   // =============================================================================
+  // Debug Operations
+  // =============================================================================
+
+  /**
+   * Debug: gets a function by its internal module index.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionIndex the internal function index
+   * @return function handle or null if not found
+   */
+  public MemorySegment instanceDebugFunction(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final int functionIndex) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_debug_function",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        functionIndex);
+  }
+
+  /**
+   * Debug: gets a global by its internal module index.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param globalIndex the internal global index
+   * @return global handle or null if not found
+   */
+  public MemorySegment instanceDebugGlobal(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final int globalIndex) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_debug_global",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        globalIndex);
+  }
+
+  /**
+   * Debug: gets a memory by its internal module index.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param memoryIndex the internal memory index
+   * @return memory handle or null if not found
+   */
+  public MemorySegment instanceDebugMemory(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final int memoryIndex) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_debug_memory",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        memoryIndex);
+  }
+
+  /**
+   * Debug: gets a shared memory by its internal module index.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param memoryIndex the internal memory index
+   * @return shared memory handle or null if not found
+   */
+  public MemorySegment instanceDebugSharedMemory(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final int memoryIndex) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_debug_shared_memory",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        memoryIndex);
+  }
+
+  /**
+   * Debug: gets a table by its internal module index.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param tableIndex the internal table index
+   * @return table handle or null if not found
+   */
+  public MemorySegment instanceDebugTable(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final int tableIndex) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_debug_table",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        tableIndex);
+  }
+
+  /**
+   * Debug: gets a tag by its internal module index.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param tagIndex the internal tag index
+   * @return tag handle or null if not found
+   */
+  public MemorySegment instanceDebugTag(
+      final MemorySegment instancePtr, final MemorySegment storePtr, final int tagIndex) {
+    validatePointer(instancePtr, "instancePtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_instance_debug_tag",
+        MemorySegment.class,
+        instancePtr,
+        storePtr,
+        tagIndex);
+  }
+
+  // =============================================================================
   // Caller Operations
   // =============================================================================
 

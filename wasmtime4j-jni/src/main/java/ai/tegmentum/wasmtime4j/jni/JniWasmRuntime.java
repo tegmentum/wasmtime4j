@@ -134,6 +134,29 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
+  public Store tryCreateStore(final Engine engine) throws WasmException {
+    Validation.requireNonNull(engine, "engine");
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    try {
+      if (!(engine instanceof JniEngine)) {
+        throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
+      }
+
+      final JniEngine jniEngine = (JniEngine) engine;
+      final long storeHandle = JniStore.nativeTryCreateStore(jniEngine.getNativeHandle());
+      if (storeHandle == 0) {
+        throw new WasmException("Failed to allocate store (out of memory)");
+      }
+      return new JniStore(storeHandle, engine);
+    } catch (Exception e) {
+      throw JniExceptionMapper.mapException(e);
+    }
+  }
+
+  @Override
   public Store createStore(
       final Engine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
       throws WasmException {
@@ -530,6 +553,77 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     } catch (final java.io.IOException e) {
       throw new WasmException("Failed to read module file: " + path, e);
     }
+  }
+
+  @Override
+  public Module moduleFromTrustedFile(final Engine engine, final java.nio.file.Path path)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("Path cannot be null");
+    }
+    if (!(engine instanceof JniEngine)) {
+      throw new IllegalArgumentException("Engine must be a JniEngine for JNI runtime");
+    }
+
+    final JniEngine jniEngine = (JniEngine) engine;
+    final long moduleHandle =
+        JniModule.nativeFromTrustedFile(jniEngine.getNativeHandle(), path.toString());
+
+    if (moduleHandle == 0) {
+      throw new WasmException("Failed to load module from trusted file: " + path);
+    }
+
+    return new JniModule(moduleHandle, engine);
+  }
+
+  @Override
+  public Module deserializeModuleRaw(final Engine engine, final byte[] bytes) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (bytes == null) {
+      throw new IllegalArgumentException("Bytes cannot be null");
+    }
+    if (bytes.length == 0) {
+      throw new WasmException("Bytes cannot be empty");
+    }
+    if (!(engine instanceof JniEngine)) {
+      throw new IllegalArgumentException("Engine must be a JniEngine for JNI runtime");
+    }
+
+    final JniEngine jniEngine = (JniEngine) engine;
+    final long moduleHandle = JniModule.nativeDeserializeRaw(jniEngine.getNativeHandle(), bytes);
+
+    if (moduleHandle == 0) {
+      throw new WasmException("Failed to deserialize module from raw bytes");
+    }
+
+    return new JniModule(moduleHandle, engine);
+  }
+
+  @Override
+  public Module deserializeModuleOpenFile(final Engine engine, final int fd) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (fd < 0) {
+      throw new IllegalArgumentException("File descriptor must be non-negative");
+    }
+    if (!(engine instanceof JniEngine)) {
+      throw new IllegalArgumentException("Engine must be a JniEngine for JNI runtime");
+    }
+
+    final JniEngine jniEngine = (JniEngine) engine;
+    final long moduleHandle = JniModule.nativeDeserializeOpenFile(jniEngine.getNativeHandle(), fd);
+
+    if (moduleHandle == 0) {
+      throw new WasmException("Failed to deserialize module from file descriptor: " + fd);
+    }
+
+    return new JniModule(moduleHandle, engine);
   }
 
   @Override

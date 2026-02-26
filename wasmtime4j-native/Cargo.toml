@@ -71,7 +71,7 @@ libc.workspace = true
 tempfile.workspace = true
 
 [features]
-default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "async", "profiling"]
+default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "async", "profiling", "rr"]
 
 # JNI bindings for Java 8-22
 jni-bindings = ["jni"]
@@ -102,6 +102,9 @@ async = ["wasmtime/async"]
 
 # Profiling support
 profiling = ["wasmtime/profiling"]
+
+# Record/replay support for deterministic debugging
+rr = ["wasmtime/rr"]
 
 # WebAssembly memory checker (wmemcheck) for debugging
 # Enables runtime detection of memory errors in wasm programs

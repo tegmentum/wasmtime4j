@@ -180,6 +180,20 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
+  public Store tryCreateStore(final Engine engine) throws WasmException {
+    Validation.requireNonNull(engine, "engine");
+    ensureNotClosed();
+
+    if (!(engine instanceof PanamaEngine)) {
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
+    }
+
+    final PanamaEngine panamaEngine = (PanamaEngine) engine;
+    return panamaEngine.tryCreateStore();
+  }
+
+  @Override
   public Store createStore(
       final Engine engine,
       final long fuelLimit,
@@ -613,6 +627,130 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       return deserializeModule(engine, serializedBytes);
     } catch (final IOException e) {
       throw new WasmException("Failed to read serialized module file: " + path, e);
+    }
+  }
+
+  @Override
+  public Module moduleFromTrustedFile(final Engine engine, final Path path) throws WasmException {
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(path, "path");
+    ensureNotClosed();
+
+    if (!(engine instanceof PanamaEngine)) {
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
+    }
+
+    final PanamaEngine panamaEngine = (PanamaEngine) engine;
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment pathStr = arena.allocateFrom(path.toString());
+
+      final int result =
+          NativeEngineBindings.getInstance()
+              .moduleFromTrustedFile(panamaEngine.getNativeEngine(), pathStr, modulePtrPtr);
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to load module from trusted file: " + path);
+      }
+
+      final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+
+      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Module from trusted file returned null");
+      }
+
+      return new PanamaModule(panamaEngine, modulePtr);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Error loading module from trusted file: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public Module deserializeModuleRaw(final Engine engine, final byte[] bytes) throws WasmException {
+    Validation.requireNonNull(engine, "engine");
+    Validation.requireNonNull(bytes, "bytes");
+    ensureNotClosed();
+
+    if (!(engine instanceof PanamaEngine)) {
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
+    }
+
+    final PanamaEngine panamaEngine = (PanamaEngine) engine;
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment dataSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, bytes);
+
+      final int result =
+          NativeEngineBindings.getInstance()
+              .moduleDeserializeRaw(
+                  panamaEngine.getNativeEngine(), dataSegment, bytes.length, modulePtrPtr);
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to deserialize module from raw bytes");
+      }
+
+      final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+
+      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Module raw deserialization returned null");
+      }
+
+      return new PanamaModule(panamaEngine, modulePtr);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Error deserializing module from raw bytes: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public Module deserializeModuleOpenFile(final Engine engine, final int fd) throws WasmException {
+    Validation.requireNonNull(engine, "engine");
+    ensureNotClosed();
+
+    if (fd < 0) {
+      throw new IllegalArgumentException("File descriptor must be non-negative");
+    }
+
+    if (!(engine instanceof PanamaEngine)) {
+      throw new IllegalArgumentException(
+          "Engine must be a PanamaEngine instance for Panama runtime");
+    }
+
+    final PanamaEngine panamaEngine = (PanamaEngine) engine;
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          NativeEngineBindings.getInstance()
+              .moduleDeserializeOpenFile(panamaEngine.getNativeEngine(), fd, modulePtrPtr);
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to deserialize module from file descriptor: " + fd);
+      }
+
+      final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+
+      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Module deserialization from file descriptor returned null");
+      }
+
+      return new PanamaModule(panamaEngine, modulePtr);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException(
+          "Error deserializing module from file descriptor: " + e.getMessage(), e);
     }
   }
 

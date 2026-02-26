@@ -87,6 +87,83 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeG
     }
 }
 
+/// Creates a new guest profiler for a component.
+///
+/// JNI bridge for `JniGuestProfiler.nativeGuestProfilerCreateComponent`.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeGuestProfilerCreateComponent(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_handle: jlong,
+    component_name: JString,
+    interval_nanos: jlong,
+    component_handle: jlong,
+    extra_module_handles: JLongArray,
+    extra_module_names: JObjectArray,
+) -> jlong {
+    // Convert component name to CString
+    let name_str = match env.get_string(&component_name) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return 0,
+    };
+    let c_name = match CString::new(name_str) {
+        Ok(s) => s,
+        Err(_) => return 0,
+    };
+
+    // Get extra module count
+    let count = match env.get_array_length(&extra_module_handles) {
+        Ok(len) => len as usize,
+        Err(_) => return 0,
+    };
+
+    // Extract extra module handles
+    let mut handle_values = vec![0i64; count];
+    if count > 0 {
+        if env
+            .get_long_array_region(&extra_module_handles, 0, &mut handle_values)
+            .is_err()
+        {
+            return 0;
+        }
+    }
+    let module_ptrs: Vec<*const c_void> = handle_values
+        .iter()
+        .map(|&h| h as *const c_void)
+        .collect();
+
+    // Extract extra module names
+    let mut c_names: Vec<CString> = Vec::with_capacity(count);
+    for i in 0..count {
+        let elem = match env.get_object_array_element(&extra_module_names, i as i32) {
+            Ok(e) => e,
+            Err(_) => return 0,
+        };
+        let jstr: JString = elem.into();
+        let s = match env.get_string(&jstr) {
+            Ok(s) => s.to_string_lossy().into_owned(),
+            Err(_) => return 0,
+        };
+        match CString::new(s) {
+            Ok(cs) => c_names.push(cs),
+            Err(_) => return 0,
+        }
+    }
+    let name_ptrs: Vec<*const c_char> = c_names.iter().map(|cs| cs.as_ptr()).collect();
+
+    unsafe {
+        crate::guest_profiler::wasmtime4j_guest_profiler_new_component(
+            engine_handle as *const c_void,
+            c_name.as_ptr(),
+            interval_nanos as c_long,
+            component_handle as *const c_void,
+            module_ptrs.as_ptr(),
+            name_ptrs.as_ptr(),
+            count as c_int,
+        ) as jlong
+    }
+}
+
 /// Collects a stack sample.
 ///
 /// JNI bridge for `JniGuestProfiler.nativeGuestProfilerSample`.

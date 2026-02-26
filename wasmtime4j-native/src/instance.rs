@@ -1020,6 +1020,48 @@ impl Instance {
         }
     }
 
+    /// Debug: get function by internal index (requires debug instrumentation).
+    pub fn debug_function(&self, store: &mut Store, function_index: u32) -> WasmtimeResult<Option<Func>> {
+        let instance = self.inner.lock();
+        let mut store_guard = store.try_lock_store()?;
+        Ok(instance.debug_function(&mut *store_guard, function_index))
+    }
+
+    /// Debug: get global by internal index (requires debug instrumentation).
+    pub fn debug_global(&self, store: &mut Store, global_index: u32) -> WasmtimeResult<Option<Global>> {
+        let instance = self.inner.lock();
+        let mut store_guard = store.try_lock_store()?;
+        Ok(instance.debug_global(&mut *store_guard, global_index))
+    }
+
+    /// Debug: get memory by internal index (requires debug instrumentation).
+    pub fn debug_memory(&self, store: &mut Store, memory_index: u32) -> WasmtimeResult<Option<Memory>> {
+        let instance = self.inner.lock();
+        let mut store_guard = store.try_lock_store()?;
+        Ok(instance.debug_memory(&mut *store_guard, memory_index))
+    }
+
+    /// Debug: get shared memory by internal index (requires debug instrumentation).
+    pub fn debug_shared_memory(&self, store: &mut Store, memory_index: u32) -> WasmtimeResult<Option<SharedMemory>> {
+        let instance = self.inner.lock();
+        let mut store_guard = store.try_lock_store()?;
+        Ok(instance.debug_shared_memory(&mut *store_guard, memory_index))
+    }
+
+    /// Debug: get table by internal index (requires debug instrumentation).
+    pub fn debug_table(&self, store: &mut Store, table_index: u32) -> WasmtimeResult<Option<Table>> {
+        let instance = self.inner.lock();
+        let mut store_guard = store.try_lock_store()?;
+        Ok(instance.debug_table(&mut *store_guard, table_index))
+    }
+
+    /// Debug: get tag by internal index (requires debug instrumentation).
+    pub fn debug_tag(&self, store: &mut Store, tag_index: u32) -> WasmtimeResult<Option<Tag>> {
+        let instance = self.inner.lock();
+        let mut store_guard = store.try_lock_store()?;
+        Ok(instance.debug_tag(&mut *store_guard, tag_index))
+    }
+
     /// Get element segment manager for table.init() operations
     pub fn get_element_segment_manager(&self) -> &Arc<ElementSegmentManager> {
         &self.element_segment_manager

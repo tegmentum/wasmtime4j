@@ -660,6 +660,56 @@ pub extern "C" fn wasmtime4j_panama_store_set_fuel_async_yield_interval(
     })
 }
 
+/// Try to create a store, returning an error on allocation failure (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_try_create(
+    engine_ptr: *mut c_void,
+    store_ptr: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
+
+        let store = core::try_create_store(engine)?;
+        let raw_ptr = Box::into_raw(store);
+        crate::memory::core::register_store_handle(raw_ptr as *const c_void)?;
+
+        unsafe {
+            *store_ptr = raw_ptr as *mut c_void;
+        }
+
+        Ok(())
+    })
+}
+
+/// Get hostcall fuel limit (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_get_hostcall_fuel(
+    store_ptr: *mut c_void,
+    fuel_ptr: *mut c_ulong,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        let fuel = core::get_hostcall_fuel(store)?;
+        unsafe {
+            *fuel_ptr = fuel as c_ulong;
+        }
+        Ok(())
+    })
+}
+
+/// Set hostcall fuel limit (Panama FFI version)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_set_hostcall_fuel(
+    store_ptr: *mut c_void,
+    fuel: c_ulong,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        core::set_hostcall_fuel(store, fuel as usize)?;
+        Ok(())
+    })
+}
+
 /// Helper function to serialize a backtrace into a byte buffer
 fn serialize_backtrace(
     backtrace: &wasmtime::WasmBacktrace,

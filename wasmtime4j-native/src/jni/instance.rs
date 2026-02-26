@@ -845,6 +845,140 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetTag
     })
 }
 
+/// Debug: get function by internal index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDebugFunction(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_handle: jlong,
+    store_handle: jlong,
+    function_index: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        match instance.debug_function(store, function_index as u32)? {
+            Some(func) => {
+                let func_handle =
+                    crate::jni::function::FunctionHandle::new(func, String::new(), store);
+                Ok(Box::into_raw(Box::new(func_handle)) as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}
+
+/// Debug: get global by internal index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDebugGlobal(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_handle: jlong,
+    store_handle: jlong,
+    global_index: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        match instance.debug_global(store, global_index as u32)? {
+            Some(global) => {
+                let global_wrapper =
+                    crate::global::Global::from_wasmtime_global(global, store, None)?;
+                Ok(Box::into_raw(Box::new(global_wrapper)) as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}
+
+/// Debug: get memory by internal index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDebugMemory(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_handle: jlong,
+    store_handle: jlong,
+    memory_index: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        match instance.debug_memory(store, memory_index as u32)? {
+            Some(memory) => {
+                let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
+                let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
+                let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                Ok(validated_ptr as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}
+
+/// Debug: get shared memory by internal index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDebugSharedMemory(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_handle: jlong,
+    store_handle: jlong,
+    memory_index: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        match instance.debug_shared_memory(store, memory_index as u32)? {
+            Some(shared_memory) => {
+                let memory_wrapper = crate::memory::Memory::from_shared_memory(shared_memory);
+                let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                Ok(validated_ptr as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}
+
+/// Debug: get table by internal index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDebugTable(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_handle: jlong,
+    store_handle: jlong,
+    table_index: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        match instance.debug_table(store, table_index as u32)? {
+            Some(table) => {
+                let table_wrapper = crate::table::Table::from_wasmtime_table(table, store, None)?;
+                Ok(Box::into_raw(Box::new(table_wrapper)) as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}
+
+/// Debug: get tag by internal index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDebugTag(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_handle: jlong,
+    store_handle: jlong,
+    tag_index: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        match instance.debug_tag(store, tag_index as u32)? {
+            Some(tag) => Ok(Box::into_raw(Box::new(tag)) as jlong),
+            None => Ok(0),
+        }
+    })
+}
+
 /// Check if an instance has a specific export
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeHasExport(

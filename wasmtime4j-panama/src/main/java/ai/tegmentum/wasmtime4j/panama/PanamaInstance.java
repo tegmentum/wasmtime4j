@@ -428,6 +428,65 @@ public final class PanamaInstance implements Instance {
   }
 
   @Override
+  public Optional<WasmGlobal> debugGlobal(final int globalIndex) {
+    ensureNotClosed();
+    final MemorySegment globalPtr =
+        NATIVE_INSTANCE_BINDINGS.instanceDebugGlobal(
+            nativeInstance, store.getNativeStore(), globalIndex);
+    if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+    return Optional.of(new PanamaGlobal(globalPtr, store));
+  }
+
+  @Override
+  public Optional<WasmMemory> debugMemory(final int memoryIndex) {
+    ensureNotClosed();
+    final MemorySegment memoryPtr =
+        NATIVE_INSTANCE_BINDINGS.instanceDebugMemory(
+            nativeInstance, store.getNativeStore(), memoryIndex);
+    if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+    return Optional.of(new PanamaMemory(memoryPtr, store));
+  }
+
+  @Override
+  public Optional<WasmMemory> debugSharedMemory(final int memoryIndex) {
+    ensureNotClosed();
+    final MemorySegment memoryPtr =
+        NATIVE_INSTANCE_BINDINGS.instanceDebugSharedMemory(
+            nativeInstance, store.getNativeStore(), memoryIndex);
+    if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+    return Optional.of(new PanamaMemory(memoryPtr, store));
+  }
+
+  @Override
+  public Optional<WasmTable> debugTable(final int tableIndex) {
+    ensureNotClosed();
+    final MemorySegment tablePtr =
+        NATIVE_INSTANCE_BINDINGS.instanceDebugTable(
+            nativeInstance, store.getNativeStore(), tableIndex);
+    if (tablePtr == null || tablePtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+    return Optional.of(new PanamaTable(tablePtr, this));
+  }
+
+  @Override
+  public Optional<Tag> debugTag(final int tagIndex) {
+    ensureNotClosed();
+    final MemorySegment tagPtr =
+        NATIVE_INSTANCE_BINDINGS.instanceDebugTag(nativeInstance, store.getNativeStore(), tagIndex);
+    if (tagPtr == null || tagPtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+    return Optional.of(new PanamaTag(tagPtr, store.getNativeStore()));
+  }
+
+  @Override
   public boolean hasExport(final String name) {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");

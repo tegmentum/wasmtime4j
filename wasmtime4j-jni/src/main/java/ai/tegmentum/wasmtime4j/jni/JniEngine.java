@@ -432,6 +432,22 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   @Override
+  public boolean isRecording() {
+    if (isClosed()) {
+      return false;
+    }
+    return nativeIsRecording(nativeHandle);
+  }
+
+  @Override
+  public boolean isReplaying() {
+    if (isClosed()) {
+      return false;
+    }
+    return nativeIsReplaying(nativeHandle);
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.debug.GuestProfiler createGuestProfiler(
       final String moduleName,
       final java.time.Duration interval,
@@ -452,6 +468,40 @@ public class JniEngine extends JniResource implements Engine {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.debug.GuestProfiler createComponentGuestProfiler(
+      final String componentName,
+      final java.time.Duration interval,
+      final ai.tegmentum.wasmtime4j.component.Component component,
+      final java.util.Map<String, ai.tegmentum.wasmtime4j.Module> extraModules)
+      throws WasmException {
+    if (componentName == null || componentName.isEmpty()) {
+      throw new IllegalArgumentException("componentName cannot be null or empty");
+    }
+    if (interval == null) {
+      throw new IllegalArgumentException("interval cannot be null");
+    }
+    if (component == null) {
+      throw new IllegalArgumentException("component cannot be null");
+    }
+    if (!(component instanceof JniComponentImpl)) {
+      throw new IllegalArgumentException("Component must be a JNI component");
+    }
+    ensureNotClosed();
+
+    final long componentHandle = ((JniComponentImpl) component).getNativeHandle();
+    if (componentHandle == 0) {
+      throw new WasmException("Component has invalid native handle");
+    }
+
+    return new JniGuestProfiler(
+        nativeHandle,
+        componentName,
+        interval.toNanos(),
+        componentHandle,
+        extraModules != null ? extraModules : java.util.Collections.emptyMap());
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.WeakEngine weak() {
     ensureNotClosed();
     final long weakHandle = nativeCreateWeakEngine(nativeHandle);
@@ -465,6 +515,10 @@ public class JniEngine extends JniResource implements Engine {
   private native boolean nativeEngineSame(long handle1, long handle2);
 
   private native boolean nativeIsAsync(long engineHandle);
+
+  private native boolean nativeIsRecording(long engineHandle);
+
+  private native boolean nativeIsReplaying(long engineHandle);
 
   private native void nativeIncrementEpoch(long engineHandle);
 

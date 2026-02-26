@@ -763,4 +763,58 @@ public interface Module extends Closeable {
       throws WasmException {
     return engine.getRuntime().deserializeModuleFile(engine, path);
   }
+
+  /**
+   * Loads a module from a trusted file, skipping WebAssembly validation.
+   *
+   * <p>This is faster than normal compilation because validation is skipped, but the file must be
+   * from a trusted source. Using an untrusted file can result in undefined behavior.
+   *
+   * @param engine the engine to use
+   * @param path the path to the trusted WebAssembly file
+   * @return the compiled Module
+   * @throws WasmException if loading fails
+   * @throws IllegalArgumentException if engine or path is null
+   * @since 1.1.0
+   */
+  static Module fromTrustedFile(final Engine engine, final java.nio.file.Path path)
+      throws WasmException {
+    return engine.getRuntime().moduleFromTrustedFile(engine, path);
+  }
+
+  /**
+   * Deserializes a module from raw bytes without the standard file format wrapper.
+   *
+   * <p>Unlike {@link #deserialize(Engine, byte[])}, this method expects raw serialized bytes
+   * without Wasmtime's file format header. The bytes must be from a compatible Wasmtime version.
+   *
+   * @param engine the engine to use for deserialization
+   * @param bytes the raw serialized module data
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   * @throws IllegalArgumentException if engine or bytes is null
+   * @since 1.1.0
+   */
+  static Module deserializeRaw(final Engine engine, final byte[] bytes) throws WasmException {
+    return engine.getRuntime().deserializeModuleRaw(engine, bytes);
+  }
+
+  /**
+   * Deserializes a module from an already-open file descriptor.
+   *
+   * <p>This method is only available on Unix-like platforms (Linux, macOS). It allows
+   * deserialization from an already-open file descriptor, which can be useful for sandboxed
+   * environments or when the file has been opened with specific permissions.
+   *
+   * @param engine the engine to use for deserialization
+   * @param fd the open file descriptor
+   * @return the deserialized Module
+   * @throws WasmException if deserialization fails
+   * @throws IllegalArgumentException if engine is null
+   * @throws UnsupportedOperationException on non-Unix platforms
+   * @since 1.1.0
+   */
+  static Module deserializeOpenFile(final Engine engine, final int fd) throws WasmException {
+    return engine.getRuntime().deserializeModuleOpenFile(engine, fd);
+  }
 }

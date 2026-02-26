@@ -604,6 +604,53 @@ public final class PanamaStore implements Store {
     return new PanamaStore((PanamaEngine) moduleEngine, storeHandle);
   }
 
+  /**
+   * Tries to create a store using OOM-safe allocation.
+   *
+   * @param engine the engine to create the store for
+   * @return a new PanamaStore
+   * @throws WasmException if allocation fails
+   */
+  static PanamaStore tryCreate(final PanamaEngine engine) throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("Engine cannot be null");
+    }
+    if (!engine.isValid()) {
+      throw new IllegalStateException("Engine is not valid");
+    }
+
+    try {
+      final MethodHandle tryCreateHandle = NATIVE_BINDINGS.getPanamaStoreTryCreate();
+      if (tryCreateHandle == null) {
+        throw new WasmException("Panama store try_create function not available");
+      }
+
+      final Arena tempArena = Arena.ofConfined();
+      final MemorySegment storePtr = tempArena.allocate(ValueLayout.ADDRESS);
+
+      final int result = (int) tryCreateHandle.invoke(engine.getNativeEngine(), storePtr);
+
+      if (result != 0) {
+        tempArena.close();
+        throw new WasmException("Failed to allocate store (out of memory)");
+      }
+
+      final MemorySegment storeHandle = storePtr.get(ValueLayout.ADDRESS, 0);
+      tempArena.close();
+
+      if (storeHandle == null || storeHandle.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to allocate store (null handle)");
+      }
+
+      return new PanamaStore(engine, storeHandle);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating store: " + e.getMessage(), e);
+    }
+  }
+
   @Override
   public Engine getEngine() {
     return engine;
@@ -827,6 +874,59 @@ public final class PanamaStore implements Store {
         throw (WasmException) e;
       }
       throw new WasmException("Error consuming fuel: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public long hostcallFuel() throws WasmException {
+    ensureNotClosed();
+
+    try {
+      final MethodHandle getHostcallFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetHostcallFuel();
+      if (getHostcallFuelHandle == null) {
+        throw new WasmException("Panama store get hostcall fuel function not available");
+      }
+
+      final MemorySegment fuelSegment = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result = (int) getHostcallFuelHandle.invoke(nativeStore, fuelSegment);
+
+      if (result != 0) {
+        throw new WasmException("Failed to get hostcall fuel");
+      }
+
+      return fuelSegment.get(ValueLayout.JAVA_LONG, 0);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error getting hostcall fuel: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public void setHostcallFuel(final long fuel) throws WasmException {
+    if (fuel < 0) {
+      throw new IllegalArgumentException("Fuel cannot be negative");
+    }
+    ensureNotClosed();
+
+    try {
+      final MethodHandle setHostcallFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetHostcallFuel();
+      if (setHostcallFuelHandle == null) {
+        throw new WasmException("Panama store set hostcall fuel function not available");
+      }
+
+      final int result = (int) setHostcallFuelHandle.invoke(nativeStore, fuel);
+
+      if (result != 0) {
+        throw new WasmException("Failed to set hostcall fuel");
+      }
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error setting hostcall fuel: " + e.getMessage(), e);
     }
   }
 

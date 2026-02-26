@@ -247,3 +247,163 @@ pub extern "C" fn wasmtime4j_panama_instance_get_global_wrapped(
         Ok(Box::new(wrapped_global))
     })
 }
+
+/// Debug: get function by internal index (Panama FFI)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_debug_function(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    function_index: c_int,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let result = (|| -> Result<*mut c_void, crate::error::WasmtimeError> {
+        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        match instance.debug_function(store, function_index as u32)? {
+            Some(func) => Ok(Box::into_raw(Box::new(func)) as *mut c_void),
+            None => Ok(std::ptr::null_mut()),
+        }
+    })();
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Debug: get global by internal index (Panama FFI)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_debug_global(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    global_index: c_int,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let result = (|| -> Result<*mut c_void, crate::error::WasmtimeError> {
+        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        match instance.debug_global(store, global_index as u32)? {
+            Some(global) => {
+                let global_wrapper =
+                    crate::global::Global::from_wasmtime_global(global, store, None)?;
+                Ok(Box::into_raw(Box::new(global_wrapper)) as *mut c_void)
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    })();
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Debug: get memory by internal index (Panama FFI)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_debug_memory(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    memory_index: c_int,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let result = (|| -> Result<*mut c_void, crate::error::WasmtimeError> {
+        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        match instance.debug_memory(store, memory_index as u32)? {
+            Some(memory) => {
+                let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
+                let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
+                let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                Ok(validated_ptr as *mut c_void)
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    })();
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Debug: get shared memory by internal index (Panama FFI)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_debug_shared_memory(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    memory_index: c_int,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let result = (|| -> Result<*mut c_void, crate::error::WasmtimeError> {
+        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        match instance.debug_shared_memory(store, memory_index as u32)? {
+            Some(shared_memory) => {
+                let memory_wrapper = crate::memory::Memory::from_shared_memory(shared_memory);
+                let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
+                Ok(validated_ptr as *mut c_void)
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    })();
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Debug: get table by internal index (Panama FFI)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_debug_table(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    table_index: c_int,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let result = (|| -> Result<*mut c_void, crate::error::WasmtimeError> {
+        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        match instance.debug_table(store, table_index as u32)? {
+            Some(table) => {
+                let table_wrapper = crate::table::Table::from_wasmtime_table(table, store, None)?;
+                Ok(Box::into_raw(Box::new(table_wrapper)) as *mut c_void)
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    })();
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => std::ptr::null_mut(),
+    }
+}
+
+/// Debug: get tag by internal index (Panama FFI)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_instance_debug_tag(
+    instance_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    tag_index: c_int,
+) -> *mut c_void {
+    if instance_ptr.is_null() || store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+    let result = (|| -> Result<*mut c_void, crate::error::WasmtimeError> {
+        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        match instance.debug_tag(store, tag_index as u32)? {
+            Some(tag) => Ok(Box::into_raw(Box::new(tag)) as *mut c_void),
+            None => Ok(std::ptr::null_mut()),
+        }
+    })();
+    match result {
+        Ok(ptr) => ptr,
+        Err(_) => std::ptr::null_mut(),
+    }
+}

@@ -21,6 +21,10 @@ pub struct CodeBuilderState {
     is_text: bool,
     dwarf_package: Option<Vec<u8>>,
     hint: Option<CodeHintKind>,
+    /// Compile-time builtins: Vec<(name, wasm_bytes, is_text)>
+    compile_time_builtins: Vec<(String, Vec<u8>, bool)>,
+    /// Optional import name for unsafe intrinsics
+    unsafe_intrinsics_import: Option<String>,
 }
 
 /// Mirrors Wasmtime's CodeHint to indicate expected code type.
@@ -68,6 +72,8 @@ impl CodeBuilderState {
             is_text: false,
             dwarf_package: None,
             hint: None,
+            compile_time_builtins: Vec::new(),
+            unsafe_intrinsics_import: None,
         })
     }
 
@@ -109,6 +115,21 @@ impl CodeBuilderState {
     /// Set the compilation hint (informational — wasmtime auto-detects from bytes).
     pub fn hint(&mut self, hint: CodeHintKind) {
         self.hint = Some(hint);
+    }
+
+    /// Add a compile-time builtin component from binary bytes.
+    pub fn compile_time_builtins_binary(&mut self, name: String, bytes: Vec<u8>) {
+        self.compile_time_builtins.push((name, bytes, false));
+    }
+
+    /// Add a compile-time builtin component from binary or text bytes.
+    pub fn compile_time_builtins_binary_or_text(&mut self, name: String, bytes: Vec<u8>) {
+        self.compile_time_builtins.push((name, bytes, true));
+    }
+
+    /// Set the import name for exposing unsafe intrinsics.
+    pub fn expose_unsafe_intrinsics(&mut self, import_name: String) {
+        self.unsafe_intrinsics_import = Some(import_name);
     }
 
     /// Build the wasmtime CodeBuilder, serialize, then deserialize to get a Module.
@@ -165,10 +186,40 @@ impl CodeBuilderState {
             self.is_text,
             self.dwarf_package.as_deref(),
         )?;
+        self.apply_extras(&mut builder)?;
 
         builder
             .compile_module_serialized()
             .map_err(|e| WasmtimeError::from_compilation_error(e))
+    }
+
+    /// Apply compile-time builtins and unsafe intrinsics to a builder.
+    fn apply_extras<'a>(&'a self, builder: &mut wasmtime::CodeBuilder<'a>) -> WasmtimeResult<()> {
+        for (name, bytes, is_text) in &self.compile_time_builtins {
+            if *is_text {
+                unsafe {
+                    builder
+                        .compile_time_builtins_binary_or_text(
+                            name.as_str(),
+                            bytes.as_slice(),
+                            None,
+                        )
+                        .map_err(|e| WasmtimeError::from_compilation_error(e))?;
+                }
+            } else {
+                unsafe {
+                    builder.compile_time_builtins_binary(name.as_str(), bytes.as_slice());
+                }
+            }
+        }
+
+        if let Some(ref import_name) = self.unsafe_intrinsics_import {
+            unsafe {
+                builder.expose_unsafe_intrinsics(import_name.as_str());
+            }
+        }
+
+        Ok(())
     }
 
     /// Build the wasmtime CodeBuilder, serialize, then deserialize to get a Component.
@@ -221,6 +272,7 @@ impl CodeBuilderState {
             self.is_text,
             self.dwarf_package.as_deref(),
         )?;
+        self.apply_extras(&mut builder)?;
 
         builder
             .compile_component_serialized()
@@ -267,6 +319,32 @@ pub fn code_builder_hint(builder: &mut CodeBuilderState, hint_ordinal: i32) {
         _ => return, // Ignore unknown hints
     };
     builder.hint(hint);
+}
+
+/// Add compile-time builtins binary bytes on the builder.
+pub fn code_builder_compile_time_builtins_binary(
+    builder: &mut CodeBuilderState,
+    name: String,
+    bytes: Vec<u8>,
+) {
+    builder.compile_time_builtins_binary(name, bytes);
+}
+
+/// Add compile-time builtins binary or text bytes on the builder.
+pub fn code_builder_compile_time_builtins_binary_or_text(
+    builder: &mut CodeBuilderState,
+    name: String,
+    bytes: Vec<u8>,
+) {
+    builder.compile_time_builtins_binary_or_text(name, bytes);
+}
+
+/// Set expose unsafe intrinsics import name on the builder.
+pub fn code_builder_expose_unsafe_intrinsics(
+    builder: &mut CodeBuilderState,
+    import_name: String,
+) {
+    builder.expose_unsafe_intrinsics(import_name);
 }
 
 /// Compile module from builder.

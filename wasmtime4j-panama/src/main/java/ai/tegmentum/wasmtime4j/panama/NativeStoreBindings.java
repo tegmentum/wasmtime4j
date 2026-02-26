@@ -51,6 +51,9 @@ public final class NativeStoreBindings extends NativeBindingsBase {
   private volatile MethodHandle mhStoreAddFuel;
   private volatile MethodHandle mhStoreConsumeFuel;
   private volatile MethodHandle mhStoreSetFuelAsyncYieldInterval;
+  private volatile MethodHandle mhStoreGetHostcallFuel;
+  private volatile MethodHandle mhStoreSetHostcallFuel;
+  private volatile MethodHandle mhStoreTryCreate;
   private volatile MethodHandle mhStoreSetEpochDeadline;
   private volatile MethodHandle mhStoreGc;
 
@@ -81,6 +84,9 @@ public final class NativeStoreBindings extends NativeBindingsBase {
     this.mhStoreConsumeFuel = resolveHandle("wasmtime4j_panama_store_consume_fuel");
     this.mhStoreSetFuelAsyncYieldInterval =
         resolveHandle("wasmtime4j_panama_store_set_fuel_async_yield_interval");
+    this.mhStoreGetHostcallFuel = resolveHandle("wasmtime4j_panama_store_get_hostcall_fuel");
+    this.mhStoreSetHostcallFuel = resolveHandle("wasmtime4j_panama_store_set_hostcall_fuel");
+    this.mhStoreTryCreate = resolveHandle("wasmtime4j_panama_store_try_create");
     this.mhStoreSetEpochDeadline = resolveHandle("wasmtime4j_panama_store_set_epoch_deadline");
     this.mhStoreGc = resolveHandle("wasmtime4j_panama_store_gc");
   }
@@ -163,6 +169,27 @@ public final class NativeStoreBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS, // store_ptr
             ValueLayout.JAVA_LONG)); // interval
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_try_create",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.ADDRESS)); // store_ptr (output)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_get_hostcall_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // fuel_out_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_set_hostcall_fuel",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG)); // fuel
 
     addFunctionBinding(
         "wasmtime4j_panama_store_set_epoch_deadline",
@@ -816,6 +843,33 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    */
   public MethodHandle getPanamaStoreSetFuelAsyncYieldInterval() {
     return mhStoreSetFuelAsyncYieldInterval;
+  }
+
+  /**
+   * Gets the method handle for trying to create a store (OOM-safe).
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreTryCreate() {
+    return mhStoreTryCreate;
+  }
+
+  /**
+   * Gets the method handle for getting hostcall fuel from a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreGetHostcallFuel() {
+    return mhStoreGetHostcallFuel;
+  }
+
+  /**
+   * Gets the method handle for setting hostcall fuel in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreSetHostcallFuel() {
+    return mhStoreSetHostcallFuel;
   }
 
   /**

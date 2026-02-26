@@ -7,7 +7,7 @@
 
 use jni::objects::{JByteArray, JClass, JObject, JString, JValue};
 use jni::strings::JavaStr;
-use jni::sys::{jboolean, jbyteArray, jlong, jlongArray, jobject, jobjectArray, jstring};
+use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray, jobject, jobjectArray, jstring};
 use jni::JNIEnv;
 
 use crate::error::jni_utils;
@@ -579,6 +579,76 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserial
             crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)?
         };
         crate::shared_ffi::module::deserialize_module_file_shared(engine, &path_str)
+    }) as jlong
+}
+
+/// Load a module from a trusted file (skips validation).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeFromTrustedFile(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    path: JString,
+) -> jlong {
+    let path_str = match env.get_string(&path) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return 0 as jlong,
+    };
+
+    jni_utils::jni_try_ptr(&mut env, || {
+        let engine = unsafe {
+            crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)?
+        };
+        let module = crate::module::Module::from_trusted_file(engine, &path_str)?;
+        Ok(Box::new(module))
+    }) as jlong
+}
+
+/// Deserialize a module from raw bytes (no file format wrapper).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserializeRaw(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    serialized_data: jbyteArray,
+) -> jlong {
+    let data = match (|| -> Result<Vec<u8>, jni::errors::Error> {
+        let byte_array = unsafe { JByteArray::from_raw(serialized_data) };
+        let array_elements =
+            unsafe { env.get_array_elements(&byte_array, jni::objects::ReleaseMode::NoCopyBack)? };
+        let len = env.get_array_length(&byte_array)? as usize;
+        let slice =
+            unsafe { std::slice::from_raw_parts(array_elements.as_ptr() as *const u8, len) };
+        Ok(slice.to_vec())
+    })() {
+        Ok(data) => data,
+        Err(_) => return 0 as jlong,
+    };
+
+    jni_utils::jni_try_ptr(&mut env, || {
+        let engine = unsafe {
+            crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)?
+        };
+        let module = crate::module::Module::deserialize_raw(engine, &data)?;
+        Ok(Box::new(module))
+    }) as jlong
+}
+
+/// Deserialize a module from an open file descriptor.
+#[cfg(unix)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserializeOpenFile(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    fd: jint,
+) -> jlong {
+    jni_utils::jni_try_ptr(&mut env, || {
+        let engine = unsafe {
+            crate::engine::core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)?
+        };
+        let module = crate::module::Module::deserialize_open_file(engine, fd)?;
+        Ok(Box::new(module))
     }) as jlong
 }
 

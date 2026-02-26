@@ -127,6 +127,85 @@ public interface CodeBuilder extends AutoCloseable {
   CodeBuilder hint(CodeHint hint);
 
   /**
+   * Adds a compile-time builtin component from binary WebAssembly bytes.
+   *
+   * <p>This registers a component with the given name that will be available at compile time. The
+   * bytes must be valid WebAssembly binary format.
+   *
+   * @param name the name of the builtin component
+   * @param bytes the WebAssembly binary bytes of the builtin component
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if name is null or empty, or bytes is null or empty
+   */
+  CodeBuilder compileTimeBuiltinsBinary(String name, byte[] bytes);
+
+  /**
+   * Adds a compile-time builtin component from binary or text WebAssembly bytes.
+   *
+   * <p>If the bytes begin with the WebAssembly magic number, they are treated as binary. Otherwise,
+   * they are parsed as WAT text format.
+   *
+   * @param name the name of the builtin component
+   * @param bytes the WebAssembly binary or WAT text bytes of the builtin component
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if name is null or empty, or bytes is null or empty
+   */
+  CodeBuilder compileTimeBuiltinsBinaryOrText(String name, byte[] bytes);
+
+  /**
+   * Adds a compile-time builtin component from a binary WebAssembly file.
+   *
+   * @param name the name of the builtin component
+   * @param path the path to the WebAssembly binary file
+   * @return this builder for method chaining
+   * @throws IOException if an I/O error occurs reading the file
+   * @throws IllegalArgumentException if name or path is null
+   */
+  default CodeBuilder compileTimeBuiltinsBinaryFile(final String name, final Path path)
+      throws IOException {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    return compileTimeBuiltinsBinary(name, Files.readAllBytes(path));
+  }
+
+  /**
+   * Adds a compile-time builtin component from a binary or text WebAssembly file.
+   *
+   * @param name the name of the builtin component
+   * @param path the path to the WebAssembly binary or WAT file
+   * @return this builder for method chaining
+   * @throws IOException if an I/O error occurs reading the file
+   * @throws IllegalArgumentException if name or path is null
+   */
+  default CodeBuilder compileTimeBuiltinsBinaryOrTextFile(final String name, final Path path)
+      throws IOException {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (path == null) {
+      throw new IllegalArgumentException("path cannot be null");
+    }
+    return compileTimeBuiltinsBinaryOrText(name, Files.readAllBytes(path));
+  }
+
+  /**
+   * Exposes unsafe Wasm intrinsics at the given import name.
+   *
+   * <p>This enables access to low-level, potentially unsafe WebAssembly intrinsics that are
+   * imported by the given name. Use with caution as these intrinsics can break sandboxing
+   * guarantees.
+   *
+   * @param importName the import name under which intrinsics will be available
+   * @return this builder for method chaining
+   * @throws IllegalArgumentException if importName is null or empty
+   */
+  CodeBuilder exposeUnsafeIntrinsics(String importName);
+
+  /**
    * Compiles the configured WebAssembly bytes into a module.
    *
    * @return the compiled module

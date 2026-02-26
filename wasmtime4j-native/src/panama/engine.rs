@@ -1016,3 +1016,35 @@ fn parse_cranelift_flags_json(json_str: &str) -> Vec<(String, String)> {
 
     flags
 }
+
+/// Check if the engine is configured for execution recording (Panama FFI version)
+#[cfg(feature = "rr")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_is_recording(engine_ptr: *mut c_void) -> c_int {
+    match unsafe { core::get_engine_ref(engine_ptr) } {
+        Ok(engine) => {
+            if engine.is_recording() {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => -1,
+    }
+}
+
+/// Check if the engine is configured for execution replaying (Panama FFI version)
+#[cfg(feature = "rr")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_engine_is_replaying(engine_ptr: *mut c_void) -> c_int {
+    match unsafe { core::get_engine_ref(engine_ptr) } {
+        Ok(engine) => {
+            if engine.is_replaying() {
+                1
+            } else {
+                0
+            }
+        }
+        Err(_) => -1,
+    }
+}

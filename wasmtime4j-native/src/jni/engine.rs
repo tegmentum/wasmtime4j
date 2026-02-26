@@ -1453,6 +1453,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateSh
     })
 }
 
+/// Query if the engine is configured for execution recording
+#[cfg(feature = "rr")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsRecording(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+) -> jboolean {
+    jni_utils::jni_try_bool(&mut env, || {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        Ok(engine.is_recording())
+    }) as jboolean
+}
+
+/// Query if the engine is configured for execution replaying
+#[cfg(feature = "rr")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsReplaying(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+) -> jboolean {
+    jni_utils::jni_try_bool(&mut env, || {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        Ok(engine.is_replaying())
+    }) as jboolean
+}
+
 /// JNI export: Eagerly initialize Wasmtime's thread-local state
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeTlsEagerInitialize(

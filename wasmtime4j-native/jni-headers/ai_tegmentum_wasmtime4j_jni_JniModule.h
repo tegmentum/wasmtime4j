@@ -73,6 +73,30 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeCompile
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeFromTrustedFile
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeFromTrustedFile
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeDeserializeRaw
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserializeRaw
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeDeserializeOpenFile
+ * Signature: (JI)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserializeOpenFile
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
  * Method:    nativeModuleSame
  * Signature: (JJ)Z
  */

@@ -17,6 +17,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_native
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGuestProfiler
+ * Method:    nativeGuestProfilerCreateComponent
+ * Signature: (JLjava/lang/String;JJ[J[Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeGuestProfilerCreateComponent
+  (JNIEnv *, jclass, jlong, jstring, jlong, jlong, jlongArray, jobjectArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGuestProfiler
  * Method:    nativeGuestProfilerSample
  * Signature: (JJJ)I
  */

@@ -137,6 +137,83 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_new_single(
     }
 }
 
+/// Creates a new guest profiler for a component.
+///
+/// # Arguments
+/// * `engine_ptr` - pointer to a `wasmtime::Engine`
+/// * `component_name` - C string label for the profile
+/// * `interval_nanos` - sampling interval hint in nanoseconds
+/// * `component_ptr` - pointer to a `crate::component::Component`
+/// * `extra_module_ptrs` - array of pointers to extra `wasmtime::Module` (may be null if count=0)
+/// * `extra_module_names` - array of C string names for extra modules (may be null if count=0)
+/// * `extra_module_count` - number of extra modules
+///
+/// # Returns
+/// Opaque pointer to a `Mutex<ProfilerBox>`, or null on error.
+///
+/// # Safety
+/// All pointer arguments must be valid.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_guest_profiler_new_component(
+    engine_ptr: *const c_void,
+    component_name: *const c_char,
+    interval_nanos: c_long,
+    component_ptr: *const c_void,
+    extra_module_ptrs: *const *const c_void,
+    extra_module_names: *const *const c_char,
+    extra_module_count: c_int,
+) -> *mut c_void {
+    if engine_ptr.is_null() || component_name.is_null() || component_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let engine = &*(engine_ptr as *const crate::engine::Engine);
+    let wasmtime_engine = engine.inner();
+    let name = match CStr::from_ptr(component_name).to_str() {
+        Ok(s) => s,
+        Err(_) => return std::ptr::null_mut(),
+    };
+    let interval = Duration::from_nanos(interval_nanos as u64);
+    let component = &*(component_ptr as *const crate::component::Component);
+    let wasmtime_component = component.wasmtime_component().clone();
+
+    // Build extra modules list
+    let mut extra_modules: Vec<(String, wasmtime::Module)> = Vec::new();
+    for i in 0..extra_module_count as usize {
+        let mptr = *extra_module_ptrs.add(i);
+        let nptr = *extra_module_names.add(i);
+        if mptr.is_null() || nptr.is_null() {
+            continue;
+        }
+        let module_wrapper = &*(mptr as *const crate::module::Module);
+        let module = module_wrapper.inner().clone();
+        let mname = match CStr::from_ptr(nptr).to_str() {
+            Ok(s) => s.to_string(),
+            Err(_) => continue,
+        };
+        extra_modules.push((mname, module));
+    }
+
+    match GuestProfiler::new_component(
+        wasmtime_engine,
+        name,
+        interval,
+        wasmtime_component,
+        extra_modules,
+    ) {
+        Ok(profiler) => {
+            let boxed = Box::new(Mutex::new(ProfilerBox {
+                profiler: Some(profiler),
+            }));
+            Box::into_raw(boxed) as *mut c_void
+        }
+        Err(e) => {
+            log::error!("Failed to create component GuestProfiler: {}", e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
 /// Collects a stack sample from the current execution.
 ///
 /// # Arguments

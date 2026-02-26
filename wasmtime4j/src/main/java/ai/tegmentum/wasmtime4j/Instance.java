@@ -300,6 +300,91 @@ public interface Instance extends Closeable {
   }
 
   /**
+   * Debug: gets a function by its internal module index.
+   *
+   * <p>This method requires that the engine was configured with {@code debugGuest(true)}. Returns
+   * empty if debug instrumentation is not enabled or if the index is out of bounds.
+   *
+   * @param functionIndex the internal function index
+   * @return the function at the given index, or empty if not found
+   * @since 1.1.0
+   */
+  default Optional<WasmFunction> debugFunction(final int functionIndex) {
+    return Optional.empty();
+  }
+
+  /**
+   * Debug: gets a global by its internal module index.
+   *
+   * <p>This method requires that the engine was configured with {@code debugGuest(true)}. Returns
+   * empty if debug instrumentation is not enabled or if the index is out of bounds.
+   *
+   * @param globalIndex the internal global index
+   * @return the global at the given index, or empty if not found
+   * @since 1.1.0
+   */
+  default Optional<WasmGlobal> debugGlobal(final int globalIndex) {
+    return Optional.empty();
+  }
+
+  /**
+   * Debug: gets a memory by its internal module index.
+   *
+   * <p>This method requires that the engine was configured with {@code debugGuest(true)}. Returns
+   * empty if debug instrumentation is not enabled or if the index is out of bounds.
+   *
+   * @param memoryIndex the internal memory index
+   * @return the memory at the given index, or empty if not found
+   * @since 1.1.0
+   */
+  default Optional<WasmMemory> debugMemory(final int memoryIndex) {
+    return Optional.empty();
+  }
+
+  /**
+   * Debug: gets a shared memory by its internal module index.
+   *
+   * <p>This method requires that the engine was configured with {@code debugGuest(true)}. Returns
+   * empty if debug instrumentation is not enabled or if the index is out of bounds. Returns empty
+   * for any unshared memory (use {@link #debugMemory(int)} instead).
+   *
+   * @param memoryIndex the internal memory index
+   * @return the shared memory at the given index, or empty if not found or not shared
+   * @since 1.1.0
+   */
+  default Optional<WasmMemory> debugSharedMemory(final int memoryIndex) {
+    return Optional.empty();
+  }
+
+  /**
+   * Debug: gets a table by its internal module index.
+   *
+   * <p>This method requires that the engine was configured with {@code debugGuest(true)}. Returns
+   * empty if debug instrumentation is not enabled or if the index is out of bounds.
+   *
+   * @param tableIndex the internal table index
+   * @return the table at the given index, or empty if not found
+   * @since 1.1.0
+   */
+  default Optional<WasmTable> debugTable(final int tableIndex) {
+    return Optional.empty();
+  }
+
+  /**
+   * Debug: gets a tag by its internal module index.
+   *
+   * <p>This method requires that the engine was configured with {@code debugGuest(true)}. Returns
+   * empty if debug instrumentation is not enabled or if the index is out of bounds.
+   *
+   * @param tagIndex the internal tag index
+   * @return the tag at the given index, or empty if not found
+   * @since 1.1.0
+   */
+  default Optional<Tag> debugTag(final int tagIndex) {
+    return Optional.empty();
+  }
+
+  /**
    * Checks if the instance is still valid and usable.
    *
    * @return true if the instance is valid, false otherwise

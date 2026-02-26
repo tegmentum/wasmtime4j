@@ -89,6 +89,79 @@ final class PanamaGuestProfiler implements GuestProfiler {
     this.finished = false;
   }
 
+  /**
+   * Creates a new Panama guest profiler for a component.
+   *
+   * @param enginePtr the native engine pointer
+   * @param componentName the profile label
+   * @param intervalNanos sampling interval hint in nanoseconds
+   * @param componentPtr the native component pointer
+   * @param extraModules map of extra module names to modules
+   * @throws WasmException if profiler creation fails
+   */
+  PanamaGuestProfiler(
+      final MemorySegment enginePtr,
+      final String componentName,
+      final long intervalNanos,
+      final MemorySegment componentPtr,
+      final Map<String, Module> extraModules)
+      throws WasmException {
+    if (enginePtr == null || enginePtr.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("enginePtr cannot be null");
+    }
+    if (componentName == null || componentName.isEmpty()) {
+      throw new IllegalArgumentException("componentName cannot be null or empty");
+    }
+    if (componentPtr == null || componentPtr.equals(MemorySegment.NULL)) {
+      throw new IllegalArgumentException("componentPtr cannot be null");
+    }
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment nameSegment = arena.allocateFrom(componentName);
+
+      // Allocate arrays for extra module pointers and names
+      final int count = extraModules != null ? extraModules.size() : 0;
+      final MemorySegment modulePtrs = arena.allocate(ValueLayout.ADDRESS, Math.max(count, 1));
+      final MemorySegment moduleNamePtrs = arena.allocate(ValueLayout.ADDRESS, Math.max(count, 1));
+
+      if (extraModules != null) {
+        int idx = 0;
+        for (final Map.Entry<String, Module> entry : extraModules.entrySet()) {
+          if (!(entry.getValue() instanceof PanamaModule)) {
+            throw new WasmException("Module '" + entry.getKey() + "' must be a Panama module");
+          }
+          final PanamaModule panamaModule = (PanamaModule) entry.getValue();
+          final MemorySegment modulePtr = panamaModule.getNativeModule();
+          if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+            throw new WasmException("Module '" + entry.getKey() + "' has invalid native handle");
+          }
+          modulePtrs.setAtIndex(ValueLayout.ADDRESS, idx, modulePtr);
+
+          final MemorySegment entryName = arena.allocateFrom(entry.getKey());
+          moduleNamePtrs.setAtIndex(ValueLayout.ADDRESS, idx, entryName);
+          idx++;
+        }
+      }
+
+      this.nativeHandle =
+          NATIVE_BINDINGS.guestProfilerNewComponent(
+              enginePtr,
+              nameSegment,
+              intervalNanos,
+              componentPtr,
+              modulePtrs,
+              moduleNamePtrs,
+              count);
+    }
+
+    if (this.nativeHandle == null || this.nativeHandle.equals(MemorySegment.NULL)) {
+      throw new WasmException(
+          "Failed to create component GuestProfiler"
+              + " (is guest debugging enabled on the engine?)");
+    }
+    this.finished = false;
+  }
+
   @Override
   public void sample(final Store store, final Duration delta) throws WasmException {
     if (store == null) {

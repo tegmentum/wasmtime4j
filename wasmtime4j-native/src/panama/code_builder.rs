@@ -155,6 +155,69 @@ pub extern "C" fn wasmtime4j_panama_code_builder_compile_component_serialized(
     }
 }
 
+/// Add compile-time builtins from binary bytes.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_code_builder_compile_time_builtins_binary(
+    builder_ptr: *mut c_void,
+    name_ptr: *const u8,
+    name_len: c_int,
+    wasm_ptr: *const u8,
+    wasm_len: c_int,
+) {
+    if builder_ptr.is_null() || name_ptr.is_null() || wasm_ptr.is_null() {
+        return;
+    }
+    let builder = unsafe { &mut *(builder_ptr as *mut code_builder::CodeBuilderState) };
+    let name_bytes = unsafe { std::slice::from_raw_parts(name_ptr, name_len as usize) };
+    let name = match std::str::from_utf8(name_bytes) {
+        Ok(s) => s.to_string(),
+        Err(_) => return,
+    };
+    let wasm_bytes = unsafe { std::slice::from_raw_parts(wasm_ptr, wasm_len as usize) };
+    code_builder::code_builder_compile_time_builtins_binary(builder, name, wasm_bytes.to_vec());
+}
+
+/// Add compile-time builtins from binary or text bytes.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_code_builder_compile_time_builtins_binary_or_text(
+    builder_ptr: *mut c_void,
+    name_ptr: *const u8,
+    name_len: c_int,
+    wasm_ptr: *const u8,
+    wasm_len: c_int,
+) {
+    if builder_ptr.is_null() || name_ptr.is_null() || wasm_ptr.is_null() {
+        return;
+    }
+    let builder = unsafe { &mut *(builder_ptr as *mut code_builder::CodeBuilderState) };
+    let name_bytes = unsafe { std::slice::from_raw_parts(name_ptr, name_len as usize) };
+    let name = match std::str::from_utf8(name_bytes) {
+        Ok(s) => s.to_string(),
+        Err(_) => return,
+    };
+    let wasm_bytes = unsafe { std::slice::from_raw_parts(wasm_ptr, wasm_len as usize) };
+    code_builder::code_builder_compile_time_builtins_binary_or_text(builder, name, wasm_bytes.to_vec());
+}
+
+/// Set expose unsafe intrinsics import name on the builder.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_code_builder_expose_unsafe_intrinsics(
+    builder_ptr: *mut c_void,
+    name_ptr: *const u8,
+    name_len: c_int,
+) {
+    if builder_ptr.is_null() || name_ptr.is_null() {
+        return;
+    }
+    let builder = unsafe { &mut *(builder_ptr as *mut code_builder::CodeBuilderState) };
+    let name_bytes = unsafe { std::slice::from_raw_parts(name_ptr, name_len as usize) };
+    let name = match std::str::from_utf8(name_bytes) {
+        Ok(s) => s.to_string(),
+        Err(_) => return,
+    };
+    code_builder::code_builder_expose_unsafe_intrinsics(builder, name);
+}
+
 /// Destroy the code builder.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_code_builder_destroy(builder_ptr: *mut c_void) {

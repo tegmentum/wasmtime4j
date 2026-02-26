@@ -316,6 +316,91 @@ pub extern "C" fn wasmtime4j_panama_module_deserialize_file(
     }
 }
 
+/// Load a module from a trusted file (skips validation).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_from_trusted_file(
+    engine_ptr: *mut c_void,
+    path_ptr: *const c_char,
+    module_ptr: *mut *mut c_void,
+) -> c_int {
+    if path_ptr.is_null() || module_ptr.is_null() {
+        return crate::shared_ffi::FFI_ERROR;
+    }
+
+    let path_cstr = unsafe { std::ffi::CStr::from_ptr(path_ptr) };
+    let path_str = match path_cstr.to_str() {
+        Ok(s) => s,
+        Err(_) => return crate::shared_ffi::FFI_ERROR,
+    };
+
+    match unsafe { crate::engine::core::get_engine_ref(engine_ptr) } {
+        Ok(engine) => match crate::module::Module::from_trusted_file(engine, path_str) {
+            Ok(module) => {
+                unsafe {
+                    *module_ptr = Box::into_raw(Box::new(module)) as *mut c_void;
+                }
+                crate::shared_ffi::FFI_SUCCESS
+            }
+            Err(_) => crate::shared_ffi::FFI_ERROR,
+        },
+        Err(_) => crate::shared_ffi::FFI_ERROR,
+    }
+}
+
+/// Deserialize a module from raw bytes (no file format wrapper).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_deserialize_raw(
+    engine_ptr: *mut c_void,
+    bytes_ptr: *const u8,
+    bytes_len: c_int,
+    module_ptr: *mut *mut c_void,
+) -> c_int {
+    if bytes_ptr.is_null() || module_ptr.is_null() || bytes_len <= 0 {
+        return crate::shared_ffi::FFI_ERROR;
+    }
+
+    let bytes = unsafe { std::slice::from_raw_parts(bytes_ptr, bytes_len as usize) };
+
+    match unsafe { crate::engine::core::get_engine_ref(engine_ptr) } {
+        Ok(engine) => match crate::module::Module::deserialize_raw(engine, bytes) {
+            Ok(module) => {
+                unsafe {
+                    *module_ptr = Box::into_raw(Box::new(module)) as *mut c_void;
+                }
+                crate::shared_ffi::FFI_SUCCESS
+            }
+            Err(_) => crate::shared_ffi::FFI_ERROR,
+        },
+        Err(_) => crate::shared_ffi::FFI_ERROR,
+    }
+}
+
+/// Deserialize a module from an open file descriptor.
+#[cfg(unix)]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_deserialize_open_file(
+    engine_ptr: *mut c_void,
+    fd: c_int,
+    module_ptr: *mut *mut c_void,
+) -> c_int {
+    if module_ptr.is_null() {
+        return crate::shared_ffi::FFI_ERROR;
+    }
+
+    match unsafe { crate::engine::core::get_engine_ref(engine_ptr) } {
+        Ok(engine) => match crate::module::Module::deserialize_open_file(engine, fd) {
+            Ok(module) => {
+                unsafe {
+                    *module_ptr = Box::into_raw(Box::new(module)) as *mut c_void;
+                }
+                crate::shared_ffi::FFI_SUCCESS
+            }
+            Err(_) => crate::shared_ffi::FFI_ERROR,
+        },
+        Err(_) => crate::shared_ffi::FFI_ERROR,
+    }
+}
+
 /// Validate module functionality (defensive check)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_module_validate_functionality(

@@ -105,6 +105,7 @@ public final class EngineConfig {
   private boolean wasmComponentModelErrorContext = false;
   private boolean wasmComponentModelGc = false;
   private boolean wasmComponentModelThreading = false;
+  private boolean wasmComponentModelFixedLengthLists = false;
 
   // Platform-specific configuration
   private boolean macosUseMachPorts = true;
@@ -161,6 +162,9 @@ public final class EngineConfig {
 
   // Signals-based trap handling (always overridden to false on native side for JVM safety)
   private boolean signalsBasedTraps = false;
+
+  // Record/replay configuration
+  private RRConfig rrConfig = RRConfig.NONE;
 
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
@@ -446,6 +450,8 @@ public final class EngineConfig {
         features.contains(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT);
     this.wasmComponentModelGc = features.contains(WasmFeature.COMPONENT_MODEL_GC);
     this.wasmComponentModelThreading = features.contains(WasmFeature.COMPONENT_MODEL_THREADING);
+    this.wasmComponentModelFixedLengthLists =
+        features.contains(WasmFeature.COMPONENT_MODEL_FIXED_LENGTH_LISTS);
 
     return this;
   }
@@ -534,6 +540,9 @@ public final class EngineConfig {
         break;
       case COMPONENT_MODEL_THREADING:
         this.wasmComponentModelThreading = true;
+        break;
+      case COMPONENT_MODEL_FIXED_LENGTH_LISTS:
+        this.wasmComponentModelFixedLengthLists = true;
         break;
       default:
         break;
@@ -697,6 +706,8 @@ public final class EngineConfig {
     if (wasmComponentModelErrorContext) features.add(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT);
     if (wasmComponentModelGc) features.add(WasmFeature.COMPONENT_MODEL_GC);
     if (wasmComponentModelThreading) features.add(WasmFeature.COMPONENT_MODEL_THREADING);
+    if (wasmComponentModelFixedLengthLists)
+      features.add(WasmFeature.COMPONENT_MODEL_FIXED_LENGTH_LISTS);
     return features;
   }
 
@@ -955,6 +966,7 @@ public final class EngineConfig {
     c.wasmComponentModelErrorContext = this.wasmComponentModelErrorContext;
     c.wasmComponentModelGc = this.wasmComponentModelGc;
     c.wasmComponentModelThreading = this.wasmComponentModelThreading;
+    c.wasmComponentModelFixedLengthLists = this.wasmComponentModelFixedLengthLists;
     // Platform-specific
     c.macosUseMachPorts = this.macosUseMachPorts;
     // Backtrace and debugging
@@ -978,6 +990,7 @@ public final class EngineConfig {
     c.emitClif = this.emitClif;
     c.x86FloatAbiOk = this.x86FloatAbiOk;
     c.signalsBasedTraps = this.signalsBasedTraps;
+    c.rrConfig = this.rrConfig;
     // Transient fields (not serialized to JSON)
     c.incrementalCacheStore = this.incrementalCacheStore;
     c.memoryCreator = this.memoryCreator;
@@ -1876,6 +1889,31 @@ public final class EngineConfig {
   }
 
   /**
+   * Enables or disables the component model fixed-length lists proposal.
+   *
+   * <p>This corresponds to the fixed-length list support in the component model specification.
+   * Support for this feature is currently incomplete in Wasmtime.
+   *
+   * @param enable true to enable component model fixed-length lists
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig wasmComponentModelFixedLengthLists(final boolean enable) {
+    this.wasmComponentModelFixedLengthLists = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether component model fixed-length lists is enabled.
+   *
+   * @return true if component model fixed-length lists is enabled
+   * @since 1.0.0
+   */
+  public boolean isWasmComponentModelFixedLengthLists() {
+    return wasmComponentModelFixedLengthLists;
+  }
+
+  /**
    * Enables or disables Cranelift proof-carrying code validation.
    *
    * @param enable true to enable PCC validation
@@ -2476,6 +2514,37 @@ public final class EngineConfig {
   }
 
   /**
+   * Configures record/replay execution tracing.
+   *
+   * <p>When recording or replaying are enabled, the engine captures or replays execution traces for
+   * deterministic debugging. This requires NaN canonicalization ({@link
+   * #craneliftNanCanonicalization(boolean)}) and deterministic relaxed SIMD ({@link
+   * #relaxedSimdDeterministic(boolean)}) to be enabled.
+   *
+   * @param config the record/replay configuration
+   * @return this configuration for method chaining
+   * @throws IllegalArgumentException if config is null
+   * @since 1.1.0
+   */
+  public EngineConfig rr(final RRConfig config) {
+    if (config == null) {
+      throw new IllegalArgumentException("RRConfig cannot be null");
+    }
+    this.rrConfig = config;
+    return this;
+  }
+
+  /**
+   * Returns the record/replay configuration.
+   *
+   * @return the current RR configuration
+   * @since 1.1.0
+   */
+  public RRConfig getRr() {
+    return rrConfig;
+  }
+
+  /**
    * Sets the directory path where Cranelift IR (CLIF) will be written during compilation.
    *
    * <p>When set to a non-null path, the engine will dump Cranelift intermediate representation
@@ -2597,6 +2666,9 @@ public final class EngineConfig {
         appendJsonBool(sb, first, "wasmComponentModelErrorContext", wasmComponentModelErrorContext);
     first = appendJsonBool(sb, first, "wasmComponentModelGc", wasmComponentModelGc);
     first = appendJsonBool(sb, first, "wasmComponentModelThreading", wasmComponentModelThreading);
+    first =
+        appendJsonBool(
+            sb, first, "wasmComponentModelFixedLengthLists", wasmComponentModelFixedLengthLists);
 
     // Cranelift settings
     first = appendJsonBool(sb, first, "craneliftDebugVerifier", craneliftDebugVerifier);
@@ -2610,6 +2682,9 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "enableCompiler", enableCompiler);
     first = appendJsonBool(sb, first, "x86FloatAbiOk", x86FloatAbiOk);
     first = appendJsonBool(sb, first, "signalsBasedTraps", signalsBasedTraps);
+    if (rrConfig != RRConfig.NONE) {
+      first = appendJsonField(sb, first, "rrConfig", rrConfig.getRustName());
+    }
     if (emitClif != null) {
       first = appendJsonField(sb, first, "emitClif", emitClif);
     }

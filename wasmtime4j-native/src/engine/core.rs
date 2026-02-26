@@ -79,6 +79,7 @@ pub struct EngineConfigFfi {
     pub wasm_component_model_error_context: Option<bool>,
     pub wasm_component_model_gc: Option<bool>,
     pub wasm_component_model_threading: Option<bool>,
+    pub wasm_component_model_fixed_length_lists: Option<bool>,
 
     // Cranelift settings
     pub cranelift_debug_verifier: Option<bool>,
@@ -152,6 +153,10 @@ pub struct EngineConfigFfi {
 
     // Signals-based trap handling (always overridden to false for JVM safety)
     pub signals_based_traps: Option<bool>,
+
+    // Record/replay configuration: "none", "recording", "replaying"
+    #[cfg(feature = "rr")]
+    pub rr_config: Option<String>,
 
     // Cranelift flag enables (single-flag variant, sets flag to "true")
     pub cranelift_flag_enables: Option<Vec<String>>,
@@ -272,6 +277,9 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     }
     if let Some(v) = config.wasm_component_model_threading {
         builder = builder.wasm_component_model_threading(v);
+    }
+    if let Some(v) = config.wasm_component_model_fixed_length_lists {
+        builder = builder.wasm_component_model_fixed_length_lists(v);
     }
 
     // Cranelift settings
@@ -445,6 +453,17 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
         }
         // Always set to false regardless of the requested value
         builder = builder.signals_based_traps(false);
+    }
+
+    // Record/replay configuration
+    #[cfg(feature = "rr")]
+    if let Some(ref rr) = config.rr_config {
+        let rr_value = match rr.as_str() {
+            "recording" => 1,
+            "replaying" => 2,
+            _ => 0,
+        };
+        builder = builder.rr(rr_value);
     }
 
     Ok(builder)

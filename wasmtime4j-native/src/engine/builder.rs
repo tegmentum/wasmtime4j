@@ -481,6 +481,7 @@ pub struct EngineConfigSummary {
     pub wasm_component_model_error_context: bool,
     pub wasm_component_model_gc: bool,
     pub wasm_component_model_threading: bool,
+    pub wasm_component_model_fixed_length_lists: bool,
 
     // ===== Runtime-essential fields =====
     /// Whether fuel consumption is enabled (drives store fuel initialization)
@@ -529,6 +530,7 @@ impl Default for EngineConfigSummary {
             wasm_component_model_error_context: false,
             wasm_component_model_gc: false,
             wasm_component_model_threading: false,
+            wasm_component_model_fixed_length_lists: false,
             fuel_enabled: false,
             epoch_interruption: false,
             max_stack_size: None,
@@ -574,6 +576,7 @@ impl EngineConfigSummary {
             wasm_component_model_error_context: false,
             wasm_component_model_gc: false,
             wasm_component_model_threading: false,
+            wasm_component_model_fixed_length_lists: false,
             fuel_enabled: false, // Wasmtime default: consume_fuel is off
             epoch_interruption: false,
             max_stack_size: None,
@@ -614,6 +617,7 @@ impl EngineConfigSummary {
             wasm_component_model_error_context: builder.wasm_component_model_error_context,
             wasm_component_model_gc: builder.wasm_component_model_gc,
             wasm_component_model_threading: builder.wasm_component_model_threading,
+            wasm_component_model_fixed_length_lists: builder.wasm_component_model_fixed_length_lists,
             fuel_enabled: builder.fuel_enabled,
             epoch_interruption: builder.epoch_interruption,
             max_stack_size: builder.max_stack_size,
@@ -665,6 +669,7 @@ pub struct EngineBuilder {
     pub(crate) wasm_component_model_async_stackful: bool,
     pub(crate) wasm_component_model_error_context: bool,
     pub(crate) wasm_component_model_gc: bool,
+    pub(crate) wasm_component_model_fixed_length_lists: bool,
     pub(crate) async_support: bool,
     pub(crate) concurrency_support: bool,
     pub(crate) coredump_on_trap: bool,
@@ -730,6 +735,9 @@ pub struct EngineBuilder {
     pub(crate) enable_compiler: bool,
     // Acknowledge x86 float ABI behavior
     pub(crate) x86_float_abi_ok: bool,
+    // Record/replay configuration
+    #[cfg(feature = "rr")]
+    pub(crate) rr_config: wasmtime::RRConfig,
 }
 
 impl EngineBuilder {
@@ -795,6 +803,7 @@ impl EngineBuilder {
             wasm_component_model_async_stackful: false, // Component model extension - off by default
             wasm_component_model_error_context: false, // Component model extension - off by default
             wasm_component_model_gc: false,            // Component model extension - off by default
+            wasm_component_model_fixed_length_lists: false, // Component model extension - off by default
             async_support: false,                      // Async execution support - off by default
             concurrency_support: false,                // Concurrency support - off by default
             coredump_on_trap: false,                   // Coredump on trap - off by default
@@ -833,6 +842,8 @@ impl EngineBuilder {
             cranelift_debug_checks: false, // Cranelift debug checks - off by default
             enable_compiler: true, // Compiler enabled - on by default
             x86_float_abi_ok: false, // x86 float ABI acknowledgment - off by default
+            #[cfg(feature = "rr")]
+            rr_config: wasmtime::RRConfig::None, // Record/replay - disabled by default
         }
     }
 
@@ -1018,6 +1029,13 @@ impl EngineBuilder {
     pub fn wasm_component_model_gc(mut self, enable: bool) -> Self {
         self.config.wasm_component_model_gc(enable);
         self.wasm_component_model_gc = enable;
+        self
+    }
+
+    /// Configure WebAssembly component model fixed-length lists support
+    pub fn wasm_component_model_fixed_length_lists(mut self, enable: bool) -> Self {
+        self.config.wasm_component_model_fixed_length_lists(enable);
+        self.wasm_component_model_fixed_length_lists = enable;
         self
     }
 
@@ -1558,6 +1576,26 @@ impl EngineBuilder {
             self.config.x86_float_abi_ok(enable);
         }
         self.x86_float_abi_ok = enable;
+        self
+    }
+
+    /// Configure record/replay execution tracing
+    ///
+    /// When recording or replaying are enabled, the engine captures or replays
+    /// execution traces for deterministic debugging. Requires NaN canonicalization
+    /// and deterministic relaxed SIMD to be enabled.
+    ///
+    /// # Arguments
+    /// * `rr_config_value` - 0 = None, 1 = Recording, 2 = Replaying
+    #[cfg(feature = "rr")]
+    pub fn rr(mut self, rr_config_value: i32) -> Self {
+        let rr = match rr_config_value {
+            1 => wasmtime::RRConfig::Recording,
+            2 => wasmtime::RRConfig::Replaying,
+            _ => wasmtime::RRConfig::None,
+        };
+        self.config.rr(rr.clone());
+        self.rr_config = rr;
         self
     }
 
