@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.panama;
 
+import ai.tegmentum.wasmtime4j.WaitResult;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
@@ -1097,7 +1098,7 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
-  public int atomicWait32(final int offset, final int expected, final long timeoutNanos) {
+  public WaitResult atomicWait32(final int offset, final int expected, final long timeoutNanos) {
     if (offset < 0 || offset % 4 != 0) {
       throw new IllegalArgumentException("Offset must be non-negative and 4-byte aligned");
     }
@@ -1123,11 +1124,11 @@ public final class PanamaMemory implements WasmMemory {
       throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
-    return resultOut.get(ValueLayout.JAVA_INT, 0);
+    return WaitResult.fromNativeCode(resultOut.get(ValueLayout.JAVA_INT, 0));
   }
 
   @Override
-  public int atomicWait64(final int offset, final long expected, final long timeoutNanos) {
+  public WaitResult atomicWait64(final int offset, final long expected, final long timeoutNanos) {
     if (offset < 0 || offset % 8 != 0) {
       throw new IllegalArgumentException("Offset must be non-negative and 8-byte aligned");
     }
@@ -1153,7 +1154,7 @@ public final class PanamaMemory implements WasmMemory {
       throwAtomicOperationError(errorCode, "Atomic operation failed");
     }
 
-    return resultOut.get(ValueLayout.JAVA_INT, 0);
+    return WaitResult.fromNativeCode(resultOut.get(ValueLayout.JAVA_INT, 0));
   }
 
   @Override

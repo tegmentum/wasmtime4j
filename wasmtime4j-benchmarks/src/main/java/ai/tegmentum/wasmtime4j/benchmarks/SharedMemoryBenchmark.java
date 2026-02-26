@@ -22,6 +22,7 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
+import ai.tegmentum.wasmtime4j.WaitResult;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
@@ -274,7 +275,7 @@ public class SharedMemoryBenchmark {
 
   /** Benchmarks atomic wait32 with immediate return (value mismatch). */
   @Benchmark
-  public int atomicWait32Immediate() {
+  public WaitResult atomicWait32Immediate() {
     final int offset = (ThreadLocalRandom.current().nextInt(1024) & ~3);
     final int current = sharedMemory.atomicLoadInt(offset);
     final int different = current + 1; // Ensure mismatch for immediate return

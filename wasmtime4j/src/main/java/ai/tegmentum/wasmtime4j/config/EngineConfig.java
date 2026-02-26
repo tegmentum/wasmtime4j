@@ -155,6 +155,12 @@ public final class EngineConfig {
   // Enable or disable the compiler (wasmtime 41.0.3)
   private boolean enableCompiler = true;
 
+  // Acknowledge x86 float ABI behavior (wasmtime 41.0.3)
+  private boolean x86FloatAbiOk = false;
+
+  // Signals-based trap handling (always overridden to false on native side for JVM safety)
+  private boolean signalsBasedTraps = false;
+
   /** Creates a new engine configuration with default settings. */
   public EngineConfig() {
     // Default feature flags are set via field initializers above
@@ -941,6 +947,8 @@ public final class EngineConfig {
     c.craneliftDebugChecks = this.craneliftDebugChecks;
     c.enableCompiler = this.enableCompiler;
     c.emitClif = this.emitClif;
+    c.x86FloatAbiOk = this.x86FloatAbiOk;
+    c.signalsBasedTraps = this.signalsBasedTraps;
     // Transient fields (not serialized to JSON)
     c.incrementalCacheStore = this.incrementalCacheStore;
     c.memoryCreator = this.memoryCreator;
@@ -2375,6 +2383,70 @@ public final class EngineConfig {
   }
 
   /**
+   * Acknowledges the x86 float ABI behavior.
+   *
+   * <p>This corresponds to the Wasmtime {@code Config::x86_float_abi_ok} method. When targeting x86
+   * platforms, certain WebAssembly float operations may exhibit non-standard ABI behavior. Setting
+   * this to {@code true} acknowledges awareness of this behavior and suppresses related warnings or
+   * errors during engine creation.
+   *
+   * @param enable true to acknowledge x86 float ABI behavior
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig x86FloatAbiOk(final boolean enable) {
+    this.x86FloatAbiOk = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether x86 float ABI behavior is acknowledged.
+   *
+   * @return true if x86 float ABI behavior is acknowledged
+   * @since 1.0.0
+   */
+  public boolean isX86FloatAbiOk() {
+    return x86FloatAbiOk;
+  }
+
+  /**
+   * Configures whether signals-based trap handling is enabled.
+   *
+   * <p>This corresponds to the Wasmtime {@code Config::signals_based_traps} method. Note that when
+   * running inside a JVM, the native side always overrides this to {@code false} for safety, since
+   * the JVM installs its own signal handlers. This setter is provided for API completeness.
+   *
+   * <p><strong>Warning:</strong> Setting this to {@code true} has no effect in JVM environments
+   * because the native engine always forces it to {@code false}.
+   *
+   * @param enable true to request signals-based traps (will be overridden to false by native)
+   * @return this configuration for method chaining
+   * @since 1.0.0
+   */
+  public EngineConfig signalsBasedTraps(final boolean enable) {
+    if (enable) {
+      java.util.logging.Logger.getLogger(EngineConfig.class.getName())
+          .warning(
+              "signalsBasedTraps(true) requested but will be overridden to false "
+                  + "by the native engine for JVM safety");
+    }
+    this.signalsBasedTraps = enable;
+    return this;
+  }
+
+  /**
+   * Returns whether signals-based trap handling is requested.
+   *
+   * <p>Note that the native engine always overrides this to {@code false} for JVM safety.
+   *
+   * @return true if signals-based traps are requested
+   * @since 1.0.0
+   */
+  public boolean isSignalsBasedTraps() {
+    return signalsBasedTraps;
+  }
+
+  /**
    * Sets the directory path where Cranelift IR (CLIF) will be written during compilation.
    *
    * <p>When set to a non-null path, the engine will dump Cranelift intermediate representation
@@ -2506,6 +2578,8 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "forceMemoryInitMemfd", forceMemoryInitMemfd);
     first = appendJsonBool(sb, first, "craneliftDebugChecks", craneliftDebugChecks);
     first = appendJsonBool(sb, first, "enableCompiler", enableCompiler);
+    first = appendJsonBool(sb, first, "x86FloatAbiOk", x86FloatAbiOk);
+    first = appendJsonBool(sb, first, "signalsBasedTraps", signalsBasedTraps);
     if (emitClif != null) {
       first = appendJsonField(sb, first, "emitClif", emitClif);
     }

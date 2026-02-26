@@ -146,6 +146,12 @@ pub struct EngineConfigFfi {
     // Cranelift IR output directory
     pub emit_clif: Option<String>,
 
+    // Acknowledge x86 float ABI behavior
+    pub x86_float_abi_ok: Option<bool>,
+
+    // Signals-based trap handling (always overridden to false for JVM safety)
+    pub signals_based_traps: Option<bool>,
+
     // Cranelift flag enables (single-flag variant, sets flag to "true")
     pub cranelift_flag_enables: Option<Vec<String>>,
 }
@@ -421,6 +427,22 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
         for flag_name in enables {
             builder = builder.cranelift_flag_enable(flag_name);
         }
+    }
+
+    // x86 float ABI acknowledgment
+    if let Some(v) = config.x86_float_abi_ok {
+        builder = builder.x86_float_abi_ok(v);
+    }
+
+    // signals_based_traps: always override to false for JVM safety
+    if let Some(v) = config.signals_based_traps {
+        if v {
+            log::warn!(
+                "signals_based_traps(true) requested but overridden to false for JVM safety"
+            );
+        }
+        // Always set to false regardless of the requested value
+        builder = builder.signals_based_traps(false);
     }
 
     Ok(builder)

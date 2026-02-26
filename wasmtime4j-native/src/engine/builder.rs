@@ -723,6 +723,8 @@ pub struct EngineBuilder {
     pub(crate) cranelift_debug_checks: bool,
     // Enable or disable the compiler (allows runtime-only engines)
     pub(crate) enable_compiler: bool,
+    // Acknowledge x86 float ABI behavior
+    pub(crate) x86_float_abi_ok: bool,
 }
 
 impl EngineBuilder {
@@ -824,6 +826,7 @@ impl EngineBuilder {
             force_memory_init_memfd: false, // Force memfd - off by default (Linux-specific)
             cranelift_debug_checks: false, // Cranelift debug checks - off by default
             enable_compiler: true, // Compiler enabled - on by default
+            x86_float_abi_ok: false, // x86 float ABI acknowledgment - off by default
         }
     }
 
@@ -1517,6 +1520,39 @@ impl EngineBuilder {
     pub fn enable_compiler(mut self, enable: bool) -> Self {
         self.config.enable_compiler(enable);
         self.enable_compiler = enable;
+        self
+    }
+
+    /// Acknowledge x86 float ABI behavior
+    ///
+    /// This setting acknowledges that the x86 calling convention for floats
+    /// may differ from what is expected. Setting this to `true` suppresses
+    /// the warning that Wasmtime would otherwise emit on x86 platforms.
+    ///
+    /// # Arguments
+    /// * `enable` - Whether to acknowledge x86 float ABI behavior
+    pub fn x86_float_abi_ok(mut self, enable: bool) -> Self {
+        // Safety: x86_float_abi_ok is unsafe because it acknowledges non-standard
+        // float ABI behavior on x86; the caller accepts responsibility for this.
+        unsafe {
+            self.config.x86_float_abi_ok(enable);
+        }
+        self.x86_float_abi_ok = enable;
+        self
+    }
+
+    /// Configure signals-based trap handling
+    ///
+    /// **WARNING**: This is always overridden to `false` for JVM safety.
+    /// Signal-based traps conflict with the JVM's own signal handlers
+    /// and would cause SIGABRT / JVM crashes. This method exists solely
+    /// for API completeness.
+    ///
+    /// # Arguments
+    /// * `_enable` - Ignored; always set to `false`
+    pub fn signals_based_traps(mut self, _enable: bool) -> Self {
+        // Always keep signals_based_traps disabled for JVM safety
+        // The safe_wasmtime_config() already sets this to false
         self
     }
 

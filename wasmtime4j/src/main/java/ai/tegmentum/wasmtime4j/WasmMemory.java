@@ -502,12 +502,12 @@ public interface WasmMemory {
    * @param offset the byte offset (must be 4-byte aligned)
    * @param expected the expected value to wait for a change from
    * @param timeoutNanos the timeout in nanoseconds (-1 for infinite)
-   * @return 0 if woken by notify, 1 if value mismatch, 2 if timeout
+   * @return the wait result indicating why the wait completed
    * @throws IllegalStateException if this memory is not shared
    * @throws IllegalArgumentException if offset is not 4-byte aligned
    * @throws IndexOutOfBoundsException if offset is out of bounds
    */
-  int atomicWait32(final int offset, final int expected, final long timeoutNanos);
+  WaitResult atomicWait32(final int offset, final int expected, final long timeoutNanos);
 
   /**
    * Waits for a notification on the specified memory location (64-bit version).
@@ -519,12 +519,12 @@ public interface WasmMemory {
    * @param offset the byte offset (must be 8-byte aligned)
    * @param expected the expected value to wait for a change from
    * @param timeoutNanos the timeout in nanoseconds (-1 for infinite)
-   * @return 0 if woken by notify, 1 if value mismatch, 2 if timeout
+   * @return the wait result indicating why the wait completed
    * @throws IllegalStateException if this memory is not shared
    * @throws IllegalArgumentException if offset is not 8-byte aligned
    * @throws IndexOutOfBoundsException if offset is out of bounds
    */
-  int atomicWait64(final int offset, final long expected, final long timeoutNanos);
+  WaitResult atomicWait64(final int offset, final long expected, final long timeoutNanos);
 
   // 64-bit Memory Operations for Large Memory Support (>4GB)
 

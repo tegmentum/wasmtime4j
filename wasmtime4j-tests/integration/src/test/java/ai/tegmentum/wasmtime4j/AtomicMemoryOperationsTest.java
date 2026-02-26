@@ -315,7 +315,7 @@ class AtomicMemoryOperationsTest {
     assertDoesNotThrow(
         () -> {
           try {
-            final int result = memory.atomicWait32(0, 0, 1000L);
+            final WaitResult result = memory.atomicWait32(0, 0, 1000L);
             assertThat(result).isNotNull();
           } catch (final UnsupportedOperationException e) {
             assertThat(e.getMessage()).contains("shared");
@@ -344,7 +344,7 @@ class AtomicMemoryOperationsTest {
     assertDoesNotThrow(
         () -> {
           try {
-            final int result = memory.atomicWait64(0, 0L, 1000L);
+            final WaitResult result = memory.atomicWait64(0, 0L, 1000L);
             assertThat(result).isNotNull();
           } catch (final UnsupportedOperationException e) {
             assertThat(e.getMessage()).contains("shared");

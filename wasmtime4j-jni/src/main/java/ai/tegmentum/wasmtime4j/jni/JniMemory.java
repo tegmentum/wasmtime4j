@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.WaitResult;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
@@ -1137,7 +1138,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public int atomicWait32(final int offset, final int expected, final long timeoutNanos) {
+  public WaitResult atomicWait32(final int offset, final int expected, final long timeoutNanos) {
     ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
@@ -1150,8 +1151,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
     checkSharedMemory();
 
     try {
-      return nativeAtomicWait32(
-          getNativeHandle(), store.getNativeHandle(), offset, expected, timeoutNanos);
+      return WaitResult.fromNativeCode(
+          nativeAtomicWait32(
+              getNativeHandle(), store.getNativeHandle(), offset, expected, timeoutNanos));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -1160,7 +1162,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
-  public int atomicWait64(final int offset, final long expected, final long timeoutNanos) {
+  public WaitResult atomicWait64(final int offset, final long expected, final long timeoutNanos) {
     ensureUsable();
     if (offset < 0) {
       throw new IllegalArgumentException("Offset must be non-negative");
@@ -1170,8 +1172,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
     checkSharedMemory();
 
     try {
-      return nativeAtomicWait64(
-          getNativeHandle(), store.getNativeHandle(), offset, expected, timeoutNanos);
+      return WaitResult.fromNativeCode(
+          nativeAtomicWait64(
+              getNativeHandle(), store.getNativeHandle(), offset, expected, timeoutNanos));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
