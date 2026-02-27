@@ -49,14 +49,6 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpCon
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
- * Method:    nativeAddToLinker
- * Signature: (JJJ)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeAddToLinker
-  (JNIEnv *, jclass, jlong, jlong, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
  * Method:    nativeFree
  * Signature: (J)V
  */

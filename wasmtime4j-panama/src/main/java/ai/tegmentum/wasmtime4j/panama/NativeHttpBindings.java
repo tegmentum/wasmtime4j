@@ -231,12 +231,7 @@ public final class NativeHttpBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_wasi_http_ctx_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-    // WASI HTTP Linker Integration Functions
-    addFunctionBinding(
-        "wasmtime4j_panama_wasi_http_add_to_linker",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
+    // WASI HTTP Availability Check
     addFunctionBinding(
         "wasmtime4j_panama_wasi_http_is_available", FunctionDescriptor.of(ValueLayout.JAVA_INT));
   }
@@ -865,35 +860,8 @@ public final class NativeHttpBindings extends NativeBindingsBase {
   }
 
   // ====================================================================================
-  // WASI HTTP Linker Integration Functions
+  // WASI HTTP Availability Functions
   // ====================================================================================
-
-  /**
-   * Adds WASI HTTP to a linker.
-   *
-   * @param linkerPtr pointer to the linker
-   * @param storePtr pointer to the store
-   * @param httpCtxPtr pointer to the WASI HTTP context
-   * @return 0 on success, non-zero error code on failure
-   */
-  public int wasiHttpAddToLinker(
-      final MemorySegment linkerPtr, final MemorySegment storePtr, final MemorySegment httpCtxPtr) {
-    if (linkerPtr == null || linkerPtr.equals(MemorySegment.NULL)) {
-      return -1;
-    }
-    if (storePtr == null || storePtr.equals(MemorySegment.NULL)) {
-      return -1;
-    }
-    if (httpCtxPtr == null || httpCtxPtr.equals(MemorySegment.NULL)) {
-      return -1;
-    }
-    return callNativeFunction(
-        "wasmtime4j_panama_wasi_http_add_to_linker",
-        Integer.class,
-        linkerPtr,
-        storePtr,
-        httpCtxPtr);
-  }
 
   /**
    * Checks if WASI HTTP support is available.

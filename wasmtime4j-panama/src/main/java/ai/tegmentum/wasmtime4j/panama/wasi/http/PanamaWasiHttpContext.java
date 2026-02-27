@@ -16,14 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.panama.wasi.http;
 
-import ai.tegmentum.wasmtime4j.Linker;
-import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeHttpBindings;
-import ai.tegmentum.wasmtime4j.panama.PanamaLinker;
-import ai.tegmentum.wasmtime4j.panama.PanamaStore;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
-import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
 import java.lang.foreign.Arena;
@@ -224,43 +219,6 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
         bindings.wasiHttpConfigBuilderFree(builderPtr);
       }
     }
-  }
-
-  @Override
-  public void addToLinker(final Linker<?> linker, final Store store) throws WasmException {
-    if (linker == null) {
-      throw new IllegalArgumentException("linker cannot be null");
-    }
-    if (store == null) {
-      throw new IllegalArgumentException("store cannot be null");
-    }
-    if (resourceHandle.isClosed()) {
-      throw new WasmException("WASI HTTP context has been closed");
-    }
-
-    // Get native pointers from Panama implementations
-    if (!(linker instanceof PanamaLinker)) {
-      throw new WasmException("linker must be a PanamaLinker instance");
-    }
-    if (!(store instanceof PanamaStore)) {
-      throw new WasmException("store must be a PanamaStore instance");
-    }
-
-    final PanamaLinker panamaLinker = (PanamaLinker) linker;
-    final PanamaStore panamaStore = (PanamaStore) store;
-
-    final MemorySegment linkerPtr = panamaLinker.getNativeLinker();
-    final MemorySegment storePtr = panamaStore.getNativeStore();
-
-    final int result = bindings.wasiHttpAddToLinker(linkerPtr, storePtr, contextPtr);
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to add WASI HTTP to linker");
-    }
-
-    LOGGER.info(
-        "WASI HTTP context added to linker (context ID: "
-            + bindings.wasiHttpContextGetId(contextPtr)
-            + ")");
   }
 
   @Override

@@ -276,21 +276,6 @@ public final class WasiHttpRequestResponseIntegrationTest {
     }
 
     @Test
-    @DisplayName("should have addToLinker method")
-    void shouldHaveAddToLinkerMethod(final TestInfo testInfo) throws NoSuchMethodException {
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
-
-      final var addToLinker =
-          WasiHttpContext.class.getMethod(
-              "addToLinker",
-              ai.tegmentum.wasmtime4j.Linker.class,
-              ai.tegmentum.wasmtime4j.Store.class);
-      assertNotNull(addToLinker, "addToLinker method should exist");
-
-      LOGGER.info("AddToLinker method verified");
-    }
-
-    @Test
     @DisplayName("should have getConfig method")
     void shouldHaveGetConfigMethod(final TestInfo testInfo) throws NoSuchMethodException {
       LOGGER.info("Testing: " + testInfo.getDisplayName());

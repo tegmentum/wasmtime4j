@@ -16,11 +16,7 @@
 
 package ai.tegmentum.wasmtime4j.jni.wasi.http;
 
-import ai.tegmentum.wasmtime4j.Linker;
-import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.jni.JniLinker;
-import ai.tegmentum.wasmtime4j.jni.JniStore;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
@@ -88,32 +84,6 @@ public final class JniWasiHttpContext implements WasiHttpContext {
     } catch (final Exception e) {
       throw new WasmException("Failed to create WASI HTTP context: " + e.getMessage(), e);
     }
-  }
-
-  @Override
-  public void addToLinker(final Linker<?> linker, final Store store) throws WasmException {
-    if (linker == null) {
-      throw new IllegalArgumentException("linker cannot be null");
-    }
-    if (store == null) {
-      throw new IllegalArgumentException("store cannot be null");
-    }
-    if (closed.get()) {
-      throw new WasmException("WASI HTTP context has been closed");
-    }
-
-    if (!(linker instanceof JniLinker)) {
-      throw new IllegalArgumentException(
-          "linker must be a JniLinker instance, got: " + linker.getClass().getName());
-    }
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException(
-          "store must be a JniStore instance, got: " + store.getClass().getName());
-    }
-
-    final long linkerHandle = ((JniLinker<?>) linker).getNativeHandle();
-    final long storeHandle = ((JniStore) store).getNativeHandle();
-    nativeAddToLinker(contextHandle, linkerHandle, storeHandle);
   }
 
   @Override
@@ -206,9 +176,6 @@ public final class JniWasiHttpContext implements WasiHttpContext {
   private static native long nativeGetContextId(long contextHandle);
 
   private static native void nativeResetStats(long contextHandle);
-
-  private static native void nativeAddToLinker(
-      long contextHandle, long linkerHandle, long storeHandle) throws WasmException;
 
   private static native void nativeFree(long contextHandle);
 }

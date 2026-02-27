@@ -1317,42 +1317,6 @@ pub unsafe extern "C" fn wasi_http_ctx_free(ctx_ptr: *mut c_void) {
     }
 }
 
-/// Add WASI HTTP to a linker
-///
-/// This function associates the WASI HTTP context with the linker and store,
-/// enabling WebAssembly modules to make HTTP requests.
-///
-/// # Arguments
-///
-/// * `linker_ptr` - Pointer to the Linker
-/// * `store_ptr` - Pointer to the Store
-/// * `http_ctx_ptr` - Pointer to the WasiHttpContext
-///
-/// # Returns
-///
-/// 0 on success, non-zero error code on failure
-///
-/// # Safety
-///
-/// All pointers must be valid and non-null.
-#[no_mangle]
-pub unsafe extern "C" fn wasi_http_add_to_linker(
-    _linker_ptr: *mut c_void,
-    _store_ptr: *mut c_void,
-    _http_ctx_ptr: *mut c_void,
-) -> c_int {
-    // WASI HTTP is a Component Model feature. The wasmtime_wasi_http::add_to_linker_sync
-    // function requires wasmtime::component::Linker<T>, not wasmtime::Linker<T>.
-    // For module-level linking, use the Component Linker's enable_wasi_http() method.
-    ffi_utils::ffi_try_code(|| {
-        Err(crate::error::WasmtimeError::Wasi {
-            message: "WASI HTTP is a Component Model feature. Use ComponentLinker.enableWasiHttp() \
-                      instead of adding HTTP to a module-level linker."
-                .to_string(),
-        })
-    })
-}
-
 /// Check if WASI HTTP support is available
 ///
 /// Returns 1 if WASI HTTP support is compiled in, 0 otherwise.

@@ -499,21 +499,8 @@ pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_free(ctx_ptr: *mut c_void) {
 }
 
 // ============================================================================
-// Linker Integration Functions
+// Availability Functions
 // ============================================================================
-
-/// Add WASI HTTP to a linker (Panama FFI)
-#[no_mangle]
-pub extern "C" fn wasmtime4j_panama_wasi_http_add_to_linker(
-    linker_ptr: *mut c_void,
-    store_ptr: *mut c_void,
-    http_ctx_ptr: *mut c_void,
-) -> c_int {
-    if linker_ptr.is_null() || store_ptr.is_null() || http_ctx_ptr.is_null() {
-        return -1;
-    }
-    unsafe { crate::wasi_http::wasi_http_add_to_linker(linker_ptr, store_ptr, http_ctx_ptr) }
-}
 
 /// Check if WASI HTTP support is available (Panama FFI)
 #[no_mangle]

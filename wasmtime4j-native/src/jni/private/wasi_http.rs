@@ -281,28 +281,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpCon
     ctx.reset_stats();
 }
 
-/// Add WASI HTTP to linker
-/// JNI binding for JniWasiHttpContext.nativeAddToLinker
-///
-/// WASI HTTP is a Component Model feature. This always throws an exception
-/// directing users to ComponentLinker.enableWasiHttp() instead.
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeAddToLinker(
-    mut env: JNIEnv,
-    _class: JClass,
-    _ctx_handle: jlong,
-    _linker_handle: jlong,
-    _store_handle: jlong,
-) {
-    jni_utils::jni_try_void(&mut env, || {
-        Err(WasmtimeError::Wasi {
-            message: "WASI HTTP is a Component Model feature. Use ComponentLinker.enableWasiHttp() \
-                      instead of adding HTTP to a module-level linker."
-                .to_string(),
-        })
-    });
-}
-
 /// Free WASI HTTP context
 /// JNI binding for JniWasiHttpContext.nativeFree
 #[no_mangle]
