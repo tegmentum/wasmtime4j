@@ -42,6 +42,27 @@ public interface WasiHttpContext extends Closeable {
   boolean isHostAllowed(String host);
 
   /**
+   * Returns a snapshot of the current HTTP statistics for this context.
+   *
+   * <p>The returned object captures point-in-time values. Counter values are cumulative since
+   * context creation or the last call to {@link #resetStats()}.
+   *
+   * @return a snapshot of the current statistics
+   * @throws IllegalStateException if the context has been closed
+   */
+  WasiHttpStats getStats();
+
+  /**
+   * Resets the cumulative HTTP statistics counters for this context.
+   *
+   * <p>Gauge values (active requests, active connections, idle connections) are not affected by
+   * this operation since they reflect current state rather than cumulative counts.
+   *
+   * @throws IllegalStateException if the context has been closed
+   */
+  void resetStats();
+
+  /**
    * Closes this HTTP context and releases associated resources.
    *
    * <p>After calling this method, the context becomes invalid and should not be used. Any pending

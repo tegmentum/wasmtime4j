@@ -308,11 +308,18 @@ pub extern "C" fn wasmtime4j_panama_exnref_get_tag(
 /// - store_ptr must be a valid pointer to a Store
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_exnref_is_valid(
-    _exnref_ptr: *const c_void,
-    _store_ptr: *mut c_void,
+    exnref_ptr: *const c_void,
+    store_ptr: *mut c_void,
 ) -> c_int {
-    // ExnRef.isValid is not yet implemented
-    0
+    if exnref_ptr.is_null() || store_ptr.is_null() {
+        return 0;
+    }
+    // Validate store is still accessible (matches JNI parity)
+    let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+    match store.try_lock_store() {
+        Ok(_guard) => 1,
+        Err(_) => 0,
+    }
 }
 
 /// Destroys an exception reference and frees its native resources.
@@ -352,24 +359,26 @@ pub extern "C" fn wasmtime4j_panama_exnref_get_field(
         return -1;
     }
 
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<(), crate::error::WasmtimeError> {
-        let owned_exnref = unsafe { &*(exnref_ptr as *const OwnedRooted<ExnRef>) };
-        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
-        let mut store_guard = store.try_lock_store()?;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+        || -> Result<(), crate::error::WasmtimeError> {
+            let owned_exnref = unsafe { &*(exnref_ptr as *const OwnedRooted<ExnRef>) };
+            let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+            let mut store_guard = store.try_lock_store()?;
 
-        let mut scope = RootScope::new(&mut *store_guard);
-        let exnref = owned_exnref.to_rooted(&mut scope);
+            let mut scope = RootScope::new(&mut *store_guard);
+            let exnref = owned_exnref.to_rooted(&mut scope);
 
-        let val = exnref.field(&mut scope, index as usize).map_err(|e| {
-            crate::error::WasmtimeError::Internal {
-                message: format!("Failed to get field {} from ExnRef: {}", index, e),
-            }
-        })?;
+            let val = exnref.field(&mut scope, index as usize).map_err(|e| {
+                crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to get field {} from ExnRef: {}", index, e),
+                }
+            })?;
 
-        // Encode the value as type code + raw bits
-        unsafe { encode_val_to_ffi(&val, out_type, out_value_i64, out_value_f64) };
-        Ok(())
-    }));
+            // Encode the value as type code + raw bits
+            unsafe { encode_val_to_ffi(&val, out_type, out_value_i64, out_value_f64) };
+            Ok(())
+        },
+    ));
 
     match result {
         Ok(Ok(())) => 0,
@@ -393,22 +402,25 @@ pub extern "C" fn wasmtime4j_panama_exnref_field_count(
         return -1;
     }
 
-    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<i32, crate::error::WasmtimeError> {
-        let owned_exnref = unsafe { &*(exnref_ptr as *const OwnedRooted<ExnRef>) };
-        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
-        let mut store_guard = store.try_lock_store()?;
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+        || -> Result<i32, crate::error::WasmtimeError> {
+            let owned_exnref = unsafe { &*(exnref_ptr as *const OwnedRooted<ExnRef>) };
+            let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+            let mut store_guard = store.try_lock_store()?;
 
-        let mut scope = RootScope::new(&mut *store_guard);
-        let exnref = owned_exnref.to_rooted(&mut scope);
+            let mut scope = RootScope::new(&mut *store_guard);
+            let exnref = owned_exnref.to_rooted(&mut scope);
 
-        let count = exnref.fields(&mut scope).map_err(|e| {
-            crate::error::WasmtimeError::Internal {
-                message: format!("Failed to get fields from ExnRef: {}", e),
-            }
-        })?.count();
+            let count = exnref
+                .fields(&mut scope)
+                .map_err(|e| crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to get fields from ExnRef: {}", e),
+                })?
+                .count();
 
-        Ok(count as i32)
-    }));
+            Ok(count as i32)
+        },
+    ));
 
     match result {
         Ok(Ok(count)) => count,

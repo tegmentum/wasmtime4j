@@ -49,6 +49,126 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpCon
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsTotalRequests
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsTotalRequests
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsSuccessfulRequests
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsSuccessfulRequests
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsFailedRequests
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsFailedRequests
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsActiveRequests
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsActiveRequests
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsBytesSent
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsBytesSent
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsBytesReceived
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsBytesReceived
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsConnectionTimeouts
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsConnectionTimeouts
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsReadTimeouts
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsReadTimeouts
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsBlockedRequests
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsBlockedRequests
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsBodySizeViolations
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsBodySizeViolations
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsActiveConnections
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsActiveConnections
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsIdleConnections
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsIdleConnections
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsAvgDurationMs
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsAvgDurationMs
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsMinDurationMs
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsMinDurationMs
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeStatsMaxDurationMs
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsMaxDurationMs
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
  * Method:    nativeFree
  * Signature: (J)V
  */

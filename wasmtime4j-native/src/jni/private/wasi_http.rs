@@ -40,11 +40,11 @@ fn get_string_array(env: &mut JNIEnv, array: &JObject) -> Result<Vec<String>, Wa
         })?;
     let mut result = Vec::with_capacity(len as usize);
     for i in 0..len {
-        let elem = env
-            .get_object_array_element(&jarray, i)
-            .map_err(|e| WasmtimeError::Internal {
-                message: format!("Failed to get array element {}: {}", i, e),
-            })?;
+        let elem =
+            env.get_object_array_element(&jarray, i)
+                .map_err(|e| WasmtimeError::Internal {
+                    message: format!("Failed to get array element {}: {}", i, e),
+                })?;
         if let Some(s) = get_java_string(env, &elem)? {
             result.push(s);
         }
@@ -279,6 +279,231 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpCon
 
     let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
     ctx.reset_stats();
+}
+
+/// Get stats - total requests
+/// JNI binding for JniWasiHttpContext.nativeStatsTotalRequests
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsTotalRequests(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().total_requests() as jlong
+}
+
+/// Get stats - successful requests
+/// JNI binding for JniWasiHttpContext.nativeStatsSuccessfulRequests
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsSuccessfulRequests(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().successful_requests() as jlong
+}
+
+/// Get stats - failed requests
+/// JNI binding for JniWasiHttpContext.nativeStatsFailedRequests
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsFailedRequests(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().failed_requests() as jlong
+}
+
+/// Get stats - active requests
+/// JNI binding for JniWasiHttpContext.nativeStatsActiveRequests
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsActiveRequests(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jint {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().active_requests() as jint
+}
+
+/// Get stats - bytes sent
+/// JNI binding for JniWasiHttpContext.nativeStatsBytesSent
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsBytesSent(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().bytes_sent() as jlong
+}
+
+/// Get stats - bytes received
+/// JNI binding for JniWasiHttpContext.nativeStatsBytesReceived
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsBytesReceived(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().bytes_received() as jlong
+}
+
+/// Get stats - connection timeouts
+/// JNI binding for JniWasiHttpContext.nativeStatsConnectionTimeouts
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsConnectionTimeouts(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().connection_timeouts() as jlong
+}
+
+/// Get stats - read timeouts
+/// JNI binding for JniWasiHttpContext.nativeStatsReadTimeouts
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsReadTimeouts(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().read_timeouts() as jlong
+}
+
+/// Get stats - blocked requests
+/// JNI binding for JniWasiHttpContext.nativeStatsBlockedRequests
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsBlockedRequests(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().blocked_requests() as jlong
+}
+
+/// Get stats - body size violations
+/// JNI binding for JniWasiHttpContext.nativeStatsBodySizeViolations
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsBodySizeViolations(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().body_size_violations() as jlong
+}
+
+/// Get stats - active connections
+/// JNI binding for JniWasiHttpContext.nativeStatsActiveConnections
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsActiveConnections(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jint {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().active_connections() as jint
+}
+
+/// Get stats - idle connections
+/// JNI binding for JniWasiHttpContext.nativeStatsIdleConnections
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsIdleConnections(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jint {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().idle_connections() as jint
+}
+
+/// Get stats - average duration in milliseconds
+/// JNI binding for JniWasiHttpContext.nativeStatsAvgDurationMs
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsAvgDurationMs(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().avg_duration_ms() as jlong
+}
+
+/// Get stats - min duration in milliseconds
+/// JNI binding for JniWasiHttpContext.nativeStatsMinDurationMs
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsMinDurationMs(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().min_duration_ms() as jlong
+}
+
+/// Get stats - max duration in milliseconds
+/// JNI binding for JniWasiHttpContext.nativeStatsMaxDurationMs
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeStatsMaxDurationMs(
+    _env: JNIEnv,
+    _class: JClass,
+    ctx_handle: jlong,
+) -> jlong {
+    if ctx_handle == 0 {
+        return 0;
+    }
+    let ctx = unsafe { &*(ctx_handle as *const WasiHttpContext) };
+    ctx.stats().max_duration_ms() as jlong
 }
 
 /// Free WASI HTTP context

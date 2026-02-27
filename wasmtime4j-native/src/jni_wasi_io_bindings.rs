@@ -205,9 +205,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
 }
 
 fn create_input_stream_pollable(_context: &WasiContext, _stream_id: u64) -> WasmtimeResult<u64> {
-    // MVP: return a dummy pollable ID
-    // In a full implementation, this would create a proper pollable resource
-    Ok(1)
+    Err(WasmtimeError::UnsupportedFeature {
+        message: "Pollable subscribe is not implemented in the JNI runtime".to_string(),
+    })
 }
 
 /// Close WASI input stream
@@ -664,9 +664,9 @@ fn splice_streams(
 }
 
 fn create_output_stream_pollable(_context: &WasiContext, _stream_id: u64) -> WasmtimeResult<u64> {
-    // MVP: return a dummy pollable ID
-    // In a full implementation, this would create a proper pollable resource
-    Ok(1)
+    Err(WasmtimeError::UnsupportedFeature {
+        message: "Pollable subscribe is not implemented in the JNI runtime".to_string(),
+    })
 }
 
 /// Block until pollable is ready
@@ -768,4 +768,3 @@ fn close_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<(
         message: "Pollable close is not implemented in the JNI runtime".to_string(),
     })
 }
-

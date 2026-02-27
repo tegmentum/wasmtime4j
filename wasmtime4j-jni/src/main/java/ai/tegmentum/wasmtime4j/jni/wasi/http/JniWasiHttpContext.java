@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
+import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -111,6 +112,22 @@ public final class JniWasiHttpContext implements WasiHttpContext {
   }
 
   @Override
+  public WasiHttpStats getStats() {
+    if (closed.get()) {
+      throw new IllegalStateException("WASI HTTP context has been closed");
+    }
+    return new JniWasiHttpStats(contextHandle);
+  }
+
+  @Override
+  public void resetStats() {
+    if (closed.get()) {
+      throw new IllegalStateException("WASI HTTP context has been closed");
+    }
+    nativeResetStats(contextHandle);
+  }
+
+  @Override
   public void close() {
     if (closed.compareAndSet(false, true)) {
       nativeFree(contextHandle);
@@ -176,6 +193,36 @@ public final class JniWasiHttpContext implements WasiHttpContext {
   private static native long nativeGetContextId(long contextHandle);
 
   private static native void nativeResetStats(long contextHandle);
+
+  static native long nativeStatsTotalRequests(long contextHandle);
+
+  static native long nativeStatsSuccessfulRequests(long contextHandle);
+
+  static native long nativeStatsFailedRequests(long contextHandle);
+
+  static native int nativeStatsActiveRequests(long contextHandle);
+
+  static native long nativeStatsBytesSent(long contextHandle);
+
+  static native long nativeStatsBytesReceived(long contextHandle);
+
+  static native long nativeStatsConnectionTimeouts(long contextHandle);
+
+  static native long nativeStatsReadTimeouts(long contextHandle);
+
+  static native long nativeStatsBlockedRequests(long contextHandle);
+
+  static native long nativeStatsBodySizeViolations(long contextHandle);
+
+  static native int nativeStatsActiveConnections(long contextHandle);
+
+  static native int nativeStatsIdleConnections(long contextHandle);
+
+  static native long nativeStatsAvgDurationMs(long contextHandle);
+
+  static native long nativeStatsMinDurationMs(long contextHandle);
+
+  static native long nativeStatsMaxDurationMs(long contextHandle);
 
   private static native void nativeFree(long contextHandle);
 }

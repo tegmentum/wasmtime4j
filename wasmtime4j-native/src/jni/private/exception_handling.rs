@@ -328,15 +328,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetField
         let mut scope = RootScope::new(&mut *store_guard);
         let exnref = owned_exnref.to_rooted(&mut scope);
 
-        let val = exnref.field(&mut scope, index as usize).map_err(|e| {
-            WasmtimeError::Internal {
-                message: format!("Failed to get field {} from ExnRef: {}", index, e),
-            }
-        })?;
+        let val =
+            exnref
+                .field(&mut scope, index as usize)
+                .map_err(|e| WasmtimeError::Internal {
+                    message: format!("Failed to get field {} from ExnRef: {}", index, e),
+                })?;
 
         let wasm_value = crate::instance::core::wasmtime_val_to_wasm_value(&val)?;
-        let java_array =
-            crate::jni::linker::wasm_values_to_java_array(&mut env, &[wasm_value])?;
+        let java_array = crate::jni::linker::wasm_values_to_java_array(&mut env, &[wasm_value])?;
         Ok(java_array.as_raw())
     })();
 
@@ -378,18 +378,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetField
         let mut scope = RootScope::new(&mut *store_guard);
         let exnref = owned_exnref.to_rooted(&mut scope);
 
-        let vals: Vec<wasmtime::Val> =
-            exnref.fields(&mut scope).map_err(|e| WasmtimeError::Internal {
+        let vals: Vec<wasmtime::Val> = exnref
+            .fields(&mut scope)
+            .map_err(|e| WasmtimeError::Internal {
                 message: format!("Failed to get fields from ExnRef: {}", e),
-            })?.collect();
+            })?
+            .collect();
 
         let wasm_values: Vec<_> = vals
             .iter()
             .map(|v| crate::instance::core::wasmtime_val_to_wasm_value(v))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let java_array =
-            crate::jni::linker::wasm_values_to_java_array(&mut env, &wasm_values)?;
+        let java_array = crate::jni::linker::wasm_values_to_java_array(&mut env, &wasm_values)?;
         Ok(java_array.as_raw())
     })();
 

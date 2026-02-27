@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.panama.NativeHttpBindings;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
+import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpStats;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.Objects;
@@ -245,6 +246,22 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
 
     final MemorySegment hostStr = arena.allocateFrom(host);
     return bindings.wasiHttpContextIsHostAllowed(contextPtr, hostStr) != 0;
+  }
+
+  @Override
+  public WasiHttpStats getStats() {
+    if (resourceHandle.isClosed()) {
+      throw new IllegalStateException("WASI HTTP context has been closed");
+    }
+    return new PanamaWasiHttpStats(bindings, contextPtr);
+  }
+
+  @Override
+  public void resetStats() {
+    if (resourceHandle.isClosed()) {
+      throw new IllegalStateException("WASI HTTP context has been closed");
+    }
+    bindings.wasiHttpContextResetStats(contextPtr);
   }
 
   @Override
