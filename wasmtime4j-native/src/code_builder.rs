@@ -137,20 +137,19 @@ impl CodeBuilderState {
     /// Wasmtime's `CodeBuilder` only exposes `compile_module_serialized()`, so we
     /// serialize first and then deserialize to obtain a usable `wasmtime::Module`.
     pub fn compile_module(&self) -> WasmtimeResult<Box<Module>> {
-        let wasm_bytes = self.wasm_bytes.as_ref().ok_or_else(|| {
-            WasmtimeError::InvalidParameter {
-                message: "No WebAssembly bytes set on CodeBuilder".to_string(),
-            }
-        })?;
+        let wasm_bytes =
+            self.wasm_bytes
+                .as_ref()
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: "No WebAssembly bytes set on CodeBuilder".to_string(),
+                })?;
 
         // First serialize via CodeBuilder
         let serialized = self.compile_module_serialized()?;
 
         // Then deserialize to get a wasmtime::Module
-        let module = unsafe {
-            wasmtime::Module::deserialize(self.engine.inner(), &serialized)
-        }
-        .map_err(|e| WasmtimeError::from_compilation_error(e))?;
+        let module = unsafe { wasmtime::Module::deserialize(self.engine.inner(), &serialized) }
+            .map_err(|e| WasmtimeError::from_compilation_error(e))?;
 
         // For deserialized modules, metadata extraction from the module itself is limited.
         // We use empty metadata since full extraction requires the original wasm bytes
@@ -170,11 +169,12 @@ impl CodeBuilderState {
 
     /// Build the wasmtime CodeBuilder and compile a module to serialized bytes.
     pub fn compile_module_serialized(&self) -> WasmtimeResult<Vec<u8>> {
-        let wasm_bytes = self.wasm_bytes.as_ref().ok_or_else(|| {
-            WasmtimeError::InvalidParameter {
-                message: "No WebAssembly bytes set on CodeBuilder".to_string(),
-            }
-        })?;
+        let wasm_bytes =
+            self.wasm_bytes
+                .as_ref()
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: "No WebAssembly bytes set on CodeBuilder".to_string(),
+                })?;
 
         self.engine.validate()?;
         let _compile_guard = self.engine.acquire_compile_lock();
@@ -199,11 +199,7 @@ impl CodeBuilderState {
             if *is_text {
                 unsafe {
                     builder
-                        .compile_time_builtins_binary_or_text(
-                            name.as_str(),
-                            bytes.as_slice(),
-                            None,
-                        )
+                        .compile_time_builtins_binary_or_text(name.as_str(), bytes.as_slice(), None)
                         .map_err(|e| WasmtimeError::from_compilation_error(e))?;
                 }
             } else {
@@ -225,11 +221,12 @@ impl CodeBuilderState {
     /// Build the wasmtime CodeBuilder, serialize, then deserialize to get a Component.
     #[cfg(feature = "component-model")]
     pub fn compile_component(&self) -> WasmtimeResult<Box<Component>> {
-        let wasm_bytes = self.wasm_bytes.as_ref().ok_or_else(|| {
-            WasmtimeError::InvalidParameter {
-                message: "No WebAssembly bytes set on CodeBuilder".to_string(),
-            }
-        })?;
+        let wasm_bytes =
+            self.wasm_bytes
+                .as_ref()
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: "No WebAssembly bytes set on CodeBuilder".to_string(),
+                })?;
 
         // First serialize via CodeBuilder
         let serialized = self.compile_component_serialized()?;
@@ -256,11 +253,12 @@ impl CodeBuilderState {
     /// Build the wasmtime CodeBuilder and compile a component to serialized bytes.
     #[cfg(feature = "component-model")]
     pub fn compile_component_serialized(&self) -> WasmtimeResult<Vec<u8>> {
-        let wasm_bytes = self.wasm_bytes.as_ref().ok_or_else(|| {
-            WasmtimeError::InvalidParameter {
-                message: "No WebAssembly bytes set on CodeBuilder".to_string(),
-            }
-        })?;
+        let wasm_bytes =
+            self.wasm_bytes
+                .as_ref()
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: "No WebAssembly bytes set on CodeBuilder".to_string(),
+                })?;
 
         self.engine.validate()?;
         let _compile_guard = self.engine.acquire_compile_lock();
@@ -340,17 +338,12 @@ pub fn code_builder_compile_time_builtins_binary_or_text(
 }
 
 /// Set expose unsafe intrinsics import name on the builder.
-pub fn code_builder_expose_unsafe_intrinsics(
-    builder: &mut CodeBuilderState,
-    import_name: String,
-) {
+pub fn code_builder_expose_unsafe_intrinsics(builder: &mut CodeBuilderState, import_name: String) {
     builder.expose_unsafe_intrinsics(import_name);
 }
 
 /// Compile module from builder.
-pub fn code_builder_compile_module(
-    builder: &CodeBuilderState,
-) -> WasmtimeResult<Box<Module>> {
+pub fn code_builder_compile_module(builder: &CodeBuilderState) -> WasmtimeResult<Box<Module>> {
     builder.compile_module()
 }
 

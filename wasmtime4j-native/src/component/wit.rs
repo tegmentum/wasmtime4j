@@ -200,4 +200,3 @@ pub struct CaseType {
     /// Optional case payload type
     pub payload: Option<ComponentValueType>,
 }
-

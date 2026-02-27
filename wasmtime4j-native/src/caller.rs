@@ -157,11 +157,7 @@ pub mod core {
     where
         T: Send + 'static,
     {
-        let interval_opt = if interval == 0 {
-            None
-        } else {
-            Some(interval)
-        };
+        let interval_opt = if interval == 0 { None } else { Some(interval) };
         caller
             .as_context_mut()
             .fuel_async_yield_interval(interval_opt)

@@ -213,8 +213,7 @@ fn test_engine_supports_feature() {
         1, // reference_types
         1, // bulk_memory
         1, // multi_value
-        0, -1, 0,
-        0, // async_support: false
+        0, -1, 0, 0, // async_support: false
     );
     assert!(!engine_ptr.is_null());
 
@@ -904,4 +903,3 @@ fn test_instance_get_global_by_name() {
     module::wasmtime4j_panama_module_destroy(module_ptr);
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
 }
-

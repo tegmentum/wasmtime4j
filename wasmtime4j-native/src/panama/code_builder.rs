@@ -8,9 +8,7 @@ use crate::error::ffi_utils;
 
 /// Create a new CodeBuilder for the given engine handle.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_code_builder_create(
-    engine_ptr: *const c_void,
-) -> *mut c_void {
+pub extern "C" fn wasmtime4j_panama_code_builder_create(engine_ptr: *const c_void) -> *mut c_void {
     ffi_utils::ffi_try_ptr(|| {
         let engine = unsafe { &*(engine_ptr as *const Engine) };
         code_builder::code_builder_new(engine)
@@ -196,7 +194,11 @@ pub extern "C" fn wasmtime4j_panama_code_builder_compile_time_builtins_binary_or
         Err(_) => return,
     };
     let wasm_bytes = unsafe { std::slice::from_raw_parts(wasm_ptr, wasm_len as usize) };
-    code_builder::code_builder_compile_time_builtins_binary_or_text(builder, name, wasm_bytes.to_vec());
+    code_builder::code_builder_compile_time_builtins_binary_or_text(
+        builder,
+        name,
+        wasm_bytes.to_vec(),
+    );
 }
 
 /// Set expose unsafe intrinsics import name on the builder.
@@ -222,8 +224,7 @@ pub extern "C" fn wasmtime4j_panama_code_builder_expose_unsafe_intrinsics(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_code_builder_destroy(builder_ptr: *mut c_void) {
     if !builder_ptr.is_null() {
-        let builder =
-            unsafe { Box::from_raw(builder_ptr as *mut code_builder::CodeBuilderState) };
+        let builder = unsafe { Box::from_raw(builder_ptr as *mut code_builder::CodeBuilderState) };
         code_builder::code_builder_destroy(builder);
     }
 }

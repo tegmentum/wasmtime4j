@@ -40,7 +40,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSto
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr as *const c_void)? };
 
-        use crate::ffi_common::parameter_conversion::{zero_to_none_u32, zero_to_none_u64, zero_to_none_usize};
+        use crate::ffi_common::parameter_conversion::{
+            zero_to_none_u32, zero_to_none_u64, zero_to_none_usize,
+        };
 
         let store = core::create_store_with_config(
             engine,
@@ -860,11 +862,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
-    memory_size: jlong,       // 0 = no limit
-    table_elements: jlong,    // 0 = no limit
-    instances: jlong,         // 0 = no limit
-    tables: jlong,            // 0 = no limit
-    memories: jlong,          // 0 = no limit
+    memory_size: jlong,             // 0 = no limit
+    table_elements: jlong,          // 0 = no limit
+    instances: jlong,               // 0 = no limit
+    tables: jlong,                  // 0 = no limit
+    memories: jlong,                // 0 = no limit
     trap_on_grow_failure: jboolean, // 0 = false, non-zero = true
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
@@ -1200,19 +1202,35 @@ fn get_limiter_context(callback_id: i64) -> Option<(std::sync::Arc<jni::JavaVM>,
 
 // Module-scope trampolines that delegate to JNI dispatch functions.
 // Shared by both sync and async resource limiter JNI bindings.
-extern "C" fn jni_memory_growing_trampoline(callback_id: i64, current: u64, desired: u64, maximum: u64) -> i32 {
+extern "C" fn jni_memory_growing_trampoline(
+    callback_id: i64,
+    current: u64,
+    desired: u64,
+    maximum: u64,
+) -> i32 {
     jni_memory_growing_dispatch(callback_id, current, desired, maximum)
 }
 
-extern "C" fn jni_table_growing_trampoline(callback_id: i64, current: u32, desired: u32, maximum: u32) -> i32 {
+extern "C" fn jni_table_growing_trampoline(
+    callback_id: i64,
+    current: u32,
+    desired: u32,
+    maximum: u32,
+) -> i32 {
     jni_table_growing_dispatch(callback_id, current, desired, maximum)
 }
 
-extern "C" fn jni_memory_grow_failed_trampoline(callback_id: i64, error: *const std::os::raw::c_char) {
+extern "C" fn jni_memory_grow_failed_trampoline(
+    callback_id: i64,
+    error: *const std::os::raw::c_char,
+) {
     jni_memory_grow_failed_dispatch(callback_id, error)
 }
 
-extern "C" fn jni_table_grow_failed_trampoline(callback_id: i64, error: *const std::os::raw::c_char) {
+extern "C" fn jni_table_grow_failed_trampoline(
+    callback_id: i64,
+    error: *const std::os::raw::c_char,
+) {
     jni_table_grow_failed_dispatch(callback_id, error)
 }
 
@@ -1425,7 +1443,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResour
     let jni_store_global = match env.new_global_ref(&jni_store_obj) {
         Ok(global) => global,
         Err(e) => {
-            log::error!("Failed to create global reference for resource limiter: {}", e);
+            log::error!(
+                "Failed to create global reference for resource limiter: {}",
+                e
+            );
             return;
         }
     };

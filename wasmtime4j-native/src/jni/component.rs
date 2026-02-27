@@ -123,7 +123,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
     let idx = index as usize;
 
     if idx >= component.metadata.exports.len() {
-        log::error!("Export index {} out of bounds (len={})", idx, component.metadata.exports.len());
+        log::error!(
+            "Export index {} out of bounds (len={})",
+            idx,
+            component.metadata.exports.len()
+        );
         return std::ptr::null_mut();
     }
 
@@ -154,7 +158,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
     let idx = index as usize;
 
     if idx >= component.metadata.imports.len() {
-        log::error!("Import index {} out of bounds (len={})", idx, component.metadata.imports.len());
+        log::error!(
+            "Import index {} out of bounds (len={})",
+            idx,
+            component.metadata.imports.len()
+        );
         return std::ptr::null_mut();
     }
 
@@ -621,8 +629,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDeser
             )?
         };
 
-        let component =
-            crate::component::core::deserialize_component_file(engine.engine(), &path)?;
+        let component = crate::component::core::deserialize_component_file(engine.engine(), &path)?;
         Ok(Box::into_raw(component) as jlong)
     })
 }
@@ -641,9 +648,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
     // Get the resource data outside the JNI env closure
     let data = (|| -> Result<[i64; 4], crate::error::WasmtimeError> {
         let component = unsafe {
-            crate::component::core::get_component_ref(
-                component_ptr as *const std::os::raw::c_void,
-            )?
+            crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
 
         let (num_mem, max_mem, num_tab, max_tab) =
@@ -653,32 +658,30 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
     })();
 
     match data {
-        Ok(result) => {
-            match env.new_long_array(4) {
-                Ok(arr) => {
-                    if env.set_long_array_region(&arr, 0, &result).is_ok() {
-                        arr.into_raw()
-                    } else {
-                        jni_utils::throw_jni_exception(
-                            &mut env,
-                            &crate::error::WasmtimeError::Internal {
-                                message: "Failed to set long array region".to_string(),
-                            },
-                        );
-                        std::ptr::null_mut()
-                    }
-                }
-                Err(_) => {
+        Ok(result) => match env.new_long_array(4) {
+            Ok(arr) => {
+                if env.set_long_array_region(&arr, 0, &result).is_ok() {
+                    arr.into_raw()
+                } else {
                     jni_utils::throw_jni_exception(
                         &mut env,
                         &crate::error::WasmtimeError::Internal {
-                            message: "Failed to create long array".to_string(),
+                            message: "Failed to set long array region".to_string(),
                         },
                     );
                     std::ptr::null_mut()
                 }
             }
-        }
+            Err(_) => {
+                jni_utils::throw_jni_exception(
+                    &mut env,
+                    &crate::error::WasmtimeError::Internal {
+                        message: "Failed to create long array".to_string(),
+                    },
+                );
+                std::ptr::null_mut()
+            }
+        },
         Err(e) => {
             jni_utils::throw_jni_exception(&mut env, &e);
             std::ptr::null_mut()
@@ -707,11 +710,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
                 engine_ptr as *const std::os::raw::c_void,
             )?
         };
-        Ok(if engine.has_component_instance_func(instance_id as u64, &name)? {
-            1
-        } else {
-            0
-        })
+        Ok(
+            if engine.has_component_instance_func(instance_id as u64, &name)? {
+                1
+            } else {
+                0
+            },
+        )
     })
 }
 
@@ -799,9 +804,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetEx
 
     jni_utils::jni_try_with_default(&mut env, 0, move || {
         let component = unsafe {
-            crate::component::core::get_component_ref(
-                component_ptr as *const std::os::raw::c_void,
-            )?
+            crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
 
         let instance = if instance_index_ptr == 0 {
@@ -828,9 +831,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestr
 ) {
     if index_ptr != 0 {
         unsafe {
-            crate::component::core::destroy_export_index(
-                index_ptr as *mut std::os::raw::c_void,
-            );
+            crate::component::core::destroy_export_index(index_ptr as *mut std::os::raw::c_void);
         }
     }
 }
@@ -855,9 +856,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
             )?
         };
 
-        let export_index = unsafe {
-            &*(index_ptr as *const wasmtime::component::ComponentExportIndex)
-        };
+        let export_index =
+            unsafe { &*(index_ptr as *const wasmtime::component::ComponentExportIndex) };
 
         match engine.has_component_instance_func_by_index(instance_id as u64, export_index) {
             Ok(true) => Ok(1),
@@ -893,8 +893,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeRunCo
             })?
             .into();
 
-        let calls =
-            crate::component_core::concurrent_call_json::deserialize_calls(&json_str)?;
+        let calls = crate::component_core::concurrent_call_json::deserialize_calls(&json_str)?;
 
         let results = engine.run_concurrent_calls(instance_id as u64, calls)?;
 
@@ -1029,9 +1028,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
 
     let data = (|| -> crate::error::WasmtimeResult<[i64; 2]> {
         let component = unsafe {
-            crate::component::core::get_component_ref(
-                component_ptr as *const std::os::raw::c_void,
-            )?
+            crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
         let (start, end) = crate::component::core::get_component_image_range(component);
         Ok([start as i64, end as i64])
@@ -1068,9 +1065,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeIniti
 
     let result = (|| -> crate::error::WasmtimeResult<()> {
         let component = unsafe {
-            crate::component::core::get_component_ref(
-                component_ptr as *const std::os::raw::c_void,
-            )?
+            crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
         crate::component::core::initialize_copy_on_write_image(component)
     })();

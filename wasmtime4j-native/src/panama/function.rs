@@ -201,10 +201,7 @@ pub extern "C" fn wasmtime4j_panama_func_to_raw(
 ///
 /// Returns a new Func pointer, or null if the raw value doesn't correspond to a function.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_func_from_raw(
-    store_ptr: *mut c_void,
-    raw: i64,
-) -> *mut c_void {
+pub extern "C" fn wasmtime4j_panama_func_from_raw(store_ptr: *mut c_void, raw: i64) -> *mut c_void {
     if store_ptr.is_null() {
         return std::ptr::null_mut();
     }

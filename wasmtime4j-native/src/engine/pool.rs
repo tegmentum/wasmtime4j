@@ -189,8 +189,8 @@ pub(crate) fn init_shared_concurrent_component_engine() -> Result<WasmtimeEngine
 /// # Panics
 /// Logs an error and returns a fallback engine if initialization failed.
 pub fn get_shared_concurrent_component_engine() -> WasmtimeEngine {
-    let result = SHARED_CONCURRENT_COMPONENT_ENGINE
-        .get_or_init(init_shared_concurrent_component_engine);
+    let result =
+        SHARED_CONCURRENT_COMPONENT_ENGINE.get_or_init(init_shared_concurrent_component_engine);
     match result {
         Ok(engine) => engine.clone(),
         Err(e) => {

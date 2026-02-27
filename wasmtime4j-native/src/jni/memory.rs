@@ -1544,10 +1544,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryIn
             });
         }
 
-        let memory =
-            unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
-        let store =
-            unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
         let instance = unsafe {
             crate::instance::core::get_instance_ref(instance_ptr as *const std::os::raw::c_void)?
         };
@@ -1594,10 +1592,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryIn
             });
         }
 
-        let memory =
-            unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
-        let store =
-            unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
         let instance = unsafe {
             crate::instance::core::get_instance_ref(instance_ptr as *const std::os::raw::c_void)?
         };
@@ -1636,10 +1632,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeIsShared
             });
         }
 
-        let memory =
-            unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
-        let store =
-            unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
 
         let is_shared = core::memory_is_shared(memory, store)?;
 

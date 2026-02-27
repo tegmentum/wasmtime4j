@@ -617,9 +617,8 @@ macro_rules! jni_wasi_bool_setter {
                 return;
             }
             let linker = unsafe {
-                match component_linker_core::get_component_linker_mut(
-                    linker_handle as *mut c_void,
-                ) {
+                match component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
+                {
                     Ok(l) => l,
                     Err(_) => return,
                 }
@@ -824,7 +823,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
         Err(_) => return,
     };
 
-    linker.add_wasi_preopen_dir(host_str, guest_str, dir_perms_bits as u32, file_perms_bits as u32);
+    linker.add_wasi_preopen_dir(
+        host_str,
+        guest_str,
+        dir_perms_bits as u32,
+        file_perms_bits as u32,
+    );
 }
 
 // =============================================================================
@@ -876,10 +880,7 @@ fn get_wasi_callback_context(callback_id: i64) -> Option<(Arc<JavaVM>, usize)> {
 
 /// Helper to register a Java callback object in the WASI callback registry.
 /// Returns the generated callback_id on success.
-fn setup_jni_wasi_callback(
-    env: &mut JNIEnv,
-    callback_obj: &JObject,
-) -> Result<i64, WasmtimeError> {
+fn setup_jni_wasi_callback(env: &mut JNIEnv, callback_obj: &JObject) -> Result<i64, WasmtimeError> {
     let jvm = env.get_java_vm().map_err(|e| WasmtimeError::Runtime {
         message: format!("Failed to get JVM: {}", e),
         backtrace: None,
@@ -929,9 +930,7 @@ extern "C" fn jni_wall_clock_now(callback_id: i64, seconds_out: *mut i64, nanos_
                                 }
                             }
                         }
-                        if let Ok(nanos) =
-                            env.call_method(&dt_obj, "getNanoseconds", "()I", &[])
-                        {
+                        if let Ok(nanos) = env.call_method(&dt_obj, "getNanoseconds", "()I", &[]) {
                             if let Ok(n) = nanos.i() {
                                 unsafe {
                                     *nanos_out = n as u32;
@@ -946,10 +945,7 @@ extern "C" fn jni_wall_clock_now(callback_id: i64, seconds_out: *mut i64, nanos_
             }
         }
         Err(e) => {
-            log::error!(
-                "Failed to attach JVM thread for wall clock now: {}",
-                e
-            );
+            log::error!("Failed to attach JVM thread for wall clock now: {}", e);
         }
     };
 }
@@ -986,9 +982,7 @@ extern "C" fn jni_wall_clock_resolution(
                                 }
                             }
                         }
-                        if let Ok(nanos) =
-                            env.call_method(&dt_obj, "getNanoseconds", "()I", &[])
-                        {
+                        if let Ok(nanos) = env.call_method(&dt_obj, "getNanoseconds", "()I", &[]) {
                             if let Ok(n) = nanos.i() {
                                 unsafe {
                                     *nanos_out = n as u32;
@@ -1040,10 +1034,7 @@ extern "C" fn jni_monotonic_clock_now(callback_id: i64) -> u64 {
             }
         }
         Err(e) => {
-            log::error!(
-                "Failed to attach JVM thread for monotonic clock now: {}",
-                e
-            );
+            log::error!("Failed to attach JVM thread for monotonic clock now: {}", e);
             0
         }
     };
@@ -1126,18 +1117,12 @@ extern "C" fn jni_random_fill_bytes(callback_id: i64, buf_ptr: *mut u8, buf_len:
                                     }
                                 }
                                 Err(e) => {
-                                    log::error!(
-                                        "Failed to convert byte array from Java: {}",
-                                        e
-                                    );
+                                    log::error!("Failed to convert byte array from Java: {}", e);
                                 }
                             }
                         }
                         Err(e) => {
-                            log::error!(
-                                "Failed to call WasiRandomSource.fillBytes(): {}",
-                                e
-                            );
+                            log::error!("Failed to call WasiRandomSource.fillBytes(): {}", e);
                         }
                     }
                 }
@@ -1241,15 +1226,14 @@ extern "C" fn jni_socket_addr_check(
             };
 
             // SocketAddrUse.fromValue(int) -> SocketAddrUse
-            let use_class = match env
-                .find_class("ai/tegmentum/wasmtime4j/wasi/sockets/SocketAddrUse")
-            {
-                Ok(c) => c,
-                Err(e) => {
-                    log::error!("Failed to find SocketAddrUse class: {}", e);
-                    return 0;
-                }
-            };
+            let use_class =
+                match env.find_class("ai/tegmentum/wasmtime4j/wasi/sockets/SocketAddrUse") {
+                    Ok(c) => c,
+                    Err(e) => {
+                        log::error!("Failed to find SocketAddrUse class: {}", e);
+                        return 0;
+                    }
+                };
             let socket_use = match env.call_static_method(
                 use_class,
                 "fromValue",
@@ -1300,10 +1284,7 @@ extern "C" fn jni_socket_addr_check(
             }
         }
         Err(e) => {
-            log::error!(
-                "Failed to attach JVM thread for socket addr check: {}",
-                e
-            );
+            log::error!("Failed to attach JVM thread for socket addr check: {}", e);
             0
         }
     };
@@ -1844,8 +1825,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
             component_linker_core::get_component_linker_ref(linker_handle as *const c_void)?
         };
 
-        let component =
-            unsafe { crate::component::core::get_component_ref(component_handle as *const c_void)? };
+        let component = unsafe {
+            crate::component::core::get_component_ref(component_handle as *const c_void)?
+        };
 
         let pre = linker.instantiate_pre(component)?;
 
@@ -1882,8 +1864,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
         let linker = unsafe {
             component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
         };
-        let component =
-            unsafe { crate::component::core::get_component_ref(component_handle as *const c_void)? };
+        let component = unsafe {
+            crate::component::core::get_component_ref(component_handle as *const c_void)?
+        };
         linker.define_unknown_imports_as_traps(component)?;
         Ok(0)
     })

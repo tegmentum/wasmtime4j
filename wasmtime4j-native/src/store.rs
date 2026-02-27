@@ -16,9 +16,9 @@ use std::time::{Duration, Instant};
 #[cfg(feature = "wasi-http")]
 use wasmtime::component::ResourceTable;
 use wasmtime::{
-    AsContext, AsContextMut, CallHook, Func, FuncType,
-    StoreLimits as WasmtimeStoreLimits, StoreLimitsBuilder as WasmtimeStoreLimitsBuilder,
-    Store as WasmtimeStore, StoreContext, StoreContextMut,
+    AsContext, AsContextMut, CallHook, Func, FuncType, Store as WasmtimeStore, StoreContext,
+    StoreContextMut, StoreLimits as WasmtimeStoreLimits,
+    StoreLimitsBuilder as WasmtimeStoreLimitsBuilder,
 };
 use wasmtime_wasi::p1::WasiP1Ctx;
 use wasmtime_wasi::p2::pipe::MemoryOutputPipe;
@@ -290,15 +290,27 @@ pub struct CallbackResourceLimiter {
 }
 
 impl CallbackResourceLimiter {
-    fn do_memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
+    fn do_memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
         let max_val = maximum.map(|m| m as u64).unwrap_or(u64::MAX);
-        let result = (self.memory_growing_fn)(self.callback_id, current as u64, desired as u64, max_val);
+        let result =
+            (self.memory_growing_fn)(self.callback_id, current as u64, desired as u64, max_val);
         Ok(result != 0)
     }
 
-    fn do_table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
+    fn do_table_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
         let max_val = maximum.map(|m| m as u32).unwrap_or(u32::MAX);
-        let result = (self.table_growing_fn)(self.callback_id, current as u32, desired as u32, max_val);
+        let result =
+            (self.table_growing_fn)(self.callback_id, current as u32, desired as u32, max_val);
         Ok(result != 0)
     }
 
@@ -322,11 +334,21 @@ impl CallbackResourceLimiter {
 }
 
 impl wasmtime::ResourceLimiter for CallbackResourceLimiter {
-    fn memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
+    fn memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
         self.do_memory_growing(current, desired, maximum)
     }
 
-    fn table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
+    fn table_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
         self.do_table_growing(current, desired, maximum)
     }
 
@@ -344,11 +366,21 @@ pub type CallbackResourceLimiterAsync = CallbackResourceLimiter;
 
 #[async_trait::async_trait]
 impl wasmtime::ResourceLimiterAsync for CallbackResourceLimiter {
-    async fn memory_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
+    async fn memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
         self.do_memory_growing(current, desired, maximum)
     }
 
-    async fn table_growing(&mut self, current: usize, desired: usize, maximum: Option<usize>) -> wasmtime::Result<bool> {
+    async fn table_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
         self.do_table_growing(current, desired, maximum)
     }
 
@@ -940,7 +972,9 @@ impl Store {
             } else {
                 // Return an error to trap execution
                 log::trace!("Trapping execution");
-                Err(wasmtime::Error::msg("Epoch deadline callback requested trap"))
+                Err(wasmtime::Error::msg(
+                    "Epoch deadline callback requested trap",
+                ))
             }
         });
 
@@ -1209,14 +1243,13 @@ impl Store {
             callback_id
         );
 
-        store.data_mut().callback_resource_limiter_async =
-            Some(CallbackResourceLimiterAsync {
-                memory_growing_fn,
-                table_growing_fn,
-                memory_grow_failed_fn,
-                table_grow_failed_fn,
-                callback_id,
-            });
+        store.data_mut().callback_resource_limiter_async = Some(CallbackResourceLimiterAsync {
+            memory_growing_fn,
+            table_growing_fn,
+            memory_grow_failed_fn,
+            table_grow_failed_fn,
+            callback_id,
+        });
 
         store.limiter_async(|data| {
             data.callback_resource_limiter_async
@@ -1312,7 +1345,10 @@ impl Store {
             if result == 0 {
                 Ok(())
             } else {
-                Err(wasmtime::Error::msg(format!("Call hook requested trap (result={})", result)))
+                Err(wasmtime::Error::msg(format!(
+                    "Call hook requested trap (result={})",
+                    result
+                )))
             }
         });
 
@@ -1469,8 +1505,11 @@ impl StoreBuilder {
                 })?;
         }
 
-        let metadata =
-            StoreMetadata::new(self.fuel_limit, self.memory_limit_bytes, self.execution_timeout);
+        let metadata = StoreMetadata::new(
+            self.fuel_limit,
+            self.memory_limit_bytes,
+            self.execution_timeout,
+        );
 
         Ok(Store {
             id: store_id,
@@ -1520,8 +1559,11 @@ impl StoreBuilder {
                 })?;
         }
 
-        let metadata =
-            StoreMetadata::new(self.fuel_limit, self.memory_limit_bytes, self.execution_timeout);
+        let metadata = StoreMetadata::new(
+            self.fuel_limit,
+            self.memory_limit_bytes,
+            self.execution_timeout,
+        );
 
         Ok(Store {
             id: store_id,
@@ -1592,8 +1634,11 @@ impl StoreBuilder {
                 })?;
         }
 
-        let metadata =
-            StoreMetadata::new(self.fuel_limit, self.memory_limit_bytes, self.execution_timeout);
+        let metadata = StoreMetadata::new(
+            self.fuel_limit,
+            self.memory_limit_bytes,
+            self.execution_timeout,
+        );
 
         Ok(Store {
             id: store_id,
@@ -2073,9 +2118,18 @@ mod tests {
             .fuel_enabled(true)
             .build()
             .expect("Failed to create engine with fuel enabled");
-        let store =
-            core::create_store_with_config(&engine, Some(1000), None, None, None, None, None, None, false)
-                .expect("Failed to create store with fuel");
+        let store = core::create_store_with_config(
+            &engine,
+            Some(1000),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            false,
+        )
+        .expect("Failed to create store with fuel");
 
         let store_ref = unsafe {
             core::get_store_ref(store.as_ref() as *const Store as *const std::os::raw::c_void)
@@ -2682,7 +2736,6 @@ pub unsafe extern "C" fn wasmtime4j_store_new(engine_ptr: *const c_void) -> *mut
     }
 }
 
-
 /// Create a new store compatible with a specific module
 ///
 /// CRITICAL: This ensures the Store's internal wasmtime::Store uses the SAME Arc
@@ -2796,7 +2849,6 @@ pub unsafe extern "C" fn wasmtime4j_store_consume_fuel(store_ptr: *const c_void,
     }
 }
 
-
 /// Set WASI context on a store (Panama FFI)
 ///
 /// This function attaches a WASI context to a store, which is required before
@@ -2907,7 +2959,7 @@ pub unsafe extern "C" fn wasmtime4j_store_breakpoint_count(store_ptr: *const c_v
     match core::get_store_ref(store_ptr) {
         Ok(store) => match store.breakpoint_count() {
             Ok(Some(count)) => count as c_int,
-            Ok(None) => -1,  // debugging not enabled
+            Ok(None) => -1, // debugging not enabled
             Err(_) => -2,
         },
         Err(_) => -2,
@@ -2935,7 +2987,7 @@ pub unsafe extern "C" fn wasmtime4j_store_set_single_step(
                 let _ = edit.single_step(enable);
             }) {
                 Ok(true) => FFI_SUCCESS,
-                Ok(false) => 1,  // debugging not enabled
+                Ok(false) => 1, // debugging not enabled
                 Err(_) => FFI_ERROR,
             }
         }
@@ -3073,4 +3125,3 @@ pub unsafe extern "C" fn wasmtime4j_store_debug_exit_frames(
         Err(_) => FFI_ERROR,
     }
 }
-

@@ -906,7 +906,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeDebugM
         match instance.debug_memory(store, memory_index as u32)? {
             Some(memory) => {
                 let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
-                let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
+                let memory_wrapper =
+                    crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
                 let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
                 Ok(validated_ptr as jlong)
             }
@@ -1114,17 +1115,17 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateIns
         let handles_array = unsafe { jni::objects::JLongArray::from_raw(extern_handles) };
         let types_array = unsafe { jni::objects::JIntArray::from_raw(extern_types) };
 
-        let handles_len = env
-            .get_array_length(&handles_array)
-            .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get extern handles array length: {}", e),
-            })? as usize;
+        let handles_len =
+            env.get_array_length(&handles_array)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get extern handles array length: {}", e),
+                })? as usize;
 
-        let types_len = env
-            .get_array_length(&types_array)
-            .map_err(|e| WasmtimeError::InvalidParameter {
-                message: format!("Failed to get extern types array length: {}", e),
-            })? as usize;
+        let types_len =
+            env.get_array_length(&types_array)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get extern types array length: {}", e),
+                })? as usize;
 
         if handles_len != types_len {
             return Err(WasmtimeError::InvalidParameter {
@@ -1141,9 +1142,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateIns
 
         if handles_len == 0 {
             let instance = core::create_instance(store, module)?;
-            return Ok(
-                crate::ffi_common::memory_utils::box_into_raw_safe(instance) as jlong
-            );
+            return Ok(crate::ffi_common::memory_utils::box_into_raw_safe(instance) as jlong);
         }
 
         let mut handle_buf = vec![0i64; handles_len];
@@ -1161,9 +1160,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateIns
 
         let ptrs: Vec<*const c_void> = handle_buf.iter().map(|&h| h as *const c_void).collect();
 
-        let instance = unsafe {
-            core::create_instance_from_extern_handles(store, module, &ptrs, &type_buf)?
-        };
+        let instance =
+            unsafe { core::create_instance_from_extern_handles(store, module, &ptrs, &type_buf)? };
 
         Ok(crate::ffi_common::memory_utils::box_into_raw_safe(instance) as jlong)
     })();
@@ -1219,4 +1217,3 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMod
         }
     }
 }
-

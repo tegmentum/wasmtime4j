@@ -194,7 +194,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetMetad
 
         let mut data = Vec::with_capacity(9); // 2 ints + 1 byte for name presence
 
-        let value_type_code = crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
+        let value_type_code =
+            crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
         data.extend_from_slice(&value_type_code.to_le_bytes());
 
         let mutability_code = match metadata.mutability {

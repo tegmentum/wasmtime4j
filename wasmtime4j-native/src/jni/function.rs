@@ -819,10 +819,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncTo
 
     let result = (|| -> WasmtimeResult<jlong> {
         if function_ptr == 0 {
-            return Err(WasmtimeError::invalid_parameter("function_ptr cannot be null"));
+            return Err(WasmtimeError::invalid_parameter(
+                "function_ptr cannot be null",
+            ));
         }
         if store_handle == 0 {
-            return Err(WasmtimeError::invalid_parameter("store_handle cannot be null"));
+            return Err(WasmtimeError::invalid_parameter(
+                "store_handle cannot be null",
+            ));
         }
 
         let func_handle = unsafe { &*(function_ptr as *const FunctionHandle) };
@@ -856,7 +860,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncFr
 
     let result = (|| -> WasmtimeResult<jlong> {
         if store_handle == 0 {
-            return Err(WasmtimeError::invalid_parameter("store_handle cannot be null"));
+            return Err(WasmtimeError::invalid_parameter(
+                "store_handle cannot be null",
+            ));
         }
 
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
@@ -864,11 +870,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncFr
 
         match func_opt {
             Some(func) => {
-                let handle = Box::new(FunctionHandle::new(
-                    func,
-                    "from_raw".to_string(),
-                    store,
-                ));
+                let handle = Box::new(FunctionHandle::new(func, "from_raw".to_string(), store));
                 Ok(Box::into_raw(handle) as jlong)
             }
             None => Ok(0),

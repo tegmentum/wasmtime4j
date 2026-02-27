@@ -7,12 +7,15 @@
 use std::os::raw::c_void;
 
 use serde::Deserialize;
-use wasmtime::{Engine as WasmtimeEngine, MemoryType, OptLevel, RegallocAlgorithm, SharedMemory as WasmtimeSharedMemory, Strategy};
+use wasmtime::{
+    Engine as WasmtimeEngine, MemoryType, OptLevel, RegallocAlgorithm,
+    SharedMemory as WasmtimeSharedMemory, Strategy,
+};
 
 use super::{Engine, EngineBuilder, EngineConfigSummary, WasmFeature};
 use crate::error::{ffi_utils, WasmtimeError, WasmtimeResult};
+use crate::memory::core::{create_validated_memory, ValidatedMemory};
 use crate::memory::Memory;
-use crate::memory::core::{ValidatedMemory, create_validated_memory};
 use crate::validate_ptr_not_null;
 
 /// JSON-deserializable engine configuration for FFI
@@ -225,52 +228,114 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     }
 
     // Core settings
-    if let Some(v) = config.debug_info { builder = builder.debug_info(v); }
-    if let Some(v) = config.fuel_enabled { builder = builder.fuel_enabled(v); }
-    if let Some(v) = config.epoch_interruption { builder = builder.epoch_interruption(v); }
-    if let Some(v) = config.async_support { builder = builder.async_support(v); }
-    if let Some(v) = config.concurrency_support { builder = builder.concurrency_support(v); }
-    if let Some(v) = config.coredump_on_trap { builder = builder.coredump_on_trap(v); }
-    if let Some(v) = config.parallel_compilation { builder = builder.parallel_compilation(v); }
-    if let Some(v) = config.native_unwind_info { builder = builder.native_unwind_info(v); }
+    if let Some(v) = config.debug_info {
+        builder = builder.debug_info(v);
+    }
+    if let Some(v) = config.fuel_enabled {
+        builder = builder.fuel_enabled(v);
+    }
+    if let Some(v) = config.epoch_interruption {
+        builder = builder.epoch_interruption(v);
+    }
+    if let Some(v) = config.async_support {
+        builder = builder.async_support(v);
+    }
+    if let Some(v) = config.concurrency_support {
+        builder = builder.concurrency_support(v);
+    }
+    if let Some(v) = config.coredump_on_trap {
+        builder = builder.coredump_on_trap(v);
+    }
+    if let Some(v) = config.parallel_compilation {
+        builder = builder.parallel_compilation(v);
+    }
+    if let Some(v) = config.native_unwind_info {
+        builder = builder.native_unwind_info(v);
+    }
 
     // Stack
-    if let Some(v) = config.max_stack_size { builder = builder.max_stack_size(v); }
-    if let Some(v) = config.async_stack_size { builder = builder.async_stack_size(v); }
-    if let Some(v) = config.async_stack_zeroing { builder = builder.async_stack_zeroing(v); }
+    if let Some(v) = config.max_stack_size {
+        builder = builder.max_stack_size(v);
+    }
+    if let Some(v) = config.async_stack_size {
+        builder = builder.async_stack_size(v);
+    }
+    if let Some(v) = config.async_stack_zeroing {
+        builder = builder.async_stack_zeroing(v);
+    }
 
     // Memory
-    if let Some(v) = config.memory_reservation { builder = builder.memory_reservation(v); }
-    if let Some(v) = config.memory_guard_size { builder = builder.memory_guard_size(v); }
+    if let Some(v) = config.memory_reservation {
+        builder = builder.memory_reservation(v);
+    }
+    if let Some(v) = config.memory_guard_size {
+        builder = builder.memory_guard_size(v);
+    }
     if let Some(v) = config.memory_reservation_for_growth {
         builder = builder.memory_reservation_for_growth(v);
     }
-    if let Some(v) = config.memory_may_move { builder = builder.memory_may_move(v); }
+    if let Some(v) = config.memory_may_move {
+        builder = builder.memory_may_move(v);
+    }
     if let Some(v) = config.guard_before_linear_memory {
         builder = builder.guard_before_linear_memory(v);
     }
-    if let Some(v) = config.memory_init_cow { builder = builder.memory_init_cow(v); }
+    if let Some(v) = config.memory_init_cow {
+        builder = builder.memory_init_cow(v);
+    }
 
     // WASM features
-    if let Some(v) = config.wasm_threads { builder = builder.wasm_threads(v); }
-    if let Some(v) = config.wasm_reference_types { builder = builder.wasm_reference_types(v); }
-    if let Some(v) = config.wasm_simd { builder = builder.wasm_simd(v); }
-    if let Some(v) = config.wasm_bulk_memory { builder = builder.wasm_bulk_memory(v); }
-    if let Some(v) = config.wasm_multi_value { builder = builder.wasm_multi_value(v); }
-    if let Some(v) = config.wasm_multi_memory { builder = builder.wasm_multi_memory(v); }
-    if let Some(v) = config.wasm_tail_call { builder = builder.wasm_tail_call(v); }
-    if let Some(v) = config.wasm_relaxed_simd { builder = builder.wasm_relaxed_simd(v); }
+    if let Some(v) = config.wasm_threads {
+        builder = builder.wasm_threads(v);
+    }
+    if let Some(v) = config.wasm_reference_types {
+        builder = builder.wasm_reference_types(v);
+    }
+    if let Some(v) = config.wasm_simd {
+        builder = builder.wasm_simd(v);
+    }
+    if let Some(v) = config.wasm_bulk_memory {
+        builder = builder.wasm_bulk_memory(v);
+    }
+    if let Some(v) = config.wasm_multi_value {
+        builder = builder.wasm_multi_value(v);
+    }
+    if let Some(v) = config.wasm_multi_memory {
+        builder = builder.wasm_multi_memory(v);
+    }
+    if let Some(v) = config.wasm_tail_call {
+        builder = builder.wasm_tail_call(v);
+    }
+    if let Some(v) = config.wasm_relaxed_simd {
+        builder = builder.wasm_relaxed_simd(v);
+    }
     if let Some(v) = config.wasm_function_references {
         builder = builder.wasm_function_references(v);
     }
-    if let Some(v) = config.wasm_gc { builder = builder.wasm_gc(v); }
-    if let Some(v) = config.wasm_exceptions { builder = builder.wasm_exceptions(v); }
-    if let Some(v) = config.wasm_memory64 { builder = builder.wasm_memory64(v); }
-    if let Some(v) = config.wasm_extended_const { builder = builder.wasm_extended_const(v); }
-    if let Some(v) = config.wasm_component_model { builder = builder.wasm_component_model(v); }
-    if let Some(v) = config.wasm_custom_page_sizes { builder = builder.wasm_custom_page_sizes(v); }
-    if let Some(v) = config.wasm_wide_arithmetic { builder = builder.wasm_wide_arithmetic(v); }
-    if let Some(v) = config.wasm_stack_switching { builder = builder.wasm_stack_switching(v); }
+    if let Some(v) = config.wasm_gc {
+        builder = builder.wasm_gc(v);
+    }
+    if let Some(v) = config.wasm_exceptions {
+        builder = builder.wasm_exceptions(v);
+    }
+    if let Some(v) = config.wasm_memory64 {
+        builder = builder.wasm_memory64(v);
+    }
+    if let Some(v) = config.wasm_extended_const {
+        builder = builder.wasm_extended_const(v);
+    }
+    if let Some(v) = config.wasm_component_model {
+        builder = builder.wasm_component_model(v);
+    }
+    if let Some(v) = config.wasm_custom_page_sizes {
+        builder = builder.wasm_custom_page_sizes(v);
+    }
+    if let Some(v) = config.wasm_wide_arithmetic {
+        builder = builder.wasm_wide_arithmetic(v);
+    }
+    if let Some(v) = config.wasm_stack_switching {
+        builder = builder.wasm_stack_switching(v);
+    }
     if let Some(v) = config.wasm_shared_everything_threads {
         builder = builder.wasm_shared_everything_threads(v);
     }
@@ -299,15 +364,27 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     }
 
     // WasmFeatures-only flags
-    if let Some(v) = config.wasm_mutable_global { builder = builder.wasm_mutable_global(v); }
+    if let Some(v) = config.wasm_mutable_global {
+        builder = builder.wasm_mutable_global(v);
+    }
     if let Some(v) = config.wasm_saturating_float_to_int {
         builder = builder.wasm_saturating_float_to_int(v);
     }
-    if let Some(v) = config.wasm_sign_extension { builder = builder.wasm_sign_extension(v); }
-    if let Some(v) = config.wasm_floats { builder = builder.wasm_floats(v); }
-    if let Some(v) = config.wasm_memory_control { builder = builder.wasm_memory_control(v); }
-    if let Some(v) = config.wasm_legacy_exceptions { builder = builder.wasm_legacy_exceptions(v); }
-    if let Some(v) = config.wasm_gc_types { builder = builder.wasm_gc_types(v); }
+    if let Some(v) = config.wasm_sign_extension {
+        builder = builder.wasm_sign_extension(v);
+    }
+    if let Some(v) = config.wasm_floats {
+        builder = builder.wasm_floats(v);
+    }
+    if let Some(v) = config.wasm_memory_control {
+        builder = builder.wasm_memory_control(v);
+    }
+    if let Some(v) = config.wasm_legacy_exceptions {
+        builder = builder.wasm_legacy_exceptions(v);
+    }
+    if let Some(v) = config.wasm_gc_types {
+        builder = builder.wasm_gc_types(v);
+    }
     if let Some(v) = config.wasm_component_model_values {
         builder = builder.wasm_component_model_values(v);
     }
@@ -320,11 +397,15 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     if let Some(v) = config.wasm_call_indirect_overlong {
         builder = builder.wasm_call_indirect_overlong(v);
     }
-    if let Some(v) = config.wasm_bulk_memory_opt { builder = builder.wasm_bulk_memory_opt(v); }
+    if let Some(v) = config.wasm_bulk_memory_opt {
+        builder = builder.wasm_bulk_memory_opt(v);
+    }
     if let Some(v) = config.wasm_custom_descriptors {
         builder = builder.wasm_custom_descriptors(v);
     }
-    if let Some(v) = config.wasm_compact_imports { builder = builder.wasm_compact_imports(v); }
+    if let Some(v) = config.wasm_compact_imports {
+        builder = builder.wasm_compact_imports(v);
+    }
 
     // Cranelift settings
     if let Some(v) = config.cranelift_debug_verifier {
@@ -333,7 +414,9 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     if let Some(v) = config.cranelift_nan_canonicalization {
         builder = builder.cranelift_nan_canonicalization(v);
     }
-    if let Some(v) = config.cranelift_pcc { builder = builder.cranelift_pcc(v); }
+    if let Some(v) = config.cranelift_pcc {
+        builder = builder.cranelift_pcc(v);
+    }
     if let Some(ref alg) = config.cranelift_regalloc_algorithm {
         builder = builder.cranelift_regalloc_algorithm(match alg.as_str() {
             "single_pass" => RegallocAlgorithm::SinglePass,
@@ -363,7 +446,9 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     }
 
     // Table
-    if let Some(v) = config.table_lazy_init { builder = builder.table_lazy_init(v); }
+    if let Some(v) = config.table_lazy_init {
+        builder = builder.table_lazy_init(v);
+    }
 
     // SIMD determinism
     if let Some(v) = config.relaxed_simd_deterministic {
@@ -373,9 +458,9 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     // Allocation strategy
     if let Some(ref strat) = config.allocation_strategy {
         if strat == "pooling" {
-            builder = builder.allocation_strategy(
-                wasmtime::InstanceAllocationStrategy::Pooling(Default::default()),
-            );
+            builder = builder.allocation_strategy(wasmtime::InstanceAllocationStrategy::Pooling(
+                Default::default(),
+            ));
         }
     }
 
@@ -395,10 +480,7 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
         builder = builder.module_version_strategy(match mvs.as_str() {
             "none" => wasmtime::ModuleVersionStrategy::None,
             "custom" => {
-                let custom = config
-                    .module_version_custom
-                    .as_deref()
-                    .unwrap_or("unknown");
+                let custom = config.module_version_custom.as_deref().unwrap_or("unknown");
                 wasmtime::ModuleVersionStrategy::Custom(custom.to_string())
             }
             _ => wasmtime::ModuleVersionStrategy::WasmtimeVersion,
@@ -773,9 +855,9 @@ pub fn create_engine_with_extended_config(
 
     // Pooling allocator
     if pooling_allocator {
-        builder = builder.allocation_strategy(
-            wasmtime::InstanceAllocationStrategy::Pooling(Default::default()),
-        );
+        builder = builder.allocation_strategy(wasmtime::InstanceAllocationStrategy::Pooling(
+            Default::default(),
+        ));
     }
 
     // Cranelift flags
@@ -786,14 +868,13 @@ pub fn create_engine_with_extended_config(
     // Module version strategy
     match module_version_strategy {
         1 => {
-            builder = builder
-                .module_version_strategy(wasmtime::ModuleVersionStrategy::None);
+            builder = builder.module_version_strategy(wasmtime::ModuleVersionStrategy::None);
         }
         2 => {
             if let Some(custom) = module_version_custom {
-                builder = builder.module_version_strategy(
-                    wasmtime::ModuleVersionStrategy::Custom(custom.to_string()),
-                );
+                builder = builder.module_version_strategy(wasmtime::ModuleVersionStrategy::Custom(
+                    custom.to_string(),
+                ));
             }
         }
         _ => {
@@ -899,7 +980,9 @@ pub unsafe fn destroy_engine(engine_ptr: *mut c_void) {
 /// # Safety
 ///
 /// The caller must ensure engine_ptr is a valid pointer to an Engine.
-pub unsafe fn create_weak_engine(engine_ptr: *const c_void) -> WasmtimeResult<Box<super::WeakEngine>> {
+pub unsafe fn create_weak_engine(
+    engine_ptr: *const c_void,
+) -> WasmtimeResult<Box<super::WeakEngine>> {
     validate_ptr_not_null!(engine_ptr, "engine");
     let engine = &*(engine_ptr as *const Engine);
     Ok(Box::new(engine.weak()))
@@ -1060,12 +1143,11 @@ pub fn create_shared_memory(
     }
 
     let memory_type = MemoryType::shared(initial_pages as u32, max_pages as u32);
-    let shared_memory =
-        WasmtimeSharedMemory::new(engine.inner(), memory_type).map_err(|e| {
-            WasmtimeError::Memory {
-                message: format!("Failed to create shared memory: {}", e),
-            }
-        })?;
+    let shared_memory = WasmtimeSharedMemory::new(engine.inner(), memory_type).map_err(|e| {
+        WasmtimeError::Memory {
+            message: format!("Failed to create shared memory: {}", e),
+        }
+    })?;
 
     let memory = Memory::from_shared_memory(shared_memory);
     create_validated_memory(memory)

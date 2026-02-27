@@ -193,8 +193,7 @@ pub fn spawn_jni_completable_future<F>(
     jvm: Arc<jni::JavaVM>,
     future_ref: jni::objects::GlobalRef,
     task: F,
-)
-where
+) where
     F: std::future::Future<Output = Result<i64, String>> + Send + 'static,
 {
     get_async_runtime().spawn(async move {
@@ -323,8 +322,7 @@ pub fn spawn_panama_completable_future<F>(
     callback: PanamaAsyncCompletionCallback,
     callback_data: i64,
     task: F,
-)
-where
+) where
     F: std::future::Future<Output = Result<i64, String>> + Send + 'static,
 {
     get_async_runtime().spawn(async move {

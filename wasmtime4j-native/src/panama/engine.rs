@@ -8,12 +8,11 @@ use std::sync::Arc;
 
 use crate::engine::core;
 use crate::engine::{
-    CacheFreeFn, CacheGetFn, CacheInsertFn, CallbackCacheStore,
-    CallbackCustomCodeMemory, CallbackMemoryCreator, CallbackStackCreator,
-    CodeMemAlignmentFn, CodeMemPublishFn, CodeMemUnpublishFn,
-    LinMemAsPtrFn, LinMemByteCapacityFn, LinMemByteSizeFn, LinMemDropFn, LinMemGrowToFn,
-    MemCreatorNewMemoryFn,
-    StkCreatorNewStackFn, StkMemDropFn, StkMemGuardRangeFn, StkMemRangeFn, StkMemTopFn,
+    CacheFreeFn, CacheGetFn, CacheInsertFn, CallbackCacheStore, CallbackCustomCodeMemory,
+    CallbackMemoryCreator, CallbackStackCreator, CodeMemAlignmentFn, CodeMemPublishFn,
+    CodeMemUnpublishFn, LinMemAsPtrFn, LinMemByteCapacityFn, LinMemByteSizeFn, LinMemDropFn,
+    LinMemGrowToFn, MemCreatorNewMemoryFn, StkCreatorNewStackFn, StkMemDropFn, StkMemGuardRangeFn,
+    StkMemRangeFn, StkMemTopFn,
 };
 use crate::error::ffi_utils;
 use crate::ffi_common::{error_handling, parameter_conversion};
@@ -409,7 +408,11 @@ pub extern "C" fn wasmtime4j_panama_engine_pooling_allocator_metrics(
 pub extern "C" fn wasmtime4j_panama_engine_is_pulley(engine_ptr: *mut c_void) -> c_int {
     match unsafe { core::get_engine_ref(engine_ptr) } {
         Ok(engine) => {
-            if engine.inner().is_pulley() { 1 } else { 0 }
+            if engine.inner().is_pulley() {
+                1
+            } else {
+                0
+            }
         }
         Err(_) => -1,
     }
@@ -700,7 +703,10 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_cache_store(
 
     let json_bytes = unsafe { std::slice::from_raw_parts(json_ptr, json_len as usize) };
     let cache_store = Arc::new(CallbackCacheStore::new(
-        callback_id, get_fn, insert_fn, free_fn,
+        callback_id,
+        get_fn,
+        insert_fn,
+        free_fn,
     ));
 
     match core::create_engine_from_json_config_with_cache_store(json_bytes, cache_store) {
@@ -789,35 +795,37 @@ pub extern "C" fn wasmtime4j_panama_engine_create_with_extensions(
             (cs_get_fn, cs_insert_fn, cs_free_fn)
         {
             Some(Arc::new(CallbackCacheStore::new(
-                cs_callback_id, get_fn, insert_fn, free_fn,
+                cs_callback_id,
+                get_fn,
+                insert_fn,
+                free_fn,
             )))
         } else {
             None
         };
 
     // Build MemoryCreator if all function pointers provided
-    let memory_creator: Option<Arc<dyn wasmtime::MemoryCreator>> =
-        if let (
-            Some(new_mem_fn),
-            Some(bs_fn),
-            Some(bc_fn),
-            Some(gt_fn),
-            Some(ap_fn),
-            Some(dr_fn),
-        ) = (
-            mc_new_memory_fn,
-            lm_byte_size_fn,
-            lm_byte_capacity_fn,
-            lm_grow_to_fn,
-            lm_as_ptr_fn,
-            lm_drop_fn,
-        ) {
-            Some(Arc::new(CallbackMemoryCreator::new(
-                mc_id, new_mem_fn, bs_fn, bc_fn, gt_fn, ap_fn, dr_fn,
-            )))
-        } else {
-            None
-        };
+    let memory_creator: Option<Arc<dyn wasmtime::MemoryCreator>> = if let (
+        Some(new_mem_fn),
+        Some(bs_fn),
+        Some(bc_fn),
+        Some(gt_fn),
+        Some(ap_fn),
+        Some(dr_fn),
+    ) = (
+        mc_new_memory_fn,
+        lm_byte_size_fn,
+        lm_byte_capacity_fn,
+        lm_grow_to_fn,
+        lm_as_ptr_fn,
+        lm_drop_fn,
+    ) {
+        Some(Arc::new(CallbackMemoryCreator::new(
+            mc_id, new_mem_fn, bs_fn, bc_fn, gt_fn, ap_fn, dr_fn,
+        )))
+    } else {
+        None
+    };
 
     // Build StackCreator if all function pointers provided
     let stack_creator: Option<Arc<dyn wasmtime::StackCreator>> =
@@ -920,10 +928,9 @@ pub extern "C" fn wasmtime4j_panama_engine_same(
     if engine_ptr1.is_null() || engine_ptr2.is_null() {
         return -1;
     }
-    match (
-        unsafe { core::get_engine_ref(engine_ptr1) },
-        unsafe { core::get_engine_ref(engine_ptr2) },
-    ) {
+    match (unsafe { core::get_engine_ref(engine_ptr1) }, unsafe {
+        core::get_engine_ref(engine_ptr2)
+    }) {
         (Ok(engine1), Ok(engine2)) => {
             if engine1.same(engine2) {
                 1

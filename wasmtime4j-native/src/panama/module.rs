@@ -605,9 +605,7 @@ pub extern "C" fn wasmtime4j_panama_module_export_destroy(module_export_ptr: *mu
 
 /// Initialize copy-on-write image for faster instantiation (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_module_initialize_cow_image(
-    module_ptr: *mut c_void,
-) -> c_int {
+pub extern "C" fn wasmtime4j_panama_module_initialize_cow_image(module_ptr: *mut c_void) -> c_int {
     match crate::shared_ffi::module::initialize_copy_on_write_image_shared(module_ptr) {
         Ok(()) => 0,
         Err(_) => -1,
@@ -675,10 +673,8 @@ pub extern "C" fn wasmtime4j_panama_module_address_map(
                 }
 
                 unsafe {
-                    *code_offsets_out =
-                        Box::into_raw(code_offsets.into_boxed_slice()) as *mut u64;
-                    *wasm_offsets_out =
-                        Box::into_raw(wasm_offsets.into_boxed_slice()) as *mut i64;
+                    *code_offsets_out = Box::into_raw(code_offsets.into_boxed_slice()) as *mut u64;
+                    *wasm_offsets_out = Box::into_raw(wasm_offsets.into_boxed_slice()) as *mut i64;
                     *count_out = count;
                 }
                 0

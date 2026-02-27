@@ -269,13 +269,15 @@ unsafe impl wasmtime::MemoryCreator for CallbackMemoryCreator {
 
 /// StackCreator.new_stack callback.
 /// Returns: callback_id for the new StackMemory, or 0 on failure.
-pub type StkCreatorNewStackFn = unsafe extern "C" fn(creator_id: i64, size: u64, zeroed: i32) -> i64;
+pub type StkCreatorNewStackFn =
+    unsafe extern "C" fn(creator_id: i64, size: u64, zeroed: i32) -> i64;
 
 /// StackMemory.top callback
 pub type StkMemTopFn = unsafe extern "C" fn(stack_id: i64) -> *mut u8;
 
 /// StackMemory.range callback: writes range_start and range_end
-pub type StkMemRangeFn = unsafe extern "C" fn(stack_id: i64, out_start: *mut u64, out_end: *mut u64);
+pub type StkMemRangeFn =
+    unsafe extern "C" fn(stack_id: i64, out_start: *mut u64, out_end: *mut u64);
 
 /// StackMemory.guard_range callback: writes guard_start and guard_end pointers
 pub type StkMemGuardRangeFn =
@@ -430,7 +432,9 @@ impl wasmtime::CustomCodeMemory for CallbackCustomCodeMemory {
         if result == 0 {
             Ok(())
         } else {
-            Err(wasmtime::Error::msg("CustomCodeMemory.publishExecutable failed"))
+            Err(wasmtime::Error::msg(
+                "CustomCodeMemory.publishExecutable failed",
+            ))
         }
     }
 
@@ -661,7 +665,8 @@ impl EngineConfigSummary {
             wasm_component_model_error_context: builder.wasm_component_model_error_context,
             wasm_component_model_gc: builder.wasm_component_model_gc,
             wasm_component_model_threading: builder.wasm_component_model_threading,
-            wasm_component_model_fixed_length_lists: builder.wasm_component_model_fixed_length_lists,
+            wasm_component_model_fixed_length_lists: builder
+                .wasm_component_model_fixed_length_lists,
             wasm_mutable_global: builder.wasm_mutable_global,
             wasm_saturating_float_to_int: builder.wasm_saturating_float_to_int,
             wasm_sign_extension: builder.wasm_sign_extension,
@@ -878,25 +883,25 @@ impl EngineBuilder {
             wasm_component_model_gc: false,            // Component model extension - off by default
             wasm_component_model_fixed_length_lists: false, // Component model extension - off by default
             // Features settable only via WasmFeatures bitflags
-            wasm_mutable_global: true,             // MVP default - always on
-            wasm_saturating_float_to_int: true,    // MVP default - always on
-            wasm_sign_extension: true,             // MVP default - always on
-            wasm_floats: true,                     // Core feature - always on
-            wasm_memory_control: false,            // Experimental - off by default
-            wasm_legacy_exceptions: false,         // Deprecated - off by default
-            wasm_gc_types: false,                  // Structural types only - off by default
-            wasm_component_model_values: false,    // Component model - off by default
+            wasm_mutable_global: true,          // MVP default - always on
+            wasm_saturating_float_to_int: true, // MVP default - always on
+            wasm_sign_extension: true,          // MVP default - always on
+            wasm_floats: true,                  // Core feature - always on
+            wasm_memory_control: false,         // Experimental - off by default
+            wasm_legacy_exceptions: false,      // Deprecated - off by default
+            wasm_gc_types: false,               // Structural types only - off by default
+            wasm_component_model_values: false, // Component model - off by default
             wasm_component_model_nested_names: false, // Component model - off by default
-            wasm_component_model_map: false,       // Component model (new in 42.0.1) - off by default
-            wasm_call_indirect_overlong: false,    // Legacy compatibility - off by default
-            wasm_bulk_memory_opt: false,           // Core - off by default
-            wasm_custom_descriptors: false,        // Core - off by default
-            wasm_compact_imports: false,           // Component (new in 42.0.1) - off by default
-            async_support: false,                      // Async execution support - off by default
-            concurrency_support: false,                // Concurrency support - off by default
-            coredump_on_trap: false,                   // Coredump on trap - off by default
-            memory_reservation: None,                  // Memory reservation - use Wasmtime default
-            memory_guard_size: None,                   // Memory guard size - use Wasmtime default
+            wasm_component_model_map: false,    // Component model (new in 42.0.1) - off by default
+            wasm_call_indirect_overlong: false, // Legacy compatibility - off by default
+            wasm_bulk_memory_opt: false,        // Core - off by default
+            wasm_custom_descriptors: false,     // Core - off by default
+            wasm_compact_imports: false,        // Component (new in 42.0.1) - off by default
+            async_support: false,               // Async execution support - off by default
+            concurrency_support: false,         // Concurrency support - off by default
+            coredump_on_trap: false,            // Coredump on trap - off by default
+            memory_reservation: None,           // Memory reservation - use Wasmtime default
+            memory_guard_size: None,            // Memory guard size - use Wasmtime default
             memory_reservation_for_growth: None, // Memory reservation for growth - use Wasmtime default
             cranelift_debug_verifier: false,     // Cranelift debug verifier - off by default
             cranelift_nan_canonicalization: false, // Cranelift NaN canonicalization - off by default
@@ -1876,10 +1881,9 @@ impl EngineBuilder {
     ///
     /// The default cache location is platform-specific and managed by Wasmtime.
     pub fn cache_config_load_default(mut self) -> WasmtimeResult<Self> {
-        let cache =
-            wasmtime::Cache::from_file(None).map_err(|e| WasmtimeError::EngineConfig {
-                message: format!("Failed to load default cache config: {}", e),
-            })?;
+        let cache = wasmtime::Cache::from_file(None).map_err(|e| WasmtimeError::EngineConfig {
+            message: format!("Failed to load default cache config: {}", e),
+        })?;
         self.config.cache(Some(cache));
         Ok(self)
     }
@@ -1893,11 +1897,11 @@ impl EngineBuilder {
     /// # Arguments
     /// * `path` - Path to the cache configuration TOML file
     pub fn cache_config_load(mut self, path: &str) -> WasmtimeResult<Self> {
-        let cache = wasmtime::Cache::from_file(Some(std::path::Path::new(path))).map_err(
-            |e| WasmtimeError::EngineConfig {
+        let cache = wasmtime::Cache::from_file(Some(std::path::Path::new(path))).map_err(|e| {
+            WasmtimeError::EngineConfig {
                 message: format!("Failed to load cache config from '{}': {}", path, e),
-            },
-        )?;
+            }
+        })?;
         self.config.cache(Some(cache));
         Ok(self)
     }
@@ -1963,19 +1967,13 @@ impl EngineBuilder {
     }
 
     /// Set a custom memory creator for linear memory allocation
-    pub fn with_host_memory(
-        mut self,
-        memory_creator: Arc<dyn wasmtime::MemoryCreator>,
-    ) -> Self {
+    pub fn with_host_memory(mut self, memory_creator: Arc<dyn wasmtime::MemoryCreator>) -> Self {
         self.config.with_host_memory(memory_creator);
         self
     }
 
     /// Set a custom stack creator for async fiber stacks
-    pub fn with_host_stack(
-        mut self,
-        stack_creator: Arc<dyn wasmtime::StackCreator>,
-    ) -> Self {
+    pub fn with_host_stack(mut self, stack_creator: Arc<dyn wasmtime::StackCreator>) -> Self {
         self.config.with_host_stack(stack_creator);
         self
     }
@@ -1985,8 +1983,7 @@ impl EngineBuilder {
         mut self,
         code_memory: Arc<dyn wasmtime::CustomCodeMemory>,
     ) -> Self {
-        self.config
-            .with_custom_code_memory(Some(code_memory));
+        self.config.with_custom_code_memory(Some(code_memory));
         self
     }
 

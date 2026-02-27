@@ -595,4 +595,3 @@ fn test_instance_create_null_pointers() {
     module::wasmtime4j_panama_module_destroy(module_ptr);
     engine::wasmtime4j_panama_engine_destroy(engine_ptr);
 }
-

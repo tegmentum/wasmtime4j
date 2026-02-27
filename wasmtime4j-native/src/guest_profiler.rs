@@ -123,7 +123,12 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_new_single(
     let module_wrapper = &*(module_ptr as *const crate::module::Module);
     let module = module_wrapper.inner().clone();
 
-    match GuestProfiler::new(wasmtime_engine, name, interval, vec![(name.to_string(), module)]) {
+    match GuestProfiler::new(
+        wasmtime_engine,
+        name,
+        interval,
+        vec![(name.to_string(), module)],
+    ) {
         Ok(profiler) => {
             let boxed = Box::new(Mutex::new(ProfilerBox {
                 profiler: Some(profiler),
@@ -413,11 +418,8 @@ mod tests {
     #[test]
     fn test_sample_null_returns_error() {
         unsafe {
-            let result = wasmtime4j_guest_profiler_sample(
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-                0,
-            );
+            let result =
+                wasmtime4j_guest_profiler_sample(std::ptr::null_mut(), std::ptr::null_mut(), 0);
             assert_eq!(result, -1);
         }
     }

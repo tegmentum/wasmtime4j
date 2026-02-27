@@ -107,9 +107,7 @@ pub extern "C" fn wasmtime4j_coredump_serialize(
 
     let store = unsafe { &mut *(store_ptr as *mut wasmtime::Store<StoreData>) };
 
-    let result = coredump::with_coredump(coredump_id, |cd| {
-        cd.serialize(store, name_str)
-    });
+    let result = coredump::with_coredump(coredump_id, |cd| cd.serialize(store, name_str));
 
     match result {
         Some(bytes) => {

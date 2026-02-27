@@ -1558,7 +1558,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeModule(
     jni_utils::jni_try_with_default(&mut env, 0u8, || {
         let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
-        let module = unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
+        let module =
+            unsafe { crate::module::core::get_module_ref(module_handle as *const c_void)? };
 
         linker_core::define_module(linker, store, &module_name_str, module)?;
         Ok(1u8)
@@ -1640,11 +1641,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeIsV
     if instance_pre_handle == 0 {
         return 0;
     }
-    unsafe {
-        crate::linker::wasmtime4j_instance_pre_is_valid(
-            instance_pre_handle as *const c_void,
-        )
-    }
+    unsafe { crate::linker::wasmtime4j_instance_pre_is_valid(instance_pre_handle as *const c_void) }
 }
 
 /// JNI binding for JniInstancePre.nativeGetInstanceCount
@@ -1658,9 +1655,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGet
         return 0;
     }
     unsafe {
-        crate::linker::wasmtime4j_instance_pre_instance_count(
-            instance_pre_handle as *const c_void,
-        ) as jlong
+        crate::linker::wasmtime4j_instance_pre_instance_count(instance_pre_handle as *const c_void)
+            as jlong
     }
 }
 
@@ -1707,9 +1703,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeDes
 ) {
     if instance_pre_handle != 0 {
         unsafe {
-            crate::linker::wasmtime4j_instance_pre_destroy(
-                instance_pre_handle as *mut c_void,
-            );
+            crate::linker::wasmtime4j_instance_pre_destroy(instance_pre_handle as *mut c_void);
         }
     }
 }
@@ -1731,20 +1725,17 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstanti
         let inner_linker = linker.inner()?;
         let wasmtime_module = module.inner();
 
-        let instance_pre = inner_linker
-            .instantiate_pre(wasmtime_module)
-            .map_err(|e| WasmtimeError::Instantiation {
+        let instance_pre = inner_linker.instantiate_pre(wasmtime_module).map_err(|e| {
+            WasmtimeError::Instantiation {
                 message: format!("Failed to create InstancePre: {}", e),
-            })?;
+            }
+        })?;
 
         drop(inner_linker);
 
         let preparation_time = start.elapsed().as_nanos() as u64;
-        let wrapper = crate::linker::InstancePreWrapper::new(
-            instance_pre,
-            module.clone(),
-            preparation_time,
-        );
+        let wrapper =
+            crate::linker::InstancePreWrapper::new(instance_pre, module.clone(), preparation_time);
 
         Ok(Box::into_raw(Box::new(wrapper)) as jlong)
     })

@@ -1021,35 +1021,55 @@ impl Instance {
     }
 
     /// Debug: get function by internal index (requires debug instrumentation).
-    pub fn debug_function(&self, store: &mut Store, function_index: u32) -> WasmtimeResult<Option<Func>> {
+    pub fn debug_function(
+        &self,
+        store: &mut Store,
+        function_index: u32,
+    ) -> WasmtimeResult<Option<Func>> {
         let instance = self.inner.lock();
         let mut store_guard = store.try_lock_store()?;
         Ok(instance.debug_function(&mut *store_guard, function_index))
     }
 
     /// Debug: get global by internal index (requires debug instrumentation).
-    pub fn debug_global(&self, store: &mut Store, global_index: u32) -> WasmtimeResult<Option<Global>> {
+    pub fn debug_global(
+        &self,
+        store: &mut Store,
+        global_index: u32,
+    ) -> WasmtimeResult<Option<Global>> {
         let instance = self.inner.lock();
         let mut store_guard = store.try_lock_store()?;
         Ok(instance.debug_global(&mut *store_guard, global_index))
     }
 
     /// Debug: get memory by internal index (requires debug instrumentation).
-    pub fn debug_memory(&self, store: &mut Store, memory_index: u32) -> WasmtimeResult<Option<Memory>> {
+    pub fn debug_memory(
+        &self,
+        store: &mut Store,
+        memory_index: u32,
+    ) -> WasmtimeResult<Option<Memory>> {
         let instance = self.inner.lock();
         let mut store_guard = store.try_lock_store()?;
         Ok(instance.debug_memory(&mut *store_guard, memory_index))
     }
 
     /// Debug: get shared memory by internal index (requires debug instrumentation).
-    pub fn debug_shared_memory(&self, store: &mut Store, memory_index: u32) -> WasmtimeResult<Option<SharedMemory>> {
+    pub fn debug_shared_memory(
+        &self,
+        store: &mut Store,
+        memory_index: u32,
+    ) -> WasmtimeResult<Option<SharedMemory>> {
         let instance = self.inner.lock();
         let mut store_guard = store.try_lock_store()?;
         Ok(instance.debug_shared_memory(&mut *store_guard, memory_index))
     }
 
     /// Debug: get table by internal index (requires debug instrumentation).
-    pub fn debug_table(&self, store: &mut Store, table_index: u32) -> WasmtimeResult<Option<Table>> {
+    pub fn debug_table(
+        &self,
+        store: &mut Store,
+        table_index: u32,
+    ) -> WasmtimeResult<Option<Table>> {
         let instance = self.inner.lock();
         let mut store_guard = store.try_lock_store()?;
         Ok(instance.debug_table(&mut *store_guard, table_index))
@@ -1744,13 +1764,12 @@ pub mod core {
         validate_ptr_not_null!(module_export_ptr, "module_export");
 
         let module_export = &*(module_export_ptr as *const wasmtime::ModuleExport);
-        let instance_guard =
-            instance
-                .inner
-                .try_lock()
-                .ok_or_else(|| WasmtimeError::Instance {
-                    message: "Failed to lock instance for module export lookup".to_string(),
-                })?;
+        let instance_guard = instance
+            .inner
+            .try_lock()
+            .ok_or_else(|| WasmtimeError::Instance {
+                message: "Failed to lock instance for module export lookup".to_string(),
+            })?;
         let mut store_guard = store.try_lock_store()?;
         use wasmtime::AsContextMut;
 

@@ -20,7 +20,6 @@ use crate::engine::WasmFeature;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::os::raw::c_void;
 
-
 /// Standard FFI return codes
 pub const FFI_SUCCESS: i32 = 0;
 /// Standard FFI error return code
@@ -175,7 +174,9 @@ impl FfiWasmFeature {
             FfiWasmFeature::ComponentModelErrorContext => WasmFeature::ComponentModelErrorContext,
             FfiWasmFeature::ComponentModelGc => WasmFeature::ComponentModelGc,
             FfiWasmFeature::ComponentModelThreading => WasmFeature::ComponentModelThreading,
-            FfiWasmFeature::ComponentModelFixedLengthLists => WasmFeature::ComponentModelFixedLengthLists,
+            FfiWasmFeature::ComponentModelFixedLengthLists => {
+                WasmFeature::ComponentModelFixedLengthLists
+            }
             FfiWasmFeature::MutableGlobal => WasmFeature::MutableGlobal,
             FfiWasmFeature::SaturatingFloatToInt => WasmFeature::SaturatingFloatToInt,
             FfiWasmFeature::SignExtension => WasmFeature::SignExtension,
@@ -220,7 +221,9 @@ impl FfiWasmFeature {
             WasmFeature::ComponentModelErrorContext => FfiWasmFeature::ComponentModelErrorContext,
             WasmFeature::ComponentModelGc => FfiWasmFeature::ComponentModelGc,
             WasmFeature::ComponentModelThreading => FfiWasmFeature::ComponentModelThreading,
-            WasmFeature::ComponentModelFixedLengthLists => FfiWasmFeature::ComponentModelFixedLengthLists,
+            WasmFeature::ComponentModelFixedLengthLists => {
+                FfiWasmFeature::ComponentModelFixedLengthLists
+            }
             WasmFeature::MutableGlobal => FfiWasmFeature::MutableGlobal,
             WasmFeature::SaturatingFloatToInt => FfiWasmFeature::SaturatingFloatToInt,
             WasmFeature::SignExtension => FfiWasmFeature::SignExtension,
@@ -500,9 +503,7 @@ pub mod module {
     /// Shared implementation for initializing copy-on-write image
     ///
     /// Pre-initializes the module's CoW memory image for faster instantiation.
-    pub fn initialize_copy_on_write_image_shared(
-        module_ptr: *mut c_void,
-    ) -> WasmtimeResult<()> {
+    pub fn initialize_copy_on_write_image_shared(module_ptr: *mut c_void) -> WasmtimeResult<()> {
         validation::validate_not_null(module_ptr, "module")?;
 
         let module = unsafe { core::get_module_ref(module_ptr)? };
@@ -1323,5 +1324,4 @@ mod tests {
         assert!(err_msg.contains("len=5"));
         assert!(err_msg.contains("slice_len=3"));
     }
-
 }

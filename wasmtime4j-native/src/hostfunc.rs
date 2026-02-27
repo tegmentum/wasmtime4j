@@ -9,8 +9,7 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::instance::WasmValue;
 use crate::store::StoreData;
 use crate::table::core::{
-    get_function_reference_with_store_check, register_function_reference,
-    remove_function_reference,
+    get_function_reference_with_store_check, register_function_reference, remove_function_reference,
 };
 use std::collections::HashMap;
 use std::mem::MaybeUninit;
@@ -242,7 +241,10 @@ impl HostFunction {
                         "[HOSTFUNC] Host function not found in registry: {}",
                         host_func_id
                     );
-                    wasmtime::Error::msg(format!("Host function not found in registry: {}", host_func_id))
+                    wasmtime::Error::msg(format!(
+                        "Host function not found in registry: {}",
+                        host_func_id
+                    ))
                 })?
             };
 
@@ -258,8 +260,7 @@ impl HostFunction {
                     "[HOSTFUNC] Zero-overhead path, marshaling {} params",
                     params.len()
                 );
-                let (wasm_params, temp_ids) =
-                    marshal_params_from_wasmtime(params, store_id)?;
+                let (wasm_params, temp_ids) = marshal_params_from_wasmtime(params, store_id)?;
                 let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
                     log::error!("[HOSTFUNC] Callback execution failed: {}", e);
                     wasmtime::Error::msg(format!("Host function execution failed: {}", e))
@@ -277,8 +278,7 @@ impl HostFunction {
                     "[HOSTFUNC] Full caller context path, marshaling {} params",
                     params.len()
                 );
-                let (wasm_params, temp_ids) =
-                    marshal_params_from_wasmtime(params, store_id)?;
+                let (wasm_params, temp_ids) = marshal_params_from_wasmtime(params, store_id)?;
 
                 // Create minimal caller context based on usage pattern
                 let _context =
@@ -334,10 +334,16 @@ impl HostFunction {
                 // Look up the host function in the registry
                 let host_function = {
                     let registry = get_host_function_registry().lock().map_err(|e| {
-                        wasmtime::Error::msg(format!("Failed to lock host function registry: {}", e))
+                        wasmtime::Error::msg(format!(
+                            "Failed to lock host function registry: {}",
+                            e
+                        ))
                     })?;
                     registry.get(&host_func_id).cloned().ok_or_else(|| {
-                        wasmtime::Error::msg(format!("Host function not found in registry: {}", host_func_id))
+                        wasmtime::Error::msg(format!(
+                            "Host function not found in registry: {}",
+                            host_func_id
+                        ))
                     })?
                 };
 
@@ -354,7 +360,12 @@ impl HostFunction {
                 cleanup_temp_funcref_ids(&temp_ids);
 
                 // Write results back to the shared buffer
-                marshal_results_to_valraw(&wasm_results, args_and_results, &result_types, store_id)?;
+                marshal_results_to_valraw(
+                    &wasm_results,
+                    args_and_results,
+                    &result_types,
+                    store_id,
+                )?;
 
                 Ok(())
             })
@@ -386,11 +397,17 @@ impl HostFunction {
                     // Look up the host function in the registry
                     let host_function = {
                         let registry = get_host_function_registry().lock().map_err(|e| {
-                            wasmtime::Error::msg(format!("Failed to lock host function registry: {}", e))
+                            wasmtime::Error::msg(format!(
+                                "Failed to lock host function registry: {}",
+                                e
+                            ))
                         })?;
 
                         registry.get(&host_func_id).cloned().ok_or_else(|| {
-                            wasmtime::Error::msg(format!("Host function not found in registry: {}", host_func_id))
+                            wasmtime::Error::msg(format!(
+                                "Host function not found in registry: {}",
+                                host_func_id
+                            ))
                         })?
                     };
 
@@ -401,7 +418,10 @@ impl HostFunction {
                             marshal_params_from_wasmtime(params, store_id)?;
                         let wasm_results =
                             host_function.callback.execute(&wasm_params).map_err(|e| {
-                                wasmtime::Error::msg(format!("Host function execution failed: {}", e))
+                                wasmtime::Error::msg(format!(
+                                    "Host function execution failed: {}",
+                                    e
+                                ))
                             })?;
                         cleanup_temp_funcref_ids(&temp_ids);
                         marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
@@ -415,7 +435,10 @@ impl HostFunction {
 
                         let wasm_results =
                             host_function.callback.execute(&wasm_params).map_err(|e| {
-                                wasmtime::Error::msg(format!("Host function execution failed: {}", e))
+                                wasmtime::Error::msg(format!(
+                                    "Host function execution failed: {}",
+                                    e
+                                ))
                             })?;
                         cleanup_temp_funcref_ids(&temp_ids);
 
@@ -625,8 +648,15 @@ fn marshal_results_to_wasmtime(
                 // with store affinity validation
                 if let Some(id) = ref_id {
                     let func = get_function_reference_with_store_check(*id as u64, store_id)
-                        .map_err(|e| wasmtime::Error::msg(format!("Failed to get function reference: {:?}", e)))?
-                        .ok_or_else(|| wasmtime::Error::msg(format!("Invalid function reference ID: {}", id)))?;
+                        .map_err(|e| {
+                            wasmtime::Error::msg(format!(
+                                "Failed to get function reference: {:?}",
+                                e
+                            ))
+                        })?
+                        .ok_or_else(|| {
+                            wasmtime::Error::msg(format!("Invalid function reference ID: {}", id))
+                        })?;
                     Val::FuncRef(Some(func))
                 } else {
                     Val::FuncRef(None)

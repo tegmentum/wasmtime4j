@@ -357,7 +357,11 @@ impl Linker {
         );
 
         self.define_host_function_internal(
-            module_name, function_name, function_type, host_function, false,
+            module_name,
+            function_name,
+            function_type,
+            host_function,
+            false,
         )
     }
 
@@ -373,7 +377,11 @@ impl Linker {
         host_function: HostFunction,
     ) -> WasmtimeResult<()> {
         self.define_host_function_internal(
-            module_name, function_name, function_type, host_function, true,
+            module_name,
+            function_name,
+            function_type,
+            host_function,
+            true,
         )
     }
 
@@ -413,7 +421,9 @@ impl Linker {
 
         log::debug!(
             "Defined host function {}::{} (unchecked={})",
-            module_name, function_name, unchecked
+            module_name,
+            function_name,
+            unchecked
         );
         Ok(())
     }
@@ -454,9 +464,15 @@ impl Linker {
         // This allows HOST_FUNCTION_REGISTRY lock to be acquired safely
         let mut created_funcs = Vec::with_capacity(definitions.len());
         for (key, definition) in &definitions {
-            log::debug!("Creating host function: {} (unchecked={})", key, definition.unchecked);
+            log::debug!(
+                "Creating host function: {} (unchecked={})",
+                key,
+                definition.unchecked
+            );
             let wasmtime_func = if definition.unchecked {
-                definition.host_function.create_wasmtime_func_unchecked(store)?
+                definition
+                    .host_function
+                    .create_wasmtime_func_unchecked(store)?
             } else {
                 definition.host_function.create_wasmtime_func(store)?
             };
@@ -1493,10 +1509,7 @@ pub mod core {
         linker_guard
             .define(&*store_guard, module_name, name, extern_item)
             .map_err(|e| crate::error::WasmtimeError::Linker {
-                message: format!(
-                    "Failed to define '{}::{}': {}",
-                    module_name, name, e
-                ),
+                message: format!("Failed to define '{}::{}': {}", module_name, name, e),
             })?;
         drop(linker_guard);
         drop(store_guard);
@@ -1588,11 +1601,7 @@ pub mod core {
     /// * `linker` - The linker to modify
     /// * `module` - The source module name
     /// * `as_module` - The destination module name
-    pub fn alias_module(
-        linker: &mut Linker,
-        module: &str,
-        as_module: &str,
-    ) -> WasmtimeResult<()> {
+    pub fn alias_module(linker: &mut Linker, module: &str, as_module: &str) -> WasmtimeResult<()> {
         let mut linker_guard = linker.inner()?;
         linker_guard
             .alias_module(module, as_module)
@@ -1640,10 +1649,7 @@ pub mod core {
         linker_guard
             .module(&mut *store_guard, module_name, module.inner())
             .map_err(|e| WasmtimeError::Linker {
-                message: format!(
-                    "Failed to define module '{}': {}",
-                    module_name, e
-                ),
+                message: format!("Failed to define module '{}': {}", module_name, e),
             })?;
         Ok(())
     }
@@ -1712,7 +1718,6 @@ pub unsafe extern "C" fn wasmtime4j_linker_instantiate(
         }
     }
 }
-
 
 // ============================================================================
 // InstancePre - Pre-instantiated module for fast repeated instantiation
@@ -1820,18 +1825,14 @@ impl InstancePreWrapper {
     /// Requires the engine to be configured with `async_support(true)`.
     /// Uses the Tokio runtime to bridge the async call.
     #[cfg(feature = "async")]
-    pub fn instantiate_async(
-        &self,
-        store: &mut crate::store::Store,
-    ) -> WasmtimeResult<Instance> {
+    pub fn instantiate_async(&self, store: &mut crate::store::Store) -> WasmtimeResult<Instance> {
         let start = Instant::now();
 
         let handle = crate::async_runtime::get_runtime_handle();
         let mut store_guard = store.try_lock_store()?;
 
-        let result = handle.block_on(async {
-            self.inner.instantiate_async(&mut *store_guard).await
-        });
+        let result =
+            handle.block_on(async { self.inner.instantiate_async(&mut *store_guard).await });
 
         drop(store_guard);
 

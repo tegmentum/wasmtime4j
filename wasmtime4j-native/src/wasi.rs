@@ -2431,10 +2431,7 @@ impl WasiDirectoryDescriptor {
             });
         }
 
-        Ok(Self {
-            rights,
-            entries,
-        })
+        Ok(Self { rights, entries })
     }
 
     fn extract_times(metadata: &Metadata) -> (u64, u64, u64) {

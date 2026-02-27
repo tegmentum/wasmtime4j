@@ -957,4 +957,3 @@ pub fn get_memory_handle_diagnostics() -> WasmtimeResult<(usize, u64)> {
 
     Ok((handle_count, total_accesses))
 }
-

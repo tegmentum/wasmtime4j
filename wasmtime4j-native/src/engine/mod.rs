@@ -19,13 +19,11 @@ mod tests;
 
 // Re-export public types
 pub use builder::{
-    CacheFreeFn, CacheGetFn, CacheInsertFn, CallbackCacheStore,
-    CallbackCustomCodeMemory, CallbackMemoryCreator, CallbackStackCreator,
-    CodeMemAlignmentFn, CodeMemPublishFn, CodeMemUnpublishFn,
-    EngineBuilder, EngineConfigSummary,
-    LinMemAsPtrFn, LinMemByteCapacityFn, LinMemByteSizeFn, LinMemDropFn, LinMemGrowToFn,
-    MemCreatorNewMemoryFn,
-    StkCreatorNewStackFn, StkMemDropFn, StkMemGuardRangeFn, StkMemRangeFn, StkMemTopFn,
+    CacheFreeFn, CacheGetFn, CacheInsertFn, CallbackCacheStore, CallbackCustomCodeMemory,
+    CallbackMemoryCreator, CallbackStackCreator, CodeMemAlignmentFn, CodeMemPublishFn,
+    CodeMemUnpublishFn, EngineBuilder, EngineConfigSummary, LinMemAsPtrFn, LinMemByteCapacityFn,
+    LinMemByteSizeFn, LinMemDropFn, LinMemGrowToFn, MemCreatorNewMemoryFn, StkCreatorNewStackFn,
+    StkMemDropFn, StkMemGuardRangeFn, StkMemRangeFn, StkMemTopFn,
 };
 pub use pool::{
     acquire_pooled_engine, engine_pool_cleanup, engine_pool_max_size, engine_pool_size,
@@ -260,24 +258,18 @@ impl Engine {
                 self.config_summary.wasm_component_model_fixed_length_lists
             }
             WasmFeature::MutableGlobal => self.config_summary.wasm_mutable_global,
-            WasmFeature::SaturatingFloatToInt => {
-                self.config_summary.wasm_saturating_float_to_int
-            }
+            WasmFeature::SaturatingFloatToInt => self.config_summary.wasm_saturating_float_to_int,
             WasmFeature::SignExtension => self.config_summary.wasm_sign_extension,
             WasmFeature::Floats => self.config_summary.wasm_floats,
             WasmFeature::MemoryControl => self.config_summary.wasm_memory_control,
             WasmFeature::LegacyExceptions => self.config_summary.wasm_legacy_exceptions,
             WasmFeature::GcTypes => self.config_summary.wasm_gc_types,
-            WasmFeature::ComponentModelValues => {
-                self.config_summary.wasm_component_model_values
-            }
+            WasmFeature::ComponentModelValues => self.config_summary.wasm_component_model_values,
             WasmFeature::ComponentModelNestedNames => {
                 self.config_summary.wasm_component_model_nested_names
             }
             WasmFeature::ComponentModelMap => self.config_summary.wasm_component_model_map,
-            WasmFeature::CallIndirectOverlong => {
-                self.config_summary.wasm_call_indirect_overlong
-            }
+            WasmFeature::CallIndirectOverlong => self.config_summary.wasm_call_indirect_overlong,
             WasmFeature::BulkMemoryOpt => self.config_summary.wasm_bulk_memory_opt,
             WasmFeature::CustomDescriptors => self.config_summary.wasm_custom_descriptors,
             WasmFeature::CompactImports => self.config_summary.wasm_compact_imports,

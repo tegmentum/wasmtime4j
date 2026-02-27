@@ -1428,9 +1428,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
     }
 
     let data = (|| -> crate::error::WasmtimeResult<[i64; 2]> {
-        let (start, end) = crate::shared_ffi::module::image_range_shared(
-            module_ptr as *mut std::os::raw::c_void,
-        )?;
+        let (start, end) =
+            crate::shared_ffi::module::image_range_shared(module_ptr as *mut std::os::raw::c_void)?;
         Ok([start as i64, end as i64])
     })();
 

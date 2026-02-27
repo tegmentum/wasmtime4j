@@ -1363,8 +1363,6 @@ fn put_long_in_map(env: &mut JNIEnv, map: &JObject, key: &str, value: i64) {
     );
 }
 
-
-
 /// Parse FieldType from string representation
 fn parse_field_type(type_str: &str) -> WasmtimeResult<FieldType> {
     match type_str.to_lowercase().as_str() {

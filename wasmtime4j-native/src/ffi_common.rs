@@ -1141,17 +1141,50 @@ mod tests {
 
     #[test]
     fn test_valtype_to_int_gc_types() {
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Eq))), 8);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::I31))), 9);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Struct))), 10);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Array))), 11);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::None))), 12);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoFunc))), 13);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoExtern))), 14);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Exn))), 15);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoExn))), 16);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Cont))), 17);
-        assert_eq!(valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoCont))), 18);
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Eq))),
+            8
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::I31))),
+            9
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Struct))),
+            10
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Array))),
+            11
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::None))),
+            12
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoFunc))),
+            13
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoExtern))),
+            14
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Exn))),
+            15
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoExn))),
+            16
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::Cont))),
+            17
+        );
+        assert_eq!(
+            valtype_to_int(&ValType::Ref(RefType::new(true, HeapType::NoCont))),
+            18
+        );
     }
 
     #[test]
@@ -1871,5 +1904,4 @@ pub mod memory_utils {
         // Safe slice creation
         unsafe { Ok(std::slice::from_raw_parts(ptr, len)) }
     }
-
 }

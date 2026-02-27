@@ -356,8 +356,7 @@ pub extern "C" fn wasmtime4j_panama_component_resources_required(
     max_table_out: *mut i64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
-        let component =
-            unsafe { crate::component::core::get_component_ref(component_ptr)? };
+        let component = unsafe { crate::component::core::get_component_ref(component_ptr)? };
 
         if num_memories_out.is_null()
             || max_memory_out.is_null()
@@ -502,9 +501,7 @@ pub extern "C" fn wasmtime4j_panama_component_get_export_index(
     let instance = if instance_index_ptr.is_null() {
         None
     } else {
-        Some(unsafe {
-            &*(instance_index_ptr as *const wasmtime::component::ComponentExportIndex)
-        })
+        Some(unsafe { &*(instance_index_ptr as *const wasmtime::component::ComponentExportIndex) })
     };
 
     match crate::component::core::get_export_index(component, instance, name_str) {
@@ -541,9 +538,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_func_by_inde
     }
 
     let engine = unsafe { &*(engine_ptr as *const EnhancedComponentEngine) };
-    let export_index = unsafe {
-        &*(index_ptr as *const wasmtime::component::ComponentExportIndex)
-    };
+    let export_index = unsafe { &*(index_ptr as *const wasmtime::component::ComponentExportIndex) };
 
     match engine.has_component_instance_func_by_index(instance_id as u64, export_index) {
         Ok(true) => 1,
@@ -594,29 +589,27 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_run_concurrent(
         }
     };
 
-    let calls =
-        match crate::component_core::concurrent_call_json::deserialize_calls(json_str) {
-            Ok(c) => c,
-            Err(e) => {
-                log::error!("Failed to deserialize concurrent calls: {}", e);
-                // Write error message as result
-                let err_msg = format!("{{\"error\":\"{}\"}}", e);
-                let err_bytes = err_msg.into_bytes();
-                let len = err_bytes.len();
-                let ptr = err_bytes.as_ptr();
-                std::mem::forget(err_bytes);
-                unsafe {
-                    *result_ptr = ptr as *mut u8;
-                    *result_len = len as c_ulong;
-                }
-                return -1;
+    let calls = match crate::component_core::concurrent_call_json::deserialize_calls(json_str) {
+        Ok(c) => c,
+        Err(e) => {
+            log::error!("Failed to deserialize concurrent calls: {}", e);
+            // Write error message as result
+            let err_msg = format!("{{\"error\":\"{}\"}}", e);
+            let err_bytes = err_msg.into_bytes();
+            let len = err_bytes.len();
+            let ptr = err_bytes.as_ptr();
+            std::mem::forget(err_bytes);
+            unsafe {
+                *result_ptr = ptr as *mut u8;
+                *result_len = len as c_ulong;
             }
-        };
+            return -1;
+        }
+    };
 
     match engine.run_concurrent_calls(instance_id as u64, calls) {
         Ok(results) => {
-            match crate::component_core::concurrent_call_json::serialize_results(&results)
-            {
+            match crate::component_core::concurrent_call_json::serialize_results(&results) {
                 Ok(json_result) => {
                     let result_bytes = json_result.into_bytes();
                     let len = result_bytes.len();
@@ -674,9 +667,7 @@ pub extern "C" fn wasmtime4j_panama_component_image_range(
         return -1;
     }
 
-    match unsafe {
-        crate::component::core::get_component_ref(component_ptr)
-    } {
+    match unsafe { crate::component::core::get_component_ref(component_ptr) } {
         Ok(component) => {
             let (start, end) = crate::component::core::get_component_image_range(component);
             unsafe {
@@ -698,15 +689,11 @@ pub extern "C" fn wasmtime4j_panama_component_initialize_cow_image(
         return -1;
     }
 
-    match unsafe {
-        crate::component::core::get_component_ref(component_ptr)
-    } {
-        Ok(component) => {
-            match crate::component::core::initialize_copy_on_write_image(component) {
-                Ok(()) => 0,
-                Err(_) => -1,
-            }
-        }
+    match unsafe { crate::component::core::get_component_ref(component_ptr) } {
+        Ok(component) => match crate::component::core::initialize_copy_on_write_image(component) {
+            Ok(()) => 0,
+            Err(_) => -1,
+        },
         Err(_) => -1,
     }
 }

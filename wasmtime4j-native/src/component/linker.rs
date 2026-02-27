@@ -6,11 +6,13 @@
 use super::{Component, ComponentStoreData};
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use std::sync::atomic::{AtomicU64, Ordering};
 use wasmtime::{
-    component::{Instance as ComponentInstance, InstancePre, Linker, ResourceTable, ResourceType, Val},
+    component::{
+        Instance as ComponentInstance, InstancePre, Linker, ResourceTable, ResourceType, Val,
+    },
     Engine as WasmtimeEngine, Store, StoreContextMut,
 };
 
@@ -168,7 +170,9 @@ pub fn val_to_component_value(val: &Val) -> ComponentValue {
         }
         Val::Variant(case_name, payload) => ComponentValue::Variant {
             case_name: case_name.to_string(),
-            payload: payload.as_ref().map(|v| Box::new(val_to_component_value(v))),
+            payload: payload
+                .as_ref()
+                .map(|v| Box::new(val_to_component_value(v))),
         },
         Val::Enum(name) => ComponentValue::Enum(name.to_string()),
         Val::Option(opt) => {
@@ -186,25 +190,29 @@ pub fn val_to_component_value(val: &Val) -> ComponentValue {
                 is_ok: false,
             },
         },
-        Val::Flags(flags) => {
-            ComponentValue::Flags(flags.iter().map(|f| f.to_string()).collect())
-        }
+        Val::Flags(flags) => ComponentValue::Flags(flags.iter().map(|f| f.to_string()).collect()),
         Val::Resource(resource) => {
             let handle = crate::wit_value_marshal::store_resource(resource.clone());
             ComponentValue::Own(handle)
         }
         Val::Future(_) => {
-            let mut registry = get_async_val_registry().lock().unwrap_or_else(|e| e.into_inner());
+            let mut registry = get_async_val_registry()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             let handle = registry.store(val.clone());
             ComponentValue::Future(handle)
         }
         Val::Stream(_) => {
-            let mut registry = get_async_val_registry().lock().unwrap_or_else(|e| e.into_inner());
+            let mut registry = get_async_val_registry()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             let handle = registry.store(val.clone());
             ComponentValue::Stream(handle)
         }
         Val::ErrorContext(_) => {
-            let mut registry = get_async_val_registry().lock().unwrap_or_else(|e| e.into_inner());
+            let mut registry = get_async_val_registry()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             let handle = registry.store(val.clone());
             ComponentValue::ErrorContext(handle)
         }
@@ -239,12 +247,11 @@ pub fn component_value_to_val(cv: &ComponentValue) -> Val {
         ComponentValue::Tuple(elements) => {
             Val::Tuple(elements.iter().map(component_value_to_val).collect())
         }
-        ComponentValue::Variant {
-            case_name,
-            payload,
-        } => Val::Variant(
+        ComponentValue::Variant { case_name, payload } => Val::Variant(
             case_name.clone().into(),
-            payload.as_ref().map(|v| Box::new(component_value_to_val(v))),
+            payload
+                .as_ref()
+                .map(|v| Box::new(component_value_to_val(v))),
         ),
         ComponentValue::Enum(name) => Val::Enum(name.clone().into()),
         ComponentValue::Option(opt) => {
@@ -252,13 +259,11 @@ pub fn component_value_to_val(cv: &ComponentValue) -> Val {
         }
         ComponentValue::Result { ok, err, is_ok } => {
             if *is_ok {
-                Val::Result(Ok(
-                    ok.as_ref().map(|v| Box::new(component_value_to_val(v)))
-                ))
+                Val::Result(Ok(ok.as_ref().map(|v| Box::new(component_value_to_val(v)))))
             } else {
-                Val::Result(Err(
-                    err.as_ref().map(|v| Box::new(component_value_to_val(v)))
-                ))
+                Val::Result(Err(err
+                    .as_ref()
+                    .map(|v| Box::new(component_value_to_val(v)))))
             }
         }
         ComponentValue::Flags(flags) => {
@@ -275,7 +280,9 @@ pub fn component_value_to_val(cv: &ComponentValue) -> Val {
         ComponentValue::Future(handle)
         | ComponentValue::Stream(handle)
         | ComponentValue::ErrorContext(handle) => {
-            let registry = get_async_val_registry().lock().unwrap_or_else(|e| e.into_inner());
+            let registry = get_async_val_registry()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
             if let Some(val) = registry.get(*handle) {
                 val.clone()
             } else {
@@ -595,10 +602,7 @@ impl WasiP2Config {
         );
 
         // Socket address check callback
-        crate::wasi_common_config::apply_socket_addr_check(
-            &mut builder,
-            self.socket_addr_check,
-        );
+        crate::wasi_common_config::apply_socket_addr_check(&mut builder, self.socket_addr_check);
 
         // Preopened directories with granular permissions
         for (host_path, guest_path, dir_bits, file_bits) in &self.preopened_dirs {
@@ -739,9 +743,12 @@ impl ComponentLinker {
         dir_perms_bits: u32,
         file_perms_bits: u32,
     ) {
-        self.wasi_p2_config
-            .preopened_dirs
-            .push((host_path, guest_path, dir_perms_bits, file_perms_bits));
+        self.wasi_p2_config.preopened_dirs.push((
+            host_path,
+            guest_path,
+            dir_perms_bits,
+            file_perms_bits,
+        ));
     }
 
     /// Set whether network access is allowed
@@ -986,28 +993,31 @@ impl ComponentLinker {
                     interface_path, e
                 ),
             })?
-            .func_new(&func_name, move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
-                                         _func_type,
-                                         params: &[Val],
-                                         results: &mut [Val]| {
-                // Convert wasmtime Val params to ComponentValue
-                let cv_params: Vec<ComponentValue> =
-                    params.iter().map(val_to_component_value).collect();
+            .func_new(
+                &func_name,
+                move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
+                      _func_type,
+                      params: &[Val],
+                      results: &mut [Val]| {
+                    // Convert wasmtime Val params to ComponentValue
+                    let cv_params: Vec<ComponentValue> =
+                        params.iter().map(val_to_component_value).collect();
 
-                // Invoke the host callback
-                let cv_results = entry.callback.execute(&cv_params).map_err(|e| {
-                    wasmtime::Error::msg(format!("Host function callback failed: {}", e))
-                })?;
+                    // Invoke the host callback
+                    let cv_results = entry.callback.execute(&cv_params).map_err(|e| {
+                        wasmtime::Error::msg(format!("Host function callback failed: {}", e))
+                    })?;
 
-                // Convert ComponentValue results back to wasmtime Val
-                for (i, cv) in cv_results.iter().enumerate() {
-                    if i < results.len() {
-                        results[i] = component_value_to_val(cv);
+                    // Convert ComponentValue results back to wasmtime Val
+                    for (i, cv) in cv_results.iter().enumerate() {
+                        if i < results.len() {
+                            results[i] = component_value_to_val(cv);
+                        }
                     }
-                }
 
-                Ok(())
-            })
+                    Ok(())
+                },
+            )
             .map_err(|e| WasmtimeError::Linker {
                 message: format!(
                     "Failed to register function '{}' on '{}': {}",
@@ -1039,31 +1049,34 @@ impl ComponentLinker {
                     interface_path, e
                 ),
             })?
-            .func_new_async(&func_name, move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
-                                               _func_type,
-                                               params: &[Val],
-                                               results: &mut [Val]| {
-                let entry = entry.clone();
-                Box::new(async move {
-                    // Convert wasmtime Val params to ComponentValue
-                    let cv_params: Vec<ComponentValue> =
-                        params.iter().map(val_to_component_value).collect();
+            .func_new_async(
+                &func_name,
+                move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
+                      _func_type,
+                      params: &[Val],
+                      results: &mut [Val]| {
+                    let entry = entry.clone();
+                    Box::new(async move {
+                        // Convert wasmtime Val params to ComponentValue
+                        let cv_params: Vec<ComponentValue> =
+                            params.iter().map(val_to_component_value).collect();
 
-                    // Invoke the host callback
-                    let cv_results = entry.callback.execute(&cv_params).map_err(|e| {
-                        wasmtime::Error::msg(format!("Host function callback failed: {}", e))
-                    })?;
+                        // Invoke the host callback
+                        let cv_results = entry.callback.execute(&cv_params).map_err(|e| {
+                            wasmtime::Error::msg(format!("Host function callback failed: {}", e))
+                        })?;
 
-                    // Convert ComponentValue results back to wasmtime Val
-                    for (i, cv) in cv_results.iter().enumerate() {
-                        if i < results.len() {
-                            results[i] = component_value_to_val(cv);
+                        // Convert ComponentValue results back to wasmtime Val
+                        for (i, cv) in cv_results.iter().enumerate() {
+                            if i < results.len() {
+                                results[i] = component_value_to_val(cv);
+                            }
                         }
-                    }
 
-                    Ok(())
-                })
-            })
+                        Ok(())
+                    })
+                },
+            )
             .map_err(|e| WasmtimeError::Linker {
                 message: format!(
                     "Failed to register async function '{}' on '{}': {}",
@@ -1097,7 +1110,9 @@ impl ComponentLinker {
 
         if !self.async_support {
             return Err(WasmtimeError::Runtime {
-                message: "Cannot define async function: engine was not created with async_support(true)".to_string(),
+                message:
+                    "Cannot define async function: engine was not created with async_support(true)"
+                        .to_string(),
                 backtrace: None,
             });
         }
@@ -1140,7 +1155,11 @@ impl ComponentLinker {
             .or_insert_with(Vec::new)
             .push(function_name.to_string());
 
-        log::debug!("Defined async component host function: {} (id={})", wit_path, id);
+        log::debug!(
+            "Defined async component host function: {} (id={})",
+            wit_path,
+            id
+        );
 
         Ok(id)
     }
@@ -1165,7 +1184,9 @@ impl ComponentLinker {
 
         if !self.async_support {
             return Err(WasmtimeError::Runtime {
-                message: "Cannot define async function: engine was not created with async_support(true)".to_string(),
+                message:
+                    "Cannot define async function: engine was not created with async_support(true)"
+                        .to_string(),
                 backtrace: None,
             });
         }
@@ -1241,9 +1262,9 @@ impl ComponentLinker {
                 ),
             })?
             .resource(resource_name, resource_type, move |_store_ctx, rep| {
-                destructor.destroy(rep).map_err(|e| {
-                    wasmtime::Error::msg(format!("Resource destructor failed: {}", e))
-                })
+                destructor
+                    .destroy(rep)
+                    .map_err(|e| wasmtime::Error::msg(format!("Resource destructor failed: {}", e)))
             })
             .map_err(|e| WasmtimeError::Linker {
                 message: format!(
@@ -1501,10 +1522,7 @@ impl ComponentLinker {
     ///
     /// This is useful for partially-defined components where some imports
     /// should trap at runtime rather than failing at instantiation time.
-    pub fn define_unknown_imports_as_traps(
-        &mut self,
-        component: &Component,
-    ) -> WasmtimeResult<()> {
+    pub fn define_unknown_imports_as_traps(&mut self, component: &Component) -> WasmtimeResult<()> {
         if self.disposed {
             return Err(WasmtimeError::Runtime {
                 message: "ComponentLinker has been disposed".to_string(),
@@ -3027,20 +3045,24 @@ fn component_value_to_json_val(
         ComponentValue::Tuple(elements) => {
             JsonVal::Tuple(elements.iter().map(component_value_to_json_val).collect())
         }
-        ComponentValue::Variant {
-            case_name,
-            payload,
-        } => JsonVal::Variant {
+        ComponentValue::Variant { case_name, payload } => JsonVal::Variant {
             discriminant: case_name.clone(),
-            value: payload.as_ref().map(|v| Box::new(component_value_to_json_val(v))),
+            value: payload
+                .as_ref()
+                .map(|v| Box::new(component_value_to_json_val(v))),
         },
         ComponentValue::Enum(s) => JsonVal::Enum(s.clone()),
-        ComponentValue::Option(opt) => {
-            JsonVal::Option(opt.as_ref().map(|v| Box::new(component_value_to_json_val(v))))
-        }
+        ComponentValue::Option(opt) => JsonVal::Option(
+            opt.as_ref()
+                .map(|v| Box::new(component_value_to_json_val(v))),
+        ),
         ComponentValue::Result { ok, err, is_ok } => JsonVal::Result {
-            ok: ok.as_ref().map(|v| Box::new(component_value_to_json_val(v))),
-            err: err.as_ref().map(|v| Box::new(component_value_to_json_val(v))),
+            ok: ok
+                .as_ref()
+                .map(|v| Box::new(component_value_to_json_val(v))),
+            err: err
+                .as_ref()
+                .map(|v| Box::new(component_value_to_json_val(v))),
             is_ok: *is_ok,
         },
         ComponentValue::Flags(flags) => JsonVal::Flags(flags.clone()),
@@ -3089,15 +3111,22 @@ fn json_val_to_component_value(
             value,
         } => ComponentValue::Variant {
             case_name: discriminant.clone(),
-            payload: value.as_ref().map(|v| Box::new(json_val_to_component_value(v))),
+            payload: value
+                .as_ref()
+                .map(|v| Box::new(json_val_to_component_value(v))),
         },
         JsonVal::Enum(s) => ComponentValue::Enum(s.clone()),
-        JsonVal::Option(opt) => {
-            ComponentValue::Option(opt.as_ref().map(|v| Box::new(json_val_to_component_value(v))))
-        }
+        JsonVal::Option(opt) => ComponentValue::Option(
+            opt.as_ref()
+                .map(|v| Box::new(json_val_to_component_value(v))),
+        ),
         JsonVal::Result { ok, err, is_ok } => ComponentValue::Result {
-            ok: ok.as_ref().map(|v| Box::new(json_val_to_component_value(v))),
-            err: err.as_ref().map(|v| Box::new(json_val_to_component_value(v))),
+            ok: ok
+                .as_ref()
+                .map(|v| Box::new(json_val_to_component_value(v))),
+            err: err
+                .as_ref()
+                .map(|v| Box::new(json_val_to_component_value(v))),
             is_ok: *is_ok,
         },
         JsonVal::Flags(flags) => ComponentValue::Flags(flags.clone()),
@@ -3127,13 +3156,7 @@ fn json_val_to_component_value(
 /// The callback allocates `results_json_out` — the Rust side frees it via
 /// the companion free function.
 struct FfiComponentHostFunctionCallback {
-    callback_fn: unsafe extern "C" fn(
-        i64,
-        *const u8,
-        u64,
-        *mut *mut u8,
-        *mut u64,
-    ) -> c_int,
+    callback_fn: unsafe extern "C" fn(i64, *const u8, u64, *mut *mut u8, *mut u64) -> c_int,
     callback_id: i64,
 }
 
@@ -3186,9 +3209,7 @@ impl ComponentHostCallback for FfiComponentHostFunctionCallback {
                     result_code
                 )
             };
-            return Err(WasmtimeError::Function {
-                message: error_msg,
-            });
+            return Err(WasmtimeError::Function { message: error_msg });
         }
 
         // 3. Deserialize result JSON back to ComponentValue
@@ -3196,18 +3217,19 @@ impl ComponentHostCallback for FfiComponentHostFunctionCallback {
             return Ok(Vec::new());
         }
 
-        let result_bytes = unsafe {
-            std::slice::from_raw_parts(results_json_ptr, results_json_len as usize)
-        };
-        let result_str =
-            std::str::from_utf8(result_bytes).map_err(|e| WasmtimeError::Runtime {
-                message: format!("Host function result JSON is not valid UTF-8: {}", e),
-                backtrace: None,
-            })?;
+        let result_bytes =
+            unsafe { std::slice::from_raw_parts(results_json_ptr, results_json_len as usize) };
+        let result_str = std::str::from_utf8(result_bytes).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Host function result JSON is not valid UTF-8: {}", e),
+            backtrace: None,
+        })?;
 
         let json_results: Vec<crate::component_core::concurrent_call_json::JsonVal> =
             serde_json::from_str(result_str).map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to deserialize host function results from JSON: {}", e),
+                message: format!(
+                    "Failed to deserialize host function results from JSON: {}",
+                    e
+                ),
                 backtrace: None,
             })?;
 
@@ -3236,10 +3258,7 @@ impl ComponentHostCallback for FfiComponentHostFunctionCallback {
 /// `ptr` must have been allocated by the Java callback and `len` must be the
 /// correct length.
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_host_callback_free_result(
-    ptr: *mut u8,
-    len: u64,
-) {
+pub unsafe extern "C" fn wasmtime4j_component_host_callback_free_result(ptr: *mut u8, len: u64) {
     if !ptr.is_null() && len > 0 {
         let _ = Vec::from_raw_parts(ptr, len as usize, len as usize);
     }
@@ -3250,9 +3269,7 @@ pub unsafe extern "C" fn wasmtime4j_component_host_callback_free_result(
 /// # Safety
 /// Caller must free via `wasmtime4j_component_host_callback_free_result`.
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_host_callback_alloc_result(
-    len: u64,
-) -> *mut u8 {
+pub unsafe extern "C" fn wasmtime4j_component_host_callback_alloc_result(len: u64) -> *mut u8 {
     if len == 0 {
         return std::ptr::null_mut();
     }

@@ -507,4 +507,3 @@ pub extern "C" fn wasmtime4j_panama_wasi_http_ctx_free(ctx_ptr: *mut c_void) {
 pub extern "C" fn wasmtime4j_panama_wasi_http_is_available() -> c_int {
     crate::wasi_http::wasi_http_is_available()
 }
-

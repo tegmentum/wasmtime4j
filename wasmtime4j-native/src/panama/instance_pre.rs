@@ -29,9 +29,7 @@ pub extern "C" fn wasmtime4j_panama_instance_pre_instantiate_async(
     if instance_pre_ptr.is_null() || store_ptr.is_null() {
         return std::ptr::null_mut();
     }
-    unsafe {
-        crate::linker::wasmtime4j_instance_pre_instantiate_async(instance_pre_ptr, store_ptr)
-    }
+    unsafe { crate::linker::wasmtime4j_instance_pre_instantiate_async(instance_pre_ptr, store_ptr) }
 }
 
 /// Check if InstancePre is valid (Panama FFI)

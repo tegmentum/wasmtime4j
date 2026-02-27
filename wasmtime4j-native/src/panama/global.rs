@@ -206,7 +206,8 @@ pub extern "C" fn wasmtime4j_panama_global_metadata(
 
         unsafe {
             if !value_type.is_null() {
-                *value_type = crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
+                *value_type =
+                    crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
             }
             if !mutability.is_null() {
                 *mutability = match metadata.mutability {

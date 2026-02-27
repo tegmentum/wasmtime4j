@@ -25,7 +25,8 @@
 // =============================================================================
 // Remaining suppressions have documented justifications:
 
-#![allow(missing_docs)] // Large codebase - docs added incrementally
+#![allow(missing_docs)]
+// Large codebase - docs added incrementally
 // Note: dead_code warnings addressed file-by-file; removed blanket suppression
 #![allow(unused_mut)] // Required: JNI env parameters need mut for API calls
 #![allow(non_snake_case)] // Required: JNI functions follow Java naming conventions
@@ -219,9 +220,9 @@ pub use gc_types::{
 
 // Re-export shared FFI utilities for interface implementations
 pub use shared_ffi::{
-    convert_wasm_features, validate_wasm_features, validation,
-    BooleanReturnConverter, FfiWasmFeature, IntegerReturnConverter,
-    PointerReturnConverter, ReturnValueConverter, FFI_ERROR, FFI_SUCCESS,
+    convert_wasm_features, validate_wasm_features, validation, BooleanReturnConverter,
+    FfiWasmFeature, IntegerReturnConverter, PointerReturnConverter, ReturnValueConverter,
+    FFI_ERROR, FFI_SUCCESS,
 };
 
 /// Library version information

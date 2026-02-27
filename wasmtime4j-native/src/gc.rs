@@ -1169,7 +1169,6 @@ impl WasmGcRuntime {
         // Create weak reference using the heap
         self.heap.create_weak_reference(object_id)
     }
-
 }
 
 #[cfg(test)]

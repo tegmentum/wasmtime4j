@@ -155,8 +155,7 @@ fn throw_i32_exit_exception(
     use jni::objects::{JThrowable, JValue};
 
     // Create I32ExitException(int exitCode)
-    let exception_class =
-        env.find_class("ai/tegmentum/wasmtime4j/exception/I32ExitException")?;
+    let exception_class = env.find_class("ai/tegmentum/wasmtime4j/exception/I32ExitException")?;
 
     let exception_obj = env.new_object(exception_class, "(I)V", &[JValue::Int(exit_code)])?;
 

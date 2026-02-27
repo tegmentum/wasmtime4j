@@ -544,9 +544,7 @@ impl WasmtimeError {
         // Check for WASI I32Exit (only when wasi feature is enabled)
         #[cfg(feature = "wasi")]
         if let Some(exit) = error.downcast_ref::<wasmtime_wasi::I32Exit>() {
-            return WasmtimeError::WasiExit {
-                exit_code: exit.0,
-            };
+            return WasmtimeError::WasiExit { exit_code: exit.0 };
         }
         // Extract trap message before potentially moving the error into the coredump registry
         let trap_msg = error
@@ -595,9 +593,7 @@ impl WasmtimeError {
                 msg.push_str(&format!("\n  Caused by: {}", cause));
             }
         }
-        WasmtimeError::Compilation {
-            message: msg,
-        }
+        WasmtimeError::Compilation { message: msg }
     }
 
     /// Create invalid parameter error with defensive checks
@@ -738,7 +734,6 @@ impl WasmtimeError {
             }
         }
     }
-
 }
 
 /// Defensive parameter validation macros
@@ -1118,4 +1113,3 @@ macro_rules! jni_try {
         }
     };
 }
-

@@ -191,5 +191,4 @@ mod tests {
         assert_eq!(*guard1, vec![1, 2, 3]);
         assert_eq!(*guard2, vec![1, 2, 3]);
     }
-
 }

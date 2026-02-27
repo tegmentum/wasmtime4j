@@ -194,7 +194,8 @@ pub extern "C" fn wasmtime4j_panama_memory_grow_async(
         let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
-        let previous_pages = crate::memory::core::grow_memory_async(memory, store, additional_pages)?;
+        let previous_pages =
+            crate::memory::core::grow_memory_async(memory, store, additional_pages)?;
 
         unsafe {
             *previous_pages_out = previous_pages;
@@ -740,7 +741,8 @@ pub extern "C" fn wasmtime4j_instance_get_global_type(
         store.with_context_ro(|ctx| {
             let global_type = global.ty(&ctx);
 
-            let type_code = crate::ffi_common::valtype_conversion::valtype_to_int(global_type.content());
+            let type_code =
+                crate::ffi_common::valtype_conversion::valtype_to_int(global_type.content());
 
             unsafe {
                 if !value_type_out.is_null() {

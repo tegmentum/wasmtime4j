@@ -48,7 +48,9 @@ pub extern "C" fn wasmtime4j_panama_store_create_with_config(
     ffi_utils::ffi_try_code(|| {
         let engine = unsafe { crate::engine::core::get_engine_ref(engine_ptr)? };
 
-        use crate::ffi_common::parameter_conversion::{zero_to_none_u32, zero_to_none_u64, zero_to_none_usize};
+        use crate::ffi_common::parameter_conversion::{
+            zero_to_none_u32, zero_to_none_u64, zero_to_none_usize,
+        };
 
         let store = core::create_store_with_config(
             engine,

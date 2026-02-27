@@ -28,9 +28,8 @@ use wasmtime::{
 use wasmtime_wasi;
 
 use crate::component::{
-    CaseType, Component, ComponentMetadata, ComponentTypeKind, ComponentValueType,
-    FieldType, FunctionDefinition, InstanceInfo, InterfaceDefinition, Parameter,
-    TypeDefinition,
+    CaseType, Component, ComponentMetadata, ComponentTypeKind, ComponentValueType, FieldType,
+    FunctionDefinition, InstanceInfo, InterfaceDefinition, Parameter, TypeDefinition,
 };
 use crate::error::{WasmtimeError, WasmtimeResult};
 
@@ -184,8 +183,7 @@ impl EnhancedComponentEngine {
                 let prev_nanos = metrics.avg_instantiation_time.as_nanos() as i128;
                 let curr_nanos = compilation_time.as_nanos() as i128;
                 let new_avg = prev_nanos + (curr_nanos - prev_nanos) / (n as i128);
-                metrics.avg_instantiation_time =
-                    Duration::from_nanos(new_avg.max(0) as u64);
+                metrics.avg_instantiation_time = Duration::from_nanos(new_avg.max(0) as u64);
             }
         }
 
@@ -504,10 +502,7 @@ impl EnhancedComponentEngine {
                 })?;
 
         handle.last_accessed = Instant::now();
-        Ok(handle
-            .instance
-            .get_func(&mut handle.store, name)
-            .is_some())
+        Ok(handle.instance.get_func(&mut handle.store, name).is_some())
     }
 
     /// Check if a component instance has a function at the given export index.
@@ -894,12 +889,12 @@ impl EnhancedComponentEngine {
 
         // Get the component bytes from the existing instance
         let component_bytes = {
-            let instances =
-                self.instances
-                    .read()
-                    .map_err(|_| WasmtimeError::Concurrency {
-                        message: "Failed to acquire instances read lock".to_string(),
-                    })?;
+            let instances = self
+                .instances
+                .read()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire instances read lock".to_string(),
+                })?;
             let handle =
                 instances
                     .get(&instance_id)
@@ -910,18 +905,15 @@ impl EnhancedComponentEngine {
         };
 
         // Get or create concurrent engine
-        let concurrent_engine =
-            crate::engine::get_shared_concurrent_component_engine();
+        let concurrent_engine = crate::engine::get_shared_concurrent_component_engine();
 
         // Compile component with concurrent engine
-        let component =
-            WasmtimeComponent::new(&concurrent_engine, component_bytes.as_slice()).map_err(|e| {
-                WasmtimeError::Compilation {
-                    message: format!(
-                        "Failed to compile component for concurrent execution: {}",
-                        e
-                    ),
-                }
+        let component = WasmtimeComponent::new(&concurrent_engine, component_bytes.as_slice())
+            .map_err(|e| WasmtimeError::Compilation {
+                message: format!(
+                    "Failed to compile component for concurrent execution: {}",
+                    e
+                ),
             })?;
 
         // Use Tokio runtime for async operations
@@ -968,15 +960,11 @@ impl EnhancedComponentEngine {
             let mut result_counts = Vec::with_capacity(calls.len());
 
             for (name, _) in &calls {
-                let func =
-                    instance
-                        .get_func(&mut store, name)
-                        .ok_or_else(|| WasmtimeError::ImportExport {
-                            message: format!(
-                                "Function '{}' not found in concurrent instance",
-                                name
-                            ),
-                        })?;
+                let func = instance.get_func(&mut store, name).ok_or_else(|| {
+                    WasmtimeError::ImportExport {
+                        message: format!("Function '{}' not found in concurrent instance", name),
+                    }
+                })?;
                 let count = func.ty(&store).results().len();
                 funcs.push(func);
                 result_counts.push(count);
@@ -988,9 +976,7 @@ impl EnhancedComponentEngine {
                 .run_concurrent(async |accessor| {
                     let mut futures = Vec::with_capacity(calls.len());
 
-                    for (i, (func, (_, params))) in
-                        funcs.iter().zip(calls.iter()).enumerate()
-                    {
+                    for (i, (func, (_, params))) in funcs.iter().zip(calls.iter()).enumerate() {
                         let func = *func;
                         let result_count = result_counts[i];
                         let params = params.as_slice();
@@ -1025,7 +1011,6 @@ impl EnhancedComponentEngine {
             Ok(final_results)
         })
     }
-
 }
 
 // Implement WasiView for ComponentStoreData to enable WASI Preview 2 component model
@@ -1254,23 +1239,19 @@ pub mod concurrent_call_json {
                 )),
                 JsonVal::Enum(v) => Ok(Val::Enum(v.clone())),
                 JsonVal::Option(opt) => Ok(Val::Option(
-                    opt.as_ref()
-                        .map(|v| v.to_val().map(Box::new))
-                        .transpose()?,
+                    opt.as_ref().map(|v| v.to_val().map(Box::new)).transpose()?,
                 )),
                 JsonVal::Result { ok, err, is_ok } => {
                     if *is_ok {
-                        Ok(Val::Result(Ok(
-                            ok.as_ref()
-                                .map(|v| v.to_val().map(Box::new))
-                                .transpose()?,
-                        )))
+                        Ok(Val::Result(Ok(ok
+                            .as_ref()
+                            .map(|v| v.to_val().map(Box::new))
+                            .transpose()?)))
                     } else {
-                        Ok(Val::Result(Err(
-                            err.as_ref()
-                                .map(|v| v.to_val().map(Box::new))
-                                .transpose()?,
-                        )))
+                        Ok(Val::Result(Err(err
+                            .as_ref()
+                            .map(|v| v.to_val().map(Box::new))
+                            .transpose()?)))
                     }
                 }
                 JsonVal::Flags(v) => Ok(Val::Flags(v.clone())),
@@ -1288,8 +1269,7 @@ pub mod concurrent_call_json {
 
         let mut result = Vec::with_capacity(calls.len());
         for call in calls {
-            let params: WasmtimeResult<Vec<Val>> =
-                call.args.iter().map(JsonVal::to_val).collect();
+            let params: WasmtimeResult<Vec<Val>> = call.args.iter().map(JsonVal::to_val).collect();
             result.push((call.name, params?));
         }
 
@@ -1465,5 +1445,4 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap().len(), 0); // No active instances
     }
-
 }

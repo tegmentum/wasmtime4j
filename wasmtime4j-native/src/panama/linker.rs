@@ -370,29 +370,27 @@ pub extern "C" fn wasmtime4j_panama_linker_alias_module(
     module_name: *const c_char,
     as_module_name: *const c_char,
 ) -> c_int {
-    ffi_utils::ffi_try_code(|| {
-        unsafe {
-            if linker_ptr.is_null() || module_name.is_null() || as_module_name.is_null() {
-                return Err(crate::error::WasmtimeError::Linker {
-                    message: "Null pointer in linker alias_module parameters".to_string(),
-                });
-            }
-
-            let module_str = CStr::from_ptr(module_name).to_str().map_err(|e| {
-                crate::error::WasmtimeError::Utf8Error {
-                    message: e.to_string(),
-                }
-            })?;
-            let as_module_str = CStr::from_ptr(as_module_name).to_str().map_err(|e| {
-                crate::error::WasmtimeError::Utf8Error {
-                    message: e.to_string(),
-                }
-            })?;
-
-            let linker = &mut *(linker_ptr as *mut crate::linker::Linker);
-            linker_core::alias_module(linker, module_str, as_module_str)?;
-            Ok(())
+    ffi_utils::ffi_try_code(|| unsafe {
+        if linker_ptr.is_null() || module_name.is_null() || as_module_name.is_null() {
+            return Err(crate::error::WasmtimeError::Linker {
+                message: "Null pointer in linker alias_module parameters".to_string(),
+            });
         }
+
+        let module_str = CStr::from_ptr(module_name).to_str().map_err(|e| {
+            crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            }
+        })?;
+        let as_module_str = CStr::from_ptr(as_module_name).to_str().map_err(|e| {
+            crate::error::WasmtimeError::Utf8Error {
+                message: e.to_string(),
+            }
+        })?;
+
+        let linker = &mut *(linker_ptr as *mut crate::linker::Linker);
+        linker_core::alias_module(linker, module_str, as_module_str)?;
+        Ok(())
     })
 }
 
@@ -1087,8 +1085,7 @@ pub extern "C" fn wasmtime4j_panama_linker_get_by_import(
     module_name: *const c_char,
     item_name: *const c_char,
 ) -> *mut c_void {
-    if linker_ptr.is_null() || store_ptr.is_null() || module_name.is_null() || item_name.is_null()
-    {
+    if linker_ptr.is_null() || store_ptr.is_null() || module_name.is_null() || item_name.is_null() {
         return std::ptr::null_mut();
     }
 
@@ -1100,11 +1097,11 @@ pub extern "C" fn wasmtime4j_panama_linker_get_by_import(
             .map_err(|e| crate::error::WasmtimeError::Utf8Error {
                 message: e.to_string(),
             })?;
-        let name_str = unsafe { CStr::from_ptr(item_name) }
-            .to_str()
-            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+        let name_str = unsafe { CStr::from_ptr(item_name) }.to_str().map_err(|e| {
+            crate::error::WasmtimeError::Utf8Error {
                 message: e.to_string(),
-            })?;
+            }
+        })?;
 
         // Flush pending host functions so they are visible to wasmtime::Linker::get()
         {
@@ -1171,11 +1168,11 @@ pub extern "C" fn wasmtime4j_panama_linker_define_name(
     ffi_utils::ffi_try_code(|| {
         let linker = unsafe { linker_core::get_linker_mut(linker_ptr)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
-        let name_str = unsafe { CStr::from_ptr(name) }
-            .to_str()
-            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+        let name_str = unsafe { CStr::from_ptr(name) }.to_str().map_err(|e| {
+            crate::error::WasmtimeError::Utf8Error {
                 message: e.to_string(),
-            })?;
+            }
+        })?;
         let extern_item = unsafe { &*(extern_ptr as *const wasmtime::Extern) };
         let cloned = extern_item.clone();
 
@@ -1215,11 +1212,11 @@ pub extern "C" fn wasmtime4j_panama_linker_define(
             .map_err(|e| crate::error::WasmtimeError::Utf8Error {
                 message: e.to_string(),
             })?;
-        let name_str = unsafe { CStr::from_ptr(name) }
-            .to_str()
-            .map_err(|e| crate::error::WasmtimeError::Utf8Error {
+        let name_str = unsafe { CStr::from_ptr(name) }.to_str().map_err(|e| {
+            crate::error::WasmtimeError::Utf8Error {
                 message: e.to_string(),
-            })?;
+            }
+        })?;
         let extern_item = unsafe { &*(extern_ptr as *const wasmtime::Extern) };
         let cloned = extern_item.clone();
 
@@ -1344,11 +1341,7 @@ pub extern "C" fn wasmtime4j_panama_linker_iter_get(
             let bytes = mod_name.as_bytes();
             let copy_len = std::cmp::min(bytes.len(), (module_name_capacity - 1) as usize);
             unsafe {
-                std::ptr::copy_nonoverlapping(
-                    bytes.as_ptr(),
-                    out_module_name as *mut u8,
-                    copy_len,
-                );
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_module_name as *mut u8, copy_len);
                 *out_module_name.add(copy_len) = 0; // null terminate
             }
         }
@@ -1358,11 +1351,7 @@ pub extern "C" fn wasmtime4j_panama_linker_iter_get(
             let bytes = item_name.as_bytes();
             let copy_len = std::cmp::min(bytes.len(), (item_name_capacity - 1) as usize);
             unsafe {
-                std::ptr::copy_nonoverlapping(
-                    bytes.as_ptr(),
-                    out_item_name as *mut u8,
-                    copy_len,
-                );
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_item_name as *mut u8, copy_len);
                 *out_item_name.add(copy_len) = 0; // null terminate
             }
         }

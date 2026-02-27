@@ -154,10 +154,8 @@ pub extern "C" fn wasmtime4j_panama_instance_get_shared_memory_by_name(
     };
 
     let result = (|| -> Result<*mut c_void, crate::error::WasmtimeError> {
-        let instance =
-            unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
-        let store =
-            unsafe { crate::store::core::get_store_mut(store_ptr)? };
+        let instance = unsafe { crate::instance::core::get_instance_ref(instance_ptr)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr)? };
 
         match instance.get_shared_memory(store, name_str)? {
             Some(shared_memory) => {
@@ -316,7 +314,8 @@ pub extern "C" fn wasmtime4j_panama_instance_debug_memory(
         match instance.debug_memory(store, memory_index as u32)? {
             Some(memory) => {
                 let memory_type = store.with_context_ro(|ctx| Ok(memory.ty(ctx)))?;
-                let memory_wrapper = crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
+                let memory_wrapper =
+                    crate::memory::Memory::from_wasmtime_memory(memory, memory_type);
                 let validated_ptr = crate::memory::core::create_validated_memory(memory_wrapper)?;
                 Ok(validated_ptr as *mut c_void)
             }

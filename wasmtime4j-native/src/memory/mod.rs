@@ -17,8 +17,8 @@ mod types;
 
 // Re-export all public types for backward compatibility
 pub use types::{
-    MemoryBuilder, MemoryConfig, MemoryDataType, MemoryError, MemoryMetadata,
-    MemoryResult, MemoryUsage, MemoryVariant,
+    MemoryBuilder, MemoryConfig, MemoryDataType, MemoryError, MemoryMetadata, MemoryResult,
+    MemoryUsage, MemoryVariant,
 };
 
 // Re-export FFI functions
@@ -27,7 +27,6 @@ pub use ffi::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
-
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::store::Store;

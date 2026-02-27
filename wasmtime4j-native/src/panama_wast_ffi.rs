@@ -33,14 +33,12 @@ pub extern "C" fn wasmtime4j_panama_wast_execute_file(
             ));
         }
 
-        let file_path_str = unsafe { CStr::from_ptr(file_path) }
-            .to_str()
-            .map_err(|e| {
-                crate::error::WasmtimeError::invalid_parameter(format!(
-                    "Invalid UTF-8 in file path: {}",
-                    e
-                ))
-            })?;
+        let file_path_str = unsafe { CStr::from_ptr(file_path) }.to_str().map_err(|e| {
+            crate::error::WasmtimeError::invalid_parameter(format!(
+                "Invalid UTF-8 in file path: {}",
+                e
+            ))
+        })?;
 
         let result = execute_wast_file(file_path_str).map_err(|e| {
             crate::error::WasmtimeError::from_string(format!("WAST execution failed: {:#}", e))
@@ -99,14 +97,12 @@ pub extern "C" fn wasmtime4j_panama_wast_execute_buffer(
             ));
         }
 
-        let filename_str = unsafe { CStr::from_ptr(filename) }
-            .to_str()
-            .map_err(|e| {
-                crate::error::WasmtimeError::invalid_parameter(format!(
-                    "Invalid UTF-8 in filename: {}",
-                    e
-                ))
-            })?;
+        let filename_str = unsafe { CStr::from_ptr(filename) }.to_str().map_err(|e| {
+            crate::error::WasmtimeError::invalid_parameter(format!(
+                "Invalid UTF-8 in filename: {}",
+                e
+            ))
+        })?;
 
         let content_slice = unsafe { std::slice::from_raw_parts(content, content_len) };
 

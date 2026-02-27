@@ -261,12 +261,7 @@ impl GcHeap {
                     message: "Failed to acquire weak refs lock".to_string(),
                 })?;
 
-            weak_refs.insert(
-                object_id,
-                WeakRefEntry {
-                    valid: true,
-                },
-            );
+            weak_refs.insert(object_id, WeakRefEntry { valid: true });
         }
 
         Ok(GcWeakReference { object_id })

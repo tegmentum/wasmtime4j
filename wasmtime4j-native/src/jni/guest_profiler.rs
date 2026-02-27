@@ -51,10 +51,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeG
             return 0;
         }
     }
-    let module_ptrs: Vec<*const c_void> = handle_values
-        .iter()
-        .map(|&h| h as *const c_void)
-        .collect();
+    let module_ptrs: Vec<*const c_void> =
+        handle_values.iter().map(|&h| h as *const c_void).collect();
 
     // Extract module names (String[]) into Vec of CString
     let mut c_names: Vec<CString> = Vec::with_capacity(count);
@@ -127,10 +125,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeG
             return 0;
         }
     }
-    let module_ptrs: Vec<*const c_void> = handle_values
-        .iter()
-        .map(|&h| h as *const c_void)
-        .collect();
+    let module_ptrs: Vec<*const c_void> =
+        handle_values.iter().map(|&h| h as *const c_void).collect();
 
     // Extract extra module names
     let mut c_names: Vec<CString> = Vec::with_capacity(count);

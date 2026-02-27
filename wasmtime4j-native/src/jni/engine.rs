@@ -135,7 +135,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
         match env.get_string(&module_version_custom) {
             Ok(s) => {
                 let s: String = s.into();
-                if s.is_empty() { None } else { Some(s) }
+                if s.is_empty() {
+                    None
+                } else {
+                    Some(s)
+                }
             }
             Err(_) => None,
         }
@@ -277,9 +281,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCreateEn
         Err(_) => return 0,
     };
 
-    jni_utils::jni_try_ptr(&mut env, || {
-        core::create_engine_from_json_config(&bytes)
-    }) as jlong
+    jni_utils::jni_try_ptr(&mut env, || core::create_engine_from_json_config(&bytes)) as jlong
 }
 
 /// A CacheStore implementation that calls back into Java via JNI
@@ -653,15 +655,22 @@ unsafe impl wasmtime::StackCreator for JniStackCreator {
 
         if env.exception_check().unwrap_or(true) {
             let _ = env.exception_clear();
-            return Err(wasmtime::Error::msg("StackCreator.newStack threw exception"));
+            return Err(wasmtime::Error::msg(
+                "StackCreator.newStack threw exception",
+            ));
         }
 
-        let obj = result.map_err(|e| wasmtime::Error::msg(format!("{}", e)))?.l().map_err(|e| wasmtime::Error::msg(format!("{}", e)))?;
+        let obj = result
+            .map_err(|e| wasmtime::Error::msg(format!("{}", e)))?
+            .l()
+            .map_err(|e| wasmtime::Error::msg(format!("{}", e)))?;
         if obj.is_null() {
             return Err(wasmtime::Error::msg("StackCreator.newStack returned null"));
         }
 
-        let stack_global = env.new_global_ref(obj).map_err(|e| wasmtime::Error::msg(format!("{}", e)))?;
+        let stack_global = env
+            .new_global_ref(obj)
+            .map_err(|e| wasmtime::Error::msg(format!("{}", e)))?;
 
         Ok(Box::new(JniStackMemory {
             jvm: self.jvm.clone(),
@@ -980,8 +989,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeUnloadPr
             });
         }
         // Take ownership of the engine by reconstructing the Box
-        let engine =
-            unsafe { *Box::from_raw(engine_ptr as *mut crate::engine::Engine) };
+        let engine = unsafe { *Box::from_raw(engine_ptr as *mut crate::engine::Engine) };
         engine.unload_process_handlers()
     });
 }
@@ -1140,8 +1148,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeCompileM
 
     jni_utils::jni_try_ptr(&mut env, || {
         let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
-        let module =
-            crate::module::Module::compile_with_dwarf(engine, &wasm_data, &dwarf_data)?;
+        let module = crate::module::Module::compile_with_dwarf(engine, &wasm_data, &dwarf_data)?;
         Ok(Box::new(module))
     }) as jlong
 }
@@ -1255,17 +1262,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetPooli
     };
 
     match core::pooling_allocator_metrics(engine) {
-        Some(metrics) => {
-            match env.new_long_array(12) {
-                Ok(array) => {
-                    if env.set_long_array_region(&array, 0, &metrics).is_err() {
-                        return std::ptr::null_mut();
-                    }
-                    array.into_raw()
+        Some(metrics) => match env.new_long_array(12) {
+            Ok(array) => {
+                if env.set_long_array_region(&array, 0, &metrics).is_err() {
+                    return std::ptr::null_mut();
                 }
-                Err(_) => std::ptr::null_mut(),
+                array.into_raw()
             }
-        }
+            Err(_) => std::ptr::null_mut(),
+        },
         None => std::ptr::null_mut(),
     }
 }
@@ -1343,7 +1348,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsPulley
 ) -> jboolean {
     match unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void) } {
         Ok(engine) => {
-            if engine.inner().is_pulley() { 1 } else { 0 }
+            if engine.inner().is_pulley() {
+                1
+            } else {
+                0
+            }
         }
         Err(_) => 0,
     }

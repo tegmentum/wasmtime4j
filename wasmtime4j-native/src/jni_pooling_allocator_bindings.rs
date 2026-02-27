@@ -541,9 +541,19 @@ mod tests {
 
     #[test]
     fn test_allocate_and_release_instance() {
-        let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
-                .unwrap();
+        let wrapper = JniPoolingAllocatorWrapper::new(
+            100,
+            1 << 20,
+            1 << 16,
+            100,
+            10,
+            10,
+            1000,
+            true,
+            false,
+            0.0,
+        )
+        .unwrap();
 
         // Allocate an instance
         let id = wrapper.allocate_instance().unwrap();
@@ -565,9 +575,19 @@ mod tests {
 
     #[test]
     fn test_reuse_instance() {
-        let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
-                .unwrap();
+        let wrapper = JniPoolingAllocatorWrapper::new(
+            100,
+            1 << 20,
+            1 << 16,
+            100,
+            10,
+            10,
+            1000,
+            true,
+            false,
+            0.0,
+        )
+        .unwrap();
 
         // Allocate an instance
         let id = wrapper.allocate_instance().unwrap();
@@ -595,9 +615,19 @@ mod tests {
 
     #[test]
     fn test_warm_pools() {
-        let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, true, 0.1)
-                .unwrap();
+        let wrapper = JniPoolingAllocatorWrapper::new(
+            100,
+            1 << 20,
+            1 << 16,
+            100,
+            10,
+            10,
+            1000,
+            true,
+            true,
+            0.1,
+        )
+        .unwrap();
 
         // Warm pools
         let result = wrapper.warm_pools();
@@ -610,9 +640,19 @@ mod tests {
 
     #[test]
     fn test_reset_statistics() {
-        let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
-                .unwrap();
+        let wrapper = JniPoolingAllocatorWrapper::new(
+            100,
+            1 << 20,
+            1 << 16,
+            100,
+            10,
+            10,
+            1000,
+            true,
+            false,
+            0.0,
+        )
+        .unwrap();
 
         // Allocate some instances
         wrapper.allocate_instance().unwrap();
@@ -632,9 +672,19 @@ mod tests {
 
     #[test]
     fn test_closed_allocator_rejects_operations() {
-        let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
-                .unwrap();
+        let wrapper = JniPoolingAllocatorWrapper::new(
+            100,
+            1 << 20,
+            1 << 16,
+            100,
+            10,
+            10,
+            1000,
+            true,
+            false,
+            0.0,
+        )
+        .unwrap();
 
         // Close the allocator
         wrapper.close();
@@ -647,9 +697,19 @@ mod tests {
 
     #[test]
     fn test_get_allocation_strategy() {
-        let wrapper =
-            JniPoolingAllocatorWrapper::new(100, 1 << 20, 1 << 16, 100, 10, 10, 1000, true, false, 0.0)
-                .unwrap();
+        let wrapper = JniPoolingAllocatorWrapper::new(
+            100,
+            1 << 20,
+            1 << 16,
+            100,
+            10,
+            10,
+            1000,
+            true,
+            false,
+            0.0,
+        )
+        .unwrap();
 
         let strategy = wrapper.get_allocation_strategy();
         match strategy {

@@ -13,9 +13,7 @@ use crate::store::Store;
 use std::collections::HashMap;
 use std::mem::ManuallyDrop;
 use std::sync::{Arc, Mutex};
-use wasmtime::{
-    Extern, Func, HeapType, Ref, RefType, Table as WasmtimeTable, TableType, ValType,
-};
+use wasmtime::{Extern, Func, HeapType, Ref, RefType, Table as WasmtimeTable, TableType, ValType};
 
 /// Thread-safe wrapper around Wasmtime table with bounds checking
 pub struct Table {
@@ -112,9 +110,7 @@ impl ReferenceRegistry {
     }
 
     fn get_external(&self, id: u64) -> Option<Arc<Extern>> {
-        self.externals
-            .get(&id)
-            .map(|entry| entry.external.clone())
+        self.externals.get(&id).map(|entry| entry.external.clone())
     }
 
     fn remove_function(&mut self, id: u64) -> Option<Arc<Func>> {
@@ -616,9 +612,7 @@ impl Table {
 
                 // Convert ElementItem to Ref
                 let ref_val = match element_item {
-                    ElementItem::NullFunc => {
-                        Ref::null(&HeapType::Func)
-                    }
+                    ElementItem::NullFunc => Ref::null(&HeapType::Func),
                     ElementItem::FuncIndex(func_idx) => {
                         // FuncIndex refers to the module-internal function index space
                         // (imports + defined functions). Wasmtime's public API does not
@@ -655,7 +649,8 @@ impl Table {
                 };
 
                 // Set the table element
-                table.set(&mut ctx, (dst + i) as u64, ref_val)
+                table
+                    .set(&mut ctx, (dst + i) as u64, ref_val)
                     .map_err(|e| WasmtimeError::Runtime {
                         message: format!("Failed to set table element at index {}: {}", dst + i, e),
                         backtrace: None,
@@ -1072,7 +1067,10 @@ pub mod core {
 
         store.with_context(|mut ctx| {
             handle
-                .block_on(async { wt.grow_async(&mut ctx, delta as u64, wasmtime_init_value).await })
+                .block_on(async {
+                    wt.grow_async(&mut ctx, delta as u64, wasmtime_init_value)
+                        .await
+                })
                 .map(|s| s as u32)
                 .map_err(|e| WasmtimeError::Runtime {
                     message: format!("Async table growth failed: {}", e),

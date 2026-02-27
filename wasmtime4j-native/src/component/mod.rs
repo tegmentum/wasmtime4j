@@ -40,8 +40,9 @@ pub use wit::{
 pub use linker::{
     component_linker_core, get_component_host_function_registry, parse_wit_path,
     CallbackMonotonicClock, CallbackRng, CallbackSocketAddrCheck, CallbackWallClock,
-    ComponentHostCallback, ComponentHostFunctionEntry, ComponentInstancePreWrapper, ComponentLinker,
-    ComponentValue, ResourceDestructorCallback, WasiP2Config, NEXT_COMPONENT_HOST_FUNCTION_ID,
+    ComponentHostCallback, ComponentHostFunctionEntry, ComponentInstancePreWrapper,
+    ComponentLinker, ComponentValue, ResourceDestructorCallback, WasiP2Config,
+    NEXT_COMPONENT_HOST_FUNCTION_ID,
 };
 
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -921,22 +922,18 @@ impl Component {
     ///
     /// The bytes must have been produced by a previous call to `serialize()` on
     /// a component compiled with a compatible engine configuration.
-    pub fn deserialize(
-        engine: &wasmtime::Engine,
-        bytes: &[u8],
-    ) -> WasmtimeResult<Self> {
+    pub fn deserialize(engine: &wasmtime::Engine, bytes: &[u8]) -> WasmtimeResult<Self> {
         if bytes.is_empty() {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Serialized component bytes cannot be empty".to_string(),
             });
         }
 
-        let component =
-            unsafe { WasmtimeComponent::deserialize(engine, bytes) }.map_err(|e| {
-                WasmtimeError::Internal {
-                    message: format!("Component deserialization failed: {}", e),
-                }
-            })?;
+        let component = unsafe { WasmtimeComponent::deserialize(engine, bytes) }.map_err(|e| {
+            WasmtimeError::Internal {
+                message: format!("Component deserialization failed: {}", e),
+            }
+        })?;
 
         Ok(Component {
             component,
@@ -1200,9 +1197,7 @@ pub mod core {
     }
 
     /// Core function to initialize copy-on-write image for a component
-    pub fn initialize_copy_on_write_image(
-        component: &Component,
-    ) -> WasmtimeResult<()> {
+    pub fn initialize_copy_on_write_image(component: &Component) -> WasmtimeResult<()> {
         component.initialize_copy_on_write_image()
     }
 
@@ -1316,12 +1311,13 @@ pub mod core {
     ) -> WasmtimeResult<String> {
         use wasmtime::component::types::ComponentItem;
 
-        let sub_type = linker.linker().substituted_component_type(
-            &component.component,
-        ).map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to get substituted component type: {}", e),
-            backtrace: None,
-        })?;
+        let sub_type = linker
+            .linker()
+            .substituted_component_type(&component.component)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to get substituted component type: {}", e),
+                backtrace: None,
+            })?;
 
         let engine = linker.engine();
 
@@ -1657,25 +1653,21 @@ pub mod core {
     ///
     /// Returns resource information as (num_memories, max_initial_memory_size, num_tables, max_initial_table_size).
     /// max values are -1 if unbounded, -2 if resources_required() returns None.
-    pub fn get_component_resources_required(
-        component: &Component,
-    ) -> (i32, i64, i32, i64) {
+    pub fn get_component_resources_required(component: &Component) -> (i32, i64, i32, i64) {
         match component.resources_required() {
             Some(req) => {
-                let max_mem = req
-                    .max_initial_memory_size
-                    .map(|s| s as i64)
-                    .unwrap_or(-1);
-                let max_table = req
-                    .max_initial_table_size
-                    .map(|s| s as i64)
-                    .unwrap_or(-1);
-                (req.num_memories as i32, max_mem, req.num_tables as i32, max_table)
+                let max_mem = req.max_initial_memory_size.map(|s| s as i64).unwrap_or(-1);
+                let max_table = req.max_initial_table_size.map(|s| s as i64).unwrap_or(-1);
+                (
+                    req.num_memories as i32,
+                    max_mem,
+                    req.num_tables as i32,
+                    max_table,
+                )
             }
             None => (-2, -2, -2, -2),
         }
     }
-
 }
 
 // Component Model C API for FFI integration
@@ -2057,10 +2049,7 @@ pub unsafe extern "C" fn wasmtime4j_component_deserialize(
 
 /// Free serialized component data
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_free_serialized_data(
-    data_ptr: *mut u8,
-    len: usize,
-) {
+pub unsafe extern "C" fn wasmtime4j_component_free_serialized_data(data_ptr: *mut u8, len: usize) {
     if !data_ptr.is_null() && len > 0 {
         let _ = Vec::from_raw_parts(data_ptr, len, len);
     }

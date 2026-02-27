@@ -361,11 +361,10 @@ impl Module {
         // Check if this is WAT (text format) by looking at the first byte
         // WAT files start with '(' while WASM files start with '\0'
         if wasm_bytes[0] == b'(' {
-            let wat_str = std::str::from_utf8(&wasm_bytes).map_err(|e| {
-                WasmtimeError::InvalidParameter {
+            let wat_str =
+                std::str::from_utf8(&wasm_bytes).map_err(|e| WasmtimeError::InvalidParameter {
                     message: format!("Invalid UTF-8 in WAT file '{}': {}", path.display(), e),
-                }
-            })?;
+                })?;
             Self::compile_wat(engine, wat_str)
         } else {
             Self::compile(engine, &wasm_bytes)
@@ -385,10 +384,7 @@ impl Module {
     /// Returns the zero-based index of the export in the module's export list,
     /// or None if no export with the given name exists.
     pub fn get_export_index(&self, name: &str) -> Option<usize> {
-        self.metadata
-            .exports
-            .iter()
-            .position(|e| e.name == name)
+        self.metadata.exports.iter().position(|e| e.name == name)
     }
 
     /// Validate WebAssembly bytecode without compiling (static validation)
@@ -572,13 +568,18 @@ impl Module {
         let mut min_table_elements: i64 = 0;
         let mut max_table_elements: i64 = 0;
 
-        for mem_type in self.inner.imports().filter_map(|i| match i.ty() {
-            wasmtime::ExternType::Memory(m) => Some(m),
-            _ => None,
-        }).chain(self.inner.exports().filter_map(|e| match e.ty() {
-            wasmtime::ExternType::Memory(m) => Some(m),
-            _ => None,
-        })) {
+        for mem_type in self
+            .inner
+            .imports()
+            .filter_map(|i| match i.ty() {
+                wasmtime::ExternType::Memory(m) => Some(m),
+                _ => None,
+            })
+            .chain(self.inner.exports().filter_map(|e| match e.ty() {
+                wasmtime::ExternType::Memory(m) => Some(m),
+                _ => None,
+            }))
+        {
             min_memory_bytes += mem_type.minimum() as i64 * 65536;
             match mem_type.maximum() {
                 Some(max) if max_memory_bytes >= 0 => {
@@ -589,13 +590,18 @@ impl Module {
             }
         }
 
-        for table_type in self.inner.imports().filter_map(|i| match i.ty() {
-            wasmtime::ExternType::Table(t) => Some(t),
-            _ => None,
-        }).chain(self.inner.exports().filter_map(|e| match e.ty() {
-            wasmtime::ExternType::Table(t) => Some(t),
-            _ => None,
-        })) {
+        for table_type in self
+            .inner
+            .imports()
+            .filter_map(|i| match i.ty() {
+                wasmtime::ExternType::Table(t) => Some(t),
+                _ => None,
+            })
+            .chain(self.inner.exports().filter_map(|e| match e.ty() {
+                wasmtime::ExternType::Table(t) => Some(t),
+                _ => None,
+            }))
+        {
             min_table_elements += table_type.minimum() as i64;
             match table_type.maximum() {
                 Some(max) if max_table_elements >= 0 => {
@@ -813,18 +819,17 @@ impl Module {
         }
         engine.validate()?;
 
-        let ptr = std::ptr::NonNull::new(bytes.as_ptr() as *mut u8)
-            .ok_or_else(|| WasmtimeError::InvalidParameter {
+        let ptr = std::ptr::NonNull::new(bytes.as_ptr() as *mut u8).ok_or_else(|| {
+            WasmtimeError::InvalidParameter {
                 message: "Failed to create NonNull pointer from bytes".to_string(),
-            })?;
+            }
+        })?;
         let non_null_slice = std::ptr::NonNull::slice_from_raw_parts(ptr, bytes.len());
 
-        let module =
-            unsafe { WasmtimeModule::deserialize_raw(engine.inner(), non_null_slice) }.map_err(
-                |e| WasmtimeError::Compilation {
-                    message: format!("Module raw deserialization failed: {}", e),
-                },
-            )?;
+        let module = unsafe { WasmtimeModule::deserialize_raw(engine.inner(), non_null_slice) }
+            .map_err(|e| WasmtimeError::Compilation {
+                message: format!("Module raw deserialization failed: {}", e),
+            })?;
 
         let metadata = ModuleMetadata::empty();
 
@@ -842,22 +847,17 @@ impl Module {
     /// # Safety
     /// The file must contain a valid serialized module from the same version of Wasmtime.
     #[cfg(unix)]
-    pub fn deserialize_open_file(
-        engine: &Engine,
-        fd: i32,
-    ) -> WasmtimeResult<Self> {
+    pub fn deserialize_open_file(engine: &Engine, fd: i32) -> WasmtimeResult<Self> {
         use std::os::unix::io::FromRawFd;
         engine.validate()?;
 
         // Safety: Caller guarantees the file descriptor is valid
         let file = unsafe { std::fs::File::from_raw_fd(fd) };
 
-        let module =
-            unsafe { WasmtimeModule::deserialize_open_file(engine.inner(), file) }.map_err(
-                |e| WasmtimeError::Compilation {
-                    message: format!("Module deserialization from open file failed: {}", e),
-                },
-            )?;
+        let module = unsafe { WasmtimeModule::deserialize_open_file(engine.inner(), file) }
+            .map_err(|e| WasmtimeError::Compilation {
+                message: format!("Module deserialization from open file failed: {}", e),
+            })?;
 
         let metadata = ModuleMetadata::empty();
 
@@ -1161,10 +1161,7 @@ pub mod core {
     /// Core function to get the index of an export by name
     ///
     /// Returns -1 if the export is not found, otherwise the zero-based index.
-    pub unsafe fn get_export_index(
-        module_ptr: *const c_void,
-        name: &str,
-    ) -> WasmtimeResult<i32> {
+    pub unsafe fn get_export_index(module_ptr: *const c_void, name: &str) -> WasmtimeResult<i32> {
         validate_ptr_not_null!(module_ptr, "module");
         let module = &*(module_ptr as *const Module);
         Ok(module
@@ -1482,7 +1479,11 @@ mod tests {
   )
 )"#;
         let result = Module::compile_wat(&engine, wat);
-        assert!(result.is_ok(), "Full Java config should compile i31ref WAT after wasm_features fix: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Full Java config should compile i31ref WAT after wasm_features fix: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -2037,10 +2038,8 @@ pub unsafe extern "C" fn wasmtime4j_module_address_map(
                     wasm_offsets.push(wasm_offset.map(|o| o as i64).unwrap_or(-1));
                 }
 
-                *code_offsets_out =
-                    Box::into_raw(code_offsets.into_boxed_slice()) as *mut u64;
-                *wasm_offsets_out =
-                    Box::into_raw(wasm_offsets.into_boxed_slice()) as *mut i64;
+                *code_offsets_out = Box::into_raw(code_offsets.into_boxed_slice()) as *mut u64;
+                *wasm_offsets_out = Box::into_raw(wasm_offsets.into_boxed_slice()) as *mut i64;
                 *count_out = count;
                 0
             }
