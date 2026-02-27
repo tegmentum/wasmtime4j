@@ -333,6 +333,51 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
+  public void defineModule(
+      final String instancePath, final String name, final ai.tegmentum.wasmtime4j.Module module)
+      throws WasmException {
+    if (instancePath == null) {
+      throw new IllegalArgumentException("Instance path cannot be null");
+    }
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Name cannot be null or empty");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException(
+          "Module must be a PanamaModule, got: " + module.getClass().getName());
+    }
+    final MemorySegment moduleHandle = ((PanamaModule) module).getNativeModule();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final byte[] pathBytes = instancePath.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+
+      final byte[] nameBytes = name.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+
+      final int errorCode =
+          NATIVE_BINDINGS.componentLinkerDefineModule(
+              nativeLinker,
+              pathSegment,
+              pathBytes.length,
+              nameSegment,
+              nameBytes.length,
+              moduleHandle);
+
+      if (errorCode != 0) {
+        throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to define module: " + name);
+      }
+    }
+
+    LOGGER.fine("Defined core module '" + name + "' on instance path '" + instancePath + "'");
+  }
+
+  @Override
   public void linkInstance(final ComponentInstance instance) throws WasmException {
     if (instance == null) {
       throw new IllegalArgumentException("Instance cannot be null");

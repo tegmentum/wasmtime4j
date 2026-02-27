@@ -122,6 +122,8 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   private final MemorySegment nativeHandle;
   private final MemorySegment contextHandle;
   private final NativeResourceHandle resourceHandle;
+  private final java.time.Instant createdAt = java.time.Instant.now();
+  private volatile java.time.Instant lastAccessedAt;
 
   /**
    * Creates a new Panama WASI input stream with the given native handles.
@@ -193,6 +195,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
 
       final byte[] data = new byte[(int) bytesRead];
       MemorySegment.copy(buffer, ValueLayout.JAVA_BYTE, 0, data, 0, (int) bytesRead);
+      lastAccessedAt = java.time.Instant.now();
       return data;
 
     } catch (final WasmException e) {
@@ -229,6 +232,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
 
       final byte[] data = new byte[(int) bytesRead];
       MemorySegment.copy(buffer, ValueLayout.JAVA_BYTE, 0, data, 0, (int) bytesRead);
+      lastAccessedAt = java.time.Instant.now();
       return data;
 
     } catch (final WasmException e) {
@@ -261,6 +265,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
         throw new WasmException("Invalid skipped count: " + skipped);
       }
 
+      lastAccessedAt = java.time.Instant.now();
       return skipped;
 
     } catch (final WasmException e) {
@@ -373,12 +378,11 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   }
 
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
-    return java.util.Optional.empty(); // Access tracking not yet implemented for WASI I/O streams
+    return java.util.Optional.ofNullable(lastAccessedAt);
   }
 
   public java.time.Instant getCreatedAt() {
-    return java.time.Instant
-        .now(); // Creation time tracking not yet implemented for WASI I/O streams
+    return createdAt;
   }
 
   /**

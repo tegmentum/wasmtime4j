@@ -202,8 +202,10 @@ public final class JniComponentImpl implements Component {
     Validation.requireNonNull(other, "other");
     ensureValid();
 
-    return WitCompatibilityResult.compatible(
-        "Full WIT compatibility (stub implementation)", new HashSet<>());
+    final WitInterfaceDefinition myInterface = getWitInterface();
+    final WitInterfaceDefinition otherInterface = other.getWitInterface();
+
+    return myInterface.isCompatibleWith(otherInterface);
   }
 
   @Override

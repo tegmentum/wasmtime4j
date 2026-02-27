@@ -69,6 +69,14 @@ JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetBu
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
+ * Method:    nativeGetDataPtr
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetDataPtr
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
  * Method:    nativeGetMemoryTypeInfo
  * Signature: (J)[J
  */

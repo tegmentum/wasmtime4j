@@ -1284,6 +1284,36 @@ impl ComponentLinker {
         Ok(())
     }
 
+    /// Define a core module on the linker under the given instance path and name.
+    ///
+    /// This uses Wasmtime's `LinkerInstance::module()` to provide a core wasm `Module`
+    /// as an import to a component.
+    pub fn define_module(
+        &mut self,
+        instance_path: &str,
+        name: &str,
+        module: &crate::module::Module,
+    ) -> WasmtimeResult<()> {
+        let wasmtime_module = module.inner();
+        self.linker
+            .root()
+            .instance(instance_path)
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Failed to get linker instance for '{}': {}",
+                    instance_path, e
+                ),
+            })?
+            .module(name, wasmtime_module)
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Failed to define module '{}' on '{}': {}",
+                    name, instance_path, e
+                ),
+            })?;
+        Ok(())
+    }
+
     /// Check if a specific interface is defined
     pub fn has_interface(&self, interface_namespace: &str, interface_name: &str) -> bool {
         let key = format!("{}/{}", interface_namespace, interface_name);
@@ -1775,6 +1805,16 @@ pub mod component_linker_core {
         callback: Box<dyn ComponentHostCallback>,
     ) -> WasmtimeResult<u64> {
         linker.define_function_by_path_async(wit_path, callback)
+    }
+
+    /// Define a core module on the component linker
+    pub fn define_module(
+        linker: &mut ComponentLinker,
+        instance_path: &str,
+        name: &str,
+        module: &crate::module::Module,
+    ) -> WasmtimeResult<()> {
+        linker.define_module(instance_path, name, module)
     }
 
     /// Set async support on a component linker
@@ -3007,6 +3047,61 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_define_resource(
         });
 
         linker.define_resource(interface_path, resource_name, resource_id, destructor)
+    })
+}
+
+/// Define a core module on the component linker (Panama FFI).
+///
+/// # Safety
+///
+/// All pointers must be valid. String pointers must point to valid UTF-8 data.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_define_module(
+    linker_ptr: *mut c_void,
+    instance_path_ptr: *const u8,
+    instance_path_len: usize,
+    name_ptr: *const u8,
+    name_len: usize,
+    module_ptr: *const c_void,
+) -> c_int {
+    crate::error::ffi_utils::ffi_try_code(|| {
+        if linker_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Linker pointer is null".to_string(),
+            });
+        }
+        if module_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Module pointer is null".to_string(),
+            });
+        }
+
+        let instance_path = if instance_path_ptr.is_null() || instance_path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Instance path is null or empty".to_string(),
+            });
+        } else {
+            let bytes = std::slice::from_raw_parts(instance_path_ptr, instance_path_len);
+            std::str::from_utf8(bytes).map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Instance path is not valid UTF-8: {}", e),
+            })?
+        };
+
+        let name = if name_ptr.is_null() || name_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Module name is null or empty".to_string(),
+            });
+        } else {
+            let bytes = std::slice::from_raw_parts(name_ptr, name_len);
+            std::str::from_utf8(bytes).map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Module name is not valid UTF-8: {}", e),
+            })?
+        };
+
+        let linker = &mut *(linker_ptr as *mut ComponentLinker);
+        let module = crate::module::core::get_module_ref(module_ptr)?;
+
+        linker.define_module(instance_path, name, module)
     })
 }
 

@@ -240,6 +240,18 @@ public interface ComponentLinkerInstance {
     }
 
     @Override
+    public void module(final String name, final ai.tegmentum.wasmtime4j.Module module)
+        throws WasmException {
+      if (name == null || name.isEmpty()) {
+        throw new IllegalArgumentException("name cannot be null or empty");
+      }
+      if (module == null) {
+        throw new IllegalArgumentException("module cannot be null");
+      }
+      linker.defineModule(scopePath, name, module);
+    }
+
+    @Override
     public ComponentLinkerInstance instance(final String name) throws WasmException {
       if (name == null || name.isEmpty()) {
         throw new IllegalArgumentException("name cannot be null or empty");

@@ -53,6 +53,9 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
   /** The native context handle. */
   private final long contextHandle;
 
+  private final java.time.Instant createdAt = java.time.Instant.now();
+  private volatile java.time.Instant lastAccessedAt;
+
   /**
    * Creates a new JNI WASI output stream with the given native handles.
    *
@@ -82,6 +85,7 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
     }
     ensureNotClosed();
     nativeWrite(contextHandle, nativeHandle, contents);
+    lastAccessedAt = java.time.Instant.now();
   }
 
   @Override
@@ -91,6 +95,7 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
     }
     ensureNotClosed();
     nativeBlockingWriteAndFlush(contextHandle, nativeHandle, contents);
+    lastAccessedAt = java.time.Instant.now();
   }
 
   @Override
@@ -181,11 +186,11 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
   }
 
   public java.time.Instant getCreatedAt() {
-    return java.time.Instant.now();
+    return createdAt;
   }
 
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
-    return java.util.Optional.empty();
+    return java.util.Optional.ofNullable(lastAccessedAt);
   }
 
   public java.util.List<String> getAvailableOperations() {

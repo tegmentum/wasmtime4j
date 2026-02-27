@@ -90,6 +90,8 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
   private final MemorySegment nativeHandle;
   private final MemorySegment contextHandle;
   private final NativeResourceHandle resourceHandle;
+  private final java.time.Instant createdAt = java.time.Instant.now();
+  private volatile java.time.Instant lastAccessedAt;
 
   /**
    * Creates a new Panama WASI pollable with the given native handles.
@@ -148,6 +150,8 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
         throw new WasmException("Failed to block on WASI pollable");
       }
 
+      lastAccessedAt = java.time.Instant.now();
+
     } catch (final WasmException e) {
       throw e;
     } catch (final Throwable e) {
@@ -173,6 +177,7 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
       }
 
       final int ready = outReady.get(ValueLayout.JAVA_INT, 0);
+      lastAccessedAt = java.time.Instant.now();
       return ready != 0;
 
     } catch (final WasmException e) {
@@ -226,12 +231,11 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
   }
 
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
-    return java.util.Optional.empty(); // Access tracking not yet implemented for WASI I/O pollables
+    return java.util.Optional.ofNullable(lastAccessedAt);
   }
 
   public java.time.Instant getCreatedAt() {
-    return java.time.Instant
-        .now(); // Creation time tracking not yet implemented for WASI I/O pollables
+    return createdAt;
   }
 
   /**

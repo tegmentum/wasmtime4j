@@ -761,6 +761,18 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // destructor_fn (function pointer, nullable)
             ValueLayout.JAVA_LONG)); // destructor_callback_id
 
+    // ===== Module Definition =====
+    addFunctionBinding(
+        "wasmtime4j_component_linker_define_module",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // instance_path_ptr (UTF-8)
+            ValueLayout.JAVA_LONG, // instance_path_len
+            ValueLayout.ADDRESS, // name_ptr (UTF-8)
+            ValueLayout.JAVA_LONG, // name_len
+            ValueLayout.ADDRESS)); // module_ptr
+
     // ===== Host Function Definition =====
     addFunctionBinding(
         "wasmtime4j_component_linker_define_host_function",
@@ -2720,6 +2732,39 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         resourceId,
         destructorFn,
         destructorCallbackId);
+  }
+
+  /**
+   * Defines a core module on the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param instancePathPtr UTF-8 encoded instance path
+   * @param instancePathLen length of the instance path
+   * @param namePtr UTF-8 encoded module name
+   * @param nameLen length of the module name
+   * @param modulePtr pointer to the native module
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerDefineModule(
+      final MemorySegment linkerPtr,
+      final MemorySegment instancePathPtr,
+      final long instancePathLen,
+      final MemorySegment namePtr,
+      final long nameLen,
+      final MemorySegment modulePtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(instancePathPtr, "instancePathPtr");
+    validatePointer(namePtr, "namePtr");
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_define_module",
+        Integer.class,
+        linkerPtr,
+        instancePathPtr,
+        instancePathLen,
+        namePtr,
+        nameLen,
+        modulePtr);
   }
 
   /**

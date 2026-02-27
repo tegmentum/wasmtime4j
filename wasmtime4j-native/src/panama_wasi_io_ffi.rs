@@ -102,66 +102,86 @@ fn splice_streams(
     splice_streams_generic(context, dest_stream_id, source_stream_id, length, blocking)
 }
 
-/// Create a pollable for a stream (stub - returns stream ID as pollable ID)
-#[inline]
-fn create_stream_pollable(_context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
-    Ok(stream_id)
+/// Create a pollable for a stream, registering it in the pollable registry.
+fn create_stream_pollable(context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
+    let pollable_id = context
+        .next_operation_id
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+    let pollable = crate::wasi_preview2::WasiPollable::new(pollable_id, stream_id);
+    let mut pollables = context.pollables.write().map_err(|e| {
+        WasmtimeError::Concurrency {
+            message: format!("Failed to lock pollable registry for write: {}", e),
+        }
+    })?;
+    pollables.insert(pollable_id, pollable);
+    Ok(pollable_id as u64)
 }
 
-/// Check if a pollable is ready
+/// Check if a pollable is ready by looking up the pollable registry.
+///
+/// For stream pollables, readiness is determined by whether the associated
+/// stream is open and not closed. For timer pollables, readiness is based
+/// on elapsed time.
 fn check_pollable_ready(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<bool> {
-    use crate::wasi_stream_ops::WasiStreamContext;
-    let streams = context.streams_read()?;
+    let pollables = context.pollables.read().map_err(|e| {
+        WasmtimeError::Concurrency {
+            message: format!("Failed to lock pollable registry for read: {}", e),
+        }
+    })?;
 
-    // Treat pollable ID as stream ID
-    if let Some(stream) = streams.get(&(pollable_id as u32)) {
-        use crate::wasi_stream_ops::WasiStreamEntry;
-        Ok(!stream.is_closed())
+    if let Some(pollable) = pollables.get(&(pollable_id as u32)) {
+        // Check timer-based readiness first
+        if pollable.is_ready() {
+            return Ok(true);
+        }
+        // For stream pollables, check if the associated stream is open
+        use crate::wasi_stream_ops::{WasiStreamContext, WasiStreamEntry};
+        let streams = context.streams_read()?;
+        if let Some(stream) = streams.get(&(pollable.resource_id as u32)) {
+            Ok(!stream.is_closed())
+        } else {
+            // Stream no longer exists — treat as ready (closed/EOF)
+            Ok(true)
+        }
     } else {
-        Ok(true) // Assume ready if not a stream
+        Err(WasmtimeError::InvalidParameter {
+            message: format!("Pollable {} not found in registry", pollable_id),
+        })
     }
 }
 
-/// Block on a pollable
-///
-/// NOTE: Blocking pollables require an async runtime which is not currently
-/// configured. This function logs a warning and returns success for non-blocking
-/// streams, but returns an error for blocking operations that would actually block.
-#[inline]
+/// Block on a pollable until it becomes ready or the timeout expires.
 fn block_on_pollable(
     context: &WasiContext,
     pollable_id: u64,
     timeout: Option<u64>,
 ) -> WasmtimeResult<()> {
-    // Check if the stream is already ready
-    match check_pollable_ready(context, pollable_id) {
-        Ok(true) => Ok(()), // Stream is ready, no blocking needed
-        Ok(false) => {
-            // Stream is not ready, we would need to block
-            log::warn!(
-                "block_on_pollable: stream {} not ready, async runtime not configured",
-                pollable_id
-            );
-            if timeout.is_some() {
-                // With a timeout, we can return immediately as if it timed out
-                Ok(())
-            } else {
-                // Without a timeout, this would block forever - return error
-                Err(WasmtimeError::UnsupportedFeature {
-                    message: "Blocking pollable requires async runtime configuration".to_string(),
-                })
+    let deadline = timeout.map(|ms| std::time::Instant::now() + std::time::Duration::from_millis(ms));
+    loop {
+        match check_pollable_ready(context, pollable_id) {
+            Ok(true) => return Ok(()),
+            Ok(false) => {
+                if let Some(dl) = deadline {
+                    if std::time::Instant::now() >= dl {
+                        return Ok(()); // Timed out — return without error
+                    }
+                }
+                // Brief sleep to avoid busy-spinning
+                std::thread::sleep(std::time::Duration::from_millis(1));
             }
+            Err(e) => return Err(e),
         }
-        Err(e) => Err(e),
     }
 }
 
-/// Close a pollable
-///
-/// Currently a no-op since pollables are just stream IDs.
-#[inline]
-fn close_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
-    // No cleanup needed - pollable IDs are just stream references
+/// Close a pollable by removing it from the registry.
+fn close_pollable(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<()> {
+    let mut pollables = context.pollables.write().map_err(|e| {
+        WasmtimeError::Concurrency {
+            message: format!("Failed to lock pollable registry for write: {}", e),
+        }
+    })?;
+    pollables.remove(&(pollable_id as u32));
     Ok(())
 }
 

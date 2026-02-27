@@ -1741,6 +1741,88 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     }
 }
 
+/// JNI binding for JniComponentLinker.nativeDefineModule
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDefineModule(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    instance_path: JString,
+    name: JString,
+    module_handle: jlong,
+) {
+    if linker_handle == 0 {
+        let error = WasmtimeError::InvalidParameter {
+            message: "Invalid linker handle".to_string(),
+        };
+        jni_utils::throw_jni_exception(&mut env, &error);
+        return;
+    }
+
+    if module_handle == 0 {
+        let error = WasmtimeError::InvalidParameter {
+            message: "Invalid module handle".to_string(),
+        };
+        jni_utils::throw_jni_exception(&mut env, &error);
+        return;
+    }
+
+    let instance_path_str: String = match env.get_string(&instance_path) {
+        Ok(s) => s.into(),
+        Err(e) => {
+            let error = WasmtimeError::Runtime {
+                message: format!("Failed to get instance path string: {}", e),
+                backtrace: None,
+            };
+            jni_utils::throw_jni_exception(&mut env, &error);
+            return;
+        }
+    };
+
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(e) => {
+            let error = WasmtimeError::Runtime {
+                message: format!("Failed to get module name string: {}", e),
+                backtrace: None,
+            };
+            jni_utils::throw_jni_exception(&mut env, &error);
+            return;
+        }
+    };
+
+    let linker = match unsafe {
+        component_linker_core::get_component_linker_mut(linker_handle as *mut std::ffi::c_void)
+    } {
+        Ok(l) => l,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    let module = match unsafe {
+        crate::module::core::get_module_ref(module_handle as *const std::ffi::c_void)
+    } {
+        Ok(m) => m,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+
+    if let Err(e) = component_linker_core::define_module(linker, &instance_path_str, &name_str, module) {
+        jni_utils::throw_jni_exception(&mut env, &e);
+        return;
+    }
+
+    log::info!(
+        "Defined core module '{}' on instance path '{}' in component linker",
+        name_str,
+        instance_path_str
+    );
+}
+
 /// Instantiate a component using the linker with host functions and resources
 /// JNI binding for JniComponentLinker.nativeInstantiateWithLinker
 #[no_mangle]

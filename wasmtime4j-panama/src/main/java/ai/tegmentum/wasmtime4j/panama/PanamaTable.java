@@ -268,18 +268,7 @@ public final class PanamaTable implements WasmTable {
       }
 
       // Handle init value
-      final int refIdPresent;
-      final long refId;
-      if (initValue == null) {
-        refIdPresent = 0;
-        refId = 0L;
-      } else if (initValue instanceof Long) {
-        refIdPresent = 1;
-        refId = ((Long) initValue).longValue();
-      } else {
-        // TODO: Support other types (function references, external references)
-        throw new IllegalArgumentException("Unsupported init value type: " + initValue.getClass());
-      }
+      final long[] refPair = objectToRefIdPair(initValue);
 
       final MemorySegment oldSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
 
@@ -290,8 +279,8 @@ public final class PanamaTable implements WasmTable {
                   getNativeStorePointer(),
                   elements,
                   elementTypeCode,
-                  refIdPresent,
-                  refId,
+                  (int) refPair[0],
+                  refPair[1],
                   oldSizeSegment);
 
       if (result != 0) {
@@ -381,7 +370,6 @@ public final class PanamaTable implements WasmTable {
       }
 
       final long refId = refIdSegment.get(ValueLayout.JAVA_LONG, 0);
-      // TODO: Convert refId to appropriate Java object (function reference or external reference)
       return Long.valueOf(refId);
     } catch (final IndexOutOfBoundsException e) {
       throw e;
@@ -416,36 +404,8 @@ public final class PanamaTable implements WasmTable {
         throw new IllegalArgumentException("Unsupported element type: " + elementType);
       }
 
-      // Handle null value (set to empty reference)
-      final int refIdPresent;
-      final long refId;
-      if (value == null) {
-        refIdPresent = 0;
-        refId = 0L;
-      } else if (value instanceof Long) {
-        refIdPresent = 1;
-        refId = ((Long) value).longValue();
-      } else if (value instanceof PanamaHostFunction) {
-        // Handle PanamaHostFunction - use its func_ref_id from the native registry
-        final PanamaHostFunction hostFunc = (PanamaHostFunction) value;
-        final long funcRefIdVal = hostFunc.getFuncRefId();
-        if (funcRefIdVal == 0) {
-          throw new IllegalArgumentException(
-              "Host function has no native registry ID - it may not have been created with a"
-                  + " store");
-        }
-        refIdPresent = 1;
-        refId = funcRefIdVal;
-        LOGGER.fine("Setting table element to host function with funcRefId: " + funcRefIdVal);
-      } else if (value instanceof ai.tegmentum.wasmtime4j.WasmFunction) {
-        // Other WasmFunction implementations - try to get native handle if available
-        throw new IllegalArgumentException(
-            "Unsupported WasmFunction type for table.set: "
-                + value.getClass().getName()
-                + ". Only PanamaHostFunction is currently supported.");
-      } else {
-        throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
-      }
+      // Handle value conversion
+      final long[] refPair = objectToRefIdPair(value);
 
       final int result =
           (int)
@@ -454,8 +414,8 @@ public final class PanamaTable implements WasmTable {
                   getNativeStorePointer(),
                   index,
                   elementTypeCode,
-                  refIdPresent,
-                  refId);
+                  (int) refPair[0],
+                  refPair[1]);
 
       if (result != 0) {
         throw new IndexOutOfBoundsException("Failed to set table element at index " + index);
@@ -472,6 +432,52 @@ public final class PanamaTable implements WasmTable {
   @Override
   public WasmValueType getElementType() {
     return elementType;
+  }
+
+  /**
+   * Converts an object value to a (refIdPresent, refId) pair for native FFI calls.
+   *
+   * <p>Handles null (no ref), Long (raw ID), PanamaHostFunction (funcRefId), and
+   * PanamaFunctionReference (nativeRegistryId).
+   *
+   * @param value the value to convert
+   * @return a two-element long array: [0] = refIdPresent (0 or 1), [1] = refId
+   * @throws IllegalArgumentException if the value type is unsupported
+   */
+  private long[] objectToRefIdPair(final Object value) {
+    if (value == null) {
+      return new long[] {0, 0L};
+    }
+    if (value instanceof Long) {
+      return new long[] {1, ((Long) value).longValue()};
+    }
+    if (value instanceof PanamaHostFunction) {
+      final PanamaHostFunction hostFunc = (PanamaHostFunction) value;
+      final long funcRefIdVal = hostFunc.getFuncRefId();
+      if (funcRefIdVal == 0) {
+        throw new IllegalArgumentException(
+            "Host function has no native registry ID - it may not have been created with a store");
+      }
+      LOGGER.fine("Converting host function to ref ID: " + funcRefIdVal);
+      return new long[] {1, funcRefIdVal};
+    }
+    if (value instanceof PanamaFunctionReference) {
+      final PanamaFunctionReference funcRef = (PanamaFunctionReference) value;
+      final long registryId = funcRef.getNativeRegistryId();
+      if (registryId < 0) {
+        throw new IllegalArgumentException(
+            "Function reference has no native registry ID - it may not have been registered");
+      }
+      LOGGER.fine("Converting function reference to ref ID: " + registryId);
+      return new long[] {1, registryId};
+    }
+    if (value instanceof ai.tegmentum.wasmtime4j.WasmFunction) {
+      throw new IllegalArgumentException(
+          "Unsupported WasmFunction type: "
+              + value.getClass().getName()
+              + ". Only PanamaHostFunction and PanamaFunctionReference are supported.");
+    }
+    throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
   }
 
   @Override
@@ -505,18 +511,7 @@ public final class PanamaTable implements WasmTable {
       }
 
       // Handle fill value
-      final int refIdPresent;
-      final long refId;
-      if (value == null) {
-        refIdPresent = 0;
-        refId = 0L;
-      } else if (value instanceof Long) {
-        refIdPresent = 1;
-        refId = ((Long) value).longValue();
-      } else {
-        // TODO: Support other types (function references, external references)
-        throw new IllegalArgumentException("Unsupported value type: " + value.getClass());
-      }
+      final long[] refPair = objectToRefIdPair(value);
 
       final int result =
           (int)
@@ -526,8 +521,8 @@ public final class PanamaTable implements WasmTable {
                   start,
                   count,
                   elementTypeCode,
-                  refIdPresent,
-                  refId);
+                  (int) refPair[0],
+                  refPair[1]);
 
       if (result != 0) {
         throw new IllegalStateException("Failed to fill table");
@@ -823,17 +818,7 @@ public final class PanamaTable implements WasmTable {
       }
 
       // Handle init value
-      final int refIdPresent;
-      final long refId;
-      if (initValue == null) {
-        refIdPresent = 0;
-        refId = 0L;
-      } else if (initValue instanceof Long) {
-        refIdPresent = 1;
-        refId = ((Long) initValue).longValue();
-      } else {
-        throw new IllegalArgumentException("Unsupported init value type: " + initValue.getClass());
-      }
+      final long[] refPair = objectToRefIdPair(initValue);
 
       final MemorySegment oldSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
 
@@ -843,8 +828,8 @@ public final class PanamaTable implements WasmTable {
               getNativeStorePointer(),
               elements,
               elementTypeCode,
-              refIdPresent,
-              refId,
+              (int) refPair[0],
+              refPair[1],
               oldSizeSegment);
 
       if (result != 0) {

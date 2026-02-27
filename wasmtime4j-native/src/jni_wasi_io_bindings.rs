@@ -204,10 +204,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiInputStre
     }
 }
 
-fn create_input_stream_pollable(_context: &WasiContext, _stream_id: u64) -> WasmtimeResult<u64> {
-    Err(WasmtimeError::UnsupportedFeature {
-        message: "Pollable subscribe is not implemented in the JNI runtime".to_string(),
-    })
+fn create_input_stream_pollable(context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
+    let pollable_id = context
+        .next_operation_id
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+    let pollable = crate::wasi_preview2::WasiPollable::new(pollable_id, stream_id);
+    let mut pollables = context.pollables.write().map_err(|e| {
+        WasmtimeError::Concurrency {
+            message: format!("Failed to lock pollable registry for write: {}", e),
+        }
+    })?;
+    pollables.insert(pollable_id, pollable);
+    Ok(pollable_id as u64)
 }
 
 /// Close WASI input stream
@@ -663,10 +671,18 @@ fn splice_streams(
     splice_streams_generic(context, dest_stream_id, source_stream_id, length, blocking)
 }
 
-fn create_output_stream_pollable(_context: &WasiContext, _stream_id: u64) -> WasmtimeResult<u64> {
-    Err(WasmtimeError::UnsupportedFeature {
-        message: "Pollable subscribe is not implemented in the JNI runtime".to_string(),
-    })
+fn create_output_stream_pollable(context: &WasiContext, stream_id: u64) -> WasmtimeResult<u64> {
+    let pollable_id = context
+        .next_operation_id
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
+    let pollable = crate::wasi_preview2::WasiPollable::new(pollable_id, stream_id);
+    let mut pollables = context.pollables.write().map_err(|e| {
+        WasmtimeError::Concurrency {
+            message: format!("Failed to lock pollable registry for write: {}", e),
+        }
+    })?;
+    pollables.insert(pollable_id, pollable);
+    Ok(pollable_id as u64)
 }
 
 /// Block until pollable is ready
@@ -751,20 +767,50 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
     }
 }
 
-fn block_on_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
-    Err(WasmtimeError::UnsupportedFeature {
-        message: "Pollable block is not implemented in the JNI runtime".to_string(),
-    })
+fn block_on_pollable(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<()> {
+    loop {
+        match check_pollable_ready(context, pollable_id) {
+            Ok(true) => return Ok(()),
+            Ok(false) => {
+                // Brief sleep to avoid busy-spinning
+                std::thread::sleep(std::time::Duration::from_millis(1));
+            }
+            Err(e) => return Err(e),
+        }
+    }
 }
 
-fn check_pollable_ready(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<bool> {
-    Err(WasmtimeError::UnsupportedFeature {
-        message: "Pollable ready check is not implemented in the JNI runtime".to_string(),
-    })
+fn check_pollable_ready(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<bool> {
+    let pollables = context.pollables.read().map_err(|e| {
+        WasmtimeError::Concurrency {
+            message: format!("Failed to lock pollable registry for read: {}", e),
+        }
+    })?;
+
+    if let Some(pollable) = pollables.get(&(pollable_id as u32)) {
+        if pollable.is_ready() {
+            return Ok(true);
+        }
+        use crate::wasi_stream_ops::{WasiStreamContext, WasiStreamEntry};
+        let streams = context.streams_read()?;
+        if let Some(stream) = streams.get(&(pollable.resource_id as u32)) {
+            Ok(!stream.is_closed())
+        } else {
+            Ok(true)
+        }
+    } else {
+        Err(WasmtimeError::InvalidParameter {
+            message: format!("Pollable {} not found in registry", pollable_id),
+        })
+    }
 }
 
-fn close_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
-    Err(WasmtimeError::UnsupportedFeature {
-        message: "Pollable close is not implemented in the JNI runtime".to_string(),
-    })
+fn close_pollable(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<()> {
+    let mut pollables = context.pollables.write().map_err(|e| {
+        WasmtimeError::Concurrency {
+            message: format!("Failed to lock pollable registry for write: {}", e),
+        }
+    })?;
+    pollables.remove(&(pollable_id as u32));
+    Ok(())
 }

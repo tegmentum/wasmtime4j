@@ -117,6 +117,13 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
+  public long dataPtr() {
+    ensureNotClosed();
+    final MemorySegment directMem = getDirectMemorySegment();
+    return directMem.address();
+  }
+
+  @Override
   public int getSize() {
     ensureNotClosed();
     if (instance != null) {

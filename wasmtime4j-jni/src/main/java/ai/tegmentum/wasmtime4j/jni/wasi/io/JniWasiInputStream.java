@@ -51,6 +51,9 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
   /** The native context handle. */
   private final long contextHandle;
 
+  private final java.time.Instant createdAt = java.time.Instant.now();
+  private volatile java.time.Instant lastAccessedAt;
+
   /**
    * Creates a new JNI WASI input stream with the given native handles.
    *
@@ -76,6 +79,7 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
     if (result == null) {
       throw new WasmException("Native read returned null");
     }
+    lastAccessedAt = java.time.Instant.now();
     return result;
   }
 
@@ -88,6 +92,7 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
     if (result == null) {
       throw new WasmException("Native blocking read returned null");
     }
+    lastAccessedAt = java.time.Instant.now();
     return result;
   }
 
@@ -96,7 +101,9 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
     Validation.requirePositive(length, "length");
     ensureNotClosed();
 
-    return nativeSkip(contextHandle, nativeHandle, length);
+    final long skipped = nativeSkip(contextHandle, nativeHandle, length);
+    lastAccessedAt = java.time.Instant.now();
+    return skipped;
   }
 
   @Override
@@ -137,11 +144,11 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
   }
 
   public java.time.Instant getCreatedAt() {
-    return java.time.Instant.now();
+    return createdAt;
   }
 
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
-    return java.util.Optional.empty();
+    return java.util.Optional.ofNullable(lastAccessedAt);
   }
 
   public java.util.List<String> getAvailableOperations() {

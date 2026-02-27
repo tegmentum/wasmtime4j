@@ -49,6 +49,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nati
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeDefineModule
+ * Signature: (JLjava/lang/String;Ljava/lang/String;J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDefineModule
+  (JNIEnv *, jobject, jlong, jstring, jstring, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
  * Method:    nativeInstantiateWithLinker
  * Signature: (JJJ)J
  */

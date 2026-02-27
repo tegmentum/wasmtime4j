@@ -802,6 +802,59 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetBuffe
     byte_buffer
 }
 
+/// Get the raw data pointer of memory as a long (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetDataPtr(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+) -> jlong {
+    macro_rules! handle_error {
+        ($error:expr) => {{
+            jni_utils::throw_jni_exception(&mut env, &$error);
+            return 0;
+        }};
+    }
+
+    if memory_ptr == 0 {
+        handle_error!(WasmtimeError::InvalidParameter {
+            message: "Memory handle cannot be null for data pointer access.".to_string(),
+        });
+    }
+
+    if store_ptr == 0 {
+        handle_error!(WasmtimeError::InvalidParameter {
+            message: "Store handle cannot be null for data pointer access.".to_string(),
+        });
+    }
+
+    let memory = match unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void) } {
+        Ok(m) => m,
+        Err(e) => handle_error!(e),
+    };
+    let store = match unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void) } {
+        Ok(s) => s,
+        Err(e) => handle_error!(e),
+    };
+
+    let (buffer_ptr, _buffer_size) = match core::get_memory_buffer(memory, store) {
+        Ok(result) => result,
+        Err(e) => {
+            log::error!(
+                "JNI Memory.nativeGetDataPtr: failed to get memory buffer for handle 0x{:x}: {}",
+                memory_ptr,
+                e
+            );
+            handle_error!(WasmtimeError::Memory {
+                message: format!("Failed to get memory data pointer: {}", e),
+            });
+        }
+    };
+
+    buffer_ptr as jlong
+}
+
 /// Destroy memory (JNI version) with comprehensive validation and cleanup
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeDestroyMemory(

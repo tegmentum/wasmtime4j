@@ -343,6 +343,39 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   }
 
   @Override
+  public void defineModule(
+      final String instancePath, final String name, final ai.tegmentum.wasmtime4j.Module module)
+      throws WasmException {
+    if (instancePath == null) {
+      throw new IllegalArgumentException("Instance path cannot be null");
+    }
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("Name cannot be null or empty");
+    }
+    if (module == null) {
+      throw new IllegalArgumentException("Module cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(module instanceof JniModule)) {
+      throw new IllegalArgumentException(
+          "Module must be a JniModule, got: " + module.getClass().getName());
+    }
+    final long moduleHandle = ((JniModule) module).getNativeHandle();
+
+    try {
+      nativeDefineModule(nativeHandle, instancePath, name, moduleHandle);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to define module: " + e.getMessage(), e);
+    }
+
+    LOGGER.fine("Defined core module '" + name + "' on instance path '" + instancePath + "'");
+  }
+
+  @Override
   public void linkInstance(final ComponentInstance instance) throws WasmException {
     if (instance == null) {
       throw new IllegalArgumentException("Instance cannot be null");
@@ -850,6 +883,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       String resourceName,
       long constructorCallbackId,
       long destructorCallbackId);
+
+  private native void nativeDefineModule(
+      long linkerHandle, String instancePath, String name, long moduleHandle);
 
   private native long nativeInstantiateWithLinker(
       long linkerHandle, long storeHandle, long componentHandle);

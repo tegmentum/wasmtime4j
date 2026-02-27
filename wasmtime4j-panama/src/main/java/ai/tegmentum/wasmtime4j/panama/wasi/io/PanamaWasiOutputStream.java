@@ -188,6 +188,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
   private final MemorySegment nativeHandle;
   private final MemorySegment contextHandle;
   private final NativeResourceHandle resourceHandle;
+  private final java.time.Instant createdAt = java.time.Instant.now();
+  private volatile java.time.Instant lastAccessedAt;
 
   /**
    * Creates a new Panama WASI output stream with the given native handles.
@@ -284,6 +286,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
         throw new WasmException("Failed to write to WASI output stream");
       }
 
+      lastAccessedAt = java.time.Instant.now();
+
     } catch (final WasmException e) {
       throw e;
     } catch (final Throwable e) {
@@ -313,6 +317,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       if (result != 0) {
         throw new WasmException("Failed to perform blocking write and flush");
       }
+
+      lastAccessedAt = java.time.Instant.now();
 
     } catch (final WasmException e) {
       throw e;
@@ -646,12 +652,11 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
   }
 
   public java.util.Optional<java.time.Instant> getLastAccessedAt() {
-    return java.util.Optional.empty(); // Access tracking not yet implemented for WASI I/O streams
+    return java.util.Optional.ofNullable(lastAccessedAt);
   }
 
   public java.time.Instant getCreatedAt() {
-    return java.time.Instant
-        .now(); // Creation time tracking not yet implemented for WASI I/O streams
+    return createdAt;
   }
 
   /**

@@ -183,6 +183,22 @@ public interface ComponentLinker<T> extends Closeable {
       throws WasmException;
 
   /**
+   * Defines a core WebAssembly module under the given instance path and name.
+   *
+   * <p>This enables providing a core wasm {@link ai.tegmentum.wasmtime4j.Module} as an import to a
+   * component. The module is saved within the linker for the specified instance path and name.
+   *
+   * @param instancePath the linker instance scope path (e.g., "wasi:cli/command")
+   * @param name the name to associate the module under
+   * @param module the core WebAssembly module to define
+   * @throws WasmException if the module definition fails
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  void defineModule(String instancePath, String name, ai.tegmentum.wasmtime4j.Module module)
+      throws WasmException;
+
+  /**
    * Links another component's exports as imports for future instantiations.
    *
    * <p>All exports from the provided component instance will be available as imports for components

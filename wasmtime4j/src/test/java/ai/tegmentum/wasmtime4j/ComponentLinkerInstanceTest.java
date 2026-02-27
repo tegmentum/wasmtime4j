@@ -476,6 +476,11 @@ class ComponentLinkerInstanceTest {
         throws WasmException {}
 
     @Override
+    public void defineModule(
+        final String instancePath, final String name, final ai.tegmentum.wasmtime4j.Module module)
+        throws WasmException {}
+
+    @Override
     public void linkInstance(final ai.tegmentum.wasmtime4j.component.ComponentInstance instance) {}
 
     @Override

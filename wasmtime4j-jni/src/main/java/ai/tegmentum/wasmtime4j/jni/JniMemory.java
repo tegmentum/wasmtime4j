@@ -534,6 +534,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
   // Interface implementation methods for WasmMemory
 
   @Override
+  public long dataPtr() {
+    ensureUsable();
+    return nativeGetDataPtr(getNativeHandle(), store.getNativeHandle());
+  }
+
+  @Override
   public int getSize() {
     return sizeInPages();
   }
@@ -686,6 +692,15 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @return a direct ByteBuffer view of the memory
    */
   private static native ByteBuffer nativeGetBuffer(long memoryHandle, long storeHandle);
+
+  /**
+   * Gets the raw data pointer of the WebAssembly linear memory.
+   *
+   * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
+   * @return the raw pointer address of the memory data
+   */
+  private static native long nativeGetDataPtr(long memoryHandle, long storeHandle);
 
   /**
    * Gets memory type information directly from the memory.

@@ -63,6 +63,8 @@ pub struct WasiContext {
     pub max_async_operations: i32,
     /// WASI Preview 2 config: async timeout in milliseconds (-1 = no timeout)
     pub async_timeout_ms: i64,
+    /// Pollable registry for WASI I/O poll support
+    pub pollables: Arc<RwLock<HashMap<u32, crate::wasi_preview2::WasiPollable>>>,
 }
 
 impl Clone for WasiContext {
@@ -92,6 +94,7 @@ impl Clone for WasiContext {
             component_model_enabled: self.component_model_enabled,
             max_async_operations: self.max_async_operations,
             async_timeout_ms: self.async_timeout_ms,
+            pollables: Arc::clone(&self.pollables),
         }
     }
 }
@@ -452,6 +455,7 @@ impl WasiContext {
             component_model_enabled: false,
             max_async_operations: -1,
             async_timeout_ms: -1,
+            pollables: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
@@ -866,6 +870,7 @@ impl Default for WasiContext {
                     component_model_enabled: false,
                     max_async_operations: -1,
                     async_timeout_ms: -1,
+                    pollables: Arc::new(RwLock::new(HashMap::new())),
                 }
             }
         }
