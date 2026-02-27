@@ -4,7 +4,7 @@
 //! including Tag creation, ExnRef management, and store exception operations.
 
 use jni::objects::{JClass, JIntArray};
-use jni::sys::{jboolean, jintArray, jlong, JNI_FALSE, JNI_TRUE};
+use jni::sys::{jboolean, jintArray, jlong, jobjectArray, JNI_FALSE, JNI_TRUE};
 use jni::JNIEnv;
 use wasmtime::{FuncType, Tag, TagType, ValType};
 
@@ -238,15 +238,47 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTag_nativeDestroy(
 /// Gets the tag associated with an exception reference
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetTag(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
-    _exnref_handle: jlong,
-    _store_handle: jlong,
+    exnref_handle: jlong,
+    store_handle: jlong,
 ) -> jlong {
-    // ExnRef.tag() requires Rooted<ExnRef> which is more complex to manage
-    // across JNI boundary. For now, return 0 (null).
-    // Full implementation would require storing ExnRef in a RootScope.
-    0
+    use wasmtime::{ExnRef, OwnedRooted, RootScope};
+
+    if exnref_handle == 0 || store_handle == 0 {
+        jni_utils::throw_jni_exception(
+            &mut env,
+            &WasmtimeError::InvalidParameter {
+                message: "ExnRef or store handle cannot be null".to_string(),
+            },
+        );
+        return 0;
+    }
+
+    let owned_exnref = unsafe { &*(exnref_handle as *const OwnedRooted<ExnRef>) };
+    let store = unsafe { &*(store_handle as *const Store) };
+    let mut store_guard = match store.try_lock_store() {
+        Ok(guard) => guard,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return 0;
+        }
+    };
+
+    let mut scope = RootScope::new(&mut *store_guard);
+    let exnref = owned_exnref.to_rooted(&mut scope);
+    match exnref.tag(&mut scope) {
+        Ok(tag) => Box::into_raw(Box::new(tag)) as jlong,
+        Err(e) => {
+            jni_utils::throw_jni_exception(
+                &mut env,
+                &WasmtimeError::Internal {
+                    message: format!("Failed to get tag from ExnRef: {}", e),
+                },
+            );
+            0
+        }
+    }
 }
 
 /// JNI binding for JniExnRef.nativeIsValid
@@ -263,6 +295,110 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeIsValid(
         JNI_TRUE
     } else {
         JNI_FALSE
+    }
+}
+
+/// JNI binding for JniExnRef.nativeGetField
+/// Gets a single field value from an exception reference by index
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetField<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    exnref_handle: jlong,
+    store_handle: jlong,
+    index: i32,
+) -> jobjectArray {
+    use wasmtime::{ExnRef, OwnedRooted, RootScope};
+
+    if exnref_handle == 0 || store_handle == 0 {
+        jni_utils::throw_jni_exception(
+            &mut env,
+            &WasmtimeError::InvalidParameter {
+                message: "ExnRef or store handle cannot be null".to_string(),
+            },
+        );
+        return std::ptr::null_mut();
+    }
+
+    let result = (|| -> Result<jobjectArray, WasmtimeError> {
+        let owned_exnref = unsafe { &*(exnref_handle as *const OwnedRooted<ExnRef>) };
+        let store = unsafe { &*(store_handle as *const Store) };
+        let mut store_guard = store.try_lock_store()?;
+
+        let mut scope = RootScope::new(&mut *store_guard);
+        let exnref = owned_exnref.to_rooted(&mut scope);
+
+        let val = exnref.field(&mut scope, index as usize).map_err(|e| {
+            WasmtimeError::Internal {
+                message: format!("Failed to get field {} from ExnRef: {}", index, e),
+            }
+        })?;
+
+        let wasm_value = crate::instance::core::wasmtime_val_to_wasm_value(&val)?;
+        let java_array =
+            crate::jni::linker::wasm_values_to_java_array(&mut env, &[wasm_value])?;
+        Ok(java_array.as_raw())
+    })();
+
+    match result {
+        Ok(arr) => arr,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// JNI binding for JniExnRef.nativeGetFields
+/// Gets all field values from an exception reference
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetFields<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    exnref_handle: jlong,
+    store_handle: jlong,
+) -> jobjectArray {
+    use wasmtime::{ExnRef, OwnedRooted, RootScope};
+
+    if exnref_handle == 0 || store_handle == 0 {
+        jni_utils::throw_jni_exception(
+            &mut env,
+            &WasmtimeError::InvalidParameter {
+                message: "ExnRef or store handle cannot be null".to_string(),
+            },
+        );
+        return std::ptr::null_mut();
+    }
+
+    let result = (|| -> Result<jobjectArray, WasmtimeError> {
+        let owned_exnref = unsafe { &*(exnref_handle as *const OwnedRooted<ExnRef>) };
+        let store = unsafe { &*(store_handle as *const Store) };
+        let mut store_guard = store.try_lock_store()?;
+
+        let mut scope = RootScope::new(&mut *store_guard);
+        let exnref = owned_exnref.to_rooted(&mut scope);
+
+        let vals: Vec<wasmtime::Val> =
+            exnref.fields(&mut scope).map_err(|e| WasmtimeError::Internal {
+                message: format!("Failed to get fields from ExnRef: {}", e),
+            })?.collect();
+
+        let wasm_values: Vec<_> = vals
+            .iter()
+            .map(|v| crate::instance::core::wasmtime_val_to_wasm_value(v))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let java_array =
+            crate::jni::linker::wasm_values_to_java_array(&mut env, &wasm_values)?;
+        Ok(java_array.as_raw())
+    })();
+
+    match result {
+        Ok(arr) => arr,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
     }
 }
 

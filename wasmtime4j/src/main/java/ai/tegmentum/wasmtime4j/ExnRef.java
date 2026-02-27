@@ -1,7 +1,9 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.gc.ExnType;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import java.util.List;
 
 /**
  * Represents a WebAssembly exception reference.
@@ -43,6 +45,39 @@ public interface ExnRef {
    * @throws IllegalArgumentException if store is null
    */
   Tag getTag(Store store) throws WasmException;
+
+  /**
+   * Gets the value of a specific field in this exception's payload.
+   *
+   * @param store the store context
+   * @param index the zero-based field index
+   * @return the field value as a WasmValue
+   * @throws WasmException if field retrieval fails or index is out of bounds
+   * @throws IllegalArgumentException if store is null or index is negative
+   */
+  WasmValue field(Store store, int index) throws WasmException;
+
+  /**
+   * Gets all field values in this exception's payload.
+   *
+   * @param store the store context
+   * @return an unmodifiable list of all field values
+   * @throws WasmException if field retrieval fails
+   * @throws IllegalArgumentException if store is null
+   */
+  List<WasmValue> fields(Store store) throws WasmException;
+
+  /**
+   * Gets the exception type of this reference.
+   *
+   * <p>The returned type describes the structure of this exception's payload fields.
+   *
+   * @param store the store context
+   * @return the ExnType describing this exception
+   * @throws WasmException if type retrieval fails
+   * @throws IllegalArgumentException if store is null
+   */
+  ExnType ty(Store store) throws WasmException;
 
   /**
    * Gets the native handle for this exception reference.

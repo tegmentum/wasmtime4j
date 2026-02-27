@@ -2772,6 +2772,47 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     }
   }
 
+  /**
+   * Gets a single field value from an exception reference by index.
+   *
+   * @param exnRefPtr the exception reference pointer
+   * @param storePtr the store pointer
+   * @param index the zero-based field index
+   * @param outType output pointer for the type code
+   * @param outValueI64 output pointer for integer/long values
+   * @param outValueF64 output pointer for float/double values
+   * @return 0 on success, non-zero on failure
+   */
+  public int exnRefGetField(
+      final MemorySegment exnRefPtr,
+      final MemorySegment storePtr,
+      final int index,
+      final MemorySegment outType,
+      final MemorySegment outValueI64,
+      final MemorySegment outValueF64) {
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_get_field",
+        Integer.class,
+        exnRefPtr,
+        storePtr,
+        index,
+        outType,
+        outValueI64,
+        outValueF64);
+  }
+
+  /**
+   * Gets the number of fields in an exception reference.
+   *
+   * @param exnRefPtr the exception reference pointer
+   * @param storePtr the store pointer
+   * @return the field count, or -1 on error
+   */
+  public int exnRefFieldCount(final MemorySegment exnRefPtr, final MemorySegment storePtr) {
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_field_count", Integer.class, exnRefPtr, storePtr);
+  }
+
   // ===== Host Function MethodHandle Getters =====
 
   /**
@@ -2839,6 +2880,21 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
 
     addFunctionBinding(
         "wasmtime4j_panama_exnref_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_get_field",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_field_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     // Host function bindings
     addFunctionBinding(

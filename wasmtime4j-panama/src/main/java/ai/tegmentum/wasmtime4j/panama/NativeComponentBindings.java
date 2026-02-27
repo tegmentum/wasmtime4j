@@ -761,6 +761,46 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // destructor_fn (function pointer, nullable)
             ValueLayout.JAVA_LONG)); // destructor_callback_id
 
+    // ===== Host Function Definition =====
+    addFunctionBinding(
+        "wasmtime4j_component_linker_define_host_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // wit_path_ptr (UTF-8)
+            ValueLayout.JAVA_LONG, // wit_path_len
+            ValueLayout.ADDRESS, // callback_fn (function pointer)
+            ValueLayout.JAVA_LONG)); // callback_id
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_define_host_function_async",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // wit_path_ptr (UTF-8)
+            ValueLayout.JAVA_LONG, // wit_path_len
+            ValueLayout.ADDRESS, // callback_fn (function pointer)
+            ValueLayout.JAVA_LONG)); // callback_id
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_async_support",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.JAVA_INT)); // enabled flag
+
+    addFunctionBinding(
+        "wasmtime4j_component_host_callback_alloc_result",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // allocated pointer
+            ValueLayout.JAVA_LONG)); // length
+
+    addFunctionBinding(
+        "wasmtime4j_component_host_callback_free_result",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // pointer
+            ValueLayout.JAVA_LONG)); // length
+
     // ===== allow_shadowing / define_unknown_imports_as_traps =====
     addFunctionBinding(
         "wasmtime4j_component_linker_allow_shadowing",
@@ -2680,6 +2720,96 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         resourceId,
         destructorFn,
         destructorCallbackId);
+  }
+
+  /**
+   * Defines a host function on the component linker using a WIT path.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param witPathPtr UTF-8 encoded WIT path (e.g., "wasi:cli/stdout#print")
+   * @param witPathLen length of the WIT path
+   * @param callbackFn function pointer for the host function callback
+   * @param callbackId callback ID passed to the function pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerDefineHostFunction(
+      final MemorySegment linkerPtr,
+      final MemorySegment witPathPtr,
+      final long witPathLen,
+      final MemorySegment callbackFn,
+      final long callbackId) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(witPathPtr, "witPathPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_define_host_function",
+        Integer.class,
+        linkerPtr,
+        witPathPtr,
+        witPathLen,
+        callbackFn,
+        callbackId);
+  }
+
+  /**
+   * Defines an async host function on the component linker using a WIT path.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param witPathPtr UTF-8 encoded WIT path (e.g., "wasi:cli/stdout#print")
+   * @param witPathLen length of the WIT path
+   * @param callbackFn function pointer for the host function callback
+   * @param callbackId callback ID passed to the function pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerDefineHostFunctionAsync(
+      final MemorySegment linkerPtr,
+      final MemorySegment witPathPtr,
+      final long witPathLen,
+      final MemorySegment callbackFn,
+      final long callbackId) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(witPathPtr, "witPathPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_define_host_function_async",
+        Integer.class,
+        linkerPtr,
+        witPathPtr,
+        witPathLen,
+        callbackFn,
+        callbackId);
+  }
+
+  /**
+   * Sets async support on a component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param enabled 1 to enable, 0 to disable
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetAsyncSupport(final MemorySegment linkerPtr, final int enabled) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_async_support", Integer.class, linkerPtr, enabled);
+  }
+
+  /**
+   * Allocates a result buffer for host function callback results.
+   *
+   * @param len length of the buffer to allocate
+   * @return pointer to the allocated buffer
+   */
+  public MemorySegment componentHostCallbackAllocResult(final long len) {
+    return callNativeFunction(
+        "wasmtime4j_component_host_callback_alloc_result", MemorySegment.class, len);
+  }
+
+  /**
+   * Frees a result buffer allocated by host function callback.
+   *
+   * @param ptr pointer to the buffer
+   * @param len length of the buffer
+   */
+  public void componentHostCallbackFreeResult(final MemorySegment ptr, final long len) {
+    callNativeFunction("wasmtime4j_component_host_callback_free_result", Void.class, ptr, len);
   }
 
   /**

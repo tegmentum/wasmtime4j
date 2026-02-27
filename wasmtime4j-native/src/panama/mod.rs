@@ -8,6 +8,7 @@ pub mod code_builder;
 pub mod component_enhanced;
 pub mod coredump;
 pub mod engine;
+pub mod exception_handling;
 pub mod function;
 pub mod global;
 pub mod instance;

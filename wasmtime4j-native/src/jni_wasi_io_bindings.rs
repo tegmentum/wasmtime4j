@@ -9,7 +9,7 @@ use jni::objects::{JByteArray, JClass, JObject};
 use jni::sys::{jboolean, jbyteArray, jlong};
 use jni::JNIEnv;
 
-use crate::error::WasmtimeResult;
+use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::{WasiContext, WasiStreamInfo, WasiStreamStatusInfo, WasiStreamTypeInfo};
 use crate::wasi_stream_ops::{
     check_write_capacity_generic, close_stream_generic, flush_stream_generic,
@@ -751,21 +751,21 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_io_JniWasiPollable_
     }
 }
 
-// Helper functions for pollable operations - MVP stubs for WasiContext
-// TODO: Implement proper pollable support when needed
-
 fn block_on_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
-    // MVP: Return immediately as if pollable is ready
-    Ok(())
+    Err(WasmtimeError::UnsupportedFeature {
+        message: "Pollable block is not implemented in the JNI runtime".to_string(),
+    })
 }
 
 fn check_pollable_ready(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<bool> {
-    // MVP: Return true as if pollable is always ready
-    Ok(true)
+    Err(WasmtimeError::UnsupportedFeature {
+        message: "Pollable ready check is not implemented in the JNI runtime".to_string(),
+    })
 }
 
 fn close_pollable(_context: &WasiContext, _pollable_id: u64) -> WasmtimeResult<()> {
-    // MVP: No-op close
-    Ok(())
+    Err(WasmtimeError::UnsupportedFeature {
+        message: "Pollable close is not implemented in the JNI runtime".to_string(),
+    })
 }
 

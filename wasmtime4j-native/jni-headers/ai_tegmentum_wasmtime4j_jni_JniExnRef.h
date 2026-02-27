@@ -23,6 +23,22 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetTag
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeIsValid
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef
+ * Method:    nativeGetField
+ * Signature: (JJI)[Ljava/lang/Object;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetField
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef
+ * Method:    nativeGetFields
+ * Signature: (JJ)[Ljava/lang/Object;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetFields
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

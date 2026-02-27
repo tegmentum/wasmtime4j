@@ -72,6 +72,8 @@ public final class PanamaGcRuntime implements GcRuntime {
   private static final MethodHandle arrayGet;
   private static final MethodHandle arraySet;
   private static final MethodHandle arrayLen;
+  private static final MethodHandle arrayCopy;
+  private static final MethodHandle arrayFill;
   private static final MethodHandle i31New;
   private static final MethodHandle i31Get;
   private static final MethodHandle refCast;
@@ -190,6 +192,18 @@ public final class PanamaGcRuntime implements GcRuntime {
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_array_len").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG));
+
+      arrayCopy =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_array_copy").orElseThrow(),
+              FunctionDescriptor.of(
+                  JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_LONG, JAVA_INT, JAVA_INT));
+
+      arrayFill =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_array_fill").orElseThrow(),
+              FunctionDescriptor.of(
+                  JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_LONG, JAVA_INT, JAVA_INT));
 
       i31New =
           linker.downcallHandle(
@@ -1370,31 +1384,18 @@ public final class PanamaGcRuntime implements GcRuntime {
       final long sourceId = getObjectId(sourceArray);
       final long destId = getObjectId(destArray);
 
-      // Copy element by element using get/set since no native copy exists
-      for (int i = 0; i < length; i++) {
-        try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
-          final java.lang.foreign.MemorySegment resultValue =
-              arena.allocate(java.lang.foreign.ValueLayout.JAVA_LONG);
-          final java.lang.foreign.MemorySegment resultType =
-              arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
-
-          final int getResult =
-              (int)
-                  arrayGet.invokeExact(
-                      nativeHandle, sourceId, sourceIndex + i, resultValue, resultType);
-          if (getResult != 0) {
-            throw new GcException("Failed to get array element at index " + (sourceIndex + i));
-          }
-
-          final long value = resultValue.get(java.lang.foreign.ValueLayout.JAVA_LONG, 0);
-          final int valueType = resultType.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
-
-          final int setResult =
-              (int) arraySet.invokeExact(nativeHandle, destId, destIndex + i, value, valueType);
-          if (setResult != 0) {
-            throw new GcException("Failed to set array element at index " + (destIndex + i));
-          }
-        }
+      final int result =
+          (int)
+              arrayCopy.invokeExact(nativeHandle, destId, destIndex, sourceId, sourceIndex, length);
+      if (result != 0) {
+        throw new GcException(
+            "Failed to copy array elements from index "
+                + sourceIndex
+                + " to index "
+                + destIndex
+                + " (length="
+                + length
+                + ")");
       }
     } catch (final Throwable e) {
       if (e instanceof GcException) {
@@ -1423,15 +1424,13 @@ public final class PanamaGcRuntime implements GcRuntime {
       final long objectId = getObjectId(array);
       final NativeValue nativeValue = convertGcValueToNative(value);
 
-      // Fill element by element since no native fill exists
-      for (int i = 0; i < length; i++) {
-        final int result =
-            (int)
-                arraySet.invokeExact(
-                    nativeHandle, objectId, startIndex + i, nativeValue.value, nativeValue.type);
-        if (result != 0) {
-          throw new GcException("Failed to fill array element at index " + (startIndex + i));
-        }
+      final int result =
+          (int)
+              arrayFill.invokeExact(
+                  nativeHandle, objectId, startIndex, nativeValue.value, nativeValue.type, length);
+      if (result != 0) {
+        throw new GcException(
+            "Failed to fill array elements at index " + startIndex + " (length=" + length + ")");
       }
     } catch (final Throwable e) {
       if (e instanceof GcException) {

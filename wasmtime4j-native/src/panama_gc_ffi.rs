@@ -1095,6 +1095,117 @@ fn collect_garbage_internal(runtime_handle: i64) -> WasmtimeResult<GcStatsFFI> {
     })
 }
 
+/// Panama FFI function for copying array elements between arrays
+///
+/// # Parameters
+/// * `runtime_handle` - GC runtime handle
+/// * `dest_object_id` - Destination array object ID
+/// * `dest_index` - Destination starting index
+/// * `src_object_id` - Source array object ID
+/// * `src_index` - Source starting index
+/// * `length` - Number of elements to copy
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_array_copy(
+    runtime_handle: i64,
+    dest_object_id: i64,
+    dest_index: i32,
+    src_object_id: i64,
+    src_index: i32,
+    length: i32,
+) -> i32 {
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+        let result = runtime.array_copy(
+            dest_object_id as ObjectId,
+            dest_index as u32,
+            src_object_id as ObjectId,
+            src_index as u32,
+            length as u32,
+        );
+
+        if result.success {
+            Ok(FFI_SUCCESS)
+        } else {
+            Err(WasmtimeError::InvalidParameter {
+                message: result.error.unwrap_or_default(),
+            })
+        }
+    })
+}
+
+/// Panama FFI function for filling array elements with a value
+///
+/// # Parameters
+/// * `runtime_handle` - GC runtime handle
+/// * `object_id` - Array object ID
+/// * `start_index` - Starting index
+/// * `value` - Value to fill with (encoded as i64)
+/// * `value_type` - Type code for the value (0=I32, 1=I64, 2=F32, 3=F64, 5=Ref, 6=Null)
+/// * `length` - Number of elements to fill
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_array_fill(
+    runtime_handle: i64,
+    object_id: i64,
+    start_index: i32,
+    value: i64,
+    value_type: i32,
+    length: i32,
+) -> i32 {
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+        let gc_value = match value_type {
+            0 => GcValue::I32(value as i32),
+            1 => GcValue::I64(value),
+            2 => GcValue::F32(f32::from_bits(value as u32)),
+            3 => GcValue::F64(f64::from_bits(value as u64)),
+            5 => {
+                if value == 0 {
+                    GcValue::Null
+                } else {
+                    GcValue::I64(value)
+                }
+            }
+            6 => GcValue::Null,
+            _ => GcValue::I32(value as i32),
+        };
+
+        let result = runtime.array_fill(
+            object_id as ObjectId,
+            start_index as u32,
+            gc_value,
+            length as u32,
+        );
+
+        if result.success {
+            Ok(FFI_SUCCESS)
+        } else {
+            Err(WasmtimeError::InvalidParameter {
+                message: result.error.unwrap_or_default(),
+            })
+        }
+    })
+}
+
 fn get_gc_stats_internal(runtime_handle: i64) -> WasmtimeResult<GcStatsFFI> {
     if runtime_handle == 0 {
         return Err(WasmtimeError::InvalidParameter {

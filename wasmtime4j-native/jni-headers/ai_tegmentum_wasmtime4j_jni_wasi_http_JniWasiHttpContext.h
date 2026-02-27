@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
  * Method:    nativeCreate
- * Signature: (Lai/tegmentum/wasmtime4j/wasi/http/WasiHttpConfig;)J
+ * Signature: ([Ljava/lang/String;[Ljava/lang/String;JJJIIJJZZZZZILjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeCreate
-  (JNIEnv *, jclass, jobject);
+  (JNIEnv *, jclass, jobjectArray, jobjectArray, jlong, jlong, jlong, jint, jint, jlong, jlong, jboolean, jboolean, jboolean, jboolean, jboolean, jint, jstring);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
@@ -22,6 +22,38 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpCo
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeIsValid
   (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeIsHostAllowed
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeIsHostAllowed
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeGetContextId
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeGetContextId
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeResetStats
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeResetStats
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext
+ * Method:    nativeAddToLinker
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext_nativeAddToLinker
+  (JNIEnv *, jclass, jlong, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_http_JniWasiHttpContext

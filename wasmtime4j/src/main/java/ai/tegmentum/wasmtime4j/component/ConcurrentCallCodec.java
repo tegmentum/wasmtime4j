@@ -94,6 +94,47 @@ public final class ConcurrentCallCodec {
     return parser.parseResultsArray();
   }
 
+  /**
+   * Serializes a list of component values to a JSON array string.
+   *
+   * <p>This is used by Panama FFI to marshal host function callback results across the boundary.
+   *
+   * @param vals the component values to serialize
+   * @return the JSON array string
+   * @throws IllegalArgumentException if vals is null
+   */
+  public static String serializeVals(final List<ComponentVal> vals) {
+    if (vals == null) {
+      throw new IllegalArgumentException("vals cannot be null");
+    }
+    final StringBuilder sb = new StringBuilder("[");
+    for (int i = 0; i < vals.size(); i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      serializeVal(sb, vals.get(i));
+    }
+    sb.append(']');
+    return sb.toString();
+  }
+
+  /**
+   * Deserializes a JSON array string to a list of component values.
+   *
+   * <p>This is used by Panama FFI to unmarshal host function callback parameters.
+   *
+   * @param json the JSON array string to deserialize
+   * @return the list of component values
+   * @throws IllegalArgumentException if json is null or malformed
+   */
+  public static List<ComponentVal> deserializeVals(final String json) {
+    if (json == null) {
+      throw new IllegalArgumentException("json cannot be null");
+    }
+    final JsonParser parser = new JsonParser(json);
+    return parser.parseValArray();
+  }
+
   private static void serializeVal(final StringBuilder sb, final ComponentVal val) {
     final ComponentType type = val.getType();
     switch (type) {

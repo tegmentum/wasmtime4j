@@ -26,6 +26,8 @@ import ai.tegmentum.wasmtime4j.component.ComponentLinker;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceDefinition;
 import ai.tegmentum.wasmtime4j.component.ComponentTypeCodec;
 import ai.tegmentum.wasmtime4j.component.ComponentTypeInfo;
+import ai.tegmentum.wasmtime4j.component.ComponentVal;
+import ai.tegmentum.wasmtime4j.component.ConcurrentCallCodec;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
@@ -46,7 +48,9 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,6 +77,9 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
   private static final ConcurrentHashMap<Long, Object> WASI_CALLBACKS = new ConcurrentHashMap<>();
   private static final AtomicLong NEXT_CALLBACK_ID = new AtomicLong(1);
   private static final AtomicInteger RESOURCE_ID_COUNTER = new AtomicInteger(0);
+
+  private static volatile MemorySegment hostFunctionUpcallStub;
+  private static volatile MemorySegment resourceDestructorUpcallStub;
 
   private final PanamaEngine engine;
   private final Arena arena;
@@ -167,20 +174,9 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // Register the callback
-    final long callbackId = registerHostFunctionCallback(implementation);
-
-    // Build WIT path key
-    final String witPath =
-        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
-    hostFunctions.put(witPath, callbackId);
-
-    // Track in defined interfaces
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
-    definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
-
-    LOGGER.fine(
-        "Defined component host function: " + witPath + " (callback ID: " + callbackId + ")");
+    // Build WIT path: "namespace:package/interface#function"
+    final String witPath = interfaceNamespace + "/" + interfaceName + "#" + functionName;
+    defineHostFunctionNative(witPath, implementation, false);
   }
 
   @Override
@@ -194,9 +190,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // Parse WIT path to extract components
-    final String[] pathParts = parseWitPath(witPath);
-    defineFunction(pathParts[0], pathParts[1], pathParts[2], implementation);
+    defineHostFunctionNative(witPath, implementation, false);
   }
 
   @Override
@@ -220,20 +214,9 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // Register the callback
-    final long callbackId = registerHostFunctionCallback(implementation);
-
-    // Build WIT path key
-    final String witPath =
-        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
-    hostFunctions.put(witPath, callbackId);
-
-    // Track in defined interfaces
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
-    definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
-
-    LOGGER.fine(
-        "Defined async component host function: " + witPath + " (callback ID: " + callbackId + ")");
+    // Build WIT path: "namespace:package/interface#function"
+    final String witPath = interfaceNamespace + "/" + interfaceName + "#" + functionName;
+    defineHostFunctionNative(witPath, implementation, true);
   }
 
   @Override
@@ -247,9 +230,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     }
     ensureNotClosed();
 
-    // Parse WIT path to extract components
-    final String[] pathParts = parseWitPath(witPath);
-    defineFunctionAsync(pathParts[0], pathParts[1], pathParts[2], implementation);
+    defineHostFunctionNative(witPath, implementation, true);
   }
 
   @Override
@@ -301,12 +282,21 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     // Assign a unique resource ID
     final int resourceId = RESOURCE_ID_COUNTER.incrementAndGet();
 
+    // Set up destructor if provided
+    MemorySegment destructorStub = MemorySegment.NULL;
+    long destructorCallbackId = 0L;
+    if (resourceDefinition.getDestructor().isPresent()) {
+      destructorCallbackId = NEXT_CALLBACK_ID.getAndIncrement();
+      WASI_CALLBACKS.put(destructorCallbackId, resourceDefinition.getDestructor().get());
+      destructorStub = getOrCreateResourceDestructorUpcallStub();
+    }
+
     // Call native define_resource
     try (Arena tempArena = Arena.ofConfined()) {
-      final byte[] pathBytes = interfacePath.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final byte[] pathBytes = interfacePath.getBytes(StandardCharsets.UTF_8);
       final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
 
-      final byte[] nameBytes = resourceName.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      final byte[] nameBytes = resourceName.getBytes(StandardCharsets.UTF_8);
       final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
 
       final int errorCode =
@@ -317,8 +307,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
               nameSegment,
               nameBytes.length,
               resourceId,
-              MemorySegment.NULL, // No destructor function pointer for now
-              0L);
+              destructorStub,
+              destructorCallbackId);
 
       if (errorCode != 0) {
         throw PanamaErrorMapper.mapNativeError(
@@ -1156,11 +1146,10 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (sourceFunctions != null) {
       definedInterfaces.computeIfAbsent(toKey, k -> new HashSet<>()).addAll(sourceFunctions);
 
-      // Also copy the host function registrations (witPath format: ns:iface/iface#func)
+      // Also copy the host function registrations (witPath format: ns/iface#func)
       for (final String function : sourceFunctions) {
-        final String fromPath =
-            fromNamespace + ":" + fromInterface + "/" + fromInterface + "#" + function;
-        final String toPath = toNamespace + ":" + toInterface + "/" + toInterface + "#" + function;
+        final String fromPath = fromNamespace + "/" + fromInterface + "#" + function;
+        final String toPath = toNamespace + "/" + toInterface + "#" + function;
         final Long callbackId = hostFunctions.get(fromPath);
         if (callbackId != null) {
           hostFunctions.put(toPath, callbackId);
@@ -1258,6 +1247,270 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
    */
   private void ensureNotClosed() {
     resourceHandle.ensureNotClosed();
+  }
+
+  /**
+   * Defines a host function via native FFI, registering it with the Wasmtime linker.
+   *
+   * <p>This creates a Panama upcall stub for the callback and passes it to native code which
+   * registers it with Wasmtime's component linker.
+   *
+   * @param witPath the WIT path (e.g., "wasi:cli/stdout#print")
+   * @param implementation the host function implementation
+   * @param async true to register as async function
+   * @throws WasmException if registration fails
+   */
+  private void defineHostFunctionNative(
+      final String witPath, final ComponentHostFunction implementation, final boolean async)
+      throws WasmException {
+    // Register the callback in Java-side map
+    final long callbackId = registerHostFunctionCallback(implementation);
+
+    // Get or create the shared upcall stub
+    final MemorySegment stub = getOrCreateHostFunctionUpcallStub();
+
+    // Call native to register the host function with Wasmtime's linker
+    try (Arena tempArena = Arena.ofConfined()) {
+      final byte[] pathBytes = witPath.getBytes(StandardCharsets.UTF_8);
+      final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+
+      final int errorCode;
+      if (async) {
+        errorCode =
+            NATIVE_BINDINGS.componentLinkerDefineHostFunctionAsync(
+                nativeLinker, pathSegment, pathBytes.length, stub, callbackId);
+      } else {
+        errorCode =
+            NATIVE_BINDINGS.componentLinkerDefineHostFunction(
+                nativeLinker, pathSegment, pathBytes.length, stub, callbackId);
+      }
+
+      if (errorCode != 0) {
+        HOST_CALLBACKS.remove(callbackId);
+        throw PanamaErrorMapper.mapNativeError(
+            errorCode, "Failed to define host function: " + witPath);
+      }
+    }
+
+    // Track in Java-side maps for hasFunction/hasInterface queries
+    hostFunctions.put(witPath, callbackId);
+
+    // Extract function name and build interface key matching hasInterface format (ns:name)
+    final int hashIndex = witPath.indexOf('#');
+    if (hashIndex > 0) {
+      final String interfacePath = witPath.substring(0, hashIndex);
+      final String functionName = witPath.substring(hashIndex + 1);
+      // Convert "wasi:cli/stdout" to "wasi:cli:stdout" for hasInterface compatibility
+      final String interfaceKey = interfacePath.replace('/', ':');
+      definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
+    }
+
+    LOGGER.fine(
+        "Defined "
+            + (async ? "async " : "")
+            + "component host function: "
+            + witPath
+            + " (callback ID: "
+            + callbackId
+            + ")");
+  }
+
+  /**
+   * Gets or creates the shared upcall stub for host function callbacks.
+   *
+   * <p>This stub is shared across all host function registrations since the callback dispatch is
+   * handled by the callback ID parameter.
+   *
+   * @return the upcall stub memory segment
+   * @throws WasmException if stub creation fails
+   */
+  private MemorySegment getOrCreateHostFunctionUpcallStub() throws WasmException {
+    MemorySegment stub = hostFunctionUpcallStub;
+    if (stub != null) {
+      return stub;
+    }
+    synchronized (PanamaComponentLinker.class) {
+      stub = hostFunctionUpcallStub;
+      if (stub != null) {
+        return stub;
+      }
+      try {
+        // Callback signature: (callback_id, params_json_ptr, params_json_len,
+        //                      results_json_out, results_json_len_out) -> int
+        final MethodHandle callbackHandle =
+            MethodHandles.lookup()
+                .findStatic(
+                    PanamaComponentLinker.class,
+                    "hostFunctionCallback",
+                    MethodType.methodType(
+                        int.class,
+                        long.class,
+                        MemorySegment.class,
+                        long.class,
+                        MemorySegment.class,
+                        MemorySegment.class));
+        stub =
+            java.lang.foreign.Linker.nativeLinker()
+                .upcallStub(
+                    callbackHandle,
+                    FunctionDescriptor.of(
+                        ValueLayout.JAVA_INT,
+                        ValueLayout.JAVA_LONG,
+                        ValueLayout.ADDRESS,
+                        ValueLayout.JAVA_LONG,
+                        ValueLayout.ADDRESS,
+                        ValueLayout.ADDRESS),
+                    Arena.global());
+        hostFunctionUpcallStub = stub;
+        return stub;
+      } catch (final NoSuchMethodException | IllegalAccessException e) {
+        throw new WasmException("Failed to create host function upcall stub: " + e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Static upcall target for host function callbacks from native code.
+   *
+   * <p>Called by native code when a WASM component invokes a host function. Deserializes the params
+   * JSON, dispatches to the registered Java callback, and serializes the results.
+   *
+   * @param callbackId the callback ID identifying the Java callback
+   * @param paramsJsonPtr pointer to UTF-8 JSON array of params
+   * @param paramsJsonLen length of the params JSON
+   * @param resultsJsonOut pointer to write the result JSON pointer
+   * @param resultsJsonLenOut pointer to write the result JSON length
+   * @return 0 on success, non-zero on error
+   */
+  @SuppressWarnings("unused")
+  static int hostFunctionCallback(
+      final long callbackId,
+      final MemorySegment paramsJsonPtr,
+      final long paramsJsonLen,
+      final MemorySegment resultsJsonOut,
+      final MemorySegment resultsJsonLenOut) {
+    try {
+      // Look up the callback
+      final ComponentHostFunctionWrapper wrapper = HOST_CALLBACKS.get(callbackId);
+      if (wrapper == null) {
+        LOGGER.warning("Host function callback not found for ID: " + callbackId);
+        return -1;
+      }
+
+      // Deserialize params from JSON
+      List<ComponentVal> params;
+      if (paramsJsonLen > 0 && !paramsJsonPtr.equals(MemorySegment.NULL)) {
+        final MemorySegment unbounded = paramsJsonPtr.reinterpret(paramsJsonLen);
+        final byte[] jsonBytes = new byte[(int) paramsJsonLen];
+        MemorySegment.copy(unbounded, ValueLayout.JAVA_BYTE, 0, jsonBytes, 0, (int) paramsJsonLen);
+        final String paramsJson = new String(jsonBytes, StandardCharsets.UTF_8);
+        params = ConcurrentCallCodec.deserializeVals(paramsJson);
+      } else {
+        params = List.of();
+      }
+
+      // Execute the callback
+      final List<ComponentVal> results = wrapper.getImplementation().execute(params);
+
+      // Serialize results to JSON
+      final String resultsJson =
+          results != null ? ConcurrentCallCodec.serializeVals(results) : "[]";
+      final byte[] resultBytes = resultsJson.getBytes(StandardCharsets.UTF_8);
+
+      // Allocate native buffer and copy results
+      final MemorySegment resultBuf =
+          NativeComponentBindings.getInstance()
+              .componentHostCallbackAllocResult(resultBytes.length);
+      if (resultBuf != null && !resultBuf.equals(MemorySegment.NULL)) {
+        final MemorySegment unboundedResult = resultBuf.reinterpret(resultBytes.length);
+        MemorySegment.copy(
+            resultBytes, 0, unboundedResult, ValueLayout.JAVA_BYTE, 0, resultBytes.length);
+        resultsJsonOut.set(ValueLayout.ADDRESS, 0, resultBuf);
+        resultsJsonLenOut.set(ValueLayout.JAVA_LONG, 0, resultBytes.length);
+      }
+
+      return 0;
+    } catch (final Exception e) {
+      LOGGER.warning("Host function callback failed: " + e.getMessage());
+      // Write error message to results buffer
+      try {
+        final byte[] errorBytes = e.getMessage().getBytes(StandardCharsets.UTF_8);
+        final MemorySegment errorBuf =
+            NativeComponentBindings.getInstance()
+                .componentHostCallbackAllocResult(errorBytes.length);
+        if (errorBuf != null && !errorBuf.equals(MemorySegment.NULL)) {
+          final MemorySegment unboundedError = errorBuf.reinterpret(errorBytes.length);
+          MemorySegment.copy(
+              errorBytes, 0, unboundedError, ValueLayout.JAVA_BYTE, 0, errorBytes.length);
+          resultsJsonOut.set(ValueLayout.ADDRESS, 0, errorBuf);
+          resultsJsonLenOut.set(ValueLayout.JAVA_LONG, 0, errorBytes.length);
+        }
+      } catch (final Exception ignored) {
+        // Cannot propagate error further
+      }
+      return -1;
+    }
+  }
+
+  /**
+   * Gets or creates the shared upcall stub for resource destructor callbacks.
+   *
+   * @return the upcall stub memory segment
+   * @throws WasmException if stub creation fails
+   */
+  private MemorySegment getOrCreateResourceDestructorUpcallStub() throws WasmException {
+    MemorySegment stub = resourceDestructorUpcallStub;
+    if (stub != null) {
+      return stub;
+    }
+    synchronized (PanamaComponentLinker.class) {
+      stub = resourceDestructorUpcallStub;
+      if (stub != null) {
+        return stub;
+      }
+      try {
+        // Destructor signature: (callback_id: u64, rep: u32) -> i32
+        final MethodHandle destructorHandle =
+            MethodHandles.lookup()
+                .findStatic(
+                    PanamaComponentLinker.class,
+                    "resourceDestructorCallback",
+                    MethodType.methodType(int.class, long.class, int.class));
+        stub =
+            java.lang.foreign.Linker.nativeLinker()
+                .upcallStub(
+                    destructorHandle,
+                    FunctionDescriptor.of(
+                        ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.JAVA_INT),
+                    Arena.global());
+        resourceDestructorUpcallStub = stub;
+        return stub;
+      } catch (final NoSuchMethodException | IllegalAccessException e) {
+        throw new WasmException(
+            "Failed to create resource destructor upcall stub: " + e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Static upcall target for resource destructor callbacks from native code.
+   *
+   * @param callbackId the callback ID identifying the Java destructor
+   * @param rep the resource representation ID
+   * @return 0 on success, non-zero on error
+   */
+  @SuppressWarnings({"unused", "unchecked"})
+  static int resourceDestructorCallback(final long callbackId, final int rep) {
+    try {
+      final Object obj = WASI_CALLBACKS.get(callbackId);
+      if (obj instanceof java.util.function.Consumer) {
+        ((java.util.function.Consumer<Object>) obj).accept(rep);
+      }
+      return 0;
+    } catch (final Exception e) {
+      LOGGER.warning("Resource destructor callback failed: " + e.getMessage());
+      return -1;
+    }
   }
 
   /**

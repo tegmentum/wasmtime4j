@@ -2,9 +2,14 @@ package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.gc.ExnType;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -59,6 +64,74 @@ public final class JniExnRef extends JniResource implements ExnRef {
   }
 
   @Override
+  public WasmValue field(final Store store, final int index) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (index < 0) {
+      throw new IllegalArgumentException("index must be non-negative");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    if (jniStore.isClosed()) {
+      throw new WasmException("Store is closed");
+    }
+
+    final Object[] result = nativeGetField(getNativeHandle(), jniStore.getNativeHandle(), index);
+
+    if (result == null || result.length == 0) {
+      throw new WasmException("Failed to get field " + index + " from exception reference");
+    }
+
+    return (WasmValue) result[0];
+  }
+
+  @Override
+  public List<WasmValue> fields(final Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    if (jniStore.isClosed()) {
+      throw new WasmException("Store is closed");
+    }
+
+    final Object[] result = nativeGetFields(getNativeHandle(), jniStore.getNativeHandle());
+
+    if (result == null) {
+      throw new WasmException("Failed to get fields from exception reference");
+    }
+
+    final List<WasmValue> fieldValues = new ArrayList<>(result.length);
+    for (final Object val : result) {
+      fieldValues.add((WasmValue) val);
+    }
+    return Collections.unmodifiableList(fieldValues);
+  }
+
+  @Override
+  public ExnType ty(final Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    ensureNotClosed();
+
+    final Tag tag = getTag(store);
+    return new ExnType(tag.getType(store));
+  }
+
+  @Override
   public boolean isValid() {
     if (isClosed()) {
       return false;
@@ -101,4 +174,8 @@ public final class JniExnRef extends JniResource implements ExnRef {
   private static native long nativeGetTag(long exnRefHandle, long storeHandle);
 
   private static native boolean nativeIsValid(long exnRefHandle, long storeHandle);
+
+  private static native Object[] nativeGetField(long exnRefHandle, long storeHandle, int index);
+
+  private static native Object[] nativeGetFields(long exnRefHandle, long storeHandle);
 }

@@ -2991,3 +2991,408 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_define_resource(
         linker.define_resource(interface_path, resource_name, resource_id, destructor)
     })
 }
+
+// =============================================================================
+// Host Function Definition FFI (Panama)
+// =============================================================================
+
+/// Convert a `ComponentValue` to a `JsonVal` for JSON serialization across FFI.
+fn component_value_to_json_val(
+    cv: &ComponentValue,
+) -> crate::component_core::concurrent_call_json::JsonVal {
+    use crate::component_core::concurrent_call_json::JsonVal;
+    match cv {
+        ComponentValue::Bool(v) => JsonVal::Bool(*v),
+        ComponentValue::S8(v) => JsonVal::S8(*v),
+        ComponentValue::S16(v) => JsonVal::S16(*v),
+        ComponentValue::S32(v) => JsonVal::S32(*v),
+        ComponentValue::S64(v) => JsonVal::S64(*v),
+        ComponentValue::U8(v) => JsonVal::U8(*v),
+        ComponentValue::U16(v) => JsonVal::U16(*v),
+        ComponentValue::U32(v) => JsonVal::U32(*v),
+        ComponentValue::U64(v) => JsonVal::U64(*v),
+        ComponentValue::F32(v) => JsonVal::Float32(*v),
+        ComponentValue::F64(v) => JsonVal::Float64(*v),
+        ComponentValue::Char(c) => JsonVal::Char(*c),
+        ComponentValue::String(s) => JsonVal::String(s.clone()),
+        ComponentValue::List(items) => {
+            JsonVal::List(items.iter().map(component_value_to_json_val).collect())
+        }
+        ComponentValue::Record(fields) => JsonVal::Record(
+            fields
+                .iter()
+                .map(|(name, val)| (name.clone(), component_value_to_json_val(val)))
+                .collect(),
+        ),
+        ComponentValue::Tuple(elements) => {
+            JsonVal::Tuple(elements.iter().map(component_value_to_json_val).collect())
+        }
+        ComponentValue::Variant {
+            case_name,
+            payload,
+        } => JsonVal::Variant {
+            discriminant: case_name.clone(),
+            value: payload.as_ref().map(|v| Box::new(component_value_to_json_val(v))),
+        },
+        ComponentValue::Enum(s) => JsonVal::Enum(s.clone()),
+        ComponentValue::Option(opt) => {
+            JsonVal::Option(opt.as_ref().map(|v| Box::new(component_value_to_json_val(v))))
+        }
+        ComponentValue::Result { ok, err, is_ok } => JsonVal::Result {
+            ok: ok.as_ref().map(|v| Box::new(component_value_to_json_val(v))),
+            err: err.as_ref().map(|v| Box::new(component_value_to_json_val(v))),
+            is_ok: *is_ok,
+        },
+        ComponentValue::Flags(flags) => JsonVal::Flags(flags.clone()),
+        // Resource/async handles are passed as U64 for FFI
+        ComponentValue::Own(v) => JsonVal::U64(*v),
+        ComponentValue::Borrow(v) => JsonVal::U64(*v),
+        ComponentValue::Future(v) => JsonVal::U64(*v),
+        ComponentValue::Stream(v) => JsonVal::U64(*v),
+        ComponentValue::ErrorContext(v) => JsonVal::U64(*v),
+    }
+}
+
+/// Convert a `JsonVal` back to a `ComponentValue`.
+fn json_val_to_component_value(
+    jv: &crate::component_core::concurrent_call_json::JsonVal,
+) -> ComponentValue {
+    use crate::component_core::concurrent_call_json::JsonVal;
+    match jv {
+        JsonVal::Bool(v) => ComponentValue::Bool(*v),
+        JsonVal::S8(v) => ComponentValue::S8(*v),
+        JsonVal::S16(v) => ComponentValue::S16(*v),
+        JsonVal::S32(v) => ComponentValue::S32(*v),
+        JsonVal::S64(v) => ComponentValue::S64(*v),
+        JsonVal::U8(v) => ComponentValue::U8(*v),
+        JsonVal::U16(v) => ComponentValue::U16(*v),
+        JsonVal::U32(v) => ComponentValue::U32(*v),
+        JsonVal::U64(v) => ComponentValue::U64(*v),
+        JsonVal::Float32(v) => ComponentValue::F32(*v),
+        JsonVal::Float64(v) => ComponentValue::F64(*v),
+        JsonVal::Char(c) => ComponentValue::Char(*c),
+        JsonVal::String(s) => ComponentValue::String(s.clone()),
+        JsonVal::List(items) => {
+            ComponentValue::List(items.iter().map(json_val_to_component_value).collect())
+        }
+        JsonVal::Record(fields) => ComponentValue::Record(
+            fields
+                .iter()
+                .map(|(name, val)| (name.clone(), json_val_to_component_value(val)))
+                .collect(),
+        ),
+        JsonVal::Tuple(elements) => {
+            ComponentValue::Tuple(elements.iter().map(json_val_to_component_value).collect())
+        }
+        JsonVal::Variant {
+            discriminant,
+            value,
+        } => ComponentValue::Variant {
+            case_name: discriminant.clone(),
+            payload: value.as_ref().map(|v| Box::new(json_val_to_component_value(v))),
+        },
+        JsonVal::Enum(s) => ComponentValue::Enum(s.clone()),
+        JsonVal::Option(opt) => {
+            ComponentValue::Option(opt.as_ref().map(|v| Box::new(json_val_to_component_value(v))))
+        }
+        JsonVal::Result { ok, err, is_ok } => ComponentValue::Result {
+            ok: ok.as_ref().map(|v| Box::new(json_val_to_component_value(v))),
+            err: err.as_ref().map(|v| Box::new(json_val_to_component_value(v))),
+            is_ok: *is_ok,
+        },
+        JsonVal::Flags(flags) => ComponentValue::Flags(flags.clone()),
+    }
+}
+
+/// FFI host function callback wrapper for Panama.
+///
+/// Stores a C function pointer and callback ID. When the host function is invoked:
+/// 1. Serialize `ComponentValue` params to JSON via `JsonVal`
+/// 2. Call the function pointer with the JSON string
+/// 3. The function pointer writes result JSON into an output buffer
+/// 4. Deserialize the result JSON back to `ComponentValue`
+///
+/// Callback signature:
+/// ```c
+/// int callback(
+///     int64_t callback_id,
+///     const uint8_t* params_json_ptr,
+///     uint64_t params_json_len,
+///     uint8_t** results_json_out,
+///     uint64_t* results_json_len_out
+/// ) -> int32_t;
+/// ```
+///
+/// Returns 0 on success, non-zero on error.
+/// The callback allocates `results_json_out` — the Rust side frees it via
+/// the companion free function.
+struct FfiComponentHostFunctionCallback {
+    callback_fn: unsafe extern "C" fn(
+        i64,
+        *const u8,
+        u64,
+        *mut *mut u8,
+        *mut u64,
+    ) -> c_int,
+    callback_id: i64,
+}
+
+// Safety: The callback function pointer is provided by the host (Java via Panama)
+// and must be valid for the lifetime of the linker.
+unsafe impl Send for FfiComponentHostFunctionCallback {}
+unsafe impl Sync for FfiComponentHostFunctionCallback {}
+
+impl ComponentHostCallback for FfiComponentHostFunctionCallback {
+    fn execute(&self, params: &[ComponentValue]) -> WasmtimeResult<Vec<ComponentValue>> {
+        // 1. Convert ComponentValue params to JsonVal and serialize to JSON
+        let json_vals: Vec<crate::component_core::concurrent_call_json::JsonVal> =
+            params.iter().map(component_value_to_json_val).collect();
+        let json_str = serde_json::to_string(&json_vals).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to serialize host function params to JSON: {}", e),
+            backtrace: None,
+        })?;
+        let json_bytes = json_str.as_bytes();
+
+        // 2. Call the Panama callback
+        let mut results_json_ptr: *mut u8 = std::ptr::null_mut();
+        let mut results_json_len: u64 = 0;
+        let result_code = unsafe {
+            (self.callback_fn)(
+                self.callback_id,
+                json_bytes.as_ptr(),
+                json_bytes.len() as u64,
+                &mut results_json_ptr,
+                &mut results_json_len,
+            )
+        };
+
+        if result_code != 0 {
+            // Try to read error message from the results buffer
+            let error_msg = if !results_json_ptr.is_null() && results_json_len > 0 {
+                let bytes = unsafe {
+                    std::slice::from_raw_parts(results_json_ptr, results_json_len as usize)
+                };
+                let msg = String::from_utf8_lossy(bytes).to_string();
+                unsafe {
+                    wasmtime4j_component_host_callback_free_result(
+                        results_json_ptr,
+                        results_json_len,
+                    );
+                }
+                msg
+            } else {
+                format!(
+                    "Panama host function callback failed with code: {}",
+                    result_code
+                )
+            };
+            return Err(WasmtimeError::Function {
+                message: error_msg,
+            });
+        }
+
+        // 3. Deserialize result JSON back to ComponentValue
+        if results_json_ptr.is_null() || results_json_len == 0 {
+            return Ok(Vec::new());
+        }
+
+        let result_bytes = unsafe {
+            std::slice::from_raw_parts(results_json_ptr, results_json_len as usize)
+        };
+        let result_str =
+            std::str::from_utf8(result_bytes).map_err(|e| WasmtimeError::Runtime {
+                message: format!("Host function result JSON is not valid UTF-8: {}", e),
+                backtrace: None,
+            })?;
+
+        let json_results: Vec<crate::component_core::concurrent_call_json::JsonVal> =
+            serde_json::from_str(result_str).map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to deserialize host function results from JSON: {}", e),
+                backtrace: None,
+            })?;
+
+        // Free the result buffer allocated by the callback
+        unsafe {
+            wasmtime4j_component_host_callback_free_result(results_json_ptr, results_json_len);
+        }
+
+        Ok(json_results
+            .iter()
+            .map(json_val_to_component_value)
+            .collect())
+    }
+
+    fn clone_callback(&self) -> Box<dyn ComponentHostCallback> {
+        Box::new(FfiComponentHostFunctionCallback {
+            callback_fn: self.callback_fn,
+            callback_id: self.callback_id,
+        })
+    }
+}
+
+/// Free result buffer allocated by Java callback via Panama.
+///
+/// # Safety
+/// `ptr` must have been allocated by the Java callback and `len` must be the
+/// correct length.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_host_callback_free_result(
+    ptr: *mut u8,
+    len: u64,
+) {
+    if !ptr.is_null() && len > 0 {
+        let _ = Vec::from_raw_parts(ptr, len as usize, len as usize);
+    }
+}
+
+/// Allocate a result buffer for Java callback to write results into.
+///
+/// # Safety
+/// Caller must free via `wasmtime4j_component_host_callback_free_result`.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_host_callback_alloc_result(
+    len: u64,
+) -> *mut u8 {
+    if len == 0 {
+        return std::ptr::null_mut();
+    }
+    let mut buf = Vec::with_capacity(len as usize);
+    buf.resize(len as usize, 0u8);
+    let ptr = buf.as_mut_ptr();
+    std::mem::forget(buf);
+    ptr
+}
+
+/// Define a host function on the component linker (Panama FFI).
+///
+/// The `callback_fn` is a C function pointer invoked when the WASM component calls
+/// the host function. It receives params as a JSON array and must write results as
+/// a JSON array.
+///
+/// # Parameters
+/// * `linker_ptr` - Pointer to the ComponentLinker
+/// * `wit_path_ptr` - UTF-8 WIT path (e.g., "wasi:cli/stdout#print")
+/// * `wit_path_len` - Length of the WIT path
+/// * `callback_fn` - Function pointer for the host function callback
+/// * `callback_id` - Callback ID passed to the function pointer
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+///
+/// # Safety
+/// All pointers must be valid. String pointer must point to valid UTF-8 data.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_define_host_function(
+    linker_ptr: *mut c_void,
+    wit_path_ptr: *const u8,
+    wit_path_len: u64,
+    callback_fn: unsafe extern "C" fn(i64, *const u8, u64, *mut *mut u8, *mut u64) -> c_int,
+    callback_id: i64,
+) -> c_int {
+    crate::error::ffi_utils::ffi_try_code(|| {
+        if linker_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Linker pointer is null".to_string(),
+            });
+        }
+
+        let wit_path = if wit_path_ptr.is_null() || wit_path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "WIT path is null or empty".to_string(),
+            });
+        } else {
+            let bytes = std::slice::from_raw_parts(wit_path_ptr, wit_path_len as usize);
+            std::str::from_utf8(bytes).map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("WIT path is not valid UTF-8: {}", e),
+            })?
+        };
+
+        let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+        let callback = Box::new(FfiComponentHostFunctionCallback {
+            callback_fn,
+            callback_id,
+        });
+
+        component_linker_core::define_host_function_by_path(linker, wit_path, callback)?;
+
+        Ok(())
+    })
+}
+
+/// Define an async host function on the component linker (Panama FFI).
+///
+/// Same as `wasmtime4j_component_linker_define_host_function` but registers
+/// the function with `func_new_async`. Requires the engine to have been created
+/// with `async_support(true)`.
+///
+/// # Safety
+/// All pointers must be valid. String pointer must point to valid UTF-8 data.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_define_host_function_async(
+    linker_ptr: *mut c_void,
+    wit_path_ptr: *const u8,
+    wit_path_len: u64,
+    callback_fn: unsafe extern "C" fn(i64, *const u8, u64, *mut *mut u8, *mut u64) -> c_int,
+    callback_id: i64,
+) -> c_int {
+    crate::error::ffi_utils::ffi_try_code(|| {
+        if linker_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Linker pointer is null".to_string(),
+            });
+        }
+
+        let wit_path = if wit_path_ptr.is_null() || wit_path_len == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "WIT path is null or empty".to_string(),
+            });
+        } else {
+            let bytes = std::slice::from_raw_parts(wit_path_ptr, wit_path_len as usize);
+            std::str::from_utf8(bytes).map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("WIT path is not valid UTF-8: {}", e),
+            })?
+        };
+
+        let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+        let callback = Box::new(FfiComponentHostFunctionCallback {
+            callback_fn,
+            callback_id,
+        });
+
+        component_linker_core::define_host_function_by_path_async(linker, wit_path, callback)?;
+
+        Ok(())
+    })
+}
+
+/// Set async support on a component linker (Panama FFI).
+///
+/// # Parameters
+/// * `linker_ptr` - Pointer to the ComponentLinker
+/// * `enabled` - 1 to enable, 0 to disable
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+///
+/// # Safety
+/// `linker_ptr` must be a valid pointer.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_async_support(
+    linker_ptr: *mut c_void,
+    enabled: c_int,
+) -> c_int {
+    crate::error::ffi_utils::ffi_try_code(|| {
+        if linker_ptr.is_null() {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Linker pointer is null".to_string(),
+            });
+        }
+
+        let linker = &mut *(linker_ptr as *mut ComponentLinker);
+        component_linker_core::set_async_support(linker, enabled != 0);
+
+        Ok(())
+    })
+}

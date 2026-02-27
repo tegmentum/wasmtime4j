@@ -19,13 +19,14 @@ package ai.tegmentum.wasmtime4j.jni.wasi.http;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.jni.JniLinker;
+import ai.tegmentum.wasmtime4j.jni.JniStore;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpContext;
+import java.time.Duration;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
@@ -39,7 +40,6 @@ import java.util.logging.Logger;
 public final class JniWasiHttpContext implements WasiHttpContext {
 
   private static final Logger LOGGER = Logger.getLogger(JniWasiHttpContext.class.getName());
-  private static final AtomicLong CONTEXT_ID_GENERATOR = new AtomicLong(0);
 
   private final WasiHttpConfig config;
   private final long contextHandle;
@@ -55,16 +55,33 @@ public final class JniWasiHttpContext implements WasiHttpContext {
    */
   public JniWasiHttpContext(final WasiHttpConfig config) throws WasmException {
     this.config = Objects.requireNonNull(config, "config cannot be null");
-    this.contextId = CONTEXT_ID_GENERATOR.incrementAndGet();
 
     // Ensure native library is loaded
     NativeLibraryLoader.loadLibrary();
 
     try {
-      this.contextHandle = nativeCreate(config);
+      this.contextHandle =
+          nativeCreate(
+              config.getAllowedHosts().toArray(new String[0]),
+              config.getBlockedHosts().toArray(new String[0]),
+              config.getConnectTimeout().map(Duration::toMillis).orElse(-1L),
+              config.getReadTimeout().map(Duration::toMillis).orElse(-1L),
+              config.getWriteTimeout().map(Duration::toMillis).orElse(-1L),
+              config.getMaxConnections().orElse(-1),
+              config.getMaxConnectionsPerHost().orElse(-1),
+              config.getMaxRequestBodySize().orElse(-1L),
+              config.getMaxResponseBodySize().orElse(-1L),
+              config.isHttpsRequired(),
+              config.isCertificateValidationEnabled(),
+              config.isHttp2Enabled(),
+              config.isConnectionPoolingEnabled(),
+              config.isFollowRedirects(),
+              config.getMaxRedirects().orElse(-1),
+              config.getUserAgent().orElse(null));
       if (this.contextHandle == 0) {
         throw new WasmException("Failed to create native WASI HTTP context");
       }
+      this.contextId = nativeGetContextId(contextHandle);
       LOGGER.fine("Created WASI HTTP context: " + contextId);
     } catch (final WasmException e) {
       throw e;
@@ -85,10 +102,18 @@ public final class JniWasiHttpContext implements WasiHttpContext {
       throw new WasmException("WASI HTTP context has been closed");
     }
 
-    // The native layer handles adding WASI HTTP interfaces to the linker
-    // This is a placeholder - actual implementation would integrate with
-    // the wasmtime-wasi-http crate's add_to_linker functionality
-    LOGGER.info("WASI HTTP context added to linker (context ID: " + contextId + ")");
+    if (!(linker instanceof JniLinker)) {
+      throw new IllegalArgumentException(
+          "linker must be a JniLinker instance, got: " + linker.getClass().getName());
+    }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException(
+          "store must be a JniStore instance, got: " + store.getClass().getName());
+    }
+
+    final long linkerHandle = ((JniLinker<?>) linker).getNativeHandle();
+    final long storeHandle = ((JniStore) store).getNativeHandle();
+    nativeAddToLinker(contextHandle, linkerHandle, storeHandle);
   }
 
   @Override
@@ -112,20 +137,7 @@ public final class JniWasiHttpContext implements WasiHttpContext {
     if (closed.get()) {
       return false;
     }
-
-    // Check blocked hosts first (they take precedence)
-    final Set<String> blockedHosts = config.getBlockedHosts();
-    if (matchesAnyPattern(host, blockedHosts)) {
-      return false;
-    }
-
-    // Check allowed hosts
-    final Set<String> allowedHosts = config.getAllowedHosts();
-    if (allowedHosts.isEmpty()) {
-      return false;
-    }
-
-    return matchesAnyPattern(host, allowedHosts);
+    return nativeIsHostAllowed(contextHandle, host);
   }
 
   @Override
@@ -166,32 +178,37 @@ public final class JniWasiHttpContext implements WasiHttpContext {
         + '}';
   }
 
-  private boolean matchesAnyPattern(final String host, final Set<String> patterns) {
-    for (final String pattern : patterns) {
-      if (matchesPattern(host, pattern)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private boolean matchesPattern(final String host, final String pattern) {
-    if (pattern.equals("*")) {
-      return true;
-    }
-    if (pattern.startsWith("*.")) {
-      // Wildcard pattern like *.example.com
-      final String suffix = pattern.substring(1);
-      return host.endsWith(suffix) || host.equals(pattern.substring(2));
-    }
-    // Exact match
-    return host.equalsIgnoreCase(pattern);
-  }
-
   // Native methods
-  private static native long nativeCreate(WasiHttpConfig config);
+
+  @SuppressWarnings("checkstyle:ParameterNumber")
+  private static native long nativeCreate(
+      String[] allowedHosts,
+      String[] blockedHosts,
+      long connectTimeoutMs,
+      long readTimeoutMs,
+      long writeTimeoutMs,
+      int maxConnections,
+      int maxConnectionsPerHost,
+      long maxRequestBodySize,
+      long maxResponseBodySize,
+      boolean httpsRequired,
+      boolean certificateValidation,
+      boolean http2Enabled,
+      boolean connectionPooling,
+      boolean followRedirects,
+      int maxRedirects,
+      String userAgent);
 
   private static native boolean nativeIsValid(long contextHandle);
+
+  private static native boolean nativeIsHostAllowed(long contextHandle, String host);
+
+  private static native long nativeGetContextId(long contextHandle);
+
+  private static native void nativeResetStats(long contextHandle);
+
+  private static native void nativeAddToLinker(
+      long contextHandle, long linkerHandle, long storeHandle) throws WasmException;
 
   private static native void nativeFree(long contextHandle);
 }
