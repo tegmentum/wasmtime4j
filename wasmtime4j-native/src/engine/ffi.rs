@@ -4,11 +4,9 @@
 
 use std::os::raw::{c_int, c_void};
 
-use wasmtime::{OptLevel, Strategy};
-
 use super::pool::{
     acquire_pooled_engine, engine_pool_cleanup, engine_pool_max_size, engine_pool_size,
-    get_shared_engine, release_pooled_engine, wasmtime_full_cleanup, ManagedEngine,
+    get_shared_engine, release_pooled_engine, wasmtime_full_cleanup,
 };
 use super::{core, Engine, WasmFeature};
 use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
@@ -30,48 +28,6 @@ pub unsafe extern "C" fn wasmtime4j_engine_new() -> *mut c_void {
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_engine_create() -> *mut c_void {
     wasmtime4j_engine_new()
-}
-
-/// Create a new engine with custom configuration
-///
-/// # Safety
-///
-/// Returns pointer to engine that must be freed with wasmtime4j_engine_destroy
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_engine_new_with_config(
-    debug_info: c_int,
-    wasm_threads: c_int,
-    wasm_simd: c_int,
-    wasm_reference_types: c_int,
-    wasm_bulk_memory: c_int,
-    wasm_multi_value: c_int,
-    fuel_enabled: c_int,
-    max_stack_size: usize,
-    epoch_interruption: c_int,
-) -> *mut c_void {
-    let opt_max_stack_size = if max_stack_size == 0 {
-        None
-    } else {
-        Some(max_stack_size)
-    };
-
-    match core::create_engine_with_config(
-        Some(Strategy::Cranelift),
-        Some(OptLevel::Speed),
-        debug_info != 0,
-        wasm_threads != 0,
-        wasm_simd != 0,
-        wasm_reference_types != 0,
-        wasm_bulk_memory != 0,
-        wasm_multi_value != 0,
-        fuel_enabled != 0,
-        opt_max_stack_size,
-        epoch_interruption != 0,
-        false, // async_support - TODO: add parameter
-    ) {
-        Ok(engine) => Box::into_raw(engine) as *mut c_void,
-        Err(_) => std::ptr::null_mut(),
-    }
 }
 
 /// Destroy engine and free resources
@@ -260,61 +216,6 @@ pub unsafe extern "C" fn wasmtime4j_engine_precompile_module(
             }
         }
         Err(_) => FFI_ERROR,
-    }
-}
-
-/// Create a new engine with extended configuration including memory settings
-///
-/// This extends wasmtime4j_engine_new_with_config with additional memory configuration options.
-///
-/// # Safety
-///
-/// This function is unsafe because it's called from FFI
-///
-/// Returns pointer to engine that must be freed with wasmtime4j_engine_destroy
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_engine_new_with_memory_config(
-    debug_info: c_int,
-    wasm_threads: c_int,
-    wasm_simd: c_int,
-    wasm_reference_types: c_int,
-    wasm_bulk_memory: c_int,
-    wasm_multi_value: c_int,
-    fuel_enabled: c_int,
-    max_stack_size: usize,
-    epoch_interruption: c_int,
-    memory_reservation: u64,
-    memory_guard_size: u64,
-    memory_reservation_for_growth: u64,
-) -> *mut c_void {
-    let mut builder = Engine::builder()
-        .strategy(Strategy::Cranelift)
-        .opt_level(OptLevel::Speed)
-        .debug_info(debug_info != 0)
-        .wasm_threads(wasm_threads != 0)
-        .wasm_simd(wasm_simd != 0)
-        .wasm_reference_types(wasm_reference_types != 0)
-        .wasm_bulk_memory(wasm_bulk_memory != 0)
-        .wasm_multi_value(wasm_multi_value != 0)
-        .fuel_enabled(fuel_enabled != 0)
-        .epoch_interruption(epoch_interruption != 0);
-
-    if max_stack_size > 0 {
-        builder = builder.max_stack_size(max_stack_size);
-    }
-    if memory_reservation > 0 {
-        builder = builder.memory_reservation(memory_reservation);
-    }
-    if memory_guard_size > 0 {
-        builder = builder.memory_guard_size(memory_guard_size);
-    }
-    if memory_reservation_for_growth > 0 {
-        builder = builder.memory_reservation_for_growth(memory_reservation_for_growth);
-    }
-
-    match builder.build() {
-        Ok(engine) => Box::into_raw(Box::new(engine)) as *mut c_void,
-        Err(_) => std::ptr::null_mut(),
     }
 }
 
@@ -557,98 +458,4 @@ pub unsafe extern "C" fn wasmtime4j_engine_pool_cleanup() {
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_full_cleanup() {
     wasmtime_full_cleanup();
-}
-
-/// Create a new managed engine.
-///
-/// A managed engine tracks resources and ensures proper cleanup order.
-/// When the managed engine is destroyed, all tracked resources are
-/// cleaned up first.
-///
-/// # Safety
-///
-/// Returns pointer that must be freed with wasmtime4j_managed_engine_destroy
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_managed_engine_new() -> *mut c_void {
-    match ManagedEngine::new() {
-        Ok(managed) => Box::into_raw(Box::new(managed)) as *mut c_void,
-        Err(_) => std::ptr::null_mut(),
-    }
-}
-
-/// Create a managed engine from the shared singleton.
-///
-/// # Safety
-///
-/// Returns pointer that must be freed with wasmtime4j_managed_engine_destroy
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_managed_engine_from_shared() -> *mut c_void {
-    let managed = ManagedEngine::from_shared();
-    Box::into_raw(Box::new(managed)) as *mut c_void
-}
-
-/// Get the underlying engine from a managed engine.
-///
-/// The returned engine pointer is valid as long as the managed engine
-/// is not destroyed. Do NOT free it with wasmtime4j_engine_destroy.
-///
-/// # Safety
-///
-/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_managed_engine_get(
-    managed_ptr: *const c_void,
-) -> *const c_void {
-    if managed_ptr.is_null() {
-        return std::ptr::null();
-    }
-    let managed = &*(managed_ptr as *const ManagedEngine);
-    // Return a pointer to a clone of the engine
-    Box::into_raw(Box::new(managed.engine_clone())) as *const c_void
-}
-
-/// Get the resource count of a managed engine.
-///
-/// # Safety
-///
-/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_managed_engine_resource_count(
-    managed_ptr: *const c_void,
-) -> usize {
-    if managed_ptr.is_null() {
-        return 0;
-    }
-    let managed = &*(managed_ptr as *const ManagedEngine);
-    managed.resource_count()
-}
-
-/// Clear all tracked resources from a managed engine.
-///
-/// # Safety
-///
-/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_managed_engine_clear_resources(managed_ptr: *mut c_void) {
-    if managed_ptr.is_null() {
-        return;
-    }
-    let managed = &*(managed_ptr as *const ManagedEngine);
-    managed.clear_resources();
-}
-
-/// Destroy a managed engine.
-///
-/// This will first clear all tracked resources, then drop the engine.
-///
-/// # Safety
-///
-/// managed_ptr must be a valid pointer from wasmtime4j_managed_engine_new
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_managed_engine_destroy(managed_ptr: *mut c_void) {
-    if managed_ptr.is_null() {
-        return;
-    }
-    let _ = Box::from_raw(managed_ptr as *mut ManagedEngine);
-    // Managed engine's Drop implementation handles cleanup
 }

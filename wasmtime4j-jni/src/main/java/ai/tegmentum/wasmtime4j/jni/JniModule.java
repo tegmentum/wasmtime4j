@@ -91,9 +91,96 @@ public class JniModule extends JniResource implements Module {
       final ai.tegmentum.wasmtime4j.Store store,
       final ai.tegmentum.wasmtime4j.validation.ImportMap imports)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    throw new UnsupportedOperationException(
-        "ImportMap-based instantiation is not yet implemented."
-            + " Use Linker-based instantiation instead.");
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (imports == null) {
+      throw new IllegalArgumentException("imports cannot be null");
+    }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("store must be a JniStore instance");
+    }
+    ensureNotClosed();
+
+    final JniStore jniStore = (JniStore) store;
+    final java.util.List<ImportType> moduleImports = getImports();
+
+    if (moduleImports.isEmpty()) {
+      return instantiate(store);
+    }
+
+    final java.util.Map<String, java.util.Map<String, Object>> importData = imports.getImports();
+    final ai.tegmentum.wasmtime4j.Extern[] externs =
+        new ai.tegmentum.wasmtime4j.Extern[moduleImports.size()];
+
+    for (int i = 0; i < moduleImports.size(); i++) {
+      final ImportType imp = moduleImports.get(i);
+      final String modName = imp.getModuleName();
+      final String fieldName = imp.getName();
+
+      final java.util.Map<String, Object> moduleMap = importData.get(modName);
+      if (moduleMap == null || !moduleMap.containsKey(fieldName)) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Missing import: " + modName + "::" + fieldName);
+      }
+
+      final Object value = moduleMap.get(fieldName);
+      externs[i] = wrapAsJniExtern(value, jniStore, imp);
+    }
+
+    return jniStore.createInstance(this, externs);
+  }
+
+  /**
+   * Wraps a WasmFunction/WasmGlobal/WasmMemory/WasmTable as the corresponding JNI Extern type.
+   *
+   * @param value the import value from the ImportMap
+   * @param store the JNI store
+   * @param imp the import type descriptor
+   * @return the Extern wrapper
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if the value cannot be converted
+   */
+  private static ai.tegmentum.wasmtime4j.Extern wrapAsJniExtern(
+      final Object value, final JniStore store, final ImportType imp)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (value == null) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Import value is null for " + imp.getModuleName() + "::" + imp.getName());
+    }
+
+    final ai.tegmentum.wasmtime4j.type.WasmTypeKind kind = imp.getType().getKind();
+
+    if (!(value instanceof JniResource)) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Import value for "
+              + imp.getModuleName()
+              + "::"
+              + imp.getName()
+              + " must be a JNI runtime object (got "
+              + value.getClass().getName()
+              + ")");
+    }
+
+    final long nativeHandle = ((JniResource) value).getNativeHandle();
+
+    switch (kind) {
+      case FUNCTION:
+        return new JniExternFunc(nativeHandle, store);
+      case GLOBAL:
+        return new JniExternGlobal(nativeHandle, store);
+      case MEMORY:
+        return new JniExternMemory(nativeHandle, store);
+      case TABLE:
+        return new JniExternTable(nativeHandle, store);
+      default:
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Unsupported import type kind: "
+                + kind
+                + " for "
+                + imp.getModuleName()
+                + "::"
+                + imp.getName());
+    }
   }
 
   @Override

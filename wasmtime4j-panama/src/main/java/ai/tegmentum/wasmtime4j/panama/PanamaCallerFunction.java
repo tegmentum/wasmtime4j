@@ -254,6 +254,15 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
     resourceHandle.ensureNotClosed();
   }
 
+  /**
+   * Gets the native function handle.
+   *
+   * @return the native function memory segment
+   */
+  MemorySegment getFuncHandle() {
+    return funcHandle;
+  }
+
   @Override
   public String toString() {
     return String.format(

@@ -387,24 +387,26 @@ public final class PanamaWasmRuntime implements WasmRuntime {
     return !resourceHandle.isClosed();
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * @deprecated This method is not supported in the Panama runtime because PanamaFunction requires
-   *     an instance context. Use {@link ai.tegmentum.wasmtime4j.Linker#defineHostFunction} or
-   *     {@link ai.tegmentum.wasmtime4j.WasmFunction#wrap} instead.
-   */
-  @Deprecated
   @Override
   public ai.tegmentum.wasmtime4j.WasmFunction funcFromRawRef(
       final ai.tegmentum.wasmtime4j.Store store, final long raw)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    if (store == null) {
-      throw new IllegalArgumentException("Store cannot be null");
+    Validation.requireNonNull(store, "store");
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance for Panama runtime");
     }
-    throw new UnsupportedOperationException(
-        "funcFromRawRef is not supported in Panama runtime. "
-            + "Use Linker.defineHostFunction() or WasmFunction.wrap() instead.");
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+    final MemorySegment funcHandle = bindings.funcFromRaw(panamaStore.getNativeStore(), raw);
+
+    if (funcHandle == null || funcHandle.equals(MemorySegment.NULL) || funcHandle.address() == 0) {
+      return null;
+    }
+
+    return new PanamaCallerFunction(funcHandle, panamaStore, "<from-raw>");
   }
 
   @Override

@@ -192,6 +192,56 @@ public abstract class AbstractWasiConfig implements WasiConfig {
 
   @Override
   public void validate() {
-    throw new UnsupportedOperationException("validate not yet implemented");
+    // Validate environment variables have non-null keys and values
+    for (final Map.Entry<String, String> entry : environment.entrySet()) {
+      if (entry.getKey() == null) {
+        throw new IllegalArgumentException("Environment variable key cannot be null");
+      }
+      if (entry.getValue() == null) {
+        throw new IllegalArgumentException(
+            "Environment variable value cannot be null for key: " + entry.getKey());
+      }
+    }
+
+    // Validate arguments have no null entries
+    for (int i = 0; i < arguments.size(); i++) {
+      if (arguments.get(i) == null) {
+        throw new IllegalArgumentException("Argument at index " + i + " cannot be null");
+      }
+    }
+
+    // Validate pre-opened directories have non-null keys and values
+    for (final Map.Entry<String, Path> entry : preopenDirectories.entrySet()) {
+      if (entry.getKey() == null) {
+        throw new IllegalArgumentException("Pre-opened directory guest path cannot be null");
+      }
+      if (entry.getValue() == null) {
+        throw new IllegalArgumentException(
+            "Pre-opened directory host path cannot be null for guest path: " + entry.getKey());
+      }
+    }
+
+    // Validate execution timeout is positive if set
+    if (executionTimeout != null && (executionTimeout.isNegative() || executionTimeout.isZero())) {
+      throw new IllegalArgumentException(
+          "Execution timeout must be positive, got: " + executionTimeout);
+    }
+
+    // Validate async operation settings
+    if (maxAsyncOperations != null && maxAsyncOperations <= 0) {
+      throw new IllegalArgumentException(
+          "Max async operations must be positive, got: " + maxAsyncOperations);
+    }
+
+    if (asyncOperationTimeout != null
+        && (asyncOperationTimeout.isNegative() || asyncOperationTimeout.isZero())) {
+      throw new IllegalArgumentException(
+          "Async operation timeout must be positive, got: " + asyncOperationTimeout);
+    }
+
+    // Validate WASI version is set
+    if (wasiVersion == null) {
+      throw new IllegalArgumentException("WASI version cannot be null");
+    }
   }
 }

@@ -1,9 +1,7 @@
 //! JNI bindings for Function operations
 
 use jni::objects::{JClass, JObject, JObjectArray};
-use jni::sys::{
-    jdoubleArray, jfloatArray, jint, jintArray, jlong, jlongArray, jobject, jobjectArray,
-};
+use jni::sys::{jlong, jobject, jobjectArray};
 use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
@@ -676,135 +674,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMu
             std::ptr::null_mut()
         }
     }
-}
-
-/// Call a function with int parameters (JNI version)
-///
-/// NOTE: This method requires Java API changes to pass store_handle.
-/// Currently throws UnsupportedOperationException.
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallInt(
-    mut env: JNIEnv,
-    _class: JClass,
-    function_ptr: jlong,
-    _params: jintArray,
-) -> jint {
-    // Validate function pointer
-    if function_ptr == 0 {
-        jni_utils::throw_jni_exception(
-            &mut env,
-            &WasmtimeError::InvalidParameter {
-                message: "function_ptr cannot be null".to_string(),
-            },
-        );
-        return 0;
-    }
-
-    // This method cannot be implemented without store context
-    jni_utils::throw_jni_exception(
-        &mut env,
-        &WasmtimeError::UnsupportedFeature {
-            message: "callInt requires store context; use call(WasmValue...) instead".to_string(),
-        },
-    );
-    0
-}
-
-/// Call a function with long parameters (JNI version)
-///
-/// NOTE: This method requires Java API changes to pass store_handle.
-/// Currently throws UnsupportedOperationException.
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallLong(
-    mut env: JNIEnv,
-    _class: JClass,
-    function_ptr: jlong,
-    _params: jlongArray,
-) -> jlong {
-    // Validate function pointer
-    if function_ptr == 0 {
-        jni_utils::throw_jni_exception(
-            &mut env,
-            &WasmtimeError::InvalidParameter {
-                message: "function_ptr cannot be null".to_string(),
-            },
-        );
-        return 0;
-    }
-
-    // This method cannot be implemented without store context
-    jni_utils::throw_jni_exception(
-        &mut env,
-        &WasmtimeError::UnsupportedFeature {
-            message: "callLong requires store context; use call(WasmValue...) instead".to_string(),
-        },
-    );
-    0
-}
-
-/// Call a function with float parameters (JNI version)
-///
-/// NOTE: This method requires Java API changes to pass store_handle.
-/// Currently throws UnsupportedOperationException.
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallFloat(
-    mut env: JNIEnv,
-    _class: JClass,
-    function_ptr: jlong,
-    _params: jfloatArray,
-) -> f32 {
-    // Validate function pointer
-    if function_ptr == 0 {
-        jni_utils::throw_jni_exception(
-            &mut env,
-            &WasmtimeError::InvalidParameter {
-                message: "function_ptr cannot be null".to_string(),
-            },
-        );
-        return 0.0;
-    }
-
-    // This method cannot be implemented without store context
-    jni_utils::throw_jni_exception(
-        &mut env,
-        &WasmtimeError::UnsupportedFeature {
-            message: "callFloat requires store context; use call(WasmValue...) instead".to_string(),
-        },
-    );
-    0.0
-}
-
-/// Call a function with double parameters (JNI version)
-///
-/// NOTE: This method requires Java API changes to pass store_handle.
-/// Currently throws UnsupportedOperationException.
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallDouble(
-    mut env: JNIEnv,
-    _class: JClass,
-    function_ptr: jlong,
-    _params: jdoubleArray,
-) -> f64 {
-    // Validate function pointer
-    if function_ptr == 0 {
-        jni_utils::throw_jni_exception(
-            &mut env,
-            &WasmtimeError::InvalidParameter {
-                message: "function_ptr cannot be null".to_string(),
-            },
-        );
-        return 0.0;
-    }
-
-    // This method cannot be implemented without store context
-    jni_utils::throw_jni_exception(
-        &mut env,
-        &WasmtimeError::UnsupportedFeature {
-            message: "callDouble requires store context; use call(WasmValue...) instead"
-                .to_string(),
-        },
-    );
-    0.0
 }
 
 /// Convert a Func to its raw funcref pointer (JNI version)

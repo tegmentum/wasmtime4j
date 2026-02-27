@@ -192,9 +192,138 @@ public final class PanamaModule implements Module {
 
   @Override
   public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
-    throw new UnsupportedOperationException(
-        "ImportMap-based instantiation is not yet implemented."
-            + " Use Linker-based instantiation instead.");
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    if (imports == null) {
+      throw new IllegalArgumentException("Imports cannot be null");
+    }
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    }
+    ensureNotClosed();
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final java.util.List<ImportType> moduleImports = getImports();
+
+    if (moduleImports.isEmpty()) {
+      return instantiate(store);
+    }
+
+    final java.util.Map<String, java.util.Map<String, Object>> importData = imports.getImports();
+    final ai.tegmentum.wasmtime4j.Extern[] externs =
+        new ai.tegmentum.wasmtime4j.Extern[moduleImports.size()];
+
+    for (int i = 0; i < moduleImports.size(); i++) {
+      final ImportType imp = moduleImports.get(i);
+      final String modName = imp.getModuleName();
+      final String fieldName = imp.getName();
+
+      final java.util.Map<String, Object> moduleMap = importData.get(modName);
+      if (moduleMap == null || !moduleMap.containsKey(fieldName)) {
+        throw new WasmException("Missing import: " + modName + "::" + fieldName);
+      }
+
+      final Object value = moduleMap.get(fieldName);
+      externs[i] = wrapAsPanamaExtern(value, panamaStore, imp);
+    }
+
+    return panamaStore.createInstance(this, externs);
+  }
+
+  /**
+   * Wraps a WasmFunction/WasmGlobal/WasmMemory/WasmTable as the corresponding Panama Extern type.
+   *
+   * @param value the import value from the ImportMap
+   * @param store the Panama store
+   * @param imp the import type descriptor
+   * @return the Extern wrapper
+   * @throws WasmException if the value cannot be converted
+   */
+  private static ai.tegmentum.wasmtime4j.Extern wrapAsPanamaExtern(
+      final Object value, final PanamaStore store, final ImportType imp) throws WasmException {
+    if (value == null) {
+      throw new WasmException(
+          "Import value is null for " + imp.getModuleName() + "::" + imp.getName());
+    }
+
+    final ai.tegmentum.wasmtime4j.type.WasmTypeKind kind = imp.getType().getKind();
+
+    switch (kind) {
+      case FUNCTION:
+        return wrapFunctionAsPanamaExtern(value, store, imp);
+      case GLOBAL:
+        if (value instanceof PanamaGlobal) {
+          return new PanamaExternGlobal(((PanamaGlobal) value).getNativeGlobal(), store);
+        }
+        throw new WasmException(
+            "Global import for "
+                + imp.getModuleName()
+                + "::"
+                + imp.getName()
+                + " must be a Panama runtime global (got "
+                + value.getClass().getName()
+                + ")");
+      case MEMORY:
+        if (value instanceof PanamaMemory) {
+          return new PanamaExternMemory(((PanamaMemory) value).getNativeMemory(), store);
+        }
+        throw new WasmException(
+            "Memory import for "
+                + imp.getModuleName()
+                + "::"
+                + imp.getName()
+                + " must be a Panama runtime memory (got "
+                + value.getClass().getName()
+                + ")");
+      case TABLE:
+        if (value instanceof PanamaTable) {
+          return new PanamaExternTable(((PanamaTable) value).getNativeTable(), store);
+        }
+        throw new WasmException(
+            "Table import for "
+                + imp.getModuleName()
+                + "::"
+                + imp.getName()
+                + " must be a Panama runtime table (got "
+                + value.getClass().getName()
+                + ")");
+      default:
+        throw new WasmException(
+            "Unsupported import type kind: "
+                + kind
+                + " for "
+                + imp.getModuleName()
+                + "::"
+                + imp.getName());
+    }
+  }
+
+  /**
+   * Wraps a WasmFunction as a PanamaExternFunc by extracting the native function handle.
+   *
+   * @param value the function value (must be a WasmFunction)
+   * @param store the Panama store
+   * @param imp the import type descriptor
+   * @return the PanamaExternFunc wrapper
+   * @throws WasmException if the function type is not supported
+   */
+  private static ai.tegmentum.wasmtime4j.Extern wrapFunctionAsPanamaExtern(
+      final Object value, final PanamaStore store, final ImportType imp) throws WasmException {
+    if (value instanceof PanamaHostFunction) {
+      return new PanamaExternFunc(((PanamaHostFunction) value).getFunctionHandle(), store);
+    }
+    if (value instanceof PanamaCallerFunction) {
+      return new PanamaExternFunc(((PanamaCallerFunction) value).getFuncHandle(), store);
+    }
+    throw new WasmException(
+        "Function import for "
+            + imp.getModuleName()
+            + "::"
+            + imp.getName()
+            + " must be a Panama runtime function (PanamaHostFunction or PanamaCallerFunction)."
+            + " Got "
+            + value.getClass().getName());
   }
 
   @Override

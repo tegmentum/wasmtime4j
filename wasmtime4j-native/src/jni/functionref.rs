@@ -100,26 +100,263 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
 
 /// Call a function reference through native code (JNI version)
 ///
-/// This is a minimal stub - actual calls happen through the Java callback mechanism.
+/// Looks up the function from the reference registry and calls it via
+/// the standard function call path using the store context.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeCallFunctionReference(
     mut env: JNIEnv,
     _class: JClass,
     function_reference_handle: jlong,
-    _params_data: jbyteArray,
-    _results_buffer: jbyteArray,
+    store_handle: jlong,
+    params_data: jbyteArray,
+    results_buffer: jbyteArray,
 ) -> jint {
-    jni_utils::jni_try_with_default(&mut env, -1, || {
-        if function_reference_handle == 0 {
-            return Err(WasmtimeError::InvalidParameter {
-                message: "Function reference handle cannot be null".to_string(),
-            });
-        }
+    // Validate inputs early
+    if function_reference_handle == 0 {
+        jni_utils::throw_jni_exception(
+            &mut env,
+            &WasmtimeError::invalid_parameter("Function reference handle cannot be null"),
+        );
+        return -1;
+    }
+    if store_handle == 0 {
+        jni_utils::throw_jni_exception(
+            &mut env,
+            &WasmtimeError::invalid_parameter("Store handle cannot be null"),
+        );
+        return -1;
+    }
 
-        // The actual call happens through the Java callback mechanism
-        // The Java side handles parameter/result marshalling through FUNCTION_REFERENCE_REGISTRY
-        Ok(0)
-    })
+    // Use local closure pattern (like nativeCall in function.rs) to avoid borrow conflicts
+    let result = (|| -> crate::error::WasmtimeResult<Vec<u8>> {
+        // Get the function from the reference registry
+        let func = crate::table::core::get_function_reference(function_reference_handle as u64)?
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!(
+                    "Function reference not found in registry: {}",
+                    function_reference_handle
+                ),
+            })?;
+
+        // Get the store
+        let store = unsafe {
+            crate::store::core::get_store_mut(store_handle as *mut std::os::raw::c_void)?
+        };
+
+        // Lock the store
+        let mut store_lock = store.try_lock_store()?;
+
+        // Get the function type for parameter/result info
+        let func_type = func.ty(&*store_lock);
+        let param_types: Vec<wasmtime::ValType> = func_type.params().collect();
+        let result_count = func_type.results().len();
+
+        // Unmarshal parameters from the byte array
+        let params = if !params_data.is_null() {
+            let params_bytes = env
+                .convert_byte_array(unsafe { jni::objects::JByteArray::from_raw(params_data) })
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to read parameter data: {}", e),
+                    backtrace: None,
+                })?;
+            unmarshal_params(&params_bytes, &param_types)?
+        } else {
+            Vec::new()
+        };
+
+        // Prepare result storage
+        let mut results = vec![wasmtime::Val::I32(0); result_count];
+
+        // Call the function
+        func.call(&mut *store_lock, &params, &mut results)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Function reference call trapped: {}", e),
+                backtrace: None,
+            })?;
+
+        // Marshal results
+        if result_count > 0 {
+            marshal_results(&results)
+        } else {
+            Ok(Vec::new())
+        }
+    })();
+
+    match result {
+        Ok(result_bytes) => {
+            // Write results back to the Java byte buffer
+            if !result_bytes.is_empty() && !results_buffer.is_null() {
+                let results_array = unsafe { jni::objects::JByteArray::from_raw(results_buffer) };
+                if let Err(e) = env.set_byte_array_region(&results_array, 0, unsafe {
+                    std::slice::from_raw_parts(
+                        result_bytes.as_ptr() as *const i8,
+                        result_bytes.len(),
+                    )
+                }) {
+                    jni_utils::throw_jni_exception(
+                        &mut env,
+                        &WasmtimeError::Runtime {
+                            message: format!("Failed to write result data: {}", e),
+                            backtrace: None,
+                        },
+                    );
+                    return -1;
+                }
+            }
+            0
+        }
+        Err(error) => {
+            jni_utils::throw_jni_exception(&mut env, &error);
+            -1
+        }
+    }
+}
+
+/// Unmarshal parameters from JniTypeConverter byte format to Wasmtime Val.
+///
+/// Format: Each value is 16 bytes: [type_tag(4 bytes LE) | value(12 bytes)]
+/// Type tags: 0=i32, 1=i64, 2=f32, 3=f64, 4=v128, 5=funcref, 6=externref
+fn unmarshal_params(
+    data: &[u8],
+    expected_types: &[wasmtime::ValType],
+) -> crate::error::WasmtimeResult<Vec<wasmtime::Val>> {
+    if data.is_empty() && expected_types.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let value_size = 16;
+    if data.len() < expected_types.len() * value_size {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "Parameter data too short: {} bytes for {} parameters",
+                data.len(),
+                expected_types.len()
+            ),
+        });
+    }
+
+    let mut vals = Vec::with_capacity(expected_types.len());
+    for (i, expected_type) in expected_types.iter().enumerate() {
+        let offset = i * value_size;
+        let type_tag = u32::from_le_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
+        let value_offset = offset + 4;
+
+        let val = match expected_type {
+            wasmtime::ValType::I32 => {
+                let v = i32::from_le_bytes([
+                    data[value_offset],
+                    data[value_offset + 1],
+                    data[value_offset + 2],
+                    data[value_offset + 3],
+                ]);
+                wasmtime::Val::I32(v)
+            }
+            wasmtime::ValType::I64 => {
+                let v = i64::from_le_bytes([
+                    data[value_offset],
+                    data[value_offset + 1],
+                    data[value_offset + 2],
+                    data[value_offset + 3],
+                    data[value_offset + 4],
+                    data[value_offset + 5],
+                    data[value_offset + 6],
+                    data[value_offset + 7],
+                ]);
+                wasmtime::Val::I64(v)
+            }
+            wasmtime::ValType::F32 => {
+                let bits = u32::from_le_bytes([
+                    data[value_offset],
+                    data[value_offset + 1],
+                    data[value_offset + 2],
+                    data[value_offset + 3],
+                ]);
+                wasmtime::Val::F32(bits)
+            }
+            wasmtime::ValType::F64 => {
+                let bits = u64::from_le_bytes([
+                    data[value_offset],
+                    data[value_offset + 1],
+                    data[value_offset + 2],
+                    data[value_offset + 3],
+                    data[value_offset + 4],
+                    data[value_offset + 5],
+                    data[value_offset + 6],
+                    data[value_offset + 7],
+                ]);
+                wasmtime::Val::F64(bits)
+            }
+            wasmtime::ValType::Ref(_) => {
+                // For funcref/externref, use null
+                if type_tag == 5 {
+                    wasmtime::Val::FuncRef(None)
+                } else {
+                    wasmtime::Val::null_extern_ref()
+                }
+            }
+            wasmtime::ValType::V128 => {
+                let mut bytes = [0u8; 16];
+                bytes[..12].copy_from_slice(&data[value_offset..value_offset + 12]);
+                wasmtime::Val::V128(wasmtime::V128::from(u128::from_le_bytes(bytes)))
+            }
+        };
+        vals.push(val);
+    }
+
+    Ok(vals)
+}
+
+/// Marshal results from Wasmtime Val to JniTypeConverter byte format.
+///
+/// Format: Each value is 16 bytes: [type_tag(4 bytes LE) | value(12 bytes)]
+fn marshal_results(results: &[wasmtime::Val]) -> crate::error::WasmtimeResult<Vec<u8>> {
+    let value_size = 16;
+    let mut data = vec![0u8; results.len() * value_size];
+
+    for (i, val) in results.iter().enumerate() {
+        let offset = i * value_size;
+        let value_offset = offset + 4;
+
+        match val {
+            wasmtime::Val::I32(v) => {
+                data[offset..offset + 4].copy_from_slice(&0u32.to_le_bytes());
+                data[value_offset..value_offset + 4].copy_from_slice(&v.to_le_bytes());
+            }
+            wasmtime::Val::I64(v) => {
+                data[offset..offset + 4].copy_from_slice(&1u32.to_le_bytes());
+                data[value_offset..value_offset + 8].copy_from_slice(&v.to_le_bytes());
+            }
+            wasmtime::Val::F32(v) => {
+                data[offset..offset + 4].copy_from_slice(&2u32.to_le_bytes());
+                data[value_offset..value_offset + 4].copy_from_slice(&v.to_le_bytes());
+            }
+            wasmtime::Val::F64(v) => {
+                data[offset..offset + 4].copy_from_slice(&3u32.to_le_bytes());
+                data[value_offset..value_offset + 8].copy_from_slice(&v.to_le_bytes());
+            }
+            wasmtime::Val::V128(v) => {
+                data[offset..offset + 4].copy_from_slice(&4u32.to_le_bytes());
+                let bytes = u128::from(*v).to_le_bytes();
+                data[value_offset..value_offset + 12].copy_from_slice(&bytes[..12]);
+            }
+            wasmtime::Val::FuncRef(_) => {
+                data[offset..offset + 4].copy_from_slice(&5u32.to_le_bytes());
+            }
+            wasmtime::Val::ExternRef(_) | wasmtime::Val::AnyRef(_) => {
+                data[offset..offset + 4].copy_from_slice(&6u32.to_le_bytes());
+            }
+            _ => {
+                data[offset..offset + 4].copy_from_slice(&6u32.to_le_bytes());
+            }
+        }
+    }
+
+    Ok(data)
 }
 
 /// Destroy a function reference (JNI version)

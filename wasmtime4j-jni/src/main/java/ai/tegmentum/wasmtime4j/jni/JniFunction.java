@@ -246,90 +246,6 @@ public final class JniFunction extends JniResource
   }
 
   /**
-   * Calls this function with integer parameters (optimized path).
-   *
-   * @param parameters the integer parameters
-   * @return the return value as an integer (0 if function returns void)
-   * @throws JniResourceException if parameters is null or this function is closed
-   * @throws RuntimeException if the call fails or types don't match
-   */
-  public int callInt(final int... parameters) {
-    Validation.requireNonNull(parameters, "parameters");
-    ensureUsable();
-
-    try {
-      return nativeCallInt(getNativeHandle(), parameters);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error calling function '" + name + "'", e);
-    }
-  }
-
-  /**
-   * Calls this function with long parameters (optimized path).
-   *
-   * @param parameters the long parameters
-   * @return the return value as a long (0 if function returns void)
-   * @throws JniResourceException if parameters is null or this function is closed
-   * @throws RuntimeException if the call fails or types don't match
-   */
-  public long callLong(final long... parameters) {
-    Validation.requireNonNull(parameters, "parameters");
-    ensureUsable();
-
-    try {
-      return nativeCallLong(getNativeHandle(), parameters);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error calling function '" + name + "'", e);
-    }
-  }
-
-  /**
-   * Calls this function with float parameters (optimized path).
-   *
-   * @param parameters the float parameters
-   * @return the return value as a float (0.0 if function returns void)
-   * @throws JniResourceException if parameters is null or this function is closed
-   * @throws RuntimeException if the call fails or types don't match
-   */
-  public float callFloat(final float... parameters) {
-    Validation.requireNonNull(parameters, "parameters");
-    ensureUsable();
-
-    try {
-      return nativeCallFloat(getNativeHandle(), parameters);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error calling function '" + name + "'", e);
-    }
-  }
-
-  /**
-   * Calls this function with double parameters (optimized path).
-   *
-   * @param parameters the double parameters
-   * @return the return value as a double (0.0 if function returns void)
-   * @throws JniResourceException if parameters is null or this function is closed
-   * @throws RuntimeException if the call fails or types don't match
-   */
-  public double callDouble(final double... parameters) {
-    Validation.requireNonNull(parameters, "parameters");
-    ensureUsable();
-
-    try {
-      return nativeCallDouble(getNativeHandle(), parameters);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error calling function '" + name + "'", e);
-    }
-  }
-
-  /**
    * Creates a typed function wrapper with the specified signature.
    *
    * <p>This method provides zero-cost typed function calls by eliminating runtime type checking
@@ -432,42 +348,6 @@ public final class JniFunction extends JniResource
    */
   private static native Object[] nativeCallMultiValue(
       long functionHandle, long storeHandle, Object[] parameters);
-
-  /**
-   * Calls a function with integer parameters (optimized).
-   *
-   * @param functionHandle the native function handle
-   * @param parameters the integer parameters
-   * @return the return value as an integer
-   */
-  private static native int nativeCallInt(long functionHandle, int[] parameters);
-
-  /**
-   * Calls a function with long parameters (optimized).
-   *
-   * @param functionHandle the native function handle
-   * @param parameters the long parameters
-   * @return the return value as a long
-   */
-  private static native long nativeCallLong(long functionHandle, long[] parameters);
-
-  /**
-   * Calls a function with float parameters (optimized).
-   *
-   * @param functionHandle the native function handle
-   * @param parameters the float parameters
-   * @return the return value as a float
-   */
-  private static native float nativeCallFloat(long functionHandle, float[] parameters);
-
-  /**
-   * Calls a function with double parameters (optimized).
-   *
-   * @param functionHandle the native function handle
-   * @param parameters the double parameters
-   * @return the return value as a double
-   */
-  private static native double nativeCallDouble(long functionHandle, double[] parameters);
 
   /**
    * Converts this function to its raw funcref pointer value.

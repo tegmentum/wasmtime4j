@@ -88,26 +88,60 @@ public interface ImportMap {
    * @return a new empty ImportMap
    */
   static ImportMap empty() {
-    // Use the same runtime selection pattern as WasmRuntimeFactory
-    try {
-      // First try Panama implementation
-      final Class<?> panamaClass = Class.forName("ai.tegmentum.wasmtime4j.panama.PanamaImportMap");
-      return (ImportMap) panamaClass.getDeclaredConstructor().newInstance();
-    } catch (final ClassNotFoundException e) {
-      // Panama not available, try JNI implementation
-      try {
-        final Class<?> jniClass = Class.forName("ai.tegmentum.wasmtime4j.jni.JniImportMap");
-        return (ImportMap) jniClass.getDeclaredConstructor().newInstance();
-      } catch (final ClassNotFoundException e2) {
-        // No specific implementation found, use Panama as fallback since it's more universal
-        throw new RuntimeException(
-            "No ImportMap implementation available. Ensure wasmtime4j-panama or wasmtime4j-jni is"
-                + " on the classpath.");
-      } catch (final Exception e2) {
-        throw new RuntimeException("Failed to create JNI ImportMap instance", e2);
+    return new ImportMap() {
+      private final java.util.Map<String, java.util.Map<String, Object>> imports =
+          new java.util.HashMap<>();
+
+      @Override
+      public ImportMap addFunction(
+          final String moduleName, final String name, final WasmFunction function) {
+        imports.computeIfAbsent(moduleName, k -> new java.util.HashMap<>()).put(name, function);
+        return this;
       }
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to create Panama ImportMap instance", e);
-    }
+
+      @Override
+      public ImportMap addMemory(
+          final String moduleName, final String name, final WasmMemory memory) {
+        imports.computeIfAbsent(moduleName, k -> new java.util.HashMap<>()).put(name, memory);
+        return this;
+      }
+
+      @Override
+      public ImportMap addGlobal(
+          final String moduleName, final String name, final WasmGlobal global) {
+        imports.computeIfAbsent(moduleName, k -> new java.util.HashMap<>()).put(name, global);
+        return this;
+      }
+
+      @Override
+      public ImportMap addTable(final String moduleName, final String name, final WasmTable table) {
+        imports.computeIfAbsent(moduleName, k -> new java.util.HashMap<>()).put(name, table);
+        return this;
+      }
+
+      @Override
+      public Optional<WasmFunction> getFunction(final String moduleName, final String name) {
+        final java.util.Map<String, Object> moduleImports = imports.get(moduleName);
+        if (moduleImports == null) {
+          return Optional.empty();
+        }
+        final Object obj = moduleImports.get(name);
+        if (obj instanceof WasmFunction) {
+          return Optional.of((WasmFunction) obj);
+        }
+        return Optional.empty();
+      }
+
+      @Override
+      public java.util.Map<String, java.util.Map<String, Object>> getImports() {
+        return imports;
+      }
+
+      @Override
+      public boolean contains(final String moduleName, final String name) {
+        final java.util.Map<String, Object> moduleImports = imports.get(moduleName);
+        return moduleImports != null && moduleImports.containsKey(name);
+      }
+    };
   }
 }

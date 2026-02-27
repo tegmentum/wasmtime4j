@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.gc.ExnType;
 import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import java.util.Arrays;
@@ -112,6 +113,21 @@ class ThrownExceptionTest {
     @Override
     public long getNativeHandle() {
       return 0;
+    }
+
+    @Override
+    public WasmValue field(final Store store, final int index) {
+      return null;
+    }
+
+    @Override
+    public java.util.List<WasmValue> fields(final Store store) {
+      return java.util.Collections.emptyList();
+    }
+
+    @Override
+    public ExnType ty(final Store store) {
+      return null;
     }
 
     @Override

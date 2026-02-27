@@ -41,38 +41,6 @@ JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nati
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
- * Method:    nativeCallInt
- * Signature: (J[I)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallInt
-  (JNIEnv *, jclass, jlong, jintArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
- * Method:    nativeCallLong
- * Signature: (J[J)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallLong
-  (JNIEnv *, jclass, jlong, jlongArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
- * Method:    nativeCallFloat
- * Signature: (J[F)F
- */
-JNIEXPORT jfloat JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallFloat
-  (JNIEnv *, jclass, jlong, jfloatArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
- * Method:    nativeCallDouble
- * Signature: (J[D)D
- */
-JNIEXPORT jdouble JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallDouble
-  (JNIEnv *, jclass, jlong, jdoubleArray);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
  * Method:    nativeFuncToRaw
  * Signature: (JJ)J
  */

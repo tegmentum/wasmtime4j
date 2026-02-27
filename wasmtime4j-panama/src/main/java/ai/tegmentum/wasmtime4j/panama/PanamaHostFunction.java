@@ -850,15 +850,30 @@ public final class PanamaHostFunction implements WasmFunction {
 
       // Check if this is a caller-aware host function
       if (hostFunction.implementation instanceof HostFunction.CallerAwareHostFunction) {
-        // Create caller context if available
-        // TODO: Caller handle not yet available in Panama implementation
-        // For now, execute without caller context
-        if (hostFunction.storeRef != null && hostFunction.storeRef.get() != null) {
+        final PanamaStore store =
+            hostFunction.storeRef != null ? hostFunction.storeRef.get() : null;
+        if (store != null) {
+          final long storeAddress = store.getNativeStore().address();
+          if (storeAddress != 0) {
+            final PanamaCaller<?> caller = new PanamaCaller<>(storeAddress, store);
+            CALLER_CONTEXT.set(caller);
+            try {
+              wasmResults = hostFunction.implementation.execute(wasmParams);
+            } finally {
+              CALLER_CONTEXT.remove();
+            }
+          } else {
+            logger.warning(
+                "Store native handle is null for caller-aware function: "
+                    + hostFunction.functionName);
+            wasmResults = hostFunction.callback.execute(wasmParams);
+          }
+        } else {
           logger.warning(
-              "Caller context requested but not yet implemented for Panama: "
+              "Store reference not available for caller-aware function: "
                   + hostFunction.functionName);
+          wasmResults = hostFunction.callback.execute(wasmParams);
         }
-        wasmResults = hostFunction.callback.execute(wasmParams);
       } else {
         // Regular host function without caller context
         wasmResults = hostFunction.callback.execute(wasmParams);

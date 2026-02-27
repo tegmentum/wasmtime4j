@@ -26,10 +26,10 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_na
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniFunctionReference
  * Method:    nativeCallFunctionReference
- * Signature: (J[B[B)I
+ * Signature: (JJ[B[B)I
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeCallFunctionReference
-  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+  (JNIEnv *, jclass, jlong, jlong, jbyteArray, jbyteArray);
 
 #ifdef __cplusplus
 }

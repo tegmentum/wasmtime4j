@@ -273,6 +273,15 @@ public final class JniFunctionReference extends JniResource implements FunctionR
    * @throws WasmException if the call fails
    */
   private WasmValue[] callNative(final WasmValue[] params) throws WasmException {
+    final JniStore store = storeRef.get();
+    if (store == null) {
+      throw new WasmException(
+          "Store has been garbage collected for function reference: " + functionName);
+    }
+    if (store.isClosed()) {
+      throw new WasmException("Store is closed for function reference: " + functionName);
+    }
+
     try {
       // Marshal parameters to native format
       final byte[] paramData = JniTypeConverter.marshalParameters(params);
@@ -281,8 +290,10 @@ public final class JniFunctionReference extends JniResource implements FunctionR
       final int resultCount = functionType.getReturnTypes().length;
       final byte[] resultBuffer = new byte[resultCount * 16]; // 16 bytes per value (worst case)
 
-      // Call native function
-      final int result = nativeCallFunctionReference(getNativeHandle(), paramData, resultBuffer);
+      // Call native function with store handle for access to the store context
+      final int result =
+          nativeCallFunctionReference(
+              getNativeHandle(), store.getNativeHandle(), paramData, resultBuffer);
       if (result != 0) {
         throw new WasmException("Native function reference call failed with code: " + result);
       }
@@ -290,6 +301,8 @@ public final class JniFunctionReference extends JniResource implements FunctionR
       // Unmarshal results from native format
       return JniTypeConverter.unmarshalResults(resultBuffer, functionType.getReturnTypes());
 
+    } catch (WasmException e) {
+      throw e;
     } catch (Exception e) {
       throw new WasmException("Failed to call function reference: " + functionName, e);
     }
@@ -543,13 +556,14 @@ public final class JniFunctionReference extends JniResource implements FunctionR
   /**
    * Calls a function reference through native code.
    *
-   * @param functionReferenceHandle the native function reference handle
+   * @param functionReferenceHandle the native function reference handle (registry ID)
+   * @param storeHandle the native store handle for function call context
    * @param paramsData marshalled parameter data
    * @param resultsBuffer buffer to write results to
    * @return 0 on success, error code on failure
    */
   private static native int nativeCallFunctionReference(
-      long functionReferenceHandle, byte[] paramsData, byte[] resultsBuffer);
+      long functionReferenceHandle, long storeHandle, byte[] paramsData, byte[] resultsBuffer);
 
   @Override
   public String toString() {
