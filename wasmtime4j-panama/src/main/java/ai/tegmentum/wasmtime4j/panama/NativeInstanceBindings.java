@@ -1214,7 +1214,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Calls a WebAssembly function asynchronously.
+   * Calls a WebAssembly function asynchronously using callback pattern.
    *
    * @param instancePtr pointer to the instance
    * @param functionName pointer to function name string
@@ -1243,6 +1243,40 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         timeoutMs,
         callback,
         userData);
+  }
+
+  /**
+   * Calls a WebAssembly function using Wasmtime's native async call path.
+   *
+   * <p>Uses {@code Func::call_async} via the async runtime, blocking the current thread but
+   * enabling proper async host function interleaving.
+   *
+   * @param funcPtr pointer to the function
+   * @param storePtr pointer to the store
+   * @param paramsPtr pointer to parameters array (WasmValue format)
+   * @param paramCount number of parameters
+   * @param resultsPtr pointer to results buffer (WasmValue format)
+   * @param maxResults maximum number of results
+   * @return actual result count on success, negative value on failure
+   */
+  public long funcCallNativeAsync(
+      final MemorySegment funcPtr,
+      final MemorySegment storePtr,
+      final MemorySegment paramsPtr,
+      final long paramCount,
+      final MemorySegment resultsPtr,
+      final long maxResults) {
+    validatePointer(funcPtr, "funcPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_call_async",
+        Long.class,
+        funcPtr,
+        storePtr,
+        paramsPtr,
+        paramCount,
+        resultsPtr,
+        maxResults);
   }
 
   // =============================================================================

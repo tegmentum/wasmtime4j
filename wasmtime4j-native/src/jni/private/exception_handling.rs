@@ -487,10 +487,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeCreate<'
 
         // Create ExnRefPre from the tag's type
         let tag_type = tag.ty(&*store_guard);
-        let exn_type = ExnType::from_tag_type(&tag_type).map_err(|e| {
-            WasmtimeError::Internal {
-                message: format!("Failed to create ExnType from TagType: {}", e),
-            }
+        let exn_type = ExnType::from_tag_type(&tag_type).map_err(|e| WasmtimeError::Internal {
+            message: format!("Failed to create ExnType from TagType: {}", e),
         })?;
         let allocator = ExnRefPre::new(&mut *store_guard, exn_type);
 
@@ -503,11 +501,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeCreate<'
         })?;
 
         // Convert to OwnedRooted and box for FFI
-        let owned = exnref.to_owned_rooted(&mut scope).map_err(|e| {
-            WasmtimeError::Internal {
+        let owned = exnref
+            .to_owned_rooted(&mut scope)
+            .map_err(|e| WasmtimeError::Internal {
                 message: format!("Failed to convert ExnRef to owned: {}", e),
-            }
-        })?;
+            })?;
 
         Ok(Box::into_raw(Box::new(owned)) as jlong)
     })
@@ -538,9 +536,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeToRaw(
 
         let mut scope = RootScope::new(&mut *store_guard);
         let exnref = owned_exnref.to_rooted(&mut scope);
-        let raw = exnref.to_raw(&mut scope).map_err(|e| WasmtimeError::Internal {
-            message: format!("Failed to convert ExnRef to raw: {}", e),
-        })?;
+        let raw = exnref
+            .to_raw(&mut scope)
+            .map_err(|e| WasmtimeError::Internal {
+                message: format!("Failed to convert ExnRef to raw: {}", e),
+            })?;
 
         Ok(raw as jlong)
     })
@@ -565,11 +565,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeFromRaw(
         let mut scope = RootScope::new(&mut *store_guard);
         match ExnRef::from_raw(&mut scope, raw as u32) {
             Some(rooted) => {
-                let owned = rooted.to_owned_rooted(&mut scope).map_err(|e| {
-                    WasmtimeError::Internal {
-                        message: format!("Failed to convert ExnRef to owned: {}", e),
-                    }
-                })?;
+                let owned =
+                    rooted
+                        .to_owned_rooted(&mut scope)
+                        .map_err(|e| WasmtimeError::Internal {
+                            message: format!("Failed to convert ExnRef to owned: {}", e),
+                        })?;
                 Ok(Box::into_raw(Box::new(owned)) as jlong)
             }
             None => Ok(0),

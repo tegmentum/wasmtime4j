@@ -806,6 +806,116 @@ public final class PanamaInstance implements Instance {
   }
 
   /**
+   * Checks if this instance's store has async support enabled.
+   *
+   * @return true if the store supports async operations
+   */
+  boolean isAsync() {
+    return store != null && store.isAsync();
+  }
+
+  /**
+   * Calls a function using Wasmtime's native async call path.
+   *
+   * <p>Gets the function handle by name, calls it via {@code Func::call_async}, and frees the
+   * handle. This enables proper async host function interleaving for stores configured with async
+   * support.
+   *
+   * @param functionName the function name
+   * @param params the parameters to pass
+   * @return the results
+   * @throws WasmException if the call fails
+   */
+  public WasmValue[] callFunctionAsync(final String functionName, final WasmValue... params)
+      throws WasmException {
+    if (functionName == null) {
+      throw new IllegalArgumentException("Function name cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
+      // Get function handle by name
+      final java.lang.foreign.MemorySegment funcPtrOut =
+          arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+      final java.lang.foreign.MemorySegment nameSegment =
+          arena.allocateFrom(functionName, java.nio.charset.StandardCharsets.UTF_8);
+
+      final int getResult =
+          NATIVE_INSTANCE_BINDINGS.funcGet(
+              nativeInstance, store.getNativeStore(), nameSegment, funcPtrOut);
+      if (getResult != 0) {
+        throw new WasmException("Failed to get function '" + functionName + "' for async call");
+      }
+
+      final java.lang.foreign.MemorySegment funcHandle =
+          funcPtrOut.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
+      if (funcHandle == null
+          || funcHandle.equals(java.lang.foreign.MemorySegment.NULL)
+          || funcHandle.address() == 0) {
+        throw new WasmException("Function '" + functionName + "' not found");
+      }
+
+      try {
+        // Use max results buffer (same as callFunction)
+        final int maxResults = 32;
+
+        // Marshal parameters
+        final int paramCount = (params != null) ? params.length : 0;
+        final java.lang.foreign.MemorySegment paramsSegment;
+        if (paramCount > 0) {
+          paramsSegment =
+              arena.allocate(
+                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
+                  java.lang.foreign.ValueLayout.JAVA_INT.byteAlignment());
+          for (int i = 0; i < paramCount; i++) {
+            WasmValueMarshaller.marshalWasmValue(
+                params[i], paramsSegment, i, this::registerExternRef);
+          }
+        } else {
+          paramsSegment = java.lang.foreign.MemorySegment.NULL;
+        }
+
+        // Allocate results buffer
+        final java.lang.foreign.MemorySegment resultsSegment =
+            arena.allocate(
+                (long) WasmValueMarshaller.WASM_VALUE_SIZE * maxResults,
+                java.lang.foreign.ValueLayout.JAVA_INT.byteAlignment());
+
+        // Call async - returns result count on success, negative on error
+        final long resultCount =
+            NATIVE_INSTANCE_BINDINGS.funcCallNativeAsync(
+                funcHandle,
+                store.getNativeStore(),
+                paramsSegment,
+                paramCount,
+                resultsSegment,
+                maxResults);
+
+        if (resultCount < 0) {
+          final String errorMsg =
+              ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new WasmException(
+              errorMsg != null
+                  ? errorMsg
+                  : "Async function call failed for '" + functionName + "'");
+        }
+
+        final int count = (int) resultCount;
+        final WasmValue[] results = new WasmValue[count];
+        for (int i = 0; i < count; i++) {
+          results[i] =
+              WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, EXTERN_REF_REGISTRY::get);
+        }
+        return results;
+
+      } finally {
+        // Always free the function handle
+        NATIVE_INSTANCE_BINDINGS.funcDestroy(funcHandle);
+      }
+    }
+  }
+
+  /**
    * Gets all exported function names.
    *
    * @return list of exported function names

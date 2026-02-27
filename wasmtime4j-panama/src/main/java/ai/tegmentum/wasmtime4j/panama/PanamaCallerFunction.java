@@ -230,14 +230,82 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
 
   @Override
   public java.util.concurrent.CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
+    final boolean useNativeAsync = store != null && store.isAsync();
     return java.util.concurrent.CompletableFuture.supplyAsync(
         () -> {
           try {
+            if (useNativeAsync) {
+              return callNativeAsync(params);
+            }
             return call(params);
           } catch (final WasmException e) {
             throw new RuntimeException(e);
           }
         });
+  }
+
+  /**
+   * Calls this function using Wasmtime's native async call path.
+   *
+   * @param params the parameters to pass
+   * @return the results
+   * @throws WasmException if the call fails
+   */
+  private WasmValue[] callNativeAsync(final WasmValue... params) throws WasmException {
+    if (params == null) {
+      throw new IllegalArgumentException("Parameters cannot be null");
+    }
+    ensureNotClosed();
+
+    try (final Arena arena = Arena.ofConfined()) {
+      final FunctionType funcType = getFunctionType();
+      final int paramCount = params.length;
+      final int resultCount = funcType.getReturnCount();
+
+      final MemorySegment paramsSegment =
+          paramCount > 0
+              ? arena.allocate(
+                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
+                  ValueLayout.JAVA_INT.byteAlignment())
+              : MemorySegment.NULL;
+      final MemorySegment resultsSegment =
+          resultCount > 0
+              ? arena.allocate(
+                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * resultCount,
+                  ValueLayout.JAVA_INT.byteAlignment())
+              : MemorySegment.NULL;
+
+      if (paramCount > 0) {
+        for (int i = 0; i < paramCount; i++) {
+          WasmValueMarshaller.marshalWasmValue(params[i], paramsSegment, i, null);
+        }
+      }
+
+      final MemorySegment storePtr = store.getNativeStore();
+      final long nativeResultCount =
+          bindings.funcCallNativeAsync(
+              funcHandle, storePtr, paramsSegment, paramCount, resultsSegment, resultCount);
+
+      if (nativeResultCount < 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            (int) nativeResultCount, "Async function call failed for '" + name + "'");
+      }
+
+      final int actualCount = (int) nativeResultCount;
+      if (actualCount > 0) {
+        final WasmValue[] results = new WasmValue[actualCount];
+        for (int i = 0; i < actualCount; i++) {
+          results[i] = WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, null);
+        }
+        return results;
+      }
+      return new WasmValue[0];
+
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Failed async call to function '" + name + "': " + e.getMessage(), e);
+    }
   }
 
   /** Closes the function and releases resources. */

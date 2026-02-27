@@ -134,6 +134,58 @@ pub extern "C" fn wasmtime4j_panama_func_call(
     })
 }
 
+/// Call WebAssembly function asynchronously (Panama FFI version)
+///
+/// Uses Wasmtime's `Func::call_async` via the async runtime, enabling proper
+/// async host function interleaving. Returns result count on success, negative on error.
+#[no_mangle]
+#[cfg(feature = "async")]
+pub extern "C" fn wasmtime4j_panama_func_call_async(
+    func_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    params_ptr: *const c_void,
+    param_count: usize,
+    results_ptr: *mut c_void,
+    max_results: usize,
+) -> isize {
+    if func_ptr.is_null() || store_ptr.is_null() {
+        return -1;
+    }
+
+    let result = (|| -> crate::error::WasmtimeResult<isize> {
+        let func = unsafe { core::get_function_ref(func_ptr)? };
+        let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+
+        // Convert parameters from C representation to Rust WasmValue
+        let params = if param_count > 0 {
+            unsafe { core::convert_params_from_ffi(params_ptr, param_count)? }
+        } else {
+            Vec::new()
+        };
+
+        // Call the function asynchronously
+        let results = core::call_function_async(func, store, &params)?;
+        let actual_count = results.len().min(max_results);
+
+        // Convert results back to C representation
+        if actual_count > 0 && !results_ptr.is_null() {
+            unsafe {
+                core::convert_results_to_ffi(&results, results_ptr, max_results)?;
+            }
+        }
+
+        Ok(actual_count as isize)
+    })();
+
+    match result {
+        Ok(count) => count,
+        Err(e) => {
+            ffi_utils::set_last_error(e);
+            -1
+        }
+    }
+}
+
 /// Get function type (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_func_type(

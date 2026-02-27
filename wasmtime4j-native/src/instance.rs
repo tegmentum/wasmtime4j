@@ -1900,6 +1900,43 @@ pub mod core {
             .collect::<Result<Vec<_>, _>>()
     }
 
+    /// Call function asynchronously with parameters and return results.
+    ///
+    /// Uses Wasmtime's `Func::call_async` via the async runtime's `block_on`.
+    /// This is required for stores configured with `async_support(true)`.
+    /// The call blocks the current thread but uses Wasmtime's async machinery
+    /// internally, allowing async host functions to suspend/yield properly.
+    #[cfg(feature = "async")]
+    pub fn call_function_async(
+        func: &wasmtime::Func,
+        store: &mut Store,
+        params: &[WasmValue],
+    ) -> WasmtimeResult<Vec<WasmValue>> {
+        // Convert WasmValue parameters to wasmtime::Val
+        let wasmtime_params: Vec<wasmtime::Val> = params
+            .iter()
+            .map(|param| wasm_value_to_wasmtime_val(param))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // Lock the store and call async via the runtime
+        let mut store_lock = store.try_lock_store()?;
+        let func_type = func.ty(&*store_lock);
+        let mut results = vec![wasmtime::Val::I32(0); func_type.results().len()];
+
+        let runtime = crate::async_runtime::get_async_runtime();
+        runtime
+            .block_on(func.call_async(&mut *store_lock, &wasmtime_params, &mut results))
+            .map_err(|e| WasmtimeError::Execution {
+                message: format!("Async function call failed: {}", e),
+            })?;
+
+        // Convert results back to WasmValue
+        results
+            .into_iter()
+            .map(|result| wasmtime_val_to_wasm_value(&result))
+            .collect::<Result<Vec<_>, _>>()
+    }
+
     /// Convert parameters from FFI representation (FfiWasmValue layout)
     pub unsafe fn convert_params_from_ffi(
         params_ptr: *const c_void,

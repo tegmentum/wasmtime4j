@@ -209,11 +209,12 @@ fn create_input_stream_pollable(context: &WasiContext, stream_id: u64) -> Wasmti
         .next_operation_id
         .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
     let pollable = crate::wasi_preview2::WasiPollable::new(pollable_id, stream_id);
-    let mut pollables = context.pollables.write().map_err(|e| {
-        WasmtimeError::Concurrency {
+    let mut pollables = context
+        .pollables
+        .write()
+        .map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock pollable registry for write: {}", e),
-        }
-    })?;
+        })?;
     pollables.insert(pollable_id, pollable);
     Ok(pollable_id as u64)
 }
@@ -676,11 +677,12 @@ fn create_output_stream_pollable(context: &WasiContext, stream_id: u64) -> Wasmt
         .next_operation_id
         .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
     let pollable = crate::wasi_preview2::WasiPollable::new(pollable_id, stream_id);
-    let mut pollables = context.pollables.write().map_err(|e| {
-        WasmtimeError::Concurrency {
+    let mut pollables = context
+        .pollables
+        .write()
+        .map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock pollable registry for write: {}", e),
-        }
-    })?;
+        })?;
     pollables.insert(pollable_id, pollable);
     Ok(pollable_id as u64)
 }
@@ -781,11 +783,12 @@ fn block_on_pollable(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<
 }
 
 fn check_pollable_ready(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<bool> {
-    let pollables = context.pollables.read().map_err(|e| {
-        WasmtimeError::Concurrency {
+    let pollables = context
+        .pollables
+        .read()
+        .map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock pollable registry for read: {}", e),
-        }
-    })?;
+        })?;
 
     if let Some(pollable) = pollables.get(&(pollable_id as u32)) {
         if pollable.is_ready() {
@@ -806,11 +809,12 @@ fn check_pollable_ready(context: &WasiContext, pollable_id: u64) -> WasmtimeResu
 }
 
 fn close_pollable(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<()> {
-    let mut pollables = context.pollables.write().map_err(|e| {
-        WasmtimeError::Concurrency {
+    let mut pollables = context
+        .pollables
+        .write()
+        .map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock pollable registry for write: {}", e),
-        }
-    })?;
+        })?;
     pollables.remove(&(pollable_id as u32));
     Ok(())
 }

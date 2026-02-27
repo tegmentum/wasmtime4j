@@ -1722,8 +1722,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeLinkerIt
     // Step 1: Get definitions from native linker (no env needed)
     let definitions = match (|| -> WasmtimeResult<Vec<(String, String, i32)>> {
         let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
-        let store =
-            unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
         linker_core::iter_definitions(linker, store)
     })() {
         Ok(defs) => defs,

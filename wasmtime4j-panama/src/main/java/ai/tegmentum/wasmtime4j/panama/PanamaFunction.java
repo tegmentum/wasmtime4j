@@ -89,9 +89,13 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
 
   @Override
   public java.util.concurrent.CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
+    final boolean useNativeAsync = instance.isAsync();
     return java.util.concurrent.CompletableFuture.supplyAsync(
         () -> {
           try {
+            if (useNativeAsync) {
+              return instance.callFunctionAsync(name, params);
+            }
             return call(params);
           } catch (final WasmException e) {
             throw new RuntimeException(e);

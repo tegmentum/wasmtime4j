@@ -11,11 +11,11 @@ use crate::interop::ReentrantLock;
 use crate::module::Module;
 use once_cell::sync::Lazy;
 use std::ffi::CString;
+use std::future::Future;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 #[cfg(feature = "wasi-http")]
 use wasmtime::component::ResourceTable;
-use std::future::Future;
 use wasmtime::{
     AsContext, AsContextMut, CallHook, DebugEvent, DebugHandler, Func, FuncType,
     Store as WasmtimeStore, StoreContext, StoreContextMut, StoreLimits as WasmtimeStoreLimits,

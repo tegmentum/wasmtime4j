@@ -231,18 +231,59 @@ public final class JniFunction extends JniResource
   /**
    * Calls this function asynchronously with the given parameters.
    *
+   * <p>When the store has async support enabled, this uses Wasmtime's native {@code
+   * Func::call_async} which enables proper async host function interleaving. For non-async stores,
+   * the synchronous {@link #call(WasmValue...)} is run on the ForkJoinPool.
+   *
    * @param params the parameters to pass to the function
    * @return a CompletableFuture containing the results
    */
   public CompletableFuture<WasmValue[]> callAsync(final WasmValue... params) {
+    final boolean useNativeAsync = store != null && store.isAsync();
     return CompletableFuture.supplyAsync(
         () -> {
           try {
+            if (useNativeAsync) {
+              return callNativeAsync(params);
+            }
             return call(params);
           } catch (final WasmException e) {
             throw new RuntimeException(e);
           }
         });
+  }
+
+  /**
+   * Internal method that calls the native async function binding.
+   *
+   * @param params the parameters to pass to the function
+   * @return the results returned by the function
+   * @throws WasmException if function execution fails
+   */
+  private WasmValue[] callNativeAsync(final WasmValue... params) throws WasmException {
+    Validation.requireNonNull(params, "parameters");
+    ensureUsable();
+
+    try {
+      final FunctionType functionType = getFunctionType();
+      JniTypeConverter.validateParameterTypes(params, functionType.getParamTypes());
+      final Object[] nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
+
+      final Object[] nativeResults =
+          nativeCallAsync(getNativeHandle(), store.getNativeHandle(), nativeParams);
+      if (nativeResults == null) {
+        throw new WasmException("Native async function call returned null for '" + name + "'");
+      }
+
+      return JniTypeConverter.nativeResultsToWasmValues(
+          nativeResults, functionType.getReturnTypes());
+    } catch (final IllegalArgumentException e) {
+      throw new WasmException("Parameter validation failed for async function '" + name + "'", e);
+    } catch (final RuntimeException e) {
+      throw new WasmException("Native async function call failed for '" + name + "'", e);
+    } catch (final Exception e) {
+      throw new WasmException("Unexpected error in async function call '" + name + "'", e);
+    }
   }
 
   /**
@@ -366,4 +407,18 @@ public final class JniFunction extends JniResource
    * @return the native function handle, or 0 if invalid
    */
   static native long nativeFuncFromRaw(long storeHandle, long raw);
+
+  /**
+   * Calls a function asynchronously using Wasmtime's native async runtime.
+   *
+   * <p>Uses {@code Func::call_async} via the Tokio runtime, enabling proper async host function
+   * interleaving. Requires the store to have been created with async support enabled.
+   *
+   * @param functionHandle the native function handle
+   * @param storeHandle the native store handle
+   * @param parameters the function parameters as WasmValue objects
+   * @return array of return values (never null, may be empty)
+   */
+  private static native Object[] nativeCallAsync(
+      long functionHandle, long storeHandle, Object[] parameters);
 }

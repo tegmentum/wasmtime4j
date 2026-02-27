@@ -503,9 +503,8 @@ pub extern "C" fn wasmtime4j_panama_exnref_create(
             // Build field values from FFI arrays
             let mut fields = Vec::with_capacity(field_count as usize);
             if field_count > 0 && !field_types_ptr.is_null() {
-                let types = unsafe {
-                    std::slice::from_raw_parts(field_types_ptr, field_count as usize)
-                };
+                let types =
+                    unsafe { std::slice::from_raw_parts(field_types_ptr, field_count as usize) };
                 let i64_vals = if field_i64_values_ptr.is_null() {
                     &[] as &[i64]
                 } else {

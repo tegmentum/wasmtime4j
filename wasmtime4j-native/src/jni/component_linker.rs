@@ -1811,7 +1811,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
         }
     };
 
-    if let Err(e) = component_linker_core::define_module(linker, &instance_path_str, &name_str, module) {
+    if let Err(e) =
+        component_linker_core::define_module(linker, &instance_path_str, &name_str, module)
+    {
         jni_utils::throw_jni_exception(&mut env, &e);
         return;
     }

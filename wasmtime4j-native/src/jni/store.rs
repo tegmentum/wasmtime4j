@@ -456,7 +456,10 @@ fn jni_debug_callback_dispatch(callback_id: i64, event_code: i32) {
             }
         };
         match callbacks.get(&callback_id) {
-            Some(ctx) => (ctx.jvm.clone(), ctx.jni_store_global.as_obj().as_raw() as usize),
+            Some(ctx) => (
+                ctx.jvm.clone(),
+                ctx.jni_store_global.as_obj().as_raw() as usize,
+            ),
             None => {
                 log::warn!("No JNI debug callback found for ID: {}", callback_id);
                 return;

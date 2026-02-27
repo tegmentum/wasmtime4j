@@ -108,11 +108,12 @@ fn create_stream_pollable(context: &WasiContext, stream_id: u64) -> WasmtimeResu
         .next_operation_id
         .fetch_add(1, std::sync::atomic::Ordering::SeqCst) as u32;
     let pollable = crate::wasi_preview2::WasiPollable::new(pollable_id, stream_id);
-    let mut pollables = context.pollables.write().map_err(|e| {
-        WasmtimeError::Concurrency {
+    let mut pollables = context
+        .pollables
+        .write()
+        .map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock pollable registry for write: {}", e),
-        }
-    })?;
+        })?;
     pollables.insert(pollable_id, pollable);
     Ok(pollable_id as u64)
 }
@@ -123,11 +124,12 @@ fn create_stream_pollable(context: &WasiContext, stream_id: u64) -> WasmtimeResu
 /// stream is open and not closed. For timer pollables, readiness is based
 /// on elapsed time.
 fn check_pollable_ready(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<bool> {
-    let pollables = context.pollables.read().map_err(|e| {
-        WasmtimeError::Concurrency {
+    let pollables = context
+        .pollables
+        .read()
+        .map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock pollable registry for read: {}", e),
-        }
-    })?;
+        })?;
 
     if let Some(pollable) = pollables.get(&(pollable_id as u32)) {
         // Check timer-based readiness first
@@ -156,7 +158,8 @@ fn block_on_pollable(
     pollable_id: u64,
     timeout: Option<u64>,
 ) -> WasmtimeResult<()> {
-    let deadline = timeout.map(|ms| std::time::Instant::now() + std::time::Duration::from_millis(ms));
+    let deadline =
+        timeout.map(|ms| std::time::Instant::now() + std::time::Duration::from_millis(ms));
     loop {
         match check_pollable_ready(context, pollable_id) {
             Ok(true) => return Ok(()),
@@ -176,11 +179,12 @@ fn block_on_pollable(
 
 /// Close a pollable by removing it from the registry.
 fn close_pollable(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<()> {
-    let mut pollables = context.pollables.write().map_err(|e| {
-        WasmtimeError::Concurrency {
+    let mut pollables = context
+        .pollables
+        .write()
+        .map_err(|e| WasmtimeError::Concurrency {
             message: format!("Failed to lock pollable registry for write: {}", e),
-        }
-    })?;
+        })?;
     pollables.remove(&(pollable_id as u32));
     Ok(())
 }
