@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -62,16 +63,20 @@ public interface ResourceTable {
   /**
    * Removes a resource entry from the table and returns it.
    *
-   * <p>After removal, the index is no longer valid and may be reused for future entries.
+   * <p>After removal, the index is no longer valid and may be reused for future entries. If the
+   * entry has outstanding child resources (created via {@link #pushChild}), the deletion will fail
+   * with a {@link ai.tegmentum.wasmtime4j.exception.ResourceTableException} to prevent orphaned
+   * children.
    *
    * @param <T> the expected type of the resource entry
    * @param index the resource handle index
    * @param clazz the expected class of the entry
    * @return an Optional containing the removed entry, or empty if the index was invalid
+   * @throws WasmException if the entry has outstanding children
    * @throws ClassCastException if the entry is not of the expected type
    * @throws IllegalArgumentException if clazz is null
    */
-  <T> Optional<T> delete(int index, Class<T> clazz);
+  <T> Optional<T> delete(int index, Class<T> clazz) throws WasmException;
 
   /**
    * Checks if a resource entry exists at the given index.
@@ -87,4 +92,38 @@ public interface ResourceTable {
    * @return the number of entries
    */
   int size();
+
+  /**
+   * Checks if the resource table is empty.
+   *
+   * @return true if the table contains no entries
+   */
+  default boolean isEmpty() {
+    return size() == 0;
+  }
+
+  /**
+   * Pushes a new child entry into the resource table under the given parent.
+   *
+   * <p>The child entry is associated with the parent so that the parent cannot be deleted while it
+   * has outstanding children. This mirrors Wasmtime's {@code ResourceTable::push_child} method.
+   *
+   * @param entry the host object to store as a child resource
+   * @param parentHandle the handle of the parent resource
+   * @return the resource handle index for the new child entry
+   * @throws WasmException if the parent handle is invalid or the table is full
+   * @throws IllegalArgumentException if entry is null
+   */
+  int pushChild(Object entry, int parentHandle) throws WasmException;
+
+  /**
+   * Returns the handles of all child resources associated with the given parent.
+   *
+   * <p>This mirrors Wasmtime's {@code ResourceTable::iter_children} method.
+   *
+   * @param parentHandle the handle of the parent resource
+   * @return a list of child resource handles (empty if no children or parent not found)
+   * @throws WasmException if the parent handle is invalid
+   */
+  List<Integer> iterChildren(int parentHandle) throws WasmException;
 }
