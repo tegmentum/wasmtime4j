@@ -7,6 +7,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.gc.ExnType;
 import ai.tegmentum.wasmtime4j.memory.Tag;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.type.HeapType;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.ValueLayout;
@@ -167,6 +168,126 @@ public final class PanamaExnRef implements ExnRef {
       return false;
     }
     return NATIVE_BINDINGS.exnRefIsValid(nativeHandle, storeHandle) != 0;
+  }
+
+  @Override
+  public long toRaw(final Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final long raw = NATIVE_BINDINGS.exnRefToRaw(nativeHandle, panamaStore.getNativeStore());
+    if (raw < 0) {
+      throw new WasmException("Failed to convert ExnRef to raw representation");
+    }
+    return raw;
+  }
+
+  @Override
+  public boolean matchesTy(final Store store, final HeapType heapType) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (heapType == null) {
+      throw new IllegalArgumentException("heapType cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final int result =
+        NATIVE_BINDINGS.exnRefMatchesTy(
+            nativeHandle, panamaStore.getNativeStore(), heapType.ordinal());
+    if (result < 0) {
+      throw new WasmException("Failed to check ExnRef type match");
+    }
+    return result == 1;
+  }
+
+  /**
+   * Creates a new PanamaExnRef from a tag and field values.
+   *
+   * @param store the Panama store
+   * @param tag the exception tag
+   * @param fields the field values
+   * @return a new PanamaExnRef
+   * @throws WasmException if creation fails
+   */
+  static PanamaExnRef createExnRef(final PanamaStore store, final Tag tag, final WasmValue[] fields)
+      throws WasmException {
+    final int fieldCount = fields.length;
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment fieldTypes = arena.allocate(ValueLayout.JAVA_INT, fieldCount);
+      final MemorySegment fieldI64Values = arena.allocate(ValueLayout.JAVA_LONG, fieldCount);
+      final MemorySegment fieldF64Values = arena.allocate(ValueLayout.JAVA_DOUBLE, fieldCount);
+
+      for (int i = 0; i < fieldCount; i++) {
+        final WasmValue val = fields[i];
+        switch (val.getType()) {
+          case I32:
+            fieldTypes.setAtIndex(ValueLayout.JAVA_INT, i, 0);
+            fieldI64Values.setAtIndex(ValueLayout.JAVA_LONG, i, val.asInt());
+            break;
+          case I64:
+            fieldTypes.setAtIndex(ValueLayout.JAVA_INT, i, 1);
+            fieldI64Values.setAtIndex(ValueLayout.JAVA_LONG, i, val.asLong());
+            break;
+          case F32:
+            fieldTypes.setAtIndex(ValueLayout.JAVA_INT, i, 2);
+            fieldF64Values.setAtIndex(ValueLayout.JAVA_DOUBLE, i, val.asFloat());
+            break;
+          case F64:
+            fieldTypes.setAtIndex(ValueLayout.JAVA_INT, i, 3);
+            fieldF64Values.setAtIndex(ValueLayout.JAVA_DOUBLE, i, val.asDouble());
+            break;
+          default:
+            throw new WasmException("Unsupported field type: " + val.getType());
+        }
+      }
+
+      final MemorySegment tagSegment =
+          MemorySegment.ofAddress(tag.getNativeHandle()).reinterpret(Long.BYTES);
+
+      final MemorySegment handle =
+          NATIVE_BINDINGS.exnRefCreate(
+              store.getNativeStore(),
+              tagSegment,
+              fieldCount,
+              fieldTypes,
+              fieldI64Values,
+              fieldF64Values);
+
+      if (handle == null || handle.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to create ExnRef");
+      }
+      return new PanamaExnRef(handle, store.getNativeStore());
+    }
+  }
+
+  /**
+   * Creates a PanamaExnRef from a raw representation.
+   *
+   * @param store the Panama store
+   * @param raw the raw u32 value
+   * @return a new PanamaExnRef, or null if raw is 0
+   * @throws WasmException if creation fails
+   */
+  static PanamaExnRef fromRawExnRef(final PanamaStore store, final long raw) throws WasmException {
+    final MemorySegment handle = NATIVE_BINDINGS.exnRefFromRaw(store.getNativeStore(), (int) raw);
+    if (handle == null || handle.equals(MemorySegment.NULL)) {
+      return null;
+    }
+    return new PanamaExnRef(handle, store.getNativeStore());
   }
 
   /** Closes this exception reference and releases native resources. */

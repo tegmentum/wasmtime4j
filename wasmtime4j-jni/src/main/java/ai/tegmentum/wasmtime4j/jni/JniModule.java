@@ -37,6 +37,15 @@ public class JniModule extends JniResource implements Module {
 
   @Override
   public String getName() {
+    ensureNotClosed();
+    try {
+      final String nativeName = nativeGetModuleName(nativeHandle);
+      if (nativeName != null) {
+        return nativeName;
+      }
+    } catch (final Exception e) {
+      // Fall through to synthetic name
+    }
     return "jni-module-" + nativeHandle;
   }
 
@@ -574,4 +583,30 @@ public class JniModule extends JniResource implements Module {
    * @return interleaved long array of address mappings, or null if not available
    */
   private native long[] nativeGetModuleAddressMap(long moduleHandle);
+
+  /**
+   * Native method to get the WASM module name from the custom name section.
+   *
+   * @param moduleHandle the native module handle
+   * @return the module name, or null if the module has no name section
+   */
+  private native String nativeGetModuleName(long moduleHandle);
+
+  /**
+   * Native method to validate WebAssembly bytecode using full Wasmtime validation.
+   *
+   * @param bytecode the WebAssembly bytecode to validate
+   * @return true if valid, false if invalid
+   */
+  private static native boolean nativeValidateModule(byte[] bytecode);
+
+  /**
+   * Validates WebAssembly bytecode using full Wasmtime validation.
+   *
+   * @param bytecode the WebAssembly bytecode to validate
+   * @return true if valid, false otherwise
+   */
+  static boolean validateModuleBytes(final byte[] bytecode) {
+    return nativeValidateModule(bytecode);
+  }
 }

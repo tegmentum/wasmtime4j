@@ -167,6 +167,22 @@ JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGe
 JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleAddressMap
   (JNIEnv *, jobject, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetModuleName
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleName
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeValidateModule
+ * Signature: ([B)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeValidateModule
+  (JNIEnv *, jclass, jbyteArray);
+
 #ifdef __cplusplus
 }
 #endif

@@ -793,6 +793,39 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   }
 
   @Override
+  public Iterable<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> iter(
+      final ai.tegmentum.wasmtime4j.Store store)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    final String[] result = nativeLinkerIter(nativeHandle, jniStore.getNativeHandle());
+
+    if (result == null) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException("Failed to iterate linker");
+    }
+
+    final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
+        new java.util.ArrayList<>(result.length / 3);
+    for (int i = 0; i < result.length; i += 3) {
+      final String moduleName = result[i];
+      final String itemName = result[i + 1];
+      final int typeCode = Integer.parseInt(result[i + 2]);
+      definitions.add(
+          new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
+              moduleName, itemName, ai.tegmentum.wasmtime4j.type.ExternType.fromCode(typeCode)));
+    }
+    return java.util.Collections.unmodifiableList(definitions);
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.Extern getByImport(
       final Store store, final String moduleName, final String name) {
     if (store == null) {
@@ -1314,6 +1347,8 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    * @return function handle or 0 if not found
    */
   private native long nativeGetDefault(long linkerHandle, long storeHandle, String moduleName);
+
+  private native String[] nativeLinkerIter(long linkerHandle, long storeHandle);
 
   /**
    * Gets the type of an extern value.

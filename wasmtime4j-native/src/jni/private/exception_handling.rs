@@ -420,6 +420,224 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeDestroy(
     }
 }
 
+/// JNI binding for JniExnRef.nativeCreate
+/// Creates a new ExnRef from a tag and field values.
+/// field_types is an int array of type codes, field_i64_values/field_f64_values are parallel value arrays.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeCreate<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass<'local>,
+    store_handle: jlong,
+    tag_handle: jlong,
+    field_types: JIntArray<'local>,
+    field_i64_values: jni::objects::JLongArray<'local>,
+    field_f64_values: jni::objects::JDoubleArray<'local>,
+) -> jlong {
+    // Extract JNI arrays outside the closure to avoid borrow conflicts
+    let type_len = env.get_array_length(&field_types).unwrap_or(0) as usize;
+    let mut type_codes = vec![0i32; type_len];
+    let mut i64_vals = vec![0i64; type_len];
+    let mut f64_vals = vec![0.0f64; type_len];
+
+    if type_len > 0 {
+        if env
+            .get_int_array_region(&field_types, 0, &mut type_codes)
+            .is_err()
+        {
+            return 0;
+        }
+        if env
+            .get_long_array_region(&field_i64_values, 0, &mut i64_vals)
+            .is_err()
+        {
+            return 0;
+        }
+        if env
+            .get_double_array_region(&field_f64_values, 0, &mut f64_vals)
+            .is_err()
+        {
+            return 0;
+        }
+    }
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use wasmtime::{ExnRef, ExnRefPre, ExnType, RootScope, Val};
+
+        let store =
+            unsafe { crate::store::core::get_store_ref(store_handle as *const std::ffi::c_void)? };
+        let tag = unsafe { &*(tag_handle as *const wasmtime::Tag) };
+        let mut store_guard = store.try_lock_store()?;
+
+        // Build field values from extracted arrays
+        let mut fields = Vec::with_capacity(type_len);
+        for i in 0..type_len {
+            let val = match type_codes[i] {
+                0 => Val::I32(i64_vals[i] as i32),
+                1 => Val::I64(i64_vals[i]),
+                2 => Val::F32((f64_vals[i] as f32).to_bits()),
+                3 => Val::F64(f64_vals[i].to_bits()),
+                _ => {
+                    return Err(WasmtimeError::Internal {
+                        message: format!("Unsupported field type code: {}", type_codes[i]),
+                    });
+                }
+            };
+            fields.push(val);
+        }
+
+        // Create ExnRefPre from the tag's type
+        let tag_type = tag.ty(&*store_guard);
+        let exn_type = ExnType::from_tag_type(&tag_type).map_err(|e| {
+            WasmtimeError::Internal {
+                message: format!("Failed to create ExnType from TagType: {}", e),
+            }
+        })?;
+        let allocator = ExnRefPre::new(&mut *store_guard, exn_type);
+
+        // Create the ExnRef
+        let mut scope = RootScope::new(&mut *store_guard);
+        let exnref = ExnRef::new(&mut scope, &allocator, tag, &fields).map_err(|e| {
+            WasmtimeError::Internal {
+                message: format!("Failed to create ExnRef: {}", e),
+            }
+        })?;
+
+        // Convert to OwnedRooted and box for FFI
+        let owned = exnref.to_owned_rooted(&mut scope).map_err(|e| {
+            WasmtimeError::Internal {
+                message: format!("Failed to convert ExnRef to owned: {}", e),
+            }
+        })?;
+
+        Ok(Box::into_raw(Box::new(owned)) as jlong)
+    })
+}
+
+/// JNI binding for JniExnRef.nativeToRaw
+/// Converts an ExnRef to its raw u32 representation
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeToRaw(
+    mut env: JNIEnv,
+    _class: JClass,
+    exnref_handle: jlong,
+    store_handle: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        use wasmtime::{ExnRef, OwnedRooted, RootScope};
+
+        if exnref_handle == 0 {
+            return Err(WasmtimeError::Internal {
+                message: "exnref_handle is null".to_string(),
+            });
+        }
+
+        let owned_exnref = unsafe { &*(exnref_handle as *const OwnedRooted<ExnRef>) };
+        let store =
+            unsafe { crate::store::core::get_store_ref(store_handle as *const std::ffi::c_void)? };
+        let mut store_guard = store.try_lock_store()?;
+
+        let mut scope = RootScope::new(&mut *store_guard);
+        let exnref = owned_exnref.to_rooted(&mut scope);
+        let raw = exnref.to_raw(&mut scope).map_err(|e| WasmtimeError::Internal {
+            message: format!("Failed to convert ExnRef to raw: {}", e),
+        })?;
+
+        Ok(raw as jlong)
+    })
+}
+
+/// JNI binding for JniExnRef.nativeFromRaw
+/// Creates an ExnRef from a raw u32 representation
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeFromRaw(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    raw: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use wasmtime::{ExnRef, RootScope};
+
+        let store =
+            unsafe { crate::store::core::get_store_ref(store_handle as *const std::ffi::c_void)? };
+        let mut store_guard = store.try_lock_store()?;
+
+        let mut scope = RootScope::new(&mut *store_guard);
+        match ExnRef::from_raw(&mut scope, raw as u32) {
+            Some(rooted) => {
+                let owned = rooted.to_owned_rooted(&mut scope).map_err(|e| {
+                    WasmtimeError::Internal {
+                        message: format!("Failed to convert ExnRef to owned: {}", e),
+                    }
+                })?;
+                Ok(Box::into_raw(Box::new(owned)) as jlong)
+            }
+            None => Ok(0),
+        }
+    })
+}
+
+/// JNI binding for JniExnRef.nativeMatchesTy
+/// Checks if an ExnRef matches a given heap type code
+/// Returns 1 if matches, 0 if not, throws on error
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeMatchesTy(
+    mut env: JNIEnv,
+    _class: JClass,
+    exnref_handle: jlong,
+    store_handle: jlong,
+    heap_type_code: jni::sys::jint,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, JNI_FALSE, || {
+        use wasmtime::{ExnRef, HeapType, OwnedRooted, RootScope};
+
+        if exnref_handle == 0 {
+            return Err(WasmtimeError::Internal {
+                message: "exnref_handle is null".to_string(),
+            });
+        }
+
+        // Must match Java HeapType enum ordinals exactly
+        let heap_type = match heap_type_code {
+            0 => HeapType::Any,
+            1 => HeapType::Eq,
+            2 => HeapType::I31,
+            3 => HeapType::Struct,
+            4 => HeapType::Array,
+            5 => HeapType::Func,
+            6 => HeapType::NoFunc,
+            7 => HeapType::Extern,
+            8 => HeapType::NoExtern,
+            9 => HeapType::Exn,
+            10 => HeapType::NoExn,
+            11 => HeapType::Cont,
+            12 => HeapType::NoCont,
+            13 => HeapType::None,
+            _ => {
+                return Err(WasmtimeError::Internal {
+                    message: format!("Unknown heap type code: {}", heap_type_code),
+                });
+            }
+        };
+
+        let owned_exnref = unsafe { &*(exnref_handle as *const OwnedRooted<ExnRef>) };
+        let store =
+            unsafe { crate::store::core::get_store_ref(store_handle as *const std::ffi::c_void)? };
+        let mut store_guard = store.try_lock_store()?;
+
+        let mut scope = RootScope::new(&mut *store_guard);
+        let exnref = owned_exnref.to_rooted(&mut scope);
+        let matches =
+            exnref
+                .matches_ty(&scope, &heap_type)
+                .map_err(|e| WasmtimeError::Internal {
+                    message: format!("Failed to check ExnRef type match: {}", e),
+                })?;
+
+        Ok(if matches { JNI_TRUE } else { JNI_FALSE })
+    })
+}
+
 /// JNI binding for JniStore.nativeThrowException
 /// Throws an exception in the store context
 #[no_mangle]

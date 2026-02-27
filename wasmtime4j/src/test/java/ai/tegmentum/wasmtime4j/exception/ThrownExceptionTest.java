@@ -152,6 +152,17 @@ class ThrownExceptionTest {
     }
 
     @Override
+    public long toRaw(final Store store) {
+      return 0;
+    }
+
+    @Override
+    public boolean matchesTy(
+        final Store store, final ai.tegmentum.wasmtime4j.type.HeapType heapType) {
+      return false;
+    }
+
+    @Override
     public int hashCode() {
       return id.hashCode();
     }

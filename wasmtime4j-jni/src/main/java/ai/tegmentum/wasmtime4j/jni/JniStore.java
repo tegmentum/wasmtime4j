@@ -1294,6 +1294,46 @@ public final class JniStore extends JniResource implements Store {
 
   private native void nativeClearEpochDeadlineCallback(long storeHandle);
 
+  // Debug handler support
+  private ai.tegmentum.wasmtime4j.debug.DebugHandler debugHandler;
+
+  @Override
+  public void setDebugHandler(final ai.tegmentum.wasmtime4j.debug.DebugHandler handler) {
+    if (handler == null) {
+      throw new NullPointerException("handler cannot be null");
+    }
+    ensureNotClosed();
+    this.debugHandler = handler;
+    nativeSetDebugHandler(getNativeHandle());
+  }
+
+  @Override
+  public void clearDebugHandler() {
+    ensureNotClosed();
+    this.debugHandler = null;
+    nativeClearDebugHandler(getNativeHandle());
+  }
+
+  private native void nativeSetDebugHandler(long storeHandle);
+
+  private native void nativeClearDebugHandler(long storeHandle);
+
+  // Called from native code when a debug event occurs
+  @SuppressWarnings("unused")
+  @SuppressFBWarnings(
+      value = "UPM_UNCALLED_PRIVATE_METHOD",
+      justification = "Called from native JNI code")
+  private void onDebugEvent(final int eventCode) {
+    if (debugHandler == null) {
+      return;
+    }
+    final ai.tegmentum.wasmtime4j.debug.DebugEvent event =
+        ai.tegmentum.wasmtime4j.debug.DebugEvent.fromCode(eventCode);
+    if (event != null) {
+      debugHandler.handle(event, java.util.Collections.emptyList());
+    }
+  }
+
   // Call hook support
   private ai.tegmentum.wasmtime4j.func.CallHookHandler callHookHandler;
   private ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler asyncCallHookHandler;

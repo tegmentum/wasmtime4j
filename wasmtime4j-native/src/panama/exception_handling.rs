@@ -464,6 +464,239 @@ unsafe fn encode_val_to_ffi(
 }
 
 // ============================================================================
+// ExnRef Factory Functions
+// ============================================================================
+
+/// Creates a new ExnRef from a tag and field values.
+///
+/// Fields are passed as parallel arrays: field_types_ptr[i] is the type code,
+/// field_i64_values_ptr[i] is the i64 value, field_f64_values_ptr[i] is the f64 value.
+/// Type codes: 0=I32, 1=I64, 2=F32, 3=F64.
+///
+/// Returns a pointer to OwnedRooted<ExnRef>, or null on failure.
+///
+/// # Safety
+/// - store_ptr must be a valid pointer to a Store
+/// - tag_ptr must be a valid pointer to a boxed Tag
+/// - Field arrays must be valid and of at least field_count length
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_exnref_create(
+    store_ptr: *mut c_void,
+    tag_ptr: *const c_void,
+    field_count: c_int,
+    field_types_ptr: *const c_int,
+    field_i64_values_ptr: *const i64,
+    field_f64_values_ptr: *const f64,
+) -> *mut c_void {
+    use wasmtime::{ExnRef, ExnRefPre, ExnType, OwnedRooted, RootScope, Tag, Val};
+
+    if store_ptr.is_null() || tag_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+        || -> Result<*mut c_void, crate::error::WasmtimeError> {
+            let tag = unsafe { &*(tag_ptr as *const Tag) };
+            let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+            let mut store_guard = store.try_lock_store()?;
+
+            // Build field values from FFI arrays
+            let mut fields = Vec::with_capacity(field_count as usize);
+            if field_count > 0 && !field_types_ptr.is_null() {
+                let types = unsafe {
+                    std::slice::from_raw_parts(field_types_ptr, field_count as usize)
+                };
+                let i64_vals = if field_i64_values_ptr.is_null() {
+                    &[] as &[i64]
+                } else {
+                    unsafe {
+                        std::slice::from_raw_parts(field_i64_values_ptr, field_count as usize)
+                    }
+                };
+                let f64_vals = if field_f64_values_ptr.is_null() {
+                    &[] as &[f64]
+                } else {
+                    unsafe {
+                        std::slice::from_raw_parts(field_f64_values_ptr, field_count as usize)
+                    }
+                };
+
+                for i in 0..field_count as usize {
+                    let val = match types[i] {
+                        0 => Val::I32(i64_vals.get(i).copied().unwrap_or(0) as i32),
+                        1 => Val::I64(i64_vals.get(i).copied().unwrap_or(0)),
+                        2 => Val::F32((f64_vals.get(i).copied().unwrap_or(0.0) as f32).to_bits()),
+                        3 => Val::F64(f64_vals.get(i).copied().unwrap_or(0.0).to_bits()),
+                        _ => {
+                            return Err(crate::error::WasmtimeError::Internal {
+                                message: format!("Unsupported field type code: {}", types[i]),
+                            });
+                        }
+                    };
+                    fields.push(val);
+                }
+            }
+
+            // Create ExnRefPre from the tag's ExnType
+            let tag_type = tag.ty(&*store_guard);
+            let exn_type = ExnType::from_tag_type(&tag_type).map_err(|e| {
+                crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to create ExnType from TagType: {}", e),
+                }
+            })?;
+            let allocator = ExnRefPre::new(&mut *store_guard, exn_type);
+
+            // Create the ExnRef
+            let mut scope = RootScope::new(&mut *store_guard);
+            let exnref = ExnRef::new(&mut scope, &allocator, tag, &fields).map_err(|e| {
+                crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to create ExnRef: {}", e),
+                }
+            })?;
+
+            // Convert to OwnedRooted and box for FFI
+            let owned = exnref.to_owned_rooted(&mut scope).map_err(|e| {
+                crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to convert ExnRef to owned: {}", e),
+                }
+            })?;
+
+            Ok(Box::into_raw(Box::new(owned)) as *mut c_void)
+        },
+    ));
+
+    match result {
+        Ok(Ok(ptr)) => ptr,
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// Converts an ExnRef to its raw u32 representation.
+///
+/// Returns the raw u32 value, or -1 on failure.
+///
+/// # Safety
+/// - exnref_ptr must be a valid pointer to an OwnedRooted<ExnRef>
+/// - store_ptr must be a valid pointer to a Store
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_exnref_to_raw(
+    exnref_ptr: *const c_void,
+    store_ptr: *mut c_void,
+) -> i64 {
+    use wasmtime::{ExnRef, OwnedRooted, RootScope};
+
+    if exnref_ptr.is_null() || store_ptr.is_null() {
+        return -1;
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let owned_exnref = unsafe { &*(exnref_ptr as *const OwnedRooted<ExnRef>) };
+        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+        let mut store_guard = store.try_lock_store().ok()?;
+
+        let mut scope = RootScope::new(&mut *store_guard);
+        let exnref = owned_exnref.to_rooted(&mut scope);
+        exnref.to_raw(&mut scope).ok().map(|r| r as i64)
+    }));
+
+    match result {
+        Ok(Some(raw)) => raw,
+        _ => -1,
+    }
+}
+
+/// Creates an ExnRef from a raw u32 representation.
+///
+/// Returns a pointer to OwnedRooted<ExnRef>, or null if raw is 0 or invalid.
+///
+/// # Safety
+/// - store_ptr must be a valid pointer to a Store
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_exnref_from_raw(
+    store_ptr: *mut c_void,
+    raw: u32,
+) -> *mut c_void {
+    use wasmtime::{ExnRef, RootScope};
+
+    if store_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+        let mut store_guard = store.try_lock_store().ok()?;
+
+        let mut scope = RootScope::new(&mut *store_guard);
+        let rooted = ExnRef::from_raw(&mut scope, raw)?;
+        let owned = rooted.to_owned_rooted(&mut scope).ok()?;
+        Some(Box::into_raw(Box::new(owned)) as *mut c_void)
+    }));
+
+    match result {
+        Ok(Some(ptr)) => ptr,
+        _ => std::ptr::null_mut(),
+    }
+}
+
+/// Checks if an ExnRef matches a given heap type code.
+///
+/// Heap type codes: 0=Any, 1=Eq, 2=I31, 3=Struct, 4=Array, 5=None,
+/// 6=Func, 7=NoFunc, 8=Extern, 9=NoExtern, 10=Exn, 11=NoExn, 12=Cont, 13=NoCont.
+///
+/// Returns 1 if matches, 0 if not, -1 on error.
+///
+/// # Safety
+/// - exnref_ptr must be a valid pointer to an OwnedRooted<ExnRef>
+/// - store_ptr must be a valid pointer to a Store
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_exnref_matches_ty(
+    exnref_ptr: *const c_void,
+    store_ptr: *mut c_void,
+    heap_type_code: c_int,
+) -> c_int {
+    use wasmtime::{ExnRef, HeapType, OwnedRooted, RootScope};
+
+    if exnref_ptr.is_null() || store_ptr.is_null() {
+        return -1;
+    }
+
+    // Must match Java HeapType enum ordinals exactly
+    let heap_type = match heap_type_code {
+        0 => HeapType::Any,
+        1 => HeapType::Eq,
+        2 => HeapType::I31,
+        3 => HeapType::Struct,
+        4 => HeapType::Array,
+        5 => HeapType::Func,
+        6 => HeapType::NoFunc,
+        7 => HeapType::Extern,
+        8 => HeapType::NoExtern,
+        9 => HeapType::Exn,
+        10 => HeapType::NoExn,
+        11 => HeapType::Cont,
+        12 => HeapType::NoCont,
+        13 => HeapType::None,
+        _ => return -1,
+    };
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let owned_exnref = unsafe { &*(exnref_ptr as *const OwnedRooted<ExnRef>) };
+        let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+        let mut store_guard = store.try_lock_store().ok()?;
+
+        let mut scope = RootScope::new(&mut *store_guard);
+        let exnref = owned_exnref.to_rooted(&mut scope);
+        exnref.matches_ty(&scope, &heap_type).ok()
+    }));
+
+    match result {
+        Ok(Some(true)) => 1,
+        Ok(Some(false)) => 0,
+        _ => -1,
+    }
+}
+
+// ============================================================================
 // Store Exception Functions
 // ============================================================================
 

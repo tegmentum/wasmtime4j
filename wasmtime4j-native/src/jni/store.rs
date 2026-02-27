@@ -403,6 +403,149 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearEpoc
     });
 }
 
+// =============================================================================
+// Debug Handler Callback Infrastructure
+// =============================================================================
+
+struct JniDebugCallbackContext {
+    jvm: std::sync::Arc<jni::JavaVM>,
+    jni_store_global: jni::objects::GlobalRef,
+}
+
+static JNI_DEBUG_CALLBACKS: once_cell::sync::OnceCell<
+    std::sync::Mutex<std::collections::HashMap<i64, JniDebugCallbackContext>>,
+> = once_cell::sync::OnceCell::new();
+
+fn get_jni_debug_callbacks(
+) -> &'static std::sync::Mutex<std::collections::HashMap<i64, JniDebugCallbackContext>> {
+    JNI_DEBUG_CALLBACKS.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+fn register_jni_debug_callback(
+    callback_id: i64,
+    jvm: std::sync::Arc<jni::JavaVM>,
+    jni_store_global: jni::objects::GlobalRef,
+) {
+    let mut callbacks = get_jni_debug_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks.insert(
+        callback_id,
+        JniDebugCallbackContext {
+            jvm,
+            jni_store_global,
+        },
+    );
+}
+
+fn unregister_jni_debug_callback(callback_id: i64) {
+    let mut callbacks = get_jni_debug_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks.remove(&callback_id);
+}
+
+/// Dispatch function for JNI debug handler callbacks
+fn jni_debug_callback_dispatch(callback_id: i64, event_code: i32) {
+    let (jvm, global_ref_ptr) = {
+        let callbacks = match get_jni_debug_callbacks().lock() {
+            Ok(cb) => cb,
+            Err(e) => {
+                log::error!("Failed to lock debug callbacks: {}", e);
+                return;
+            }
+        };
+        match callbacks.get(&callback_id) {
+            Some(ctx) => (ctx.jvm.clone(), ctx.jni_store_global.as_obj().as_raw() as usize),
+            None => {
+                log::warn!("No JNI debug callback found for ID: {}", callback_id);
+                return;
+            }
+        }
+    };
+
+    // Use a block to ensure AttachGuard is dropped before jvm
+    {
+        let mut env = match jvm.attach_current_thread() {
+            Ok(env) => env,
+            Err(e) => {
+                log::error!("Failed to attach to JVM for debug callback: {}", e);
+                return;
+            }
+        };
+        let jni_store_obj =
+            unsafe { jni::objects::JObject::from_raw(global_ref_ptr as jni::sys::jobject) };
+        match env.call_method(
+            &jni_store_obj,
+            "onDebugEvent",
+            "(I)V",
+            &[jni::objects::JValue::Int(event_code)],
+        ) {
+            Ok(_) => {}
+            Err(e) => {
+                if env.exception_check().unwrap_or(false) {
+                    let _ = env.exception_clear();
+                }
+                log::error!("Failed to call onDebugEvent: {}", e);
+            }
+        }
+    };
+}
+
+extern "C" fn jni_debug_callback(callback_id: i64, event_code: i32) {
+    jni_debug_callback_dispatch(callback_id, event_code);
+}
+
+/// Set debug handler on store
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetDebugHandler(
+    mut env: JNIEnv,
+    jni_store_obj: jni::objects::JObject,
+    store_ptr: jlong,
+) {
+    // Get JavaVM reference before the closure to avoid borrow conflicts
+    let jvm = match env.get_java_vm() {
+        Ok(vm) => std::sync::Arc::new(vm),
+        Err(e) => {
+            log::error!("Failed to get JavaVM for debug handler: {}", e);
+            return;
+        }
+    };
+
+    let jni_store_global = match env.new_global_ref(&jni_store_obj) {
+        Ok(global) => global,
+        Err(e) => {
+            log::error!("Failed to create global reference for debug handler: {}", e);
+            return;
+        }
+    };
+
+    let callback_id = store_ptr;
+    register_jni_debug_callback(callback_id, jvm, jni_store_global);
+
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        store.set_debug_handler_with_fn(jni_debug_callback, callback_id)?;
+        Ok(())
+    });
+}
+
+/// Clear debug handler on store
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearDebugHandler(
+    mut env: JNIEnv,
+    _jni_store_obj: jni::objects::JObject,
+    store_ptr: jlong,
+) {
+    unregister_jni_debug_callback(store_ptr);
+
+    let _ = jni_utils::jni_try_void(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        store.clear_debug_handler()?;
+        Ok(())
+    });
+}
+
 /// Configure epoch deadline async yield and update
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeEpochDeadlineAsyncYieldAndUpdate(

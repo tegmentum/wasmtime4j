@@ -1114,6 +1114,63 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   }
 
   @Override
+  public Iterable<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> iter(
+      final ai.tegmentum.wasmtime4j.Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("Store cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore");
+    }
+
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final int nameBufferSize = 1024;
+
+    try (java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment outCount =
+          arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+
+      final int iterResult =
+          NATIVE_INSTANCE_BINDINGS.linkerIter(nativeLinker, panamaStore.getNativeStore(), outCount);
+
+      if (iterResult != 0) {
+        throw new WasmException("Failed to iterate linker definitions");
+      }
+
+      final int count = outCount.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+      final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
+          new java.util.ArrayList<>(count);
+
+      for (int i = 0; i < count; i++) {
+        final java.lang.foreign.MemorySegment moduleNameBuf = arena.allocate(nameBufferSize);
+        final java.lang.foreign.MemorySegment itemNameBuf = arena.allocate(nameBufferSize);
+        final java.lang.foreign.MemorySegment outTypeCode =
+            arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+
+        final int getResult =
+            NATIVE_INSTANCE_BINDINGS.linkerIterGet(
+                i, moduleNameBuf, nameBufferSize, itemNameBuf, nameBufferSize, outTypeCode);
+
+        if (getResult != 0) {
+          throw new WasmException("Failed to get linker definition at index " + i);
+        }
+
+        final String moduleName = moduleNameBuf.getString(0);
+        final String itemName = itemNameBuf.getString(0);
+        final int typeCode = outTypeCode.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+
+        definitions.add(
+            new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
+                moduleName, itemName, ai.tegmentum.wasmtime4j.type.ExternType.fromCode(typeCode)));
+      }
+
+      return java.util.Collections.unmodifiableList(definitions);
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.Extern getByImport(
       final Store store, final String moduleName, final String name) {
     if (store == null) {

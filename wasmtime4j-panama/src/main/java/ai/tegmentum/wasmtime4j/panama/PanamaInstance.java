@@ -428,6 +428,18 @@ public final class PanamaInstance implements Instance {
   }
 
   @Override
+  public Optional<WasmFunction> debugFunction(final int functionIndex) {
+    ensureNotClosed();
+    final MemorySegment funcPtr =
+        NATIVE_INSTANCE_BINDINGS.instanceDebugFunction(
+            nativeInstance, store.getNativeStore(), functionIndex);
+    if (funcPtr == null || funcPtr.equals(MemorySegment.NULL)) {
+      return Optional.empty();
+    }
+    return Optional.of(new PanamaCallerFunction(funcPtr, store, "__debug_func_" + functionIndex));
+  }
+
+  @Override
   public Optional<WasmGlobal> debugGlobal(final int globalIndex) {
     ensureNotClosed();
     final MemorySegment globalPtr =

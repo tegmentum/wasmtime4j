@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.jni;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -8,6 +9,7 @@ import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.util.JniExceptionMapper;
@@ -694,6 +696,21 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
+  public boolean validateModule(final byte[] wasmBytes) {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("WebAssembly bytes cannot be null");
+    }
+    if (wasmBytes.length == 0) {
+      return false;
+    }
+    try {
+      return JniModule.validateModuleBytes(wasmBytes);
+    } catch (final Exception e) {
+      return false;
+    }
+  }
+
+  @Override
   protected void doClose() throws Exception {
     nativeDestroyRuntime(nativeHandle);
   }
@@ -895,6 +912,25 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   @Override
   public boolean isNnAvailable() {
     return nativeIsNnAvailable() != 0;
+  }
+
+  @Override
+  public ExnRef createExnRef(final Store store, final Tag tag, final WasmValue[] fields)
+      throws WasmException {
+    validateRuntimeState();
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance");
+    }
+    return JniExnRef.createExnRef((JniStore) store, tag, fields);
+  }
+
+  @Override
+  public ExnRef exnRefFromRaw(final Store store, final long raw) throws WasmException {
+    validateRuntimeState();
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance");
+    }
+    return JniExnRef.fromRawExnRef((JniStore) store, raw);
   }
 
   // ===== UTILITY METHODS =====

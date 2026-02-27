@@ -161,6 +161,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeGetDefa
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
+ * Method:    nativeLinkerIter
+ * Signature: (JJ)[Ljava/lang/String;
+ */
+JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeLinkerIter
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniLinker
  * Method:    nativeGetExternType
  * Signature: (J)I
  */

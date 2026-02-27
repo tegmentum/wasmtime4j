@@ -510,8 +510,16 @@ public final class PanamaModule implements Module {
   @Override
   public String getName() {
     ensureNotClosed();
-    // Return module identifier based on native pointer
-    // Matches JNI backend pattern which returns "jni-module-{handle}"
+    try {
+      final MemorySegment namePtr = NATIVE_BINDINGS.moduleGetName(nativeModule);
+      if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
+        final String name = namePtr.reinterpret(Long.MAX_VALUE).getString(0);
+        NATIVE_BINDINGS.moduleFreeString(namePtr);
+        return name;
+      }
+    } catch (final Exception e) {
+      // Fall through to synthetic name
+    }
     return "panama-module-" + System.identityHashCode(nativeModule);
   }
 

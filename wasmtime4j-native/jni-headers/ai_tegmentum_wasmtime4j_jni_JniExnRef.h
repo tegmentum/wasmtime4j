@@ -39,6 +39,38 @@ JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_native
 JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeGetFields
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef
+ * Method:    nativeCreate
+ * Signature: (JJ[I[J[D)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeCreate
+  (JNIEnv *, jclass, jlong, jlong, jintArray, jlongArray, jdoubleArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef
+ * Method:    nativeToRaw
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeToRaw
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef
+ * Method:    nativeFromRaw
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeFromRaw
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef
+ * Method:    nativeMatchesTy
+ * Signature: (JJI)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeMatchesTy
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
 #ifdef __cplusplus
 }
 #endif

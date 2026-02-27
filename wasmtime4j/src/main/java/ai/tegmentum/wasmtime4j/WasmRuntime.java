@@ -580,6 +580,42 @@ public interface WasmRuntime extends Closeable {
   void tlsEagerInitialize() throws WasmException;
 
   /**
+   * Validates WebAssembly bytecode using full Wasmtime structural and semantic validation.
+   *
+   * <p>This method performs complete validation including section structure, type checking, and
+   * instruction validation via the native Wasmtime engine.
+   *
+   * @param wasmBytes the WebAssembly bytecode to validate
+   * @return true if the module is valid, false otherwise
+   * @throws IllegalArgumentException if wasmBytes is null
+   * @since 1.1.0
+   */
+  boolean validateModule(final byte[] wasmBytes);
+
+  /**
+   * Creates a new ExnRef from a tag and field values.
+   *
+   * @param store the store context
+   * @param tag the exception tag
+   * @param fields the field values for the exception payload
+   * @return a new ExnRef instance
+   * @throws WasmException if creation fails
+   * @since 1.1.0
+   */
+  ExnRef createExnRef(Store store, Tag tag, WasmValue[] fields) throws WasmException;
+
+  /**
+   * Creates an ExnRef from a raw integer representation.
+   *
+   * @param store the store context
+   * @param raw the raw u32 representation
+   * @return a new ExnRef instance, or null if raw is 0
+   * @throws WasmException if creation fails
+   * @since 1.1.0
+   */
+  ExnRef exnRefFromRaw(Store store, long raw) throws WasmException;
+
+  /**
    * Closes the runtime and releases associated resources.
    *
    * <p>After calling this method, the runtime becomes invalid and should not be used. Any attempt

@@ -411,6 +411,13 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG)); // wasm_size
 
     addFunctionBinding(
+        "wasmtime4j_panama_module_validate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0=success, non-zero=error
+            ValueLayout.ADDRESS, // wasm_bytes
+            ValueLayout.JAVA_LONG)); // wasm_size
+
+    addFunctionBinding(
         "wasmtime4j_module_create_wat",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return module*
@@ -483,7 +490,7 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // type_out_ptr
 
     addFunctionBinding(
-        "wasmtime4j_module_get_name",
+        "wasmtime4j_panama_module_get_name",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return name string pointer
             ValueLayout.ADDRESS)); // module_ptr
@@ -2417,6 +2424,19 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
+   * Validates WebAssembly bytecode using full Wasmtime structural and semantic validation.
+   *
+   * @param wasmBytes pointer to the WASM bytecode
+   * @param wasmSize size of the WASM bytecode in bytes
+   * @return 0 on success (valid), non-zero on failure (invalid)
+   */
+  public int moduleValidate(final MemorySegment wasmBytes, final long wasmSize) {
+    validatePointer(wasmBytes, "wasmBytes");
+    return callNativeFunction(
+        "wasmtime4j_panama_module_validate", Integer.class, wasmBytes, wasmSize);
+  }
+
+  /**
    * Gets the number of imports in a module.
    *
    * @param modulePtr pointer to the module
@@ -2674,7 +2694,7 @@ public final class NativeEngineBindings extends NativeBindingsBase {
    */
   public MemorySegment moduleGetName(final MemorySegment modulePtr) {
     validatePointer(modulePtr, "modulePtr");
-    return callNativeFunction("wasmtime4j_module_get_name", MemorySegment.class, modulePtr);
+    return callNativeFunction("wasmtime4j_panama_module_get_name", MemorySegment.class, modulePtr);
   }
 
   /**

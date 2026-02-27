@@ -17,6 +17,7 @@
 package ai.tegmentum.wasmtime4j.panama;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.ExnRef;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
@@ -24,6 +25,7 @@ import ai.tegmentum.wasmtime4j.RuntimeInfo;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.component.ComponentEngine;
 import ai.tegmentum.wasmtime4j.component.ComponentEngineConfig;
@@ -778,6 +780,44 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public void tlsEagerInitialize() throws ai.tegmentum.wasmtime4j.exception.WasmException {
     NativeEngineBindings.getInstance().tlsEagerInitialize();
+  }
+
+  @Override
+  public boolean validateModule(final byte[] wasmBytes) {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("WebAssembly bytes cannot be null");
+    }
+    if (wasmBytes.length == 0) {
+      return false;
+    }
+    try (java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment bytesSegment = arena.allocate(wasmBytes.length);
+      bytesSegment.copyFrom(java.lang.foreign.MemorySegment.ofArray(wasmBytes));
+      final int result =
+          NativeEngineBindings.getInstance().moduleValidate(bytesSegment, wasmBytes.length);
+      return result == 0;
+    } catch (final Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public ExnRef createExnRef(final Store store, final Tag tag, final WasmValue[] fields)
+      throws WasmException {
+    ensureNotClosed();
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    }
+    return PanamaExnRef.createExnRef((PanamaStore) store, tag, fields);
+  }
+
+  @Override
+  public ExnRef exnRefFromRaw(final Store store, final long raw) throws WasmException {
+    ensureNotClosed();
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    }
+    return PanamaExnRef.fromRawExnRef((PanamaStore) store, raw);
   }
 
   @Override

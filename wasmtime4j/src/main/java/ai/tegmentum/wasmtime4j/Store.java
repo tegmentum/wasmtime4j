@@ -790,36 +790,6 @@ public interface Store extends Closeable {
   }
 
   /**
-   * Gets all instances currently alive in this store.
-   *
-   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
-   *
-   * @return a list of all instances in this store
-   * @throws UnsupportedOperationException if guest debugging is not enabled
-   * @throws WasmException if retrieval fails
-   * @since 1.1.0
-   */
-  default java.util.List<Instance> debugAllInstances() throws WasmException {
-    throw new UnsupportedOperationException(
-        "debugAllInstances requires guest debugging to be enabled via Config.guestDebug(true)");
-  }
-
-  /**
-   * Gets all modules currently loaded in this store.
-   *
-   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
-   *
-   * @return a list of all modules in this store
-   * @throws UnsupportedOperationException if guest debugging is not enabled
-   * @throws WasmException if retrieval fails
-   * @since 1.1.0
-   */
-  default java.util.List<Module> debugAllModules() throws WasmException {
-    throw new UnsupportedOperationException(
-        "debugAllModules requires guest debugging to be enabled via Config.guestDebug(true)");
-  }
-
-  /**
    * Creates a breakpoint editor for batch-modifying breakpoints.
    *
    * <p>The returned editor allows adding/removing breakpoints and toggling single-step mode.

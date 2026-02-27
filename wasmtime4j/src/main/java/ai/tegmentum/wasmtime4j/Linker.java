@@ -447,14 +447,31 @@ public interface Linker<T> extends Closeable {
       throws WasmException;
 
   /**
-   * Iterates over all definitions in this linker.
+   * Iterates over all definitions in this linker using the Java-side registry.
    *
-   * <p>Returns an iterator over all module/name pairs that have been defined.
+   * <p>This method only returns definitions tracked by the Java-side import registry. Definitions
+   * added through native-only paths (e.g., {@link #enableWasi}, {@link #module}) may not be
+   * visible. Use {@link #iter(Store)} for a complete view from the native linker.
    *
    * @return an iterable of module/name pairs
    * @since 1.0.0
    */
   Iterable<LinkerDefinition> iter();
+
+  /**
+   * Iterates over all definitions in this linker by querying the native Wasmtime linker.
+   *
+   * <p>Unlike {@link #iter()}, this method queries the actual native linker state, which includes
+   * definitions added through all paths including {@link #enableWasi}, {@link #module}, and {@link
+   * #defineInstance}.
+   *
+   * @param store the store context required by the native linker for iteration
+   * @return an iterable of all linker definitions
+   * @throws WasmException if iteration fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  Iterable<LinkerDefinition> iter(Store store) throws WasmException;
 
   /**
    * Gets a definition by its import specifier.

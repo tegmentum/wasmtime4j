@@ -640,6 +640,39 @@ public final class NativeStoreBindings extends NativeBindingsBase {
   }
 
   /**
+   * Sets a debug handler with a function pointer on the store.
+   *
+   * @param storePtr pointer to the store
+   * @param callbackFn function pointer for the debug handler callback (takes callback_id,
+   *     event_code)
+   * @param callbackId identifier passed to the callback to identify the Java handler
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeSetDebugHandlerFn(
+      final MemorySegment storePtr, final MemorySegment callbackFn, final long callbackId) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(callbackFn, "callbackFn");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_set_debug_handler",
+        Integer.class,
+        storePtr,
+        callbackFn,
+        callbackId);
+  }
+
+  /**
+   * Clears the debug handler from the store.
+   *
+   * @param storePtr pointer to the store
+   * @return 0 on success, negative error code on failure
+   */
+  public int storeClearDebugHandler(final MemorySegment storePtr) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_store_clear_debug_handler", Integer.class, storePtr);
+  }
+
+  /**
    * Sets a dynamic resource limiter on the store with callback function pointers.
    *
    * <p>The callbacks are invoked by the Wasmtime runtime each time a memory or table needs to grow,

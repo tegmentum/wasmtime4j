@@ -205,6 +205,47 @@ pub extern "C" fn wasmtime4j_panama_store_set_epoch_deadline_callback_fn(
     })
 }
 
+/// Debug handler callback function type for Panama FFI
+pub type DebugHandlerCallbackFn = extern "C" fn(callback_id: i64, event_code: i32);
+
+/// Set debug handler on store (Panama FFI version)
+///
+/// # Arguments
+/// * `store_ptr` - Pointer to the store
+/// * `callback_fn` - Function pointer for the debug handler callback
+/// * `callback_id` - Identifier passed to the callback
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_set_debug_handler(
+    store_ptr: *mut c_void,
+    callback_fn: DebugHandlerCallbackFn,
+    callback_id: i64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        store.set_debug_handler_with_fn(callback_fn, callback_id)?;
+        Ok(())
+    })
+}
+
+/// Clear debug handler on store (Panama FFI version)
+///
+/// # Arguments
+/// * `store_ptr` - Pointer to the store
+///
+/// # Returns
+/// 0 on success, non-zero error code on failure
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_clear_debug_handler(store_ptr: *mut c_void) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { core::get_store_ref(store_ptr)? };
+        store.clear_debug_handler()?;
+        Ok(())
+    })
+}
+
 /// Configure epoch deadline to yield and update (Panama FFI version)
 ///
 /// This configures the store to yield when the epoch deadline is reached,

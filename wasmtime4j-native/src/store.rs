@@ -15,9 +15,10 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 #[cfg(feature = "wasi-http")]
 use wasmtime::component::ResourceTable;
+use std::future::Future;
 use wasmtime::{
-    AsContext, AsContextMut, CallHook, Func, FuncType, Store as WasmtimeStore, StoreContext,
-    StoreContextMut, StoreLimits as WasmtimeStoreLimits,
+    AsContext, AsContextMut, CallHook, DebugEvent, DebugHandler, Func, FuncType,
+    Store as WasmtimeStore, StoreContext, StoreContextMut, StoreLimits as WasmtimeStoreLimits,
     StoreLimitsBuilder as WasmtimeStoreLimitsBuilder,
 };
 use wasmtime_wasi::p1::WasiP1Ctx;
@@ -978,6 +979,48 @@ impl Store {
             }
         });
 
+        Ok(())
+    }
+
+    /// Sets a debug handler via an FFI callback function.
+    ///
+    /// The callback function receives a callback_id and an event code:
+    /// - 0 = HostcallError
+    /// - 1 = CaughtExceptionThrown
+    /// - 2 = UncaughtExceptionThrown
+    /// - 3 = Trap
+    /// - 4 = Breakpoint
+    /// - 5 = EpochYield
+    ///
+    /// # Safety
+    /// The callback function must be valid for the lifetime of the Store.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn set_debug_handler_with_fn(
+        &self,
+        callback_fn: extern "C" fn(callback_id: i64, event_code: i32),
+        callback_id: i64,
+    ) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+
+        let handler = FfiDebugHandler {
+            callback_fn,
+            callback_id,
+        };
+        store.set_debug_handler(handler);
+        Ok(())
+    }
+
+    /// Clears the debug handler.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn clear_debug_handler(&self) -> WasmtimeResult<()> {
+        self.check_not_closed()?;
+        let mut store = self.inner.lock();
+        store.clear_debug_handler();
         Ok(())
     }
 
@@ -3123,5 +3166,41 @@ pub unsafe extern "C" fn wasmtime4j_store_debug_exit_frames(
             Err(_) => FFI_ERROR,
         },
         Err(_) => FFI_ERROR,
+    }
+}
+
+/// FFI-compatible debug handler that dispatches debug events through a callback function.
+///
+/// This struct implements the Wasmtime `DebugHandler` trait and forwards events
+/// to a C-compatible function pointer with a callback ID for identifying the Java handler.
+#[derive(Clone)]
+struct FfiDebugHandler {
+    callback_fn: extern "C" fn(callback_id: i64, event_code: i32),
+    callback_id: i64,
+}
+
+// Safety: The callback function pointer is valid for the lifetime of the store
+// and the callback dispatches through thread-safe Java mechanisms.
+unsafe impl Send for FfiDebugHandler {}
+unsafe impl Sync for FfiDebugHandler {}
+
+impl DebugHandler for FfiDebugHandler {
+    type Data = StoreData;
+
+    fn handle(
+        &self,
+        _store: StoreContextMut<'_, StoreData>,
+        event: DebugEvent<'_>,
+    ) -> impl Future<Output = ()> + Send {
+        let event_code = match event {
+            DebugEvent::HostcallError(_) => 0,
+            DebugEvent::CaughtExceptionThrown(_) => 1,
+            DebugEvent::UncaughtExceptionThrown(_) => 2,
+            DebugEvent::Trap(_) => 3,
+            DebugEvent::Breakpoint => 4,
+            DebugEvent::EpochYield => 5,
+        };
+        (self.callback_fn)(self.callback_id, event_code);
+        std::future::ready(())
     }
 }

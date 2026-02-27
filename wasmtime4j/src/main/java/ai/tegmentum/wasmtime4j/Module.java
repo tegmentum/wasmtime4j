@@ -235,11 +235,8 @@ public interface Module extends Closeable {
    * Validates WebAssembly bytecode and returns detailed validation results.
    *
    * <p>This method performs comprehensive validation of WebAssembly bytecode without compiling it,
-   * providing detailed error information.
-   *
-   * <p>This method performs header-level validation (magic number and version checks). For full
-   * structural and semantic validation, use {@link Engine#compileModule(byte[])} or {@link
-   * Engine#compileWat(String)} which will report any compilation errors.
+   * including header checks (magic number and version) followed by full structural and semantic
+   * validation via the native Wasmtime engine.
    *
    * @param engine the engine to use for validation
    * @param wasmBytes the WebAssembly bytecode to validate
@@ -257,7 +254,7 @@ public interface Module extends Closeable {
       return ModuleValidationResult.failure(List.of("WebAssembly bytecode cannot be empty"));
     }
 
-    // Basic WebAssembly magic number validation
+    // Basic WebAssembly magic number validation (fast fail before native call)
     if (wasmBytes.length < 8) {
       return ModuleValidationResult.failure(
           List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
@@ -279,7 +276,19 @@ public interface Module extends Closeable {
       return ModuleValidationResult.failure(List.of("Unsupported WebAssembly version"));
     }
 
-    return ModuleValidationResult.success();
+    // Full structural and semantic validation via native Wasmtime engine
+    try {
+      final boolean valid =
+          ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory.create().validateModule(wasmBytes);
+      if (valid) {
+        return ModuleValidationResult.success();
+      }
+      return ModuleValidationResult.failure(
+          List.of("WebAssembly validation failed (structural or semantic error)"));
+    } catch (final Exception e) {
+      return ModuleValidationResult.failure(
+          List.of("WebAssembly validation error: " + e.getMessage()));
+    }
   }
 
   /**

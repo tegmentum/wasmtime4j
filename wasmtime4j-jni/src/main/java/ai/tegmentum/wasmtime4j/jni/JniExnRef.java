@@ -7,6 +7,7 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.gc.ExnType;
 import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import ai.tegmentum.wasmtime4j.type.HeapType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -170,6 +171,120 @@ public final class JniExnRef extends JniResource implements ExnRef {
     return "ExnRef";
   }
 
+  @Override
+  public long toRaw(final Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    if (jniStore.isClosed()) {
+      throw new WasmException("Store is closed");
+    }
+
+    final long raw = nativeToRaw(getNativeHandle(), jniStore.getNativeHandle());
+    if (raw < 0) {
+      throw new WasmException("Failed to convert ExnRef to raw representation");
+    }
+    return raw;
+  }
+
+  @Override
+  public boolean matchesTy(final Store store, final HeapType heapType) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (heapType == null) {
+      throw new IllegalArgumentException("heapType cannot be null");
+    }
+    ensureNotClosed();
+
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance");
+    }
+
+    final JniStore jniStore = (JniStore) store;
+    if (jniStore.isClosed()) {
+      throw new WasmException("Store is closed");
+    }
+
+    return nativeMatchesTy(getNativeHandle(), jniStore.getNativeHandle(), heapType.ordinal());
+  }
+
+  /**
+   * Creates a new JniExnRef from a tag and field values.
+   *
+   * @param store the JNI store
+   * @param tag the exception tag
+   * @param fields the field values
+   * @return a new JniExnRef
+   * @throws WasmException if creation fails
+   */
+  static JniExnRef createExnRef(final JniStore store, final Tag tag, final WasmValue[] fields)
+      throws WasmException {
+    final int fieldCount = fields.length;
+    final int[] fieldTypes = new int[fieldCount];
+    final long[] fieldI64Values = new long[fieldCount];
+    final double[] fieldF64Values = new double[fieldCount];
+
+    for (int i = 0; i < fieldCount; i++) {
+      final WasmValue val = fields[i];
+      switch (val.getType()) {
+        case I32:
+          fieldTypes[i] = 0;
+          fieldI64Values[i] = val.asInt();
+          break;
+        case I64:
+          fieldTypes[i] = 1;
+          fieldI64Values[i] = val.asLong();
+          break;
+        case F32:
+          fieldTypes[i] = 2;
+          fieldF64Values[i] = val.asFloat();
+          break;
+        case F64:
+          fieldTypes[i] = 3;
+          fieldF64Values[i] = val.asDouble();
+          break;
+        default:
+          throw new WasmException("Unsupported field type: " + val.getType());
+      }
+    }
+
+    final long handle =
+        nativeCreate(
+            store.getNativeHandle(),
+            tag.getNativeHandle(),
+            fieldTypes,
+            fieldI64Values,
+            fieldF64Values);
+    if (handle == 0) {
+      throw new WasmException("Failed to create ExnRef");
+    }
+    return new JniExnRef(handle, store.getNativeHandle());
+  }
+
+  /**
+   * Creates a JniExnRef from a raw representation.
+   *
+   * @param store the JNI store
+   * @param raw the raw u32 value
+   * @return a new JniExnRef, or null if raw is 0
+   * @throws WasmException if creation fails
+   */
+  static JniExnRef fromRawExnRef(final JniStore store, final long raw) throws WasmException {
+    final long handle = nativeFromRaw(store.getNativeHandle(), raw);
+    if (handle == 0) {
+      return null;
+    }
+    return new JniExnRef(handle, store.getNativeHandle());
+  }
+
   // Native method declarations
   private static native long nativeGetTag(long exnRefHandle, long storeHandle);
 
@@ -178,4 +293,18 @@ public final class JniExnRef extends JniResource implements ExnRef {
   private static native Object[] nativeGetField(long exnRefHandle, long storeHandle, int index);
 
   private static native Object[] nativeGetFields(long exnRefHandle, long storeHandle);
+
+  private static native long nativeCreate(
+      long storeHandle,
+      long tagHandle,
+      int[] fieldTypes,
+      long[] fieldI64Values,
+      double[] fieldF64Values);
+
+  private static native long nativeToRaw(long exnRefHandle, long storeHandle);
+
+  private static native long nativeFromRaw(long storeHandle, long raw);
+
+  private static native boolean nativeMatchesTy(
+      long exnRefHandle, long storeHandle, int heapTypeCode);
 }

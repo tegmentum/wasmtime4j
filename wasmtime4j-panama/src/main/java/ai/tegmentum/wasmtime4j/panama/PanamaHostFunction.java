@@ -224,10 +224,26 @@ public final class PanamaHostFunction implements WasmFunction {
   }
 
   @Override
-  public long toRawFuncRef() throws WasmException {
-    throw new UnsupportedOperationException(
-        "Host functions do not support toRawFuncRef(). "
-            + "Use exported function references from an instance instead.");
+  public long toRawFuncRef() throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    if (functionHandle == null || functionHandle.equals(java.lang.foreign.MemorySegment.NULL)) {
+      throw new IllegalStateException("Host function handle is not valid");
+    }
+    final WeakReference<PanamaStore> ref = this.storeRef;
+    if (ref == null) {
+      throw new IllegalStateException("Store reference is null");
+    }
+    final PanamaStore store = ref.get();
+    if (store == null) {
+      throw new IllegalStateException("Store has been garbage collected");
+    }
+    try {
+      return NativeInstanceBindings.getInstance().funcToRaw(functionHandle, store.getNativeStore());
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to convert host function to raw funcref", e);
+    }
   }
 
   @Override

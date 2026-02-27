@@ -1,8 +1,10 @@
 package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.gc.ExnType;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import ai.tegmentum.wasmtime4j.type.HeapType;
 import java.util.List;
 
 /**
@@ -97,4 +99,75 @@ public interface ExnRef {
    * @return true if this reference is valid and can be used
    */
   boolean isValid();
+
+  /**
+   * Creates a new ExnRef from a tag and field values.
+   *
+   * <p>The field values must match the tag's type signature. Type codes are: 0=I32, 1=I64, 2=F32,
+   * 3=F64.
+   *
+   * @param store the store context
+   * @param tag the exception tag
+   * @param fields the field values for the exception payload
+   * @return a new ExnRef instance
+   * @throws WasmException if creation fails
+   * @throws IllegalArgumentException if store, tag, or fields is null
+   */
+  static ExnRef create(final Store store, final Tag tag, final WasmValue... fields)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (tag == null) {
+      throw new IllegalArgumentException("tag cannot be null");
+    }
+    if (fields == null) {
+      throw new IllegalArgumentException("fields cannot be null");
+    }
+    return WasmRuntimeFactory.create().createExnRef(store, tag, fields);
+  }
+
+  /**
+   * Creates an ExnRef from a raw integer representation.
+   *
+   * <p>This is a low-level API used for typed function calls and ValRaw operations. The raw value
+   * is a GC heap index. A raw value of 0 indicates a null reference and returns null.
+   *
+   * @param store the store context
+   * @param raw the raw u32 representation
+   * @return a new ExnRef instance, or null if raw is 0
+   * @throws WasmException if creation fails
+   * @throws IllegalArgumentException if store is null
+   */
+  static ExnRef fromRaw(final Store store, final long raw) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    return WasmRuntimeFactory.create().exnRefFromRaw(store, raw);
+  }
+
+  /**
+   * Converts this ExnRef to its raw integer representation.
+   *
+   * <p>This is a low-level API used for typed function calls and ValRaw operations.
+   *
+   * @param store the store context
+   * @return the raw u32 representation as a long
+   * @throws WasmException if conversion fails
+   * @throws IllegalArgumentException if store is null
+   */
+  long toRaw(Store store) throws WasmException;
+
+  /**
+   * Checks if this ExnRef matches the given heap type.
+   *
+   * <p>This performs a subtype check against the specified heap type.
+   *
+   * @param store the store context
+   * @param heapType the heap type to check against
+   * @return true if this ExnRef matches the given type
+   * @throws WasmException if the check fails
+   * @throws IllegalArgumentException if store or heapType is null
+   */
+  boolean matchesTy(Store store, HeapType heapType) throws WasmException;
 }

@@ -1755,6 +1755,55 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         moduleNamePtr);
   }
 
+  /**
+   * Iterates over all definitions in the linker.
+   *
+   * <p>Stores the results in thread-local storage for retrieval with {@link #linkerIterGet}.
+   *
+   * @param linkerPtr the linker pointer
+   * @param storePtr the store pointer
+   * @param outCountPtr pointer to write the definition count
+   * @return 0 on success, -1 on error
+   */
+  public int linkerIter(
+      final MemorySegment linkerPtr,
+      final MemorySegment storePtr,
+      final MemorySegment outCountPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_iter", Integer.class, linkerPtr, storePtr, outCountPtr);
+  }
+
+  /**
+   * Gets a specific definition from the last iter() call.
+   *
+   * @param index the definition index
+   * @param outModuleNamePtr buffer for the module name
+   * @param moduleNameCapacity capacity of the module name buffer
+   * @param outItemNamePtr buffer for the item name
+   * @param itemNameCapacity capacity of the item name buffer
+   * @param outTypeCodePtr pointer for the type code
+   * @return 0 on success, -1 on error
+   */
+  public int linkerIterGet(
+      final int index,
+      final MemorySegment outModuleNamePtr,
+      final int moduleNameCapacity,
+      final MemorySegment outItemNamePtr,
+      final int itemNameCapacity,
+      final MemorySegment outTypeCodePtr) {
+    return callNativeFunction(
+        "wasmtime4j_panama_linker_iter_get",
+        Integer.class,
+        index,
+        outModuleNamePtr,
+        moduleNameCapacity,
+        outItemNamePtr,
+        itemNameCapacity,
+        outTypeCodePtr);
+  }
+
   // =============================================================================
   // InstancePre Operations
   // =============================================================================
@@ -2813,6 +2862,79 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         "wasmtime4j_panama_exnref_field_count", Integer.class, exnRefPtr, storePtr);
   }
 
+  /**
+   * Creates a new ExnRef from a tag and field values.
+   *
+   * @param storePtr the store pointer
+   * @param tagPtr the tag pointer
+   * @param fieldCount the number of fields
+   * @param fieldTypesPtr pointer to int array of field type codes
+   * @param fieldI64ValuesPtr pointer to long array of integer field values
+   * @param fieldF64ValuesPtr pointer to double array of float field values
+   * @return the new ExnRef pointer, or NULL on failure
+   */
+  public MemorySegment exnRefCreate(
+      final MemorySegment storePtr,
+      final MemorySegment tagPtr,
+      final int fieldCount,
+      final MemorySegment fieldTypesPtr,
+      final MemorySegment fieldI64ValuesPtr,
+      final MemorySegment fieldF64ValuesPtr) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(tagPtr, "tagPtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_create",
+        MemorySegment.class,
+        storePtr,
+        tagPtr,
+        fieldCount,
+        fieldTypesPtr,
+        fieldI64ValuesPtr,
+        fieldF64ValuesPtr);
+  }
+
+  /**
+   * Converts an ExnRef to its raw u32 representation.
+   *
+   * @param exnRefPtr the exception reference pointer
+   * @param storePtr the store pointer
+   * @return the raw value as a long, or -1 on failure
+   */
+  public long exnRefToRaw(final MemorySegment exnRefPtr, final MemorySegment storePtr) {
+    validatePointer(exnRefPtr, "exnRefPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_panama_exnref_to_raw", Long.class, exnRefPtr, storePtr);
+  }
+
+  /**
+   * Creates an ExnRef from a raw u32 representation.
+   *
+   * @param storePtr the store pointer
+   * @param raw the raw u32 value
+   * @return the ExnRef pointer, or NULL if raw is 0 or invalid
+   */
+  public MemorySegment exnRefFromRaw(final MemorySegment storePtr, final int raw) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_from_raw", MemorySegment.class, storePtr, raw);
+  }
+
+  /**
+   * Checks if an ExnRef matches a given heap type.
+   *
+   * @param exnRefPtr the exception reference pointer
+   * @param storePtr the store pointer
+   * @param heapTypeCode the heap type code (matching Java HeapType enum ordinal)
+   * @return 1 if matches, 0 if not, -1 on error
+   */
+  public int exnRefMatchesTy(
+      final MemorySegment exnRefPtr, final MemorySegment storePtr, final int heapTypeCode) {
+    validatePointer(exnRefPtr, "exnRefPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_exnref_matches_ty", Integer.class, exnRefPtr, storePtr, heapTypeCode);
+  }
+
   // ===== Host Function MethodHandle Getters =====
 
   /**
@@ -2895,6 +3017,30 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_exnref_field_count",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_create",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_to_raw",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_from_raw",
+        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_exnref_matches_ty",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
     // Host function bindings
     addFunctionBinding(

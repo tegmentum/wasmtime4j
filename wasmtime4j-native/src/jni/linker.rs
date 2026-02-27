@@ -1708,6 +1708,74 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeDes
     }
 }
 
+/// Iterate over all definitions in the linker (JNI version).
+///
+/// Returns a String[] where every 3 consecutive elements form a triple:
+/// [moduleName, itemName, typeCode] where typeCode is "0"=Func, "1"=Table, "2"=Memory, "3"=Global.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeLinkerIter(
+    mut env: JNIEnv,
+    _obj: jobject,
+    linker_handle: jlong,
+    store_handle: jlong,
+) -> jobject {
+    // Step 1: Get definitions from native linker (no env needed)
+    let definitions = match (|| -> WasmtimeResult<Vec<(String, String, i32)>> {
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+        let store =
+            unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
+        linker_core::iter_definitions(linker, store)
+    })() {
+        Ok(defs) => defs,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
+        }
+    };
+
+    // Step 2: Build JNI String array (needs env)
+    let array_len = (definitions.len() * 3) as i32;
+    let string_class = match env.find_class("java/lang/String") {
+        Ok(cls) => cls,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    let arr = match env.new_object_array(array_len, &string_class, jni::objects::JObject::null()) {
+        Ok(a) => a,
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    for (i, (module_name, item_name, type_code)) in definitions.iter().enumerate() {
+        let base = (i * 3) as i32;
+
+        let j_module = match env.new_string(module_name) {
+            Ok(s) => s,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let j_name = match env.new_string(item_name) {
+            Ok(s) => s,
+            Err(_) => return std::ptr::null_mut(),
+        };
+        let j_type = match env.new_string(type_code.to_string()) {
+            Ok(s) => s,
+            Err(_) => return std::ptr::null_mut(),
+        };
+
+        if env.set_object_array_element(&arr, base, &j_module).is_err()
+            || env
+                .set_object_array_element(&arr, base + 1, &j_name)
+                .is_err()
+            || env
+                .set_object_array_element(&arr, base + 2, &j_type)
+                .is_err()
+        {
+            return std::ptr::null_mut();
+        }
+    }
+
+    arr.into_raw()
+}
+
 /// Pre-instantiate a module using the linker (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstantiatePre(

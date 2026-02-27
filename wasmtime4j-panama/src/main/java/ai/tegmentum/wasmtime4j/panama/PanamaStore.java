@@ -106,6 +106,52 @@ public final class PanamaStore implements Store {
     }
   }
 
+  // Debug handler callback infrastructure
+  private static final AtomicLong DEBUG_HANDLER_ID_COUNTER = new AtomicLong(1);
+  private static final ConcurrentHashMap<Long, ai.tegmentum.wasmtime4j.debug.DebugHandler>
+      DEBUG_HANDLERS = new ConcurrentHashMap<>();
+  private static final MemorySegment DEBUG_HANDLER_STUB;
+  private static final FunctionDescriptor DEBUG_HANDLER_DESCRIPTOR =
+      FunctionDescriptor.ofVoid(
+          ValueLayout.JAVA_LONG, // callback_id
+          ValueLayout.JAVA_INT); // event_code
+
+  static {
+    MemorySegment debugStub = null;
+    try {
+      final MethodHandle debugCallbackHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaStore.class,
+                  "debugHandlerCallbackStub",
+                  MethodType.methodType(void.class, long.class, int.class));
+      debugStub =
+          Linker.nativeLinker()
+              .upcallStub(debugCallbackHandle, DEBUG_HANDLER_DESCRIPTOR, Arena.global());
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.severe("Failed to create debug handler callback stub: " + e.getMessage());
+    }
+    DEBUG_HANDLER_STUB = debugStub;
+  }
+
+  /**
+   * Static callback method invoked from native code when a debug event occurs.
+   *
+   * @param callbackId the callback identifier
+   * @param eventCode the debug event type code
+   */
+  private static void debugHandlerCallbackStub(final long callbackId, final int eventCode) {
+    final ai.tegmentum.wasmtime4j.debug.DebugHandler handler = DEBUG_HANDLERS.get(callbackId);
+    if (handler == null) {
+      return;
+    }
+    final ai.tegmentum.wasmtime4j.debug.DebugEvent event =
+        ai.tegmentum.wasmtime4j.debug.DebugEvent.fromCode(eventCode);
+    if (event != null) {
+      handler.handle(event, java.util.Collections.emptyList());
+    }
+  }
+
   // Call hook callback infrastructure
   private static final AtomicLong CALL_HOOK_CALLBACK_ID_COUNTER = new AtomicLong(1);
   private static final ConcurrentHashMap<Long, ai.tegmentum.wasmtime4j.func.CallHookHandler>
@@ -360,6 +406,11 @@ public final class PanamaStore implements Store {
   // Resource limiter callback ID for this store (0 = no limiter registered)
   // AtomicLong so the safety net lambda can capture it without preventing GC of PanamaStore
   private final AtomicLong limiterCallbackId = new AtomicLong(0);
+
+  // Debug handler callback ID for this store (0 = no handler registered)
+  // AtomicLong so the safety net lambda can capture it without preventing GC of PanamaStore
+  private final AtomicLong debugHandlerCallbackId = new AtomicLong(0);
+  private ai.tegmentum.wasmtime4j.debug.DebugHandler debugHandler;
 
   /**
    * Creates a new Panama store.
@@ -1795,6 +1846,61 @@ public final class PanamaStore implements Store {
   // Callback holder to prevent garbage collection
   private ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback epochDeadlineCallback;
 
+  @Override
+  public void setDebugHandler(final ai.tegmentum.wasmtime4j.debug.DebugHandler handler) {
+    if (handler == null) {
+      throw new NullPointerException("handler cannot be null");
+    }
+    ensureNotClosed();
+
+    // Remove previous debug handler registration if any
+    final long oldDebugId = debugHandlerCallbackId.get();
+    if (oldDebugId != 0) {
+      DEBUG_HANDLERS.remove(oldDebugId);
+      debugHandlerCallbackId.set(0);
+    }
+
+    this.debugHandler = handler;
+
+    if (DEBUG_HANDLER_STUB == null) {
+      throw new IllegalStateException("Debug handler callback infrastructure not initialized");
+    }
+
+    // Generate a unique callback ID and register the handler
+    final long newDebugId = DEBUG_HANDLER_ID_COUNTER.getAndIncrement();
+    DEBUG_HANDLERS.put(newDebugId, handler);
+    debugHandlerCallbackId.set(newDebugId);
+
+    final int result =
+        NATIVE_BINDINGS.storeSetDebugHandlerFn(nativeStore, DEBUG_HANDLER_STUB, newDebugId);
+
+    if (result != 0) {
+      // Cleanup on failure
+      DEBUG_HANDLERS.remove(newDebugId);
+      debugHandlerCallbackId.set(0);
+      throw new IllegalStateException("Failed to set debug handler: native error " + result);
+    }
+  }
+
+  @Override
+  public void clearDebugHandler() {
+    ensureNotClosed();
+
+    // Remove debug handler registration
+    final long oldDebugId = debugHandlerCallbackId.get();
+    if (oldDebugId != 0) {
+      DEBUG_HANDLERS.remove(oldDebugId);
+      debugHandlerCallbackId.set(0);
+    }
+
+    this.debugHandler = null;
+
+    final int result = NATIVE_BINDINGS.storeClearDebugHandler(nativeStore);
+    if (result != 0) {
+      throw new IllegalStateException("Failed to clear debug handler: native error " + result);
+    }
+  }
+
   // Call hook support
   private ai.tegmentum.wasmtime4j.func.CallHookHandler callHookHandler;
   // AtomicLong so the safety net lambda can capture it without preventing GC of PanamaStore
@@ -1867,6 +1973,7 @@ public final class PanamaStore implements Store {
     final AtomicLong epochId = this.epochCallbackId;
     final AtomicLong hookId = this.callHookCallbackId;
     final AtomicLong limiterId = this.limiterCallbackId;
+    final AtomicLong debugId = this.debugHandlerCallbackId;
     return new NativeResourceHandle(
         "PanamaStore",
         () -> {
@@ -1887,6 +1994,12 @@ public final class PanamaStore implements Store {
           if (limiterVal != 0) {
             RESOURCE_LIMITERS.remove(limiterVal);
             RESOURCE_LIMITERS_ASYNC.remove(limiterVal);
+          }
+
+          // Clean up debug handler from static registry
+          final long debugVal = debugHandlerCallbackId.getAndSet(0);
+          if (debugVal != 0) {
+            DEBUG_HANDLERS.remove(debugVal);
           }
 
           // Close callback registry first (cleans up function references)
@@ -1925,6 +2038,10 @@ public final class PanamaStore implements Store {
           if (limiterVal != 0) {
             RESOURCE_LIMITERS.remove(limiterVal);
             RESOURCE_LIMITERS_ASYNC.remove(limiterVal);
+          }
+          final long debugVal = debugId.getAndSet(0);
+          if (debugVal != 0) {
+            DEBUG_HANDLERS.remove(debugVal);
           }
           if (storeHandle != null && !storeHandle.equals(MemorySegment.NULL)) {
             NATIVE_BINDINGS.storeDestroy(storeHandle);
