@@ -175,7 +175,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     ensureNotClosed();
 
     // Build WIT path: "namespace:package/interface#function"
-    final String witPath = interfaceNamespace + "/" + interfaceName + "#" + functionName;
+    final String witPath =
+        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
     defineHostFunctionNative(witPath, implementation, false);
   }
 
@@ -215,7 +216,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     ensureNotClosed();
 
     // Build WIT path: "namespace:package/interface#function"
-    final String witPath = interfaceNamespace + "/" + interfaceName + "#" + functionName;
+    final String witPath =
+        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
     defineHostFunctionNative(witPath, implementation, true);
   }
 
@@ -1345,8 +1347,10 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (hashIndex > 0) {
       final String interfacePath = witPath.substring(0, hashIndex);
       final String functionName = witPath.substring(hashIndex + 1);
-      // Convert "wasi:cli/stdout" to "wasi:cli:stdout" for hasInterface compatibility
-      final String interfaceKey = interfacePath.replace('/', ':');
+      // Extract "ns:pkg" from "ns:pkg/iface" — drop everything after the last '/'
+      final int lastSlash = interfacePath.lastIndexOf('/');
+      final String interfaceKey =
+          lastSlash > 0 ? interfacePath.substring(0, lastSlash) : interfacePath;
       definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
     }
 

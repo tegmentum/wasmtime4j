@@ -630,6 +630,8 @@ pub struct ComponentLinker {
     host_functions: HashMap<String, u64>,
     /// Defined interfaces
     pub(crate) defined_interfaces: HashMap<String, Vec<String>>,
+    /// Entries per interface for re-registration when adding multiple functions
+    interface_function_entries: HashMap<String, Vec<(String, Arc<ComponentHostFunctionEntry>, bool)>>,
     /// Whether WASI Preview 2 is enabled
     wasi_p2_enabled: bool,
     /// Whether WASI HTTP is enabled
@@ -662,6 +664,7 @@ impl ComponentLinker {
             linker,
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
+            interface_function_entries: HashMap::new(),
             wasi_p2_enabled: false,
             wasi_http_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
@@ -688,6 +691,7 @@ impl ComponentLinker {
             linker,
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
+            interface_function_entries: HashMap::new(),
             wasi_p2_enabled: false,
             wasi_http_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
@@ -889,7 +893,7 @@ impl ComponentLinker {
 
         // Wire the host function into wasmtime's component Linker
         let interface_path = format!("{}/{}", interface_namespace, interface_name);
-        self.register_func_on_linker(&interface_path, function_name, entry.clone())?;
+        self.register_func_on_linker(&interface_path, function_name, entry.clone(), false)?;
 
         // Build WIT path key for internal tracking
         let wit_path = format!(
@@ -953,7 +957,7 @@ impl ComponentLinker {
         // Use the interface part of the WIT path (everything before '#') as the instance path.
         let parts: Vec<&str> = wit_path.split('#').collect();
         let interface_path = parts[0];
-        self.register_func_on_linker(interface_path, &function, entry.clone())?;
+        self.register_func_on_linker(interface_path, &function, entry.clone(), false)?;
 
         self.host_functions.insert(wit_path.to_string(), id);
 
@@ -977,112 +981,115 @@ impl ComponentLinker {
     ///
     /// This creates a `func_new` entry on the appropriate `LinkerInstance`
     /// that bridges between wasmtime's `Val` type and our `ComponentValue` type.
+    /// Register a host function on wasmtime's component Linker.
+    ///
+    /// Wasmtime's `LinkerInstance::instance()` can only be called once per name
+    /// because it inserts a new definition. To support multiple functions per
+    /// interface, we use `allow_shadowing` and re-register all functions for the
+    /// interface each time a new one is added.
     fn register_func_on_linker(
         &mut self,
         interface_path: &str,
         function_name: &str,
         entry: Arc<ComponentHostFunctionEntry>,
+        is_async: bool,
     ) -> WasmtimeResult<()> {
-        let func_name = function_name.to_string();
-        self.linker
-            .root()
-            .instance(interface_path)
-            .map_err(|e| WasmtimeError::Linker {
-                message: format!(
-                    "Failed to get linker instance for '{}': {}",
-                    interface_path, e
-                ),
-            })?
-            .func_new(
-                &func_name,
-                move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
-                      _func_type,
-                      params: &[Val],
-                      results: &mut [Val]| {
-                    // Convert wasmtime Val params to ComponentValue
-                    let cv_params: Vec<ComponentValue> =
-                        params.iter().map(val_to_component_value).collect();
+        // Track the entry for this interface
+        self.interface_function_entries
+            .entry(interface_path.to_string())
+            .or_default()
+            .push((function_name.to_string(), entry, is_async));
 
-                    // Invoke the host callback
-                    let cv_results = entry.callback.execute(&cv_params).map_err(|e| {
-                        wasmtime::Error::msg(format!("Host function callback failed: {}", e))
-                    })?;
+        // Clone entries to avoid borrow conflicts with self.linker
+        let entries: Vec<(String, Arc<ComponentHostFunctionEntry>, bool)> = self
+            .interface_function_entries
+            .get(interface_path)
+            .cloned()
+            .unwrap_or_default();
 
-                    // Convert ComponentValue results back to wasmtime Val
-                    for (i, cv) in cv_results.iter().enumerate() {
-                        if i < results.len() {
-                            results[i] = component_value_to_val(cv);
-                        }
-                    }
+        // Enable shadowing so we can replace the instance with all its functions
+        self.linker.allow_shadowing(true);
 
-                    Ok(())
-                },
-            )
-            .map_err(|e| WasmtimeError::Linker {
-                message: format!(
-                    "Failed to register function '{}' on '{}': {}",
-                    function_name, interface_path, e
-                ),
-            })?;
+        let mut root = self.linker.root();
+        let mut inst = root.instance(interface_path).map_err(|e| WasmtimeError::Linker {
+            message: format!(
+                "Failed to get linker instance for '{}': {}",
+                interface_path, e
+            ),
+        })?;
 
-        Ok(())
-    }
-
-    /// Register an async host function on wasmtime's component Linker.
-    ///
-    /// This creates a `func_new_async` entry on the appropriate `LinkerInstance`
-    /// that bridges between wasmtime's `Val` type and our `ComponentValue` type.
-    /// Requires the engine to have been created with `async_support(true)`.
-    fn register_func_on_linker_async(
-        &mut self,
-        interface_path: &str,
-        function_name: &str,
-        entry: Arc<ComponentHostFunctionEntry>,
-    ) -> WasmtimeResult<()> {
-        let func_name = function_name.to_string();
-        self.linker
-            .root()
-            .instance(interface_path)
-            .map_err(|e| WasmtimeError::Linker {
-                message: format!(
-                    "Failed to get linker instance for '{}': {}",
-                    interface_path, e
-                ),
-            })?
-            .func_new_async(
-                &func_name,
-                move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
-                      _func_type,
-                      params: &[Val],
-                      results: &mut [Val]| {
-                    let entry = entry.clone();
-                    Box::new(async move {
-                        // Convert wasmtime Val params to ComponentValue
+        // Register ALL functions for this interface (re-registers existing + new)
+        for (fn_name, fn_entry, fn_is_async) in entries {
+            if fn_is_async {
+                let fn_entry_clone = fn_entry.clone();
+                inst.func_new_async(
+                    &fn_name,
+                    move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
+                          _func_type,
+                          params: &[Val],
+                          results: &mut [Val]| {
+                        let entry = fn_entry_clone.clone();
+                        Box::new(async move {
+                            let cv_params: Vec<ComponentValue> =
+                                params.iter().map(val_to_component_value).collect();
+                            let cv_results =
+                                entry.callback.execute(&cv_params).map_err(|e| {
+                                    wasmtime::Error::msg(format!(
+                                        "Host function callback failed: {}",
+                                        e
+                                    ))
+                                })?;
+                            for (i, cv) in cv_results.iter().enumerate() {
+                                if i < results.len() {
+                                    results[i] = component_value_to_val(cv);
+                                }
+                            }
+                            Ok(())
+                        })
+                    },
+                )
+                .map_err(|e| WasmtimeError::Linker {
+                    message: format!(
+                        "Failed to register async function '{}' on '{}': {}",
+                        fn_name, interface_path, e
+                    ),
+                })?;
+            } else {
+                let fn_entry_clone = fn_entry.clone();
+                inst.func_new(
+                    &fn_name,
+                    move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
+                          _func_type,
+                          params: &[Val],
+                          results: &mut [Val]| {
                         let cv_params: Vec<ComponentValue> =
                             params.iter().map(val_to_component_value).collect();
-
-                        // Invoke the host callback
-                        let cv_results = entry.callback.execute(&cv_params).map_err(|e| {
-                            wasmtime::Error::msg(format!("Host function callback failed: {}", e))
-                        })?;
-
-                        // Convert ComponentValue results back to wasmtime Val
+                        let cv_results =
+                            fn_entry_clone.callback.execute(&cv_params).map_err(|e| {
+                                wasmtime::Error::msg(format!(
+                                    "Host function callback failed: {}",
+                                    e
+                                ))
+                            })?;
                         for (i, cv) in cv_results.iter().enumerate() {
                             if i < results.len() {
                                 results[i] = component_value_to_val(cv);
                             }
                         }
-
                         Ok(())
-                    })
-                },
-            )
-            .map_err(|e| WasmtimeError::Linker {
-                message: format!(
-                    "Failed to register async function '{}' on '{}': {}",
-                    function_name, interface_path, e
-                ),
-            })?;
+                    },
+                )
+                .map_err(|e| WasmtimeError::Linker {
+                    message: format!(
+                        "Failed to register function '{}' on '{}': {}",
+                        fn_name, interface_path, e
+                    ),
+                })?;
+            }
+        }
+
+        // Disable shadowing after re-registration
+        self.linker.allow_shadowing(false);
 
         Ok(())
     }
@@ -1139,7 +1146,7 @@ impl ComponentLinker {
 
         // Wire the host function into wasmtime's component Linker using async variant
         let interface_path = format!("{}/{}", interface_namespace, interface_name);
-        self.register_func_on_linker_async(&interface_path, function_name, entry.clone())?;
+        self.register_func_on_linker(&interface_path, function_name, entry.clone(), true)?;
 
         // Build WIT path key for internal tracking
         let wit_path = format!(
@@ -1217,7 +1224,7 @@ impl ComponentLinker {
         // Wire the host function into wasmtime's component Linker using async variant.
         let parts: Vec<&str> = wit_path.split('#').collect();
         let interface_path = parts[0];
-        self.register_func_on_linker_async(interface_path, &function, entry.clone())?;
+        self.register_func_on_linker(interface_path, &function, entry.clone(), true)?;
 
         self.host_functions.insert(wit_path.to_string(), id);
 
@@ -1995,6 +2002,7 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(
             linker,
             host_functions: HashMap::new(),
             defined_interfaces: HashMap::new(),
+            interface_function_entries: HashMap::new(),
             wasi_p2_enabled: false,
             wasi_http_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
