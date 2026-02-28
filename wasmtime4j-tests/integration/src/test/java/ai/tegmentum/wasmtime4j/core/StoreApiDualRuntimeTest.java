@@ -629,8 +629,9 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
         final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
             store.debugExitFrames();
         assertNotNull(frames, "debugExitFrames should return non-null list");
-        assertTrue(frames.isEmpty(), "debugExitFrames should return empty list "
-            + "when guest debugging is not enabled");
+        assertTrue(
+            frames.isEmpty(),
+            "debugExitFrames should return empty list " + "when guest debugging is not enabled");
         LOGGER.info("[" + runtime + "] debugExitFrames returned empty list as expected");
       }
     }
@@ -651,8 +652,9 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
         final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
             store.debugExitFrames();
         assertNotNull(frames, "debugExitFrames should return non-null list");
-        assertTrue(frames.isEmpty(), "debugExitFrames should return empty list "
-            + "when no wasm call is active");
+        assertTrue(
+            frames.isEmpty(),
+            "debugExitFrames should return empty list " + "when no wasm call is active");
         LOGGER.info("[" + runtime + "] debugExitFrames returned empty list with debug enabled");
       }
     }

@@ -385,7 +385,13 @@ impl Linker {
         )
     }
 
-    /// Internal implementation for both checked and unchecked host function definition.
+    /// Internal implementation for checked and unchecked host function definition.
+    ///
+    /// Note: Wasmtime's `Func::new_async()` is not used because its fiber-based
+    /// async is incompatible with JVM threads. The JVM's stack overflow detection
+    /// throws StackOverflowError when the stack pointer moves to Wasmtime's fiber
+    /// stack. Instead, async host functions are handled by wrapping the Java
+    /// `CompletableFuture` with `.join()` in a synchronous `Func::new()`.
     fn define_host_function_internal(
         &mut self,
         module_name: &str,
@@ -1393,6 +1399,10 @@ pub mod core {
         })?;
 
         // Get the wasmtime store and call instantiate
+        // Note: We always use synchronous instantiate() rather than instantiate_async()
+        // because Wasmtime's fiber-based async is incompatible with JVM threads.
+        // The JVM's stack overflow detection throws StackOverflowError when fibers
+        // switch the stack pointer outside the JVM's known thread stack bounds.
         let mut store_guard = store.try_lock_store()?;
         let wasmtime_instance = linker_guard
             .instantiate(&mut *store_guard, module.inner())
@@ -2513,4 +2523,5 @@ mod tests {
 
         assert!(linker.metadata().wasi_enabled, "WASI should be enabled");
     }
+
 }

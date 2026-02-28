@@ -2448,6 +2448,20 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG));
 
     addFunctionBinding(
+        "wasmtime4j_panama_linker_define_host_function_async",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
         "wasmtime4j_panama_linker_define_global",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,

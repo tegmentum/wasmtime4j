@@ -538,7 +538,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeInstanti
         let mut store_lock = store.try_lock_store()?;
         linker.instantiate_host_functions(&mut *store_lock)?;
 
-        // Then use wasmtime::Linker::instantiate
+        // Use synchronous instantiate (Wasmtime fiber-based async is incompatible with JVM threads)
         let linker_lock = linker.inner()?;
         let wasmtime_instance = linker_lock
             .instantiate(&mut *store_lock, module.inner())

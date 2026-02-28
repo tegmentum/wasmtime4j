@@ -823,8 +823,13 @@ impl Instance {
                     results.push(default_val);
                 }
 
-                // Try using typed function for no-param i32 return case
+                // Note: We always use synchronous Func::call() rather than call_async()
+                // because Wasmtime's fiber-based async (call_async uses on_fiber) is
+                // incompatible with JVM threads. The JVM's stack overflow detection
+                // throws StackOverflowError when fibers switch the stack pointer
+                // outside the JVM's known thread stack bounds.
                 if wasm_params.is_empty() && results.len() == 1 {
+                    // Try using typed function for no-param i32 return case
                     if let Val::I32(_) = results[0] {
                         match func.typed::<(), i32>(&*store_guard) {
                             Ok(typed_func) => match typed_func.call(&mut *store_guard, ()) {

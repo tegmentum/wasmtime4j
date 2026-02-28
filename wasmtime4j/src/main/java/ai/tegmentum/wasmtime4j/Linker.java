@@ -79,8 +79,10 @@ public interface Linker<T> extends Closeable {
       final FunctionType functionType,
       final HostFunctionAsync implementation)
       throws WasmException {
-    // Default: wrap async implementation as a synchronous host function that blocks on the future.
-    // JNI/Panama implementations should override to use Func::new_async() for true async.
+    // Wrap async implementation as a synchronous host function that blocks on the future.
+    // Note: Wasmtime's fiber-based Func::new_async() is incompatible with JVM threads
+    // because the JVM's stack overflow detection throws StackOverflowError when fibers
+    // switch the stack pointer outside the JVM's known thread stack bounds.
     defineHostFunction(
         moduleName,
         name,
