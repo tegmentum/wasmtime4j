@@ -49,9 +49,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WASI Sockets Integration Tests")
-public final class WasiSocketsIntegrationTest {
+public final class WasiSocketsTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiSocketsIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiSocketsTest.class.getName());
 
   private static boolean wasiSocketsAvailable = false;
   private static WasmRuntime sharedRuntime;

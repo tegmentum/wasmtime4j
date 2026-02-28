@@ -63,10 +63,9 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @since 1.1.0
  */
 @DisplayName("WASI Socket Timeout Integration Tests")
-public final class WasiSocketTimeoutIntegrationTest {
+public final class WasiSocketTimeoutTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiSocketTimeoutIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiSocketTimeoutTest.class.getName());
 
   private static boolean wasiSocketsAvailable = false;
   private static WasmRuntime sharedRuntime;

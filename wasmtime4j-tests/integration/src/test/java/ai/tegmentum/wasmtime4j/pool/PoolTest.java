@@ -23,9 +23,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the pooling allocator interfaces and classes.
  */
 @DisplayName("Pool Integration Tests")
-public class PoolIntegrationTest {
+public class PoolTest {
 
-  private static final Logger LOGGER = Logger.getLogger(PoolIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(PoolTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

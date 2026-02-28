@@ -43,10 +43,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("ComponentVal Integration Tests")
-public final class ComponentValIntegrationTest {
+public final class ComponentValTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ComponentValIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ComponentValTest.class.getName());
 
   @Nested
   @DisplayName("Boolean Value Tests")

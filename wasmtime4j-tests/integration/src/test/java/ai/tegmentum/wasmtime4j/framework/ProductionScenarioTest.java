@@ -51,10 +51,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Production Scenario Integration Tests")
-public class ProductionScenarioIntegrationTest {
+public class ProductionScenarioTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ProductionScenarioIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ProductionScenarioTest.class.getName());
 
   private ExecutorService executorService;
   private ProductionMetrics metrics;

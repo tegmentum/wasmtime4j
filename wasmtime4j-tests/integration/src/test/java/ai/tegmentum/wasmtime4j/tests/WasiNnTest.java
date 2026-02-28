@@ -53,9 +53,9 @@ import org.junit.jupiter.api.condition.EnabledIf;
  * ONNX Runtime, OpenVINO, or WinML) to be available. Tests that require actual inference are
  * conditionally enabled based on backend availability.
  */
-public class WasiNnIntegrationTest {
+public class WasiNnTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiNnIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiNnTest.class.getName());
 
   private WasmRuntime runtime;
   private Engine engine;

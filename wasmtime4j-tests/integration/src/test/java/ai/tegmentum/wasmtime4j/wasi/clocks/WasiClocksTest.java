@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the DateTime, TimezoneDisplay, and related clock classes.
  */
 @DisplayName("WASI Clocks Integration Tests")
-public class WasiClocksIntegrationTest {
+public class WasiClocksTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiClocksIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiClocksTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

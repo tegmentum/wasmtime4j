@@ -34,10 +34,9 @@ import org.junit.jupiter.api.Test;
  * for WebAssembly component model type handling.
  */
 @DisplayName("WIT Type System Integration Tests")
-public class WitTypeSystemIntegrationTest {
+public class WitTypeSystemTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WitTypeSystemIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WitTypeSystemTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

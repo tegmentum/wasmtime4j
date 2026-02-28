@@ -48,10 +48,9 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Host Function Integration Tests")
-public final class HostFunctionIntegrationTest {
+public final class HostFunctionTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(HostFunctionIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(HostFunctionTest.class.getName());
 
   /**
    * WebAssembly module that imports and calls a host function.

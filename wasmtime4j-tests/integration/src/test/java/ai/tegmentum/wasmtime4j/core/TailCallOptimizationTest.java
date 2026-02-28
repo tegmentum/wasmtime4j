@@ -59,10 +59,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Tail Call Optimization Integration Tests")
-public final class TailCallOptimizationIntegrationTest {
+public final class TailCallOptimizationTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(TailCallOptimizationIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TailCallOptimizationTest.class.getName());
 
   private static boolean tailCallSupported = false;
   private static WasmRuntime sharedRuntime;

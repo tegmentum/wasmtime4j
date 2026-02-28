@@ -49,10 +49,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("ComponentLinker Integration Tests")
-public final class ComponentLinkerIntegrationTest {
+public final class ComponentLinkerTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ComponentLinkerIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ComponentLinkerTest.class.getName());
 
   private static boolean componentLinkerAvailable = false;
 

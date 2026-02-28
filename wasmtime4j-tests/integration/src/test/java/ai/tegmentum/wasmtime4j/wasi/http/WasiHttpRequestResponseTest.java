@@ -49,10 +49,10 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WASI HTTP Request/Response Integration Tests")
-public final class WasiHttpRequestResponseIntegrationTest {
+public final class WasiHttpRequestResponseTest {
 
   private static final Logger LOGGER =
-      Logger.getLogger(WasiHttpRequestResponseIntegrationTest.class.getName());
+      Logger.getLogger(WasiHttpRequestResponseTest.class.getName());
 
   private static boolean wasiHttpAvailable = false;
   private static WasmRuntime sharedRuntime;

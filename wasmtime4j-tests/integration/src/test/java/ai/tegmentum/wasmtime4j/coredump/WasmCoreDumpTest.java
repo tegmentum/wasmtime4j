@@ -38,10 +38,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WasmCoreDump Integration Tests")
-public final class WasmCoreDumpIntegrationTest {
+public final class WasmCoreDumpTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasmCoreDumpIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasmCoreDumpTest.class.getName());
 
   @Nested
   @DisplayName("CoreDump Builder Tests")

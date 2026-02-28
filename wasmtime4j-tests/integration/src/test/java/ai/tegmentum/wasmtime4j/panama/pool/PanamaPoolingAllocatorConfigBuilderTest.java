@@ -34,10 +34,10 @@ import org.junit.jupiter.api.Test;
  * <p>These tests exercise actual code execution to improve JaCoCo coverage.
  */
 @DisplayName("Panama Pooling Allocator Config Builder Integration Tests")
-public class PanamaPoolingAllocatorConfigBuilderIntegrationTest {
+public class PanamaPoolingAllocatorConfigBuilderTest {
 
   private static final Logger LOGGER =
-      Logger.getLogger(PanamaPoolingAllocatorConfigBuilderIntegrationTest.class.getName());
+      Logger.getLogger(PanamaPoolingAllocatorConfigBuilderTest.class.getName());
 
   @Nested
   @DisplayName("Default Builder Tests")

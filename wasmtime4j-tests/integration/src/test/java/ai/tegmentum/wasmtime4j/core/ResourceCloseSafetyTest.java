@@ -52,10 +52,9 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Resource Close Safety Integration Tests")
-public final class ResourceCloseSafetyIntegrationTest {
+public final class ResourceCloseSafetyTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ResourceCloseSafetyIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ResourceCloseSafetyTest.class.getName());
 
   /**
    * Simple WebAssembly module that exports an add function.

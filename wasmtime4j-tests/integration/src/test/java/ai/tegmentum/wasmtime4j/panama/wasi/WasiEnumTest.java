@@ -32,9 +32,9 @@ import org.junit.jupiter.api.Test;
  * <p>These tests exercise actual code execution for WasiClockId to improve JaCoCo coverage.
  */
 @DisplayName("WASI Enum Integration Tests")
-public class WasiEnumIntegrationTest {
+public class WasiEnumTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiEnumIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiEnumTest.class.getName());
 
   @Nested
   @DisplayName("WasiClockId Tests")

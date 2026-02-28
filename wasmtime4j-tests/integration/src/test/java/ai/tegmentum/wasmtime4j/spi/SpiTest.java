@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the SPI components for caller context.
  */
 @DisplayName("SPI Integration Tests")
-public class SpiIntegrationTest {
+public class SpiTest {
 
-  private static final Logger LOGGER = Logger.getLogger(SpiIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(SpiTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

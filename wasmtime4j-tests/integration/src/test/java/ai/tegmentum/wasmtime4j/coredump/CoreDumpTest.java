@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the coredump classes and their public APIs.
  */
 @DisplayName("CoreDump Integration Tests")
-public class CoreDumpIntegrationTest {
+public class CoreDumpTest {
 
-  private static final Logger LOGGER = Logger.getLogger(CoreDumpIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CoreDumpTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

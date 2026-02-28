@@ -48,10 +48,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Memory Operations Integration Tests")
-public final class MemoryOperationsIntegrationTest {
+public final class MemoryOperationsTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(MemoryOperationsIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(MemoryOperationsTest.class.getName());
 
   /** Page size in bytes (64KB). */
   private static final int PAGE_SIZE = 65536;

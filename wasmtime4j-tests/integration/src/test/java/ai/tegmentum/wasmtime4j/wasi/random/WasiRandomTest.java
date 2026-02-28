@@ -29,9 +29,9 @@ import org.junit.jupiter.api.Test;
  * generation.
  */
 @DisplayName("WASI Random Integration Tests")
-public class WasiRandomIntegrationTest {
+public class WasiRandomTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiRandomIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiRandomTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

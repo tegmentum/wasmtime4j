@@ -42,10 +42,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Component Lifecycle Integration Tests")
-public final class ComponentLifecycleIntegrationTest {
+public final class ComponentLifecycleTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ComponentLifecycleIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ComponentLifecycleTest.class.getName());
 
   private static boolean componentAvailable = false;
 

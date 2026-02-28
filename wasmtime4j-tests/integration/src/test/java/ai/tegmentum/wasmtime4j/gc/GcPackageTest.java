@@ -40,9 +40,9 @@ import org.junit.jupiter.api.TestInfo;
  * <p>Tests GcReferenceType, I31Type, FieldType, FieldDefinition, ArrayType, and related classes.
  */
 @DisplayName("GC Package Integration Tests")
-class GcPackageIntegrationTest {
+class GcPackageTest {
 
-  private static final Logger LOGGER = Logger.getLogger(GcPackageIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(GcPackageTest.class.getName());
 
   @Nested
   @DisplayName("GcReferenceType Tests")

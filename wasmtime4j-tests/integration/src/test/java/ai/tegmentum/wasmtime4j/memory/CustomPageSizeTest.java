@@ -61,10 +61,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Custom Page Size Integration Tests")
-public final class CustomPageSizeIntegrationTest {
+public final class CustomPageSizeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(CustomPageSizeIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CustomPageSizeTest.class.getName());
 
   /** Standard WebAssembly page size is 64KB (65536 bytes). */
   private static final int STANDARD_PAGE_SIZE = 65536;

@@ -46,10 +46,9 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Fuel Management Integration Tests")
-public final class FuelManagementIntegrationTest {
+public final class FuelManagementTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(FuelManagementIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(FuelManagementTest.class.getName());
 
   private static boolean fuelAvailable = false;
 

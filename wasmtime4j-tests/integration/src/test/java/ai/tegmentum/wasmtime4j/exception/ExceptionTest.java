@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the exception hierarchy and specific exception types.
  */
 @DisplayName("Exception Integration Tests")
-public class ExceptionIntegrationTest {
+public class ExceptionTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ExceptionIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ExceptionTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

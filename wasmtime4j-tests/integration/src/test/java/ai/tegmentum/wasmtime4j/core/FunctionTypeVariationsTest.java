@@ -48,10 +48,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Function Type Variations Integration Tests")
-public final class FunctionTypeVariationsIntegrationTest {
+public final class FunctionTypeVariationsTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(FunctionTypeVariationsIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(FunctionTypeVariationsTest.class.getName());
 
   private WasmRuntime runtime;
   private Engine engine;

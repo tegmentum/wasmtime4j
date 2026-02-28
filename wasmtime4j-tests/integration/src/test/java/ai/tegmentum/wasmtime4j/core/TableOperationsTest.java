@@ -50,10 +50,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Table Operations Integration Tests")
-public final class TableOperationsIntegrationTest {
+public final class TableOperationsTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(TableOperationsIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TableOperationsTest.class.getName());
 
   /**
    * WebAssembly module with an exported funcref table. Table has 2 elements initial, 10 max.

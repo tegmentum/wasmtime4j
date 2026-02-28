@@ -26,9 +26,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the NN enums, NnTensor, and NnException.
  */
 @DisplayName("WASI NN Integration Tests")
-public class WasiNnIntegrationTest {
+public class WasiNnTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiNnIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiNnTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

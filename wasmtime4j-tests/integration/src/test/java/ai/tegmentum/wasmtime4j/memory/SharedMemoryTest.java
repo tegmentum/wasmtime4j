@@ -66,10 +66,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Shared Memory Integration Tests")
-public final class SharedMemoryIntegrationTest {
+public final class SharedMemoryTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(SharedMemoryIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(SharedMemoryTest.class.getName());
 
   private static boolean sharedMemorySupported = false;
   private static boolean sharedMemoryExportSupported = false;

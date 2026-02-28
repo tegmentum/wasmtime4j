@@ -29,10 +29,9 @@ import org.junit.jupiter.api.condition.EnabledIf;
  *   <li>Resource management and cleanup
  * </ul>
  */
-public class WasiPreview2IntegrationTest {
+public class WasiPreview2Test {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiPreview2IntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiPreview2Test.class.getName());
 
   private WasmRuntime runtime;
   private Engine engine;

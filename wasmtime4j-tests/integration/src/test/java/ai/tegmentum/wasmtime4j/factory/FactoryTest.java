@@ -28,9 +28,9 @@ import org.junit.jupiter.api.Test;
  * instances, including automatic runtime selection, manual overrides, and fallback behavior.
  */
 @DisplayName("WasmRuntimeFactory Integration Tests")
-public class FactoryIntegrationTest {
+public class FactoryTest {
 
-  private static final Logger LOGGER = Logger.getLogger(FactoryIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(FactoryTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

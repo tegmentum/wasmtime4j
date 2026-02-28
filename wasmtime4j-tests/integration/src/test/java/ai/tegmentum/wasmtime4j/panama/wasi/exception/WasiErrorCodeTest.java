@@ -35,10 +35,9 @@ import org.junit.jupiter.api.Test;
  * <p>These tests exercise actual code execution to improve JaCoCo coverage.
  */
 @DisplayName("WASI Error Code Integration Tests")
-public class WasiErrorCodeIntegrationTest {
+public class WasiErrorCodeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiErrorCodeIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiErrorCodeTest.class.getName());
 
   @Nested
   @DisplayName("Enum Value Tests")

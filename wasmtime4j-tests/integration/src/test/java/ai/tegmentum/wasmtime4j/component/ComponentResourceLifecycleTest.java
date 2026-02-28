@@ -40,10 +40,10 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Component Resource Lifecycle Integration Tests")
-public final class ComponentResourceLifecycleIntegrationTest {
+public final class ComponentResourceLifecycleTest {
 
   private static final Logger LOGGER =
-      Logger.getLogger(ComponentResourceLifecycleIntegrationTest.class.getName());
+      Logger.getLogger(ComponentResourceLifecycleTest.class.getName());
 
   private final List<AutoCloseable> resources = new ArrayList<>();
 

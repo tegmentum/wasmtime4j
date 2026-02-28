@@ -50,9 +50,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WASI HTTP Integration Tests")
-public final class WasiHttpIntegrationTest {
+public final class WasiHttpTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiHttpIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiHttpTest.class.getName());
 
   private static boolean wasiHttpAvailable = false;
   private static WasmRuntime sharedRuntime;

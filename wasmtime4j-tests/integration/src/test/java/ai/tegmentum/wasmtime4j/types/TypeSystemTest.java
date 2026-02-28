@@ -34,9 +34,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the type hierarchy and type metadata classes.
  */
 @DisplayName("Type System Integration Tests")
-public class TypeSystemIntegrationTest {
+public class TypeSystemTest {
 
-  private static final Logger LOGGER = Logger.getLogger(TypeSystemIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TypeSystemTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

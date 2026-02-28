@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the configuration enums and classes.
  */
 @DisplayName("Config Integration Tests")
-public class ConfigIntegrationTest {
+public class ConfigTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ConfigIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ConfigTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

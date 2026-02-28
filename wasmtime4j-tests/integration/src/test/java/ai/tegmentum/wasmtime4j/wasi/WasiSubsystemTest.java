@@ -47,10 +47,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WASI Subsystem Integration Tests")
-public final class WasiSubsystemIntegrationTest {
+public final class WasiSubsystemTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiSubsystemIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiSubsystemTest.class.getName());
 
   // ========================================================================
   // DateTime Functional Tests

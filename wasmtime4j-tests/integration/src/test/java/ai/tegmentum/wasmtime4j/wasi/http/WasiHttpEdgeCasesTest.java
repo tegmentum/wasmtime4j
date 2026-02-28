@@ -67,10 +67,9 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @since 1.1.0
  */
 @DisplayName("WASI HTTP Edge Cases Integration Tests")
-public final class WasiHttpEdgeCasesIntegrationTest {
+public final class WasiHttpEdgeCasesTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiHttpEdgeCasesIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiHttpEdgeCasesTest.class.getName());
 
   private static boolean wasiHttpAvailable = false;
   private static WasmRuntime sharedRuntime;

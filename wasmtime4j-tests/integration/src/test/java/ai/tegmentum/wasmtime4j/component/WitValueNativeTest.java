@@ -44,10 +44,9 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("WitValue Native Integration Tests")
-class WitValueNativeIntegrationTest {
+class WitValueNativeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WitValueNativeIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WitValueNativeTest.class.getName());
 
   @BeforeAll
   static void loadNativeLibrary() {

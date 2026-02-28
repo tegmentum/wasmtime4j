@@ -59,10 +59,9 @@ import org.junit.jupiter.api.io.TempDir;
  * </ul>
  */
 @DisplayName("JNI WasiContext Integration Tests")
-class JniWasiContextIntegrationTest {
+class JniWasiContextTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(JniWasiContextIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(JniWasiContextTest.class.getName());
 
   /** Tracks resources for cleanup. */
   private final List<AutoCloseable> resources = new ArrayList<>();

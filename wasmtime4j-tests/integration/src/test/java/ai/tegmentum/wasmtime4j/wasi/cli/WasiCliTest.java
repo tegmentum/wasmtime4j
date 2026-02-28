@@ -28,9 +28,9 @@ import org.junit.jupiter.api.Test;
  * <p>This test class validates the WasiEnvironment, WasiExit, and WasiStdio interfaces.
  */
 @DisplayName("WASI CLI Integration Tests")
-public class WasiCliIntegrationTest {
+public class WasiCliTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiCliIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiCliTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

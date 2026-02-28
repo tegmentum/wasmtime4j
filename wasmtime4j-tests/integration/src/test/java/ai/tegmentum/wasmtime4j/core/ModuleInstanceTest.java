@@ -52,10 +52,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Module and Instance Integration Tests")
-public final class ModuleInstanceIntegrationTest {
+public final class ModuleInstanceTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ModuleInstanceIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleInstanceTest.class.getName());
 
   /** Simple WebAssembly module that exports an add function: (i32, i32) -> i32. */
   private static final byte[] ADD_WASM =

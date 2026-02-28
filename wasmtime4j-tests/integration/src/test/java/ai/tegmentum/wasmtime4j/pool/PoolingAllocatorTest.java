@@ -48,10 +48,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("PoolingAllocator Integration Tests")
-public final class PoolingAllocatorIntegrationTest {
+public final class PoolingAllocatorTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(PoolingAllocatorIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(PoolingAllocatorTest.class.getName());
 
   private static boolean poolingAllocatorAvailable = false;
 

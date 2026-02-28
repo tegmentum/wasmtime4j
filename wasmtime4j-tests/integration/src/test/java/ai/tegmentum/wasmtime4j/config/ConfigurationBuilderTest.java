@@ -53,10 +53,9 @@ import org.junit.jupiter.api.TestInfo;
  */
 @DisplayName("Configuration Builder Integration Tests")
 @SuppressWarnings("deprecation")
-public final class ConfigurationBuilderIntegrationTest {
+public final class ConfigurationBuilderTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ConfigurationBuilderIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ConfigurationBuilderTest.class.getName());
 
   // Simple add function for testing: (param i32 i32) (result i32)
   private static final byte[] ADD_WASM = {

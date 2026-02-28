@@ -53,10 +53,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Module Exports Integration Tests")
-public final class ModuleExportsIntegrationTest {
+public final class ModuleExportsTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ModuleExportsIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ModuleExportsTest.class.getName());
 
   private WasmRuntime runtime;
   private Engine engine;

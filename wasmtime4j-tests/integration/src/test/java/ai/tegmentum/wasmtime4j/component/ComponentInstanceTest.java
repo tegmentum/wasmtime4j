@@ -47,10 +47,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("ComponentInstance Integration Tests")
-public final class ComponentInstanceIntegrationTest {
+public final class ComponentInstanceTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ComponentInstanceIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ComponentInstanceTest.class.getName());
 
   private static boolean componentInstanceAvailable = false;
   private static byte[] addComponentBytes;
@@ -69,7 +68,7 @@ public final class ComponentInstanceIntegrationTest {
 
       // Load the test component file
       try (InputStream is =
-          ComponentInstanceIntegrationTest.class.getResourceAsStream("/components/add.wasm")) {
+          ComponentInstanceTest.class.getResourceAsStream("/components/add.wasm")) {
         if (is != null) {
           addComponentBytes = TestUtils.readAllBytes(is);
           componentInstanceAvailable = true;

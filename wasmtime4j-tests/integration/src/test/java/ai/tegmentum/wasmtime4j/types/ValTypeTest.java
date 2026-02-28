@@ -27,9 +27,9 @@ import org.junit.jupiter.api.Test;
  * implementations for WebAssembly value type handling.
  */
 @DisplayName("ValType Integration Tests")
-public class ValTypeIntegrationTest {
+public class ValTypeTest {
 
-  private static final Logger LOGGER = Logger.getLogger(ValTypeIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ValTypeTest.class.getName());
 
   @BeforeAll
   static void setUpClass() {

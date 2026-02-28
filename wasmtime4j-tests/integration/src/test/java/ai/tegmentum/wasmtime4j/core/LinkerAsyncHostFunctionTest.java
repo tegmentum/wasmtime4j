@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j.core;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -233,7 +232,8 @@ public class LinkerAsyncHostFunctionTest extends DualRuntimeTest {
       final WasmValue[] results =
           instance.callFunction("compute", WasmValue.i32(10), WasmValue.i32(20));
       assertEquals(30, results[0].asInt(), "10 + 20 should equal 30");
-      LOGGER.info("[" + runtime + "] Async host function on non-async engine: " + results[0].asInt());
+      LOGGER.info(
+          "[" + runtime + "] Async host function on non-async engine: " + results[0].asInt());
 
       instance.close();
       module.close();

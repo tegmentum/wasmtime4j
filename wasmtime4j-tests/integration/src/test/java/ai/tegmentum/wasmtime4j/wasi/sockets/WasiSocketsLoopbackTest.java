@@ -48,10 +48,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WASI Sockets Loopback Integration Tests")
-public final class WasiSocketsLoopbackIntegrationTest {
+public final class WasiSocketsLoopbackTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiSocketsLoopbackIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiSocketsLoopbackTest.class.getName());
 
   /** Loopback IPv4 address bytes: 127.0.0.1. */
   private static final byte[] LOOPBACK_ADDRESS = {127, 0, 0, 1};

@@ -52,9 +52,9 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WASI Clock Integration Tests")
 @Tag("integration")
-class WasiClockIntegrationTest {
+class WasiClockTest {
 
-  private static final Logger LOGGER = Logger.getLogger(WasiClockIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiClockTest.class.getName());
 
   /** WASM module that uses WASI clock functions. */
   private static final String CLOCK_MODULE_WAT =

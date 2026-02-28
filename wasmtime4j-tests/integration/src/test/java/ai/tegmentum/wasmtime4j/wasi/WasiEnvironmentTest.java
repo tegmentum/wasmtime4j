@@ -47,10 +47,9 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WASI Environment Integration Tests")
 @Tag("integration")
-class WasiEnvironmentIntegrationTest {
+class WasiEnvironmentTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(WasiEnvironmentIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(WasiEnvironmentTest.class.getName());
 
   private static boolean wasiAvailable = false;
   private static WasmRuntime sharedRuntime;

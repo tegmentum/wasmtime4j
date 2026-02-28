@@ -51,10 +51,9 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Store and Engine Lifecycle Integration Tests")
-public final class StoreEngineLifecycleIntegrationTest {
+public final class StoreEngineLifecycleTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(StoreEngineLifecycleIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(StoreEngineLifecycleTest.class.getName());
 
   /** Simple WebAssembly module that exports an add function. */
   private static final byte[] ADD_WASM =

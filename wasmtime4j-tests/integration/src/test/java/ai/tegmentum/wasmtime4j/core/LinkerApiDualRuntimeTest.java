@@ -1098,8 +1098,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(instance);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineInstance(store, null, instance));
+            IllegalArgumentException.class, () -> linker.defineInstance(store, null, instance));
         LOGGER.info("[" + runtime + "] Correctly rejected null module name for defineInstance");
       }
     }
@@ -1118,8 +1117,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(store);
 
         assertThrows(
-            IllegalArgumentException.class,
-            () -> linker.defineInstance(store, "test", null));
+            IllegalArgumentException.class, () -> linker.defineInstance(store, "test", null));
         LOGGER.info("[" + runtime + "] Correctly rejected null instance for defineInstance");
       }
     }

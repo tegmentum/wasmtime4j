@@ -47,9 +47,9 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * @since 1.0.0
  */
 @DisplayName("CacheStore Integration Tests")
-public class CacheStoreIntegrationTest extends DualRuntimeTest {
+public class CacheStoreTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER = Logger.getLogger(CacheStoreIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(CacheStoreTest.class.getName());
 
   /** Simple WAT module for compilation caching tests. */
   private static final String SIMPLE_WAT =

@@ -50,10 +50,9 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * @since 1.0.0
  */
 @DisplayName("Resource Limiter Integration Tests")
-public class ResourceLimiterIntegrationTest extends DualRuntimeTest {
+public class ResourceLimiterTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ResourceLimiterIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ResourceLimiterTest.class.getName());
 
   /** WAT module with growable memory (1 page initial, 10 pages max). */
   private static final String MEMORY_GROW_WAT =

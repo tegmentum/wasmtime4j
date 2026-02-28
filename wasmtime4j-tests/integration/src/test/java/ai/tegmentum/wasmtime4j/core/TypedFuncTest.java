@@ -48,9 +48,9 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * @since 1.0.0
  */
 @DisplayName("TypedFunc Integration Tests")
-public class TypedFuncIntegrationTest extends DualRuntimeTest {
+public class TypedFuncTest extends DualRuntimeTest {
 
-  private static final Logger LOGGER = Logger.getLogger(TypedFuncIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TypedFuncTest.class.getName());
 
   /**
    * WAT module with functions of various signatures.

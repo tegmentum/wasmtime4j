@@ -58,10 +58,9 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("Epoch Interruption Integration Tests")
 @SuppressWarnings("deprecation")
-public final class EpochInterruptionIntegrationTest {
+public final class EpochInterruptionTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(EpochInterruptionIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(EpochInterruptionTest.class.getName());
 
   private static boolean epochInterruptionAvailable = false;
 

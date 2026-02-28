@@ -59,10 +59,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("ComponentComposition Integration Tests")
-public final class ComponentCompositionIntegrationTest {
+public final class ComponentCompositionTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ComponentCompositionIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ComponentCompositionTest.class.getName());
 
   private static boolean componentCompositionAvailable = false;
   private static byte[] withImportsComponentBytes;
@@ -83,8 +82,7 @@ public final class ComponentCompositionIntegrationTest {
 
       // Load the with-imports component
       try (InputStream is =
-          ComponentCompositionIntegrationTest.class.getResourceAsStream(
-              "/components/with-imports.wasm")) {
+          ComponentCompositionTest.class.getResourceAsStream("/components/with-imports.wasm")) {
         if (is != null) {
           withImportsComponentBytes = TestUtils.readAllBytes(is);
           LOGGER.info(
@@ -94,7 +92,7 @@ public final class ComponentCompositionIntegrationTest {
         } else {
           // Try alternate location in panama test resources
           try (InputStream altIs =
-              ComponentCompositionIntegrationTest.class
+              ComponentCompositionTest.class
                   .getClassLoader()
                   .getResourceAsStream("components/with-imports.wasm")) {
             if (altIs != null) {
@@ -114,7 +112,7 @@ public final class ComponentCompositionIntegrationTest {
 
       // Load the add component for multi-component tests
       try (InputStream is =
-          ComponentCompositionIntegrationTest.class.getResourceAsStream("/components/add.wasm")) {
+          ComponentCompositionTest.class.getResourceAsStream("/components/add.wasm")) {
         if (is != null) {
           addComponentBytes = TestUtils.readAllBytes(is);
           LOGGER.info("add.wasm component loaded - " + addComponentBytes.length + " bytes");

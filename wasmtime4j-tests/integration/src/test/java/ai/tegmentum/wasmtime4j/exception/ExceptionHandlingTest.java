@@ -55,10 +55,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Exception Handling Integration Tests")
-public final class ExceptionHandlingIntegrationTest {
+public final class ExceptionHandlingTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ExceptionHandlingIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ExceptionHandlingTest.class.getName());
 
   private static boolean exceptionHandlingAvailable = false;
   private static WasmRuntime sharedRuntime;

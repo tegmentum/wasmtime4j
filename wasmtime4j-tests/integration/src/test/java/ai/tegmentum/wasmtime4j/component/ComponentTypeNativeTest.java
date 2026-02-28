@@ -38,10 +38,9 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("ComponentType Native Integration Tests")
-class ComponentTypeNativeIntegrationTest {
+class ComponentTypeNativeTest {
 
-  private static final Logger LOGGER =
-      Logger.getLogger(ComponentTypeNativeIntegrationTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ComponentTypeNativeTest.class.getName());
 
   @BeforeAll
   static void loadNativeLibrary() {
