@@ -56,6 +56,64 @@ pub extern "C" fn wasmtime4j_panama_table_create(
     })
 }
 
+/// Create a new WebAssembly table with an initial value (Panama FFI version)
+///
+/// The `init_ref_id` parameter is the reference registry ID for the initial value.
+/// Pass -1 for null reference. The `has_init` parameter controls whether to use the
+/// provided init value (1) or the default null ref (0).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_table_create_with_init(
+    store_ptr: *mut c_void,
+    element_type: c_int,
+    initial_size: c_uint,
+    has_maximum: c_int,
+    maximum_size: c_uint,
+    name_ptr: *const c_char,
+    init_ref_id: i64,
+    table_ptr: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+
+        let val_type = match element_type {
+            5 => ValType::Ref(RefType::FUNCREF),
+            6 => ValType::Ref(RefType::EXTERNREF),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
+        };
+
+        let max_size = if has_maximum != 0 {
+            Some(maximum_size)
+        } else {
+            None
+        };
+
+        let name = if name_ptr.is_null() {
+            None
+        } else {
+            Some(unsafe { ffi_utils::c_char_to_string(name_ptr)? })
+        };
+
+        let ref_id_opt = if init_ref_id < 0 {
+            None
+        } else {
+            Some(init_ref_id as u64)
+        };
+        let init_element = core::create_table_element(val_type.clone(), ref_id_opt)?;
+        let table =
+            core::create_table_with_init(store, val_type, initial_size, max_size, name, init_element)?;
+
+        unsafe {
+            *table_ptr = Box::into_raw(table) as *mut c_void;
+        }
+
+        Ok(())
+    })
+}
+
 /// Create a new 32-bit table asynchronously (Panama FFI version)
 ///
 /// Uses Wasmtime's `Table::new_async` for async resource limiter support.

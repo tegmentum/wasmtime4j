@@ -138,6 +138,29 @@ public final class StorageType {
     }
   }
 
+  /**
+   * Checks if this storage type matches another for type compatibility.
+   *
+   * <p>Two packed types (I8, I16) match if they are the same kind. For VAL storage types, matching
+   * delegates to {@link ValType#matches(ValType)}.
+   *
+   * @param other the storage type to check against
+   * @return true if this storage type matches the other
+   */
+  public boolean matches(final StorageType other) {
+    if (other == null) {
+      return false;
+    }
+    if (this.kind != other.kind) {
+      return false;
+    }
+    if (this.kind == Kind.VAL) {
+      return this.valType.matches(other.valType);
+    }
+    // I8 matches I8, I16 matches I16
+    return true;
+  }
+
   @Override
   public boolean equals(final Object obj) {
     if (this == obj) {

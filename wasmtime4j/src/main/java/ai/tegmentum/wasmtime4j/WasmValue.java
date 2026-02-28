@@ -649,6 +649,43 @@ public final class WasmValue {
   }
 
   /**
+   * Creates a null reference of the nofunc (bottom) type.
+   *
+   * <p>NOFUNC is the bottom type in the funcref hierarchy. A null nofunc reference is a subtype of
+   * all nullable function reference types. This is equivalent to {@link #nullNullFuncRef()}.
+   *
+   * @return a new WasmValue representing a null nofunc reference
+   */
+  public static WasmValue noFuncNullRef() {
+    return new WasmValue(WasmValueType.NULLFUNCREF, null);
+  }
+
+  /**
+   * Creates a null reference of the noextern (bottom) type.
+   *
+   * <p>NOEXTERN is the bottom type in the externref hierarchy. A null noextern reference is a
+   * subtype of all nullable external reference types. This is equivalent to {@link
+   * #nullNullExternRef()}.
+   *
+   * @return a new WasmValue representing a null noextern reference
+   */
+  public static WasmValue noExternNullRef() {
+    return new WasmValue(WasmValueType.NULLEXTERNREF, null);
+  }
+
+  /**
+   * Creates a null reference of the noexn (bottom) type.
+   *
+   * <p>NOEXN is the bottom type in the exnref hierarchy. A null noexn reference is a subtype of all
+   * nullable exception reference types. This is equivalent to {@link #nullNullExnRef()}.
+   *
+   * @return a new WasmValue representing a null noexn reference
+   */
+  public static WasmValue noExnNullRef() {
+    return new WasmValue(WasmValueType.NULLEXNREF, null);
+  }
+
+  /**
    * Checks if this value is an exception reference.
    *
    * @return true if this value is of type EXNREF, false otherwise

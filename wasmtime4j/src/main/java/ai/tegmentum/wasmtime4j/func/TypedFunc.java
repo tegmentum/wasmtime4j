@@ -3,6 +3,7 @@ package ai.tegmentum.wasmtime4j.func;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A type-safe WebAssembly function with statically known parameter and return types.
@@ -289,6 +290,267 @@ public interface TypedFunc extends AutoCloseable {
    * @throws WasmException if function execution fails
    */
   float callF32I32ToF32(float param1, int param2) throws WasmException;
+
+  // ==============================================================================================
+  // Async call methods - default implementations delegate through WasmFunction.callAsync()
+  // Implementations may override for native async support without WasmValue boxing.
+  // ==============================================================================================
+
+  /**
+   * Asynchronously calls a typed function with no parameters and no return: () -> ().
+   *
+   * @return a CompletableFuture that completes when the function finishes
+   */
+  default CompletableFuture<Void> callAsyncVoidToVoid() {
+    return getFunction().callAsync().thenApply(r -> null);
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i32) -> ().
+   *
+   * @param param the i32 parameter
+   * @return a CompletableFuture that completes when the function finishes
+   */
+  default CompletableFuture<Void> callAsyncI32ToVoid(final int param) {
+    return getFunction().callAsync(WasmValue.i32(param)).thenApply(r -> null);
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i32, i32) -> ().
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @return a CompletableFuture that completes when the function finishes
+   */
+  default CompletableFuture<Void> callAsyncI32I32ToVoid(final int param1, final int param2) {
+    return getFunction()
+        .callAsync(WasmValue.i32(param1), WasmValue.i32(param2))
+        .thenApply(r -> null);
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i64) -> ().
+   *
+   * @param param the i64 parameter
+   * @return a CompletableFuture that completes when the function finishes
+   */
+  default CompletableFuture<Void> callAsyncI64ToVoid(final long param) {
+    return getFunction().callAsync(WasmValue.i64(param)).thenApply(r -> null);
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i64, i64) -> ().
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @return a CompletableFuture that completes when the function finishes
+   */
+  default CompletableFuture<Void> callAsyncI64I64ToVoid(final long param1, final long param2) {
+    return getFunction()
+        .callAsync(WasmValue.i64(param1), WasmValue.i64(param2))
+        .thenApply(r -> null);
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i32) -> i32.
+   *
+   * @param param the i32 parameter
+   * @return a CompletableFuture completing with the i32 result
+   */
+  default CompletableFuture<Integer> callAsyncI32ToI32(final int param) {
+    return getFunction().callAsync(WasmValue.i32(param)).thenApply(r -> r[0].asInt());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i32, i32) -> i32.
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @return a CompletableFuture completing with the i32 result
+   */
+  default CompletableFuture<Integer> callAsyncI32I32ToI32(final int param1, final int param2) {
+    return getFunction()
+        .callAsync(WasmValue.i32(param1), WasmValue.i32(param2))
+        .thenApply(r -> r[0].asInt());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i64) -> i64.
+   *
+   * @param param the i64 parameter
+   * @return a CompletableFuture completing with the i64 result
+   */
+  default CompletableFuture<Long> callAsyncI64ToI64(final long param) {
+    return getFunction().callAsync(WasmValue.i64(param)).thenApply(r -> r[0].asLong());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i64, i64) -> i64.
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @return a CompletableFuture completing with the i64 result
+   */
+  default CompletableFuture<Long> callAsyncI64I64ToI64(final long param1, final long param2) {
+    return getFunction()
+        .callAsync(WasmValue.i64(param1), WasmValue.i64(param2))
+        .thenApply(r -> r[0].asLong());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (f32) -> f32.
+   *
+   * @param param the f32 parameter
+   * @return a CompletableFuture completing with the f32 result
+   */
+  default CompletableFuture<Float> callAsyncF32ToF32(final float param) {
+    return getFunction().callAsync(WasmValue.f32(param)).thenApply(r -> r[0].asFloat());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (f64) -> f64.
+   *
+   * @param param the f64 parameter
+   * @return a CompletableFuture completing with the f64 result
+   */
+  default CompletableFuture<Double> callAsyncF64ToF64(final double param) {
+    return getFunction().callAsync(WasmValue.f64(param)).thenApply(r -> r[0].asDouble());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (f32, f32) -> f32.
+   *
+   * @param param1 the first f32 parameter
+   * @param param2 the second f32 parameter
+   * @return a CompletableFuture completing with the f32 result
+   */
+  default CompletableFuture<Float> callAsyncF32F32ToF32(final float param1, final float param2) {
+    return getFunction()
+        .callAsync(WasmValue.f32(param1), WasmValue.f32(param2))
+        .thenApply(r -> r[0].asFloat());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (f64, f64) -> f64.
+   *
+   * @param param1 the first f64 parameter
+   * @param param2 the second f64 parameter
+   * @return a CompletableFuture completing with the f64 result
+   */
+  default CompletableFuture<Double> callAsyncF64F64ToF64(final double param1, final double param2) {
+    return getFunction()
+        .callAsync(WasmValue.f64(param1), WasmValue.f64(param2))
+        .thenApply(r -> r[0].asDouble());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i32, i32, i32) -> i32.
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @param param3 the third i32 parameter
+   * @return a CompletableFuture completing with the i32 result
+   */
+  default CompletableFuture<Integer> callAsyncI32I32I32ToI32(
+      final int param1, final int param2, final int param3) {
+    return getFunction()
+        .callAsync(WasmValue.i32(param1), WasmValue.i32(param2), WasmValue.i32(param3))
+        .thenApply(r -> r[0].asInt());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i64, i64, i64) -> i64.
+   *
+   * @param param1 the first i64 parameter
+   * @param param2 the second i64 parameter
+   * @param param3 the third i64 parameter
+   * @return a CompletableFuture completing with the i64 result
+   */
+  default CompletableFuture<Long> callAsyncI64I64I64ToI64(
+      final long param1, final long param2, final long param3) {
+    return getFunction()
+        .callAsync(WasmValue.i64(param1), WasmValue.i64(param2), WasmValue.i64(param3))
+        .thenApply(r -> r[0].asLong());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (f32, f32, f32) -> f32.
+   *
+   * @param param1 the first f32 parameter
+   * @param param2 the second f32 parameter
+   * @param param3 the third f32 parameter
+   * @return a CompletableFuture completing with the f32 result
+   */
+  default CompletableFuture<Float> callAsyncF32F32F32ToF32(
+      final float param1, final float param2, final float param3) {
+    return getFunction()
+        .callAsync(WasmValue.f32(param1), WasmValue.f32(param2), WasmValue.f32(param3))
+        .thenApply(r -> r[0].asFloat());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (f64, f64, f64) -> f64.
+   *
+   * @param param1 the first f64 parameter
+   * @param param2 the second f64 parameter
+   * @param param3 the third f64 parameter
+   * @return a CompletableFuture completing with the f64 result
+   */
+  default CompletableFuture<Double> callAsyncF64F64F64ToF64(
+      final double param1, final double param2, final double param3) {
+    return getFunction()
+        .callAsync(WasmValue.f64(param1), WasmValue.f64(param2), WasmValue.f64(param3))
+        .thenApply(r -> r[0].asDouble());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i32, i32) -> i64.
+   *
+   * @param param1 the first i32 parameter
+   * @param param2 the second i32 parameter
+   * @return a CompletableFuture completing with the i64 result
+   */
+  default CompletableFuture<Long> callAsyncI32I32ToI64(final int param1, final int param2) {
+    return getFunction()
+        .callAsync(WasmValue.i32(param1), WasmValue.i32(param2))
+        .thenApply(r -> r[0].asLong());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i64) -> i32.
+   *
+   * @param param the i64 parameter
+   * @return a CompletableFuture completing with the i32 result
+   */
+  default CompletableFuture<Integer> callAsyncI64ToI32(final long param) {
+    return getFunction().callAsync(WasmValue.i64(param)).thenApply(r -> r[0].asInt());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (i32, f32) -> f32.
+   *
+   * @param param1 the i32 parameter
+   * @param param2 the f32 parameter
+   * @return a CompletableFuture completing with the f32 result
+   */
+  default CompletableFuture<Float> callAsyncI32F32ToF32(final int param1, final float param2) {
+    return getFunction()
+        .callAsync(WasmValue.i32(param1), WasmValue.f32(param2))
+        .thenApply(r -> r[0].asFloat());
+  }
+
+  /**
+   * Asynchronously calls a typed function: (f32, i32) -> f32.
+   *
+   * @param param1 the f32 parameter
+   * @param param2 the i32 parameter
+   * @return a CompletableFuture completing with the f32 result
+   */
+  default CompletableFuture<Float> callAsyncF32I32ToF32(final float param1, final int param2) {
+    return getFunction()
+        .callAsync(WasmValue.f32(param1), WasmValue.i32(param2))
+        .thenApply(r -> r[0].asFloat());
+  }
 
   /**
    * Gets the signature string for this typed function.

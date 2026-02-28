@@ -246,6 +246,47 @@ public interface Component extends AutoCloseable {
   }
 
   /**
+   * Compiles a WebAssembly component from binary bytes.
+   *
+   * <p>This method validates that the provided bytes are in binary WebAssembly format (not WAT text
+   * format) by checking the WebAssembly magic number ({@code \0asm}), then compiles the component.
+   *
+   * <p>Unlike {@link ComponentEngine#compileComponent(byte[])} which accepts both binary and text
+   * formats, this method strictly requires binary format.
+   *
+   * @param engine the component engine to use for compilation
+   * @param wasmBytes the binary WebAssembly component bytes
+   * @return a compiled Component
+   * @throws WasmException if compilation fails
+   * @throws IllegalArgumentException if engine or wasmBytes is null, or if the bytes are not in
+   *     binary format
+   * @since 1.1.0
+   */
+  static Component fromBinary(final ComponentEngine engine, final byte[] wasmBytes)
+      throws WasmException {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    if (wasmBytes.length < 4) {
+      throw new IllegalArgumentException(
+          "Binary wasm bytes too short (minimum 4 bytes for magic number)");
+    }
+    // Validate WebAssembly binary magic number: \0asm (0x00 0x61 0x73 0x6D)
+    if (wasmBytes[0] != 0x00
+        || wasmBytes[1] != 0x61
+        || wasmBytes[2] != 0x73
+        || wasmBytes[3] != 0x6D) {
+      throw new IllegalArgumentException(
+          "Not binary wasm: missing WebAssembly magic number. "
+              + "Use ComponentEngine.compileComponent() for WAT text format.");
+    }
+    return engine.compileComponent(wasmBytes);
+  }
+
+  /**
    * Gets the memory address range of the compiled image for this component.
    *
    * <p>This returns the range in the process's virtual address space where the compiled machine

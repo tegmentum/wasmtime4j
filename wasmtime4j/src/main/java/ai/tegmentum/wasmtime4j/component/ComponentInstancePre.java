@@ -76,6 +76,22 @@ public interface ComponentInstancePre extends Closeable {
   Component getComponent();
 
   /**
+   * Returns the type information of instances that will be created by this pre-instantiated
+   * component.
+   *
+   * <p>This corresponds to Wasmtime's {@code InstancePre::instance_type()} and returns the type
+   * information describing the imports and exports of instances created from this
+   * pre-instantiation.
+   *
+   * @return the component type information for instances created by this pre-instantiation
+   * @throws WasmException if type introspection fails
+   * @since 1.1.0
+   */
+  default ComponentTypeInfo instanceType() throws WasmException {
+    return getComponent().componentType();
+  }
+
+  /**
    * Asynchronously creates a new component instance from this pre-instantiated component.
    *
    * <p>This is the async variant of {@link #instantiate()}. It requires the engine to have been

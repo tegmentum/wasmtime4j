@@ -105,6 +105,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTa
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeCreateTableWithInit
+ * Signature: (JIIIJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTableWithInit
+  (JNIEnv *, jclass, jlong, jint, jint, jint, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeCreateMemory
  * Signature: (JII)J
  */
@@ -310,6 +318,22 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResour
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetFuelAsyncYieldInterval
   (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeCaptureBacktrace
+ * Signature: (J)Lai/tegmentum/wasmtime4j/debug/WasmBacktrace;
+ */
+JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptureBacktrace
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeForceCaptureBacktrace
+ * Signature: (J)Lai/tegmentum/wasmtime4j/debug/WasmBacktrace;
+ */
+JNIEXPORT jobject JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCaptureBacktrace
+  (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore

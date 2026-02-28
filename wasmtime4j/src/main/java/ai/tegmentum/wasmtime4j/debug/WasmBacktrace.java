@@ -1,5 +1,7 @@
 package ai.tegmentum.wasmtime4j.debug;
 
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +22,42 @@ public final class WasmBacktrace {
 
   private final List<FrameInfo> frames;
   private final boolean forceCapture;
+
+  /**
+   * Captures a backtrace from the current execution state of the store.
+   *
+   * <p>This delegates to {@link Store#captureBacktrace()}.
+   *
+   * @param store the store to capture the backtrace from
+   * @return the captured backtrace
+   * @throws WasmException if capture fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public static WasmBacktrace capture(final Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    return store.captureBacktrace();
+  }
+
+  /**
+   * Force-captures a backtrace even if backtrace capture is disabled in the engine configuration.
+   *
+   * <p>This delegates to {@link Store#forceCaptureBacktrace()}.
+   *
+   * @param store the store to capture the backtrace from
+   * @return the force-captured backtrace
+   * @throws WasmException if capture fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public static WasmBacktrace forceCapture(final Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    return store.forceCaptureBacktrace();
+  }
 
   /**
    * Creates a new WasmBacktrace with the specified frames.

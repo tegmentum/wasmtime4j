@@ -86,6 +86,34 @@ public final class ArrayRefPre implements AutoCloseable {
   }
 
   /**
+   * Allocates a new fixed-length array instance using this pre-compiled allocator.
+   *
+   * <p>Fixed arrays have all elements set at creation time and may be immutable. This corresponds
+   * to Wasmtime's {@code ArrayRef::new_fixed} operation.
+   *
+   * @param gcRuntime the GC runtime to allocate in
+   * @param elements the fixed element values
+   * @return a new ArrayRef with the fixed elements
+   * @throws GcException if allocation fails
+   * @throws IllegalStateException if this allocator has been closed
+   * @throws IllegalArgumentException if gcRuntime or elements is null
+   */
+  public ArrayRef allocateFixed(final GcRuntime gcRuntime, final List<GcValue> elements)
+      throws GcException {
+    if (closed) {
+      throw new IllegalStateException("ArrayRefPre has been closed");
+    }
+    if (gcRuntime == null) {
+      throw new IllegalArgumentException("gcRuntime cannot be null");
+    }
+    if (elements == null) {
+      throw new IllegalArgumentException("elements cannot be null");
+    }
+    final ArrayInstance instance = gcRuntime.createArrayFixed(arrayType, elements);
+    return ArrayRef.of(instance);
+  }
+
+  /**
    * Allocates a new array instance with default element values.
    *
    * @param gcRuntime the GC runtime to allocate in

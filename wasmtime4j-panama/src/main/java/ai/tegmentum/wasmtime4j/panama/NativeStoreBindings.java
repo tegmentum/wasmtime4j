@@ -533,6 +533,18 @@ public final class NativeStoreBindings extends NativeBindingsBase {
   }
 
   /**
+   * Frees a byte array buffer allocated by native backtrace capture functions.
+   *
+   * @param dataPtr pointer to the data
+   * @param len length of the data in bytes
+   */
+  public void freeBuffer(final MemorySegment dataPtr, final int len) {
+    if (dataPtr != null && !dataPtr.equals(MemorySegment.NULL) && len > 0) {
+      callNativeFunction("wasmtime4j_free_byte_array", Void.class, dataPtr, (long) len);
+    }
+  }
+
+  /**
    * Performs garbage collection on a WebAssembly store.
    *
    * <p>This triggers garbage collection to reclaim unreachable GC objects. If GC support is not

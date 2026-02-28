@@ -67,4 +67,20 @@ public interface ContType {
    * @return the FunctionType describing this continuation's signature
    */
   FunctionType getFunctionType();
+
+  /**
+   * Checks if this continuation type matches another by comparing underlying function types.
+   *
+   * <p>Two continuation types match if their underlying function types match. This delegates to
+   * {@link FuncType#matches(FuncType)}.
+   *
+   * @param other the continuation type to compare with
+   * @return true if the continuation types have matching function types
+   */
+  default boolean matches(final ContType other) {
+    if (other == null) {
+      return false;
+    }
+    return getFunctionType().matches(other.getFunctionType());
+  }
 }

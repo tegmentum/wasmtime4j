@@ -1,5 +1,11 @@
 package ai.tegmentum.wasmtime4j.gc;
 
+import ai.tegmentum.wasmtime4j.ExnRef;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.memory.Tag;
+
 /**
  * A pre-compiled exception allocator that caches type resolution for efficient repeated allocation.
  *
@@ -62,6 +68,37 @@ public final class ExnRefPre implements AutoCloseable {
    */
   public boolean isActive() {
     return !closed;
+  }
+
+  /**
+   * Allocates a new exception reference using this pre-compiled allocator.
+   *
+   * <p>The field values must match the tag's type signature. This delegates to {@link
+   * ExnRef#create(Store, Tag, WasmValue...)} using the tag from this allocator's exception type.
+   *
+   * @param store the store context for allocation
+   * @param tag the exception tag identifying the exception type
+   * @param fields the field values for the exception payload
+   * @return a new ExnRef instance
+   * @throws WasmException if allocation fails
+   * @throws IllegalStateException if this allocator has been closed
+   * @throws IllegalArgumentException if store, tag, or fields is null
+   */
+  public ExnRef allocate(final Store store, final Tag tag, final WasmValue... fields)
+      throws WasmException {
+    if (closed) {
+      throw new IllegalStateException("ExnRefPre has been closed");
+    }
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (tag == null) {
+      throw new IllegalArgumentException("tag cannot be null");
+    }
+    if (fields == null) {
+      throw new IllegalArgumentException("fields cannot be null");
+    }
+    return ExnRef.create(store, tag, fields);
   }
 
   @Override

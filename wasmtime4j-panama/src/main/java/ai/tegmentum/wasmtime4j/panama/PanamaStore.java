@@ -1219,6 +1219,82 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmTable createTable(
+      final ai.tegmentum.wasmtime4j.WasmValueType elementType,
+      final int initialSize,
+      final int maxSize,
+      final ai.tegmentum.wasmtime4j.WasmValue initValue)
+      throws WasmException {
+    if (elementType == null) {
+      throw new IllegalArgumentException("Element type cannot be null");
+    }
+    if (initValue == null) {
+      throw new IllegalArgumentException("Init value cannot be null");
+    }
+    if (initialSize < 0) {
+      throw new IllegalArgumentException("Initial size cannot be negative");
+    }
+    if (maxSize < -1) {
+      throw new IllegalArgumentException("Max size must be -1 (unlimited) or non-negative");
+    }
+    if (maxSize != -1 && maxSize < initialSize) {
+      throw new IllegalArgumentException(
+          "Max size (" + maxSize + ") cannot be less than initial size (" + initialSize + ")");
+    }
+    ensureNotClosed();
+
+    try {
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreateWithInit();
+      if (createHandle == null) {
+        throw new WasmException("Panama table creation with init function not available");
+      }
+
+      final int elementTypeCode;
+      if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
+        elementTypeCode = 5;
+      } else if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+        elementTypeCode = 6;
+      } else {
+        throw new IllegalArgumentException("Unsupported table element type: " + elementType);
+      }
+
+      final int hasMaximum = (maxSize == -1) ? 0 : 1;
+      final int maximumSize = (maxSize == -1) ? 0 : maxSize;
+      final long initRefId = wasmValueToRefId(initValue);
+
+      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  elementTypeCode,
+                  initialSize,
+                  hasMaximum,
+                  maximumSize,
+                  MemorySegment.NULL, // name = null
+                  initRefId,
+                  tablePtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create table with init value");
+      }
+
+      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeTablePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created table pointer is null");
+      }
+
+      return new PanamaTable(nativeTablePtr, elementType, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating table with init value: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
       throws WasmException {
     if (initialPages < 0) {
@@ -1567,6 +1643,80 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmTable createTable(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType,
+      final ai.tegmentum.wasmtime4j.WasmValue initValue)
+      throws WasmException {
+    if (tableType == null) {
+      throw new IllegalArgumentException("Table type cannot be null");
+    }
+    if (initValue == null) {
+      throw new IllegalArgumentException("Init value cannot be null");
+    }
+    final ai.tegmentum.wasmtime4j.WasmValueType elementType = tableType.getElementType();
+    final long minSize = tableType.getMinimum();
+    final long maxSize = tableType.getMaximum().orElse(-1L);
+
+    if (elementType != ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF
+        && elementType != ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+    if (minSize < 0) {
+      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
+    }
+    if (maxSize != -1 && maxSize < minSize) {
+      throw new IllegalArgumentException(
+          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
+    }
+    ensureNotClosed();
+
+    try {
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreateWithInit();
+      if (createHandle == null) {
+        throw new WasmException("Panama table creation with init function not available");
+      }
+
+      final int elementTypeCode =
+          (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) ? 5 : 6;
+      final int hasMaximum = (maxSize == -1) ? 0 : 1;
+      final int maximumSize = (maxSize == -1) ? 0 : (int) maxSize;
+      final long initRefId = wasmValueToRefId(initValue);
+
+      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  elementTypeCode,
+                  (int) minSize,
+                  hasMaximum,
+                  maximumSize,
+                  MemorySegment.NULL,
+                  initRefId,
+                  tablePtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create table from type with init value");
+      }
+
+      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeTablePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Created table pointer is null");
+      }
+
+      return new PanamaTable(nativeTablePtr, elementType, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException(
+          "Error creating table from type with init value: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
       final ai.tegmentum.wasmtime4j.type.TableType tableType) {
     return java.util.concurrent.CompletableFuture.supplyAsync(
@@ -1577,6 +1727,18 @@ public final class PanamaStore implements Store {
             throw new java.util.concurrent.CompletionException(e);
           }
         });
+  }
+
+  private long wasmValueToRefId(final ai.tegmentum.wasmtime4j.WasmValue initValue) {
+    if (initValue.getValue() == null) {
+      return -1L;
+    }
+    final Object val = initValue.getValue();
+    if (val instanceof Long) {
+      return (Long) val;
+    }
+    // Null ref for unsupported value types
+    return -1L;
   }
 
   private ai.tegmentum.wasmtime4j.WasmTable createTableAsyncInternal(
@@ -2246,6 +2408,67 @@ public final class PanamaStore implements Store {
   @Override
   public long getFuelAsyncYieldInterval() {
     return fuelAsyncYieldInterval;
+  }
+
+  // ===== Backtrace API =====
+
+  @Override
+  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    return captureBacktraceInternal(false);
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    return captureBacktraceInternal(true);
+  }
+
+  private ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktraceInternal(final boolean force)
+      throws WasmException {
+    try (final java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined()) {
+      final java.lang.foreign.MemorySegment bufferOutPtr =
+          tempArena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+      final java.lang.foreign.MemorySegment bufferLenOutPtr =
+          tempArena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+
+      final int result;
+      if (force) {
+        result =
+            NATIVE_BINDINGS.storeForceCaptureBacktrace(nativeStore, bufferOutPtr, bufferLenOutPtr);
+      } else {
+        result = NATIVE_BINDINGS.storeCaptureBacktrace(nativeStore, bufferOutPtr, bufferLenOutPtr);
+      }
+
+      if (result < 0) {
+        return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(
+            java.util.Collections.emptyList(), force);
+      }
+
+      final java.lang.foreign.MemorySegment bufferPtr =
+          bufferOutPtr.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
+      final int bufferLen = bufferLenOutPtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+
+      if (bufferPtr.equals(java.lang.foreign.MemorySegment.NULL) || bufferLen <= 0) {
+        return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(
+            java.util.Collections.emptyList(), force);
+      }
+
+      final java.lang.foreign.MemorySegment buffer = bufferPtr.reinterpret(bufferLen);
+      final byte[] data = buffer.toArray(java.lang.foreign.ValueLayout.JAVA_BYTE);
+
+      // Free the native buffer
+      NATIVE_BINDINGS.freeBuffer(bufferPtr, bufferLen);
+
+      return ai.tegmentum.wasmtime4j.panama.util.BacktraceDeserializer.deserialize(data);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error capturing backtrace: " + e.getMessage(), e);
+    }
   }
 
   // ===== Debugging API =====

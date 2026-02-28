@@ -213,6 +213,26 @@ public interface Store extends Closeable {
       throws WasmException;
 
   /**
+   * Creates a new WebAssembly table with the specified element type, size, and initial value.
+   *
+   * <p>All table slots are initialized to the specified value instead of the default null
+   * reference. This is useful when creating tables that should be pre-populated with a specific
+   * function reference or other reference value.
+   *
+   * @param elementType the type of elements this table will store (FUNCREF or EXTERNREF)
+   * @param initialSize the initial number of elements
+   * @param maxSize the maximum number of elements, or -1 for unlimited
+   * @param initValue the initial value for all table slots
+   * @return a new WasmTable that can be used in import maps or accessed directly
+   * @throws WasmException if table creation fails
+   * @throws IllegalArgumentException if any parameter is invalid or initValue is null
+   * @since 1.1.0
+   */
+  WasmTable createTable(
+      WasmValueType elementType, int initialSize, int maxSize, WasmValue initValue)
+      throws WasmException;
+
+  /**
    * Creates a new WebAssembly linear memory with the specified size.
    *
    * <p>Linear memory is a contiguous, mutable array of raw bytes that can be read and written by
@@ -282,6 +302,21 @@ public interface Store extends Closeable {
    * @since 1.1.0
    */
   WasmTable createTable(TableType tableType) throws WasmException;
+
+  /**
+   * Creates a new WebAssembly table from a table type descriptor with an initial value.
+   *
+   * <p>All table slots are initialized to the specified value instead of the default null
+   * reference.
+   *
+   * @param tableType the table type descriptor specifying all table attributes
+   * @param initValue the initial value for all table slots
+   * @return a new WasmTable matching the specified type
+   * @throws WasmException if table creation fails
+   * @throws IllegalArgumentException if tableType or initValue is null
+   * @since 1.1.0
+   */
+  WasmTable createTable(TableType tableType, WasmValue initValue) throws WasmException;
 
   /**
    * Creates a function reference from a host function.
@@ -705,6 +740,40 @@ public interface Store extends Closeable {
   }
 
   // ===== Debug Methods =====
+
+  /**
+   * Captures a WebAssembly backtrace from the current execution state of this store.
+   *
+   * <p>This captures the current call stack, providing function names, module offsets, and debug
+   * symbols when available. Backtrace capture must be enabled in the engine configuration.
+   *
+   * <p>If backtrace capture is disabled, this may return an empty backtrace. Use {@link
+   * #forceCaptureBacktrace()} to capture even when disabled.
+   *
+   * @return the captured backtrace
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if capture fails
+   * @since 1.1.0
+   */
+  default ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    throw new UnsupportedOperationException("captureBacktrace not supported by this store");
+  }
+
+  /**
+   * Force-captures a WebAssembly backtrace even if backtrace capture is disabled.
+   *
+   * <p>This method captures the current call stack regardless of the engine's backtrace
+   * configuration. This is useful for debugging when backtrace capture is normally disabled for
+   * performance reasons.
+   *
+   * @return the force-captured backtrace
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException if capture fails
+   * @since 1.1.0
+   */
+  default ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    throw new UnsupportedOperationException("forceCaptureBacktrace not supported by this store");
+  }
 
   // ===== Fuel Async Methods =====
 

@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.type;
 
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import java.util.List;
 import java.util.Optional;
@@ -243,6 +244,19 @@ public interface FuncType extends WasmType {
    */
   default Optional<FuncType> getSupertype() {
     return Optional.empty();
+  }
+
+  /**
+   * Returns the default value for this function type.
+   *
+   * <p>The default value for a function type is a null funcref, since function references default
+   * to null. This corresponds to Wasmtime's {@code FuncType::default_value()}.
+   *
+   * @return an Optional containing the default WasmValue (null funcref)
+   * @since 1.1.0
+   */
+  default Optional<WasmValue> defaultValue() {
+    return Optional.of(WasmValue.nullFuncref());
   }
 
   @Override

@@ -149,6 +149,27 @@ impl Table {
             maximum_size.map(|s| s as u64),
             name,
             false, // 32-bit table
+            None,
+        )
+    }
+
+    /// Create a new 32-bit table with specified element type, size, and initial value
+    pub fn new_with_init(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u32,
+        maximum_size: Option<u32>,
+        name: Option<String>,
+        init_value: TableElement,
+    ) -> WasmtimeResult<Self> {
+        Self::new_internal(
+            store,
+            element_type,
+            initial_size as u64,
+            maximum_size.map(|s| s as u64),
+            name,
+            false,
+            Some(init_value),
         )
     }
 
@@ -163,7 +184,27 @@ impl Table {
         maximum_size: Option<u64>,
         name: Option<String>,
     ) -> WasmtimeResult<Self> {
-        Self::new_internal(store, element_type, initial_size, maximum_size, name, true)
+        Self::new_internal(store, element_type, initial_size, maximum_size, name, true, None)
+    }
+
+    /// Create a new 64-bit table with specified element type, size, and initial value
+    pub fn new64_with_init(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u64,
+        maximum_size: Option<u64>,
+        name: Option<String>,
+        init_value: TableElement,
+    ) -> WasmtimeResult<Self> {
+        Self::new_internal(
+            store,
+            element_type,
+            initial_size,
+            maximum_size,
+            name,
+            true,
+            Some(init_value),
+        )
     }
 
     /// Internal table creation method
@@ -174,6 +215,7 @@ impl Table {
         maximum_size: Option<u64>,
         name: Option<String>,
         is_64: bool,
+        init_value: Option<TableElement>,
     ) -> WasmtimeResult<Self> {
         // Validate that element_type is a valid reference type
         Self::validate_element_type(&element_type)?;
@@ -215,7 +257,11 @@ impl Table {
             TableType::new(ref_type, init_size_32, max_size_32)
         };
 
-        let initial_value = Self::default_ref_for_type(&element_type)?;
+        let initial_value = if let Some(init_elem) = init_value {
+            Self::table_element_to_wasmtime_ref(init_elem)?
+        } else {
+            Self::default_ref_for_type(&element_type)?
+        };
 
         let wasmtime_table = store.with_context(|ctx| {
             WasmtimeTable::new(ctx, table_type, initial_value).map_err(|e| WasmtimeError::Runtime {
@@ -251,6 +297,7 @@ impl Table {
         maximum_size: Option<u64>,
         name: Option<String>,
         is_64: bool,
+        init_value: Option<TableElement>,
     ) -> WasmtimeResult<Self> {
         Self::validate_element_type(&element_type)?;
 
@@ -288,7 +335,11 @@ impl Table {
             TableType::new(ref_type, init_size_32, max_size_32)
         };
 
-        let initial_value = Self::default_ref_for_type(&element_type)?;
+        let initial_value = if let Some(init_elem) = init_value {
+            Self::table_element_to_wasmtime_ref(init_elem)?
+        } else {
+            Self::default_ref_for_type(&element_type)?
+        };
 
         let handle = crate::async_runtime::get_runtime_handle();
         let mut store_guard = store.try_lock_store()?;
@@ -1049,6 +1100,19 @@ pub mod core {
         Table::new(store, element_type, initial_size, maximum_size, name).map(Box::new)
     }
 
+    /// Core function to create a new 32-bit table with an initial value
+    pub fn create_table_with_init(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u32,
+        maximum_size: Option<u32>,
+        name: Option<String>,
+        init_value: TableElement,
+    ) -> WasmtimeResult<Box<Table>> {
+        Table::new_with_init(store, element_type, initial_size, maximum_size, name, init_value)
+            .map(Box::new)
+    }
+
     /// Core function to create a new 32-bit table asynchronously
     ///
     /// Uses Wasmtime's `Table::new_async` for async resource limiter support.
@@ -1067,6 +1131,7 @@ pub mod core {
             maximum_size.map(|s| s as u64),
             name,
             false,
+            None,
         )
         .map(Box::new)
     }
@@ -1082,7 +1147,7 @@ pub mod core {
         maximum_size: Option<u64>,
         name: Option<String>,
     ) -> WasmtimeResult<Box<Table>> {
-        Table::new_internal_async(store, element_type, initial_size, maximum_size, name, true)
+        Table::new_internal_async(store, element_type, initial_size, maximum_size, name, true, None)
             .map(Box::new)
     }
 

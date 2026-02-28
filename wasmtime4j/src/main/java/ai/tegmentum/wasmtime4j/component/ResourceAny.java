@@ -89,6 +89,28 @@ public interface ResourceAny {
   void resourceDrop(Store store) throws WasmException;
 
   /**
+   * Asynchronously drops this resource handle, releasing the underlying resource.
+   *
+   * <p>This is the async variant of {@link #resourceDrop(Store)}. It requires the engine to have
+   * been created with async support enabled. The default implementation wraps the synchronous
+   * {@link #resourceDrop(Store)} call in a {@link java.util.concurrent.CompletableFuture}.
+   *
+   * @param store the store that contains this resource
+   * @return a CompletableFuture that completes when the resource has been dropped
+   * @since 1.1.0
+   */
+  default java.util.concurrent.CompletableFuture<Void> resourceDropAsync(final Store store) {
+    return java.util.concurrent.CompletableFuture.runAsync(
+        () -> {
+          try {
+            resourceDrop(store);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
+  }
+
+  /**
    * Gets the u32 representation value for this resource in the given store.
    *
    * <p>This corresponds to Wasmtime's {@code ResourceAny::resource_rep()} which returns the

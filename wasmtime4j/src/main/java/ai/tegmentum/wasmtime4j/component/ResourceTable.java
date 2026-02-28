@@ -17,8 +17,11 @@
 package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Provides access to the Component Model resource table for managing host resources.
@@ -170,4 +173,42 @@ public interface ResourceTable {
    * @throws WasmException if either handle is invalid or the relationship does not exist
    */
   void removeChild(int childHandle, int parentHandle) throws WasmException;
+
+  /**
+   * Creates a new ResourceTable with the specified initial capacity hint.
+   *
+   * <p>The capacity is used as a hint for the underlying data structure's initial allocation. The
+   * table will still grow dynamically as needed. This corresponds to Wasmtime's {@code
+   * ResourceTable::with_capacity()}.
+   *
+   * @param capacity the initial capacity hint
+   * @return a new ResourceTable with the specified initial capacity
+   * @throws IllegalArgumentException if capacity is negative
+   */
+  static ResourceTable withCapacity(final int capacity) {
+    if (capacity < 0) {
+      throw new IllegalArgumentException("capacity cannot be negative, got: " + capacity);
+    }
+    return new DefaultResourceTable(capacity);
+  }
+
+  /**
+   * Returns the set of all currently active resource handles in this table.
+   *
+   * <p>The returned set is a snapshot; modifications to the table after this call are not reflected
+   * in the returned set.
+   *
+   * @return an unmodifiable set of active resource handle indices
+   */
+  Set<Integer> handles();
+
+  /**
+   * Returns an iterator over all entries in this table as handle-to-object pairs.
+   *
+   * <p>The returned iterator provides a snapshot view of the entries at the time of the call.
+   * Modifications to the table after this call may or may not be reflected.
+   *
+   * @return an iterator over map entries of handle index to resource object
+   */
+  Iterator<Map.Entry<Integer, Object>> iterEntries();
 }

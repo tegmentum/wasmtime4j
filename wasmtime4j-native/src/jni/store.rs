@@ -888,6 +888,52 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTab
     })
 }
 
+/// Create a new WebAssembly table with an initial value
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTableWithInit(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    element_type: jint,
+    initial_size: jint,
+    max_size: jint,
+    init_ref_id: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use crate::error::WasmtimeError;
+        use wasmtime::{RefType, ValType};
+
+        let store = unsafe { core::get_store_mut(store_handle as *mut c_void)? };
+
+        let val_type = match element_type {
+            0x70 | 5 => ValType::Ref(RefType::FUNCREF),
+            0x6F | 6 => ValType::Ref(RefType::EXTERNREF),
+            _ => return Err(WasmtimeError::Type {
+                message: format!("Invalid element type code: {} (expected 0x70/5 for FUNCREF or 0x6F/6 for EXTERNREF)", element_type),
+            }),
+        };
+
+        let max_size_opt = if max_size == -1 {
+            None
+        } else {
+            Some(max_size as u32)
+        };
+
+        let ref_id_opt = if init_ref_id < 0 { None } else { Some(init_ref_id as u64) };
+        let init_element = crate::table::core::create_table_element(val_type.clone(), ref_id_opt)?;
+        let table = crate::table::core::create_table_with_init(
+            store,
+            val_type,
+            initial_size as u32,
+            max_size_opt,
+            None,
+            init_element,
+        )?;
+
+        Ok(Box::into_raw(table) as jlong)
+    })
+}
+
 /// Create a new WebAssembly table asynchronously using async resource limiter
 #[cfg(feature = "async")]
 #[no_mangle]
@@ -1246,7 +1292,7 @@ fn create_backtrace_object<'local>(
 
     // Create WasmBacktrace object
     let backtrace_obj = env.new_object(
-        "ai/tegmentum/wasmtime4j/WasmBacktrace",
+        "ai/tegmentum/wasmtime4j/debug/WasmBacktrace",
         "(Ljava/util/List;Z)V",
         &[
             JValue::Object(&frames_list),
@@ -1312,7 +1358,7 @@ fn create_frame_info_object<'local>(
 
     // Create FrameInfo object
     let frame_obj = env.new_object(
-        "ai/tegmentum/wasmtime4j/FrameInfo",
+        "ai/tegmentum/wasmtime4j/debug/FrameInfo",
         "(ILai/tegmentum/wasmtime4j/Module;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;)V",
         &[
             JValue::Int(func_index),
@@ -1367,7 +1413,7 @@ fn create_frame_symbol_object<'local>(
         .unwrap_or(JValue::Object(&null_column));
 
     let symbol_obj = env.new_object(
-        "ai/tegmentum/wasmtime4j/FrameSymbol",
+        "ai/tegmentum/wasmtime4j/debug/FrameSymbol",
         "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;)V",
         &[name, file, line, column],
     )?;

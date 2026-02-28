@@ -2554,6 +2554,15 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
   }
 
   /**
+   * Gets the method handle for Panama FFI table creation with initial value.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableCreateWithInit() {
+    return getMethodHandleByName("wasmtime4j_panama_table_create_with_init").orElse(null);
+  }
+
+  /**
    * Gets the method handle for Panama FFI 64-bit table creation.
    *
    * @return the method handle, or null if not available

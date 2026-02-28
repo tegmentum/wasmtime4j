@@ -461,6 +461,61 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmTable createTable(
+      final WasmValueType elementType,
+      final int initialSize,
+      final int maxSize,
+      final ai.tegmentum.wasmtime4j.WasmValue initValue)
+      throws WasmException {
+    Validation.requireNonNull(elementType, "elementType");
+    Validation.requireNonNull(initValue, "initValue");
+    if (initialSize < 0) {
+      throw new IllegalArgumentException("Initial size cannot be negative: " + initialSize);
+    }
+    if (maxSize < -1) {
+      throw new IllegalArgumentException("Max size must be -1 (unlimited) or >= 0: " + maxSize);
+    }
+    if (maxSize != -1 && maxSize < initialSize) {
+      throw new IllegalArgumentException(
+          "Max size (" + maxSize + ") cannot be less than initial size (" + initialSize + ")");
+    }
+    if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+    ensureNotClosed();
+
+    try {
+      final long initRefId = wasmValueToRefHandle(initValue);
+      final long tableHandle =
+          nativeCreateTableWithInit(
+              getNativeHandle(), elementType.toNativeTypeCode(), initialSize, maxSize, initRefId);
+
+      if (tableHandle == 0) {
+        throw new JniException("Native table creation with init value returned null handle");
+      }
+
+      final JniTable table = new JniTable(tableHandle, this);
+      LOGGER.fine(
+          "Created table with init value: elementType="
+              + elementType
+              + ", size="
+              + initialSize
+              + ", max="
+              + maxSize
+              + ", handle=0x"
+              + Long.toHexString(tableHandle));
+      return table;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create table with init value", e);
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
       throws WasmException {
     if (initialPages < 0) {
@@ -663,6 +718,66 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.WasmTable createTable(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType,
+      final ai.tegmentum.wasmtime4j.WasmValue initValue)
+      throws WasmException {
+    Validation.requireNonNull(tableType, "tableType");
+    Validation.requireNonNull(initValue, "initValue");
+    ensureNotClosed();
+
+    final WasmValueType elementType = tableType.getElementType();
+    final long minSize = tableType.getMinimum();
+    final long maxSize = tableType.getMaximum().orElse(-1L);
+
+    if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+    if (minSize < 0) {
+      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
+    }
+    if (maxSize != -1 && maxSize < minSize) {
+      throw new IllegalArgumentException(
+          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
+    }
+
+    try {
+      final long initRefId = wasmValueToRefHandle(initValue);
+      final long tableHandle =
+          nativeCreateTableWithInit(
+              getNativeHandle(),
+              elementType.toNativeTypeCode(),
+              (int) minSize,
+              maxSize == -1 ? -1 : (int) maxSize,
+              initRefId);
+
+      if (tableHandle == 0) {
+        throw new JniException(
+            "Native table creation with type and init value returned null handle");
+      }
+
+      final JniTable table = new JniTable(tableHandle, this);
+      LOGGER.fine(
+          "Created table from type with init value: elementType="
+              + elementType
+              + ", min="
+              + minSize
+              + ", max="
+              + maxSize
+              + ", handle=0x"
+              + Long.toHexString(tableHandle));
+      return table;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create table from type with init value", e);
+    }
+  }
+
+  @Override
   public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
       createMemoryAsync(final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) {
     return java.util.concurrent.CompletableFuture.supplyAsync(
@@ -725,6 +840,21 @@ public final class JniStore extends JniResource implements Store {
             throw new java.util.concurrent.CompletionException(e);
           }
         });
+  }
+
+  private long wasmValueToRefHandle(final ai.tegmentum.wasmtime4j.WasmValue initValue) {
+    if (initValue.getValue() == null) {
+      return 0L;
+    }
+    final Object val = initValue.getValue();
+    if (val instanceof Long) {
+      return (Long) val;
+    }
+    if (val instanceof JniFunctionReference) {
+      return ((JniFunctionReference) val).getNativeHandle();
+    }
+    // Null ref for unsupported value types
+    return 0L;
   }
 
   private ai.tegmentum.wasmtime4j.WasmTable createTableAsyncInternal(
@@ -1093,6 +1223,9 @@ public final class JniStore extends JniResource implements Store {
    */
   private static native long nativeCreateTable(
       long storeHandle, int elementType, int initialSize, int maxSize);
+
+  private static native long nativeCreateTableWithInit(
+      long storeHandle, int elementType, int initialSize, int maxSize, long initRefId);
 
   /**
    * Creates a new WebAssembly linear memory.
@@ -1574,6 +1707,39 @@ public final class JniStore extends JniResource implements Store {
 
   // Native methods for new functionality
   private native void nativeSetFuelAsyncYieldInterval(long storeHandle, long interval);
+
+  // ===== Backtrace API =====
+
+  @Override
+  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    final ai.tegmentum.wasmtime4j.debug.WasmBacktrace result = nativeCaptureBacktrace(nativeHandle);
+    if (result == null) {
+      return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(
+          java.util.Collections.emptyList(), false);
+    }
+    return result;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace()
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    ensureNotClosed();
+    final ai.tegmentum.wasmtime4j.debug.WasmBacktrace result =
+        nativeForceCaptureBacktrace(nativeHandle);
+    if (result == null) {
+      return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(
+          java.util.Collections.emptyList(), true);
+    }
+    return result;
+  }
+
+  private static native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeCaptureBacktrace(
+      long storeHandle);
+
+  private static native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeForceCaptureBacktrace(
+      long storeHandle);
 
   // ===== Debugging API =====
 

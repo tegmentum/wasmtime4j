@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.type;
 
+import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 
 /**
@@ -65,6 +66,20 @@ public interface GlobalType extends WasmType {
       throw new IllegalArgumentException("mutability cannot be null");
     }
     return new DefaultGlobalType(valueType, mutability);
+  }
+
+  /**
+   * Returns the default value for this global type.
+   *
+   * <p>The default value is determined by the global's content type. For numeric types this returns
+   * zero, for reference types this returns null. This corresponds to Wasmtime's approach of using
+   * the content type's default value for global initialization.
+   *
+   * @return the default WasmValue for this global's content type
+   * @since 1.1.0
+   */
+  default WasmValue defaultValue() {
+    return WasmValue.defaultForType(getValueType());
   }
 
   @Override

@@ -19,7 +19,9 @@ package ai.tegmentum.wasmtime4j.component;
 import ai.tegmentum.wasmtime4j.exception.ResourceTableException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,15 +45,33 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class DefaultResourceTable implements ResourceTable {
 
-  private final ConcurrentHashMap<Integer, Object> entries = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Integer, Object> entries;
   private final AtomicInteger nextHandle = new AtomicInteger(1);
   private volatile int maxCapacity = Integer.MAX_VALUE;
 
   /** Maps parent handle to the set of its child handles. */
-  private final ConcurrentHashMap<Integer, Set<Integer>> children = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Integer, Set<Integer>> children;
 
   /** Maps child handle to its parent handle. */
-  private final ConcurrentHashMap<Integer, Integer> childToParent = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<Integer, Integer> childToParent;
+
+  /** Creates a new DefaultResourceTable with default initial capacity. */
+  public DefaultResourceTable() {
+    this.entries = new ConcurrentHashMap<>();
+    this.children = new ConcurrentHashMap<>();
+    this.childToParent = new ConcurrentHashMap<>();
+  }
+
+  /**
+   * Creates a new DefaultResourceTable with the specified initial capacity hint.
+   *
+   * @param initialCapacity the initial capacity hint for the underlying maps
+   */
+  DefaultResourceTable(final int initialCapacity) {
+    this.entries = new ConcurrentHashMap<>(initialCapacity);
+    this.children = new ConcurrentHashMap<>(initialCapacity);
+    this.childToParent = new ConcurrentHashMap<>(initialCapacity);
+  }
 
   @Override
   public int maxCapacity() {
@@ -248,5 +268,15 @@ public final class DefaultResourceTable implements ResourceTable {
     if (parentChildren != null) {
       parentChildren.remove(childHandle);
     }
+  }
+
+  @Override
+  public Set<Integer> handles() {
+    return Collections.unmodifiableSet(Set.copyOf(entries.keySet()));
+  }
+
+  @Override
+  public Iterator<Map.Entry<Integer, Object>> iterEntries() {
+    return Collections.unmodifiableMap(new java.util.HashMap<>(entries)).entrySet().iterator();
   }
 }

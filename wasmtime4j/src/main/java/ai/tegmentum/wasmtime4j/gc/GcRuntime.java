@@ -135,6 +135,27 @@ public interface GcRuntime {
     return createArray(arrayType, elements);
   }
 
+  /**
+   * Creates a new fixed-length array instance with the given elements.
+   *
+   * <p>Unlike {@link #createArray(ArrayType, List)}, this method creates an immutable array where
+   * all elements are set at creation time and cannot be modified afterward. This corresponds to
+   * Wasmtime's {@code ArrayRef::new_fixed} operation.
+   *
+   * <p>The default implementation delegates to {@link #createArray(ArrayType, List)} since the
+   * distinction between fixed and dynamic arrays is a native-level optimization.
+   *
+   * @param arrayType the array type
+   * @param elements the fixed array elements (must match the array type's element type)
+   * @return the new fixed array instance
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  default ArrayInstance createArrayFixed(ArrayType arrayType, List<GcValue> elements)
+      throws GcException {
+    return createArray(arrayType, elements);
+  }
+
   // ========== Field and Element Access ==========
 
   /**
