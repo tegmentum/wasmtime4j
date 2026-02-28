@@ -9,11 +9,11 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 /// Global coredump registry storing wasmtime::Error objects that contain WasmCoreDump.
-static REGISTRY: Lazy<RwLock<HashMap<u64, CoredumpEntry>>> =
-    Lazy::new(|| RwLock::new(HashMap::new()));
+static REGISTRY: LazyLock<RwLock<HashMap<u64, CoredumpEntry>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 /// Monotonically increasing counter for coredump IDs.
 static COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -93,7 +93,7 @@ mod tests {
     use std::sync::Mutex;
 
     /// Mutex to serialize coredump tests that share the global REGISTRY.
-    static TEST_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+    static TEST_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
     #[test]
     fn test_register_and_retrieve() {

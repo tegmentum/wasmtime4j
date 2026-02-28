@@ -276,10 +276,9 @@ public interface Module extends Closeable {
       return ModuleValidationResult.failure(List.of("Unsupported WebAssembly version"));
     }
 
-    // Full structural and semantic validation via native Wasmtime engine
+    // Full structural and semantic validation via the provided engine's runtime
     try {
-      final boolean valid =
-          ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory.create().validateModule(wasmBytes);
+      final boolean valid = engine.getRuntime().validateModule(wasmBytes);
       if (valid) {
         return ModuleValidationResult.success();
       }
@@ -292,10 +291,7 @@ public interface Module extends Closeable {
   }
 
   /**
-   * Gets all function types defined in this module.
-   *
-   * <p>This includes function types for both imported and exported functions, as well as internal
-   * functions.
+   * Gets all exported function types from this module.
    *
    * @return an immutable list of function types
    */
@@ -310,9 +306,7 @@ public interface Module extends Closeable {
   }
 
   /**
-   * Gets all memory types defined in this module.
-   *
-   * <p>This includes memory types for both imported and exported memories.
+   * Gets all exported memory types from this module.
    *
    * @return an immutable list of memory types
    */
@@ -327,9 +321,7 @@ public interface Module extends Closeable {
   }
 
   /**
-   * Gets all table types defined in this module.
-   *
-   * <p>This includes table types for both imported and exported tables.
+   * Gets all exported table types from this module.
    *
    * @return an immutable list of table types
    */
@@ -344,9 +336,7 @@ public interface Module extends Closeable {
   }
 
   /**
-   * Gets all global types defined in this module.
-   *
-   * <p>This includes global types for both imported and exported globals.
+   * Gets all exported global types from this module.
    *
    * @return an immutable list of global types
    */

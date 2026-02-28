@@ -13,33 +13,5 @@ public enum CompilationStrategy {
   /** Use the Cranelift compiler backend (optimizing). */
   CRANELIFT,
   /** Use the Winch compiler backend (baseline). */
-  WINCH,
-  /**
-   * Optimize for compilation speed.
-   *
-   * @deprecated Use {@link #AUTO} instead. This maps to AUTO in Wasmtime.
-   */
-  @Deprecated
-  SPEED,
-  /**
-   * Optimize for runtime performance.
-   *
-   * @deprecated Use {@link #CRANELIFT} instead.
-   */
-  @Deprecated
-  PERFORMANCE,
-  /**
-   * Optimize for memory usage.
-   *
-   * @deprecated Use {@link #AUTO} instead. This maps to AUTO in Wasmtime.
-   */
-  @Deprecated
-  SIZE,
-  /**
-   * Default strategy.
-   *
-   * @deprecated Use {@link #AUTO} instead.
-   */
-  @Deprecated
-  DEFAULT
+  WINCH
 }

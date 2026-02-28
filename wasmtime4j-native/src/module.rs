@@ -875,7 +875,7 @@ impl ModuleMetadata {
     pub(crate) fn extract(
         module: &WasmtimeModule,
         size_bytes: usize,
-        wasm_bytes: &[u8],
+        _wasm_bytes: &[u8],
     ) -> WasmtimeResult<Self> {
         let mut imports = Vec::new();
         let mut exports = Vec::new();

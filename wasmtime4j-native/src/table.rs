@@ -38,9 +38,9 @@ pub struct TableMetadata {
 
 /// Global reference registry for managing references across table operations
 /// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
-use once_cell::sync::Lazy;
-static REFERENCE_REGISTRY: Lazy<ManuallyDrop<Arc<Mutex<ReferenceRegistry>>>> =
-    Lazy::new(|| ManuallyDrop::new(Arc::new(Mutex::new(ReferenceRegistry::new()))));
+use std::sync::LazyLock;
+static REFERENCE_REGISTRY: LazyLock<ManuallyDrop<Arc<Mutex<ReferenceRegistry>>>> =
+    LazyLock::new(|| ManuallyDrop::new(Arc::new(Mutex::new(ReferenceRegistry::new()))));
 
 /// Registry entry pairing a reference with its originating store ID
 #[derive(Debug)]

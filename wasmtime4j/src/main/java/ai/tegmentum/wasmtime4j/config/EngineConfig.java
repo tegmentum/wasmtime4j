@@ -2875,20 +2875,6 @@ public final class EngineConfig {
   }
 
   /**
-   * Sets the GC collector implementation by name.
-   *
-   * @param collector the collector name ("auto", "deferred_reference_counting", "null")
-   * @return this configuration for method chaining
-   * @deprecated Use {@link #collector(Collector)} instead
-   * @since 1.0.0
-   */
-  @Deprecated
-  public EngineConfig collector(final String collector) {
-    this.collector = Collector.fromString(collector);
-    return this;
-  }
-
-  /**
    * Returns the GC collector strategy.
    *
    * @return the collector strategy
@@ -3502,11 +3488,9 @@ public final class EngineConfig {
     }
   }
 
-  @SuppressWarnings("deprecation")
   private static String strategyToString(final CompilationStrategy strategy) {
     switch (strategy) {
       case CRANELIFT:
-      case PERFORMANCE:
         return "cranelift";
       case WINCH:
         return "winch";

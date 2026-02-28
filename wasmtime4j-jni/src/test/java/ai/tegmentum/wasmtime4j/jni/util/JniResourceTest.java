@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -154,26 +153,26 @@ class JniResourceTest {
   class StateAfterClose {
 
     @Test
-    @DisplayName("getNativeHandle() should throw JniResourceException after close")
+    @DisplayName("getNativeHandle() should throw IllegalStateException after close")
     void getNativeHandleShouldThrowAfterClose() {
       final TestJniResource resource = new TestJniResource(VALID_HANDLE);
       resource.close();
 
       assertThatThrownBy(resource::getNativeHandle)
-          .isInstanceOf(JniResourceException.class)
+          .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("TestResource")
           .hasMessageContaining("closed")
           .hasMessageContaining(String.format("0x%x", VALID_HANDLE));
     }
 
     @Test
-    @DisplayName("ensureNotClosed() should throw JniResourceException after close")
+    @DisplayName("ensureNotClosed() should throw IllegalStateException after close")
     void ensureNotClosedShouldThrowAfterClose() {
       final TestJniResource resource = new TestJniResource(VALID_HANDLE);
       resource.close();
 
       assertThatThrownBy(resource::ensureNotClosed)
-          .isInstanceOf(JniResourceException.class)
+          .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("TestResource")
           .hasMessageContaining("closed");
     }

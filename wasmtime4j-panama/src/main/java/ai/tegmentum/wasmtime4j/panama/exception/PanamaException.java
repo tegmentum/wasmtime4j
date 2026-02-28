@@ -1,14 +1,17 @@
 package ai.tegmentum.wasmtime4j.panama.exception;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+
 /**
  * Base exception for Panama FFI implementation errors.
  *
  * <p>This is the root exception class for all Panama-specific errors in the WebAssembly runtime. It
- * provides a common base for exception handling across the Panama implementation.
+ * provides a common base for exception handling across the Panama implementation, and extends
+ * {@link WasmException} for consistency with the JNI implementation.
  *
  * @since 1.0.0
  */
-public class PanamaException extends Exception {
+public class PanamaException extends WasmException {
 
   private static final long serialVersionUID = 1L;
 

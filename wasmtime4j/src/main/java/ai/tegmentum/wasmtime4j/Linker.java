@@ -167,27 +167,6 @@ public interface Linker<T> extends Closeable {
       throws WasmException;
 
   /**
-   * Defines an instance that can be imported by WebAssembly modules.
-   *
-   * <p>This is a convenience overload that extracts the store from the instance. Prefer {@link
-   * #defineInstance(Store, String, Instance)} for explicit store context.
-   *
-   * @param moduleName the module name for the import
-   * @param instance the WebAssembly instance whose exports should be provided
-   * @throws WasmException if the instance cannot be defined
-   * @throws IllegalArgumentException if any parameter is null
-   * @deprecated Use {@link #defineInstance(Store, String, Instance)} instead
-   */
-  @Deprecated
-  default void defineInstance(final String moduleName, final Instance instance)
-      throws WasmException {
-    if (instance == null) {
-      throw new IllegalArgumentException("Instance cannot be null");
-    }
-    defineInstance(instance.getStore(), moduleName, instance);
-  }
-
-  /**
    * Defines an extern in the linker with a module and item name.
    *
    * <p>This is a generic define method that accepts any extern type (function, memory, table, or

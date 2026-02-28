@@ -80,6 +80,9 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   /** Cached default GC runtime for lazy initialization. */
   private volatile ai.tegmentum.wasmtime4j.gc.GcRuntime defaultGcRuntime;
 
+  /** Engine backing the default GC runtime, must be closed when runtime is closed. */
+  private volatile Engine gcRuntimeEngine;
+
   /** Lock object for GC runtime lazy initialization. */
   private final Object gcRuntimeLock = new Object();
 
@@ -96,7 +99,12 @@ public final class PanamaWasmRuntime implements WasmRuntime {
           new NativeResourceHandle(
               "PanamaWasmRuntime",
               () -> {
-                // Note: GcRuntime does not have a close() method - it relies on engine lifecycle
+                // Close the GC runtime engine if it was lazily created
+                final Engine engine = gcRuntimeEngine;
+                if (engine != null) {
+                  engine.close();
+                  gcRuntimeEngine = null;
+                }
                 defaultGcRuntime = null;
 
                 try {
@@ -609,6 +617,7 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
       try {
         final Engine engine = createEngine();
+        gcRuntimeEngine = engine;
         final long engineHandle = ((PanamaEngine) engine).getNativeEngine().address();
         defaultGcRuntime = new PanamaGcRuntime(engineHandle);
 

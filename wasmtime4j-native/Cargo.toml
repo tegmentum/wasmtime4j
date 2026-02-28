@@ -39,21 +39,14 @@ serde.workspace = true
 serde_json.workspace = true
 
 # Error handling
-anyhow.workspace = true
 thiserror.workspace = true
 
 # Logging
 log.workspace = true
 env_logger.workspace = true
 
-# Memory management utilities
-once_cell.workspace = true
-
 # Advanced threading and lock-free data structures
 parking_lot.workspace = true
-
-# Encoding
-base64.workspace = true
 
 # RNG core traits for custom WASI RNG implementations
 rand_core = { workspace = true, optional = true }

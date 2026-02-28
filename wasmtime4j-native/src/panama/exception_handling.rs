@@ -488,7 +488,7 @@ pub extern "C" fn wasmtime4j_panama_exnref_create(
     field_i64_values_ptr: *const i64,
     field_f64_values_ptr: *const f64,
 ) -> *mut c_void {
-    use wasmtime::{ExnRef, ExnRefPre, ExnType, OwnedRooted, RootScope, Tag, Val};
+    use wasmtime::{ExnRef, ExnRefPre, ExnType, RootScope, Tag, Val};
 
     if store_ptr.is_null() || tag_ptr.is_null() {
         return std::ptr::null_mut();
@@ -588,7 +588,7 @@ pub extern "C" fn wasmtime4j_panama_exnref_create_async(
     field_i64_values_ptr: *const i64,
     field_f64_values_ptr: *const f64,
 ) -> *mut c_void {
-    use wasmtime::{ExnRef, ExnRefPre, ExnType, OwnedRooted, RootScope, Tag, Val};
+    use wasmtime::{ExnRef, ExnRefPre, ExnType, RootScope, Tag, Val};
 
     if store_ptr.is_null() || tag_ptr.is_null() {
         return std::ptr::null_mut();

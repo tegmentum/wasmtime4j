@@ -858,7 +858,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetDataP
 /// Destroy memory (JNI version) with comprehensive validation and cleanup
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeDestroyMemory(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     memory_ptr: jlong,
 ) {
@@ -1153,7 +1153,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMaxSi
 /// Validate memory handle and return diagnostics (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeValidateHandle(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     memory_ptr: jlong,
 ) -> jboolean {

@@ -113,15 +113,6 @@ class CollectorTest {
     }
 
     @Test
-    @DisplayName("deprecated string overload should work")
-    @SuppressWarnings("deprecation")
-    void deprecatedStringOverloadShouldWork() {
-      final EngineConfig config = new EngineConfig();
-      config.collector("null");
-      assertEquals(Collector.NULL, config.getCollector());
-    }
-
-    @Test
     @DisplayName("collector should serialize in toJson")
     void collectorShouldSerializeInToJson() {
       final EngineConfig config = new EngineConfig();

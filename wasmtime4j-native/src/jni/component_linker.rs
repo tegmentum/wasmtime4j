@@ -1646,7 +1646,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     interface_namespace: JString,
     interface_name: JString,
     resource_name: JString,
-    constructor_callback_id: jlong,
+    _constructor_callback_id: jlong,
     destructor_callback_id: jlong,
 ) -> jlong {
     // Validate linker handle

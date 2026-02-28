@@ -951,7 +951,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAliasMod
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunction(
     mut env: JNIEnv,
-    obj: jobject,
+    _obj: jobject,
     linker_handle: jlong,
     module_name: JString,
     name: JString,
@@ -1062,7 +1062,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHo
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHostFunctionUnchecked(
     mut env: JNIEnv,
-    obj: jobject,
+    _obj: jobject,
     linker_handle: jlong,
     module_name: JString,
     name: JString,
@@ -1255,7 +1255,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUn
 /// Destroy a linker
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroyLinker(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     linker_handle: jlong,
 ) {
@@ -1281,7 +1281,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroyL
 /// Set whether name shadowing is allowed in the linker
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowShadowing(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     linker_handle: jlong,
     allow: jboolean,
@@ -1313,7 +1313,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowSha
 /// Set whether unknown exports are allowed during instantiation
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowUnknownExports(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     linker_handle: jlong,
     allow: jboolean,

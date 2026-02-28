@@ -7,7 +7,7 @@
 use crate::caller::core;
 use crate::error::ffi_utils;
 use crate::store::StoreData;
-use std::os::raw::{c_char, c_int, c_long, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_ulong, c_void};
 use wasmtime::Caller as WasmtimeCaller;
 
 /// Get fuel remaining in the caller if fuel metering is enabled (Panama FFI version)

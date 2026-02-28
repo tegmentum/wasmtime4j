@@ -622,6 +622,8 @@ public interface Engine extends Closeable {
    * @since 1.0.0
    */
   static void tlsEagerInitialize() throws WasmException {
-    WasmRuntimeFactory.create().tlsEagerInitialize();
+    try (WasmRuntime runtime = WasmRuntimeFactory.create()) {
+      runtime.tlsEagerInitialize();
+    }
   }
 }

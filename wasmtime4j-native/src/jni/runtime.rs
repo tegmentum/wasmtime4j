@@ -153,7 +153,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeGet
 /// Destroy a WebAssembly runtime (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDestroyRuntime(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     runtime_handle: jlong,
 ) {

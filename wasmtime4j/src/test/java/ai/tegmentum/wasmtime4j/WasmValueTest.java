@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
  * cases for all WebAssembly value types.
  */
 @DisplayName("WasmValue Tests")
-@SuppressWarnings("deprecation")
 class WasmValueTest {
 
   @Nested
@@ -503,81 +502,6 @@ class WasmValueTest {
           IllegalArgumentException.class,
           () -> WasmValue.validateMultiValue(values, types),
           "Should throw for null value");
-    }
-
-    @Test
-    @DisplayName("isMultiValue should detect multi-value arrays")
-    void isMultiValueShouldDetectMultiValueArrays() {
-      assertFalse(WasmValue.isMultiValue(null), "Null should not be multi-value");
-      assertFalse(WasmValue.isMultiValue(new WasmValue[0]), "Empty should not be multi-value");
-      assertFalse(
-          WasmValue.isMultiValue(new WasmValue[] {WasmValue.i32(1)}),
-          "Single value should not be multi-value");
-      assertTrue(
-          WasmValue.isMultiValue(new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)}),
-          "Two values should be multi-value");
-    }
-
-    @Test
-    @DisplayName("getFirstValue should return first value")
-    void getFirstValueShouldReturnFirstValue() {
-      final WasmValue[] values = new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)};
-      final WasmValue first = WasmValue.getFirstValue(values);
-      assertEquals(1, first.asInt(), "Should return first value");
-    }
-
-    @Test
-    @DisplayName("getFirstValue should return null for empty array")
-    void getFirstValueShouldReturnNullForEmptyArray() {
-      assertNull(WasmValue.getFirstValue(null), "Null array should return null");
-      assertNull(WasmValue.getFirstValue(new WasmValue[0]), "Empty array should return null");
-    }
-
-    @Test
-    @DisplayName("getLastValue should return last value")
-    void getLastValueShouldReturnLastValue() {
-      final WasmValue[] values = new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)};
-      final WasmValue last = WasmValue.getLastValue(values);
-      assertEquals(2, last.asInt(), "Should return last value");
-    }
-
-    @Test
-    @DisplayName("extractByType should filter values by type")
-    void extractByTypeShouldFilterValuesByType() {
-      final WasmValue[] values =
-          new WasmValue[] {WasmValue.i32(1), WasmValue.i64(2L), WasmValue.i32(3)};
-      final WasmValue[] i32Values = WasmValue.extractByType(values, WasmValueType.I32);
-      assertEquals(2, i32Values.length, "Should have 2 I32 values");
-      assertEquals(1, i32Values[0].asInt(), "First I32 should be 1");
-      assertEquals(3, i32Values[1].asInt(), "Second I32 should be 3");
-    }
-
-    @Test
-    @DisplayName("copyMultiValue should create copy")
-    void copyMultiValueShouldCreateCopy() {
-      final WasmValue[] original = new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)};
-      final WasmValue[] copy = WasmValue.copyMultiValue(original);
-      assertNotSame(original, copy, "Should be different array instances");
-      assertEquals(original.length, copy.length, "Should have same length");
-    }
-
-    @Test
-    @DisplayName("copyMultiValue should return null for null input")
-    void copyMultiValueShouldReturnNullForNullInput() {
-      assertNull(WasmValue.copyMultiValue(null), "Should return null for null input");
-    }
-
-    @Test
-    @DisplayName("multiValueToString should format correctly")
-    void multiValueToStringShouldFormatCorrectly() {
-      assertEquals("null", WasmValue.multiValueToString(null), "Null should return 'null'");
-      assertEquals(
-          "[]", WasmValue.multiValueToString(new WasmValue[0]), "Empty should return '[]'");
-      final WasmValue[] values = new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)};
-      final String str = WasmValue.multiValueToString(values);
-      assertTrue(str.startsWith("["), "Should start with '['");
-      assertTrue(str.endsWith("]"), "Should end with ']'");
-      assertTrue(str.contains(","), "Should contain comma separator");
     }
   }
 

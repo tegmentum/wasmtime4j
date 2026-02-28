@@ -1097,7 +1097,9 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Instance instance = linker.instantiate(store, module);
         resources.add(instance);
 
-        assertThrows(IllegalArgumentException.class, () -> linker.defineInstance(null, instance));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> linker.defineInstance(store, null, instance));
         LOGGER.info("[" + runtime + "] Correctly rejected null module name for defineInstance");
       }
     }
@@ -1112,8 +1114,12 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
       try (Engine engine = Engine.create()) {
         final Linker<?> linker = Linker.create(engine);
         resources.add(linker);
+        final Store store = engine.createStore();
+        resources.add(store);
 
-        assertThrows(IllegalArgumentException.class, () -> linker.defineInstance("test", null));
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> linker.defineInstance(store, "test", null));
         LOGGER.info("[" + runtime + "] Correctly rejected null instance for defineInstance");
       }
     }
@@ -1135,7 +1141,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         final Instance instance = linker.instantiate(store, module);
         resources.add(instance);
 
-        assertDoesNotThrow(() -> linker.defineInstance("my_module", instance));
+        assertDoesNotThrow(() -> linker.defineInstance(store, "my_module", instance));
         LOGGER.info("[" + runtime + "] Successfully defined instance");
       }
     }

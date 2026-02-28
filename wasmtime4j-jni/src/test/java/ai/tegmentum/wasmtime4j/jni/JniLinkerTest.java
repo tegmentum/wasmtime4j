@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -240,7 +239,8 @@ class JniLinkerTest {
     final JniInstance instance = new JniInstance(VALID_HANDLE, module, testStore);
 
     final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> linker.defineInstance(null, instance));
+        assertThrows(
+            IllegalArgumentException.class, () -> linker.defineInstance(testStore, null, instance));
 
     assertThat(exception.getMessage()).contains("Module name cannot be null");
     instance.markClosedForTesting();
@@ -250,7 +250,8 @@ class JniLinkerTest {
   @Test
   void testDefineInstanceWithNullInstance() {
     final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> linker.defineInstance("test", null));
+        assertThrows(
+            IllegalArgumentException.class, () -> linker.defineInstance(testStore, "test", null));
 
     assertThat(exception.getMessage()).contains("Instance cannot be null");
   }
@@ -381,24 +382,24 @@ class JniLinkerTest {
   }
 
   @Test
-  void testDefineHostFunctionAfterCloseThrowsJniResourceException() {
+  void testDefineHostFunctionAfterCloseThrowsIllegalStateException() {
     linker.markClosedForTesting();
 
-    final JniResourceException exception =
+    final IllegalStateException exception =
         assertThrows(
-            JniResourceException.class,
+            IllegalStateException.class,
             () -> linker.defineHostFunction("env", "func", testFunctionType, testImplementation));
 
     assertThat(exception.getMessage()).contains("closed");
   }
 
   @Test
-  void testInstantiateAfterCloseThrowsJniResourceException() {
+  void testInstantiateAfterCloseThrowsIllegalStateException() {
     final JniModule module = new JniModule(VALID_HANDLE, testEngine);
     linker.markClosedForTesting();
 
-    final JniResourceException exception =
-        assertThrows(JniResourceException.class, () -> linker.instantiate(testStore, module));
+    final IllegalStateException exception =
+        assertThrows(IllegalStateException.class, () -> linker.instantiate(testStore, module));
 
     assertThat(exception.getMessage()).contains("closed");
     module.markClosedForTesting();

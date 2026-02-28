@@ -32,7 +32,9 @@ public interface WasmGlobal {
    * Sets the value of this global.
    *
    * @param value the new value
-   * @throws ai.tegmentum.wasmtime4j.exception.ValidationException if the global is immutable
+   * @throws UnsupportedOperationException if the global is immutable
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmTypeException if the value type does not match
+   *     the global type
    */
   void set(final WasmValue value);
 

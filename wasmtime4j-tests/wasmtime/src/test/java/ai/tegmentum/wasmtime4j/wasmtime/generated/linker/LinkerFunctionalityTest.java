@@ -149,7 +149,7 @@ public final class LinkerFunctionalityTest extends DualRuntimeTest {
 
         // Instantiate module A and register it
         try (final Instance instanceA = linker.instantiate(store, moduleA)) {
-          linker.defineInstance("a", instanceA);
+          linker.defineInstance(store, "a", instanceA);
 
           // Instantiate module B
           try (final Instance instanceB = linker.instantiate(store, moduleB)) {

@@ -760,7 +760,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncFr
 /// JNI binding: check if function matches a function type using subtype-aware checking.
 /// param_type_codes and result_type_codes are int[] of WasmValueType ordinals.
 /// Returns 1 if matches, 0 if not, -1 on error.
-#[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncMatchesTy(
     mut env: JNIEnv,
     _class: JClass,

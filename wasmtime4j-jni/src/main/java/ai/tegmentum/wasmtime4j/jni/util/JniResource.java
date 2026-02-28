@@ -158,8 +158,8 @@ public abstract class JniResource implements AutoCloseable {
 
   /**
    * Marks this resource as closed for testing purposes without calling native cleanup. This method
-   * is public and should only be used in unit tests to simulate closed resource behavior without
-   * requiring actual native resources.
+   * should only be used in unit tests to simulate closed resource behavior without requiring actual
+   * native resources.
    */
   public void markClosedForTesting() {
     closed.set(true);
@@ -168,11 +168,11 @@ public abstract class JniResource implements AutoCloseable {
   /**
    * Ensures that this resource has not been closed.
    *
-   * @throws JniResourceException if the resource has been closed
+   * @throws IllegalStateException if the resource has been closed
    */
   protected final void ensureNotClosed() {
     if (isClosed()) {
-      throw new JniResourceException(
+      throw new IllegalStateException(
           String.format(
               "%s resource has been closed (handle: 0x%x)", getResourceType(), nativeHandle));
     }

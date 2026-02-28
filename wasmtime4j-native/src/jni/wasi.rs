@@ -24,7 +24,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeC
 /// Destroy a WASI context and free its resources
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeDestroyContext(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     context_handle: jlong,
 ) {

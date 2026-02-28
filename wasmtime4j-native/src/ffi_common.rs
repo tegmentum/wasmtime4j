@@ -260,15 +260,15 @@ pub mod parameter_conversion {
 /// double-free vulnerabilities across FFI boundaries. All destroy operations
 /// are thread-safe and panic-safe to prevent JVM crashes.
 pub mod resource_destruction {
-    use once_cell::sync::Lazy;
+    use std::sync::LazyLock;
     use std::collections::HashSet;
     use std::os::raw::c_void;
     use std::sync::Mutex;
 
     /// Thread-safe tracking of destroyed pointers to prevent double-free.
     /// Using usize addresses instead of raw pointers for thread safety.
-    pub static DESTROYED_POINTERS: Lazy<Mutex<HashSet<usize>>> =
-        Lazy::new(|| Mutex::new(HashSet::new()));
+    pub static DESTROYED_POINTERS: LazyLock<Mutex<HashSet<usize>>> =
+        LazyLock::new(|| Mutex::new(HashSet::new()));
 
     /// Magic prefix used to detect fake/test pointers.
     /// Pointers with this prefix in high bits are treated as test pointers.

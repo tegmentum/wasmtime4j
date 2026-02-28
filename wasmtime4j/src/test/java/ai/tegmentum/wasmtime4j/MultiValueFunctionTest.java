@@ -3,7 +3,6 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,7 +21,6 @@ import org.junit.jupiter.api.Test;
  * value marshaling - Error handling for multi-value operations - Performance characteristics
  */
 @DisplayName("Multi-Value Function Operations")
-@SuppressWarnings("deprecation")
 class MultiValueFunctionTest {
 
   @Nested
@@ -54,74 +52,6 @@ class MultiValueFunctionTest {
     }
 
     @Test
-    @DisplayName("Should detect multi-value arrays correctly")
-    void testMultiValueDetection() {
-      assertFalse(WasmValue.isMultiValue(null));
-      assertFalse(WasmValue.isMultiValue(new WasmValue[0]));
-      assertFalse(WasmValue.isMultiValue(new WasmValue[] {WasmValue.i32(1)}));
-
-      assertTrue(WasmValue.isMultiValue(new WasmValue[] {WasmValue.i32(1), WasmValue.i32(2)}));
-
-      assertTrue(
-          WasmValue.isMultiValue(
-              new WasmValue[] {WasmValue.i32(1), WasmValue.f64(2.0), WasmValue.i64(3L)}));
-    }
-
-    @Test
-    @DisplayName("Should get first and last values correctly")
-    void testFirstAndLastValues() {
-      // Test null array
-      assertNull(WasmValue.getFirstValue(null));
-      assertNull(WasmValue.getLastValue(null));
-
-      // Test empty array
-      assertNull(WasmValue.getFirstValue(new WasmValue[0]));
-      assertNull(WasmValue.getLastValue(new WasmValue[0]));
-
-      // Test single value
-      WasmValue[] single = {WasmValue.i32(42)};
-      assertEquals(42, WasmValue.getFirstValue(single).asInt());
-      assertEquals(42, WasmValue.getLastValue(single).asInt());
-
-      // Test multiple values
-      WasmValue[] multiple = {WasmValue.i32(10), WasmValue.f64(3.14), WasmValue.i64(1000L)};
-      assertEquals(10, WasmValue.getFirstValue(multiple).asInt());
-      assertEquals(1000L, WasmValue.getLastValue(multiple).asLong());
-    }
-
-    @Test
-    @DisplayName("Should extract values by type correctly")
-    void testExtractByType() {
-      WasmValue[] values = {
-        WasmValue.i32(10),
-        WasmValue.f64(3.14),
-        WasmValue.i32(20),
-        WasmValue.i64(1000L),
-        WasmValue.i32(30)
-      };
-
-      // Extract I32 values
-      WasmValue[] i32Values = WasmValue.extractByType(values, WasmValueType.I32);
-      assertEquals(3, i32Values.length);
-      assertEquals(10, i32Values[0].asInt());
-      assertEquals(20, i32Values[1].asInt());
-      assertEquals(30, i32Values[2].asInt());
-
-      // Extract F64 values
-      WasmValue[] f64Values = WasmValue.extractByType(values, WasmValueType.F64);
-      assertEquals(1, f64Values.length);
-      assertEquals(3.14, f64Values[0].asDouble(), 0.001);
-
-      // Extract non-existent type
-      WasmValue[] f32Values = WasmValue.extractByType(values, WasmValueType.F32);
-      assertEquals(0, f32Values.length);
-
-      // Test with null inputs
-      assertEquals(0, WasmValue.extractByType(null, WasmValueType.I32).length);
-      assertEquals(0, WasmValue.extractByType(values, null).length);
-    }
-
-    @Test
     @DisplayName("Should validate multi-value arrays correctly")
     void testMultiValueValidation() {
       WasmValue[] values = {WasmValue.i32(10), WasmValue.f64(3.14), WasmValue.i64(1000L)};
@@ -150,53 +80,6 @@ class MultiValueFunctionTest {
           IllegalArgumentException.class, () -> WasmValue.validateMultiValue(null, expectedTypes));
       assertThrows(
           IllegalArgumentException.class, () -> WasmValue.validateMultiValue(values, null));
-    }
-
-    @Test
-    @DisplayName("Should handle multi-value string representation")
-    void testMultiValueToString() {
-      // Test null
-      assertEquals("null", WasmValue.multiValueToString(null));
-
-      // Test empty
-      assertEquals("[]", WasmValue.multiValueToString(new WasmValue[0]));
-
-      // Test single value
-      WasmValue[] single = {WasmValue.i32(42)};
-      String singleStr = WasmValue.multiValueToString(single);
-      assertTrue(singleStr.contains("42"));
-      assertTrue(singleStr.startsWith("["));
-      assertTrue(singleStr.endsWith("]"));
-
-      // Test multiple values
-      WasmValue[] multiple = {WasmValue.i32(10), WasmValue.f64(3.14)};
-      String multiStr = WasmValue.multiValueToString(multiple);
-      assertTrue(multiStr.contains("10"));
-      assertTrue(multiStr.contains("3.14"));
-      assertTrue(multiStr.contains(","));
-    }
-
-    @Test
-    @DisplayName("Should copy multi-value arrays correctly")
-    void testMultiValueCopy() {
-      // Test null
-      assertNull(WasmValue.copyMultiValue(null));
-
-      // Test copying
-      WasmValue[] original = {WasmValue.i32(10), WasmValue.f64(3.14), WasmValue.i64(1000L)};
-
-      WasmValue[] copy = WasmValue.copyMultiValue(original);
-      assertNotNull(copy);
-      assertEquals(original.length, copy.length);
-
-      // Verify values are the same
-      for (int i = 0; i < original.length; i++) {
-        assertEquals(original[i].getType(), copy[i].getType());
-        assertEquals(original[i].getValue(), copy[i].getValue());
-      }
-
-      // Verify it's a different array instance
-      assertTrue(original != copy);
     }
   }
 

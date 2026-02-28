@@ -233,7 +233,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetName<'
 /// Destroy a table (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeDestroy(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     table_ptr: jlong,
 ) {

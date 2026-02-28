@@ -2,7 +2,6 @@ package ai.tegmentum.wasmtime4j;
 
 import ai.tegmentum.wasmtime4j.func.FunctionReference;
 import ai.tegmentum.wasmtime4j.type.ValType;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * Represents a WebAssembly value that can be passed to and from WebAssembly functions.
@@ -939,113 +938,6 @@ public final class WasmValue {
       }
       values[i].validateType(expectedTypes[i]);
     }
-  }
-
-  /**
-   * Checks if an array of values represents a multi-value result (more than one value).
-   *
-   * @param values the values to check
-   * @return true if the array contains multiple values, false otherwise
-   * @deprecated Array length checks do not belong on a value class. Use {@code values.length > 1}
-   *     directly.
-   */
-  @Deprecated
-  public static boolean isMultiValue(final WasmValue[] values) {
-    return values != null && values.length > 1;
-  }
-
-  /**
-   * Gets the first value from a multi-value result, or null if empty.
-   *
-   * @param values the values array
-   * @return the first value, or null if empty
-   * @deprecated Array access utilities do not belong on a value class. Use {@code values[0]}
-   *     directly.
-   */
-  @Deprecated
-  public static WasmValue getFirstValue(final WasmValue[] values) {
-    return (values != null && values.length > 0) ? values[0] : null;
-  }
-
-  /**
-   * Gets the last value from a multi-value result, or null if empty.
-   *
-   * @param values the values array
-   * @return the last value, or null if empty
-   * @deprecated Array access utilities do not belong on a value class. Use {@code
-   *     values[values.length - 1]} directly.
-   */
-  @Deprecated
-  public static WasmValue getLastValue(final WasmValue[] values) {
-    return (values != null && values.length > 0) ? values[values.length - 1] : null;
-  }
-
-  /**
-   * Extracts values of a specific type from a multi-value result.
-   *
-   * @param values the values array
-   * @param targetType the type to extract
-   * @return array of values matching the target type
-   * @deprecated Array filtering utilities do not belong on a value class. Use streams directly.
-   */
-  @Deprecated
-  public static WasmValue[] extractByType(
-      final WasmValue[] values, final WasmValueType targetType) {
-    if (values == null || targetType == null) {
-      return new WasmValue[0];
-    }
-
-    return java.util.Arrays.stream(values)
-        .filter(v -> v != null && v.getType() == targetType)
-        .toArray(WasmValue[]::new);
-  }
-
-  /**
-   * Converts a multi-value result to a string representation.
-   *
-   * @param values the values array
-   * @return string representation of the multi-value result
-   * @deprecated Use {@link java.util.Arrays#toString(Object[])} directly.
-   */
-  @Deprecated
-  public static String multiValueToString(final WasmValue[] values) {
-    if (values == null) {
-      return "null";
-    }
-    if (values.length == 0) {
-      return "[]";
-    }
-    if (values.length == 1) {
-      return "[" + values[0].toString() + "]";
-    }
-
-    final StringBuilder sb = new StringBuilder("[");
-    for (int i = 0; i < values.length; i++) {
-      if (i > 0) {
-        sb.append(", ");
-      }
-      sb.append(values[i] != null ? values[i].toString() : "null");
-    }
-    sb.append("]");
-    return sb.toString();
-  }
-
-  /**
-   * Creates a deep copy of a multi-value result.
-   *
-   * @param values the values to copy
-   * @return deep copy of the values array
-   * @deprecated Use {@link Object#clone()} on the array directly.
-   */
-  @Deprecated
-  @SuppressFBWarnings(
-      value = "PZLA_PREFER_ZERO_LENGTH_ARRAYS",
-      justification = "Null input produces null output - distinct from empty array input/output")
-  public static WasmValue[] copyMultiValue(final WasmValue[] values) {
-    if (values == null) {
-      return null;
-    }
-    return values.clone();
   }
 
   @Override

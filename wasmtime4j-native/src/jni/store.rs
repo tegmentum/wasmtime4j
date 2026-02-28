@@ -412,9 +412,9 @@ struct JniDebugCallbackContext {
     jni_store_global: jni::objects::GlobalRef,
 }
 
-static JNI_DEBUG_CALLBACKS: once_cell::sync::OnceCell<
+static JNI_DEBUG_CALLBACKS: std::sync::OnceLock<
     std::sync::Mutex<std::collections::HashMap<i64, JniDebugCallbackContext>>,
-> = once_cell::sync::OnceCell::new();
+> = std::sync::OnceLock::new();
 
 fn get_jni_debug_callbacks(
 ) -> &'static std::sync::Mutex<std::collections::HashMap<i64, JniDebugCallbackContext>> {

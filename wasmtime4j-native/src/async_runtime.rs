@@ -36,7 +36,7 @@
 //! - Thread-safe callback dispatch to Java
 
 use log::{debug, error, info, warn};
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::ffi::{c_char, c_void, CStr, CString};
 use std::mem::ManuallyDrop;
 use std::os::raw::{c_int, c_uint, c_ulong};
@@ -57,7 +57,7 @@ use crate::store::Store;
 /// Wrapped in ManuallyDrop to prevent automatic cleanup during process exit.
 /// This avoids SIGABRT caused by Tokio worker threads trying to interact with
 /// the JVM during shutdown when the JVM is already tearing down.
-static ASYNC_RUNTIME: Lazy<ManuallyDrop<Arc<Runtime>>> = Lazy::new(|| {
+static ASYNC_RUNTIME: LazyLock<ManuallyDrop<Arc<Runtime>>> = LazyLock::new(|| {
     info!("Initializing global Tokio async runtime for wasmtime4j");
 
     // Try optimal configuration first
@@ -562,7 +562,7 @@ mod tests {
 
         static ERR_SUCCESS: AtomicI32 = AtomicI32::new(-1);
         static ERR_RESULT: AtomicI64 = AtomicI64::new(-1);
-        static ERR_MSG: Lazy<Mutex<String>> = Lazy::new(|| Mutex::new(String::new()));
+        static ERR_MSG: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
         extern "C" fn error_callback(
             _callback_data: i64,

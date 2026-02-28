@@ -28,9 +28,6 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
    */
   public JniWasiContextImpl(long nativeHandle) {
     super(nativeHandle);
-    if (nativeHandle == 0) {
-      throw new IllegalArgumentException("Native handle cannot be 0");
-    }
   }
 
   @Override

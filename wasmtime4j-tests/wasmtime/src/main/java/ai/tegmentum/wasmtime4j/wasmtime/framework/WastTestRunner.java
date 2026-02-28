@@ -219,7 +219,7 @@ public final class WastTestRunner implements AutoCloseable {
     }
 
     // Use Linker.defineInstance() to register all exports at once
-    linker.defineInstance(moduleName, currentInstance);
+    linker.defineInstance(store, moduleName, currentInstance);
     // Also track the instance for later lookup by name
     namedInstances.put(moduleName, currentInstance);
     hasHostFunctions = true; // Mark as using linker

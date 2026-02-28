@@ -226,11 +226,13 @@ class WasiHttpConfigTest {
       // If no implementation, it throws RuntimeException with useful message
       try {
         WasiHttpConfig.builder();
-        // If we get here, an implementation exists
-        assertTrue(true);
+        // If we get here, an implementation exists — success
       } catch (RuntimeException e) {
-        // Expected when no implementation - exceptions are wrapped
+        // Expected when no implementation - exceptions are wrapped, not ClassNotFoundException
         assertNotNull(e.getMessage(), "RuntimeException should have a message");
+        assertFalse(
+            ClassNotFoundException.class.isAssignableFrom(e.getClass()),
+            "ClassNotFoundException should not leak directly");
       }
     }
 
@@ -241,11 +243,12 @@ class WasiHttpConfigTest {
       // Checked exceptions should never leak from the static method
       try {
         WasiHttpConfig.builder();
-        // If we get here, an implementation exists
-        assertTrue(true);
+        // If we get here, an implementation exists — success
       } catch (RuntimeException e) {
-        // Expected behavior - all exceptions are wrapped
-        assertTrue(true);
+        // Expected behavior - all exceptions are wrapped in RuntimeException
+        assertNotNull(e.getMessage(), "RuntimeException should have a message");
+      } catch (Exception e) {
+        fail("Checked exceptions should not leak from builder(): " + e.getClass().getName());
       }
     }
   }

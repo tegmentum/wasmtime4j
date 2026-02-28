@@ -1267,7 +1267,7 @@ pub mod core {
         component: &Component,
         engine: &wasmtime::Engine,
     ) -> WasmtimeResult<String> {
-        use wasmtime::component::types::ComponentItem;
+        
 
         let component_type = component.component.component_type();
         let mut json = String::with_capacity(1024);
@@ -1309,7 +1309,7 @@ pub mod core {
         linker: &ComponentLinker,
         component: &Component,
     ) -> WasmtimeResult<String> {
-        use wasmtime::component::types::ComponentItem;
+        
 
         let sub_type = linker
             .linker()

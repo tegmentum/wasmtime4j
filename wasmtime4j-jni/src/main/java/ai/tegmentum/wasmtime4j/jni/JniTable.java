@@ -64,7 +64,7 @@ public final class JniTable extends JniResource implements WasmTable {
   /**
    * Ensures this table and its owning store are still usable.
    *
-   * @throws JniResourceException if this table or its store has been closed
+   * @throws IllegalStateException if this table or its store has been closed
    */
   private void ensureUsable() {
     ensureNotClosed();
@@ -77,7 +77,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * Gets the current size of the table.
    *
    * @return the number of elements in the table
-   * @throws JniResourceException if this table is closed
+   * @throws IllegalStateException if this table is closed
    * @throws RuntimeException if the size cannot be retrieved
    */
   public int getSize() {
@@ -87,7 +87,7 @@ public final class JniTable extends JniResource implements WasmTable {
       final long storeHandle = store.getNativeHandle();
       final int size = nativeGetSize(tableHandle, storeHandle);
       return size;
-    } catch (final JniResourceException e) {
+    } catch (final JniResourceException | IllegalStateException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table size", e);
@@ -98,14 +98,14 @@ public final class JniTable extends JniResource implements WasmTable {
    * Gets the maximum size of the table.
    *
    * @return the maximum number of elements, or -1 if unlimited
-   * @throws JniResourceException if this table is closed
+   * @throws IllegalStateException if this table is closed
    * @throws RuntimeException if the max size cannot be retrieved
    */
   public int getMaxSize() {
     ensureUsable();
     try {
       return nativeGetMaxSize(getNativeHandle(), store.getNativeHandle());
-    } catch (final JniResourceException e) {
+    } catch (final JniResourceException | IllegalStateException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table max size", e);
@@ -116,7 +116,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * Gets the element type of this table.
    *
    * @return the element type name (e.g., "funcref", "externref")
-   * @throws JniResourceException if this table is closed
+   * @throws IllegalStateException if this table is closed
    * @throws RuntimeException if the type cannot be retrieved
    */
   public WasmValueType getElementType() {
@@ -137,7 +137,7 @@ public final class JniTable extends JniResource implements WasmTable {
         default:
           throw new IllegalStateException("Unknown table element type: " + typeString);
       }
-    } catch (final JniResourceException e) {
+    } catch (final JniResourceException | IllegalStateException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table element type", e);
@@ -161,7 +161,7 @@ public final class JniTable extends JniResource implements WasmTable {
       final long minimum = typeInfo[1];
       final Long maximum = typeInfo[2] == -1 ? null : typeInfo[2];
       return new ai.tegmentum.wasmtime4j.jni.type.JniTableType(elementType, minimum, maximum);
-    } catch (final JniResourceException e) {
+    } catch (final JniResourceException | IllegalStateException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table type", e);
@@ -174,7 +174,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @param index the table index
    * @return the element at the index (may be null for uninitialized slots)
    * @throws IllegalArgumentException if index is negative
-   * @throws JniResourceException if this table is closed
+   * @throws IllegalStateException if this table is closed
    * @throws IndexOutOfBoundsException if index is beyond table bounds
    * @throws RuntimeException if the element cannot be retrieved
    */
@@ -187,7 +187,10 @@ public final class JniTable extends JniResource implements WasmTable {
 
     try {
       return nativeGet(handle, store.getNativeHandle(), index);
-    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
+    } catch (final JniResourceException
+        | IllegalStateException
+        | IllegalArgumentException
+        | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table element", e);
@@ -200,7 +203,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @param index the table index
    * @param value the value to set (must be compatible with element type)
    * @throws IllegalArgumentException if index is negative
-   * @throws JniResourceException if this table is closed
+   * @throws IllegalStateException if this table is closed
    * @throws IndexOutOfBoundsException if index is beyond table bounds
    * @throws RuntimeException if the element cannot be set
    */
@@ -216,7 +219,10 @@ public final class JniTable extends JniResource implements WasmTable {
       if (!success) {
         throw new RuntimeException("Failed to set table element");
       }
-    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
+    } catch (final JniResourceException
+        | IllegalStateException
+        | IllegalArgumentException
+        | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error setting table element", e);
@@ -230,7 +236,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @param init the initial value for new elements (may be null)
    * @return the previous size of the table, or -1 if growth failed
    * @throws IllegalArgumentException if delta is negative
-   * @throws JniResourceException if this table is closed
+   * @throws IllegalStateException if this table is closed
    * @throws RuntimeException if the growth operation fails
    */
   public int grow(final int delta, final Object init) {
@@ -242,7 +248,7 @@ public final class JniTable extends JniResource implements WasmTable {
       final long storeHandle = store.getNativeHandle();
       final long initValue = objectToRefHandle(init);
       return (int) nativeTableGrow(tableHandle, storeHandle, delta, initValue);
-    } catch (final JniResourceException | IllegalArgumentException e) {
+    } catch (final JniResourceException | IllegalStateException | IllegalArgumentException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error growing table", e);
@@ -256,7 +262,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @param count the number of elements to fill
    * @param value the value to fill with
    * @throws IllegalArgumentException if start or count is negative
-   * @throws JniResourceException if this table is closed
+   * @throws IllegalStateException if this table is closed
    * @throws IndexOutOfBoundsException if the range exceeds table bounds
    * @throws RuntimeException if the fill operation fails
    */
@@ -276,7 +282,10 @@ public final class JniTable extends JniResource implements WasmTable {
       if (result != 0) {
         throw new RuntimeException("Failed to fill table range");
       }
-    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
+    } catch (final JniResourceException
+        | IllegalStateException
+        | IllegalArgumentException
+        | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error filling table", e);
@@ -290,7 +299,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @param src the source starting index
    * @param count the number of elements to copy
    * @throws IllegalArgumentException if dst, src, or count is negative
-   * @throws JniResourceException if this table is closed
+   * @throws IllegalStateException if this table is closed
    * @throws IndexOutOfBoundsException if source or destination range exceeds table bounds
    * @throws RuntimeException if the copy operation fails
    */
@@ -309,7 +318,10 @@ public final class JniTable extends JniResource implements WasmTable {
       if (!success) {
         throw new RuntimeException("Failed to copy table elements");
       }
-    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
+    } catch (final JniResourceException
+        | IllegalStateException
+        | IllegalArgumentException
+        | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error copying table elements", e);
@@ -373,7 +385,10 @@ public final class JniTable extends JniResource implements WasmTable {
       if (!success) {
         throw new RuntimeException("Failed to copy elements from source table");
       }
-    } catch (final JniResourceException | IllegalArgumentException | IndexOutOfBoundsException e) {
+    } catch (final JniResourceException
+        | IllegalStateException
+        | IllegalArgumentException
+        | IndexOutOfBoundsException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error copying from source table", e);

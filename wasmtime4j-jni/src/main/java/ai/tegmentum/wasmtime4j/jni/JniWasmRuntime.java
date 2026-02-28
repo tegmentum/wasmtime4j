@@ -55,6 +55,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   /** Cached default GC runtime for lazy initialization. */
   private volatile ai.tegmentum.wasmtime4j.gc.GcRuntime defaultGcRuntime;
 
+  /** Engine backing the default GC runtime, must be closed when runtime is closed. */
+  private volatile Engine gcRuntimeEngine;
+
   /** Lock object for GC runtime lazy initialization. */
   private final Object gcRuntimeLock = new Object();
 
@@ -362,8 +365,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       synchronized (gcRuntimeLock) {
         if (defaultGcRuntime == null) {
           try {
-            // Create a default engine for the GC runtime
+            // Create a default engine for the GC runtime — store it so we can close it later
             final Engine engine = createEngine();
+            gcRuntimeEngine = engine;
             defaultGcRuntime = createGcRuntime(engine);
             LOGGER.fine("Created default GC runtime with lazy initialization");
           } catch (final Exception e) {
@@ -712,6 +716,13 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   protected void doClose() throws Exception {
+    // Close the GC runtime engine if it was lazily created
+    final Engine engine = gcRuntimeEngine;
+    if (engine != null) {
+      engine.close();
+      gcRuntimeEngine = null;
+    }
+    defaultGcRuntime = null;
     nativeDestroyRuntime(nativeHandle);
   }
 
@@ -769,6 +780,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
       final ai.tegmentum.wasmtime4j.jni.JniLinker<T> linker =
           new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle, engine);
+      linker.allowUnknownExports(allowUnknownExports);
 
       LOGGER.fine(
           "Created linker with config - allowUnknownExports: "

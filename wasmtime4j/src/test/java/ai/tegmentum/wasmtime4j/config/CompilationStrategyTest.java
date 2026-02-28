@@ -43,17 +43,16 @@ class CompilationStrategyTest {
   class EnumValuesTests {
 
     @Test
-    @DisplayName("CompilationStrategy should have 7 values")
-    void shouldHaveSevenValues() {
+    @DisplayName("CompilationStrategy should have 3 values")
+    void shouldHaveThreeValues() {
       CompilationStrategy[] values = CompilationStrategy.values();
-      assertEquals(7, values.length, "CompilationStrategy should have 7 values");
+      assertEquals(3, values.length, "CompilationStrategy should have 3 values");
     }
 
     @Test
     @DisplayName("CompilationStrategy should have expected values")
     void shouldHaveExpectedValues() {
-      Set<String> expectedNames =
-          Set.of("AUTO", "CRANELIFT", "WINCH", "SPEED", "PERFORMANCE", "SIZE", "DEFAULT");
+      Set<String> expectedNames = Set.of("AUTO", "CRANELIFT", "WINCH");
       Set<String> actualNames = new HashSet<>();
       for (CompilationStrategy strategy : CompilationStrategy.values()) {
         actualNames.add(strategy.name());
@@ -83,38 +82,6 @@ class CompilationStrategyTest {
       CompilationStrategy winch = CompilationStrategy.valueOf("WINCH");
       assertNotNull(winch, "WINCH value should exist");
       assertEquals("WINCH", winch.name(), "Name should be WINCH");
-    }
-
-    @Test
-    @DisplayName("SPEED value should exist (deprecated)")
-    void shouldHaveSpeedValue() {
-      CompilationStrategy speed = CompilationStrategy.valueOf("SPEED");
-      assertNotNull(speed, "SPEED value should exist");
-      assertEquals("SPEED", speed.name(), "Name should be SPEED");
-    }
-
-    @Test
-    @DisplayName("PERFORMANCE value should exist (deprecated)")
-    void shouldHavePerformanceValue() {
-      CompilationStrategy performance = CompilationStrategy.valueOf("PERFORMANCE");
-      assertNotNull(performance, "PERFORMANCE value should exist");
-      assertEquals("PERFORMANCE", performance.name(), "Name should be PERFORMANCE");
-    }
-
-    @Test
-    @DisplayName("SIZE value should exist (deprecated)")
-    void shouldHaveSizeValue() {
-      CompilationStrategy size = CompilationStrategy.valueOf("SIZE");
-      assertNotNull(size, "SIZE value should exist");
-      assertEquals("SIZE", size.name(), "Name should be SIZE");
-    }
-
-    @Test
-    @DisplayName("DEFAULT value should exist (deprecated)")
-    void shouldHaveDefaultValue() {
-      CompilationStrategy defaultValue = CompilationStrategy.valueOf("DEFAULT");
-      assertNotNull(defaultValue, "DEFAULT value should exist");
-      assertEquals("DEFAULT", defaultValue.name(), "Name should be DEFAULT");
     }
   }
 }

@@ -19,12 +19,12 @@ use super::Memory;
 const MEMORY_MAGIC: u64 = 0xDEADBEEF_CAFEBABE;
 
 /// Thread-safe registry for tracking valid memory handles (using usize for thread safety)
-static VALID_MEMORY_HANDLES: once_cell::sync::Lazy<Arc<RwLock<HashSet<usize>>>> =
-    once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(HashSet::new())));
+static VALID_MEMORY_HANDLES: std::sync::LazyLock<Arc<RwLock<HashSet<usize>>>> =
+    std::sync::LazyLock::new(|| Arc::new(RwLock::new(HashSet::new())));
 
 /// Thread-safe registry for tracking valid store handles (using usize for thread safety)
-static VALID_STORE_HANDLES: once_cell::sync::Lazy<Arc<RwLock<HashSet<usize>>>> =
-    once_cell::sync::Lazy::new(|| Arc::new(RwLock::new(HashSet::new())));
+static VALID_STORE_HANDLES: std::sync::LazyLock<Arc<RwLock<HashSet<usize>>>> =
+    std::sync::LazyLock::new(|| Arc::new(RwLock::new(HashSet::new())));
 
 /// Memory access counter for detecting potential race conditions
 static MEMORY_ACCESS_COUNTER: AtomicU64 = AtomicU64::new(0);

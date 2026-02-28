@@ -6,7 +6,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};
 
-use wasmtime::{Config, Engine as WasmtimeEngine, Strategy};
+use wasmtime::{Config, Engine as WasmtimeEngine};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 

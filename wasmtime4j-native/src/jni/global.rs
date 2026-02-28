@@ -298,7 +298,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
 /// Check if a global variable is mutable (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeIsMutable(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     global_ptr: jlong,
 ) -> jboolean {
@@ -891,7 +891,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetDoubl
 /// Destroy a global variable (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroyGlobal(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     global_ptr: jlong,
 ) {
@@ -903,7 +903,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroyG
 /// Destroy a global variable (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroy(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
     global_ptr: jlong,
 ) {

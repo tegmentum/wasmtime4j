@@ -9,7 +9,7 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
 use crate::interop::ReentrantLock;
 use crate::module::Module;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use std::ffi::CString;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
@@ -29,7 +29,7 @@ use wasmtime_wasi_http::WasiHttpCtx;
 use wasmtime_wasi_nn::witx::WasiNnCtx;
 
 /// Store ID counter for unique identification
-static STORE_ID_COUNTER: Lazy<Mutex<u64>> = Lazy::new(|| Mutex::new(1));
+static STORE_ID_COUNTER: LazyLock<Mutex<u64>> = LazyLock::new(|| Mutex::new(1));
 
 /// Thread-safe wrapper around Wasmtime store with resource management
 ///

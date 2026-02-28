@@ -7,7 +7,7 @@ use jni::JNIEnv;
 /// Create a test runtime for validation (JNI version) - PLACEHOLDER
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeCreateRuntime(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
     // Placeholder implementation - return a non-zero value to indicate "success"
@@ -17,9 +17,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBi
 /// Destroy a test runtime (JNI version) - PLACEHOLDER
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeDestroyRuntime(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
-    runtime_handle: jlong,
+    _runtime_handle: jlong,
 ) {
     // Placeholder implementation - do nothing for now
 }
@@ -27,7 +27,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBi
 /// Initialize the native library (JNI version) - PLACEHOLDER
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_nativelib_NativeMethodBindings_nativeInitialize(
-    mut env: JNIEnv,
+    _env: JNIEnv,
     _class: JClass,
 ) {
     // Placeholder implementation - do nothing for now

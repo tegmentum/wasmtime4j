@@ -3,8 +3,6 @@
 //! This module provides JNI-compatible functions for use by the wasmtime4j-jni module.
 //! All functions follow JNI naming conventions and handle Java/native type conversions.
 
-#![allow(unused_variables)]
-
 #[cfg(feature = "jni-bindings")]
 use jni::objects::JClass;
 #[cfg(feature = "jni-bindings")]

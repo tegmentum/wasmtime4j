@@ -486,7 +486,7 @@ impl WasmtimeGcOperations {
                                 let new_object_id = (self.gc_objects.len() as u64 + 1) * 1000
                                     + (std::time::SystemTime::now()
                                         .duration_since(std::time::UNIX_EPOCH)
-                                        .unwrap()
+                                        .unwrap_or_default()
                                         .as_nanos()
                                         % 1000) as u64;
 

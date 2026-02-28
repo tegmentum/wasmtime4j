@@ -12,7 +12,7 @@ use std::any::Any;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use wasmtime::Engine as WasmtimeEngine;
 
 use super::{safe_wasmtime_config, Engine};
@@ -219,8 +219,8 @@ pub fn get_shared_wasmtime_engine() -> WasmtimeEngine {
 /// Pool of reusable engines with default configuration.
 /// Engines returned to the pool can be reused by subsequent callers,
 /// reducing the total number of engine creations over time.
-static ENGINE_POOL: Lazy<Mutex<Vec<Engine>>> =
-    Lazy::new(|| Mutex::new(Vec::with_capacity(ENGINE_POOL_MAX_SIZE)));
+static ENGINE_POOL: LazyLock<Mutex<Vec<Engine>>> =
+    LazyLock::new(|| Mutex::new(Vec::with_capacity(ENGINE_POOL_MAX_SIZE)));
 
 /// Returns a clone of the shared singleton engine.
 ///

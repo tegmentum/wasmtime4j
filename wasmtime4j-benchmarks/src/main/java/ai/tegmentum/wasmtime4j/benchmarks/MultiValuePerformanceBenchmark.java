@@ -28,7 +28,6 @@ import org.openjdk.jmh.infra.Blackhole;
 @Fork(
     value = 2,
     jvmArgs = {"-Xms2g", "-Xmx2g"})
-@SuppressWarnings("deprecation")
 public class MultiValuePerformanceBenchmark {
 
   // Test data sets for different scenarios
@@ -168,48 +167,6 @@ public class MultiValuePerformanceBenchmark {
         WasmValue.i32(8));
   }
 
-  // =================== Multi-Value Utility Benchmarks ===================
-
-  @Benchmark
-  public boolean isMultiValueSingle(Blackhole bh) {
-    return WasmValue.isMultiValue(singleResult);
-  }
-
-  @Benchmark
-  public boolean isMultiValueMultiple(Blackhole bh) {
-    return WasmValue.isMultiValue(fourResults);
-  }
-
-  @Benchmark
-  public WasmValue getFirstValueSingle(Blackhole bh) {
-    return WasmValue.getFirstValue(singleResult);
-  }
-
-  @Benchmark
-  public WasmValue getFirstValueMultiple(Blackhole bh) {
-    return WasmValue.getFirstValue(eightResults);
-  }
-
-  @Benchmark
-  public WasmValue getLastValueSingle(Blackhole bh) {
-    return WasmValue.getLastValue(singleResult);
-  }
-
-  @Benchmark
-  public WasmValue getLastValueMultiple(Blackhole bh) {
-    return WasmValue.getLastValue(eightResults);
-  }
-
-  @Benchmark
-  public WasmValue[] extractByTypeFew(Blackhole bh) {
-    return WasmValue.extractByType(fourResults, WasmValueType.I32);
-  }
-
-  @Benchmark
-  public WasmValue[] extractByTypeMany(Blackhole bh) {
-    return WasmValue.extractByType(eightResults, WasmValueType.I32);
-  }
-
   // =================== Validation Benchmarks ===================
 
   @Benchmark
@@ -308,30 +265,6 @@ public class MultiValuePerformanceBenchmark {
     return eightValueHostFunction.execute(singleParam);
   }
 
-  // =================== String Representation Benchmarks ===================
-
-  @Benchmark
-  public String multiValueToStringSingle(Blackhole bh) {
-    return WasmValue.multiValueToString(singleResult);
-  }
-
-  @Benchmark
-  public String multiValueToStringMultiple(Blackhole bh) {
-    return WasmValue.multiValueToString(eightResults);
-  }
-
-  // =================== Copy Operations Benchmarks ===================
-
-  @Benchmark
-  public WasmValue[] copyMultiValueSingle(Blackhole bh) {
-    return WasmValue.copyMultiValue(singleResult);
-  }
-
-  @Benchmark
-  public WasmValue[] copyMultiValueMultiple(Blackhole bh) {
-    return WasmValue.copyMultiValue(eightResults);
-  }
-
   // =================== Comparison Benchmarks ===================
 
   /**
@@ -367,7 +300,7 @@ public class MultiValuePerformanceBenchmark {
    */
   @Benchmark
   public int accessFirstValueFromMultiple(Blackhole bh) {
-    WasmValue first = WasmValue.getFirstValue(fourResults);
+    WasmValue first = fourResults[0];
     bh.consume(first);
     return first.asInt();
   }

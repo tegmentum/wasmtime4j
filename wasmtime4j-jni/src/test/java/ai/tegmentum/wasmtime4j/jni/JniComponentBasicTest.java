@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
-import ai.tegmentum.wasmtime4j.jni.exception.JniResourceException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -136,20 +135,20 @@ public final class JniComponentBasicTest {
       final JniComponent.JniComponentEngine engine = JniComponent.createComponentEngine();
       engine.close();
 
-      // Operations on closed engine should throw JniResourceException
+      // Operations on closed engine should throw IllegalStateException
       assertThrows(
-          JniResourceException.class,
+          IllegalStateException.class,
           () -> engine.getActiveInstancesCount(),
           "getActiveInstancesCount on closed engine should throw exception");
 
       assertThrows(
-          JniResourceException.class,
+          IllegalStateException.class,
           () -> engine.cleanupInstances(),
           "cleanupInstances on closed engine should throw exception");
 
       if (simpleWatBytes != null) {
         assertThrows(
-            JniResourceException.class,
+            IllegalStateException.class,
             () -> engine.loadComponentFromBytes(simpleWatBytes),
             "loadComponentFromBytes on closed engine should throw exception");
       }

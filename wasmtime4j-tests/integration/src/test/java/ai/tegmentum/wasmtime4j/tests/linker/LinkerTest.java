@@ -76,7 +76,7 @@ public class LinkerTest {
     final Instance instance1 = module1.instantiate(store);
 
     final Linker<Void> linker = Linker.create(engine);
-    linker.defineInstance("mod1", instance1);
+    linker.defineInstance(store, "mod1", instance1);
 
     final Module module2 = engine.compileWat(wat2);
     final Instance instance2 = linker.instantiate(store, module2);
@@ -312,12 +312,12 @@ public class LinkerTest {
     final Instance instanceA = moduleA.instantiate(store);
 
     final Linker<Void> linker = Linker.create(engine);
-    linker.defineInstance("modA", instanceA);
+    linker.defineInstance(store, "modA", instanceA);
 
     final Module moduleB = engine.compileWat(watB);
     final Instance instanceB = linker.instantiate(store, moduleB);
 
-    linker.defineInstance("modB", instanceB);
+    linker.defineInstance(store, "modB", instanceB);
 
     final Module moduleC = engine.compileWat(watC);
     final Instance instanceC = linker.instantiate(store, moduleC);
@@ -381,7 +381,7 @@ public class LinkerTest {
 
     final Linker<Void> linker = Linker.create(engine);
     linker.defineHostFunction("env", "log", logType, logFunction);
-    linker.defineInstance("mod1", instance1);
+    linker.defineInstance(store, "mod1", instance1);
 
     final Module module2 = engine.compileWat(wat2);
     final Instance instance2 = linker.instantiate(store, module2);
@@ -421,7 +421,7 @@ public class LinkerTest {
     final Instance instance1 = module1.instantiate(store);
 
     final Linker<Void> linker = Linker.create(engine);
-    linker.defineInstance("mod1", instance1);
+    linker.defineInstance(store, "mod1", instance1);
 
     // Create alias: mod1.original -> mod1.aliased
     linker.alias("mod1", "original", "mod1", "aliased");

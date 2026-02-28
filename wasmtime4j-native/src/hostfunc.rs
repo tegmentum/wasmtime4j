@@ -684,7 +684,7 @@ fn marshal_results_to_wasmtime(
 fn marshal_params_from_valraw(
     args_and_results: &mut [MaybeUninit<ValRaw>],
     param_types: &[ValType],
-    store_id: u64,
+    _store_id: u64,
 ) -> Result<(Vec<WasmValue>, Vec<u64>), wasmtime::Error> {
     let mut wasm_params = Vec::with_capacity(param_types.len());
     let mut temp_funcref_ids = Vec::new();

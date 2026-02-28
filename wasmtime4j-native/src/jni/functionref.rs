@@ -66,8 +66,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
         let name = format!("host_function_{}", function_reference_id);
         let registry_id = store_ref.create_function_reference(name, func_type, callback)?;
 
-        // Return the registry ID directly as jlong
-        Ok(registry_id as jlong)
+        // Return the registry ID as a boxed pointer so the destroy path is uniform
+        // with wasm-created references (both use Box::from_raw to clean up)
+        Ok(Box::into_raw(Box::new(registry_id as u64)) as jlong)
     })
 }
 
@@ -129,12 +130,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
 
     // Use local closure pattern (like nativeCall in function.rs) to avoid borrow conflicts
     let result = (|| -> crate::error::WasmtimeResult<Vec<u8>> {
+        // Dereference the boxed handle to get the registry ID
+        let registry_id = unsafe { *(function_reference_handle as *const u64) };
+
         // Get the function from the reference registry
-        let func = crate::table::core::get_function_reference(function_reference_handle as u64)?
+        let func = crate::table::core::get_function_reference(registry_id)?
             .ok_or_else(|| WasmtimeError::InvalidParameter {
                 message: format!(
                     "Function reference not found in registry: {}",
-                    function_reference_handle
+                    registry_id
                 ),
             })?;
 

@@ -525,14 +525,13 @@ public final class WastThreadTestRunner implements AutoCloseable {
      * @param instanceName the name of the instance to register (or null for current)
      * @throws Exception if registration fails
      */
-    @SuppressWarnings("deprecation")
     public void register(final String registerName, final String instanceName) throws Exception {
       final Instance instance =
           instanceName != null ? instances.get(instanceName) : currentInstance;
       if (instance == null) {
         throw new IllegalStateException("No instance to register");
       }
-      linker.defineInstance(registerName, instance);
+      linker.defineInstance(store, registerName, instance);
       LOGGER.fine(() -> "Thread " + threadName + ": registered as " + registerName);
     }
 
