@@ -461,6 +461,47 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     }
   }
 
+  // ===== Environment and Argument Getters =====
+
+  @Override
+  public java.util.Map<String, String> getEnvironment() {
+    ensureNotClosed();
+
+    final String data = nativeGetEnvironment(nativeHandle);
+    if (data == null || data.isEmpty()) {
+      return java.util.Collections.emptyMap();
+    }
+
+    final java.util.Map<String, String> env = new java.util.LinkedHashMap<>();
+    for (String line : data.split("\n")) {
+      if (!line.isEmpty()) {
+        final int eqIdx = line.indexOf('=');
+        if (eqIdx > 0) {
+          env.put(line.substring(0, eqIdx), line.substring(eqIdx + 1));
+        }
+      }
+    }
+    return java.util.Collections.unmodifiableMap(env);
+  }
+
+  @Override
+  public java.util.List<String> getArguments() {
+    ensureNotClosed();
+
+    final String data = nativeGetArguments(nativeHandle);
+    if (data == null || data.isEmpty()) {
+      return java.util.Collections.emptyList();
+    }
+
+    final java.util.List<String> args = new java.util.ArrayList<>();
+    for (String line : data.split("\n")) {
+      if (!line.isEmpty()) {
+        args.add(line);
+      }
+    }
+    return java.util.Collections.unmodifiableList(args);
+  }
+
   // ===== Output Capture methods =====
 
   @Override
@@ -573,4 +614,10 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   private static native int nativeHasStdoutCapture(long contextHandle);
 
   private static native int nativeHasStderrCapture(long contextHandle);
+
+  // Environment and argument getter native methods
+
+  private static native String nativeGetEnvironment(long contextHandle);
+
+  private static native String nativeGetArguments(long contextHandle);
 }

@@ -3052,6 +3052,17 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
+   * Gets the method handle for creating an unchecked host function in a store.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaStoreCreateHostFunctionUnchecked() {
+    FunctionBinding binding =
+        getFunctionBinding("wasmtime4j_panama_store_create_host_function_unchecked");
+    return binding != null ? binding.getMethodHandle().orElse(null) : null;
+  }
+
+  /**
    * Gets the method handle for destroying a host function.
    *
    * @return the method handle, or null if not available
@@ -3157,6 +3168,19 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     // Host function bindings
     addFunctionBinding(
         "wasmtime4j_panama_store_create_host_function",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_create_host_function_unchecked",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,

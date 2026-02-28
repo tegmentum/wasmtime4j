@@ -156,6 +156,53 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   }
 
   /**
+   * Creates the native handle for an unchecked host function.
+   *
+   * @param functionName the name of the function
+   * @param functionType the WebAssembly function type signature
+   * @param implementation the Java implementation of the function
+   * @param store the store this host function belongs to
+   * @return the host function handle containing native handle and ID
+   * @throws WasmException if creation fails or any parameter is null
+   */
+  private static HostFunctionHandle createNativeHandleUnchecked(
+      final String functionName,
+      final FunctionType functionType,
+      final HostFunction implementation,
+      final JniStore store)
+      throws WasmException {
+    if (functionName == null) {
+      throw new WasmException(
+          "Failed to create native host function: Function name cannot be null");
+    }
+    if (functionType == null) {
+      throw new WasmException(
+          "Failed to create native host function: Function type cannot be null");
+    }
+    if (implementation == null) {
+      throw new WasmException(
+          "Failed to create native host function: Implementation cannot be null");
+    }
+    if (store == null) {
+      throw new WasmException("Failed to create native host function: Store cannot be null");
+    }
+
+    final long hostFunctionId = NEXT_HOST_FUNCTION_ID.getAndIncrement();
+    final long nativeHandle =
+        nativeCreateHostFunctionUnchecked(
+            store.getNativeHandle(),
+            functionName,
+            JniTypeConverter.marshalFunctionType(functionType),
+            hostFunctionId);
+
+    if (nativeHandle == 0) {
+      throw new WasmException("Failed to create native unchecked host function: " + functionName);
+    }
+
+    return new HostFunctionHandle(nativeHandle, hostFunctionId);
+  }
+
+  /**
    * Creates a new host function with the specified signature and implementation.
    *
    * @param functionName the name of the function (for debugging/logging)
@@ -173,6 +220,30 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       throws WasmException {
     this(
         createNativeHandle(functionName, functionType, implementation, store),
+        functionName,
+        functionType,
+        implementation,
+        store);
+  }
+
+  /**
+   * Creates a new unchecked host function that skips per-call type validation.
+   *
+   * @param functionName the name of the function (for debugging/logging)
+   * @param functionType the WebAssembly function type signature
+   * @param implementation the Java implementation of the function
+   * @param store the store this host function belongs to
+   * @return the created unchecked host function
+   * @throws WasmException if host function creation fails
+   */
+  static JniHostFunction createUnchecked(
+      final String functionName,
+      final FunctionType functionType,
+      final HostFunction implementation,
+      final JniStore store)
+      throws WasmException {
+    return new JniHostFunction(
+        createNativeHandleUnchecked(functionName, functionType, implementation, store),
         functionName,
         functionType,
         implementation,
@@ -464,6 +535,18 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
    * @return the native host function handle, or 0 on failure
    */
   private static native long nativeCreateHostFunction(
+      long storeHandle, String functionName, byte[] functionTypeData, long hostFunctionId);
+
+  /**
+   * Creates a native unchecked host function handle that skips per-call type validation.
+   *
+   * @param storeHandle the native store handle
+   * @param functionName the function name
+   * @param functionTypeData marshalled function type data
+   * @param hostFunctionId the host function callback ID
+   * @return the native host function handle, or 0 on failure
+   */
+  private static native long nativeCreateHostFunctionUnchecked(
       long storeHandle, String functionName, byte[] functionTypeData, long hostFunctionId);
 
   /**

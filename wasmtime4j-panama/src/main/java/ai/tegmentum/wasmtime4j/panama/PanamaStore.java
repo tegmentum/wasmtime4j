@@ -407,6 +407,9 @@ public final class PanamaStore implements Store {
   // AtomicLong so the safety net lambda can capture it without preventing GC of PanamaStore
   private final AtomicLong limiterCallbackId = new AtomicLong(0);
 
+  // Tracked WASI context reference for getWasiContext() and reapplyWasiContext()
+  private volatile PanamaWasiContext trackedWasiContext;
+
   // Debug handler callback ID for this store (0 = no handler registered)
   // AtomicLong so the safety net lambda can capture it without preventing GC of PanamaStore
   private final AtomicLong debugHandlerCallbackId = new AtomicLong(0);
@@ -1007,6 +1010,64 @@ public final class PanamaStore implements Store {
 
     LOGGER.fine("Created host function '" + name + "' in store");
     return hostFunction;
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmFunction createHostFunctionUnchecked(
+      final String name,
+      final ai.tegmentum.wasmtime4j.type.FunctionType functionType,
+      final ai.tegmentum.wasmtime4j.func.HostFunction implementation)
+      throws WasmException {
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (functionType == null) {
+      throw new IllegalArgumentException("functionType cannot be null");
+    }
+    if (implementation == null) {
+      throw new IllegalArgumentException("implementation cannot be null");
+    }
+    ensureNotClosed();
+
+    final PanamaHostFunction.HostFunctionCallback callback = implementation::execute;
+
+    final PanamaHostFunction hostFunction =
+        new PanamaHostFunction(
+            name, functionType, callback, implementation, this, resourceManager, true);
+
+    LOGGER.fine("Created unchecked host function '" + name + "' in store");
+    return hostFunction;
+  }
+
+  /**
+   * Sets the tracked WASI context reference for this store.
+   *
+   * <p>Called internally when a WASI context is applied to this store during instantiation.
+   *
+   * @param wasiCtx the WASI context to track
+   */
+  void setTrackedWasiContext(final PanamaWasiContext wasiCtx) {
+    this.trackedWasiContext = wasiCtx;
+  }
+
+  @Override
+  public java.util.Optional<ai.tegmentum.wasmtime4j.wasi.WasiContext> getWasiContext() {
+    return java.util.Optional.ofNullable(trackedWasiContext);
+  }
+
+  @Override
+  public void reapplyWasiContext() throws WasmException {
+    final PanamaWasiContext wasiCtx = trackedWasiContext;
+    if (wasiCtx == null) {
+      throw new WasmException("No WASI context is configured for this store");
+    }
+    ensureNotClosed();
+    final int result =
+        NativeStoreBindings.getInstance()
+            .storeSetWasiContext(nativeStore, wasiCtx.getNativeContext());
+    if (result != 0) {
+      throw new WasmException("Failed to re-apply WASI context to store");
+    }
   }
 
   @Override

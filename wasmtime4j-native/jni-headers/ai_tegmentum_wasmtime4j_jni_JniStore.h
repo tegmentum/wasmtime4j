@@ -177,6 +177,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroySt
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeReapplyWasiContext
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeReapplyWasiContext
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeGc
  * Signature: (J)V
  */

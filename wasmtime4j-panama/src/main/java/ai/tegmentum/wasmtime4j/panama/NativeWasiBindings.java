@@ -121,6 +121,23 @@ public final class NativeWasiBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT,
             ValueLayout.JAVA_INT));
 
+    // WASI context environment and argument getters
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_get_environment",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // ctx_ptr
+            ValueLayout.ADDRESS, // out_ptr
+            ValueLayout.ADDRESS)); // out_len
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_get_arguments",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // ctx_ptr
+            ValueLayout.ADDRESS, // out_ptr
+            ValueLayout.ADDRESS)); // out_len
+
     // WASI output capture functions
     addFunctionBinding(
         "wasmtime4j_wasi_context_enable_output_capture",
@@ -237,6 +254,48 @@ public final class NativeWasiBindings extends NativeBindingsBase {
   public int wasiContextInheritArgs(final MemorySegment contextHandle) {
     validatePointer(contextHandle, "contextHandle");
     return callNativeFunction("wasmtime4j_wasi_context_inherit_args", Integer.class, contextHandle);
+  }
+
+  // ===== WASI Context Environment and Argument Getters =====
+
+  /**
+   * Gets the environment variables from the WASI context.
+   *
+   * <p>Returns environment as "key=value\n" pairs in the output buffer. The caller must free the
+   * buffer using {@link #wasiFreeCaptureBuffer(MemorySegment)}.
+   *
+   * @param contextHandle the WASI context handle
+   * @param outPtr output pointer for the data buffer
+   * @param outLen output pointer for the data length
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextGetEnvironment(
+      final MemorySegment contextHandle, final MemorySegment outPtr, final MemorySegment outLen) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(outPtr, "outPtr");
+    validatePointer(outLen, "outLen");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_get_environment", Integer.class, contextHandle, outPtr, outLen);
+  }
+
+  /**
+   * Gets the arguments from the WASI context.
+   *
+   * <p>Returns arguments as "arg1\narg2\n..." in the output buffer. The caller must free the buffer
+   * using {@link #wasiFreeCaptureBuffer(MemorySegment)}.
+   *
+   * @param contextHandle the WASI context handle
+   * @param outPtr output pointer for the data buffer
+   * @param outLen output pointer for the data length
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextGetArguments(
+      final MemorySegment contextHandle, final MemorySegment outPtr, final MemorySegment outLen) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(outPtr, "outPtr");
+    validatePointer(outLen, "outLen");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_get_arguments", Integer.class, contextHandle, outPtr, outLen);
   }
 
   // ===== WASI Context Stdio =====

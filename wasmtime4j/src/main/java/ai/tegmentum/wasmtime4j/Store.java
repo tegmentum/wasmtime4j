@@ -144,6 +144,32 @@ public interface Store extends Closeable {
       throws WasmException;
 
   /**
+   * Creates an unchecked host function that skips per-call type validation.
+   *
+   * <p>This is identical to {@link #createHostFunction} but uses {@code Func::new_unchecked}
+   * internally, which skips Wasmtime's per-call parameter and return type validation for better
+   * performance. The caller is responsible for ensuring that the function is always called with
+   * arguments matching the declared function type.
+   *
+   * <p><b>Warning:</b> Using this method with mismatched types is undefined behavior and may cause
+   * crashes or data corruption. Only use this when performance is critical and type correctness is
+   * guaranteed by the caller.
+   *
+   * @param name the name of the function (for debugging/logging purposes)
+   * @param functionType the WebAssembly function type signature
+   * @param implementation the Java implementation of the function
+   * @return a WasmFunction that can be used in import maps
+   * @throws WasmException if host function creation fails
+   * @throws IllegalArgumentException if any parameter is null
+   * @since 1.1.0
+   */
+  default WasmFunction createHostFunctionUnchecked(
+      final String name, final FunctionType functionType, final HostFunction implementation)
+      throws WasmException {
+    return createHostFunction(name, functionType, implementation);
+  }
+
+  /**
    * Creates a new WebAssembly global variable with the specified type and initial value.
    *
    * <p>Global variables can store values that persist across function calls and can be either
@@ -1116,5 +1142,36 @@ public interface Store extends Closeable {
    */
   static <T> StoreBuilder<T> builder(final Engine engine) {
     return new StoreBuilder<>(engine);
+  }
+
+  /**
+   * Gets the WASI context associated with this store, if any.
+   *
+   * <p>The WASI context is typically set during module instantiation via a linker. This method
+   * returns the context that was applied to this store, allowing runtime inspection and mutation of
+   * WASI configuration.
+   *
+   * <p>After modifying the returned context (e.g., adding environment variables), call {@link
+   * #reapplyWasiContext()} to apply the changes to the running store.
+   *
+   * @return an Optional containing the WASI context, or empty if no WASI context is configured
+   * @since 1.1.0
+   */
+  default java.util.Optional<ai.tegmentum.wasmtime4j.wasi.WasiContext> getWasiContext() {
+    return java.util.Optional.empty();
+  }
+
+  /**
+   * Re-applies the WASI context to this store, rebuilding the internal WASI state.
+   *
+   * <p>This method should be called after modifying the WASI context returned by {@link
+   * #getWasiContext()} to ensure that changes (such as new environment variables or arguments) take
+   * effect in the running store.
+   *
+   * @throws WasmException if re-applying the WASI context fails or no context is set
+   * @since 1.1.0
+   */
+  default void reapplyWasiContext() throws WasmException {
+    throw new WasmException("WASI context re-application not supported by this store");
   }
 }

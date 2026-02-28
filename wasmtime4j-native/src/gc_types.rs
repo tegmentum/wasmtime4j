@@ -123,6 +123,8 @@ pub enum GcValue {
     V128([u8; 16]),
     /// Reference (placeholder - actual GC refs handled by gc_operations)
     Reference,
+    /// An object reference carried by its ObjectId (for JNI/Panama interop)
+    ObjectRef(u64),
     /// Null reference
     Null,
 }
@@ -324,6 +326,7 @@ impl GcTypeRegistry {
             (GcValue::I32(i), FieldType::PackedI8) if *i >= -128 && *i <= 127 => Ok(()),
             (GcValue::I32(i), FieldType::PackedI16) if *i >= -32768 && *i <= 32767 => Ok(()),
             (GcValue::Reference, FieldType::Reference(_)) => Ok(()),
+            (GcValue::ObjectRef(_), FieldType::Reference(_)) => Ok(()),
             (GcValue::Null, FieldType::Reference(_)) => Ok(()),
             _ => Err(WasmtimeError::InvalidParameter {
                 message: format!(

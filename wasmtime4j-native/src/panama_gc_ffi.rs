@@ -601,13 +601,13 @@ fn struct_new_internal(
                         FieldType::V128 => GcValue::I32(raw_value as i32), // Simplified - V128 needs special handling
                         FieldType::PackedI8 => GcValue::I32(raw_value as i32),
                         FieldType::PackedI16 => GcValue::I32(raw_value as i32),
-                        // Pass reference object IDs as I64 so gc_operations can look them up
+                        // Pass reference object IDs as ObjectRef for gc_operations lookup
                         // If raw_value is 0, treat as null reference
                         FieldType::Reference(_) => {
                             if raw_value == 0 {
                                 GcValue::Null
                             } else {
-                                GcValue::I64(raw_value)
+                                GcValue::ObjectRef(raw_value as u64)
                             }
                         }
                     }
@@ -690,11 +690,12 @@ fn struct_get_internal(
 
         if let Some(value) = result.value {
             match value {
-                GcValue::I32(i) => Ok((i as i64, 0)),           // Type 0 = I32
-                GcValue::I64(i) => Ok((i, 1)),                  // Type 1 = I64
-                GcValue::F32(f) => Ok((f.to_bits() as i64, 2)), // Type 2 = F32
-                GcValue::F64(f) => Ok((f.to_bits() as i64, 3)), // Type 3 = F64
-                GcValue::Null => Ok((0, 6)),                    // Type 6 = Null
+                GcValue::I32(i) => Ok((i as i64, 0)),              // Type 0 = I32
+                GcValue::I64(i) => Ok((i, 1)),                     // Type 1 = I64
+                GcValue::F32(f) => Ok((f.to_bits() as i64, 2)),    // Type 2 = F32
+                GcValue::F64(f) => Ok((f.to_bits() as i64, 3)),    // Type 3 = F64
+                GcValue::ObjectRef(id) => Ok((id as i64, 5)),      // Type 5 = Reference
+                GcValue::Null => Ok((0, 6)),                       // Type 6 = Null
                 _ => Ok((0, 0)),
             }
         } else {
@@ -734,7 +735,7 @@ fn struct_set_internal(
             if value == 0 {
                 GcValue::Null
             } else {
-                GcValue::I64(value)
+                GcValue::ObjectRef(value as u64)
             }
         }
         6 => GcValue::Null, // Null type
@@ -787,7 +788,7 @@ fn array_new_internal(
                         if element == 0 {
                             GcValue::Null
                         } else {
-                            GcValue::I64(element)
+                            GcValue::ObjectRef(element as u64)
                         }
                     }
                     _ => GcValue::I32(element as i32),
@@ -858,6 +859,8 @@ fn array_get_internal(
                 GcValue::I64(i) => Ok((i, 1)),
                 GcValue::F32(f) => Ok((f.to_bits() as i64, 2)),
                 GcValue::F64(f) => Ok((f.to_bits() as i64, 3)),
+                GcValue::ObjectRef(id) => Ok((id as i64, 5)),
+                GcValue::Null => Ok((0, 6)),
                 _ => Ok((0, 0)),
             }
         } else {
@@ -897,7 +900,7 @@ fn array_set_internal(
             if value == 0 {
                 GcValue::Null
             } else {
-                GcValue::I64(value)
+                GcValue::ObjectRef(value as u64)
             }
         }
         6 => GcValue::Null, // Null type
@@ -1316,7 +1319,7 @@ pub extern "C" fn wasmtime4j_gc_array_fill(
                 if value == 0 {
                     GcValue::Null
                 } else {
-                    GcValue::I64(value)
+                    GcValue::ObjectRef(value as u64)
                 }
             }
             6 => GcValue::Null,
@@ -1623,7 +1626,7 @@ pub extern "C" fn wasmtime4j_gc_struct_new_async(
                                 if raw_value == 0 {
                                     GcValue::Null
                                 } else {
-                                    GcValue::I64(raw_value)
+                                    GcValue::ObjectRef(raw_value as u64)
                                 }
                             }
                         }
@@ -1694,7 +1697,7 @@ pub extern "C" fn wasmtime4j_gc_array_new_async(
                             if element == 0 {
                                 GcValue::Null
                             } else {
-                                GcValue::I64(element)
+                                GcValue::ObjectRef(element as u64)
                             }
                         }
                         _ => GcValue::I32(element as i32),

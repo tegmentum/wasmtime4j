@@ -75,6 +75,7 @@ public final class PanamaHostFunction implements WasmFunction {
   private MemorySegment upcallStub;
   private MemorySegment ffiUpcallStub; // FFI-compatible upcall stub for native registry
   private long funcRefId = 0L; // Native reference registry ID for table operations
+  private final boolean unchecked; // Whether to use Func::new_unchecked for better performance
   private final NativeResourceHandle resourceHandle;
 
   /**
@@ -116,6 +117,32 @@ public final class PanamaHostFunction implements WasmFunction {
       final PanamaStore store,
       final ArenaResourceManager arenaManager)
       throws WasmException {
+    this(functionName, functionType, callback, implementation, store, arenaManager, false);
+  }
+
+  /**
+   * Creates a new host function with the specified signature and implementation.
+   *
+   * @param functionName the name of the function (for debugging/logging)
+   * @param functionType the WebAssembly function type signature
+   * @param callback the Java implementation of the function
+   * @param implementation the original HostFunction implementation (may be null for direct
+   *     callbacks)
+   * @param store the store this host function belongs to (may be null for direct callbacks)
+   * @param arenaManager the arena resource manager for memory lifecycle
+   * @param unchecked if true, uses Func::new_unchecked for better performance
+   * @throws WasmException if host function creation fails
+   * @throws IllegalArgumentException if any parameter is null
+   */
+  public PanamaHostFunction(
+      final String functionName,
+      final FunctionType functionType,
+      final HostFunctionCallback callback,
+      final ai.tegmentum.wasmtime4j.func.HostFunction implementation,
+      final PanamaStore store,
+      final ArenaResourceManager arenaManager,
+      final boolean unchecked)
+      throws WasmException {
     this.hostFunctionId = nextHostFunctionId.getAndIncrement();
     this.functionName = Objects.requireNonNull(functionName, "Function name cannot be null");
     this.functionType = Objects.requireNonNull(functionType, "Function type cannot be null");
@@ -123,6 +150,7 @@ public final class PanamaHostFunction implements WasmFunction {
     this.implementation = implementation; // May be null
     this.storeRef = store != null ? new WeakReference<>(store) : null;
     this.arenaManager = Objects.requireNonNull(arenaManager, "Arena manager cannot be null");
+    this.unchecked = unchecked;
 
     try {
       // Register this host function to prevent GC
@@ -373,7 +401,10 @@ public final class PanamaHostFunction implements WasmFunction {
    */
   private void registerInNativeRegistry(final PanamaStore store) throws WasmException {
     final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
-    final MethodHandle createHandle = bindings.getPanamaStoreCreateHostFunction();
+    final MethodHandle createHandle =
+        unchecked
+            ? bindings.getPanamaStoreCreateHostFunctionUnchecked()
+            : bindings.getPanamaStoreCreateHostFunction();
 
     if (createHandle == null) {
       logger.warning("Native host function creation not available - table.set() may not work");

@@ -1199,6 +1199,45 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     }) as jlong
 }
 
+/// Re-apply a WASI context to a store (rebuilds the WasiP1Ctx from configuration)
+#[no_mangle]
+#[allow(non_snake_case)]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeReapplyWasiContext(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+    wasi_ctx_ptr: jlong,
+) -> jint {
+    jni_utils::jni_try_default(&mut env, -1, || {
+        if store_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null".to_string(),
+            });
+        }
+        if wasi_ctx_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "WASI context handle cannot be null".to_string(),
+            });
+        }
+
+        let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
+
+        // Get WASI context from pointer (same tuple format as addWasiToLinker)
+        let wasi_ctx_raw = wasi_ctx_ptr
+            as *const (
+                crate::wasi::WasiContext,
+                crate::wasi::WasiFileDescriptorManager,
+            );
+        let wasi_tuple = unsafe { &*wasi_ctx_raw };
+        let wasi_context = &wasi_tuple.0;
+
+        let fd_manager = crate::wasi::WasiFileDescriptorManager::new();
+        store.set_wasi_context(wasi_context, fd_manager)?;
+
+        Ok(0)
+    })
+}
+
 #[no_mangle]
 #[allow(non_snake_case)]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(

@@ -822,11 +822,13 @@ pub fn memory_copy(
         MemoryVariant::Regular(mem) => store.with_context(|ctx| {
             let memory_data = mem.data_mut(ctx);
 
-            if dest_offset < src_offset && dest_offset + len > src_offset {
+            if src_offset < dest_offset && src_offset + len > dest_offset {
+                // dest > src with overlap: iterate backward to avoid overwriting source
                 for i in (0..len).rev() {
                     memory_data[dest_offset + i] = memory_data[src_offset + i];
                 }
-            } else if src_offset < dest_offset && src_offset + len > dest_offset {
+            } else if dest_offset < src_offset && dest_offset + len > src_offset {
+                // dest < src with overlap: iterate forward
                 for i in 0..len {
                     memory_data[dest_offset + i] = memory_data[src_offset + i];
                 }
@@ -838,14 +840,16 @@ pub fn memory_copy(
         MemoryVariant::Shared(mem) => {
             let mem_data = mem.data();
 
-            if dest_offset < src_offset && dest_offset + len > src_offset {
+            if src_offset < dest_offset && src_offset + len > dest_offset {
+                // dest > src with overlap: iterate backward to avoid overwriting source
                 for i in (0..len).rev() {
                     unsafe {
                         let val = *mem_data[src_offset + i].get();
                         *mem_data[dest_offset + i].get() = val;
                     }
                 }
-            } else if src_offset < dest_offset && src_offset + len > dest_offset {
+            } else if dest_offset < src_offset && dest_offset + len > src_offset {
+                // dest < src with overlap: iterate forward
                 for i in 0..len {
                     unsafe {
                         let val = *mem_data[src_offset + i].get();

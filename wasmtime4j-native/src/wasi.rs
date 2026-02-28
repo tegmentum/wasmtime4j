@@ -1616,6 +1616,80 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_preopen_dir_with_perms(
     )
 }
 
+/// Get the current environment variables from a WASI context as a JSON-encoded string.
+///
+/// Returns a null-terminated UTF-8 string in the format: `key1=value1\nkey2=value2\n...`
+/// The caller must free the returned buffer with `wasmtime4j_wasi_free_capture_buffer`.
+///
+/// # Arguments
+/// * `ctx_ptr` - Pointer to the WASI context
+/// * `out_ptr` - Output pointer for the environment string
+/// * `out_len` - Output pointer for the length of the string (excluding null terminator)
+///
+/// # Returns
+/// 0 on success, non-zero on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_get_environment(
+    ctx_ptr: *mut c_void,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
+        let env = ctx.get_environment();
+
+        // Format as "key=value\n" pairs
+        let mut result = String::new();
+        for (key, value) in env {
+            result.push_str(key);
+            result.push('=');
+            result.push_str(value);
+            result.push('\n');
+        }
+
+        let bytes = result.into_bytes();
+        let len = bytes.len();
+        let ptr = Box::into_raw(bytes.into_boxed_slice()) as *mut u8;
+
+        *out_ptr = ptr;
+        *out_len = len;
+        Ok(())
+    })
+}
+
+/// Get the current arguments from a WASI context as a newline-separated string.
+///
+/// Returns a null-terminated UTF-8 string in the format: `arg1\narg2\n...`
+/// The caller must free the returned buffer with `wasmtime4j_wasi_free_capture_buffer`.
+///
+/// # Arguments
+/// * `ctx_ptr` - Pointer to the WASI context
+/// * `out_ptr` - Output pointer for the arguments string
+/// * `out_len` - Output pointer for the length of the string (excluding null terminator)
+///
+/// # Returns
+/// 0 on success, non-zero on error
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_get_arguments(
+    ctx_ptr: *mut c_void,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr::<WasiContext>(ctx_ptr, "WASI context")?;
+        let args = ctx.get_arguments();
+
+        let result = args.join("\n");
+        let bytes = result.into_bytes();
+        let len = bytes.len();
+        let ptr = Box::into_raw(bytes.into_boxed_slice()) as *mut u8;
+
+        *out_ptr = ptr;
+        *out_len = len;
+        Ok(())
+    })
+}
+
 /// Add WASI to a linker (Panama FFI version)
 ///
 /// This function adds all WASI Preview 1 imports to the provided linker.

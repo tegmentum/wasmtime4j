@@ -1061,6 +1061,32 @@ impl Store {
         Ok((host_function_id, wasmtime_func))
     }
 
+    /// Create an unchecked host function that skips per-call type validation
+    ///
+    /// This is identical to `create_host_function` but uses `Func::new_unchecked`
+    /// internally, which skips Wasmtime's per-call type validation for better performance.
+    /// The caller is responsible for ensuring type correctness.
+    ///
+    /// # Errors
+    /// Returns an error if the store has been closed.
+    pub fn create_host_function_unchecked(
+        &self,
+        name: String,
+        func_type: FuncType,
+        callback: Box<dyn HostFunctionCallback + Send + Sync>,
+    ) -> WasmtimeResult<(u64, Func)> {
+        self.check_not_closed()?;
+        let host_function = HostFunction::new(name, func_type, callback)?;
+        let host_function_id = host_function.id();
+
+        let wasmtime_func = {
+            let mut store = self.inner.lock();
+            host_function.create_wasmtime_func_unchecked(&mut store)?
+        };
+
+        Ok((host_function_id, wasmtime_func))
+    }
+
     /// Create a function reference from a host function
     /// Returns only the handle ID - the FunctionReference wrapper is created on the Java side
     pub fn create_function_reference(

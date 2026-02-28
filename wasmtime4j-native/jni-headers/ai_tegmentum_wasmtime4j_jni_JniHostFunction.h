@@ -17,6 +17,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeC
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniHostFunction
+ * Method:    nativeCreateHostFunctionUnchecked
+ * Signature: (JLjava/lang/String;[BJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCreateHostFunctionUnchecked
+  (JNIEnv *, jclass, jlong, jstring, jbyteArray, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniHostFunction
  * Method:    nativeDestroyHostFunction
  * Signature: (J)V
  */

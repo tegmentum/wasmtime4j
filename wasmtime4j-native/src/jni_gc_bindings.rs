@@ -1634,6 +1634,12 @@ fn convert_gc_value_to_jobject(env: &mut JNIEnv, gc_value: &GcValue) -> jobject 
 
             JObject::from(byte_array).into_raw()
         }
+        GcValue::ObjectRef(id) => {
+            match env.new_object("java/lang/Long", "(J)V", &[JValue::Long(*id as i64)]) {
+                Ok(obj) => obj.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
         GcValue::Reference | GcValue::Null => std::ptr::null_mut(),
     }
 }

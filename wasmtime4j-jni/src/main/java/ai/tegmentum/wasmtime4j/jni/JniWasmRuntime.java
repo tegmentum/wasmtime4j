@@ -825,6 +825,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new WasmException("Failed to add WASI imports to linker");
     }
 
+    // Track WASI context on the linker for store association during instantiation
+    jniLinker.setWasiContext((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context);
+
     // Track WASI imports for hasImport() checks
     for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P1_IMPORTS) {
       jniLinker.addImport(entry[0], entry[1]);
@@ -853,6 +856,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     if (result != 0) {
       throw new WasmException("Failed to add WASI Preview 2 imports to linker");
     }
+
+    // Track WASI context on the linker for store association during instantiation
+    jniLinker.setWasiContext((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context);
 
     // Track WASI Preview 2 imports for hasImport() checks
     for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P2_IMPORTS) {

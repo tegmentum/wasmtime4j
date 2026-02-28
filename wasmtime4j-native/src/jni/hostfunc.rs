@@ -90,6 +90,73 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCr
     }) as jlong
 }
 
+/// Create a new unchecked host function (JNI version)
+/// Identical to nativeCreateHostFunction but uses Func::new_unchecked internally,
+/// skipping per-call type validation for better performance.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCreateHostFunctionUnchecked(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    function_name: JString,
+    function_type_data: jbyteArray,
+    host_function_id: jlong,
+) -> jlong {
+    let name_string = match env.get_string(&function_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0 as jlong,
+    };
+
+    let type_data_bytes =
+        match env.convert_byte_array(unsafe { JByteArray::from_raw(function_type_data) }) {
+            Ok(data) => data,
+            Err(_) => return 0 as jlong,
+        };
+
+    let jvm = match env.get_java_vm() {
+        Ok(jvm) => std::sync::Arc::new(jvm),
+        Err(e) => {
+            log::error!("Failed to get JVM reference: {}", e);
+            return 0 as jlong;
+        }
+    };
+
+    jni_utils::jni_try_ptr(&mut env, || {
+        let name: String = name_string;
+        let type_data = type_data_bytes;
+
+        let store = unsafe { crate::store::core::get_store_ref(store_handle as *const c_void)? };
+
+        let func_type = store.with_context(|ctx| {
+            let engine = ctx.engine();
+            unmarshal_function_type(engine, &type_data)
+        })?;
+
+        let callback = Box::new(super::linker::JniHostFunctionCallback {
+            jvm: jvm.clone(),
+            callback_id: host_function_id,
+            is_function_reference: false,
+        });
+
+        let (host_function_id, wasmtime_func) =
+            store.create_host_function_unchecked(name, func_type, callback)?;
+
+        let func_ref_id =
+            crate::table::core::register_function_reference(wasmtime_func, store.id())?;
+
+        #[repr(C)]
+        struct JniHostFunctionHandle {
+            host_function_id: u64,
+            func_ref_id: u64,
+        }
+
+        Ok(Box::new(JniHostFunctionHandle {
+            host_function_id,
+            func_ref_id,
+        }))
+    }) as jlong
+}
+
 /// Destroy a host function (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeDestroyHostFunction(

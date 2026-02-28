@@ -193,6 +193,38 @@ pub extern "C" fn wasmtime4j_panama_wasi_context_preopen_dir_readonly(
     }
 }
 
+/// Get environment variables from WASI context (Panama FFI)
+///
+/// Returns environment as "key=value\n" pairs via out_ptr/out_len.
+/// Caller must free the buffer with wasmtime4j_wasi_free_capture_buffer.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_context_get_environment(
+    ctx_ptr: *mut c_void,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    if ctx_ptr.is_null() || out_ptr.is_null() || out_len.is_null() {
+        return -1;
+    }
+    unsafe { crate::wasi::wasmtime4j_wasi_context_get_environment(ctx_ptr, out_ptr, out_len) }
+}
+
+/// Get arguments from WASI context (Panama FFI)
+///
+/// Returns arguments as "arg1\narg2\n..." via out_ptr/out_len.
+/// Caller must free the buffer with wasmtime4j_wasi_free_capture_buffer.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_wasi_context_get_arguments(
+    ctx_ptr: *mut c_void,
+    out_ptr: *mut *mut u8,
+    out_len: *mut usize,
+) -> c_int {
+    if ctx_ptr.is_null() || out_ptr.is_null() || out_len.is_null() {
+        return -1;
+    }
+    unsafe { crate::wasi::wasmtime4j_wasi_context_get_arguments(ctx_ptr, out_ptr, out_len) }
+}
+
 /// Preopen a directory with specific permissions (Panama FFI)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_wasi_context_preopen_dir_with_perms(

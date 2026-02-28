@@ -1290,4 +1290,88 @@ pub mod jni_wasi {
         }
         unsafe { wasi::wasmtime4j_wasi_context_has_stderr_capture(context_handle as *const c_void) }
     }
+
+    /// Get environment variables from WASI context as a String ("key=value\n" pairs)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeGetEnvironment(
+        mut env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) -> jni::sys::jstring {
+        if context_handle == 0 {
+            return std::ptr::null_mut();
+        }
+
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut out_len: usize = 0;
+        let result = unsafe {
+            wasi::wasmtime4j_wasi_context_get_environment(
+                context_handle as *mut c_void,
+                &mut out_ptr as *mut *mut u8,
+                &mut out_len as *mut usize,
+            )
+        };
+
+        if result != 0 || out_ptr.is_null() || out_len == 0 {
+            if !out_ptr.is_null() {
+                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr); }
+            }
+            // Return empty string
+            match env.new_string("") {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        } else {
+            let data_slice = unsafe { std::slice::from_raw_parts(out_ptr, out_len) };
+            let string = String::from_utf8_lossy(data_slice).into_owned();
+            unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr); }
+
+            match env.new_string(&string) {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+    }
+
+    /// Get arguments from WASI context as a String ("arg1\narg2\n..." newline-separated)
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeGetArguments(
+        mut env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+    ) -> jni::sys::jstring {
+        if context_handle == 0 {
+            return std::ptr::null_mut();
+        }
+
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut out_len: usize = 0;
+        let result = unsafe {
+            wasi::wasmtime4j_wasi_context_get_arguments(
+                context_handle as *mut c_void,
+                &mut out_ptr as *mut *mut u8,
+                &mut out_len as *mut usize,
+            )
+        };
+
+        if result != 0 || out_ptr.is_null() || out_len == 0 {
+            if !out_ptr.is_null() {
+                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr); }
+            }
+            // Return empty string
+            match env.new_string("") {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        } else {
+            let data_slice = unsafe { std::slice::from_raw_parts(out_ptr, out_len) };
+            let string = String::from_utf8_lossy(data_slice).into_owned();
+            unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr); }
+
+            match env.new_string(&string) {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+    }
 }

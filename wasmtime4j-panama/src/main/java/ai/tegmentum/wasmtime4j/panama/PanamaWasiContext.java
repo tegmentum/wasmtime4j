@@ -443,6 +443,87 @@ public final class PanamaWasiContext implements WasiContext {
     return asyncTimeoutMs;
   }
 
+  // ===== Environment and Argument Getters =====
+
+  @Override
+  public java.util.Map<String, String> getEnvironment() {
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment outPtr = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outLen = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result = NATIVE_BINDINGS.wasiContextGetEnvironment(contextHandle, outPtr, outLen);
+      if (result != 0) {
+        return java.util.Collections.emptyMap();
+      }
+
+      final MemorySegment dataPtr = outPtr.get(ValueLayout.ADDRESS, 0);
+      final long length = outLen.get(ValueLayout.JAVA_LONG, 0);
+
+      if (dataPtr.equals(MemorySegment.NULL) || length == 0) {
+        if (!dataPtr.equals(MemorySegment.NULL)) {
+          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        }
+        return java.util.Collections.emptyMap();
+      }
+
+      final MemorySegment sizedPtr = dataPtr.reinterpret(length);
+      final byte[] bytes = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
+      NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+
+      final String data = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+      final java.util.Map<String, String> env = new java.util.LinkedHashMap<>();
+      for (String line : data.split("\n")) {
+        if (!line.isEmpty()) {
+          final int eqIdx = line.indexOf('=');
+          if (eqIdx > 0) {
+            env.put(line.substring(0, eqIdx), line.substring(eqIdx + 1));
+          }
+        }
+      }
+      return java.util.Collections.unmodifiableMap(env);
+    }
+  }
+
+  @Override
+  public java.util.List<String> getArguments() {
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment outPtr = arena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment outLen = arena.allocate(ValueLayout.JAVA_LONG);
+
+      final int result = NATIVE_BINDINGS.wasiContextGetArguments(contextHandle, outPtr, outLen);
+      if (result != 0) {
+        return java.util.Collections.emptyList();
+      }
+
+      final MemorySegment dataPtr = outPtr.get(ValueLayout.ADDRESS, 0);
+      final long length = outLen.get(ValueLayout.JAVA_LONG, 0);
+
+      if (dataPtr.equals(MemorySegment.NULL) || length == 0) {
+        if (!dataPtr.equals(MemorySegment.NULL)) {
+          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        }
+        return java.util.Collections.emptyList();
+      }
+
+      final MemorySegment sizedPtr = dataPtr.reinterpret(length);
+      final byte[] bytes = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
+      NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+
+      final String data = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+      final java.util.List<String> args = new java.util.ArrayList<>();
+      for (String line : data.split("\n")) {
+        if (!line.isEmpty()) {
+          args.add(line);
+        }
+      }
+      return java.util.Collections.unmodifiableList(args);
+    }
+  }
+
   // ===== Output Capture Methods =====
 
   @Override

@@ -227,14 +227,14 @@ impl WasmtimeGcOperations {
                     ))
                 });
 
-                // FIX: For reference fields, convert I32(object_id) to I64(object_id)
-                // This handles cases where the FFI layer passes reference object IDs as I32
+                // For reference fields, convert I32/I64 object IDs to ObjectRef
                 let effective_value: GcValue = if let Ok(field) = field_def {
                     if matches!(field.field_type, crate::gc_types::FieldType::Reference(_)) {
-                        if let GcValue::I32(id) = value {
-                            GcValue::I64(*id as i64)
-                        } else {
-                            value.clone()
+                        match value {
+                            GcValue::I32(id) => GcValue::ObjectRef(*id as u64),
+                            GcValue::I64(id) => GcValue::ObjectRef(*id as u64),
+                            GcValue::Null => GcValue::Null,
+                            _ => value.clone(),
                         }
                     } else {
                         value.clone()
@@ -355,12 +355,14 @@ impl WasmtimeGcOperations {
                     ))
                 });
 
+                // For reference fields, convert I32/I64 object IDs to ObjectRef
                 let effective_value: GcValue = if let Ok(field) = field_def {
                     if matches!(field.field_type, crate::gc_types::FieldType::Reference(_)) {
-                        if let GcValue::I32(id) = value {
-                            GcValue::I64(*id as i64)
-                        } else {
-                            value.clone()
+                        match value {
+                            GcValue::I32(id) => GcValue::ObjectRef(*id as u64),
+                            GcValue::I64(id) => GcValue::ObjectRef(*id as u64),
+                            GcValue::Null => GcValue::Null,
+                            _ => value.clone(),
                         }
                     } else {
                         value.clone()
@@ -1902,12 +1904,9 @@ impl WasmtimeGcOperations {
     {
         match gc_value {
             GcValue::I32(i) => Ok(Val::I32(*i)),
-            GcValue::I64(i) => {
-                // Check if this i64 is actually an object ID (hack to support JNI layer passing object IDs as Long)
-                // If the value exists in gc_objects, treat it as a reference
-                let object_id = *i as u64;
-                if let Some(gc_ref) = gc_objects.get(&object_id) {
-                    // Found an object with this ID - convert it to AnyRef within the provided scope
+            GcValue::I64(i) => Ok(Val::I64(*i)),
+            GcValue::ObjectRef(object_id) => {
+                if let Some(gc_ref) = gc_objects.get(object_id) {
                     let any_ref = match gc_ref {
                         GcObjectRef::Struct(owned_struct) => {
                             let struct_rooted = owned_struct.to_rooted(scope);
@@ -1922,8 +1921,6 @@ impl WasmtimeGcOperations {
                             Ok(any_rooted)
                         }
                         GcObjectRef::ExnRef(_owned_exn) => {
-                            // ExnRef cannot be converted to AnyRef directly
-                            // Return an error for now
                             Err(crate::error::WasmtimeError::Runtime {
                                 message: "ExnRef cannot be converted to AnyRef".to_string(),
                                 backtrace: None,
@@ -1932,8 +1929,10 @@ impl WasmtimeGcOperations {
                     };
                     any_ref.map(|a| Val::AnyRef(Some(a)))
                 } else {
-                    // Not an object ID, treat as regular i64
-                    Ok(Val::I64(*i))
+                    Err(crate::error::WasmtimeError::Runtime {
+                        message: format!("ObjectRef {} not found in gc_objects", object_id),
+                        backtrace: None,
+                    })
                 }
             }
             GcValue::F32(f) => Ok(Val::F32(f.to_bits())),
@@ -1954,12 +1953,9 @@ impl WasmtimeGcOperations {
     fn convert_gc_value_to_wasmtime(&mut self, gc_value: &GcValue) -> WasmtimeResult<Val> {
         match gc_value {
             GcValue::I32(i) => Ok(Val::I32(*i)),
-            GcValue::I64(i) => {
-                // Check if this i64 is actually an object ID (hack to support JNI layer passing object IDs as Long)
-                // If the value exists in gc_objects, treat it as a reference
-                let object_id = *i as u64;
-                if let Some(gc_ref) = self.gc_objects.get(&object_id) {
-                    // Found an object with this ID - convert it to AnyRef
+            GcValue::I64(i) => Ok(Val::I64(*i)),
+            GcValue::ObjectRef(object_id) => {
+                if let Some(gc_ref) = self.gc_objects.get(object_id) {
                     let mut scope = wasmtime::RootScope::new(&mut self.store);
                     let any_ref = match gc_ref {
                         GcObjectRef::Struct(owned_struct) => {
@@ -1975,7 +1971,6 @@ impl WasmtimeGcOperations {
                             Ok(any_rooted)
                         }
                         GcObjectRef::ExnRef(_owned_exn) => {
-                            // ExnRef cannot be converted to AnyRef directly
                             Err(crate::error::WasmtimeError::Runtime {
                                 message: "ExnRef cannot be converted to AnyRef".to_string(),
                                 backtrace: None,
@@ -1984,8 +1979,10 @@ impl WasmtimeGcOperations {
                     };
                     any_ref.map(|a| Val::AnyRef(Some(a)))
                 } else {
-                    // Not an object ID, treat as regular i64
-                    Ok(Val::I64(*i))
+                    Err(crate::error::WasmtimeError::Runtime {
+                        message: format!("ObjectRef {} not found in gc_objects", object_id),
+                        backtrace: None,
+                    })
                 }
             }
             GcValue::F32(f) => Ok(Val::F32(f.to_bits())),

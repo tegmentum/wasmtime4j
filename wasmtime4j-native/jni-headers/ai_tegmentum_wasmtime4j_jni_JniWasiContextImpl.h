@@ -215,6 +215,22 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativ
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeHasStderrCapture
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeGetEnvironment
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeGetEnvironment
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeGetArguments
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeGetArguments
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

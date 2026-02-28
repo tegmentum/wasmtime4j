@@ -322,6 +322,32 @@ public interface WasiContext {
   boolean hasStderrCapture();
 
   /**
+   * Gets the current environment variables configured in this WASI context.
+   *
+   * <p>Returns a copy of the environment variables map. Modifications to the returned map do not
+   * affect the context; use {@link #setEnv(String, String)} to modify.
+   *
+   * @return a map of environment variable names to values, or an empty map if none are configured
+   * @since 1.1.0
+   */
+  default Map<String, String> getEnvironment() {
+    return java.util.Collections.emptyMap();
+  }
+
+  /**
+   * Gets the current command-line arguments configured in this WASI context.
+   *
+   * <p>Returns a copy of the arguments list. Modifications to the returned list do not affect the
+   * context; use {@link #setArgv(String[])} to modify.
+   *
+   * @return a list of command-line arguments, or an empty list if none are configured
+   * @since 1.1.0
+   */
+  default java.util.List<String> getArguments() {
+    return java.util.Collections.emptyList();
+  }
+
+  /**
    * Creates a new WasiContext with default settings.
    *
    * <p>The default context has no environment variables, no command-line arguments, inherits stdio,

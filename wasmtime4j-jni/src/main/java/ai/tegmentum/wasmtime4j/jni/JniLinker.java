@@ -41,6 +41,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   private final Set<Long> registeredCallbackIds =
       java.util.concurrent.ConcurrentHashMap.newKeySet();
   private boolean wasiEnabled = false;
+  private volatile JniWasiContextImpl wasiContext = null;
 
   /**
    * Creates a new JNI linker with the given native handle.
@@ -60,6 +61,17 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    */
   public Engine getEngine() {
     return engine;
+  }
+
+  /**
+   * Sets the WASI context for this linker.
+   *
+   * <p>The WASI context will be tracked on the store during instantiation.
+   *
+   * @param wasiCtx the WASI context to track
+   */
+  void setWasiContext(final JniWasiContextImpl wasiCtx) {
+    this.wasiContext = wasiCtx;
   }
 
   @Override
@@ -440,6 +452,11 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     final JniStore jniStore = (JniStore) store;
     final JniModule jniModule = (JniModule) module;
 
+    // Track WASI context on the store if set
+    if (wasiContext != null) {
+      jniStore.setTrackedWasiContext(wasiContext);
+    }
+
     try {
       final long instanceHandle =
           nativeInstantiate(nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
@@ -480,6 +497,11 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
 
     final JniStore jniStore = (JniStore) store;
     final JniModule jniModule = (JniModule) module;
+
+    // Track WASI context on the store if set
+    if (wasiContext != null) {
+      jniStore.setTrackedWasiContext(wasiContext);
+    }
 
     try {
       final long instanceHandle =

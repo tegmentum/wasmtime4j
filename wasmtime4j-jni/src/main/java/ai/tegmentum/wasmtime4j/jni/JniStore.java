@@ -97,6 +97,9 @@ public final class JniStore extends JniResource implements Store {
   /** Callback registry for managing callbacks and asynchronous operations. Lazily initialized. */
   private volatile CallbackRegistry callbackRegistry;
 
+  /** Tracked WASI context reference for getWasiContext() and reapplyWasiContext(). */
+  private volatile JniWasiContextImpl trackedWasiContext;
+
   /**
    * Creates a new JNI store with the given native handle.
    *
@@ -358,6 +361,62 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create host function: " + name, e);
+    }
+  }
+
+  @Override
+  public WasmFunction createHostFunctionUnchecked(
+      final String name, final FunctionType functionType, final HostFunction implementation)
+      throws WasmException {
+    Objects.requireNonNull(name, "name cannot be null");
+    Objects.requireNonNull(functionType, "functionType cannot be null");
+    Objects.requireNonNull(implementation, "implementation cannot be null");
+    ensureNotClosed();
+
+    try {
+      final JniHostFunction hostFunction =
+          JniHostFunction.createUnchecked(name, functionType, implementation, this);
+
+      LOGGER.fine(
+          "Created unchecked host function '"
+              + name
+              + "' in store 0x"
+              + Long.toHexString(getNativeHandle()));
+      return hostFunction;
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create unchecked host function: " + name, e);
+    }
+  }
+
+  /**
+   * Sets the tracked WASI context for this store.
+   *
+   * <p>Called internally when a WASI context is applied to this store during instantiation.
+   *
+   * @param wasiCtx the WASI context to track
+   */
+  void setTrackedWasiContext(final JniWasiContextImpl wasiCtx) {
+    this.trackedWasiContext = wasiCtx;
+  }
+
+  @Override
+  public java.util.Optional<ai.tegmentum.wasmtime4j.wasi.WasiContext> getWasiContext() {
+    return java.util.Optional.ofNullable(trackedWasiContext);
+  }
+
+  @Override
+  public void reapplyWasiContext() throws WasmException {
+    final JniWasiContextImpl wasiCtx = trackedWasiContext;
+    if (wasiCtx == null) {
+      throw new WasmException("No WASI context is configured for this store");
+    }
+    ensureNotClosed();
+    final int result = nativeReapplyWasiContext(getNativeHandle(), wasiCtx.getNativeHandle());
+    if (result != 0) {
+      throw new WasmException("Failed to re-apply WASI context to store");
     }
   }
 
@@ -1310,6 +1369,8 @@ public final class JniStore extends JniResource implements Store {
       long storeHandle, long moduleHandle, long[] externHandles, int[] externTypes);
 
   private static native void nativeDestroyStore(long storeHandle);
+
+  private static native int nativeReapplyWasiContext(long storeHandle, long wasiContextHandle);
 
   /**
    * Extracts value components from WasmValue for passing to native code.

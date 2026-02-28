@@ -548,20 +548,52 @@ impl Table {
         }
 
         store.with_context(|mut ctx| {
-            // Manually implement table copy since direct copy might not be available
-            for i in 0..len {
-                let src_elem = table.get(&mut ctx, (src + i) as u64).ok_or_else(|| {
-                    WasmtimeError::Runtime {
-                        message: format!("Failed to get element at index {}", src + i),
-                        backtrace: None,
-                    }
-                })?;
-                table
-                    .set(&mut ctx, (dst + i) as u64, src_elem)
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!("Failed to set element at index {}: {}", dst + i, e),
-                        backtrace: None,
-                    })?;
+            // Use memmove semantics: iterate backward when dst > src with overlap
+            // to avoid overwriting source elements before they are copied
+            if dst > src && dst < src + len {
+                for i in (0..len).rev() {
+                    let src_elem =
+                        table.get(&mut ctx, (src + i) as u64).ok_or_else(|| {
+                            WasmtimeError::Runtime {
+                                message: format!(
+                                    "Failed to get element at index {}",
+                                    src + i
+                                ),
+                                backtrace: None,
+                            }
+                        })?;
+                    table
+                        .set(&mut ctx, (dst + i) as u64, src_elem)
+                        .map_err(|e| WasmtimeError::Runtime {
+                            message: format!(
+                                "Failed to set element at index {}: {}",
+                                dst + i, e
+                            ),
+                            backtrace: None,
+                        })?;
+                }
+            } else {
+                for i in 0..len {
+                    let src_elem =
+                        table.get(&mut ctx, (src + i) as u64).ok_or_else(|| {
+                            WasmtimeError::Runtime {
+                                message: format!(
+                                    "Failed to get element at index {}",
+                                    src + i
+                                ),
+                                backtrace: None,
+                            }
+                        })?;
+                    table
+                        .set(&mut ctx, (dst + i) as u64, src_elem)
+                        .map_err(|e| WasmtimeError::Runtime {
+                            message: format!(
+                                "Failed to set element at index {}: {}",
+                                dst + i, e
+                            ),
+                            backtrace: None,
+                        })?;
+                }
             }
             Ok(())
         })
@@ -576,9 +608,15 @@ impl Table {
         src: u32,
         len: u32,
     ) -> WasmtimeResult<()> {
-        // Validate type compatibility
-        if format!("{:?}", self.metadata.element_type)
-            != format!("{:?}", src_table.metadata.element_type)
+        // Validate type compatibility using ValType::matches (subtyping-aware)
+        if !self
+            .metadata
+            .element_type
+            .matches(&src_table.metadata.element_type)
+            && !src_table
+                .metadata
+                .element_type
+                .matches(&self.metadata.element_type)
         {
             return Err(WasmtimeError::Type {
                 message: format!(
@@ -723,8 +761,10 @@ impl Table {
             });
         }
 
-        // Validate type compatibility
-        if format!("{:?}", self.metadata.element_type) != format!("{:?}", segment.elem_type) {
+        // Validate type compatibility using ValType::matches (subtyping-aware)
+        if !self.metadata.element_type.matches(&segment.elem_type)
+            && !segment.elem_type.matches(&self.metadata.element_type)
+        {
             return Err(WasmtimeError::Type {
                 message: format!(
                     "Table element type {:?} does not match segment element type {:?}",
