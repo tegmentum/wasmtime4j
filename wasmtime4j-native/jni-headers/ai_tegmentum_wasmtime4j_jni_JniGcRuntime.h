@@ -231,6 +231,46 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayCopyNa
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayFillNative
   (JNIEnv *, jclass, jlong, jlong, jint, jint, jobject);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    anyrefToRawNative
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefToRawNative
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    anyrefFromRawNative
+ * Signature: (JI)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefFromRawNative
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    anyrefMatchesTyNative
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefMatchesTyNative
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    externrefConvertAnyNative
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_externrefConvertAnyNative
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    anyrefConvertExternNative
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefConvertExternNative
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

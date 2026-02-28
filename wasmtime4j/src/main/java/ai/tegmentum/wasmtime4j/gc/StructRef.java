@@ -19,6 +19,9 @@ package ai.tegmentum.wasmtime4j.gc;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -156,6 +159,27 @@ public final class StructRef implements GcRef {
     }
     Objects.requireNonNull(store, "store cannot be null");
     return instance.getField(index);
+  }
+
+  /**
+   * Gets all field values from the referenced struct.
+   *
+   * @param store the store context
+   * @return an unmodifiable list of all field values
+   * @throws IllegalStateException if this is a null reference
+   * @throws GcException if field access fails
+   */
+  public List<GcValue> fields(final Store store) throws GcException {
+    if (instance == null) {
+      throw new IllegalStateException("Cannot get fields from null struct reference");
+    }
+    Objects.requireNonNull(store, "store cannot be null");
+    final int count = instance.getFieldCount();
+    final List<GcValue> result = new ArrayList<>(count);
+    for (int i = 0; i < count; i++) {
+      result.add(instance.getField(i));
+    }
+    return Collections.unmodifiableList(result);
   }
 
   /**

@@ -19,6 +19,9 @@ package ai.tegmentum.wasmtime4j.gc;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -155,6 +158,27 @@ public final class ArrayRef implements GcRef {
     }
     Objects.requireNonNull(store, "store cannot be null");
     return instance.getElement(index);
+  }
+
+  /**
+   * Gets all element values from the referenced array.
+   *
+   * @param store the store context
+   * @return an unmodifiable list of all element values
+   * @throws IllegalStateException if this is a null reference
+   * @throws GcException if element access fails
+   */
+  public List<GcValue> elems(final Store store) throws GcException {
+    if (instance == null) {
+      throw new IllegalStateException("Cannot get elements from null array reference");
+    }
+    Objects.requireNonNull(store, "store cannot be null");
+    final int length = instance.getLength();
+    final List<GcValue> result = new ArrayList<>(length);
+    for (int i = 0; i < length; i++) {
+      result.add(instance.getElement(i));
+    }
+    return Collections.unmodifiableList(result);
   }
 
   /**

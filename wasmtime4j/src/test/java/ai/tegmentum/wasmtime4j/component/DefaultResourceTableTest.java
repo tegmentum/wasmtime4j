@@ -557,6 +557,325 @@ class DefaultResourceTableTest {
   }
 
   @Nested
+  @DisplayName("addChild() tests")
+  class AddChildTests {
+
+    @Test
+    @DisplayName("should add existing entry as child of existing parent")
+    void shouldAddChildToParent() throws WasmException {
+      final int parent = table.push("parent-entry");
+      final int child = table.push("child-entry");
+
+      table.addChild(child, parent);
+
+      final List<Integer> children = table.iterChildren(parent);
+      assertEquals(1, children.size(), "Parent should have 1 child");
+      assertTrue(children.contains(child), "Children should contain the added child handle");
+    }
+
+    @Test
+    @DisplayName("should prevent parent deletion after addChild")
+    void shouldPreventParentDeletionAfterAddChild() throws WasmException {
+      final int parent = table.push("parent-entry");
+      final int child = table.push("child-entry");
+
+      table.addChild(child, parent);
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.delete(parent, String.class),
+              "Should not be able to delete parent with dynamically added child");
+      assertEquals(
+          ResourceTableException.ErrorKind.HAS_CHILDREN,
+          ex.getErrorKind(),
+          "Error kind should be HAS_CHILDREN");
+    }
+
+    @Test
+    @DisplayName("should throw for invalid child handle")
+    void shouldThrowForInvalidChild() throws WasmException {
+      final int parent = table.push("parent-entry");
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.addChild(999, parent),
+              "Should throw for invalid child handle");
+      assertEquals(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          ex.getErrorKind(),
+          "Error kind should be NOT_PRESENT");
+    }
+
+    @Test
+    @DisplayName("should throw for invalid parent handle")
+    void shouldThrowForInvalidParent() throws WasmException {
+      final int child = table.push("child-entry");
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.addChild(child, 999),
+              "Should throw for invalid parent handle");
+      assertEquals(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          ex.getErrorKind(),
+          "Error kind should be NOT_PRESENT");
+    }
+
+    @Test
+    @DisplayName("should throw if child already has a parent")
+    void shouldThrowIfChildAlreadyHasParent() throws WasmException {
+      final int parent1 = table.push("parent-1");
+      final int parent2 = table.push("parent-2");
+      final int child = table.push("child-entry");
+
+      table.addChild(child, parent1);
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.addChild(child, parent2),
+              "Should throw when child already has a parent");
+      assertEquals(
+          ResourceTableException.ErrorKind.HAS_PARENT,
+          ex.getErrorKind(),
+          "Error kind should be HAS_PARENT");
+    }
+
+    @Test
+    @DisplayName("should coexist with pushChild entries")
+    void shouldCoexistWithPushChild() throws WasmException {
+      final int parent = table.push("parent-entry");
+      final int pushChildHandle = table.pushChild("push-child", parent);
+      final int addChildHandle = table.push("add-child");
+
+      table.addChild(addChildHandle, parent);
+
+      final List<Integer> children = table.iterChildren(parent);
+      assertEquals(2, children.size(), "Parent should have 2 children");
+      assertTrue(children.contains(pushChildHandle), "Should contain pushChild entry");
+      assertTrue(children.contains(addChildHandle), "Should contain addChild entry");
+    }
+  }
+
+  @Nested
+  @DisplayName("removeChild() tests")
+  class RemoveChildTests {
+
+    @Test
+    @DisplayName("should remove parent-child relationship without deleting either entry")
+    void shouldRemoveRelationshipOnly() throws WasmException {
+      final int parent = table.push("parent-entry");
+      final int child = table.push("child-entry");
+
+      table.addChild(child, parent);
+      table.removeChild(child, parent);
+
+      // Both entries should still exist
+      assertTrue(table.contains(parent), "Parent should still exist after removeChild");
+      assertTrue(table.contains(child), "Child should still exist after removeChild");
+
+      // Parent should have no children
+      final List<Integer> children = table.iterChildren(parent);
+      assertTrue(children.isEmpty(), "Parent should have no children after removeChild");
+
+      // Parent should now be deletable
+      table.delete(parent, String.class);
+      assertFalse(table.contains(parent), "Parent should be deletable after removeChild");
+    }
+
+    @Test
+    @DisplayName("should work with pushChild-created relationships")
+    void shouldWorkWithPushChildRelationships() throws WasmException {
+      final int parent = table.push("parent-entry");
+      final int child = table.pushChild("child-entry", parent);
+
+      table.removeChild(child, parent);
+
+      final List<Integer> children = table.iterChildren(parent);
+      assertTrue(children.isEmpty(), "Parent should have no children after removeChild");
+
+      // Parent should now be deletable
+      table.delete(parent, String.class);
+    }
+
+    @Test
+    @DisplayName("should throw for invalid child handle")
+    void shouldThrowForInvalidChild() throws WasmException {
+      final int parent = table.push("parent-entry");
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.removeChild(999, parent),
+              "Should throw for invalid child handle");
+      assertEquals(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          ex.getErrorKind(),
+          "Error kind should be NOT_PRESENT");
+    }
+
+    @Test
+    @DisplayName("should throw for invalid parent handle")
+    void shouldThrowForInvalidParent() throws WasmException {
+      final int child = table.push("child-entry");
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.removeChild(child, 999),
+              "Should throw for invalid parent handle");
+      assertEquals(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          ex.getErrorKind(),
+          "Error kind should be NOT_PRESENT");
+    }
+
+    @Test
+    @DisplayName("should throw if relationship does not exist")
+    void shouldThrowIfRelationshipNotExists() throws WasmException {
+      final int parent = table.push("parent-entry");
+      final int child = table.push("child-entry");
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.removeChild(child, parent),
+              "Should throw when no relationship exists");
+      assertEquals(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          ex.getErrorKind(),
+          "Error kind should be NOT_PRESENT");
+    }
+
+    @Test
+    @DisplayName("should allow re-adding child to different parent after removal")
+    void shouldAllowReaddingAfterRemoval() throws WasmException {
+      final int parent1 = table.push("parent-1");
+      final int parent2 = table.push("parent-2");
+      final int child = table.push("child-entry");
+
+      // Add to parent1, then remove, then add to parent2
+      table.addChild(child, parent1);
+      table.removeChild(child, parent1);
+      table.addChild(child, parent2);
+
+      assertTrue(
+          table.iterChildren(parent1).isEmpty(), "Parent1 should have no children after removal");
+      assertEquals(
+          1, table.iterChildren(parent2).size(), "Parent2 should have 1 child after re-add");
+      assertTrue(
+          table.iterChildren(parent2).contains(child), "Parent2 children should contain the child");
+    }
+  }
+
+  @Nested
+  @DisplayName("maxCapacity tests")
+  class MaxCapacityTests {
+
+    @Test
+    @DisplayName("default max capacity should be Integer.MAX_VALUE")
+    void shouldHaveDefaultMaxCapacity() {
+      assertEquals(
+          Integer.MAX_VALUE,
+          table.maxCapacity(),
+          "Default max capacity should be Integer.MAX_VALUE");
+    }
+
+    @Test
+    @DisplayName("should allow setting and getting max capacity")
+    void shouldSetAndGetMaxCapacity() {
+      table.setMaxCapacity(100);
+      assertEquals(100, table.maxCapacity(), "Max capacity should be 100 after setting");
+    }
+
+    @Test
+    @DisplayName("should throw when push exceeds capacity")
+    void shouldThrowWhenPushExceedsCapacity() throws WasmException {
+      table.setMaxCapacity(2);
+      table.push("entry-1");
+      table.push("entry-2");
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.push("entry-3"),
+              "Should throw when exceeding capacity");
+      assertEquals(
+          ResourceTableException.ErrorKind.FULL, ex.getErrorKind(), "Error kind should be FULL");
+      assertTrue(
+          ex.getMessage().contains("2"),
+          "Message should mention capacity, got: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("should throw when pushChild exceeds capacity")
+    void shouldThrowWhenPushChildExceedsCapacity() throws WasmException {
+      table.setMaxCapacity(2);
+      final int parent = table.push("parent");
+      table.pushChild("child-1", parent);
+
+      final ResourceTableException ex =
+          assertThrows(
+              ResourceTableException.class,
+              () -> table.pushChild("child-2", parent),
+              "Should throw when pushChild exceeds capacity");
+      assertEquals(
+          ResourceTableException.ErrorKind.FULL, ex.getErrorKind(), "Error kind should be FULL");
+    }
+
+    @Test
+    @DisplayName("should allow push after deletion frees space")
+    void shouldAllowPushAfterDeletionFreesSpace() throws WasmException {
+      table.setMaxCapacity(2);
+      final int h1 = table.push("entry-1");
+      table.push("entry-2");
+
+      // Delete one to free space
+      table.delete(h1, String.class);
+
+      // Should now be able to push again
+      final int h3 = table.push("entry-3");
+      assertTrue(table.contains(h3), "New entry should exist after freeing space");
+      assertEquals(2, table.size(), "Size should be 2");
+    }
+
+    @Test
+    @DisplayName("should throw for max capacity less than 1")
+    void shouldThrowForInvalidMaxCapacity() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> table.setMaxCapacity(0),
+          "Should throw for maxCapacity of 0");
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> table.setMaxCapacity(-1),
+          "Should throw for negative maxCapacity");
+    }
+
+    @Test
+    @DisplayName("should not evict existing entries when lowering capacity")
+    void shouldNotEvictExistingOnLowerCapacity() throws WasmException {
+      table.push("entry-1");
+      table.push("entry-2");
+      table.push("entry-3");
+
+      table.setMaxCapacity(1);
+
+      // Existing entries should still be accessible
+      assertEquals(3, table.size(), "Existing entries should not be evicted");
+
+      // But new pushes should fail
+      assertThrows(
+          ResourceTableException.class,
+          () -> table.push("entry-4"),
+          "Should not allow new entries when over capacity");
+    }
+  }
+
+  @Nested
   @DisplayName("mixed type tests")
   class MixedTypeTests {
 

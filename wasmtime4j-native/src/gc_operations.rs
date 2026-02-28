@@ -1601,6 +1601,121 @@ impl WasmtimeGcOperations {
         }
     }
 
+    /// Converts an AnyRef (identified by object_id) to its raw u32 representation.
+    pub fn anyref_to_raw(&mut self, object_id: ObjectId) -> WasmtimeResult<u32> {
+        let gc_ref = self.gc_objects.get(&object_id).ok_or_else(|| {
+            WasmtimeError::from_string(&format!("AnyRef object {} not found", object_id))
+        })?;
+
+        let any_ref = match gc_ref {
+            GcObjectRef::Any(a) => a,
+            _ => {
+                return Err(WasmtimeError::from_string(&format!(
+                    "Object {} is not an AnyRef",
+                    object_id
+                )));
+            }
+        };
+
+        let mut scope = wasmtime::RootScope::new(&mut self.store);
+        let rooted = any_ref.to_rooted(&mut scope);
+        rooted
+            .to_raw(&mut scope)
+            .map_err(|e| WasmtimeError::from_string(&format!("Failed to convert AnyRef to raw: {}", e)))
+    }
+
+    /// Creates an AnyRef from a raw u32 representation and stores it.
+    pub fn anyref_from_raw(&mut self, raw: u32) -> WasmtimeResult<Option<ObjectId>> {
+        let mut scope = wasmtime::RootScope::new(&mut self.store);
+        match wasmtime::AnyRef::from_raw(&mut scope, raw) {
+            Some(rooted) => {
+                let owned = rooted.to_owned_rooted(&mut scope).map_err(|e| {
+                    WasmtimeError::from_string(&format!("Failed to convert AnyRef to owned: {}", e))
+                })?;
+                let new_id = self.gc_objects.len() as u64 + 1;
+                self.gc_objects.insert(new_id, GcObjectRef::Any(owned));
+                Ok(Some(new_id))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Checks if an AnyRef matches a given HeapType.
+    pub fn anyref_matches_ty(
+        &mut self,
+        object_id: ObjectId,
+        heap_type: &wasmtime::HeapType,
+    ) -> WasmtimeResult<bool> {
+        let gc_ref = self.gc_objects.get(&object_id).ok_or_else(|| {
+            WasmtimeError::from_string(&format!("AnyRef object {} not found", object_id))
+        })?;
+
+        let any_ref = match gc_ref {
+            GcObjectRef::Any(a) => a,
+            _ => {
+                return Err(WasmtimeError::from_string(&format!(
+                    "Object {} is not an AnyRef",
+                    object_id
+                )));
+            }
+        };
+
+        let mut scope = wasmtime::RootScope::new(&mut self.store);
+        let rooted = any_ref.to_rooted(&mut scope);
+        rooted.matches_ty(&scope, heap_type).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to check AnyRef type match: {}", e))
+        })
+    }
+
+    /// Converts an AnyRef to an ExternRef (extern.convert_any).
+    /// Returns the i64 data from the resulting ExternRef.
+    pub fn externref_convert_any(&mut self, object_id: ObjectId) -> WasmtimeResult<Option<i64>> {
+        let gc_ref = self.gc_objects.get(&object_id).ok_or_else(|| {
+            WasmtimeError::from_string(&format!("AnyRef object {} not found", object_id))
+        })?;
+
+        let any_ref = match gc_ref {
+            GcObjectRef::Any(a) => a,
+            _ => {
+                return Err(WasmtimeError::from_string(&format!(
+                    "Object {} is not an AnyRef",
+                    object_id
+                )));
+            }
+        };
+
+        let mut scope = wasmtime::RootScope::new(&mut self.store);
+        let rooted = any_ref.to_rooted(&mut scope);
+        let externref = wasmtime::ExternRef::convert_any(&mut scope, rooted).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to convert AnyRef to ExternRef: {}", e))
+        })?;
+        let data = externref.data(&scope).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to extract ExternRef data: {}", e))
+        })?;
+        match data {
+            Some(any) => Ok(any.downcast_ref::<i64>().copied()),
+            None => Ok(None),
+        }
+    }
+
+    /// Converts an ExternRef (any.convert_extern) to an AnyRef and stores it.
+    /// Returns the new object_id for the resulting AnyRef.
+    pub fn anyref_convert_extern(&mut self, externref_data: i64) -> WasmtimeResult<ObjectId> {
+        let mut scope = wasmtime::RootScope::new(&mut self.store);
+        let externref = wasmtime::ExternRef::new(&mut scope, externref_data).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to create ExternRef: {}", e))
+        })?;
+        let anyref = wasmtime::AnyRef::convert_extern(&mut scope, externref).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to convert ExternRef to AnyRef: {}", e))
+        })?;
+        let owned = anyref.to_owned_rooted(&mut scope).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to convert AnyRef to owned: {}", e))
+        })?;
+        let new_id = self.gc_objects.len() as u64 + 1;
+        self.gc_objects.insert(new_id, GcObjectRef::Any(owned));
+        Ok(new_id)
+    }
+
     /// Validate reference cast using Wasmtime's type system
     fn validate_reference_cast(&self, gc_ref: &GcObjectRef, target_type: &GcReferenceType) -> bool {
         match target_type {

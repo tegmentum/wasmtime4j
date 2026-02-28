@@ -16,8 +16,12 @@
 
 package ai.tegmentum.wasmtime4j.gc;
 
+import ai.tegmentum.wasmtime4j.ExternRef;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.type.HeapType;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -114,6 +118,22 @@ public final class AnyRef implements GcRef {
   public static AnyRef of(final ArrayRef arrayRef) {
     Objects.requireNonNull(arrayRef, "arrayRef cannot be null");
     return new AnyRef(arrayRef.getInstance());
+  }
+
+  /**
+   * Creates an AnyRef from an i31 integer value.
+   *
+   * <p>This is a convenience factory that creates an {@link I31Instance} from the given integer
+   * value and wraps it in an AnyRef. Equivalent to {@code AnyRef.of(EqRef.ofI31(value))} but avoids
+   * the intermediate EqRef allocation.
+   *
+   * @param value the integer value to wrap as an i31ref
+   * @return a new AnyRef containing the i31 value
+   * @throws WasmException if I31 creation fails
+   */
+  public static AnyRef fromI31(final int value) throws WasmException {
+    I31Instance i31 = WasmRuntimeFactory.create().getGcRuntime().createI31(value);
+    return new AnyRef(i31);
   }
 
   /**
@@ -303,6 +323,108 @@ public final class AnyRef implements GcRef {
   }
 
   /**
+   * Converts this AnyRef to its raw GC heap index representation.
+   *
+   * <p>This is a low-level API used for typed function calls and ValRaw operations. The raw value
+   * is a GC heap index.
+   *
+   * @param store the store context
+   * @return the raw u32 representation as a long
+   * @throws WasmException if conversion fails
+   * @throws IllegalStateException if this is a null reference
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public long toRaw(final Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (value == null) {
+      throw new IllegalStateException("Cannot convert null AnyRef to raw");
+    }
+    return WasmRuntimeFactory.create().getGcRuntime().anyRefToRaw(value.getObjectId());
+  }
+
+  /**
+   * Creates an AnyRef from a raw GC heap index representation.
+   *
+   * <p>This is a low-level API used for typed function calls and ValRaw operations. The raw value
+   * is a GC heap index. A raw value that decodes to a null reference returns a null AnyRef.
+   *
+   * @param store the store context
+   * @param raw the raw u32 representation
+   * @return a new AnyRef, or a null AnyRef if the raw value is invalid
+   * @throws WasmException if creation fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public static AnyRef fromRaw(final Store store, final long raw) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    final GcRuntime gcRuntime = WasmRuntimeFactory.create().getGcRuntime();
+    final long objectId = gcRuntime.anyRefFromRaw(raw);
+    if (objectId == -1L) {
+      return nullRef();
+    }
+    return new AnyRef(new RawGcObject(objectId));
+  }
+
+  /**
+   * Checks if this AnyRef matches a given heap type.
+   *
+   * <p>This performs runtime type checking against the specified heap type, which is useful for
+   * validating references before passing them to typed WebAssembly functions.
+   *
+   * @param store the store context
+   * @param heapType the heap type to check against
+   * @return true if this AnyRef matches the heap type
+   * @throws WasmException if the check fails
+   * @throws IllegalStateException if this is a null reference
+   * @throws IllegalArgumentException if store or heapType is null
+   * @since 1.1.0
+   */
+  public boolean matchesTy(final Store store, final HeapType heapType) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (heapType == null) {
+      throw new IllegalArgumentException("heapType cannot be null");
+    }
+    if (value == null) {
+      throw new IllegalStateException("Cannot check type of null AnyRef");
+    }
+    return WasmRuntimeFactory.create()
+        .getGcRuntime()
+        .anyRefMatchesTy(value.getObjectId(), heapType.ordinal());
+  }
+
+  /**
+   * Converts an ExternRef to an AnyRef via the {@code any.convert_extern} instruction.
+   *
+   * <p>This is the host-side equivalent of the WebAssembly {@code any.convert_extern} instruction.
+   *
+   * @param store the store context
+   * @param externRef the ExternRef to convert
+   * @return a new AnyRef containing the converted value
+   * @throws WasmException if conversion fails
+   * @throws IllegalArgumentException if store or externRef is null
+   * @since 1.1.0
+   */
+  public static AnyRef convertExtern(final Store store, final ExternRef<?> externRef)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (externRef == null) {
+      throw new IllegalArgumentException("externRef cannot be null");
+    }
+    final long objectId =
+        WasmRuntimeFactory.create().getGcRuntime().anyRefConvertExtern(externRef.getId());
+    return new AnyRef(new RawGcObject(objectId));
+  }
+
+  /**
    * Converts this AnyRef to a WasmValue.
    *
    * @return a WasmValue containing this reference
@@ -331,6 +453,65 @@ public final class AnyRef implements GcRef {
       return false;
     }
     return this.value.refEquals(other.value);
+  }
+
+  /**
+   * Minimal GcObject implementation for objects created from raw GC heap indices. These objects
+   * only have an objectId and basic type information.
+   */
+  private static final class RawGcObject implements GcObject {
+    private final long objectId;
+
+    RawGcObject(final long objectId) {
+      this.objectId = objectId;
+    }
+
+    @Override
+    public long getObjectId() {
+      return objectId;
+    }
+
+    @Override
+    public GcReferenceType getReferenceType() {
+      return GcReferenceType.ANY_REF;
+    }
+
+    @Override
+    public boolean isNull() {
+      return false;
+    }
+
+    @Override
+    public boolean isOfType(final GcReferenceType type) {
+      return getReferenceType().isSubtypeOf(type);
+    }
+
+    @Override
+    public GcObject castTo(final GcReferenceType type) {
+      if (!isOfType(type)) {
+        throw new ClassCastException(
+            "Cannot cast " + getReferenceType() + " to " + type + ": incompatible reference types");
+      }
+      return this;
+    }
+
+    @Override
+    public boolean refEquals(final GcObject other) {
+      if (other instanceof RawGcObject) {
+        return ((RawGcObject) other).objectId == this.objectId;
+      }
+      return false;
+    }
+
+    @Override
+    public int getSizeBytes() {
+      return 0;
+    }
+
+    @Override
+    public ai.tegmentum.wasmtime4j.WasmValue toWasmValue() {
+      return ai.tegmentum.wasmtime4j.WasmValue.externref(this);
+    }
   }
 
   @Override

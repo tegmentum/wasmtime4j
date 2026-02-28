@@ -16,6 +16,9 @@
 
 package ai.tegmentum.wasmtime4j;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.gc.AnyRef;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -308,6 +311,82 @@ public final class ExternRef<T> {
     }
     return ai.tegmentum.wasmtime4j.type.RefType.nonNull(
         ai.tegmentum.wasmtime4j.type.HeapType.EXTERN);
+  }
+
+  /**
+   * Converts this ExternRef to its raw GC heap index representation.
+   *
+   * <p>This is a low-level API used for typed function calls and ValRaw operations. The raw value
+   * is a GC heap index.
+   *
+   * @param store the store context
+   * @return the raw u32 representation as a long
+   * @throws WasmException if conversion fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public long toRaw(final Store store) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    return WasmRuntimeFactory.create().externRefToRaw(store, id);
+  }
+
+  /**
+   * Creates an ExternRef from a raw GC heap index representation.
+   *
+   * <p>This is a low-level API used for typed function calls and ValRaw operations. The raw value
+   * is a GC heap index. A raw value that decodes to a null reference returns a null ExternRef.
+   *
+   * @param store the store context
+   * @param raw the raw u32 representation
+   * @return a new ExternRef, or a null ExternRef if the raw value is invalid
+   * @throws WasmException if creation fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public static ExternRef<Object> fromRaw(final Store store, final long raw) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    long resultId = WasmRuntimeFactory.create().externRefFromRaw(store, raw);
+    if (resultId == Long.MIN_VALUE) {
+      return new ExternRef<>(null, Object.class);
+    }
+    return new ExternRef<>(resultId, Object.class);
+  }
+
+  /**
+   * Converts an AnyRef to an ExternRef via the {@code extern.convert_any} instruction.
+   *
+   * <p>This is the host-side equivalent of the WebAssembly {@code extern.convert_any} instruction.
+   *
+   * @param store the store context
+   * @param anyRef the AnyRef to convert
+   * @return a new ExternRef containing the converted value
+   * @throws WasmException if conversion fails
+   * @throws IllegalArgumentException if store or anyRef is null
+   * @since 1.1.0
+   */
+  public static ExternRef<Object> convertAny(final Store store, final AnyRef anyRef)
+      throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (anyRef == null) {
+      throw new IllegalArgumentException("anyRef cannot be null");
+    }
+    if (anyRef.getUnderlying() == null) {
+      return new ExternRef<>(null, Object.class);
+    }
+    long resultData =
+        WasmRuntimeFactory.create()
+            .getGcRuntime()
+            .externRefConvertAny(anyRef.getUnderlying().getObjectId());
+    if (resultData == Long.MIN_VALUE) {
+      return new ExternRef<>(null, Object.class);
+    }
+    return new ExternRef<>(resultData, Object.class);
   }
 
   /**

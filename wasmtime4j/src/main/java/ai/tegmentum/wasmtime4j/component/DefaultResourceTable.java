@@ -45,6 +45,7 @@ public final class DefaultResourceTable implements ResourceTable {
 
   private final ConcurrentHashMap<Integer, Object> entries = new ConcurrentHashMap<>();
   private final AtomicInteger nextHandle = new AtomicInteger(1);
+  private volatile int maxCapacity = Integer.MAX_VALUE;
 
   /** Maps parent handle to the set of its child handles. */
   private final ConcurrentHashMap<Integer, Set<Integer>> children = new ConcurrentHashMap<>();
@@ -53,9 +54,27 @@ public final class DefaultResourceTable implements ResourceTable {
   private final ConcurrentHashMap<Integer, Integer> childToParent = new ConcurrentHashMap<>();
 
   @Override
+  public int maxCapacity() {
+    return maxCapacity;
+  }
+
+  @Override
+  public void setMaxCapacity(final int maxCapacity) {
+    if (maxCapacity < 1) {
+      throw new IllegalArgumentException("maxCapacity must be at least 1, got: " + maxCapacity);
+    }
+    this.maxCapacity = maxCapacity;
+  }
+
+  @Override
   public int push(final Object entry) throws WasmException {
     if (entry == null) {
       throw new IllegalArgumentException("entry cannot be null");
+    }
+    if (entries.size() >= maxCapacity) {
+      throw new ResourceTableException(
+          ResourceTableException.ErrorKind.FULL,
+          "Resource table is at capacity (" + maxCapacity + ")");
     }
     final int handle = nextHandle.getAndIncrement();
     entries.put(handle, entry);
@@ -148,6 +167,11 @@ public final class DefaultResourceTable implements ResourceTable {
           ResourceTableException.ErrorKind.NOT_PRESENT,
           "Parent resource " + parentHandle + " not found in table");
     }
+    if (entries.size() >= maxCapacity) {
+      throw new ResourceTableException(
+          ResourceTableException.ErrorKind.FULL,
+          "Resource table is at capacity (" + maxCapacity + ")");
+    }
 
     final int childHandle = nextHandle.getAndIncrement();
     entries.put(childHandle, entry);
@@ -172,5 +196,57 @@ public final class DefaultResourceTable implements ResourceTable {
       return Collections.emptyList();
     }
     return List.copyOf(childSet);
+  }
+
+  @Override
+  public void addChild(final int childHandle, final int parentHandle) throws WasmException {
+    if (!entries.containsKey(childHandle)) {
+      throw new ResourceTableException(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          "Child resource " + childHandle + " not found in table");
+    }
+    if (!entries.containsKey(parentHandle)) {
+      throw new ResourceTableException(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          "Parent resource " + parentHandle + " not found in table");
+    }
+    if (childToParent.containsKey(childHandle)) {
+      throw new ResourceTableException(
+          ResourceTableException.ErrorKind.HAS_PARENT,
+          "Child resource "
+              + childHandle
+              + " already has parent "
+              + childToParent.get(childHandle));
+    }
+
+    children.computeIfAbsent(parentHandle, k -> ConcurrentHashMap.newKeySet()).add(childHandle);
+    childToParent.put(childHandle, parentHandle);
+  }
+
+  @Override
+  public void removeChild(final int childHandle, final int parentHandle) throws WasmException {
+    if (!entries.containsKey(childHandle)) {
+      throw new ResourceTableException(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          "Child resource " + childHandle + " not found in table");
+    }
+    if (!entries.containsKey(parentHandle)) {
+      throw new ResourceTableException(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          "Parent resource " + parentHandle + " not found in table");
+    }
+
+    final Integer actualParent = childToParent.get(childHandle);
+    if (actualParent == null || actualParent != parentHandle) {
+      throw new ResourceTableException(
+          ResourceTableException.ErrorKind.NOT_PRESENT,
+          "Child resource " + childHandle + " is not a child of parent resource " + parentHandle);
+    }
+
+    childToParent.remove(childHandle);
+    final Set<Integer> parentChildren = children.get(parentHandle);
+    if (parentChildren != null) {
+      parentChildren.remove(childHandle);
+    }
   }
 }

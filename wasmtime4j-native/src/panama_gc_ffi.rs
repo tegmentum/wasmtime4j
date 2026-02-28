@@ -20,6 +20,29 @@ use crate::gc_types::{
 use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 use crate::{ffi_boundary_i32, ffi_boundary_result};
 
+/// Converts a heap type code integer to a Wasmtime HeapType.
+///
+/// This is shared between Panama and JNI bindings for AnyRef.matchesTy.
+pub fn heap_type_from_code(code: i32) -> Option<wasmtime::HeapType> {
+    match code {
+        0 => Some(wasmtime::HeapType::Any),
+        1 => Some(wasmtime::HeapType::Eq),
+        2 => Some(wasmtime::HeapType::I31),
+        3 => Some(wasmtime::HeapType::Struct),
+        4 => Some(wasmtime::HeapType::Array),
+        5 => Some(wasmtime::HeapType::Func),
+        6 => Some(wasmtime::HeapType::NoFunc),
+        7 => Some(wasmtime::HeapType::Extern),
+        8 => Some(wasmtime::HeapType::NoExtern),
+        9 => Some(wasmtime::HeapType::Exn),
+        10 => Some(wasmtime::HeapType::NoExn),
+        11 => Some(wasmtime::HeapType::Cont),
+        12 => Some(wasmtime::HeapType::NoCont),
+        13 => Some(wasmtime::HeapType::None),
+        _ => Option::None,
+    }
+}
+
 /// Panama FFI function for creating a GC runtime
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_create_runtime(engine_handle: i64) -> i64 {
@@ -1228,5 +1251,113 @@ fn get_gc_stats_internal(runtime_handle: i64) -> WasmtimeResult<GcStatsFFI> {
         current_heap_size: stats.current_heap_size as i32,
         peak_heap_size: stats.peak_heap_size as i32,
         max_heap_size: stats.peak_heap_size as i32, // Use peak as max since GcHeapStats doesn't have max_heap_size
+    })
+}
+
+// ============================================================================
+// AnyRef Raw Conversion and Type Matching FFI
+// ============================================================================
+
+/// Panama FFI: Convert an AnyRef (by object_id) to its raw u32 representation.
+/// Returns the raw value as i64, or -1 on failure.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_anyref_to_raw(runtime_handle: i64, object_id: u64) -> i64 {
+    ffi_boundary_result!(-1i64, {
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let raw = runtime.anyref_to_raw(object_id)?;
+        Ok(raw as i64)
+    })
+}
+
+/// Panama FFI: Create an AnyRef from a raw u32 representation.
+/// Returns the new object_id, or 0 if the raw value is null/invalid.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_anyref_from_raw(runtime_handle: i64, raw: u32) -> i64 {
+    ffi_boundary_result!(0i64, {
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        match runtime.anyref_from_raw(raw)? {
+            Some(object_id) => Ok(object_id as i64),
+            None => Ok(0),
+        }
+    })
+}
+
+/// Panama FFI: Check if an AnyRef matches a given heap type code.
+/// Returns 1 if matches, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_anyref_matches_ty(
+    runtime_handle: i64,
+    object_id: u64,
+    heap_type_code: i32,
+) -> i32 {
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+
+        let heap_type = match heap_type_from_code(heap_type_code) {
+            Some(ht) => ht,
+            None => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Unknown heap type code: {}", heap_type_code),
+                });
+            }
+        };
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let matches = runtime.anyref_matches_ty(object_id, &heap_type)?;
+        Ok(if matches { 1 } else { 0 })
+    })
+}
+
+/// Panama FFI: Convert an AnyRef to an ExternRef (extern.convert_any).
+/// Returns the i64 data from the resulting ExternRef, or i64::MIN on failure.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_externref_convert_any(
+    runtime_handle: i64,
+    object_id: u64,
+) -> i64 {
+    ffi_boundary_result!(i64::MIN, {
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        match runtime.externref_convert_any(object_id)? {
+            Some(id) => Ok(id),
+            None => Ok(i64::MIN),
+        }
+    })
+}
+
+/// Panama FFI: Convert an ExternRef to an AnyRef (any.convert_extern).
+/// Returns the new object_id for the resulting AnyRef.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_anyref_convert_extern(
+    runtime_handle: i64,
+    externref_data: i64,
+) -> i64 {
+    ffi_boundary_result!(0i64, {
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let object_id = runtime.anyref_convert_extern(externref_data)?;
+        Ok(object_id as i64)
     })
 }

@@ -933,6 +933,30 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     return JniExnRef.fromRawExnRef((JniStore) store, raw);
   }
 
+  @Override
+  public long externRefToRaw(final Store store, final long externRefId) throws WasmException {
+    validateRuntimeState();
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance");
+    }
+    final long storeHandle = ((JniStore) store).getNativeHandle();
+    final long result = nativeExternRefToRaw(storeHandle, externRefId);
+    if (result == -1L) {
+      throw new WasmException("Failed to convert ExternRef to raw");
+    }
+    return result;
+  }
+
+  @Override
+  public long externRefFromRaw(final Store store, final long raw) throws WasmException {
+    validateRuntimeState();
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("Store must be a JniStore instance");
+    }
+    final long storeHandle = ((JniStore) store).getNativeHandle();
+    return nativeExternRefFromRaw(storeHandle, raw);
+  }
+
   // ===== UTILITY METHODS =====
 
   /**
@@ -1095,4 +1119,10 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    * @return the native tag handle, or 0 on failure
    */
   private static native long nativeCreateTag(long storeHandle, int[] paramTypes, int[] returnTypes);
+
+  // ===== EXTERNREF RAW CONVERSION NATIVE METHOD DECLARATIONS =====
+
+  private static native long nativeExternRefToRaw(long storeHandle, long externRefData);
+
+  private static native long nativeExternRefFromRaw(long storeHandle, long raw);
 }

@@ -103,6 +103,26 @@ public interface ResourceTable {
   }
 
   /**
+   * Gets the maximum capacity of the resource table.
+   *
+   * <p>The default maximum capacity is {@link Integer#MAX_VALUE}.
+   *
+   * @return the maximum number of entries the table can hold
+   */
+  int maxCapacity();
+
+  /**
+   * Sets the maximum capacity of the resource table.
+   *
+   * <p>If the current size exceeds the new capacity, existing entries are not removed, but new
+   * entries will be rejected until the size drops below the limit.
+   *
+   * @param maxCapacity the maximum number of entries
+   * @throws IllegalArgumentException if maxCapacity is less than 1
+   */
+  void setMaxCapacity(int maxCapacity);
+
+  /**
    * Pushes a new child entry into the resource table under the given parent.
    *
    * <p>The child entry is associated with the parent so that the parent cannot be deleted while it
@@ -126,4 +146,28 @@ public interface ResourceTable {
    * @throws WasmException if the parent handle is invalid
    */
   List<Integer> iterChildren(int parentHandle) throws WasmException;
+
+  /**
+   * Adds an existing resource as a child of an existing parent resource.
+   *
+   * <p>This allows dynamic reparenting of entries that were originally created without a parent
+   * relationship. After this call, the parent cannot be deleted while the child exists.
+   *
+   * @param childHandle the handle of the child resource
+   * @param parentHandle the handle of the parent resource
+   * @throws WasmException if either handle is invalid or the child already has a parent
+   */
+  void addChild(int childHandle, int parentHandle) throws WasmException;
+
+  /**
+   * Removes a parent-child relationship without deleting either resource.
+   *
+   * <p>After this call, the child is no longer associated with the parent, and the parent can be
+   * deleted even if the child still exists.
+   *
+   * @param childHandle the handle of the child resource
+   * @param parentHandle the handle of the parent resource
+   * @throws WasmException if either handle is invalid or the relationship does not exist
+   */
+  void removeChild(int childHandle, int parentHandle) throws WasmException;
 }

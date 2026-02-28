@@ -616,6 +616,28 @@ public interface WasmRuntime extends Closeable {
   ExnRef exnRefFromRaw(Store store, long raw) throws WasmException;
 
   /**
+   * Converts an ExternRef to its raw GC heap index.
+   *
+   * @param store the store context
+   * @param externRefId the ExternRef's unique id
+   * @return the raw u32 representation as a long
+   * @throws WasmException if conversion fails
+   * @since 1.1.0
+   */
+  long externRefToRaw(Store store, long externRefId) throws WasmException;
+
+  /**
+   * Creates an ExternRef from a raw GC heap index.
+   *
+   * @param store the store context
+   * @param raw the raw u32 representation
+   * @return the ExternRef's unique id, or Long.MIN_VALUE if null/invalid
+   * @throws WasmException if creation fails
+   * @since 1.1.0
+   */
+  long externRefFromRaw(Store store, long raw) throws WasmException;
+
+  /**
    * Closes the runtime and releases associated resources.
    *
    * <p>After calling this method, the runtime becomes invalid and should not be used. Any attempt

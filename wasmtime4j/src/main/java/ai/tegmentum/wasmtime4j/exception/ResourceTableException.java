@@ -22,7 +22,9 @@ public class ResourceTableException extends ResourceException {
     /** The resource handle refers to a different type than expected. */
     WRONG_TYPE("Resource type mismatch"),
     /** The resource cannot be removed because it has outstanding child references. */
-    HAS_CHILDREN("Resource has outstanding child references");
+    HAS_CHILDREN("Resource has outstanding child references"),
+    /** The child resource already has a parent. */
+    HAS_PARENT("Child resource already has a parent");
 
     private final String description;
 

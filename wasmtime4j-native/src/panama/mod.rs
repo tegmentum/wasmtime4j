@@ -10,6 +10,7 @@ pub mod coredump;
 pub mod engine;
 pub mod exception_handling;
 pub mod function;
+pub mod gc_refs;
 pub mod global;
 pub mod instance;
 pub mod instance_pre;

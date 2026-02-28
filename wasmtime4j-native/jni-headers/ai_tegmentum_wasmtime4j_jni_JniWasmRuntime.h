@@ -183,6 +183,22 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeIsN
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateTag
   (JNIEnv *, jclass, jlong, jintArray, jintArray);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeExternRefToRaw
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeExternRefToRaw
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
+ * Method:    nativeExternRefFromRaw
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeExternRefFromRaw
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

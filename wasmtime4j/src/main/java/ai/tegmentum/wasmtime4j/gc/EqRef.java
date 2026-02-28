@@ -18,6 +18,8 @@ package ai.tegmentum.wasmtime4j.gc;
 
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -137,6 +139,21 @@ public final class EqRef implements GcRef {
   public static EqRef of(final I31Instance i31Instance) {
     Objects.requireNonNull(i31Instance, "i31Instance cannot be null");
     return new EqRef(i31Instance);
+  }
+
+  /**
+   * Creates an EqRef from an i31 integer value.
+   *
+   * <p>This is a convenience factory that creates an {@link I31Instance} from the given integer
+   * value and wraps it in an EqRef. The value must fit in 31 bits.
+   *
+   * @param value the integer value to wrap as an i31ref
+   * @return a new EqRef containing the i31 value
+   * @throws WasmException if I31 creation fails
+   */
+  public static EqRef ofI31(final int value) throws WasmException {
+    I31Instance i31 = WasmRuntimeFactory.create().getGcRuntime().createI31(value);
+    return new EqRef(i31);
   }
 
   /**

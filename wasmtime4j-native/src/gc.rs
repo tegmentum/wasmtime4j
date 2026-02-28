@@ -1169,6 +1169,57 @@ impl WasmGcRuntime {
         // Create weak reference using the heap
         self.heap.create_weak_reference(object_id)
     }
+
+    // === AnyRef Raw Conversion Operations ===
+
+    /// Converts an AnyRef (identified by object_id) to its raw u32 representation.
+    pub fn anyref_to_raw(&self, object_id: ObjectId) -> WasmtimeResult<u32> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.anyref_to_raw(object_id)
+    }
+
+    /// Creates an AnyRef from a raw u32 representation.
+    pub fn anyref_from_raw(&self, raw: u32) -> WasmtimeResult<Option<ObjectId>> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.anyref_from_raw(raw)
+    }
+
+    /// Checks if an AnyRef matches a given HeapType.
+    pub fn anyref_matches_ty(
+        &self,
+        object_id: ObjectId,
+        heap_type: &wasmtime::HeapType,
+    ) -> WasmtimeResult<bool> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.anyref_matches_ty(object_id, heap_type)
+    }
+
+    /// Converts an AnyRef to an ExternRef (extern.convert_any).
+    pub fn externref_convert_any(&self, object_id: ObjectId) -> WasmtimeResult<Option<i64>> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.externref_convert_any(object_id)
+    }
+
+    /// Converts an ExternRef to an AnyRef (any.convert_extern).
+    pub fn anyref_convert_extern(&self, externref_data: i64) -> WasmtimeResult<ObjectId> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.anyref_convert_extern(externref_data)
+    }
 }
 
 #[cfg(test)]

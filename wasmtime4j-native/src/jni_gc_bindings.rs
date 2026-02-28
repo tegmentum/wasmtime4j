@@ -1505,3 +1505,173 @@ fn convert_gc_value_to_jobject(env: &mut JNIEnv, gc_value: &GcValue) -> jobject 
         GcValue::Reference | GcValue::Null => std::ptr::null_mut(),
     }
 }
+
+// ============================================================================
+// AnyRef Raw Conversion JNI Bindings
+// ============================================================================
+
+/// JNI binding for anyRefToRaw
+/// Converts an AnyRef (identified by objectId) to a raw GC heap index.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefToRawNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+) -> jlong {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return -1;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    match runtime.anyref_to_raw(object_id as u64) {
+        Ok(raw) => raw as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to convert AnyRef to raw: {}", e),
+            );
+            -1
+        }
+    }
+}
+
+/// JNI binding for anyRefFromRaw
+/// Creates an AnyRef from a raw GC heap index, returns the new objectId.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefFromRawNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    raw: jint,
+) -> jlong {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return 0;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    match runtime.anyref_from_raw(raw as u32) {
+        Ok(Some(oid)) => oid as jlong,
+        Ok(None) => 0,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to create AnyRef from raw: {}", e),
+            );
+            0
+        }
+    }
+}
+
+/// JNI binding for anyRefMatchesTy
+/// Checks if an AnyRef matches a given heap type.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefMatchesTyNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    heap_type_code: jint,
+) -> jint {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return -1;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let heap_type = match crate::panama_gc_ffi::heap_type_from_code(heap_type_code) {
+        Some(ht) => ht,
+        None => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Unknown heap type code: {}", heap_type_code),
+            );
+            return -1;
+        }
+    };
+
+    match runtime.anyref_matches_ty(object_id as u64, &heap_type) {
+        Ok(true) => 1,
+        Ok(false) => 0,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to check AnyRef type match: {}", e),
+            );
+            -1
+        }
+    }
+}
+
+/// JNI binding for externRefConvertAny
+/// Converts an AnyRef to an ExternRef (extern.convert_any).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_externrefConvertAnyNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+) -> jlong {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return i64::MIN;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    match runtime.externref_convert_any(object_id as u64) {
+        Ok(Some(data)) => data,
+        Ok(None) => i64::MIN,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to convert AnyRef to ExternRef: {}", e),
+            );
+            i64::MIN
+        }
+    }
+}
+
+/// JNI binding for anyRefConvertExtern
+/// Converts an ExternRef to an AnyRef (any.convert_extern).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefConvertExternNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    externref_data: jlong,
+) -> jlong {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return 0;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    match runtime.anyref_convert_extern(externref_data) {
+        Ok(oid) => oid as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to convert ExternRef to AnyRef: {}", e),
+            );
+            0
+        }
+    }
+}

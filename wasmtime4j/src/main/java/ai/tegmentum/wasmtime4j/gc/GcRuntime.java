@@ -258,6 +258,69 @@ public interface GcRuntime {
    */
   int registerArrayType(ArrayType arrayType) throws GcException;
 
+  // ========== Raw GC Heap Conversions ==========
+
+  /**
+   * Converts an AnyRef (identified by its GC object ID) to a raw GC heap index.
+   *
+   * <p>This is the host-side equivalent of getting the raw representation of an anyref for use with
+   * ValRaw and typed function calls.
+   *
+   * @param objectId the GC object ID (from {@link GcObject#getObjectId()})
+   * @return the raw u32 representation as a long
+   * @throws GcException if conversion fails
+   * @since 1.1.0
+   */
+  long anyRefToRaw(long objectId) throws GcException;
+
+  /**
+   * Creates an AnyRef from a raw GC heap index.
+   *
+   * <p>This is the host-side equivalent of creating an anyref from its raw representation. A raw
+   * value that decodes to null returns -1.
+   *
+   * @param raw the raw u32 representation
+   * @return the new GC object ID, or -1 if the raw value is null/invalid
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  long anyRefFromRaw(long raw) throws GcException;
+
+  /**
+   * Checks if an AnyRef matches a given heap type.
+   *
+   * @param objectId the GC object ID (from {@link GcObject#getObjectId()})
+   * @param heapTypeOrdinal the ordinal of the HeapType enum
+   * @return true if the AnyRef matches the heap type
+   * @throws GcException if the check fails
+   * @since 1.1.0
+   */
+  boolean anyRefMatchesTy(long objectId, int heapTypeOrdinal) throws GcException;
+
+  /**
+   * Converts an AnyRef to an ExternRef via the {@code extern.convert_any} instruction.
+   *
+   * <p>This is the host-side equivalent of the WebAssembly {@code extern.convert_any} instruction.
+   *
+   * @param objectId the GC object ID of the AnyRef (from {@link GcObject#getObjectId()})
+   * @return the ExternRef's i64 data, or {@link Long#MIN_VALUE} if the conversion yields null
+   * @throws GcException if conversion fails
+   * @since 1.1.0
+   */
+  long externRefConvertAny(long objectId) throws GcException;
+
+  /**
+   * Converts an ExternRef to an AnyRef via the {@code any.convert_extern} instruction.
+   *
+   * <p>This is the host-side equivalent of the WebAssembly {@code any.convert_extern} instruction.
+   *
+   * @param externRefData the ExternRef's i64 data (the Java ExternRef id)
+   * @return the new GC object ID for the resulting AnyRef
+   * @throws GcException if conversion fails
+   * @since 1.1.0
+   */
+  long anyRefConvertExtern(long externRefData) throws GcException;
+
   // ========== Garbage Collection Control ==========
 
   /**

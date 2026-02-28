@@ -24,11 +24,12 @@ class ResourceTableExceptionTest {
     @Test
     @DisplayName("should have all expected error kinds")
     void shouldHaveAllExpectedErrorKinds() {
-      assertEquals(4, ErrorKind.values().length, "Should have exactly 4 error kinds");
+      assertEquals(5, ErrorKind.values().length, "Should have exactly 5 error kinds");
       assertNotNull(ErrorKind.FULL);
       assertNotNull(ErrorKind.NOT_PRESENT);
       assertNotNull(ErrorKind.WRONG_TYPE);
       assertNotNull(ErrorKind.HAS_CHILDREN);
+      assertNotNull(ErrorKind.HAS_PARENT);
     }
 
     @Test

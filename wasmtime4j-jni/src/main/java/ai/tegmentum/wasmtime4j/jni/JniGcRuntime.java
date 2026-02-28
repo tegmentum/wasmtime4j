@@ -1130,6 +1130,89 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  @Override
+  public long anyRefToRaw(final long objectId) throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      final long result = anyrefToRawNative(nativeHandle, objectId);
+      if (result == -1L) {
+        throw new GcException("Failed to convert AnyRef to raw for objectId: " + objectId);
+      }
+      return result;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public long anyRefFromRaw(final long raw) throws GcException {
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      final long result = anyrefFromRawNative(nativeHandle, (int) raw);
+      if (result == 0L) {
+        return -1L;
+      }
+      return result;
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public boolean anyRefMatchesTy(final long objectId, final int heapTypeOrdinal)
+      throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      final int result = anyrefMatchesTyNative(nativeHandle, objectId, heapTypeOrdinal);
+      if (result < 0) {
+        throw new GcException(
+            "Failed to check AnyRef type match for objectId: "
+                + objectId
+                + ", heapType: "
+                + heapTypeOrdinal);
+      }
+      return result == 1;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public long externRefConvertAny(final long objectId) throws GcException {
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      return externrefConvertAnyNative(nativeHandle, objectId);
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public long anyRefConvertExtern(final long externRefData) throws GcException {
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      final long result = anyrefConvertExternNative(nativeHandle, externRefData);
+      if (result == 0L) {
+        throw new GcException(
+            "Failed to convert ExternRef to AnyRef (any.convert_extern) for data: "
+                + externRefData);
+      }
+      return result;
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
   // Native method declarations
 
   private static native long createRuntimeNative(long engineHandle);
@@ -1207,6 +1290,17 @@ public final class JniGcRuntime implements GcRuntime {
 
   private static native int arrayFillNative(
       long runtimeHandle, long objectId, int startIndex, int length, Object value);
+
+  private static native long anyrefToRawNative(long runtimeHandle, long objectId);
+
+  private static native long anyrefFromRawNative(long runtimeHandle, int raw);
+
+  private static native int anyrefMatchesTyNative(
+      long runtimeHandle, long objectId, int heapTypeCode);
+
+  private static native long externrefConvertAnyNative(long runtimeHandle, long objectId);
+
+  private static native long anyrefConvertExternNative(long runtimeHandle, long externrefData);
 
   // Helper classes for JNI GC objects
 

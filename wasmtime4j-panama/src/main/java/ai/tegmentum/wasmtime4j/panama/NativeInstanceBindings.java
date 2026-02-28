@@ -2969,6 +2969,31 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         "wasmtime4j_panama_exnref_matches_ty", Integer.class, exnRefPtr, storePtr, heapTypeCode);
   }
 
+  /**
+   * Converts an ExternRef (identified by its i64 data) to a raw u32 GC heap index.
+   *
+   * @param storePtr the store pointer
+   * @param externRefData the i64 data stored in the ExternRef
+   * @return the raw value as a long, or -1 on failure
+   */
+  public long externRefToRaw(final MemorySegment storePtr, final long externRefData) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_externref_to_raw", Long.class, storePtr, externRefData);
+  }
+
+  /**
+   * Creates an ExternRef from a raw u32 GC heap index.
+   *
+   * @param storePtr the store pointer
+   * @param raw the raw u32 value
+   * @return the i64 data from the ExternRef, or -1 on failure
+   */
+  public long externRefFromRaw(final MemorySegment storePtr, final int raw) {
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction("wasmtime4j_panama_externref_from_raw", Long.class, storePtr, raw);
+  }
+
   // ===== Host Function MethodHandle Getters =====
 
   /**
@@ -3075,6 +3100,14 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         "wasmtime4j_panama_exnref_matches_ty",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_externref_to_raw",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+
+    addFunctionBinding(
+        "wasmtime4j_panama_externref_from_raw",
+        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
     // Host function bindings
     addFunctionBinding(

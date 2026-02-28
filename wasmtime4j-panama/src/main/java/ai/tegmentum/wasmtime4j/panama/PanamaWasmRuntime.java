@@ -821,6 +821,33 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
+  public long externRefToRaw(final Store store, final long externRefId) throws WasmException {
+    ensureNotClosed();
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    }
+    final PanamaStore panamaStore = (PanamaStore) store;
+    final long result =
+        NativeInstanceBindings.getInstance()
+            .externRefToRaw(panamaStore.getNativeStore(), externRefId);
+    if (result == -1L) {
+      throw new WasmException("Failed to convert ExternRef to raw");
+    }
+    return result;
+  }
+
+  @Override
+  public long externRefFromRaw(final Store store, final long raw) throws WasmException {
+    ensureNotClosed();
+    if (!(store instanceof PanamaStore)) {
+      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    }
+    final PanamaStore panamaStore = (PanamaStore) store;
+    return NativeInstanceBindings.getInstance()
+        .externRefFromRaw(panamaStore.getNativeStore(), (int) raw);
+  }
+
+  @Override
   public void close() {
     resourceHandle.close();
   }

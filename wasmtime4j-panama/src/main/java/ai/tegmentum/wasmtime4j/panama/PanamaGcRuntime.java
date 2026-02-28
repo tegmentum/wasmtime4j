@@ -82,6 +82,11 @@ public final class PanamaGcRuntime implements GcRuntime {
   private static final MethodHandle refIsNull;
   private static final MethodHandle collectGarbage;
   private static final MethodHandle getGcStats;
+  private static final MethodHandle anyrefToRaw;
+  private static final MethodHandle anyrefFromRaw;
+  private static final MethodHandle anyrefMatchesTy;
+  private static final MethodHandle externrefConvertAny;
+  private static final MethodHandle anyrefConvertExtern;
 
   // GC Stats structure layout
   private static final MemoryLayout GC_STATS_LAYOUT =
@@ -244,6 +249,31 @@ public final class PanamaGcRuntime implements GcRuntime {
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_get_stats").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, ADDRESS));
+
+      anyrefToRaw =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_anyref_to_raw").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
+
+      anyrefFromRaw =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_anyref_from_raw").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
+
+      anyrefMatchesTy =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_anyref_matches_ty").orElseThrow(),
+              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT));
+
+      externrefConvertAny =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_externref_convert_any").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
+
+      anyrefConvertExtern =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_anyref_convert_extern").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
 
     } catch (final Throwable e) {
       throw new ExceptionInInitializerError(
@@ -1437,6 +1467,129 @@ public final class PanamaGcRuntime implements GcRuntime {
         throw (GcException) e;
       }
       throw new GcException("Failed to fill array elements", e);
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public long anyRefToRaw(final long objectId) throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      final long result = (long) anyrefToRaw.invokeExact(nativeHandle, objectId);
+      if (result == -1L) {
+        throw new GcException("Failed to convert AnyRef to raw for objectId: " + objectId);
+      }
+      return result;
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to convert AnyRef to raw", e);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public long anyRefFromRaw(final long raw) throws GcException {
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      final long result = (long) anyrefFromRaw.invokeExact(nativeHandle, (int) raw);
+      if (result == 0L) {
+        return -1L;
+      }
+      return result;
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to create AnyRef from raw", e);
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public boolean anyRefMatchesTy(final long objectId, final int heapTypeOrdinal)
+      throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      final int result = (int) anyrefMatchesTy.invokeExact(nativeHandle, objectId, heapTypeOrdinal);
+      if (result < 0) {
+        throw new GcException(
+            "Failed to check AnyRef type match for objectId: "
+                + objectId
+                + ", heapType: "
+                + heapTypeOrdinal);
+      }
+      return result == 1;
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to check AnyRef type match", e);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public long externRefConvertAny(final long objectId) throws GcException {
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      return (long) externrefConvertAny.invokeExact(nativeHandle, objectId);
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to convert AnyRef to ExternRef (extern.convert_any)", e);
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public long anyRefConvertExtern(final long externRefData) throws GcException {
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      final long result = (long) anyrefConvertExtern.invokeExact(nativeHandle, externRefData);
+      if (result == 0L) {
+        throw new GcException(
+            "Failed to convert ExternRef to AnyRef (any.convert_extern) for data: "
+                + externRefData);
+      }
+      return result;
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to convert ExternRef to AnyRef (any.convert_extern)", e);
     } finally {
       lock.writeLock().unlock();
     }
