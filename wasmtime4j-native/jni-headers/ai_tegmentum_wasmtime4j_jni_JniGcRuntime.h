@@ -89,6 +89,22 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayNewDe
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    structNewAsyncNative
+ * Signature: (JI[Ljava/lang/Object;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_structNewAsyncNative
+  (JNIEnv *, jclass, jlong, jint, jobjectArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    arrayNewAsyncNative
+ * Signature: (JI[Ljava/lang/Object;)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayNewAsyncNative
+  (JNIEnv *, jclass, jlong, jint, jobjectArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
  * Method:    arrayGetNative
  * Signature: (JJI)Ljava/lang/Object;
  */
@@ -117,6 +133,30 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayLenNat
  * Signature: (JI)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31NewNative
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    i31NewUnsignedNative
+ * Signature: (JI)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31NewUnsignedNative
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    i31WrappingSignedNative
+ * Signature: (JI)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31WrappingSignedNative
+  (JNIEnv *, jclass, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    i31WrappingUnsignedNative
+ * Signature: (JI)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31WrappingUnsignedNative
   (JNIEnv *, jclass, jlong, jint);
 
 /*
@@ -253,6 +293,38 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefFrom
  * Signature: (JJI)I
  */
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefMatchesTyNative
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    eqrefTyNative
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_eqrefTyNative
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    eqrefMatchesTyNative
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_eqrefMatchesTyNative
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    structrefMatchesTyNative
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_structrefMatchesTyNative
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    arrayrefMatchesTyNative
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayrefMatchesTyNative
   (JNIEnv *, jclass, jlong, jlong, jint);
 
 /*

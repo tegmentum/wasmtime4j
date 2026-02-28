@@ -1148,6 +1148,37 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
    *
    * @param funcPtr pointer to the function to destroy
    */
+  /**
+   * Checks if a function matches a function type using subtype-aware checking.
+   *
+   * @param funcPtr the function pointer
+   * @param storePtr the store pointer
+   * @param paramTypesPtr pointer to array of param type codes
+   * @param paramCount number of param types
+   * @param resultTypesPtr pointer to array of result type codes
+   * @param resultCount number of result types
+   * @return 1 if matches, 0 if not, negative on error
+   */
+  public int funcMatchesTy(
+      final MemorySegment funcPtr,
+      final MemorySegment storePtr,
+      final MemorySegment paramTypesPtr,
+      final int paramCount,
+      final MemorySegment resultTypesPtr,
+      final int resultCount) {
+    validatePointer(funcPtr, "funcPtr");
+    validatePointer(storePtr, "storePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_func_matches_ty",
+        Integer.class,
+        funcPtr,
+        storePtr,
+        paramTypesPtr,
+        paramCount,
+        resultTypesPtr,
+        resultCount);
+  }
+
   public void funcDestroy(final MemorySegment funcPtr) {
     if (funcPtr != null && !funcPtr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasmtime4j_panama_func_destroy", Void.class, funcPtr);

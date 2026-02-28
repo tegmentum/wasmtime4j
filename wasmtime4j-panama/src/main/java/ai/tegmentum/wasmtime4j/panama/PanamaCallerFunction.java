@@ -308,6 +308,53 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
     }
   }
 
+  @Override
+  public boolean matchesFuncType(
+      final ai.tegmentum.wasmtime4j.Store storeCtx, final FunctionType funcType)
+      throws WasmException {
+    if (storeCtx == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (funcType == null) {
+      return false;
+    }
+    ensureNotClosed();
+
+    final WasmValueType[] paramTypes = funcType.getParamTypes();
+    final WasmValueType[] resultTypes = funcType.getReturnTypes();
+
+    try (final Arena matchArena = Arena.ofConfined()) {
+      final MemorySegment paramCodes =
+          paramTypes.length > 0
+              ? matchArena.allocate(ValueLayout.JAVA_INT, paramTypes.length)
+              : MemorySegment.NULL;
+      for (int i = 0; i < paramTypes.length; i++) {
+        paramCodes.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i].ordinal());
+      }
+
+      final MemorySegment resultCodes =
+          resultTypes.length > 0
+              ? matchArena.allocate(ValueLayout.JAVA_INT, resultTypes.length)
+              : MemorySegment.NULL;
+      for (int i = 0; i < resultTypes.length; i++) {
+        resultCodes.setAtIndex(ValueLayout.JAVA_INT, i, resultTypes[i].ordinal());
+      }
+
+      final MemorySegment storePtr = store.getNativeStore();
+      final int result =
+          bindings.funcMatchesTy(
+              funcHandle, storePtr, paramCodes, paramTypes.length, resultCodes, resultTypes.length);
+      if (result < 0) {
+        throw new WasmException("Native func_matches_ty check failed");
+      }
+      return result == 1;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("func_matches_ty failed: " + e.getMessage(), e);
+    }
+  }
+
   /** Closes the function and releases resources. */
   public void close() {
     resourceHandle.close();

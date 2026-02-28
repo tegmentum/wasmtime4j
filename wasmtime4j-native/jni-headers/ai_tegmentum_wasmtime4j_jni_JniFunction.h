@@ -63,6 +63,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncF
 JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAsync
   (JNIEnv *, jclass, jlong, jlong, jobjectArray);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeFuncMatchesTy
+ * Signature: (JJ[I[I)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncMatchesTy
+  (JNIEnv *, jclass, jlong, jlong, jintArray, jintArray);
+
 #ifdef __cplusplus
 }
 #endif

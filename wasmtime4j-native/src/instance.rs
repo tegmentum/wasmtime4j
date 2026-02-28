@@ -2020,6 +2020,32 @@ pub mod core {
         crate::ffi_common::valtype_conversion::valtype_to_int(&val_type)
     }
 
+    /// Check if a function matches a given function type using Wasmtime's subtype-aware
+    /// Func::matches_ty. Takes param/result type ordinals matching Java WasmValueType.ordinal().
+    pub fn func_matches_ty(
+        func: &wasmtime::Func,
+        store: &Store,
+        param_type_codes: &[i32],
+        result_type_codes: &[i32],
+    ) -> WasmtimeResult<bool> {
+        store.with_context(|ctx| {
+            let engine = ctx.engine();
+
+            let params: Vec<wasmtime::ValType> = param_type_codes
+                .iter()
+                .map(|&code| crate::ffi_common::valtype_conversion::int_to_valtype(code))
+                .collect::<WasmtimeResult<Vec<_>>>()?;
+
+            let results: Vec<wasmtime::ValType> = result_type_codes
+                .iter()
+                .map(|&code| crate::ffi_common::valtype_conversion::int_to_valtype(code))
+                .collect::<WasmtimeResult<Vec<_>>>()?;
+
+            let func_type = wasmtime::FuncType::new(engine, params, results);
+            Ok(func.matches_ty(&ctx, &func_type))
+        })
+    }
+
     /// Core function to get exports as a vector (for FFI use)
     pub fn get_exports(instance: &Instance) -> Vec<ExportBinding> {
         instance.exports_map.values().cloned().collect()

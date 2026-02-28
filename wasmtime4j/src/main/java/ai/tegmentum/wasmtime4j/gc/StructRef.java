@@ -18,6 +18,8 @@ package ai.tegmentum.wasmtime4j.gc;
 
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.type.HeapType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -200,6 +202,32 @@ public final class StructRef implements GcRef {
     Objects.requireNonNull(store, "store cannot be null");
     Objects.requireNonNull(value, "value cannot be null");
     instance.setField(index, value);
+  }
+
+  /**
+   * Checks if this StructRef matches a given heap type using Wasmtime's subtype-aware type
+   * checking.
+   *
+   * @param store the store context
+   * @param heapType the heap type to check against
+   * @return true if this reference matches the heap type
+   * @throws IllegalStateException if this is a null reference
+   * @throws GcException if the native type check fails
+   * @since 1.1.0
+   */
+  public boolean matchesTy(final Store store, final HeapType heapType) throws GcException {
+    Objects.requireNonNull(store, "store cannot be null");
+    Objects.requireNonNull(heapType, "heapType cannot be null");
+    if (instance == null) {
+      throw new IllegalStateException("Cannot check type of null StructRef");
+    }
+    try {
+      return WasmRuntimeFactory.create()
+          .getGcRuntime()
+          .structRefMatchesTy(instance.getObjectId(), heapType.ordinal());
+    } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+      throw new GcException("Failed to check StructRef type match", e);
+    }
   }
 
   /**

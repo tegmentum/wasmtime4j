@@ -238,6 +238,83 @@ impl Table {
         })
     }
 
+    /// Internal async table creation method
+    ///
+    /// Uses Wasmtime's `Table::new_async` which goes through the async resource limiter.
+    /// Required when the engine has `async_support(true)` and an async resource limiter
+    /// is configured.
+    #[cfg(feature = "async")]
+    fn new_internal_async(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u64,
+        maximum_size: Option<u64>,
+        name: Option<String>,
+        is_64: bool,
+    ) -> WasmtimeResult<Self> {
+        Self::validate_element_type(&element_type)?;
+
+        if let Some(max_size) = maximum_size {
+            if initial_size > max_size {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Initial size {} exceeds maximum size {}",
+                        initial_size, max_size
+                    ),
+                });
+            }
+        }
+
+        let ref_type = Self::valtype_to_reftype(&element_type)?;
+
+        let table_type = if is_64 {
+            TableType::new64(ref_type, initial_size, maximum_size)
+        } else {
+            let init_size_32 =
+                initial_size
+                    .try_into()
+                    .map_err(|_| WasmtimeError::InvalidParameter {
+                        message: format!(
+                            "Initial size {} exceeds u32 maximum for 32-bit table",
+                            initial_size
+                        ),
+                    })?;
+            let max_size_32 = maximum_size
+                .map(|s| s.try_into())
+                .transpose()
+                .map_err(|_| WasmtimeError::InvalidParameter {
+                    message: "Maximum size exceeds u32 maximum for 32-bit table".to_string(),
+                })?;
+            TableType::new(ref_type, init_size_32, max_size_32)
+        };
+
+        let initial_value = Self::default_ref_for_type(&element_type)?;
+
+        let handle = crate::async_runtime::get_runtime_handle();
+        let mut store_guard = store.try_lock_store()?;
+        let wasmtime_table = handle
+            .block_on(async {
+                WasmtimeTable::new_async(&mut *store_guard, table_type, initial_value).await
+            })
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Async table creation failed: {}", e),
+                backtrace: None,
+            })?;
+
+        let metadata = TableMetadata {
+            element_type,
+            initial_size,
+            maximum_size,
+            name,
+            is_64,
+        };
+
+        Ok(Table {
+            inner: Arc::new(Mutex::new(wasmtime_table)),
+            metadata,
+        })
+    }
+
     /// Check if this table uses 64-bit addressing (Memory64 proposal)
     pub fn is_64(&self) -> bool {
         self.metadata.is_64
@@ -970,6 +1047,43 @@ pub mod core {
         name: Option<String>,
     ) -> WasmtimeResult<Box<Table>> {
         Table::new(store, element_type, initial_size, maximum_size, name).map(Box::new)
+    }
+
+    /// Core function to create a new 32-bit table asynchronously
+    ///
+    /// Uses Wasmtime's `Table::new_async` for async resource limiter support.
+    #[cfg(feature = "async")]
+    pub fn create_table_async(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u32,
+        maximum_size: Option<u32>,
+        name: Option<String>,
+    ) -> WasmtimeResult<Box<Table>> {
+        Table::new_internal_async(
+            store,
+            element_type,
+            initial_size as u64,
+            maximum_size.map(|s| s as u64),
+            name,
+            false,
+        )
+        .map(Box::new)
+    }
+
+    /// Core function to create a new 64-bit table asynchronously
+    ///
+    /// Uses Wasmtime's `Table::new_async` for async resource limiter support.
+    #[cfg(feature = "async")]
+    pub fn create_table64_async(
+        store: &Store,
+        element_type: ValType,
+        initial_size: u64,
+        maximum_size: Option<u64>,
+        name: Option<String>,
+    ) -> WasmtimeResult<Box<Table>> {
+        Table::new_internal_async(store, element_type, initial_size, maximum_size, name, true)
+            .map(Box::new)
     }
 
     /// Core function to create a new 64-bit table (Memory64 proposal)

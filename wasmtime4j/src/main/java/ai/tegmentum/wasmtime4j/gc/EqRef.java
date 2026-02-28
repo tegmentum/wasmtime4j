@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.type.HeapType;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -283,6 +284,60 @@ public final class EqRef implements GcRef {
       return WasmValue.nullEqRef();
     }
     return value.toWasmValue();
+  }
+
+  /**
+   * Gets the heap type of this EqRef.
+   *
+   * <p>Returns the abstract {@link HeapType} that classifies this reference (e.g., {@code I31},
+   * {@code STRUCT}, or {@code ARRAY}).
+   *
+   * @param store the store context
+   * @return the heap type of the underlying reference
+   * @throws IllegalStateException if this is a null reference
+   * @throws GcException if the native type check fails
+   * @since 1.1.0
+   */
+  public HeapType ty(final Store store) throws GcException {
+    Objects.requireNonNull(store, "store cannot be null");
+    if (value == null) {
+      throw new IllegalStateException("Cannot get type of null EqRef");
+    }
+    try {
+      final int code = WasmRuntimeFactory.create().getGcRuntime().eqRefTy(value.getObjectId());
+      final HeapType[] values = HeapType.values();
+      if (code < 0 || code >= values.length) {
+        throw new GcException("Invalid heap type code returned: " + code);
+      }
+      return values[code];
+    } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+      throw new GcException("Failed to get EqRef type", e);
+    }
+  }
+
+  /**
+   * Checks if this EqRef matches a given heap type using Wasmtime's subtype-aware type checking.
+   *
+   * @param store the store context
+   * @param heapType the heap type to check against
+   * @return true if this reference matches the heap type
+   * @throws IllegalStateException if this is a null reference
+   * @throws GcException if the native type check fails
+   * @since 1.1.0
+   */
+  public boolean matchesTy(final Store store, final HeapType heapType) throws GcException {
+    Objects.requireNonNull(store, "store cannot be null");
+    Objects.requireNonNull(heapType, "heapType cannot be null");
+    if (value == null) {
+      throw new IllegalStateException("Cannot check type of null EqRef");
+    }
+    try {
+      return WasmRuntimeFactory.create()
+          .getGcRuntime()
+          .eqRefMatchesTy(value.getObjectId(), heapType.ordinal());
+    } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
+      throw new GcException("Failed to check EqRef type match", e);
+    }
   }
 
   /**

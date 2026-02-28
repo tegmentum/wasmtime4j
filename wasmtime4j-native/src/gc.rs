@@ -218,6 +218,91 @@ impl WasmGcRuntime {
         }
     }
 
+    /// Create a new struct instance using async resource limiter
+    ///
+    /// This is the async variant of [`struct_new`]. Uses `StructRef::new_async` which goes
+    /// through the async resource limiter.
+    #[cfg(feature = "async")]
+    pub fn struct_new_async(
+        &self,
+        type_def: StructTypeDefinition,
+        field_values: Vec<GcValue>,
+    ) -> StructOperationResult {
+        let object_id = {
+            let mut next_id = match self
+                .next_object_id
+                .lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
+            {
+                Ok(guard) => guard,
+                Err(_) => {
+                    return StructOperationResult {
+                        success: false,
+                        object_id: None,
+                        value: None,
+                        error: Some("Failed to acquire object ID lock".to_string()),
+                    };
+                }
+            };
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let mut gc_ops = match self.gc_operations.lock() {
+            Ok(ops) => ops,
+            Err(_) => {
+                return StructOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
+        };
+
+        if let Err(e) = gc_ops.register_struct_type(&type_def) {
+            return StructOperationResult {
+                success: false,
+                object_id: None,
+                value: None,
+                error: Some(format!("Failed to register struct type: {}", e)),
+            };
+        }
+
+        let result = gc_ops.struct_new_async(&type_def, &field_values, object_id);
+
+        if result.success {
+            if let Some(gc_ref) = result.gc_object {
+                let wasmtime_ref = WasmtimeGcRef {
+                    gc_ref: Arc::new(gc_ref),
+                    ref_type: GcReferenceType::StructRef(type_def.clone()),
+                    object_id,
+                };
+
+                if let Ok(mut gc_objects) = self.gc_objects.write() {
+                    gc_objects.insert(object_id, wasmtime_ref);
+                }
+            }
+
+            self.allocation_count.fetch_add(1, Ordering::Relaxed);
+
+            StructOperationResult {
+                success: true,
+                object_id: Some(object_id),
+                value: None,
+                error: None,
+            }
+        } else {
+            StructOperationResult {
+                success: false,
+                object_id: None,
+                value: None,
+                error: result.error,
+            }
+        }
+    }
+
     /// Create a new struct instance with default values (struct.new_default)
     pub fn struct_new_default(&self, type_def: StructTypeDefinition) -> StructOperationResult {
         let default_values: Vec<GcValue> = type_def
@@ -444,6 +529,96 @@ impl WasmGcRuntime {
             }
 
             // Increment allocation count
+            self.allocation_count.fetch_add(1, Ordering::Relaxed);
+
+            ArrayOperationResult {
+                success: true,
+                object_id: Some(object_id),
+                value: None,
+                length: Some(elements.len() as u32),
+                error: None,
+            }
+        } else {
+            ArrayOperationResult {
+                success: false,
+                object_id: None,
+                value: None,
+                length: None,
+                error: result.error,
+            }
+        }
+    }
+
+    /// Create a new array instance using async resource limiter
+    ///
+    /// This is the async variant of [`array_new`]. Uses `ArrayRef::new_async` and
+    /// `ArrayRef::new_fixed_async` which go through the async resource limiter.
+    #[cfg(feature = "async")]
+    pub fn array_new_async(
+        &self,
+        type_def: ArrayTypeDefinition,
+        elements: Vec<GcValue>,
+    ) -> ArrayOperationResult {
+        let object_id = {
+            let mut next_id = match self
+                .next_object_id
+                .lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
+            {
+                Ok(guard) => guard,
+                Err(_) => {
+                    return ArrayOperationResult {
+                        success: false,
+                        object_id: None,
+                        value: None,
+                        length: None,
+                        error: Some("Failed to acquire object ID lock".to_string()),
+                    };
+                }
+            };
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let mut gc_ops = match self.gc_operations.lock() {
+            Ok(ops) => ops,
+            Err(_) => {
+                return ArrayOperationResult {
+                    success: false,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
+        };
+
+        if let Err(e) = gc_ops.register_array_type(&type_def) {
+            return ArrayOperationResult {
+                success: false,
+                object_id: None,
+                value: None,
+                length: None,
+                error: Some(format!("Failed to register array type: {}", e)),
+            };
+        }
+
+        let result = gc_ops.array_new_async(&type_def, &elements, object_id);
+
+        if result.success {
+            if let Some(gc_ref) = result.gc_array {
+                let wasmtime_ref = WasmtimeGcRef {
+                    gc_ref: Arc::new(gc_ref),
+                    ref_type: GcReferenceType::ArrayRef(Box::new(type_def.clone())),
+                    object_id,
+                };
+
+                if let Ok(mut gc_objects) = self.gc_objects.write() {
+                    gc_objects.insert(object_id, wasmtime_ref);
+                }
+            }
+
             self.allocation_count.fetch_add(1, Ordering::Relaxed);
 
             ArrayOperationResult {
@@ -1050,6 +1225,237 @@ impl WasmGcRuntime {
         }
     }
 
+    /// Create I31 from unsigned u32 (checked, returns error if > 2^31-1)
+    pub fn i31_new_unsigned(&self, value: u32) -> RefOperationResult {
+        let object_id = {
+            let mut next_id = match self
+                .next_object_id
+                .lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
+            {
+                Ok(guard) => guard,
+                Err(_) => {
+                    return RefOperationResult {
+                        success: false,
+                        cast_result: None,
+                        test_result: None,
+                        eq_result: None,
+                        is_null: None,
+                        value: None,
+                        error: Some("Failed to acquire object ID lock".to_string()),
+                    };
+                }
+            };
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let mut gc_ops = match self.gc_operations.lock() {
+            Ok(ops) => ops,
+            Err(_) => {
+                return RefOperationResult {
+                    success: false,
+                    cast_result: None,
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
+        };
+
+        let result = gc_ops.i31_new_unsigned(value, object_id);
+
+        if result.success {
+            if let Some(gc_ref) = result.cast_result {
+                let wasmtime_ref = WasmtimeGcRef {
+                    gc_ref: Arc::new(gc_ref),
+                    ref_type: GcReferenceType::I31Ref,
+                    object_id,
+                };
+                if let Ok(mut gc_objects) = self.gc_objects.write() {
+                    gc_objects.insert(object_id, wasmtime_ref);
+                }
+            }
+            self.allocation_count.fetch_add(1, Ordering::Relaxed);
+            RefOperationResult {
+                success: true,
+                cast_result: Some(object_id),
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: None,
+            }
+        } else {
+            RefOperationResult {
+                success: false,
+                cast_result: None,
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: result.error,
+            }
+        }
+    }
+
+    /// Create I31 from signed i32 (wrapping, truncates to 31 bits)
+    pub fn i31_wrapping_signed(&self, value: i32) -> RefOperationResult {
+        let object_id = {
+            let mut next_id = match self
+                .next_object_id
+                .lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
+            {
+                Ok(guard) => guard,
+                Err(_) => {
+                    return RefOperationResult {
+                        success: false,
+                        cast_result: None,
+                        test_result: None,
+                        eq_result: None,
+                        is_null: None,
+                        value: None,
+                        error: Some("Failed to acquire object ID lock".to_string()),
+                    };
+                }
+            };
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let mut gc_ops = match self.gc_operations.lock() {
+            Ok(ops) => ops,
+            Err(_) => {
+                return RefOperationResult {
+                    success: false,
+                    cast_result: None,
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
+        };
+
+        let result = gc_ops.i31_wrapping_signed(value, object_id);
+
+        if result.success {
+            if let Some(gc_ref) = result.cast_result {
+                let wasmtime_ref = WasmtimeGcRef {
+                    gc_ref: Arc::new(gc_ref),
+                    ref_type: GcReferenceType::I31Ref,
+                    object_id,
+                };
+                if let Ok(mut gc_objects) = self.gc_objects.write() {
+                    gc_objects.insert(object_id, wasmtime_ref);
+                }
+            }
+            self.allocation_count.fetch_add(1, Ordering::Relaxed);
+            RefOperationResult {
+                success: true,
+                cast_result: Some(object_id),
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: None,
+            }
+        } else {
+            RefOperationResult {
+                success: false,
+                cast_result: None,
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: result.error,
+            }
+        }
+    }
+
+    /// Create I31 from unsigned u32 (wrapping, truncates to 31 bits)
+    pub fn i31_wrapping_unsigned(&self, value: u32) -> RefOperationResult {
+        let object_id = {
+            let mut next_id = match self
+                .next_object_id
+                .lock()
+                .map_err(|_| WasmtimeError::from_string("Failed to acquire object ID lock"))
+            {
+                Ok(guard) => guard,
+                Err(_) => {
+                    return RefOperationResult {
+                        success: false,
+                        cast_result: None,
+                        test_result: None,
+                        eq_result: None,
+                        is_null: None,
+                        value: None,
+                        error: Some("Failed to acquire object ID lock".to_string()),
+                    };
+                }
+            };
+            let id = *next_id;
+            *next_id += 1;
+            id
+        };
+
+        let mut gc_ops = match self.gc_operations.lock() {
+            Ok(ops) => ops,
+            Err(_) => {
+                return RefOperationResult {
+                    success: false,
+                    cast_result: None,
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: Some("Failed to acquire GC operations lock".to_string()),
+                }
+            }
+        };
+
+        let result = gc_ops.i31_wrapping_unsigned(value, object_id);
+
+        if result.success {
+            if let Some(gc_ref) = result.cast_result {
+                let wasmtime_ref = WasmtimeGcRef {
+                    gc_ref: Arc::new(gc_ref),
+                    ref_type: GcReferenceType::I31Ref,
+                    object_id,
+                };
+                if let Ok(mut gc_objects) = self.gc_objects.write() {
+                    gc_objects.insert(object_id, wasmtime_ref);
+                }
+            }
+            self.allocation_count.fetch_add(1, Ordering::Relaxed);
+            RefOperationResult {
+                success: true,
+                cast_result: Some(object_id),
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: None,
+            }
+        } else {
+            RefOperationResult {
+                success: false,
+                cast_result: None,
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: result.error,
+            }
+        }
+    }
+
     /// Get value from I31 reference using real Wasmtime GC (i31.get_s/i31.get_u)
     pub fn i31_get(&self, object_id: ObjectId, signed: bool) -> RefOperationResult {
         // Use real Wasmtime GC operations
@@ -1219,6 +1625,54 @@ impl WasmGcRuntime {
             .lock()
             .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
         gc_ops.anyref_convert_extern(externref_data)
+    }
+
+    /// Gets the HeapType code for an EqRef.
+    pub fn eqref_ty(&self, object_id: ObjectId) -> WasmtimeResult<i32> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.eqref_ty(object_id)
+    }
+
+    /// Checks if an EqRef matches a given HeapType.
+    pub fn eqref_matches_ty(
+        &self,
+        object_id: ObjectId,
+        heap_type: &wasmtime::HeapType,
+    ) -> WasmtimeResult<bool> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.eqref_matches_ty(object_id, heap_type)
+    }
+
+    /// Checks if a StructRef matches a given HeapType.
+    pub fn structref_matches_ty(
+        &self,
+        object_id: ObjectId,
+        heap_type: &wasmtime::HeapType,
+    ) -> WasmtimeResult<bool> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.structref_matches_ty(object_id, heap_type)
+    }
+
+    /// Checks if an ArrayRef matches a given HeapType.
+    pub fn arrayref_matches_ty(
+        &self,
+        object_id: ObjectId,
+        heap_type: &wasmtime::HeapType,
+    ) -> WasmtimeResult<bool> {
+        let mut gc_ops = self
+            .gc_operations
+            .lock()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC operations lock"))?;
+        gc_ops.arrayref_matches_ty(object_id, heap_type)
     }
 }
 

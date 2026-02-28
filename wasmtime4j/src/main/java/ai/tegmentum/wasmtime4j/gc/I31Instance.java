@@ -1,5 +1,8 @@
 package ai.tegmentum.wasmtime4j.gc;
 
+import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+
 /**
  * WebAssembly GC I31 instance.
  *
@@ -21,6 +24,78 @@ package ai.tegmentum.wasmtime4j.gc;
  * @since 1.0.0
  */
 public interface I31Instance extends GcObject {
+
+  /**
+   * Creates an I31 from a signed integer value (checked).
+   *
+   * <p>This is a convenience factory that uses the default runtime.
+   *
+   * @param value the signed integer value (must fit in 31 bits)
+   * @return the I31 instance
+   * @throws GcException if the value is out of range or creation fails
+   * @since 1.1.0
+   */
+  static I31Instance ofSigned(final int value) throws GcException {
+    try {
+      return WasmRuntimeFactory.create().getGcRuntime().createI31(value);
+    } catch (final WasmException e) {
+      throw new GcException("Failed to create I31 instance", e);
+    }
+  }
+
+  /**
+   * Creates an I31 from an unsigned integer value (checked).
+   *
+   * <p>This is a convenience factory that uses the default runtime.
+   *
+   * @param value the unsigned integer value (must be 0 to 2^31-1)
+   * @return the I31 instance
+   * @throws GcException if the value is out of range or creation fails
+   * @since 1.1.0
+   */
+  static I31Instance ofUnsigned(final int value) throws GcException {
+    try {
+      return WasmRuntimeFactory.create().getGcRuntime().createI31Unsigned(value);
+    } catch (final WasmException e) {
+      throw new GcException("Failed to create I31 instance", e);
+    }
+  }
+
+  /**
+   * Creates an I31 from a signed integer value (wrapping, truncates to 31 bits).
+   *
+   * <p>This is a convenience factory that uses the default runtime.
+   *
+   * @param value the signed integer value (will be truncated to 31 bits)
+   * @return the I31 instance
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  static I31Instance wrappingSigned(final int value) throws GcException {
+    try {
+      return WasmRuntimeFactory.create().getGcRuntime().createI31Wrapping(value);
+    } catch (final WasmException e) {
+      throw new GcException("Failed to create I31 instance", e);
+    }
+  }
+
+  /**
+   * Creates an I31 from an unsigned integer value (wrapping, truncates to 31 bits).
+   *
+   * <p>This is a convenience factory that uses the default runtime.
+   *
+   * @param value the unsigned integer value (will be truncated to 31 bits)
+   * @return the I31 instance
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  static I31Instance wrappingUnsigned(final int value) throws GcException {
+    try {
+      return WasmRuntimeFactory.create().getGcRuntime().createI31WrappingUnsigned(value);
+    } catch (final WasmException e) {
+      throw new GcException("Failed to create I31 instance", e);
+    }
+  }
 
   /**
    * Gets the signed 31-bit integer value.

@@ -56,6 +56,54 @@ pub extern "C" fn wasmtime4j_panama_table_create(
     })
 }
 
+/// Create a new 32-bit table asynchronously (Panama FFI version)
+///
+/// Uses Wasmtime's `Table::new_async` for async resource limiter support.
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_table_create_async(
+    store_ptr: *mut c_void,
+    element_type: c_int,
+    initial_size: c_uint,
+    has_maximum: c_int,
+    maximum_size: c_uint,
+    name: *const c_char,
+    table_ptr: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(store_ptr, "store")? };
+
+        let val_type = match element_type {
+            5 => ValType::Ref(RefType::FUNCREF),
+            6 => ValType::Ref(RefType::EXTERNREF),
+            _ => {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: format!("Invalid table element type: {}", element_type),
+                })
+            }
+        };
+        let max_size = if has_maximum != 0 {
+            Some(maximum_size)
+        } else {
+            None
+        };
+
+        let name = if name.is_null() {
+            None
+        } else {
+            Some(unsafe { ffi_utils::c_str_to_string(name, "table_name")? })
+        };
+
+        let table = core::create_table_async(store, val_type, initial_size, max_size, name)?;
+
+        unsafe {
+            *table_ptr = Box::into_raw(table) as *mut c_void;
+        }
+
+        Ok(())
+    })
+}
+
 /// Get table size (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_table_size(

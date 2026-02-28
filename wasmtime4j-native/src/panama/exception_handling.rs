@@ -570,6 +570,108 @@ pub extern "C" fn wasmtime4j_panama_exnref_create(
     }
 }
 
+/// Create an ExnRef asynchronously using Wasmtime's async GC creation API.
+///
+/// Uses `ExnRef::new_async` which goes through the async resource limiter.
+/// Returns a pointer to the boxed OwnedRooted<ExnRef>, or null on failure.
+///
+/// # Safety
+/// - store_ptr must be a valid pointer to a Store
+/// - tag_ptr must be a valid pointer to a Tag
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_exnref_create_async(
+    store_ptr: *mut c_void,
+    tag_ptr: *const c_void,
+    field_count: c_int,
+    field_types_ptr: *const c_int,
+    field_i64_values_ptr: *const i64,
+    field_f64_values_ptr: *const f64,
+) -> *mut c_void {
+    use wasmtime::{ExnRef, ExnRefPre, ExnType, OwnedRooted, RootScope, Tag, Val};
+
+    if store_ptr.is_null() || tag_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+        || -> Result<*mut c_void, crate::error::WasmtimeError> {
+            let tag = unsafe { &*(tag_ptr as *const Tag) };
+            let store = unsafe { &*(store_ptr as *const crate::store::Store) };
+            let mut store_guard = store.try_lock_store()?;
+
+            // Build field values from FFI arrays (same as sync version)
+            let mut fields = Vec::with_capacity(field_count as usize);
+            if field_count > 0 && !field_types_ptr.is_null() {
+                let types =
+                    unsafe { std::slice::from_raw_parts(field_types_ptr, field_count as usize) };
+                let i64_vals = if field_i64_values_ptr.is_null() {
+                    &[] as &[i64]
+                } else {
+                    unsafe {
+                        std::slice::from_raw_parts(field_i64_values_ptr, field_count as usize)
+                    }
+                };
+                let f64_vals = if field_f64_values_ptr.is_null() {
+                    &[] as &[f64]
+                } else {
+                    unsafe {
+                        std::slice::from_raw_parts(field_f64_values_ptr, field_count as usize)
+                    }
+                };
+
+                for i in 0..field_count as usize {
+                    let val = match types[i] {
+                        0 => Val::I32(i64_vals.get(i).copied().unwrap_or(0) as i32),
+                        1 => Val::I64(i64_vals.get(i).copied().unwrap_or(0)),
+                        2 => Val::F32((f64_vals.get(i).copied().unwrap_or(0.0) as f32).to_bits()),
+                        3 => Val::F64(f64_vals.get(i).copied().unwrap_or(0.0).to_bits()),
+                        _ => {
+                            return Err(crate::error::WasmtimeError::Internal {
+                                message: format!("Unsupported field type code: {}", types[i]),
+                            });
+                        }
+                    };
+                    fields.push(val);
+                }
+            }
+
+            // Create ExnRefPre from the tag's ExnType
+            let tag_type = tag.ty(&*store_guard);
+            let exn_type = ExnType::from_tag_type(&tag_type).map_err(|e| {
+                crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to create ExnType from TagType: {}", e),
+                }
+            })?;
+            let allocator = ExnRefPre::new(&mut *store_guard, exn_type);
+
+            // Create the ExnRef asynchronously
+            let handle = crate::async_runtime::get_runtime_handle();
+            let mut scope = RootScope::new(&mut *store_guard);
+            let exnref = handle
+                .block_on(async {
+                    ExnRef::new_async(&mut scope, &allocator, tag, &fields).await
+                })
+                .map_err(|e| crate::error::WasmtimeError::Internal {
+                    message: format!("Async ExnRef creation failed: {}", e),
+                })?;
+
+            let owned = exnref.to_owned_rooted(&mut scope).map_err(|e| {
+                crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to convert ExnRef to owned: {}", e),
+                }
+            })?;
+
+            Ok(Box::into_raw(Box::new(owned)) as *mut c_void)
+        },
+    ));
+
+    match result {
+        Ok(Ok(ptr)) => ptr,
+        _ => std::ptr::null_mut(),
+    }
+}
+
 /// Converts an ExnRef to its raw u32 representation.
 ///
 /// Returns the raw u32 value, or -1 on failure.

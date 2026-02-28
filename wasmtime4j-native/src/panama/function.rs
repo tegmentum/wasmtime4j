@@ -277,6 +277,55 @@ pub extern "C" fn wasmtime4j_panama_func_from_raw(store_ptr: *mut c_void, raw: i
     }
 }
 
+/// Check if a function matches a given function type using subtype-aware checking.
+/// param_types_ptr and result_types_ptr point to arrays of i32 type codes.
+/// Returns 1 if matches, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_func_matches_ty(
+    func_ptr: *mut c_void,
+    store_ptr: *mut c_void,
+    param_types_ptr: *const c_int,
+    param_count: c_int,
+    result_types_ptr: *const c_int,
+    result_count: c_int,
+) -> c_int {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<bool, crate::error::WasmtimeError> {
+        let func = unsafe { core::get_function_ref(func_ptr as *const c_void)? };
+        let store = unsafe { ffi_utils::deref_ptr_mut::<Store>(store_ptr, "store")? };
+
+        let param_codes: Vec<i32> = if param_count > 0 && !param_types_ptr.is_null() {
+            unsafe {
+                std::slice::from_raw_parts(param_types_ptr, param_count as usize).to_vec()
+            }
+        } else {
+            Vec::new()
+        };
+
+        let result_codes: Vec<i32> = if result_count > 0 && !result_types_ptr.is_null() {
+            unsafe {
+                std::slice::from_raw_parts(result_types_ptr, result_count as usize).to_vec()
+            }
+        } else {
+            Vec::new()
+        };
+
+        core::func_matches_ty(func, store, &param_codes, &result_codes)
+    }));
+
+    match result {
+        Ok(Ok(true)) => 1,
+        Ok(Ok(false)) => 0,
+        Ok(Err(e)) => {
+            ffi_utils::set_last_error(e);
+            -1
+        }
+        Err(_) => {
+            ffi_utils::set_last_error(crate::error::WasmtimeError::from_string("Panic in func_matches_ty"));
+            -1
+        }
+    }
+}
+
 /// Destroy a function handle (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_func_destroy(func_ptr: *mut c_void) {

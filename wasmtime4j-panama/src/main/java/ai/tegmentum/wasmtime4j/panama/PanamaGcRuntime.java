@@ -75,6 +75,9 @@ public final class PanamaGcRuntime implements GcRuntime {
   private static final MethodHandle arrayCopy;
   private static final MethodHandle arrayFill;
   private static final MethodHandle i31New;
+  private static final MethodHandle i31NewUnsigned;
+  private static final MethodHandle i31WrappingSigned;
+  private static final MethodHandle i31WrappingUnsigned;
   private static final MethodHandle i31Get;
   private static final MethodHandle refCast;
   private static final MethodHandle refTest;
@@ -85,8 +88,14 @@ public final class PanamaGcRuntime implements GcRuntime {
   private static final MethodHandle anyrefToRaw;
   private static final MethodHandle anyrefFromRaw;
   private static final MethodHandle anyrefMatchesTy;
+  private static final MethodHandle eqrefTy;
+  private static final MethodHandle eqrefMatchesTy;
+  private static final MethodHandle structrefMatchesTy;
+  private static final MethodHandle arrayrefMatchesTy;
   private static final MethodHandle externrefConvertAny;
   private static final MethodHandle anyrefConvertExtern;
+  private static final MethodHandle structNewAsync;
+  private static final MethodHandle arrayNewAsync;
 
   // GC Stats structure layout
   private static final MemoryLayout GC_STATS_LAYOUT =
@@ -215,6 +224,21 @@ public final class PanamaGcRuntime implements GcRuntime {
               lookup.find("wasmtime4j_gc_i31_new").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
 
+      i31NewUnsigned =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_i31_new_unsigned").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
+
+      i31WrappingSigned =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_i31_wrapping_signed").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
+
+      i31WrappingUnsigned =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_i31_wrapping_unsigned").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT));
+
       i31Get =
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_i31_get").orElseThrow(),
@@ -265,6 +289,26 @@ public final class PanamaGcRuntime implements GcRuntime {
               lookup.find("wasmtime4j_gc_anyref_matches_ty").orElseThrow(),
               FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT));
 
+      eqrefTy =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_eqref_ty").orElseThrow(),
+              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG));
+
+      eqrefMatchesTy =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_eqref_matches_ty").orElseThrow(),
+              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT));
+
+      structrefMatchesTy =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_structref_matches_ty").orElseThrow(),
+              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT));
+
+      arrayrefMatchesTy =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_arrayref_matches_ty").orElseThrow(),
+              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT));
+
       externrefConvertAny =
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_externref_convert_any").orElseThrow(),
@@ -274,6 +318,16 @@ public final class PanamaGcRuntime implements GcRuntime {
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_anyref_convert_extern").orElseThrow(),
               FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_LONG));
+
+      structNewAsync =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_struct_new_async").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, JAVA_INT));
+
+      arrayNewAsync =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_array_new_async").orElseThrow(),
+              FunctionDescriptor.of(JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, JAVA_INT));
 
     } catch (final Throwable e) {
       throw new ExceptionInInitializerError(
@@ -379,6 +433,43 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
+  public StructInstance createStructAsync(
+      final StructType structType, final List<GcValue> fieldValues) throws GcException {
+    validateNotDisposed();
+    validateNotNull(structType, "structType");
+    validateNotNull(fieldValues, "fieldValues");
+
+    lock.writeLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+
+      final int typeId = registerStructTypeInternal(structType);
+      final MemorySegment valuesSegment = convertGcValuesToNative(fieldValues);
+
+      try {
+        final long objectId =
+            (long)
+                structNewAsync.invokeExact(nativeHandle, typeId, valuesSegment, fieldValues.size());
+
+        if (objectId == 0) {
+          throw new GcException("Failed to create struct instance asynchronously");
+        }
+
+        final PanamaStructInstance instance =
+            new PanamaStructInstance(this, objectId, structType, typeId);
+        objectRegistry.put(objectId, instance);
+        return instance;
+      } catch (final Throwable e) {
+        throw new GcException("Failed to create struct instance asynchronously", e);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
   public ArrayInstance createArray(final ArrayType arrayType, final List<GcValue> elements)
       throws GcException {
     validateNotDisposed();
@@ -453,6 +544,42 @@ public final class PanamaGcRuntime implements GcRuntime {
   }
 
   @Override
+  public ArrayInstance createArrayAsync(final ArrayType arrayType, final List<GcValue> elements)
+      throws GcException {
+    validateNotDisposed();
+    validateNotNull(arrayType, "arrayType");
+    validateNotNull(elements, "elements");
+
+    lock.writeLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+
+      final int typeId = registerArrayTypeInternal(arrayType);
+      final MemorySegment valuesSegment = convertGcValuesToNative(elements);
+
+      try {
+        final long objectId =
+            (long) arrayNewAsync.invokeExact(nativeHandle, typeId, valuesSegment, elements.size());
+
+        if (objectId == 0) {
+          throw new GcException("Failed to create array instance asynchronously");
+        }
+
+        final PanamaArrayInstance instance =
+            new PanamaArrayInstance(this, objectId, arrayType, typeId, elements.size());
+        objectRegistry.put(objectId, instance);
+        return instance;
+      } catch (final Throwable e) {
+        throw new GcException("Failed to create array instance asynchronously", e);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
   public I31Instance createI31(final int value) throws GcException {
     // Validate I31 range: 31-bit signed integer (-2^30 to 2^30-1)
     // I31 uses 31 bits for the value (1 bit reserved for tagging)
@@ -488,6 +615,100 @@ public final class PanamaGcRuntime implements GcRuntime {
         return instance;
       } catch (final Throwable e) {
         throw new GcException("Failed to create I31 instance", e);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public I31Instance createI31Unsigned(final int value) throws GcException {
+    if (value < 0) {
+      throw new IllegalArgumentException("I31 unsigned value must be non-negative: " + value);
+    }
+
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+
+      try {
+        final long objectId = (long) i31NewUnsigned.invokeExact(nativeHandle, value);
+        if (objectId == 0) {
+          throw new GcException("Failed to create I31 unsigned instance (value out of range)");
+        }
+
+        final PanamaI31Instance instance = new PanamaI31Instance(this, objectId, value);
+        objectRegistry.put(objectId, instance);
+        return instance;
+      } catch (final Throwable e) {
+        if (e instanceof GcException) {
+          throw (GcException) e;
+        }
+        throw new GcException("Failed to create I31 unsigned instance", e);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public I31Instance createI31Wrapping(final int value) throws GcException {
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+
+      try {
+        final long objectId = (long) i31WrappingSigned.invokeExact(nativeHandle, value);
+        if (objectId == 0) {
+          throw new GcException("Failed to create wrapping I31 signed instance");
+        }
+
+        final PanamaI31Instance instance = new PanamaI31Instance(this, objectId, value);
+        objectRegistry.put(objectId, instance);
+        return instance;
+      } catch (final Throwable e) {
+        if (e instanceof GcException) {
+          throw (GcException) e;
+        }
+        throw new GcException("Failed to create wrapping I31 signed instance", e);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  @Override
+  public I31Instance createI31WrappingUnsigned(final int value) throws GcException {
+    validateNotDisposed();
+
+    lock.writeLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+
+      try {
+        final long objectId = (long) i31WrappingUnsigned.invokeExact(nativeHandle, value);
+        if (objectId == 0) {
+          throw new GcException("Failed to create wrapping I31 unsigned instance");
+        }
+
+        final PanamaI31Instance instance = new PanamaI31Instance(this, objectId, value);
+        objectRegistry.put(objectId, instance);
+        return instance;
+      } catch (final Throwable e) {
+        if (e instanceof GcException) {
+          throw (GcException) e;
+        }
+        throw new GcException("Failed to create wrapping I31 unsigned instance", e);
       }
     } finally {
       lock.writeLock().unlock();
@@ -1544,6 +1765,118 @@ public final class PanamaGcRuntime implements GcRuntime {
         throw (GcException) e;
       }
       throw new GcException("Failed to check AnyRef type match", e);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public int eqRefTy(final long objectId) throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      final int result = (int) eqrefTy.invokeExact(nativeHandle, objectId);
+      if (result < 0) {
+        throw new GcException("Failed to get EqRef type for objectId: " + objectId);
+      }
+      return result;
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to get EqRef type", e);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public boolean eqRefMatchesTy(final long objectId, final int heapTypeOrdinal) throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      final int result = (int) eqrefMatchesTy.invokeExact(nativeHandle, objectId, heapTypeOrdinal);
+      if (result < 0) {
+        throw new GcException(
+            "Failed to check EqRef type match for objectId: "
+                + objectId
+                + ", heapType: "
+                + heapTypeOrdinal);
+      }
+      return result == 1;
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to check EqRef type match", e);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public boolean structRefMatchesTy(final long objectId, final int heapTypeOrdinal)
+      throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      final int result =
+          (int) structrefMatchesTy.invokeExact(nativeHandle, objectId, heapTypeOrdinal);
+      if (result < 0) {
+        throw new GcException(
+            "Failed to check StructRef type match for objectId: "
+                + objectId
+                + ", heapType: "
+                + heapTypeOrdinal);
+      }
+      return result == 1;
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to check StructRef type match", e);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public boolean arrayRefMatchesTy(final long objectId, final int heapTypeOrdinal)
+      throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new GcException("GC runtime has been disposed");
+      }
+      final int result =
+          (int) arrayrefMatchesTy.invokeExact(nativeHandle, objectId, heapTypeOrdinal);
+      if (result < 0) {
+        throw new GcException(
+            "Failed to check ArrayRef type match for objectId: "
+                + objectId
+                + ", heapType: "
+                + heapTypeOrdinal);
+      }
+      return result == 1;
+    } catch (final Throwable e) {
+      if (e instanceof GcException) {
+        throw (GcException) e;
+      }
+      throw new GcException("Failed to check ArrayRef type match", e);
     } finally {
       lock.readLock().unlock();
     }

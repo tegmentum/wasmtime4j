@@ -149,6 +149,104 @@ impl Memory {
         })
     }
 
+    /// Create a new memory with specific configuration using async resource limiter
+    ///
+    /// This is the async variant of [`new_with_config`]. It uses Wasmtime's
+    /// `Memory::new_async` which goes through the async resource limiter.
+    /// Required when the engine has `async_support(true)` and an async resource
+    /// limiter is configured.
+    #[cfg(feature = "async")]
+    pub fn new_with_config_async(
+        store: &crate::store::Store,
+        config: MemoryConfig,
+    ) -> WasmtimeResult<Self> {
+        // Validate configuration parameters (same as sync version)
+        if config.initial_pages == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Initial pages cannot be zero".to_string(),
+            });
+        }
+
+        if let Some(max_pages) = config.maximum_pages {
+            if config.initial_pages > max_pages {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Initial pages ({}) cannot exceed maximum pages ({})",
+                        config.initial_pages, max_pages
+                    ),
+                });
+            }
+        }
+
+        if !config.is_64 {
+            const MAX_WASM_PAGES_32: u64 = 65536;
+            if config.initial_pages > MAX_WASM_PAGES_32 {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!(
+                        "Initial pages ({}) exceeds WebAssembly 32-bit limit ({})",
+                        config.initial_pages, MAX_WASM_PAGES_32
+                    ),
+                });
+            }
+            if let Some(max_pages) = config.maximum_pages {
+                if max_pages > MAX_WASM_PAGES_32 {
+                    return Err(WasmtimeError::InvalidParameter {
+                        message: format!(
+                            "Maximum pages ({}) exceeds WebAssembly 32-bit limit ({})",
+                            max_pages, MAX_WASM_PAGES_32
+                        ),
+                    });
+                }
+            }
+        }
+
+        if config.is_shared {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Async creation not supported for shared memory".to_string(),
+            });
+        }
+
+        let memory_type = if config.is_64 {
+            MemoryType::new64(config.initial_pages, config.maximum_pages)
+        } else {
+            MemoryType::new(
+                config.initial_pages as u32,
+                config.maximum_pages.map(|p| p as u32),
+            )
+        };
+
+        let handle = crate::async_runtime::get_runtime_handle();
+        let mut store_guard = store.try_lock_store()?;
+        let inner = handle
+            .block_on(async {
+                WasmtimeMemory::new_async(&mut *store_guard, memory_type.clone()).await
+            })
+            .map_err(|e| WasmtimeError::Memory {
+                message: format!("Async memory creation failed: {}", e),
+            })?;
+
+        let metadata = MemoryMetadata {
+            created_at: Instant::now(),
+            current_pages: config.initial_pages,
+            maximum_pages: config.maximum_pages,
+            read_operations: 0,
+            write_operations: 0,
+            bytes_read: 0,
+            bytes_written: 0,
+            growth_operations: 0,
+            peak_pages: config.initial_pages,
+            last_access: None,
+            bounds_violations_prevented: 0,
+        };
+
+        Ok(Self {
+            inner: MemoryVariant::Regular(inner),
+            metadata: Arc::new(RwLock::new(metadata)),
+            config,
+            memory_type,
+        })
+    }
+
     /// Get reference to inner Wasmtime memory (internal use)
     /// Returns None if this is a shared memory variant.
     pub(crate) fn inner(&self) -> Option<&WasmtimeMemory> {

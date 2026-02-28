@@ -1237,6 +1237,15 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
   }
 
   /**
+   * Gets the method handle for async memory creation with config (async resource limiter path).
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaMemoryCreateAsync() {
+    return getMethodHandleByName("wasmtime4j_panama_memory_create_async").orElse(null);
+  }
+
+  /**
    * Destroys a validated memory instance and unregisters it from the handle registry.
    *
    * <p>This must be called to properly free native memory pointers obtained from memory creation or
@@ -2551,6 +2560,15 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
    */
   public MethodHandle getPanamaTableCreate64() {
     return getMethodHandleByName("wasmtime4j_panama_table_create64").orElse(null);
+  }
+
+  /**
+   * Gets the method handle for async table creation (async resource limiter path).
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getPanamaTableCreateAsync() {
+    return getMethodHandleByName("wasmtime4j_panama_table_create_async").orElse(null);
   }
 
   /**

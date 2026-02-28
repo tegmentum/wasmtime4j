@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.jni;
 
+import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -323,6 +324,42 @@ public final class JniFunction extends JniResource
    * @return the resource type name
    */
   @Override
+  public boolean matchesFuncType(final Store store, final FunctionType funcType)
+      throws WasmException {
+    ensureNotClosed();
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    if (funcType == null) {
+      throw new IllegalArgumentException("funcType cannot be null");
+    }
+    if (!(store instanceof JniStore)) {
+      throw new IllegalArgumentException("store must be a JniStore");
+    }
+    final JniStore jniStore = (JniStore) store;
+
+    final WasmValueType[] paramTypes = funcType.getParamTypes();
+    final WasmValueType[] resultTypes = funcType.getReturnTypes();
+
+    final int[] paramCodes = new int[paramTypes.length];
+    for (int i = 0; i < paramTypes.length; i++) {
+      paramCodes[i] = paramTypes[i].ordinal();
+    }
+
+    final int[] resultCodes = new int[resultTypes.length];
+    for (int i = 0; i < resultTypes.length; i++) {
+      resultCodes[i] = resultTypes[i].ordinal();
+    }
+
+    final int result =
+        nativeFuncMatchesTy(getNativeHandle(), jniStore.getNativeHandle(), paramCodes, resultCodes);
+    if (result < 0) {
+      throw new WasmException("Native func_matches_ty check failed");
+    }
+    return result == 1;
+  }
+
+  @Override
   protected String getResourceType() {
     return "Function[" + name + "]";
   }
@@ -421,4 +458,16 @@ public final class JniFunction extends JniResource
    */
   private static native Object[] nativeCallAsync(
       long functionHandle, long storeHandle, Object[] parameters);
+
+  /**
+   * Checks if a function matches a function type using subtype-aware checking.
+   *
+   * @param functionHandle the native function handle
+   * @param storeHandle the native store handle
+   * @param paramTypeCodes param type ordinals (WasmValueType.ordinal())
+   * @param resultTypeCodes result type ordinals (WasmValueType.ordinal())
+   * @return 1 if matches, 0 if not, -1 on error
+   */
+  private static native int nativeFuncMatchesTy(
+      long functionHandle, long storeHandle, int[] paramTypeCodes, int[] resultTypeCodes);
 }

@@ -303,6 +303,130 @@ impl WasmtimeGcOperations {
         }
     }
 
+    /// Create a new struct using Wasmtime's async GC creation API
+    ///
+    /// This is the async variant of [`struct_new`]. It uses `StructRef::new_async` which goes
+    /// through the async resource limiter. Required when the engine has `async_support(true)`
+    /// and an async resource limiter is configured.
+    #[cfg(feature = "async")]
+    pub fn struct_new_async(
+        &mut self,
+        type_def: &StructTypeDefinition,
+        field_values: &[GcValue],
+        object_id: ObjectId,
+    ) -> RealStructOperationResult {
+        let heap_type = match self.gc_types.get(&type_def.type_id) {
+            Some(ht) => ht.clone(),
+            None => {
+                return RealStructOperationResult {
+                    success: false,
+                    gc_object: None,
+                    object_id: None,
+                    value: None,
+                    error: Some(format!("Struct type {} not registered", type_def.type_id)),
+                };
+            }
+        };
+
+        let struct_type = match heap_type.as_concrete_struct() {
+            Some(st) => st.clone(),
+            None => {
+                return RealStructOperationResult {
+                    success: false,
+                    gc_object: None,
+                    object_id: None,
+                    value: None,
+                    error: Some("HeapType is not a concrete struct type".to_string()),
+                };
+            }
+        };
+
+        let allocator = wasmtime::StructRefPre::new(&mut self.store, struct_type);
+
+        let result = {
+            let mut scope = wasmtime::RootScope::new(&mut self.store);
+
+            let mut wasmtime_values = Vec::new();
+            for (i, value) in field_values.iter().enumerate() {
+                let field_def = &type_def.fields.get(i).ok_or_else(|| {
+                    WasmtimeError::from_string(&format!(
+                        "Field {} not found in struct definition",
+                        i
+                    ))
+                });
+
+                let effective_value: GcValue = if let Ok(field) = field_def {
+                    if matches!(field.field_type, crate::gc_types::FieldType::Reference(_)) {
+                        if let GcValue::I32(id) = value {
+                            GcValue::I64(*id as i64)
+                        } else {
+                            value.clone()
+                        }
+                    } else {
+                        value.clone()
+                    }
+                } else {
+                    value.clone()
+                };
+
+                match Self::convert_gc_value_to_wasmtime_in_scope(
+                    &self.gc_objects,
+                    &mut scope,
+                    &effective_value,
+                ) {
+                    Ok(val) => {
+                        wasmtime_values.push(val);
+                    }
+                    Err(e) => {
+                        return RealStructOperationResult {
+                            success: false,
+                            gc_object: None,
+                            object_id: None,
+                            value: None,
+                            error: Some(format!("Failed to convert field {} value: {}", i, e)),
+                        };
+                    }
+                }
+            }
+
+            let handle = crate::async_runtime::get_runtime_handle();
+            match handle.block_on(async {
+                wasmtime::StructRef::new_async(&mut scope, &allocator, &wasmtime_values).await
+            }) {
+                Ok(struct_ref) => struct_ref.to_owned_rooted(&mut scope),
+                Err(e) => Err(e),
+            }
+        };
+
+        match result {
+            Ok(owned_struct_ref) => {
+                let gc_ref = GcObjectRef::Struct(owned_struct_ref.clone());
+                self.gc_objects.insert(object_id, gc_ref);
+
+                let rooted_ref = {
+                    let mut scope = wasmtime::RootScope::new(&mut self.store);
+                    let struct_rooted = owned_struct_ref.to_rooted(&mut scope);
+                    struct_rooted.to_anyref()
+                };
+
+                RealStructOperationResult {
+                    success: true,
+                    gc_object: Some(rooted_ref),
+                    object_id: Some(object_id),
+                    value: None,
+                    error: None,
+                }
+            }
+            Err(e) => RealStructOperationResult {
+                success: false,
+                gc_object: None,
+                object_id: None,
+                value: None,
+                error: Some(format!("Async struct creation failed: {}", e)),
+            },
+        }
+    }
+
     /// Get a struct field value using Wasmtime's GC system
     pub fn struct_get(
         &mut self,
@@ -663,6 +787,174 @@ impl WasmtimeGcOperations {
                 value: None,
                 length: None,
                 error: Some(format!("Wasmtime array creation failed: {}", e)),
+            },
+        }
+    }
+
+    /// Create a new array using Wasmtime's async GC creation API
+    ///
+    /// This is the async variant of [`array_new`]. It uses `ArrayRef::new_async` and
+    /// `ArrayRef::new_fixed_async` which go through the async resource limiter.
+    #[cfg(feature = "async")]
+    pub fn array_new_async(
+        &mut self,
+        type_def: &ArrayTypeDefinition,
+        elements: &[GcValue],
+        object_id: ObjectId,
+    ) -> RealArrayOperationResult {
+        let heap_type = match self.gc_types.get(&type_def.type_id) {
+            Some(ht) => ht.clone(),
+            None => {
+                return RealArrayOperationResult {
+                    success: false,
+                    gc_array: None,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some(format!("Array type {} not registered", type_def.type_id)),
+                };
+            }
+        };
+
+        let mut wasmtime_values = Vec::new();
+        for (i, element) in elements.iter().enumerate() {
+            match self.convert_gc_value_to_wasmtime(element) {
+                Ok(val) => wasmtime_values.push(val),
+                Err(e) => {
+                    return RealArrayOperationResult {
+                        success: false,
+                        gc_array: None,
+                        object_id: None,
+                        value: None,
+                        length: None,
+                        error: Some(format!("Failed to convert element {} value: {}", i, e)),
+                    };
+                }
+            }
+        }
+
+        let array_type = match heap_type.as_concrete_array() {
+            Some(at) => at.clone(),
+            None => {
+                return RealArrayOperationResult {
+                    success: false,
+                    gc_array: None,
+                    object_id: None,
+                    value: None,
+                    length: None,
+                    error: Some("HeapType is not a concrete array type".to_string()),
+                };
+            }
+        };
+
+        let allocator = wasmtime::ArrayRefPre::new(&mut self.store, array_type);
+        let handle = crate::async_runtime::get_runtime_handle();
+
+        let result = {
+            let mut scope = wasmtime::RootScope::new(&mut self.store);
+
+            let array_ref = if !type_def.mutable && !wasmtime_values.is_empty() {
+                match handle.block_on(async {
+                    wasmtime::ArrayRef::new_fixed_async(
+                        &mut scope,
+                        &allocator,
+                        &wasmtime_values,
+                    )
+                    .await
+                }) {
+                    Ok(array_ref) => array_ref,
+                    Err(e) => {
+                        return RealArrayOperationResult {
+                            success: false,
+                            gc_array: None,
+                            object_id: None,
+                            value: None,
+                            length: None,
+                            error: Some(format!(
+                                "Async immutable array creation failed: {}",
+                                e
+                            )),
+                        };
+                    }
+                }
+            } else {
+                let initial_element = if let Some(first) = wasmtime_values.first() {
+                    first.clone()
+                } else {
+                    wasmtime::Val::I32(0)
+                };
+                let length = wasmtime_values.len() as u32;
+
+                match handle.block_on(async {
+                    wasmtime::ArrayRef::new_async(
+                        &mut scope,
+                        &allocator,
+                        &initial_element,
+                        length,
+                    )
+                    .await
+                }) {
+                    Ok(array_ref) => {
+                        for (i, val) in wasmtime_values.iter().enumerate() {
+                            if let Err(e) = array_ref.set(&mut scope, i as u32, val.clone()) {
+                                return RealArrayOperationResult {
+                                    success: false,
+                                    gc_array: None,
+                                    object_id: None,
+                                    value: None,
+                                    length: None,
+                                    error: Some(format!(
+                                        "Failed to set array element {}: {}",
+                                        i, e
+                                    )),
+                                };
+                            }
+                        }
+                        array_ref
+                    }
+                    Err(e) => {
+                        return RealArrayOperationResult {
+                            success: false,
+                            gc_array: None,
+                            object_id: None,
+                            value: None,
+                            length: None,
+                            error: Some(format!("Async mutable array creation failed: {}", e)),
+                        };
+                    }
+                }
+            };
+
+            array_ref.to_owned_rooted(&mut scope)
+        };
+
+        match result {
+            Ok(owned_array_ref) => {
+                let gc_ref = GcObjectRef::Array(owned_array_ref.clone());
+                self.gc_objects.insert(object_id, gc_ref);
+
+                let rooted_ref = {
+                    let mut scope = wasmtime::RootScope::new(&mut self.store);
+                    let array_rooted = owned_array_ref.to_rooted(&mut scope);
+                    array_rooted.to_anyref()
+                };
+
+                RealArrayOperationResult {
+                    success: true,
+                    gc_array: Some(rooted_ref),
+                    object_id: Some(object_id),
+                    value: None,
+                    length: Some(elements.len() as u32),
+                    error: None,
+                }
+            }
+            Err(e) => RealArrayOperationResult {
+                success: false,
+                gc_array: None,
+                object_id: None,
+                value: None,
+                length: None,
+                error: Some(format!("Async array creation failed: {}", e)),
             },
         }
     }
@@ -1216,6 +1508,142 @@ impl WasmtimeGcOperations {
         }
     }
 
+    /// Create an I31 from an unsigned u32 value using `I31::new_u32` (checked).
+    /// Returns None if value > 2^31-1.
+    pub fn i31_new_unsigned(
+        &mut self,
+        value: u32,
+        object_id: ObjectId,
+    ) -> RealRefOperationResult {
+        match wasmtime::I31::new_u32(value) {
+            Some(i31) => {
+                let rooted_ref = wasmtime::AnyRef::from_i31(&mut self.store, i31);
+                match rooted_ref.to_owned_rooted(&mut self.store) {
+                    Ok(owned_ref) => {
+                        let gc_ref = GcObjectRef::Any(owned_ref.clone());
+                        self.gc_objects.insert(object_id, gc_ref);
+                        RealRefOperationResult {
+                            success: true,
+                            cast_result: Some(rooted_ref),
+                            cast_object_id: Some(object_id),
+                            test_result: None,
+                            eq_result: None,
+                            is_null: None,
+                            value: None,
+                            error: None,
+                        }
+                    }
+                    Err(e) => RealRefOperationResult {
+                        success: false,
+                        cast_result: None,
+                        cast_object_id: None,
+                        test_result: None,
+                        eq_result: None,
+                        is_null: None,
+                        value: None,
+                        error: Some(format!(
+                            "Failed to convert I31 unsigned to OwnedRooted: {}",
+                            e
+                        )),
+                    },
+                }
+            }
+            None => RealRefOperationResult {
+                success: false,
+                cast_result: None,
+                cast_object_id: None,
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: Some(format!(
+                    "I31 unsigned value {} out of range (must fit in 31 bits unsigned)",
+                    value
+                )),
+            },
+        }
+    }
+
+    /// Create an I31 from a signed i32 value using `I31::wrapping_i32` (wrapping).
+    /// Truncates to 31 bits.
+    pub fn i31_wrapping_signed(
+        &mut self,
+        value: i32,
+        object_id: ObjectId,
+    ) -> RealRefOperationResult {
+        let i31 = wasmtime::I31::wrapping_i32(value);
+        let rooted_ref = wasmtime::AnyRef::from_i31(&mut self.store, i31);
+        match rooted_ref.to_owned_rooted(&mut self.store) {
+            Ok(owned_ref) => {
+                let gc_ref = GcObjectRef::Any(owned_ref.clone());
+                self.gc_objects.insert(object_id, gc_ref);
+                RealRefOperationResult {
+                    success: true,
+                    cast_result: Some(rooted_ref),
+                    cast_object_id: Some(object_id),
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: None,
+                }
+            }
+            Err(e) => RealRefOperationResult {
+                success: false,
+                cast_result: None,
+                cast_object_id: None,
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: Some(format!(
+                    "Failed to convert wrapping I31 signed to OwnedRooted: {}",
+                    e
+                )),
+            },
+        }
+    }
+
+    /// Create an I31 from an unsigned u32 value using `I31::wrapping_u32` (wrapping).
+    /// Truncates to 31 bits.
+    pub fn i31_wrapping_unsigned(
+        &mut self,
+        value: u32,
+        object_id: ObjectId,
+    ) -> RealRefOperationResult {
+        let i31 = wasmtime::I31::wrapping_u32(value);
+        let rooted_ref = wasmtime::AnyRef::from_i31(&mut self.store, i31);
+        match rooted_ref.to_owned_rooted(&mut self.store) {
+            Ok(owned_ref) => {
+                let gc_ref = GcObjectRef::Any(owned_ref.clone());
+                self.gc_objects.insert(object_id, gc_ref);
+                RealRefOperationResult {
+                    success: true,
+                    cast_result: Some(rooted_ref),
+                    cast_object_id: Some(object_id),
+                    test_result: None,
+                    eq_result: None,
+                    is_null: None,
+                    value: None,
+                    error: None,
+                }
+            }
+            Err(e) => RealRefOperationResult {
+                success: false,
+                cast_result: None,
+                cast_object_id: None,
+                test_result: None,
+                eq_result: None,
+                is_null: None,
+                value: None,
+                error: Some(format!(
+                    "Failed to convert wrapping I31 unsigned to OwnedRooted: {}",
+                    e
+                )),
+            },
+        }
+    }
+
     /// Get I31 value using Wasmtime's GC system
     pub fn i31_get(&mut self, object_id: ObjectId, signed: bool) -> RealRefOperationResult {
         // Get the GC object from storage
@@ -1664,6 +2092,135 @@ impl WasmtimeGcOperations {
         let rooted = any_ref.to_rooted(&mut scope);
         rooted.matches_ty(&scope, heap_type).map_err(|e| {
             WasmtimeError::from_string(&format!("Failed to check AnyRef type match: {}", e))
+        })
+    }
+
+    /// Gets the abstract HeapType code for an EqRef.
+    /// EqRef can be backed by Any (I31), Struct, or Array variants.
+    /// Returns the heap type code matching the Java HeapType ordinal.
+    pub fn eqref_ty(&mut self, object_id: ObjectId) -> WasmtimeResult<i32> {
+        let gc_ref = self.gc_objects.get(&object_id).ok_or_else(|| {
+            WasmtimeError::from_string(&format!("EqRef object {} not found", object_id))
+        })?;
+
+        match gc_ref {
+            GcObjectRef::Any(a) => {
+                let mut scope = wasmtime::RootScope::new(&mut self.store);
+                let rooted = a.to_rooted(&mut scope);
+                let heap_type = rooted.ty(&scope).map_err(|e| {
+                    WasmtimeError::from_string(&format!("Failed to get EqRef type: {}", e))
+                })?;
+                Ok(crate::panama_gc_ffi::heap_type_to_code(&heap_type))
+            }
+            GcObjectRef::Struct(_) => Ok(3), // HeapType::Struct
+            GcObjectRef::Array(_) => Ok(4),  // HeapType::Array
+            GcObjectRef::ExnRef(_) => Err(WasmtimeError::from_string(&format!(
+                "Object {} is an ExnRef, not an EqRef",
+                object_id
+            ))),
+        }
+    }
+
+    /// Checks if an EqRef matches a given HeapType.
+    /// EqRef can be backed by Any (I31), Struct, or Array variants.
+    pub fn eqref_matches_ty(
+        &mut self,
+        object_id: ObjectId,
+        heap_type: &wasmtime::HeapType,
+    ) -> WasmtimeResult<bool> {
+        let gc_ref = self.gc_objects.get(&object_id).ok_or_else(|| {
+            WasmtimeError::from_string(&format!("EqRef object {} not found", object_id))
+        })?;
+
+        match gc_ref {
+            GcObjectRef::Any(a) => {
+                let mut scope = wasmtime::RootScope::new(&mut self.store);
+                let rooted = a.to_rooted(&mut scope);
+                rooted.matches_ty(&scope, heap_type).map_err(|e| {
+                    WasmtimeError::from_string(&format!(
+                        "Failed to check EqRef type match: {}",
+                        e
+                    ))
+                })
+            }
+            GcObjectRef::Struct(s) => {
+                let mut scope = wasmtime::RootScope::new(&mut self.store);
+                let rooted = s.to_rooted(&mut scope).to_anyref();
+                rooted.matches_ty(&scope, heap_type).map_err(|e| {
+                    WasmtimeError::from_string(&format!(
+                        "Failed to check StructRef type match: {}",
+                        e
+                    ))
+                })
+            }
+            GcObjectRef::Array(a) => {
+                let mut scope = wasmtime::RootScope::new(&mut self.store);
+                let rooted = a.to_rooted(&mut scope).to_anyref();
+                rooted.matches_ty(&scope, heap_type).map_err(|e| {
+                    WasmtimeError::from_string(&format!(
+                        "Failed to check ArrayRef type match: {}",
+                        e
+                    ))
+                })
+            }
+            GcObjectRef::ExnRef(_) => Err(WasmtimeError::from_string(&format!(
+                "Object {} is an ExnRef, not an EqRef",
+                object_id
+            ))),
+        }
+    }
+
+    /// Checks if a StructRef matches a given HeapType.
+    pub fn structref_matches_ty(
+        &mut self,
+        object_id: ObjectId,
+        heap_type: &wasmtime::HeapType,
+    ) -> WasmtimeResult<bool> {
+        let gc_ref = self.gc_objects.get(&object_id).ok_or_else(|| {
+            WasmtimeError::from_string(&format!("StructRef object {} not found", object_id))
+        })?;
+
+        let struct_ref = match gc_ref {
+            GcObjectRef::Struct(s) => s,
+            _ => {
+                return Err(WasmtimeError::from_string(&format!(
+                    "Object {} is not a StructRef",
+                    object_id
+                )));
+            }
+        };
+
+        let mut scope = wasmtime::RootScope::new(&mut self.store);
+        let rooted = struct_ref.to_rooted(&mut scope).to_anyref();
+        rooted.matches_ty(&scope, heap_type).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to check StructRef type match: {}", e))
+        })
+    }
+
+    /// Checks if an ArrayRef matches a given HeapType.
+    pub fn arrayref_matches_ty(
+        &mut self,
+        object_id: ObjectId,
+        heap_type: &wasmtime::HeapType,
+    ) -> WasmtimeResult<bool> {
+        let gc_ref = self.gc_objects.get(&object_id).ok_or_else(|| {
+            WasmtimeError::from_string(&format!("ArrayRef object {} not found", object_id))
+        })?;
+
+        let array_ref = match gc_ref {
+            GcObjectRef::Array(a) => a,
+            _ => {
+                return Err(WasmtimeError::from_string(&format!(
+                    "Object {} is not an ArrayRef",
+                    object_id
+                )));
+            }
+        };
+
+        let mut scope = wasmtime::RootScope::new(&mut self.store);
+        let rooted = array_ref.to_rooted(&mut scope).to_anyref();
+        rooted.matches_ty(&scope, heap_type).map_err(|e| {
+            WasmtimeError::from_string(&format!("Failed to check ArrayRef type match: {}", e))
         })
     }
 

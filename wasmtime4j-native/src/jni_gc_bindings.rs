@@ -329,6 +329,72 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31NewNativ
     }
 }
 
+/// JNI binding for creating I31 from unsigned u32 (checked)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31NewUnsignedNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    value: jint,
+) -> jlong {
+    let result = i31_new_unsigned_internal(&mut env, runtime_handle, value as u32);
+
+    match result {
+        Ok(object_id) => object_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            0
+        }
+    }
+}
+
+/// JNI binding for creating I31 from signed i32 (wrapping)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31WrappingSignedNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    value: jint,
+) -> jlong {
+    let result = i31_wrapping_signed_internal(&mut env, runtime_handle, value);
+
+    match result {
+        Ok(object_id) => object_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            0
+        }
+    }
+}
+
+/// JNI binding for creating I31 from unsigned u32 (wrapping)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31WrappingUnsignedNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    value: jint,
+) -> jlong {
+    let result = i31_wrapping_unsigned_internal(&mut env, runtime_handle, value as u32);
+
+    match result {
+        Ok(object_id) => object_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            0
+        }
+    }
+}
+
 /// JNI binding for getting I31 value
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_i31GetNative(
@@ -909,6 +975,72 @@ fn i31_new_internal(
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
     let result = runtime.i31_new(value);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
+    }
+}
+
+fn i31_new_unsigned_internal(
+    _env: &mut JNIEnv,
+    runtime_handle: jlong,
+    value: u32,
+) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.i31_new_unsigned(value);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
+    }
+}
+
+fn i31_wrapping_signed_internal(
+    _env: &mut JNIEnv,
+    runtime_handle: jlong,
+    value: jint,
+) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.i31_wrapping_signed(value);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
+    }
+}
+
+fn i31_wrapping_unsigned_internal(
+    _env: &mut JNIEnv,
+    runtime_handle: jlong,
+    value: u32,
+) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.i31_wrapping_unsigned(value);
 
     if result.success {
         Ok(result.cast_result.unwrap_or(0))
@@ -1673,5 +1805,285 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_anyrefConve
             );
             0
         }
+    }
+}
+
+/// JNI binding for eqRefTy
+/// Gets the HeapType code for an EqRef.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_eqrefTyNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+) -> jint {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return -1;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    match runtime.eqref_ty(object_id as u64) {
+        Ok(code) => code,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to get EqRef type: {}", e),
+            );
+            -1
+        }
+    }
+}
+
+/// JNI binding for eqRefMatchesTy
+/// Checks if an EqRef matches a given heap type.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_eqrefMatchesTyNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    heap_type_code: jint,
+) -> jint {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return -1;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let heap_type = match crate::panama_gc_ffi::heap_type_from_code(heap_type_code) {
+        Some(ht) => ht,
+        None => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Unknown heap type code: {}", heap_type_code),
+            );
+            return -1;
+        }
+    };
+
+    match runtime.eqref_matches_ty(object_id as u64, &heap_type) {
+        Ok(true) => 1,
+        Ok(false) => 0,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to check EqRef type match: {}", e),
+            );
+            -1
+        }
+    }
+}
+
+/// JNI binding for structRefMatchesTy
+/// Checks if a StructRef matches a given heap type.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_structrefMatchesTyNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    heap_type_code: jint,
+) -> jint {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return -1;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let heap_type = match crate::panama_gc_ffi::heap_type_from_code(heap_type_code) {
+        Some(ht) => ht,
+        None => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Unknown heap type code: {}", heap_type_code),
+            );
+            return -1;
+        }
+    };
+
+    match runtime.structref_matches_ty(object_id as u64, &heap_type) {
+        Ok(true) => 1,
+        Ok(false) => 0,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to check StructRef type match: {}", e),
+            );
+            -1
+        }
+    }
+}
+
+/// JNI binding for arrayRefMatchesTy
+/// Checks if an ArrayRef matches a given heap type.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayrefMatchesTyNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    heap_type_code: jint,
+) -> jint {
+    if runtime_handle == 0 {
+        let _ = env.throw_new(
+            "ai/tegmentum/wasmtime4j/gc/GcException",
+            "Invalid GC runtime handle",
+        );
+        return -1;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let heap_type = match crate::panama_gc_ffi::heap_type_from_code(heap_type_code) {
+        Some(ht) => ht,
+        None => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Unknown heap type code: {}", heap_type_code),
+            );
+            return -1;
+        }
+    };
+
+    match runtime.arrayref_matches_ty(object_id as u64, &heap_type) {
+        Ok(true) => 1,
+        Ok(false) => 0,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/gc/GcException",
+                format!("Failed to check ArrayRef type match: {}", e),
+            );
+            -1
+        }
+    }
+}
+
+// ==================== Async GC Creation ====================
+
+/// JNI binding for creating a struct instance asynchronously
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_structNewAsyncNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    type_id: jint,
+    field_values: JObjectArray,
+) -> jlong {
+    let result = struct_new_async_internal(&mut env, runtime_handle, type_id, field_values);
+
+    match result {
+        Ok(object_id) => object_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            0
+        }
+    }
+}
+
+#[cfg(feature = "async")]
+fn struct_new_async_internal(
+    env: &mut JNIEnv,
+    runtime_handle: jlong,
+    type_id: jint,
+    field_values: JObjectArray,
+) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    let struct_def = runtime.get_struct_type(type_id as u32)?;
+
+    let field_count = env.get_array_length(&field_values)?;
+    let mut values = Vec::with_capacity(field_count as usize);
+
+    for i in 0..field_count {
+        let obj = env.get_object_array_element(&field_values, i)?;
+        let gc_value = convert_jobject_to_gc_value(env, obj)?;
+        values.push(gc_value);
+    }
+
+    let result = runtime.struct_new_async(struct_def, values);
+
+    if result.success {
+        Ok(result.object_id.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
+    }
+}
+
+/// JNI binding for creating an array instance asynchronously
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_arrayNewAsyncNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    type_id: jint,
+    elements: JObjectArray,
+) -> jlong {
+    let result = array_new_async_internal(&mut env, runtime_handle, type_id, elements);
+
+    match result {
+        Ok(object_id) => object_id as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            0
+        }
+    }
+}
+
+#[cfg(feature = "async")]
+fn array_new_async_internal(
+    env: &mut JNIEnv,
+    runtime_handle: jlong,
+    type_id: jint,
+    elements: JObjectArray,
+) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    let array_def = runtime.get_array_type(type_id as u32)?;
+
+    let element_count = env.get_array_length(&elements)?;
+    let mut gc_elements = Vec::with_capacity(element_count as usize);
+
+    for i in 0..element_count {
+        let obj = env.get_object_array_element(&elements, i)?;
+        let gc_value = convert_jobject_to_gc_value(env, obj)?;
+        gc_elements.push(gc_value);
+    }
+
+    let result = runtime.array_new_async(array_def, gc_elements);
+
+    if result.success {
+        Ok(result.object_id.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
     }
 }

@@ -1397,6 +1397,82 @@ public final class PanamaStore implements Store {
   }
 
   @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
+      createMemoryAsync(final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createMemoryAsyncInternal(memoryType);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
+  }
+
+  private ai.tegmentum.wasmtime4j.WasmMemory createMemoryAsyncInternal(
+      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
+    if (memoryType == null) {
+      throw new IllegalArgumentException("Memory type cannot be null");
+    }
+    final long minPages = memoryType.getMinimum();
+    final long maxPages = memoryType.getMaximum().orElse(-1L);
+    if (minPages < 0) {
+      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+    }
+    if (maxPages != -1 && maxPages < minPages) {
+      throw new IllegalArgumentException(
+          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
+    }
+    if (memoryType.isShared()) {
+      throw new IllegalArgumentException("Async creation not supported for shared memory");
+    }
+    ensureNotClosed();
+
+    try {
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateAsync();
+      if (createHandle == null) {
+        // Fallback to sync path if async not available
+        return createMemory(memoryType);
+      }
+
+      final long maximumPages = (maxPages == -1) ? 0L : maxPages;
+      final int isShared = 0; // Shared not supported for async
+      final int is64 = memoryType.is64Bit() ? 1 : 0;
+      final int memoryIndex = 0;
+
+      final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  minPages,
+                  maximumPages,
+                  isShared,
+                  is64,
+                  memoryIndex,
+                  MemorySegment.NULL, // name = null
+                  memoryPtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create memory asynchronously");
+      }
+
+      final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Async created memory pointer is null");
+      }
+
+      return new PanamaMemory(nativeMemoryPtr, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating memory asynchronously: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public ai.tegmentum.wasmtime4j.WasmTable createTable(
       final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
     if (tableType == null) {
@@ -1487,6 +1563,85 @@ public final class PanamaStore implements Store {
         throw (WasmException) e;
       }
       throw new WasmException("Error creating table from type: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createTableAsyncInternal(tableType);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
+  }
+
+  private ai.tegmentum.wasmtime4j.WasmTable createTableAsyncInternal(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
+    if (tableType == null) {
+      throw new IllegalArgumentException("Table type cannot be null");
+    }
+    final ai.tegmentum.wasmtime4j.WasmValueType elementType = tableType.getElementType();
+    final long minSize = tableType.getMinimum();
+    final long maxSize = tableType.getMaximum().orElse(-1L);
+
+    if (elementType != ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF
+        && elementType != ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+    if (minSize < 0) {
+      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
+    }
+    if (maxSize != -1 && maxSize < minSize) {
+      throw new IllegalArgumentException(
+          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
+    }
+    ensureNotClosed();
+
+    try {
+      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreateAsync();
+      if (createHandle == null) {
+        // Fallback to sync path if async not available
+        return createTable(tableType);
+      }
+
+      final int elementTypeCode =
+          (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) ? 5 : 6;
+
+      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+      final int hasMaximum = (maxSize == -1) ? 0 : 1;
+      final int maximumSize = (maxSize == -1) ? 0 : (int) maxSize;
+
+      final int result =
+          (int)
+              createHandle.invoke(
+                  nativeStore,
+                  elementTypeCode,
+                  (int) minSize,
+                  hasMaximum,
+                  maximumSize,
+                  MemorySegment.NULL, // name = null
+                  tablePtr);
+
+      if (result != 0) {
+        throw new WasmException("Failed to create table asynchronously");
+      }
+
+      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+      if (nativeTablePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Async created table pointer is null");
+      }
+
+      return new PanamaTable(nativeTablePtr, elementType, this);
+    } catch (final Throwable e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Error creating table asynchronously: " + e.getMessage(), e);
     }
   }
 

@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.gc;
 
+import ai.tegmentum.wasmtime4j.Engine;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,16 +34,22 @@ public final class StructType {
   private final List<FieldDefinition> fields;
   private final StructType supertype;
   private final int typeId;
+  private final Finality finality;
+  private final Engine engine;
 
   private StructType(
       final String name,
       final List<FieldDefinition> fields,
       final StructType supertype,
-      final int typeId) {
+      final int typeId,
+      final Finality finality,
+      final Engine engine) {
     this.name = name;
     this.fields = Collections.unmodifiableList(new ArrayList<>(fields));
     this.supertype = supertype;
     this.typeId = typeId;
+    this.finality = finality;
+    this.engine = engine;
   }
 
   /**
@@ -89,6 +96,30 @@ public final class StructType {
    */
   public int getTypeId() {
     return typeId;
+  }
+
+  /**
+   * Gets the finality of this struct type.
+   *
+   * <p>A final struct type cannot be subtyped. Non-final types may have subtypes.
+   *
+   * @return the finality (defaults to {@link Finality#FINAL})
+   * @since 1.1.0
+   */
+  public Finality getFinality() {
+    return finality;
+  }
+
+  /**
+   * Gets the engine this struct type was created with, if any.
+   *
+   * <p>Returns empty if the type was built without an engine reference.
+   *
+   * @return the engine, or empty if not bound to an engine
+   * @since 1.1.0
+   */
+  public Optional<Engine> getEngine() {
+    return Optional.ofNullable(engine);
   }
 
   /**
@@ -279,6 +310,8 @@ public final class StructType {
     private final String name;
     private final List<FieldDefinition> fields = new ArrayList<>();
     private StructType supertype;
+    private Finality finality = Finality.FINAL;
+    private Engine engine;
 
     private Builder(final String name) {
       this.name = Objects.requireNonNull(name, "Struct name cannot be null");
@@ -343,6 +376,32 @@ public final class StructType {
     }
 
     /**
+     * Set the finality of this struct type.
+     *
+     * <p>Defaults to {@link Finality#FINAL}.
+     *
+     * @param finality the finality
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder withFinality(final Finality finality) {
+      this.finality = Objects.requireNonNull(finality, "Finality cannot be null");
+      return this;
+    }
+
+    /**
+     * Set the engine for this struct type.
+     *
+     * @param engine the engine
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder withEngine(final Engine engine) {
+      this.engine = Objects.requireNonNull(engine, "Engine cannot be null");
+      return this;
+    }
+
+    /**
      * Build the struct type.
      *
      * @return the struct type
@@ -353,7 +412,7 @@ public final class StructType {
         throw new IllegalStateException("Struct must have at least one field");
       }
 
-      final StructType structType = new StructType(name, fields, supertype, 0);
+      final StructType structType = new StructType(name, fields, supertype, 0, finality, engine);
       structType.validate();
       return structType;
     }

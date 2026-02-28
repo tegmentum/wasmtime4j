@@ -1,7 +1,7 @@
 //! JNI bindings for Function operations
 
 use jni::objects::{JClass, JObject, JObjectArray};
-use jni::sys::{jlong, jobject, jobjectArray};
+use jni::sys::{jint, jlong, jobject, jobjectArray};
 use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
@@ -756,6 +756,71 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncFr
 }
 
 /// Destroy a function (JNI version)
+#[no_mangle]
+/// JNI binding: check if function matches a function type using subtype-aware checking.
+/// param_type_codes and result_type_codes are int[] of WasmValueType ordinals.
+/// Returns 1 if matches, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncMatchesTy(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+    param_type_codes: jni::sys::jintArray,
+    result_type_codes: jni::sys::jintArray,
+) -> jint {
+    let result = (|| -> crate::WasmtimeResult<bool> {
+        if function_ptr == 0 {
+            return Err(crate::error::WasmtimeError::from_string("Invalid function handle"));
+        }
+        if store_handle == 0 {
+            return Err(crate::error::WasmtimeError::from_string("Invalid store handle"));
+        }
+
+        let func_handle = unsafe { &*(function_ptr as *const FunctionHandle) };
+        let func = func_handle.get_func();
+        let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut std::ffi::c_void)? };
+
+        let param_codes: Vec<i32> = if !param_type_codes.is_null() {
+            let arr = unsafe { jni::objects::JIntArray::from_raw(param_type_codes) };
+            let len = env.get_array_length(&arr).unwrap_or(0) as usize;
+            let mut buf = vec![0i32; len];
+            if len > 0 {
+                let _ = env.get_int_array_region(&arr, 0, &mut buf);
+            }
+            buf
+        } else {
+            Vec::new()
+        };
+
+        let result_codes: Vec<i32> = if !result_type_codes.is_null() {
+            let arr = unsafe { jni::objects::JIntArray::from_raw(result_type_codes) };
+            let len = env.get_array_length(&arr).unwrap_or(0) as usize;
+            let mut buf = vec![0i32; len];
+            if len > 0 {
+                let _ = env.get_int_array_region(&arr, 0, &mut buf);
+            }
+            buf
+        } else {
+            Vec::new()
+        };
+
+        crate::instance::core::func_matches_ty(func, store, &param_codes, &result_codes)
+    })();
+
+    match result {
+        Ok(true) => 1,
+        Ok(false) => 0,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            -1
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeDestroyFunction(
     _env: JNIEnv,

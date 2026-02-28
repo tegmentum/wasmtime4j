@@ -1,6 +1,8 @@
 package ai.tegmentum.wasmtime4j.gc;
 
+import ai.tegmentum.wasmtime4j.Engine;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * WebAssembly GC array type definition.
@@ -31,13 +33,25 @@ public final class ArrayType {
   private final FieldType elementType;
   private final boolean mutable;
   private final int typeId;
+  private final Finality finality;
+  private final Engine engine;
+  private final ArrayType supertype;
 
   private ArrayType(
-      final String name, final FieldType elementType, final boolean mutable, final int typeId) {
+      final String name,
+      final FieldType elementType,
+      final boolean mutable,
+      final int typeId,
+      final Finality finality,
+      final Engine engine,
+      final ArrayType supertype) {
     this.name = name;
     this.elementType = elementType;
     this.mutable = mutable;
     this.typeId = typeId;
+    this.finality = finality;
+    this.engine = engine;
+    this.supertype = supertype;
   }
 
   /**
@@ -95,6 +109,40 @@ public final class ArrayType {
    */
   public int getTypeId() {
     return typeId;
+  }
+
+  /**
+   * Gets the finality of this array type.
+   *
+   * <p>A final array type cannot be subtyped. Non-final types may have subtypes.
+   *
+   * @return the finality (defaults to {@link Finality#FINAL})
+   * @since 1.1.0
+   */
+  public Finality getFinality() {
+    return finality;
+  }
+
+  /**
+   * Gets the engine this array type was created with, if any.
+   *
+   * <p>Returns empty if the type was built without an engine reference.
+   *
+   * @return the engine, or empty if not bound to an engine
+   * @since 1.1.0
+   */
+  public Optional<Engine> getEngine() {
+    return Optional.ofNullable(engine);
+  }
+
+  /**
+   * Gets the supertype if this array type extends another.
+   *
+   * @return the supertype, or empty if no supertype
+   * @since 1.1.0
+   */
+  public Optional<ArrayType> getSupertype() {
+    return Optional.ofNullable(supertype);
   }
 
   /**
@@ -209,6 +257,9 @@ public final class ArrayType {
     private final String name;
     private FieldType elementType;
     private boolean mutable = true; // Default to mutable
+    private Finality finality = Finality.FINAL;
+    private Engine engine;
+    private ArrayType supertype;
 
     private Builder(final String name) {
       this.name = Objects.requireNonNull(name, "Array name cannot be null");
@@ -246,6 +297,44 @@ public final class ArrayType {
     }
 
     /**
+     * Set the finality of this array type.
+     *
+     * <p>Defaults to {@link Finality#FINAL}.
+     *
+     * @param finality the finality
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder withFinality(final Finality finality) {
+      this.finality = Objects.requireNonNull(finality, "Finality cannot be null");
+      return this;
+    }
+
+    /**
+     * Set the engine for this array type.
+     *
+     * @param engine the engine
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder withEngine(final Engine engine) {
+      this.engine = Objects.requireNonNull(engine, "Engine cannot be null");
+      return this;
+    }
+
+    /**
+     * Set the supertype for inheritance.
+     *
+     * @param supertype the supertype
+     * @return this builder
+     * @since 1.1.0
+     */
+    public Builder extend(final ArrayType supertype) {
+      this.supertype = supertype;
+      return this;
+    }
+
+    /**
      * Build the array type.
      *
      * @return the array type
@@ -256,7 +345,8 @@ public final class ArrayType {
         throw new IllegalStateException("Element type must be specified");
       }
 
-      final ArrayType arrayType = new ArrayType(name, elementType, mutable, 0);
+      final ArrayType arrayType =
+          new ArrayType(name, elementType, mutable, 0, finality, engine, supertype);
       arrayType.validate();
       return arrayType;
     }

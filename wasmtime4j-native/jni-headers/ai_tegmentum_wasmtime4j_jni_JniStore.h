@@ -129,6 +129,22 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMe
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeCreateMemoryAsync
+ * Signature: (JJJII)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMemoryAsync
+  (JNIEnv *, jclass, jlong, jlong, jlong, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeCreateTableAsync
+ * Signature: (JIII)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTableAsync
+  (JNIEnv *, jclass, jlong, jint, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeCreateTable64
  * Signature: (JIJIJ)J
  */

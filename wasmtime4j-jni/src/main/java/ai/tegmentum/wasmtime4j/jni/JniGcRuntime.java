@@ -178,6 +178,60 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  @Override
+  public StructInstance createStructAsync(
+      final StructType structType, final List<GcValue> fieldValues) throws GcException {
+    validateNotDisposed();
+    validateNotNull(structType, "structType");
+    validateNotNull(fieldValues, "fieldValues");
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new IllegalStateException("GC runtime has been disposed");
+      }
+
+      final int typeId = registerStructTypeInternal(structType);
+      final Object[] nativeValues = convertGcValuesToNative(fieldValues);
+
+      final long objectId = structNewAsyncNative(nativeHandle, typeId, nativeValues);
+      if (objectId == 0) {
+        throw new IllegalStateException("Failed to create struct instance asynchronously");
+      }
+
+      return new JniStructInstance(this, objectId, structType, typeId);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public ArrayInstance createArrayAsync(final ArrayType arrayType, final List<GcValue> elements)
+      throws GcException {
+    validateNotDisposed();
+    validateNotNull(arrayType, "arrayType");
+    validateNotNull(elements, "elements");
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new IllegalStateException("GC runtime has been disposed");
+      }
+
+      final int typeId = registerArrayTypeInternal(arrayType);
+      final Object[] nativeElements = convertGcValuesToNative(elements);
+
+      final long objectId = arrayNewAsyncNative(nativeHandle, typeId, nativeElements);
+      if (objectId == 0) {
+        throw new IllegalStateException("Failed to create array instance asynchronously");
+      }
+
+      return new JniArrayInstance(this, objectId, arrayType, typeId, elements.size());
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
   /** Javadoc placeholder. */
   public I31Instance createI31(final int value) throws GcException {
     validateNotDisposed();
@@ -206,6 +260,73 @@ public final class JniGcRuntime implements GcRuntime {
       final long objectId = i31NewNative(nativeHandle, value);
       if (objectId == 0) {
         throw new IllegalStateException("Failed to create I31 instance");
+      }
+
+      return new JniI31Instance(this, objectId, value);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public I31Instance createI31Unsigned(final int value) throws GcException {
+    validateNotDisposed();
+
+    if (value < 0) {
+      throw new IllegalArgumentException("I31 unsigned value must be non-negative: " + value);
+    }
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new IllegalStateException("GC runtime has been disposed");
+      }
+
+      final long objectId = i31NewUnsignedNative(nativeHandle, value);
+      if (objectId == 0) {
+        throw new GcException("Failed to create I31 unsigned instance (value out of range)");
+      }
+
+      return new JniI31Instance(this, objectId, value);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public I31Instance createI31Wrapping(final int value) throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new IllegalStateException("GC runtime has been disposed");
+      }
+
+      final long objectId = i31WrappingSignedNative(nativeHandle, value);
+      if (objectId == 0) {
+        throw new GcException("Failed to create wrapping I31 signed instance");
+      }
+
+      return new JniI31Instance(this, objectId, value);
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public I31Instance createI31WrappingUnsigned(final int value) throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new IllegalStateException("GC runtime has been disposed");
+      }
+
+      final long objectId = i31WrappingUnsignedNative(nativeHandle, value);
+      if (objectId == 0) {
+        throw new GcException("Failed to create wrapping I31 unsigned instance");
       }
 
       return new JniI31Instance(this, objectId, value);
@@ -1184,6 +1305,84 @@ public final class JniGcRuntime implements GcRuntime {
   }
 
   @Override
+  public int eqRefTy(final long objectId) throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      final int result = eqrefTyNative(nativeHandle, objectId);
+      if (result < 0) {
+        throw new GcException("Failed to get EqRef type for objectId: " + objectId);
+      }
+      return result;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public boolean eqRefMatchesTy(final long objectId, final int heapTypeOrdinal) throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      final int result = eqrefMatchesTyNative(nativeHandle, objectId, heapTypeOrdinal);
+      if (result < 0) {
+        throw new GcException(
+            "Failed to check EqRef type match for objectId: "
+                + objectId
+                + ", heapType: "
+                + heapTypeOrdinal);
+      }
+      return result == 1;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public boolean structRefMatchesTy(final long objectId, final int heapTypeOrdinal)
+      throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      final int result = structrefMatchesTyNative(nativeHandle, objectId, heapTypeOrdinal);
+      if (result < 0) {
+        throw new GcException(
+            "Failed to check StructRef type match for objectId: "
+                + objectId
+                + ", heapType: "
+                + heapTypeOrdinal);
+      }
+      return result == 1;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
+  public boolean arrayRefMatchesTy(final long objectId, final int heapTypeOrdinal)
+      throws GcException {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      final int result = arrayrefMatchesTyNative(nativeHandle, objectId, heapTypeOrdinal);
+      if (result < 0) {
+        throw new GcException(
+            "Failed to check ArrayRef type match for objectId: "
+                + objectId
+                + ", heapType: "
+                + heapTypeOrdinal);
+      }
+      return result == 1;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
+  @Override
   public long externRefConvertAny(final long objectId) throws GcException {
     validateNotDisposed();
 
@@ -1242,6 +1441,11 @@ public final class JniGcRuntime implements GcRuntime {
 
   private static native long arrayNewDefaultNative(long runtimeHandle, int typeId, int length);
 
+  private static native long structNewAsyncNative(
+      long runtimeHandle, int typeId, Object[] fieldValues);
+
+  private static native long arrayNewAsyncNative(long runtimeHandle, int typeId, Object[] elements);
+
   private static native Object arrayGetNative(long runtimeHandle, long objectId, int elementIndex);
 
   private static native int arraySetNative(
@@ -1250,6 +1454,12 @@ public final class JniGcRuntime implements GcRuntime {
   private static native int arrayLenNative(long runtimeHandle, long objectId);
 
   private static native long i31NewNative(long runtimeHandle, int value);
+
+  private static native long i31NewUnsignedNative(long runtimeHandle, int value);
+
+  private static native long i31WrappingSignedNative(long runtimeHandle, int value);
+
+  private static native long i31WrappingUnsignedNative(long runtimeHandle, int value);
 
   private static native int i31GetNative(long runtimeHandle, long objectId, boolean signed);
 
@@ -1296,6 +1506,17 @@ public final class JniGcRuntime implements GcRuntime {
   private static native long anyrefFromRawNative(long runtimeHandle, int raw);
 
   private static native int anyrefMatchesTyNative(
+      long runtimeHandle, long objectId, int heapTypeCode);
+
+  private static native int eqrefTyNative(long runtimeHandle, long objectId);
+
+  private static native int eqrefMatchesTyNative(
+      long runtimeHandle, long objectId, int heapTypeCode);
+
+  private static native int structrefMatchesTyNative(
+      long runtimeHandle, long objectId, int heapTypeCode);
+
+  private static native int arrayrefMatchesTyNative(
       long runtimeHandle, long objectId, int heapTypeCode);
 
   private static native long externrefConvertAnyNative(long runtimeHandle, long objectId);

@@ -183,6 +183,32 @@ public interface WasmFunction {
     return true;
   }
 
+  /**
+   * Checks if this function matches the given function type using Wasmtime's subtype-aware type
+   * checking ({@code Func::matches_ty}).
+   *
+   * <p>Unlike {@link #matchesType(WasmValueType[], WasmValueType[])} which uses simple enum
+   * equality, this method delegates to the native Wasmtime engine which correctly handles GC
+   * subtype relationships (e.g., {@code anyref} vs {@code eqref}).
+   *
+   * <p>The default implementation falls back to {@link #matchesType(WasmValueType[],
+   * WasmValueType[])}. Implementations with native access should override to use the native
+   * subtype-aware check.
+   *
+   * @param store the store context
+   * @param funcType the expected function type
+   * @return true if the function matches the type including subtype compatibility
+   * @throws WasmException if the native type check fails
+   * @since 1.1.0
+   */
+  default boolean matchesFuncType(final Store store, final FunctionType funcType)
+      throws WasmException {
+    if (funcType == null) {
+      return false;
+    }
+    return matchesType(funcType.getParamTypes(), funcType.getReturnTypes());
+  }
+
   // ===== Typed Fast-Path Methods =====
   // Default implementations delegate to call() with WasmValue boxing.
   // Implementations should override these with optimized native calls

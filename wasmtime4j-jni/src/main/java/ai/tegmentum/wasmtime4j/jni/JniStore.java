@@ -663,6 +663,114 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
+      createMemoryAsync(final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createMemoryAsyncInternal(memoryType);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
+  }
+
+  private ai.tegmentum.wasmtime4j.WasmMemory createMemoryAsyncInternal(
+      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
+    Validation.requireNonNull(memoryType, "memoryType");
+    ensureNotClosed();
+
+    final long minPages = memoryType.getMinimum();
+    final long maxPages = memoryType.getMaximum().orElse(-1L);
+    final int isShared = memoryType.isShared() ? 1 : 0;
+    final int is64 = memoryType.is64Bit() ? 1 : 0;
+
+    if (minPages < 0) {
+      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+    }
+    if (maxPages != -1 && maxPages < minPages) {
+      throw new IllegalArgumentException(
+          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
+    }
+    if (memoryType.isShared()) {
+      throw new IllegalArgumentException("Async creation not supported for shared memory");
+    }
+
+    try {
+      final long memoryHandle =
+          nativeCreateMemoryAsync(getNativeHandle(), minPages, maxPages, isShared, is64);
+
+      if (memoryHandle == 0) {
+        throw new JniException("Native async memory creation returned null handle");
+      }
+
+      return new JniMemory(memoryHandle, this);
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create memory asynchronously", e);
+    }
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType) {
+    return java.util.concurrent.CompletableFuture.supplyAsync(
+        () -> {
+          try {
+            return createTableAsyncInternal(tableType);
+          } catch (final WasmException e) {
+            throw new java.util.concurrent.CompletionException(e);
+          }
+        });
+  }
+
+  private ai.tegmentum.wasmtime4j.WasmTable createTableAsyncInternal(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
+    Validation.requireNonNull(tableType, "tableType");
+    ensureNotClosed();
+
+    final WasmValueType elementType = tableType.getElementType();
+    final long minSize = tableType.getMinimum();
+    final long maxSize = tableType.getMaximum().orElse(-1L);
+
+    if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+    if (minSize < 0) {
+      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
+    }
+    if (maxSize != -1 && maxSize < minSize) {
+      throw new IllegalArgumentException(
+          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
+    }
+
+    try {
+      final long tableHandle =
+          nativeCreateTableAsync(
+              getNativeHandle(),
+              elementType.toNativeTypeCode(),
+              (int) minSize,
+              maxSize == -1 ? -1 : (int) maxSize);
+
+      if (tableHandle == 0) {
+        throw new JniException("Native async table creation returned null handle");
+      }
+
+      return new JniTable(tableHandle, this);
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create table asynchronously", e);
+    }
+  }
+
+  @Override
   public FunctionReference createFunctionReference(
       final HostFunction implementation, final FunctionType functionType) throws WasmException {
     Objects.requireNonNull(implementation, "Host function implementation cannot be null");
@@ -1011,6 +1119,31 @@ public final class JniStore extends JniResource implements Store {
    */
   private static native long nativeCreateMemoryWithType(
       long storeHandle, long initialPages, long maxPages, int isShared, int is64);
+
+  /**
+   * Creates a native memory asynchronously (async resource limiter path).
+   *
+   * @param storeHandle the native store handle
+   * @param initialPages the initial number of pages
+   * @param maxPages the maximum number of pages (-1 for unlimited)
+   * @param isShared 1 if shared, 0 if not
+   * @param is64 1 if 64-bit addressing, 0 if 32-bit
+   * @return the native memory handle, or 0 on failure
+   */
+  private static native long nativeCreateMemoryAsync(
+      long storeHandle, long initialPages, long maxPages, int isShared, int is64);
+
+  /**
+   * Creates a native table asynchronously (async resource limiter path).
+   *
+   * @param storeHandle the native store handle
+   * @param elementType the element type code
+   * @param initialSize the initial number of elements
+   * @param maxSize the maximum number of elements (-1 for unlimited)
+   * @return the native table handle, or 0 on failure
+   */
+  private static native long nativeCreateTableAsync(
+      long storeHandle, int elementType, int initialSize, int maxSize);
 
   /**
    * Creates a native 64-bit table.

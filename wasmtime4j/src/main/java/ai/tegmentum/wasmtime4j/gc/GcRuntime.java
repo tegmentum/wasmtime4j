@@ -64,6 +64,77 @@ public interface GcRuntime {
    */
   I31Instance createI31(int value) throws GcException;
 
+  /**
+   * Creates a new I31 from an unsigned value (checked).
+   *
+   * <p>Returns the I31 instance if the value fits in 31 unsigned bits (0 to 2^31-1), otherwise
+   * throws.
+   *
+   * @param value the unsigned value (interpreted as unsigned, must be non-negative)
+   * @return the I31 instance
+   * @throws GcException if the value is out of range or creation fails
+   * @since 1.1.0
+   */
+  I31Instance createI31Unsigned(int value) throws GcException;
+
+  /**
+   * Creates a new I31 from a signed value with wrapping (truncates to 31 bits).
+   *
+   * @param value the signed integer value
+   * @return the I31 instance with the value truncated to 31 bits
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  I31Instance createI31Wrapping(int value) throws GcException;
+
+  /**
+   * Creates a new I31 from an unsigned value with wrapping (truncates to 31 bits).
+   *
+   * @param value the unsigned integer value (interpreted as unsigned)
+   * @return the I31 instance with the value truncated to 31 bits
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  I31Instance createI31WrappingUnsigned(int value) throws GcException;
+
+  // ========== Async Object Creation ==========
+
+  /**
+   * Asynchronously creates a new struct instance.
+   *
+   * <p>Uses Wasmtime's async resource limiter path for allocation. The default implementation
+   * delegates to the synchronous method. Implementations should override this to use the native
+   * async API when available.
+   *
+   * @param structType the struct type
+   * @param fieldValues the initial field values
+   * @return the new struct instance
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  default StructInstance createStructAsync(StructType structType, List<GcValue> fieldValues)
+      throws GcException {
+    return createStruct(structType, fieldValues);
+  }
+
+  /**
+   * Asynchronously creates a new array instance.
+   *
+   * <p>Uses Wasmtime's async resource limiter path for allocation. The default implementation
+   * delegates to the synchronous method. Implementations should override this to use the native
+   * async API when available.
+   *
+   * @param arrayType the array type
+   * @param elements the array elements
+   * @return the new array instance
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  default ArrayInstance createArrayAsync(ArrayType arrayType, List<GcValue> elements)
+      throws GcException {
+    return createArray(arrayType, elements);
+  }
+
   // ========== Field and Element Access ==========
 
   /**
@@ -320,6 +391,55 @@ public interface GcRuntime {
    * @since 1.1.0
    */
   long anyRefConvertExtern(long externRefData) throws GcException;
+
+  /**
+   * Gets the abstract HeapType code for an EqRef.
+   *
+   * <p>Returns the ordinal of the {@link ai.tegmentum.wasmtime4j.type.HeapType} enum that
+   * corresponds to the concrete type of the EqRef (e.g., I31, STRUCT, ARRAY).
+   *
+   * @param objectId the GC object ID (from {@link GcObject#getObjectId()})
+   * @return the HeapType ordinal code
+   * @throws GcException if the type check fails
+   * @since 1.1.0
+   */
+  int eqRefTy(long objectId) throws GcException;
+
+  /**
+   * Checks if an EqRef matches a given heap type.
+   *
+   * <p>EqRef can wrap I31, StructRef, or ArrayRef values. This method handles all variants and
+   * delegates to the appropriate Wasmtime type check.
+   *
+   * @param objectId the GC object ID (from {@link GcObject#getObjectId()})
+   * @param heapTypeOrdinal the ordinal of the HeapType enum
+   * @return true if the EqRef matches the heap type
+   * @throws GcException if the check fails
+   * @since 1.1.0
+   */
+  boolean eqRefMatchesTy(long objectId, int heapTypeOrdinal) throws GcException;
+
+  /**
+   * Checks if a StructRef matches a given heap type.
+   *
+   * @param objectId the GC object ID (from {@link GcObject#getObjectId()})
+   * @param heapTypeOrdinal the ordinal of the HeapType enum
+   * @return true if the StructRef matches the heap type
+   * @throws GcException if the check fails
+   * @since 1.1.0
+   */
+  boolean structRefMatchesTy(long objectId, int heapTypeOrdinal) throws GcException;
+
+  /**
+   * Checks if an ArrayRef matches a given heap type.
+   *
+   * @param objectId the GC object ID (from {@link GcObject#getObjectId()})
+   * @param heapTypeOrdinal the ordinal of the HeapType enum
+   * @return true if the ArrayRef matches the heap type
+   * @throws GcException if the check fails
+   * @since 1.1.0
+   */
+  boolean arrayRefMatchesTy(long objectId, int heapTypeOrdinal) throws GcException;
 
   // ========== Garbage Collection Control ==========
 

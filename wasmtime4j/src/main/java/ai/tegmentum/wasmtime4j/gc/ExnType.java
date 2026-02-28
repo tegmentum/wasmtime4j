@@ -1,5 +1,6 @@
 package ai.tegmentum.wasmtime4j.gc;
 
+import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.TagType;
@@ -7,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a WebAssembly GC exception type.
@@ -23,6 +25,8 @@ public final class ExnType {
 
   private final TagType tagType;
   private final List<WasmValueType> fields;
+  private final Finality finality;
+  private final Engine engine;
 
   /**
    * Creates a new ExnType from a TagType.
@@ -43,15 +47,89 @@ public final class ExnType {
       fieldList.add(paramType);
     }
     this.fields = Collections.unmodifiableList(fieldList);
+    this.finality = Finality.FINAL;
+    this.engine = null;
+  }
+
+  /**
+   * Creates a new ExnType from an engine and a list of field value types.
+   *
+   * <p>This is the standalone constructor that does not require a TagType, useful for defining
+   * exception types directly from their payload types.
+   *
+   * @param engine the engine this type is associated with
+   * @param fieldTypes the payload field value types
+   * @throws IllegalArgumentException if engine or fieldTypes is null
+   * @since 1.1.0
+   */
+  public ExnType(final Engine engine, final List<WasmValueType> fieldTypes) {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (fieldTypes == null) {
+      throw new IllegalArgumentException("fieldTypes cannot be null");
+    }
+    this.tagType = null;
+    this.fields = Collections.unmodifiableList(new ArrayList<>(fieldTypes));
+    this.finality = Finality.FINAL;
+    this.engine = engine;
+  }
+
+  /**
+   * Creates a new ExnType with a specified finality, engine, and field types.
+   *
+   * @param engine the engine this type is associated with
+   * @param fieldTypes the payload field value types
+   * @param finality the finality of this type
+   * @throws IllegalArgumentException if any argument is null
+   * @since 1.1.0
+   */
+  public ExnType(
+      final Engine engine, final List<WasmValueType> fieldTypes, final Finality finality) {
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+    if (fieldTypes == null) {
+      throw new IllegalArgumentException("fieldTypes cannot be null");
+    }
+    if (finality == null) {
+      throw new IllegalArgumentException("finality cannot be null");
+    }
+    this.tagType = null;
+    this.fields = Collections.unmodifiableList(new ArrayList<>(fieldTypes));
+    this.finality = finality;
+    this.engine = engine;
   }
 
   /**
    * Gets the underlying tag type.
    *
-   * @return the tag type
+   * <p>May return null if this ExnType was created with the standalone constructor.
+   *
+   * @return the tag type, or null if created without a tag type
    */
   public TagType tagType() {
     return tagType;
+  }
+
+  /**
+   * Gets the finality of this exception type.
+   *
+   * @return the finality (defaults to {@link Finality#FINAL})
+   * @since 1.1.0
+   */
+  public Finality finality() {
+    return finality;
+  }
+
+  /**
+   * Gets the engine this exception type was created with, if any.
+   *
+   * @return the engine, or empty if not bound to an engine
+   * @since 1.1.0
+   */
+  public Optional<Engine> engine() {
+    return Optional.ofNullable(engine);
   }
 
   /**

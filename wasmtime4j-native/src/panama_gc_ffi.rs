@@ -43,6 +43,29 @@ pub fn heap_type_from_code(code: i32) -> Option<wasmtime::HeapType> {
     }
 }
 
+/// Converts a Wasmtime HeapType to an integer code matching the Java HeapType ordinal.
+///
+/// This is shared between Panama and JNI bindings for EqRef.ty().
+pub fn heap_type_to_code(heap_type: &wasmtime::HeapType) -> i32 {
+    match heap_type {
+        wasmtime::HeapType::Any => 0,
+        wasmtime::HeapType::Eq => 1,
+        wasmtime::HeapType::I31 => 2,
+        wasmtime::HeapType::Struct => 3,
+        wasmtime::HeapType::Array => 4,
+        wasmtime::HeapType::Func => 5,
+        wasmtime::HeapType::NoFunc => 6,
+        wasmtime::HeapType::Extern => 7,
+        wasmtime::HeapType::NoExtern => 8,
+        wasmtime::HeapType::Exn => 9,
+        wasmtime::HeapType::NoExn => 10,
+        wasmtime::HeapType::Cont => 11,
+        wasmtime::HeapType::NoCont => 12,
+        wasmtime::HeapType::None => 13,
+        _ => 14, // CONCRETE or unknown
+    }
+}
+
 /// Panama FFI function for creating a GC runtime
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_create_runtime(engine_handle: i64) -> i64 {
@@ -250,6 +273,34 @@ pub extern "C" fn wasmtime4j_gc_array_len(runtime_handle: i64, object_id: i64) -
 pub extern "C" fn wasmtime4j_gc_i31_new(runtime_handle: i64, value: i32) -> i64 {
     ffi_boundary_result!(0i64, {
         let object_id = i31_new_internal(runtime_handle, value)?;
+        Ok(object_id as i64)
+    })
+}
+
+/// Panama FFI function for creating I31 from unsigned u32 (checked).
+/// Returns 0 if value > 2^31-1.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_i31_new_unsigned(runtime_handle: i64, value: u32) -> i64 {
+    ffi_boundary_result!(0i64, {
+        let object_id = i31_new_unsigned_internal(runtime_handle, value)?;
+        Ok(object_id as i64)
+    })
+}
+
+/// Panama FFI function for creating I31 from signed i32 (wrapping, truncates to 31 bits).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_i31_wrapping_signed(runtime_handle: i64, value: i32) -> i64 {
+    ffi_boundary_result!(0i64, {
+        let object_id = i31_wrapping_signed_internal(runtime_handle, value)?;
+        Ok(object_id as i64)
+    })
+}
+
+/// Panama FFI function for creating I31 from unsigned u32 (wrapping, truncates to 31 bits).
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_i31_wrapping_unsigned(runtime_handle: i64, value: u32) -> i64 {
+    ffi_boundary_result!(0i64, {
+        let object_id = i31_wrapping_unsigned_internal(runtime_handle, value)?;
         Ok(object_id as i64)
     })
 }
@@ -904,6 +955,66 @@ fn i31_new_internal(runtime_handle: i64, value: i32) -> WasmtimeResult<ObjectId>
     }
 }
 
+fn i31_new_unsigned_internal(runtime_handle: i64, value: u32) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Invalid runtime handle".to_string(),
+        });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.i31_new_unsigned(value);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::InvalidParameter {
+            message: result.error.unwrap_or_default(),
+        })
+    }
+}
+
+fn i31_wrapping_signed_internal(runtime_handle: i64, value: i32) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Invalid runtime handle".to_string(),
+        });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.i31_wrapping_signed(value);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::InvalidParameter {
+            message: result.error.unwrap_or_default(),
+        })
+    }
+}
+
+fn i31_wrapping_unsigned_internal(runtime_handle: i64, value: u32) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: "Invalid runtime handle".to_string(),
+        });
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    let result = runtime.i31_wrapping_unsigned(value);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::InvalidParameter {
+            message: result.error.unwrap_or_default(),
+        })
+    }
+}
+
 fn i31_get_internal(runtime_handle: i64, object_id: i64, signed: u8) -> WasmtimeResult<i32> {
     if runtime_handle == 0 {
         return Err(WasmtimeError::InvalidParameter {
@@ -1359,5 +1470,248 @@ pub extern "C" fn wasmtime4j_gc_anyref_convert_extern(
         let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
         let object_id = runtime.anyref_convert_extern(externref_data)?;
         Ok(object_id as i64)
+    })
+}
+
+/// Panama FFI: Get the HeapType code for an EqRef.
+/// Returns the heap type code (matching Java HeapType ordinal), or -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_eqref_ty(
+    runtime_handle: i64,
+    object_id: u64,
+) -> i32 {
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let code = runtime.eqref_ty(object_id)?;
+        Ok(code)
+    })
+}
+
+/// Panama FFI: Check if an EqRef matches a given heap type code.
+/// Returns 1 if matches, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_eqref_matches_ty(
+    runtime_handle: i64,
+    object_id: u64,
+    heap_type_code: i32,
+) -> i32 {
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+
+        let heap_type = match heap_type_from_code(heap_type_code) {
+            Some(ht) => ht,
+            None => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Unknown heap type code: {}", heap_type_code),
+                });
+            }
+        };
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let matches = runtime.eqref_matches_ty(object_id, &heap_type)?;
+        Ok(if matches { 1 } else { 0 })
+    })
+}
+
+/// Panama FFI: Check if a StructRef matches a given heap type code.
+/// Returns 1 if matches, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_structref_matches_ty(
+    runtime_handle: i64,
+    object_id: u64,
+    heap_type_code: i32,
+) -> i32 {
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+
+        let heap_type = match heap_type_from_code(heap_type_code) {
+            Some(ht) => ht,
+            None => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Unknown heap type code: {}", heap_type_code),
+                });
+            }
+        };
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let matches = runtime.structref_matches_ty(object_id, &heap_type)?;
+        Ok(if matches { 1 } else { 0 })
+    })
+}
+
+/// Panama FFI: Check if an ArrayRef matches a given heap type code.
+/// Returns 1 if matches, 0 if not, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_arrayref_matches_ty(
+    runtime_handle: i64,
+    object_id: u64,
+    heap_type_code: i32,
+) -> i32 {
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+
+        let heap_type = match heap_type_from_code(heap_type_code) {
+            Some(ht) => ht,
+            None => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Unknown heap type code: {}", heap_type_code),
+                });
+            }
+        };
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let matches = runtime.arrayref_matches_ty(object_id, &heap_type)?;
+        Ok(if matches { 1 } else { 0 })
+    })
+}
+
+// ==================== Async GC Creation ====================
+
+/// Panama FFI function for creating a struct instance asynchronously
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_struct_new_async(
+    runtime_handle: i64,
+    type_id: i32,
+    field_values_ptr: *const i64,
+    field_count: i32,
+) -> i64 {
+    ffi_boundary_result!(0i64, {
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let struct_def = runtime.get_struct_type(type_id as u32)?;
+
+        let mut values = Vec::with_capacity(field_count as usize);
+        if !field_values_ptr.is_null() && field_count > 0 {
+            unsafe {
+                let values_slice =
+                    std::slice::from_raw_parts(field_values_ptr, field_count as usize);
+                for (i, &raw_value) in values_slice.iter().enumerate() {
+                    let gc_value = if i < struct_def.fields.len() {
+                        match &struct_def.fields[i].field_type {
+                            FieldType::I32 => GcValue::I32(raw_value as i32),
+                            FieldType::I64 => GcValue::I64(raw_value),
+                            FieldType::F32 => GcValue::F32(f32::from_bits(raw_value as u32)),
+                            FieldType::F64 => GcValue::F64(f64::from_bits(raw_value as u64)),
+                            FieldType::V128 => GcValue::I32(raw_value as i32),
+                            FieldType::PackedI8 | FieldType::PackedI16 => {
+                                GcValue::I32(raw_value as i32)
+                            }
+                            FieldType::Reference(_) => {
+                                if raw_value == 0 {
+                                    GcValue::Null
+                                } else {
+                                    GcValue::I64(raw_value)
+                                }
+                            }
+                        }
+                    } else {
+                        GcValue::I32(raw_value as i32)
+                    };
+                    values.push(gc_value);
+                }
+            }
+        } else {
+            for field in &struct_def.fields {
+                let default_value = match &field.field_type {
+                    FieldType::I32 => GcValue::I32(0),
+                    FieldType::I64 => GcValue::I64(0),
+                    FieldType::F32 => GcValue::F32(0.0),
+                    FieldType::F64 => GcValue::F64(0.0),
+                    FieldType::V128 => GcValue::I32(0),
+                    FieldType::PackedI8 | FieldType::PackedI16 => GcValue::I32(0),
+                    FieldType::Reference(_) => GcValue::Null,
+                };
+                values.push(default_value);
+            }
+        }
+
+        let result = runtime.struct_new_async(struct_def, values);
+
+        if result.success {
+            Ok(result.object_id.unwrap_or(0) as i64)
+        } else {
+            Err(WasmtimeError::InvalidParameter {
+                message: result.error.unwrap_or_default(),
+            })
+        }
+    })
+}
+
+/// Panama FFI function for creating an array instance asynchronously
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_array_new_async(
+    runtime_handle: i64,
+    type_id: i32,
+    elements_ptr: *const i64,
+    element_count: i32,
+) -> i64 {
+    ffi_boundary_result!(0i64, {
+        if runtime_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
+        }
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let array_def = runtime.get_array_type(type_id as u32)?;
+
+        let mut gc_elements = Vec::with_capacity(element_count as usize);
+        if !elements_ptr.is_null() && element_count > 0 {
+            unsafe {
+                let elements_slice =
+                    std::slice::from_raw_parts(elements_ptr, element_count as usize);
+                for &element in elements_slice {
+                    let gc_value = match &array_def.element_type {
+                        FieldType::I32 => GcValue::I32(element as i32),
+                        FieldType::I64 => GcValue::I64(element),
+                        FieldType::F32 => GcValue::F32(f32::from_bits(element as u32)),
+                        FieldType::F64 => GcValue::F64(f64::from_bits(element as u64)),
+                        FieldType::Reference(_) => {
+                            if element == 0 {
+                                GcValue::Null
+                            } else {
+                                GcValue::I64(element)
+                            }
+                        }
+                        _ => GcValue::I32(element as i32),
+                    };
+                    gc_elements.push(gc_value);
+                }
+            }
+        }
+
+        let result = runtime.array_new_async(array_def, gc_elements);
+
+        if result.success {
+            Ok(result.object_id.unwrap_or(0) as i64)
+        } else {
+            Err(WasmtimeError::InvalidParameter {
+                message: result.error.unwrap_or_default(),
+            })
+        }
     })
 }

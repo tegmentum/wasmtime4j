@@ -4,7 +4,7 @@ use jni::objects::{JClass, JObject, JValue};
 use jni::sys::{jboolean, jint, jintArray, jlong, jobjectArray, jsize};
 use jni::JNIEnv;
 
-use crate::error::jni_utils;
+use crate::error::{ffi_utils, jni_utils};
 use crate::store::core;
 
 use std::os::raw::c_void;
@@ -888,6 +888,51 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTab
     })
 }
 
+/// Create a new WebAssembly table asynchronously using async resource limiter
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTableAsync(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    element_type: jint,
+    initial_size: jint,
+    max_size: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use crate::error::WasmtimeError;
+        use wasmtime::{RefType, ValType};
+
+        let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(
+            store_handle as *const c_void, "store"
+        )? };
+
+        let val_type = match element_type {
+            0x70 | 5 => ValType::Ref(RefType::FUNCREF),
+            0x6F | 6 => ValType::Ref(RefType::EXTERNREF),
+            _ => return Err(WasmtimeError::Type {
+                message: format!("Invalid element type code: {} (expected 0x70/5 for FUNCREF or 0x6F/6 for EXTERNREF)", element_type),
+            }),
+        };
+
+        let max_size_opt = if max_size == -1 {
+            None
+        } else {
+            Some(max_size as u32)
+        };
+
+        let table = crate::table::core::create_table_async(
+            store,
+            val_type,
+            initial_size as u32,
+            max_size_opt,
+            None,
+        )?;
+
+        Ok(Box::into_raw(table) as jlong)
+    })
+}
+
 /// Create a new WebAssembly linear memory with the specified page size
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMemory(
@@ -965,6 +1010,45 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMem
         let memory = crate::memory::Memory::new_with_config(store, memory_config)?;
 
         // Register the memory handle for validation and return the pointer
+        let validated_ptr = crate::memory::core::create_validated_memory(memory)?;
+        Ok(validated_ptr as jlong)
+    })
+}
+
+/// Create a new WebAssembly memory asynchronously using async resource limiter
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMemoryAsync(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    initial_pages: jlong,
+    max_pages: jlong,
+    is_shared: jint,
+    is_64: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let store = unsafe { ffi_utils::deref_ptr::<crate::store::Store>(
+            store_handle as *const c_void, "store"
+        )? };
+
+        let max_pages_opt = if max_pages == -1 {
+            None
+        } else {
+            Some(max_pages as u64)
+        };
+
+        let memory_config = crate::memory::MemoryConfig {
+            initial_pages: initial_pages as u64,
+            maximum_pages: max_pages_opt,
+            is_shared: is_shared != 0,
+            is_64: is_64 != 0,
+            memory_index: 0,
+            name: None,
+        };
+
+        let memory = crate::memory::Memory::new_with_config_async(store, memory_config)?;
+
         let validated_ptr = crate::memory::core::create_validated_memory(memory)?;
         Ok(validated_ptr as jlong)
     })

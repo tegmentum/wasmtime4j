@@ -84,6 +84,58 @@ pub extern "C" fn wasmtime4j_panama_memory_create_with_config(
     })
 }
 
+/// Create a new WebAssembly memory asynchronously (Panama FFI version)
+///
+/// Uses Wasmtime's `Memory::new_async` for async resource limiter support.
+#[cfg(feature = "async")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_memory_create_async(
+    store_ptr: *mut c_void,
+    initial_pages: u64,
+    maximum_pages: u64,
+    is_shared: c_int,
+    is_64: c_int,
+    memory_index: c_uint,
+    name: *const c_char,
+    memory_ptr: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let store = unsafe { ffi_utils::deref_ptr::<Store>(store_ptr, "store")? };
+
+        let mut builder = MemoryBuilder::new(initial_pages);
+
+        if maximum_pages > 0 {
+            builder = builder.maximum_pages(maximum_pages);
+        }
+
+        if is_shared != 0 {
+            builder = builder.shared();
+        }
+
+        if is_64 != 0 {
+            builder = builder.memory64();
+        }
+
+        builder = builder.memory_index(memory_index);
+
+        if !name.is_null() {
+            let name_str = unsafe { ffi_utils::c_str_to_string(name, "memory_name")? };
+            builder = builder.name(name_str);
+        }
+
+        let config = crate::memory::MemoryConfig::from(builder);
+        let memory = Memory::new_with_config_async(store, config)?;
+
+        let validated_ptr = crate::memory::core::create_validated_memory(memory)?;
+
+        unsafe {
+            *memory_ptr = validated_ptr as *mut c_void;
+        }
+
+        Ok(())
+    })
+}
+
 /// Get memory size in pages (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_memory_size_pages(
