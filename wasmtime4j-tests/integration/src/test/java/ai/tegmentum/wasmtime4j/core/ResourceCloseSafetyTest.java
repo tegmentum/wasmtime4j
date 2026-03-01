@@ -24,14 +24,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for resource close safety across all closeable WASM resources.
@@ -52,9 +56,14 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Resource Close Safety Integration Tests")
-public final class ResourceCloseSafetyTest {
+public class ResourceCloseSafetyTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ResourceCloseSafetyTest.class.getName());
+
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
 
   /**
    * Simple WebAssembly module that exports an add function.
@@ -118,9 +127,11 @@ public final class ResourceCloseSafetyTest {
   @DisplayName("Closed Instance Detection Tests")
   class ClosedInstanceDetectionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("getFunction on closed instance should throw IllegalStateException")
-    void getFunctionOnClosedInstanceShouldThrow() throws Exception {
+    void getFunctionOnClosedInstanceShouldThrow(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
       final Module module = engine.compileModule(ADD_WASM);
       final Store store = engine.createStore();
@@ -140,9 +151,11 @@ public final class ResourceCloseSafetyTest {
       engine.close();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("double close on instance should be safe")
-    void doubleCloseOnInstanceShouldBeSafe() throws Exception {
+    void doubleCloseOnInstanceShouldBeSafe(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
       final Module module = engine.compileModule(ADD_WASM);
       final Store store = engine.createStore();
@@ -170,10 +183,12 @@ public final class ResourceCloseSafetyTest {
   @DisplayName("Closed Module Detection Tests")
   class ClosedModuleDetectionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("operations on closed module should throw IllegalStateException")
     @SuppressWarnings("deprecation")
-    void operationsOnClosedModuleShouldThrow() throws Exception {
+    void operationsOnClosedModuleShouldThrow(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
       final Module module = engine.compileModule(ADD_WASM);
 
@@ -189,9 +204,11 @@ public final class ResourceCloseSafetyTest {
       engine.close();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("double close on module should be safe")
-    void doubleCloseOnModuleShouldBeSafe() throws Exception {
+    void doubleCloseOnModuleShouldBeSafe(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
       final Module module = engine.compileModule(ADD_WASM);
 
@@ -208,9 +225,11 @@ public final class ResourceCloseSafetyTest {
   @DisplayName("Closed Engine Detection Tests")
   class ClosedEngineDetectionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("double close on engine should be safe")
-    void doubleCloseOnEngineShouldBeSafe() throws Exception {
+    void doubleCloseOnEngineShouldBeSafe(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
 
       engine.close();
@@ -218,9 +237,11 @@ public final class ResourceCloseSafetyTest {
       LOGGER.info("Engine double close succeeded without exception");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("createStore on closed engine should throw or be handled safely")
-    void createStoreOnClosedEngineShouldBeHandled() throws Exception {
+    void createStoreOnClosedEngineShouldBeHandled(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
       engine.close();
       LOGGER.info("Engine closed, attempting createStore()");
@@ -244,9 +265,11 @@ public final class ResourceCloseSafetyTest {
   @DisplayName("Closed Store Detection Tests")
   class ClosedStoreDetectionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("double close on store should be safe")
-    void doubleCloseOnStoreShouldBeSafe() throws Exception {
+    void doubleCloseOnStoreShouldBeSafe(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
       final Store store = engine.createStore();
 
@@ -263,9 +286,12 @@ public final class ResourceCloseSafetyTest {
   @DisplayName("Resource Cleanup After Error Tests")
   class ResourceCleanupAfterErrorTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should clean up resources when created and immediately closed")
-    void shouldCleanUpResourcesWhenCreatedAndImmediatelyClosed() throws Exception {
+    void shouldCleanUpResourcesWhenCreatedAndImmediatelyClosed(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
       final Store store = engine.createStore();
 
@@ -275,9 +301,11 @@ public final class ResourceCloseSafetyTest {
       LOGGER.info("Resources cleaned up after error scenario");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle close of all resources in reverse creation order")
-    void shouldHandleCloseOfAllResourcesInReverseOrder() throws Exception {
+    void shouldHandleCloseOfAllResourcesInReverseOrder(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       final Engine engine = Engine.create();
       final Module module = engine.compileModule(ADD_WASM);
       final Store store = engine.createStore();

@@ -24,9 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,16 +37,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
@@ -67,70 +64,35 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @since 1.1.0
  */
 @DisplayName("WASI HTTP Edge Cases Integration Tests")
-public final class WasiHttpEdgeCasesTest {
+public class WasiHttpEdgeCasesTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiHttpEdgeCasesTest.class.getName());
 
-  private static boolean wasiHttpAvailable = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
-  private static WasiHttpContext sharedHttpContext;
+  private final List<AutoCloseable> resources = new ArrayList<>();
 
-  @BeforeAll
-  static void checkWasiHttpAvailable() {
+  private static boolean checkWasiHttpAvailable() {
     try {
-      sharedRuntime = WasmRuntimeFactory.create();
-      sharedEngine = sharedRuntime.createEngine();
-
-      // Try to create a WASI HTTP context using JNI directly
       final Class<?> jniContextClass =
           Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      sharedHttpContext =
+      final WasiHttpContext context =
           (WasiHttpContext)
               jniContextClass
                   .getConstructor(WasiHttpConfig.class)
                   .newInstance(WasiHttpConfig.defaultConfig());
-
-      if (sharedHttpContext != null) {
-        wasiHttpAvailable = true;
-        LOGGER.info("WASI HTTP is available (using JNI implementation)");
+      if (context != null) {
+        context.close();
+        return true;
       }
     } catch (final Exception e) {
       LOGGER.warning("WASI HTTP not available: " + e.getMessage());
-      wasiHttpAvailable = false;
     }
-  }
-
-  @AfterAll
-  static void cleanup() {
-    if (sharedHttpContext != null) {
-      try {
-        sharedHttpContext.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared HTTP context: " + e.getMessage());
-      }
-    }
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared runtime: " + e.getMessage());
-      }
-    }
+    return false;
   }
 
   private static void assumeWasiHttpAvailable() {
-    assumeTrue(wasiHttpAvailable, "WASI HTTP native implementation not available - skipping");
+    assumeTrue(
+        checkWasiHttpAvailable(), "WASI HTTP native implementation not available - skipping");
   }
-
-  private final List<AutoCloseable> resources = new ArrayList<>();
 
   @BeforeEach
   void setUp(final TestInfo testInfo) {
@@ -148,15 +110,18 @@ public final class WasiHttpEdgeCasesTest {
       }
     }
     resources.clear();
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Connection Pool Edge Cases")
   class ConnectionPoolEdgeCases {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should reject zero max connections")
-    void shouldRejectZeroMaxConnections() {
+    void shouldRejectZeroMaxConnections(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing zero max connections configuration");
 
@@ -169,9 +134,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Zero max connections correctly rejected");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle max int connections")
-    void shouldHandleMaxIntConnections() {
+    void shouldHandleMaxIntConnections(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing max int connections configuration");
 
@@ -185,9 +152,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Max int connections handled: " + maxConnections.get());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle connections per host limit")
-    void shouldHandleConnectionsPerHostLimit() {
+    void shouldHandleConnectionsPerHostLimit(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing connections per host limit");
 
@@ -201,10 +170,12 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Per-host limit configuration handled");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @Timeout(30)
     @DisplayName("should handle concurrent context creation")
-    void shouldHandleConcurrentContextCreation() throws Exception {
+    void shouldHandleConcurrentContextCreation(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing concurrent HTTP context creation");
 
@@ -288,9 +259,11 @@ public final class WasiHttpEdgeCasesTest {
   @DisplayName("Redirect Handling Edge Cases")
   class RedirectEdgeCases {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle zero max redirects")
-    void shouldHandleZeroMaxRedirects() {
+    void shouldHandleZeroMaxRedirects(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing zero max redirects configuration");
 
@@ -303,9 +276,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Zero max redirects handled");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle large max redirects value")
-    void shouldHandleLargeMaxRedirects() {
+    void shouldHandleLargeMaxRedirects(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing large max redirects configuration");
 
@@ -321,9 +296,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Large max redirects handled: " + largeRedirectCount);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should not set max redirects when follow redirects disabled")
-    void shouldIgnoreMaxRedirectsWhenDisabled() {
+    void shouldIgnoreMaxRedirectsWhenDisabled(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing max redirects when follow redirects disabled");
 
@@ -342,9 +319,11 @@ public final class WasiHttpEdgeCasesTest {
   @DisplayName("Large Response Body Edge Cases")
   class LargeResponseBodyEdgeCases {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should reject zero body size limits")
-    void shouldRejectZeroBodySizeLimits() {
+    void shouldRejectZeroBodySizeLimits(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing zero body size limits");
 
@@ -362,9 +341,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Zero body size limits correctly rejected");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle very large body size limits")
-    void shouldHandleVeryLargeBodySizeLimits() {
+    void shouldHandleVeryLargeBodySizeLimits(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing very large body size limits");
 
@@ -407,9 +388,11 @@ public final class WasiHttpEdgeCasesTest {
   @DisplayName("Timeout Edge Cases")
   class TimeoutEdgeCases {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle zero duration timeouts")
-    void shouldHandleZeroDurationTimeouts() {
+    void shouldHandleZeroDurationTimeouts(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing zero duration timeouts");
 
@@ -427,9 +410,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Zero duration timeouts handled");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle very long timeouts")
-    void shouldHandleVeryLongTimeouts() {
+    void shouldHandleVeryLongTimeouts(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing very long timeouts");
 
@@ -445,9 +430,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Long timeouts handled: connect=1h, read=1d");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle millisecond precision timeouts")
-    void shouldHandleMillisecondPrecisionTimeouts() {
+    void shouldHandleMillisecondPrecisionTimeouts(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing millisecond precision timeouts");
 
@@ -463,9 +450,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Millisecond precision timeout handled: " + preciseTimeout.toMillis() + "ms");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle nano precision timeouts")
-    void shouldHandleNanoPrecisionTimeouts() {
+    void shouldHandleNanoPrecisionTimeouts(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing nano precision timeouts");
 
@@ -484,9 +473,11 @@ public final class WasiHttpEdgeCasesTest {
   @DisplayName("Host Pattern Edge Cases")
   class HostPatternEdgeCases {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should reject empty host pattern")
-    void shouldRejectEmptyHostPattern() {
+    void shouldRejectEmptyHostPattern(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing empty host pattern");
 
@@ -499,9 +490,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Empty host pattern correctly rejected");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle very long host pattern")
-    void shouldHandleVeryLongHostPattern() {
+    void shouldHandleVeryLongHostPattern(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing very long host pattern");
 
@@ -515,9 +508,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Long host pattern handled: " + longHost.length() + " chars");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle multiple wildcard levels")
-    void shouldHandleMultipleWildcardLevels() {
+    void shouldHandleMultipleWildcardLevels(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing multiple wildcard levels");
 
@@ -536,9 +531,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Multiple wildcard levels handled: " + hosts.size() + " patterns");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle case sensitivity in hosts")
-    void shouldHandleCaseSensitivityInHosts() throws Exception {
+    void shouldHandleCaseSensitivityInHosts(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing case sensitivity in host patterns");
 
@@ -563,9 +560,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Case sensitivity handled correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle numeric IP addresses as hosts")
-    void shouldHandleNumericIpAddressesAsHosts() throws Exception {
+    void shouldHandleNumericIpAddressesAsHosts(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing numeric IP addresses as hosts");
 
@@ -590,9 +589,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("IP address hosts handled correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle IPv6 addresses as hosts")
-    void shouldHandleIpv6AddressesAsHosts() throws Exception {
+    void shouldHandleIpv6AddressesAsHosts(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing IPv6 addresses as hosts");
 
@@ -615,9 +616,11 @@ public final class WasiHttpEdgeCasesTest {
   @DisplayName("Configuration Validation Edge Cases")
   class ConfigurationValidationEdgeCases {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create empty config")
-    void shouldCreateEmptyConfig() {
+    void shouldCreateEmptyConfig(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing empty config creation");
 
@@ -630,9 +633,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Empty config created successfully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle duplicate host patterns")
-    void shouldHandleDuplicateHostPatterns() {
+    void shouldHandleDuplicateHostPatterns(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing duplicate host patterns");
 
@@ -651,9 +656,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Duplicate hosts deduplicated correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle same host in allow and block lists")
-    void shouldHandleSameHostInAllowAndBlockLists() throws Exception {
+    void shouldHandleSameHostInAllowAndBlockLists(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing same host in allow and block lists");
 
@@ -679,9 +686,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Block list priority verified");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should preserve config immutability")
-    void shouldPreserveConfigImmutability() {
+    void shouldPreserveConfigImmutability(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing config immutability");
 
@@ -705,9 +714,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Config immutability verified");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should validate config after build")
-    void shouldValidateConfigAfterBuild() {
+    void shouldValidateConfigAfterBuild(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing config validation");
 
@@ -729,9 +740,11 @@ public final class WasiHttpEdgeCasesTest {
   @DisplayName("User Agent Edge Cases")
   class UserAgentEdgeCases {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle empty user agent")
-    void shouldHandleEmptyUserAgent() {
+    void shouldHandleEmptyUserAgent(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing empty user agent");
 
@@ -743,9 +756,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Empty user agent handled");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle very long user agent")
-    void shouldHandleVeryLongUserAgent() {
+    void shouldHandleVeryLongUserAgent(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing very long user agent");
 
@@ -758,13 +773,15 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Long user agent handled: " + longUserAgent.length() + " chars");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle special characters in user agent")
-    void shouldHandleSpecialCharactersInUserAgent() {
+    void shouldHandleSpecialCharactersInUserAgent(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing special characters in user agent");
 
-      final String specialUserAgent = "Agent/1.0 (Linux; U; 中文; en-US)";
+      final String specialUserAgent = "Agent/1.0 (Linux; U; \u4E2D\u6587; en-US)";
 
       final WasiHttpConfig config =
           WasiHttpConfig.builder().withUserAgent(specialUserAgent).build();
@@ -779,9 +796,11 @@ public final class WasiHttpEdgeCasesTest {
   @DisplayName("HTTP Methods Edge Cases")
   class HttpMethodsEdgeCases {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle empty methods list")
-    void shouldHandleEmptyMethodsList() {
+    void shouldHandleEmptyMethodsList(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing empty methods list");
 
@@ -794,9 +813,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Empty methods list handled, size: " + methods.size());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle custom HTTP methods")
-    void shouldHandleCustomHttpMethods() {
+    void shouldHandleCustomHttpMethods(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing custom HTTP methods");
 
@@ -812,9 +833,11 @@ public final class WasiHttpEdgeCasesTest {
       LOGGER.info("Custom HTTP methods handled: " + methods.size() + " methods");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle duplicate methods")
-    void shouldHandleDuplicateMethods() {
+    void shouldHandleDuplicateMethods(final RuntimeType runtime) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing duplicate HTTP methods");
 

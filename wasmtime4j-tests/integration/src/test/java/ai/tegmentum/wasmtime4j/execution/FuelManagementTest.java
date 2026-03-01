@@ -24,17 +24,20 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for fuel management functionality.
@@ -46,11 +49,9 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Fuel Management Integration Tests")
-public final class FuelManagementTest {
+public class FuelManagementTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(FuelManagementTest.class.getName());
-
-  private static boolean fuelAvailable = false;
 
   /** Simple WebAssembly module that exports an add function. */
   private static final byte[] ADD_WASM =
@@ -157,17 +158,21 @@ public final class FuelManagementTest {
         0x0B // end
       };
 
-  @BeforeAll
-  static void checkFuelAvailable() {
+  @AfterEach
+  void tearDown() {
+    clearRuntimeSelection();
+  }
+
+  private boolean checkFuelAvailable(final RuntimeType runtime) {
     try {
+      setRuntime(runtime);
       final EngineConfig config = new EngineConfig().consumeFuel(true);
       try (final Engine engine = Engine.create(config)) {
-        fuelAvailable = engine.isFuelEnabled();
-        LOGGER.info("Fuel management available: " + fuelAvailable);
+        return engine.isFuelEnabled();
       }
     } catch (final Exception e) {
       LOGGER.warning("Fuel management not available: " + e.getMessage());
-      fuelAvailable = false;
+      return false;
     }
   }
 
@@ -175,10 +180,12 @@ public final class FuelManagementTest {
   @DisplayName("Fuel Configuration Tests")
   class FuelConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enable fuel consumption via engine config")
-    void shouldEnableFuelConsumptionViaEngineConfig() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldEnableFuelConsumptionViaEngineConfig(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing fuel consumption enablement");
 
@@ -190,9 +197,12 @@ public final class FuelManagementTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should not enable fuel by default")
-    void shouldNotEnableFuelByDefault() throws Exception {
+    void shouldNotEnableFuelByDefault(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       LOGGER.info("Testing default fuel configuration");
 
       final EngineConfig config = new EngineConfig();
@@ -210,10 +220,12 @@ public final class FuelManagementTest {
   @DisplayName("Fuel Setting and Getting Tests")
   class FuelSettingGettingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should set and get fuel on store")
-    void shouldSetAndGetFuelOnStore() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldSetAndGetFuelOnStore(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing set and get fuel");
 
@@ -230,10 +242,12 @@ public final class FuelManagementTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should add fuel to existing amount")
-    void shouldAddFuelToExistingAmount() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldAddFuelToExistingAmount(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing add fuel");
 
@@ -246,40 +260,24 @@ public final class FuelManagementTest {
         final long initialFuel = store.getFuel();
         LOGGER.info("Initial fuel: " + initialFuel);
 
-        // Skip test if initial fuel query doesn't work as expected
-        if (initialFuel <= 0) {
-          LOGGER.warning("Fuel query returned unexpected value: " + initialFuel);
-          assumeTrue(false, "Fuel API not working as expected - getFuel returned " + initialFuel);
-          return;
-        }
+        assertTrue(
+            initialFuel > 0,
+            "Fuel API should return positive value after setFuel, got: " + initialFuel);
 
         store.addFuel(3000L);
         final long afterAdd = store.getFuel();
         LOGGER.info("Fuel after adding 3000: " + afterAdd);
 
-        // Verify fuel increased (or at least stayed same if fuel is consumed during query)
-        // Note: If fuel system works differently than expected, log and skip
-        if (afterAdd < initialFuel) {
-          LOGGER.warning(
-              "Fuel decreased unexpectedly from "
-                  + initialFuel
-                  + " to "
-                  + afterAdd
-                  + " - native fuel API may have different semantics");
-          assumeTrue(
-              false,
-              "Native fuel API has unexpected behavior - addFuel did not increase fuel as"
-                  + " expected");
-        }
-
         assertTrue(afterAdd >= initialFuel, "Fuel should increase or stay same after adding");
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get remaining fuel accurately")
-    void shouldGetRemainingFuelAccurately() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldGetRemainingFuelAccurately(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing remaining fuel");
 
@@ -301,10 +299,12 @@ public final class FuelManagementTest {
   @DisplayName("Fuel Consumption Tests")
   class FuelConsumptionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should consume fuel during execution")
-    void shouldConsumeFuelDuringExecution() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldConsumeFuelDuringExecution(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing fuel consumption during execution");
 
@@ -336,10 +336,12 @@ public final class FuelManagementTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should consume fuel proportional to work")
-    void shouldConsumeFuelProportionalToWork() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldConsumeFuelProportionalToWork(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing proportional fuel consumption");
 
@@ -373,10 +375,13 @@ public final class FuelManagementTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should consume fuel explicitly via consumeFuel method")
-    void shouldConsumeFuelExplicitlyViaConsumeFuelMethod() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldConsumeFuelExplicitlyViaConsumeFuelMethod(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing explicit fuel consumption");
 
@@ -401,26 +406,16 @@ public final class FuelManagementTest {
   @DisplayName("Fuel Exhaustion Tests")
   class FuelExhaustionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw when fuel is exhausted")
-    void shouldThrowWhenFuelIsExhausted() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldThrowWhenFuelIsExhausted(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing fuel exhaustion");
 
       final EngineConfig config = new EngineConfig().consumeFuel(true);
-
-      // Verify WASM bytecode can be compiled first
-      try (final Engine testEngine = Engine.create(config)) {
-        try {
-          testEngine.compileModule(LOOP_WASM);
-        } catch (final Exception e) {
-          LOGGER.warning(
-              "WASM compilation failed - test bytecode may need updating: " + e.getMessage());
-          assumeTrue(false, "WASM bytecode compilation failed: " + e.getMessage());
-          return;
-        }
-      }
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore();
@@ -443,10 +438,12 @@ public final class FuelManagementTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should not throw when sufficient fuel is available")
-    void shouldNotThrowWhenSufficientFuelIsAvailable() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldNotThrowWhenSufficientFuelIsAvailable(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing execution with sufficient fuel");
 
@@ -475,10 +472,12 @@ public final class FuelManagementTest {
   @DisplayName("Fuel Boundary Condition Tests")
   class FuelBoundaryConditionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should allow zero fuel setting")
-    void shouldAllowZeroFuelSetting() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldAllowZeroFuelSetting(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing zero fuel setting - Wasmtime allows setting fuel to 0");
 
@@ -495,10 +494,12 @@ public final class FuelManagementTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle large fuel values")
-    void shouldHandleLargeFuelValues() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldHandleLargeFuelValues(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing large fuel values");
 
@@ -516,10 +517,12 @@ public final class FuelManagementTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should reject negative fuel consumption")
-    void shouldRejectNegativeFuelConsumption() throws Exception {
-      assumeTrue(fuelAvailable, "Fuel management not available");
+    void shouldRejectNegativeFuelConsumption(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkFuelAvailable(runtime), "Fuel management not available");
 
       LOGGER.info("Testing negative fuel consumption rejection");
 

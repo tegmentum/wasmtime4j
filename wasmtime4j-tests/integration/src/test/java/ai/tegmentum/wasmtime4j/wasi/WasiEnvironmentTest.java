@@ -17,21 +17,18 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WASI environment variables and command-line arguments.
@@ -47,72 +44,37 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WASI Environment Integration Tests")
 @Tag("integration")
-class WasiEnvironmentTest {
+class WasiEnvironmentTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiEnvironmentTest.class.getName());
 
-  private static boolean wasiAvailable = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
-
-  @BeforeAll
-  static void checkWasiAvailable() {
-    LOGGER.info("Checking WASI availability");
-    try {
-      sharedRuntime = WasmRuntimeFactory.create();
-      sharedEngine = sharedRuntime.createEngine();
-
-      // Check if WASI context is available
-      final WasiContext testContext = WasiContext.create();
-      if (testContext != null) {
-        wasiAvailable = true;
-        LOGGER.info("WASI context is available");
-      }
-    } catch (final Exception e) {
-      LOGGER.warning("WASI not available: " + e.getMessage());
-      wasiAvailable = false;
-    }
-  }
-
-  @AfterAll
-  static void cleanupSharedResources() {
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing shared runtime: " + e.getMessage());
-      }
-    }
-  }
-
-  @BeforeEach
-  void setUp() {
-    assumeTrue(wasiAvailable, "WASI must be available for these tests");
+  @AfterEach
+  void tearDown() {
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Environment Variable Configuration Tests")
   class EnvironmentVariableConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with single environment variable")
-    void shouldCreateContextWithSingleEnvVar() throws Exception {
+    void shouldCreateContextWithSingleEnvVar(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context = WasiContext.create().setEnv("TEST_VAR", "test_value");
 
       LOGGER.info("Created WASI context with single env var");
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with multiple environment variables")
-    void shouldCreateContextWithMultipleEnvVars() throws Exception {
+    void shouldCreateContextWithMultipleEnvVars(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final Map<String, String> envVars = new HashMap<>();
       envVars.put("PATH", "/usr/bin:/bin");
       envVars.put("HOME", "/home/user");
@@ -125,18 +87,24 @@ class WasiEnvironmentTest {
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with empty environment variable value")
-    void shouldCreateContextWithEmptyEnvValue() throws Exception {
+    void shouldCreateContextWithEmptyEnvValue(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context = WasiContext.create().setEnv("EMPTY_VAR", "");
 
       LOGGER.info("Created WASI context with empty env var value");
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with special characters in environment variable")
-    void shouldCreateContextWithSpecialCharsInEnv() throws Exception {
+    void shouldCreateContextWithSpecialCharsInEnv(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context =
           WasiContext.create().setEnv("SPECIAL", "value with spaces and !@#$%^&*()");
 
@@ -144,9 +112,12 @@ class WasiEnvironmentTest {
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with chained environment variables")
-    void shouldCreateContextWithChainedEnvVars() throws Exception {
+    void shouldCreateContextWithChainedEnvVars(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context =
           WasiContext.create()
               .setEnv("VAR1", "value1")
@@ -162,18 +133,24 @@ class WasiEnvironmentTest {
   @DisplayName("Command-Line Argument Configuration Tests")
   class CommandLineArgumentConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with single argument")
-    void shouldCreateContextWithSingleArg() throws Exception {
+    void shouldCreateContextWithSingleArg(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context = WasiContext.create().setArgv(new String[] {"--help"});
 
       LOGGER.info("Created WASI context with single arg");
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with multiple arguments")
-    void shouldCreateContextWithMultipleArgs() throws Exception {
+    void shouldCreateContextWithMultipleArgs(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context =
           WasiContext.create()
               .setArgv(
@@ -190,9 +167,12 @@ class WasiEnvironmentTest {
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with arguments containing spaces")
-    void shouldCreateContextWithArgsContainingSpaces() throws Exception {
+    void shouldCreateContextWithArgsContainingSpaces(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context =
           WasiContext.create()
               .setArgv(
@@ -202,9 +182,12 @@ class WasiEnvironmentTest {
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with empty arguments array")
-    void shouldCreateContextWithNoArgs() throws Exception {
+    void shouldCreateContextWithNoArgs(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context = WasiContext.create().setArgv(new String[] {});
 
       LOGGER.info("Created WASI context with no args");
@@ -216,9 +199,12 @@ class WasiEnvironmentTest {
   @DisplayName("Combined Configuration Tests")
   class CombinedConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with both env vars and args")
-    void shouldCreateContextWithEnvAndArgs() throws Exception {
+    void shouldCreateContextWithEnvAndArgs(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context =
           WasiContext.create()
               .setEnv("HOME", "/home/testuser")
@@ -229,9 +215,12 @@ class WasiEnvironmentTest {
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with realistic configuration")
-    void shouldCreateContextWithRealisticConfig() throws Exception {
+    void shouldCreateContextWithRealisticConfig(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final Map<String, String> envVars = new HashMap<>();
       envVars.put("HOME", "/home/wasm");
       envVars.put("USER", "wasm");
@@ -256,18 +245,24 @@ class WasiEnvironmentTest {
   @DisplayName("Stdio Configuration Tests")
   class StdioConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context that inherits all stdio")
-    void shouldCreateContextInheritingAllStdio() throws Exception {
+    void shouldCreateContextInheritingAllStdio(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context = WasiContext.create().inheritStdio();
 
       LOGGER.info("Created WASI context inheriting all stdio");
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with combined stdio and env")
-    void shouldCreateContextWithStdioAndEnv() throws Exception {
+    void shouldCreateContextWithStdioAndEnv(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context =
           WasiContext.create()
               .inheritStdio()
@@ -283,18 +278,25 @@ class WasiEnvironmentTest {
   @DisplayName("Environment Inheritance Tests")
   class EnvironmentInheritanceTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context that inherits host environment")
-    void shouldCreateContextInheritingEnv() throws Exception {
+    void shouldCreateContextInheritingEnv(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context = WasiContext.create().inheritEnv();
 
       LOGGER.info("Created WASI context inheriting host environment");
       assertThat(context).isNotNull();
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create WASI context with inherited env and additional vars")
-    void shouldCreateContextWithInheritedAndAdditionalEnv() throws Exception {
+    void shouldCreateContextWithInheritedAndAdditionalEnv(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+
       final WasiContext context =
           WasiContext.create().inheritEnv().setEnv("ADDITIONAL_VAR", "additional_value");
 

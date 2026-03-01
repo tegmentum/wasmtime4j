@@ -23,21 +23,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WebAssembly function type variations.
@@ -48,25 +48,11 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Function Type Variations Integration Tests")
-public final class FunctionTypeVariationsTest {
+public final class FunctionTypeVariationsTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(FunctionTypeVariationsTest.class.getName());
 
-  private WasmRuntime runtime;
-  private Engine engine;
-  private Store store;
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-    runtime = WasmRuntimeFactory.create();
-    engine = runtime.createEngine();
-    store = engine.createStore();
-    resources.add(store);
-    resources.add(engine);
-    resources.add(runtime);
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -79,16 +65,25 @@ public final class FunctionTypeVariationsTest {
       }
     }
     resources.clear();
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("No Parameter Functions")
   class NoParameterFunctions {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function returning i32 constant")
-    void shouldCallFunctionReturningI32Constant(final TestInfo testInfo) throws Exception {
+    void shouldCallFunctionReturningI32Constant(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // WAT: (module (func (export "get42") (result i32) (i32.const 42)))
       final byte[] wasm = {
@@ -151,10 +146,18 @@ public final class FunctionTypeVariationsTest {
       LOGGER.info("Function returned: " + results[0].asInt());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function returning i64 constant")
-    void shouldCallFunctionReturningI64Constant(final TestInfo testInfo) throws Exception {
+    void shouldCallFunctionReturningI64Constant(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // WAT: (module (func (export "get_big") (result i64) (i64.const 9223372036854775807)))
       final byte[] wasm = {
@@ -227,10 +230,18 @@ public final class FunctionTypeVariationsTest {
       LOGGER.info("Function returned: " + results[0].asLong());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call void function")
-    void shouldCallVoidFunction(final TestInfo testInfo) throws Exception {
+    void shouldCallVoidFunction(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // WAT: (module (func (export "noop")))
       final byte[] wasm = {
@@ -293,10 +304,18 @@ public final class FunctionTypeVariationsTest {
   @DisplayName("Single Parameter Functions")
   class SingleParameterFunctions {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function with i32 parameter")
-    void shouldCallFunctionWithI32Parameter(final TestInfo testInfo) throws Exception {
+    void shouldCallFunctionWithI32Parameter(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // WAT: (module (func (export "double") (param i32) (result i32)
       //              (i32.mul (local.get 0) (i32.const 2))))
@@ -364,10 +383,18 @@ public final class FunctionTypeVariationsTest {
       LOGGER.info("double(21) = " + results[0].asInt());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function with f64 parameter")
-    void shouldCallFunctionWithF64Parameter(final TestInfo testInfo) throws Exception {
+    void shouldCallFunctionWithF64Parameter(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // WAT: (module (func (export "negate") (param f64) (result f64)
       //              (f64.neg (local.get 0))))
@@ -438,10 +465,18 @@ public final class FunctionTypeVariationsTest {
   @DisplayName("Multiple Parameter Functions")
   class MultipleParameterFunctions {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function with two i32 parameters")
-    void shouldCallFunctionWithTwoI32Parameters(final TestInfo testInfo) throws Exception {
+    void shouldCallFunctionWithTwoI32Parameters(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // WAT: (module (func (export "add") (param i32 i32) (result i32)
       //              (i32.add (local.get 0) (local.get 1))))
@@ -507,10 +542,18 @@ public final class FunctionTypeVariationsTest {
       LOGGER.info("add(100, 23) = " + results[0].asInt());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function with mixed parameter types")
-    void shouldCallFunctionWithMixedParameterTypes(final TestInfo testInfo) throws Exception {
+    void shouldCallFunctionWithMixedParameterTypes(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // WAT: (module (func (export "mix") (param i32 i64) (result i64)
       //              (i64.add (i64.extend_i32_u (local.get 0)) (local.get 1))))
@@ -577,10 +620,18 @@ public final class FunctionTypeVariationsTest {
       LOGGER.info("mix(10, 1000) = " + results[0].asLong());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function with four parameters")
-    void shouldCallFunctionWithFourParameters(final TestInfo testInfo) throws Exception {
+    void shouldCallFunctionWithFourParameters(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // WAT: (module (func (export "sum4") (param i32 i32 i32 i32) (result i32)
       //              (i32.add (i32.add (i32.add (local.get 0) (local.get 1)) (local.get 2))
@@ -662,10 +713,18 @@ public final class FunctionTypeVariationsTest {
   @DisplayName("Edge Case Values")
   class EdgeCaseValues {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle i32 min and max values")
-    void shouldHandleI32MinAndMaxValues(final TestInfo testInfo) throws Exception {
+    void shouldHandleI32MinAndMaxValues(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Simple identity function: (param i32) (result i32) - returns what it receives
       final byte[] wasm = {
@@ -734,10 +793,18 @@ public final class FunctionTypeVariationsTest {
       LOGGER.info("Edge case i32 values handled correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle f32 special values")
-    void shouldHandleF32SpecialValues(final TestInfo testInfo) throws Exception {
+    void shouldHandleF32SpecialValues(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Simple identity function: (param f32) (result f32)
       final byte[] wasm = {

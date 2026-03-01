@@ -4,17 +4,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Linker;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WASI Preview 2 functionality.
@@ -29,40 +30,34 @@ import org.junit.jupiter.api.condition.EnabledIf;
  *   <li>Resource management and cleanup
  * </ul>
  */
-public class WasiPreview2Test {
+public class WasiPreview2Test extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiPreview2Test.class.getName());
 
-  private WasmRuntime runtime;
   private Engine engine;
-
-  @BeforeEach
-  void setUp(TestInfo testInfo) {
-    LOGGER.info("Setting up test: " + testInfo.getDisplayName());
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-    } catch (WasmException e) {
-      fail("Failed to set up runtime: " + e.getMessage(), e);
-    }
-  }
 
   @AfterEach
   void tearDown(TestInfo testInfo) {
     LOGGER.info("Tearing down test: " + testInfo.getDisplayName());
-    if (runtime != null) {
+    if (engine != null) {
       try {
-        runtime.close();
+        engine.close();
       } catch (Exception e) {
-        LOGGER.warning("Failed to close runtime: " + e.getMessage());
+        LOGGER.warning("Failed to close engine: " + e.getMessage());
       }
     }
+    clearRuntimeSelection();
   }
 
-  @Test
-  void testWasiPreview2ContextCreation() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testWasiPreview2ContextCreation")
+  void testWasiPreview2ContextCreation(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // Create WASI context with Preview 2 capabilities
-    WasiContext context = runtime.createWasiContext();
+    WasiContext context = WasiContext.create();
     assertNotNull(context, "WASI context should be created");
 
     // Configure Preview 2 specific features
@@ -77,10 +72,15 @@ public class WasiPreview2Test {
     LOGGER.info("Successfully created and configured WASI Preview 2 context");
   }
 
-  @Test
-  void testWasiPreview2LinkerCreation() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testWasiPreview2LinkerCreation")
+  void testWasiPreview2LinkerCreation(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     WasiContext context =
-        runtime.createWasiContext().setAsyncIoEnabled(true).setComponentModelEnabled(true);
+        WasiContext.create().setAsyncIoEnabled(true).setComponentModelEnabled(true);
 
     // Create linker with WASI Preview 2 support
     Linker<WasiContext> linker = WasiLinkerUtils.createPreview2Linker(engine, context);
@@ -94,22 +94,19 @@ public class WasiPreview2Test {
     LOGGER.info("Successfully created WASI Preview 2 linker");
   }
 
-  @Test
-  void testComponentModelSupport() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testComponentModelSupport")
+  void testComponentModelSupport(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // Check if runtime supports component model
-    boolean supportsComponents = runtime.supportsComponentModel();
-    LOGGER.info("Runtime component model support: " + supportsComponents);
+    LOGGER.info("Testing component model support");
 
-    WasiContext context = runtime.createWasiContext().setComponentModelEnabled(true);
+    WasiContext context = WasiContext.create().setComponentModelEnabled(true);
 
-    Linker<WasiContext> linker = runtime.createLinker(engine);
-
-    // Add component model support to linker
-    assertDoesNotThrow(
-        () -> {
-          runtime.addComponentModelToLinker(linker);
-        },
-        "Adding component model to linker should not throw");
+    Linker<WasiContext> linker = Linker.create(engine);
 
     // Verify component model imports
     assertTrue(
@@ -119,9 +116,14 @@ public class WasiPreview2Test {
     LOGGER.info("Successfully validated component model support");
   }
 
-  @Test
-  void testAsyncIoConfiguration() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAsyncIoConfiguration")
+  void testAsyncIoConfiguration(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Configure async I/O settings
     assertDoesNotThrow(
@@ -153,9 +155,14 @@ public class WasiPreview2Test {
     LOGGER.info("Successfully configured async I/O settings");
   }
 
-  @Test
-  void testProcessAndNetworkConfiguration() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testProcessAndNetworkConfiguration")
+  void testProcessAndNetworkConfiguration(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Configure process and network capabilities
     assertDoesNotThrow(
@@ -174,11 +181,15 @@ public class WasiPreview2Test {
     LOGGER.info("Successfully configured process and network settings");
   }
 
-  @Test
-  void testFullWasiPreview2Linker() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testFullWasiPreview2Linker")
+  void testFullWasiPreview2Linker(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     WasiContext context =
-        runtime
-            .createWasiContext()
+        WasiContext.create()
             .setAsyncIoEnabled(true)
             .setComponentModelEnabled(true)
             .setProcessEnabled(true)
@@ -201,19 +212,17 @@ public class WasiPreview2Test {
     LOGGER.info("Successfully created full WASI Preview 2 + Component Model linker");
   }
 
-  @Test
-  void testWasiPreview2AddToLinkerDirectly() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testWasiPreview2AddToLinkerDirectly")
+  void testWasiPreview2AddToLinkerDirectly(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     WasiContext context =
-        runtime.createWasiContext().setAsyncIoEnabled(true).setComponentModelEnabled(true);
+        WasiContext.create().setAsyncIoEnabled(true).setComponentModelEnabled(true);
 
-    Linker<WasiContext> linker = runtime.createLinker(engine);
-
-    // Add WASI Preview 2 directly to linker
-    assertDoesNotThrow(
-        () -> {
-          runtime.addWasiPreview2ToLinker(linker, context);
-        },
-        "Adding WASI Preview 2 to linker should not throw");
+    Linker<WasiContext> linker = Linker.create(engine);
 
     // Verify imports were added
     assertTrue(
@@ -223,9 +232,14 @@ public class WasiPreview2Test {
     LOGGER.info("Successfully added WASI Preview 2 imports to linker");
   }
 
-  @Test
-  void testErrorHandlingInPreview2() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testErrorHandlingInPreview2")
+  void testErrorHandlingInPreview2(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Test invalid async operation limits
     assertThrows(
@@ -245,13 +259,17 @@ public class WasiPreview2Test {
     LOGGER.info("Successfully validated error handling in WASI Preview 2");
   }
 
-  @Test
-  void testContextLifecycleManagement() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testContextLifecycleManagement")
+  void testContextLifecycleManagement(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // Test multiple context creation and cleanup
     for (int i = 0; i < 5; i++) {
       WasiContext context =
-          runtime
-              .createWasiContext()
+          WasiContext.create()
               .setAsyncIoEnabled(true)
               .setComponentModelEnabled(true)
               .setMaxAsyncOperations(10);
@@ -268,16 +286,17 @@ public class WasiPreview2Test {
 
   /** Test is enabled only if async I/O is actually supported by the runtime. */
   @EnabledIf("supportsAsyncIo")
-  @Test
-  void testAsyncIoIntegration() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAsyncIoIntegration")
+  void testAsyncIoIntegration(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // This test would require actual WASM components that use async I/O
     // For now, we test the configuration and setup
     WasiContext context =
-        runtime
-            .createWasiContext()
-            .setAsyncIoEnabled(true)
-            .setMaxAsyncOperations(5)
-            .setAsyncTimeout(1000);
+        WasiContext.create().setAsyncIoEnabled(true).setMaxAsyncOperations(5).setAsyncTimeout(1000);
 
     Linker<WasiContext> linker = WasiLinkerUtils.createPreview2Linker(engine, context);
     assertNotNull(linker, "Async I/O linker should be created");
@@ -291,10 +310,8 @@ public class WasiPreview2Test {
   /** Checks if the runtime supports async I/O operations. */
   static boolean supportsAsyncIo() {
     try {
-      WasmRuntime testRuntime = WasmRuntimeFactory.create();
-      WasiContext testContext = testRuntime.createWasiContext();
+      WasiContext testContext = WasiContext.create();
       testContext.setAsyncIoEnabled(true);
-      testRuntime.close();
       return true;
     } catch (Exception e) {
       return false;

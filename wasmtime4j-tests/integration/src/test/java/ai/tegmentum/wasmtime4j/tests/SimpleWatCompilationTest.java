@@ -7,10 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Simple test to verify WAT compilation functionality.
@@ -18,11 +22,18 @@ import org.junit.jupiter.api.Test;
  * <p>This test validates that the compileWat() method works correctly by compiling a minimal WAT
  * module and executing a simple function.
  */
-public final class SimpleWatCompilationTest {
+public class SimpleWatCompilationTest extends DualRuntimeTest {
 
-  @Test
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Compile and execute simple WAT module")
-  public void testSimpleWatCompilation() throws Exception {
+  public void testSimpleWatCompilation(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     // Define a simple WAT module with an add function
     final String wat =
         """
@@ -64,9 +75,11 @@ public final class SimpleWatCompilationTest {
     }
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Compile WAT with global variable")
-  public void testWatWithGlobal() throws Exception {
+  public void testWatWithGlobal(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -105,9 +118,11 @@ public final class SimpleWatCompilationTest {
     }
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Compile empty WAT should fail")
-  public void testEmptyWatFails() throws Exception {
+  public void testEmptyWatFails(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final Engine engine = Engine.create();
 
     try {
@@ -120,9 +135,11 @@ public final class SimpleWatCompilationTest {
     }
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Compile null WAT should fail")
-  public void testNullWatFails() throws Exception {
+  public void testNullWatFails(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final Engine engine = Engine.create();
 
     try {
@@ -135,9 +152,11 @@ public final class SimpleWatCompilationTest {
     }
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Compile invalid WAT should fail")
-  public void testInvalidWatFails() throws Exception {
+  public void testInvalidWatFails(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final Engine engine = Engine.create();
 
     try {

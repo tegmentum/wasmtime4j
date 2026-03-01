@@ -24,21 +24,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.util.ArrayList;
-import java.util.List;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WebAssembly linear memory operations.
@@ -48,7 +47,7 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Memory Operations Integration Tests")
-public final class MemoryOperationsTest {
+public class MemoryOperationsTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(MemoryOperationsTest.class.getName());
 
@@ -200,94 +199,83 @@ public final class MemoryOperationsTest {
         0x0B // end
       };
 
-  private Engine engine;
-  private Store store;
-  private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws WasmException {
-    LOGGER.info("Setting up test: " + testInfo.getDisplayName());
-    engine = Engine.create();
-    resources.add(engine);
-    store = engine.createStore();
-    resources.add(store);
-    LOGGER.info("Test setup completed");
-  }
-
   @AfterEach
-  void tearDown(final TestInfo testInfo) {
-    LOGGER.info("Cleaning up test: " + testInfo.getDisplayName());
-    for (int i = resources.size() - 1; i >= 0; i--) {
-      try {
-        resources.get(i).close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close resource: " + e.getMessage());
-      }
-    }
-    resources.clear();
-    LOGGER.info("Test cleanup completed");
+  void cleanup() {
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Memory Size Tests")
   class MemorySizeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should report correct initial memory size in pages")
-    void shouldReportCorrectInitialMemorySizeInPages() throws Exception {
+    void shouldReportCorrectInitialMemorySizeInPages(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing initial memory size in pages");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
-      assertEquals(1, memory.getSize(), "Memory should have 1 page initially");
-      LOGGER.info("Memory size: " + memory.getSize() + " pages");
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+
+        final WasmMemory memory = memOpt.get();
+        assertEquals(1, memory.getSize(), "Memory should have 1 page initially");
+        LOGGER.info("Memory size: " + memory.getSize() + " pages");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should report correct initial memory size in bytes")
-    void shouldReportCorrectInitialMemorySizeInBytes() throws Exception {
+    void shouldReportCorrectInitialMemorySizeInBytes(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing initial memory size in bytes");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
-      assertEquals(PAGE_SIZE, memory.dataSize(), "Memory should have 64KB (1 page)");
-      LOGGER.info("Memory size: " + memory.dataSize() + " bytes");
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+
+        final WasmMemory memory = memOpt.get();
+        assertEquals(PAGE_SIZE, memory.dataSize(), "Memory should have 64KB (1 page)");
+        LOGGER.info("Memory size: " + memory.dataSize() + " bytes");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should report correct size for multi-page memory")
-    void shouldReportCorrectSizeForMultiPageMemory() throws Exception {
+    void shouldReportCorrectSizeForMultiPageMemory(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing multi-page memory size");
 
-      final Module module = engine.compileModule(MEMORY_2_4_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_2_4_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
-      assertEquals(2, memory.getSize(), "Memory should have 2 pages initially");
-      assertEquals(2 * PAGE_SIZE, memory.dataSize(), "Memory should have 128KB (2 pages)");
-      LOGGER.info("Memory size: " + memory.getSize() + " pages, " + memory.dataSize() + " bytes");
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+
+        final WasmMemory memory = memOpt.get();
+        assertEquals(2, memory.getSize(), "Memory should have 2 pages initially");
+        assertEquals(2 * PAGE_SIZE, memory.dataSize(), "Memory should have 128KB (2 pages)");
+        LOGGER.info("Memory size: " + memory.getSize() + " pages, " + memory.dataSize() + " bytes");
+      }
     }
   }
 
@@ -295,88 +283,100 @@ public final class MemoryOperationsTest {
   @DisplayName("Memory Byte Read/Write Tests")
   class MemoryByteReadWriteTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should write and read single byte")
-    void shouldWriteAndReadSingleByte() throws Exception {
+    void shouldWriteAndReadSingleByte(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing single byte write and read");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Write byte at offset 0
-      memory.writeByte(0, (byte) 0x42);
-      LOGGER.info("Wrote byte 0x42 at offset 0");
+        final WasmMemory memory = memOpt.get();
 
-      // Read byte back
-      final byte value = memory.readByte(0);
-      assertEquals((byte) 0x42, value, "Should read back 0x42");
-      LOGGER.info("Read byte: 0x" + Integer.toHexString(value & 0xFF));
+        // Write byte at offset 0
+        memory.writeByte(0, (byte) 0x42);
+        LOGGER.info("Wrote byte 0x42 at offset 0");
+
+        // Read byte back
+        final byte value = memory.readByte(0);
+        assertEquals((byte) 0x42, value, "Should read back 0x42");
+        LOGGER.info("Read byte: 0x" + Integer.toHexString(value & 0xFF));
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should write and read bytes at various offsets")
-    void shouldWriteAndReadBytesAtVariousOffsets() throws Exception {
+    void shouldWriteAndReadBytesAtVariousOffsets(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing byte writes at various offsets");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Write bytes at different offsets
-      memory.writeByte(0, (byte) 0x01);
-      memory.writeByte(100, (byte) 0x02);
-      memory.writeByte(1000, (byte) 0x03);
-      memory.writeByte(PAGE_SIZE - 1, (byte) 0xFF); // Last byte of first page
+        final WasmMemory memory = memOpt.get();
 
-      // Verify all values
-      assertEquals((byte) 0x01, memory.readByte(0), "Byte at offset 0 should be 0x01");
-      assertEquals((byte) 0x02, memory.readByte(100), "Byte at offset 100 should be 0x02");
-      assertEquals((byte) 0x03, memory.readByte(1000), "Byte at offset 1000 should be 0x03");
-      assertEquals((byte) 0xFF, memory.readByte(PAGE_SIZE - 1), "Last byte should be 0xFF");
+        // Write bytes at different offsets
+        memory.writeByte(0, (byte) 0x01);
+        memory.writeByte(100, (byte) 0x02);
+        memory.writeByte(1000, (byte) 0x03);
+        memory.writeByte(PAGE_SIZE - 1, (byte) 0xFF); // Last byte of first page
 
-      LOGGER.info("All byte reads verified correctly");
+        // Verify all values
+        assertEquals((byte) 0x01, memory.readByte(0), "Byte at offset 0 should be 0x01");
+        assertEquals((byte) 0x02, memory.readByte(100), "Byte at offset 100 should be 0x02");
+        assertEquals((byte) 0x03, memory.readByte(1000), "Byte at offset 1000 should be 0x03");
+        assertEquals((byte) 0xFF, memory.readByte(PAGE_SIZE - 1), "Last byte should be 0xFF");
+
+        LOGGER.info("All byte reads verified correctly");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle signed byte values correctly")
-    void shouldHandleSignedByteValuesCorrectly() throws Exception {
+    void shouldHandleSignedByteValuesCorrectly(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing signed byte values");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Write negative byte value
-      memory.writeByte(0, (byte) -128); // 0x80
-      final byte value = memory.readByte(0);
-      assertEquals((byte) -128, value, "Should correctly handle signed byte -128");
+        final WasmMemory memory = memOpt.get();
 
-      memory.writeByte(1, (byte) -1); // 0xFF
-      assertEquals((byte) -1, memory.readByte(1), "Should correctly handle signed byte -1");
+        // Write negative byte value
+        memory.writeByte(0, (byte) -128); // 0x80
+        final byte value = memory.readByte(0);
+        assertEquals((byte) -128, value, "Should correctly handle signed byte -128");
 
-      LOGGER.info("Signed byte handling verified");
+        memory.writeByte(1, (byte) -1); // 0xFF
+        assertEquals((byte) -1, memory.readByte(1), "Should correctly handle signed byte -1");
+
+        LOGGER.info("Signed byte handling verified");
+      }
     }
   }
 
@@ -384,102 +384,114 @@ public final class MemoryOperationsTest {
   @DisplayName("Memory Byte Array Read/Write Tests")
   class MemoryByteArrayReadWriteTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should write and read byte array")
-    void shouldWriteAndReadByteArray() throws Exception {
+    void shouldWriteAndReadByteArray(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing byte array write and read");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Prepare test data
-      final byte[] testData = {0x01, 0x02, 0x03, 0x04, 0x05};
+        final WasmMemory memory = memOpt.get();
 
-      // Write to memory
-      memory.writeBytes(0, testData, 0, testData.length);
-      LOGGER.info("Wrote " + testData.length + " bytes to memory");
+        // Prepare test data
+        final byte[] testData = {0x01, 0x02, 0x03, 0x04, 0x05};
 
-      // Read back
-      final byte[] readBuffer = new byte[5];
-      memory.readBytes(0, readBuffer, 0, readBuffer.length);
-      LOGGER.info("Read " + readBuffer.length + " bytes from memory");
+        // Write to memory
+        memory.writeBytes(0, testData, 0, testData.length);
+        LOGGER.info("Wrote " + testData.length + " bytes to memory");
 
-      // Verify data
-      for (int i = 0; i < testData.length; i++) {
-        assertEquals(testData[i], readBuffer[i], "Byte " + i + " should match");
+        // Read back
+        final byte[] readBuffer = new byte[5];
+        memory.readBytes(0, readBuffer, 0, readBuffer.length);
+        LOGGER.info("Read " + readBuffer.length + " bytes from memory");
+
+        // Verify data
+        for (int i = 0; i < testData.length; i++) {
+          assertEquals(testData[i], readBuffer[i], "Byte " + i + " should match");
+        }
+
+        LOGGER.info("Byte array read/write verified successfully");
       }
-
-      LOGGER.info("Byte array read/write verified successfully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should write byte array at non-zero offset")
-    void shouldWriteByteArrayAtNonZeroOffset() throws Exception {
+    void shouldWriteByteArrayAtNonZeroOffset(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing byte array write at offset");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Write at offset 100
-      final byte[] testData = {(byte) 0xAA, (byte) 0xBB, (byte) 0xCC};
-      memory.writeBytes(100, testData, 0, testData.length);
+        final WasmMemory memory = memOpt.get();
 
-      // Verify bytes at offset 100
-      assertEquals((byte) 0xAA, memory.readByte(100), "Byte at 100 should be 0xAA");
-      assertEquals((byte) 0xBB, memory.readByte(101), "Byte at 101 should be 0xBB");
-      assertEquals((byte) 0xCC, memory.readByte(102), "Byte at 102 should be 0xCC");
+        // Write at offset 100
+        final byte[] testData = {(byte) 0xAA, (byte) 0xBB, (byte) 0xCC};
+        memory.writeBytes(100, testData, 0, testData.length);
 
-      // Verify bytes before offset are still zero
-      assertEquals((byte) 0x00, memory.readByte(99), "Byte at 99 should be 0x00");
+        // Verify bytes at offset 100
+        assertEquals((byte) 0xAA, memory.readByte(100), "Byte at 100 should be 0xAA");
+        assertEquals((byte) 0xBB, memory.readByte(101), "Byte at 101 should be 0xBB");
+        assertEquals((byte) 0xCC, memory.readByte(102), "Byte at 102 should be 0xCC");
 
-      LOGGER.info("Byte array write at offset verified");
+        // Verify bytes before offset are still zero
+        assertEquals((byte) 0x00, memory.readByte(99), "Byte at 99 should be 0x00");
+
+        LOGGER.info("Byte array write at offset verified");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle partial array writes")
-    void shouldHandlePartialArrayWrites() throws Exception {
+    void shouldHandlePartialArrayWrites(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing partial array write");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Write only middle portion of array
-      final byte[] sourceData = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
-      // Write bytes 3-7 (indices 2-6, 5 bytes) to memory at offset 0
-      memory.writeBytes(0, sourceData, 2, 5);
+        final WasmMemory memory = memOpt.get();
 
-      // Verify
-      assertEquals((byte) 0x03, memory.readByte(0), "First byte should be 0x03");
-      assertEquals((byte) 0x04, memory.readByte(1), "Second byte should be 0x04");
-      assertEquals((byte) 0x05, memory.readByte(2), "Third byte should be 0x05");
-      assertEquals((byte) 0x06, memory.readByte(3), "Fourth byte should be 0x06");
-      assertEquals((byte) 0x07, memory.readByte(4), "Fifth byte should be 0x07");
+        // Write only middle portion of array
+        final byte[] sourceData = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
+        // Write bytes 3-7 (indices 2-6, 5 bytes) to memory at offset 0
+        memory.writeBytes(0, sourceData, 2, 5);
 
-      LOGGER.info("Partial array write verified");
+        // Verify
+        assertEquals((byte) 0x03, memory.readByte(0), "First byte should be 0x03");
+        assertEquals((byte) 0x04, memory.readByte(1), "Second byte should be 0x04");
+        assertEquals((byte) 0x05, memory.readByte(2), "Third byte should be 0x05");
+        assertEquals((byte) 0x06, memory.readByte(3), "Fourth byte should be 0x06");
+        assertEquals((byte) 0x07, memory.readByte(4), "Fifth byte should be 0x07");
+
+        LOGGER.info("Partial array write verified");
+      }
     }
   }
 
@@ -487,84 +499,96 @@ public final class MemoryOperationsTest {
   @DisplayName("Memory Integer Read/Write Tests")
   class MemoryIntegerReadWriteTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should write and read i32 value")
-    void shouldWriteAndReadI32Value() throws Exception {
+    void shouldWriteAndReadI32Value(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing i32 write and read");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Write i32 at offset 0
-      memory.writeInt32(0, 0x12345678);
-      LOGGER.info("Wrote i32 0x12345678 at offset 0");
+        final WasmMemory memory = memOpt.get();
 
-      // Read back
-      final int value = memory.readInt32(0);
-      assertEquals(0x12345678, value, "Should read back 0x12345678");
-      LOGGER.info("Read i32: 0x" + Integer.toHexString(value));
+        // Write i32 at offset 0
+        memory.writeInt32(0, 0x12345678);
+        LOGGER.info("Wrote i32 0x12345678 at offset 0");
+
+        // Read back
+        final int value = memory.readInt32(0);
+        assertEquals(0x12345678, value, "Should read back 0x12345678");
+        LOGGER.info("Read i32: 0x" + Integer.toHexString(value));
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle negative i32 values")
-    void shouldHandleNegativeI32Values() throws Exception {
+    void shouldHandleNegativeI32Values(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing negative i32 values");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      memory.writeInt32(0, -1);
-      assertEquals(-1, memory.readInt32(0), "Should handle -1 correctly");
+        final WasmMemory memory = memOpt.get();
 
-      memory.writeInt32(4, Integer.MIN_VALUE);
-      assertEquals(Integer.MIN_VALUE, memory.readInt32(4), "Should handle MIN_VALUE correctly");
+        memory.writeInt32(0, -1);
+        assertEquals(-1, memory.readInt32(0), "Should handle -1 correctly");
 
-      memory.writeInt32(8, Integer.MAX_VALUE);
-      assertEquals(Integer.MAX_VALUE, memory.readInt32(8), "Should handle MAX_VALUE correctly");
+        memory.writeInt32(4, Integer.MIN_VALUE);
+        assertEquals(Integer.MIN_VALUE, memory.readInt32(4), "Should handle MIN_VALUE correctly");
 
-      LOGGER.info("Negative i32 handling verified");
+        memory.writeInt32(8, Integer.MAX_VALUE);
+        assertEquals(Integer.MAX_VALUE, memory.readInt32(8), "Should handle MAX_VALUE correctly");
+
+        LOGGER.info("Negative i32 handling verified");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should write and read i64 value")
-    void shouldWriteAndReadI64Value() throws Exception {
+    void shouldWriteAndReadI64Value(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing i64 write and read");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Write i64 at offset 0
-      memory.writeInt64(0, 0x123456789ABCDEF0L);
-      LOGGER.info("Wrote i64 0x123456789ABCDEF0 at offset 0");
+        final WasmMemory memory = memOpt.get();
 
-      // Read back
-      final long value = memory.readInt64(0);
-      assertEquals(0x123456789ABCDEF0L, value, "Should read back 0x123456789ABCDEF0");
-      LOGGER.info("Read i64: 0x" + Long.toHexString(value));
+        // Write i64 at offset 0
+        memory.writeInt64(0, 0x123456789ABCDEF0L);
+        LOGGER.info("Wrote i64 0x123456789ABCDEF0 at offset 0");
+
+        // Read back
+        final long value = memory.readInt64(0);
+        assertEquals(0x123456789ABCDEF0L, value, "Should read back 0x123456789ABCDEF0");
+        LOGGER.info("Read i64: 0x" + Long.toHexString(value));
+      }
     }
   }
 
@@ -572,116 +596,132 @@ public final class MemoryOperationsTest {
   @DisplayName("Memory Grow Tests")
   class MemoryGrowTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should grow memory by one page")
-    void shouldGrowMemoryByOnePage() throws Exception {
+    void shouldGrowMemoryByOnePage(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing memory grow by 1 page");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      final long initialSize = memory.getSize();
-      assertEquals(1, initialSize, "Initial size should be 1 page");
+        final WasmMemory memory = memOpt.get();
 
-      // Grow by 1 page
-      final long previousSize = memory.grow(1);
-      assertEquals(1, previousSize, "Previous size should be 1 page");
+        final long initialSize = memory.getSize();
+        assertEquals(1, initialSize, "Initial size should be 1 page");
 
-      final long newSize = memory.getSize();
-      assertEquals(2, newSize, "New size should be 2 pages");
-      LOGGER.info("Memory grew from " + previousSize + " to " + newSize + " pages");
+        // Grow by 1 page
+        final long previousSize = memory.grow(1);
+        assertEquals(1, previousSize, "Previous size should be 1 page");
+
+        final long newSize = memory.getSize();
+        assertEquals(2, newSize, "New size should be 2 pages");
+        LOGGER.info("Memory grew from " + previousSize + " to " + newSize + " pages");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should grow memory multiple times")
-    void shouldGrowMemoryMultipleTimes() throws Exception {
+    void shouldGrowMemoryMultipleTimes(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing multiple memory grows");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Grow multiple times
-      memory.grow(1); // 1 -> 2 pages
-      assertEquals(2, memory.getSize(), "Should have 2 pages after first grow");
+        final WasmMemory memory = memOpt.get();
 
-      memory.grow(2); // 2 -> 4 pages
-      assertEquals(4, memory.getSize(), "Should have 4 pages after second grow");
+        // Grow multiple times
+        memory.grow(1); // 1 -> 2 pages
+        assertEquals(2, memory.getSize(), "Should have 2 pages after first grow");
 
-      LOGGER.info("Final memory size: " + memory.getSize() + " pages");
+        memory.grow(2); // 2 -> 4 pages
+        assertEquals(4, memory.getSize(), "Should have 4 pages after second grow");
+
+        LOGGER.info("Final memory size: " + memory.getSize() + " pages");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle grow by zero pages")
-    void shouldHandleGrowByZeroPages() throws Exception {
+    void shouldHandleGrowByZeroPages(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing memory grow by 0 pages");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      final long initialSize = memory.getSize();
-      assertEquals(1, initialSize, "Initial size should be 1 page");
+        final WasmMemory memory = memOpt.get();
 
-      // Grow by 0 should succeed and return current size
-      final long previousSize = memory.grow(0);
-      assertEquals(1, previousSize, "Previous size should be 1 page");
+        final long initialSize = memory.getSize();
+        assertEquals(1, initialSize, "Initial size should be 1 page");
 
-      final long newSize = memory.getSize();
-      assertEquals(1, newSize, "Size should remain unchanged after grow(0)");
-      LOGGER.info("Memory grow(0) returned " + previousSize + ", size unchanged at " + newSize);
+        // Grow by 0 should succeed and return current size
+        final long previousSize = memory.grow(0);
+        assertEquals(1, previousSize, "Previous size should be 1 page");
+
+        final long newSize = memory.getSize();
+        assertEquals(1, newSize, "Size should remain unchanged after grow(0)");
+        LOGGER.info("Memory grow(0) returned " + previousSize + ", size unchanged at " + newSize);
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should respect memory maximum limit")
-    void shouldRespectMemoryMaximumLimit() throws Exception {
+    void shouldRespectMemoryMaximumLimit(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing memory maximum limit");
 
-      final Module module = engine.compileModule(MEMORY_2_4_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_2_4_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      assertEquals(2, memory.getSize(), "Initial size should be 2 pages");
+        final WasmMemory memory = memOpt.get();
 
-      // Grow to maximum (4 pages)
-      memory.grow(2);
-      assertEquals(4, memory.getSize(), "Should have 4 pages (max)");
+        assertEquals(2, memory.getSize(), "Initial size should be 2 pages");
 
-      // Try to grow beyond maximum - should fail
-      final long result = memory.grow(1);
-      assertEquals(-1, result, "Growing beyond max should return -1");
-      assertEquals(4, memory.getSize(), "Size should still be 4 pages");
+        // Grow to maximum (4 pages)
+        memory.grow(2);
+        assertEquals(4, memory.getSize(), "Should have 4 pages (max)");
 
-      LOGGER.info("Memory maximum limit enforced correctly");
+        // Try to grow beyond maximum - should fail
+        final long result = memory.grow(1);
+        assertEquals(-1, result, "Growing beyond max should return -1");
+        assertEquals(4, memory.getSize(), "Size should still be 4 pages");
+
+        LOGGER.info("Memory maximum limit enforced correctly");
+      }
     }
   }
 
@@ -689,108 +729,120 @@ public final class MemoryOperationsTest {
   @DisplayName("Memory Bounds Checking Tests")
   class MemoryBoundsCheckingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for out-of-bounds byte read")
-    void shouldThrowExceptionForOutOfBoundsByteRead() throws Exception {
+    void shouldThrowExceptionForOutOfBoundsByteRead(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing out-of-bounds byte read");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Try to read beyond memory bounds
-      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
-      // happens
-      final Exception readException =
-          assertThrows(
-              Exception.class,
-              () -> memory.readByte(PAGE_SIZE), // Just beyond 1 page
-              "Should throw exception for out-of-bounds read");
-      assertTrue(
-          readException instanceof WasmException
-              || readException instanceof IndexOutOfBoundsException,
-          "Should throw WasmException or IndexOutOfBoundsException, got: "
-              + readException.getClass().getName());
+        final WasmMemory memory = memOpt.get();
 
-      LOGGER.info("Out-of-bounds read check passed");
+        // Try to read beyond memory bounds
+        // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
+        // happens
+        final Exception readException =
+            assertThrows(
+                Exception.class,
+                () -> memory.readByte(PAGE_SIZE), // Just beyond 1 page
+                "Should throw exception for out-of-bounds read");
+        assertTrue(
+            readException instanceof WasmException
+                || readException instanceof IndexOutOfBoundsException,
+            "Should throw WasmException or IndexOutOfBoundsException, got: "
+                + readException.getClass().getName());
+
+        LOGGER.info("Out-of-bounds read check passed");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for out-of-bounds byte write")
-    void shouldThrowExceptionForOutOfBoundsByteWrite() throws Exception {
+    void shouldThrowExceptionForOutOfBoundsByteWrite(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing out-of-bounds byte write");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Try to write beyond memory bounds
-      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
-      // happens
-      final Exception writeException =
-          assertThrows(
-              Exception.class,
-              () -> memory.writeByte(PAGE_SIZE, (byte) 0x42),
-              "Should throw exception for out-of-bounds write");
-      assertTrue(
-          writeException instanceof WasmException
-              || writeException instanceof IndexOutOfBoundsException,
-          "Should throw WasmException or IndexOutOfBoundsException, got: "
-              + writeException.getClass().getName());
+        final WasmMemory memory = memOpt.get();
 
-      LOGGER.info("Out-of-bounds write check passed");
+        // Try to write beyond memory bounds
+        // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
+        // happens
+        final Exception writeException =
+            assertThrows(
+                Exception.class,
+                () -> memory.writeByte(PAGE_SIZE, (byte) 0x42),
+                "Should throw exception for out-of-bounds write");
+        assertTrue(
+            writeException instanceof WasmException
+                || writeException instanceof IndexOutOfBoundsException,
+            "Should throw WasmException or IndexOutOfBoundsException, got: "
+                + writeException.getClass().getName());
+
+        LOGGER.info("Out-of-bounds write check passed");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should allow access after memory grow")
-    void shouldAllowAccessAfterMemoryGrow() throws Exception {
+    void shouldAllowAccessAfterMemoryGrow(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing access after memory grow");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
+        final Instance instance = module.instantiate(store);
 
-      final WasmMemory memory = memOpt.get();
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
 
-      // Initially can't access offset 65536 (page 2)
-      // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
-      // happens
-      final Exception beforeGrowException =
-          assertThrows(
-              Exception.class, () -> memory.readByte(PAGE_SIZE), "Should throw before grow");
-      assertTrue(
-          beforeGrowException instanceof WasmException
-              || beforeGrowException instanceof IndexOutOfBoundsException,
-          "Should throw WasmException or IndexOutOfBoundsException, got: "
-              + beforeGrowException.getClass().getName());
+        final WasmMemory memory = memOpt.get();
 
-      // Grow memory
-      memory.grow(1);
+        // Initially can't access offset 65536 (page 2)
+        // May throw WasmException or IndexOutOfBoundsException depending on where bounds check
+        // happens
+        final Exception beforeGrowException =
+            assertThrows(
+                Exception.class, () -> memory.readByte(PAGE_SIZE), "Should throw before grow");
+        assertTrue(
+            beforeGrowException instanceof WasmException
+                || beforeGrowException instanceof IndexOutOfBoundsException,
+            "Should throw WasmException or IndexOutOfBoundsException, got: "
+                + beforeGrowException.getClass().getName());
 
-      // Now access should succeed
-      memory.writeByte(PAGE_SIZE, (byte) 0xAB);
-      assertEquals((byte) 0xAB, memory.readByte(PAGE_SIZE), "Should be able to access page 2");
+        // Grow memory
+        memory.grow(1);
 
-      LOGGER.info("Access after grow verified");
+        // Now access should succeed
+        memory.writeByte(PAGE_SIZE, (byte) 0xAB);
+        assertEquals((byte) 0xAB, memory.readByte(PAGE_SIZE), "Should be able to access page 2");
+
+        LOGGER.info("Access after grow verified");
+      }
     }
   }
 
@@ -798,71 +850,79 @@ public final class MemoryOperationsTest {
   @DisplayName("Memory and Function Integration Tests")
   class MemoryAndFunctionIntegrationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should use WASM store and load functions")
-    void shouldUseWasmStoreAndLoadFunctions() throws Exception {
+    void shouldUseWasmStoreAndLoadFunctions(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing WASM store/load functions");
 
-      final Module module = engine.compileModule(MEMORY_FUNCS_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_FUNCS_WASM);
 
-      // Get functions
-      final Optional<WasmFunction> storeFunc = instance.getFunction("store");
-      final Optional<WasmFunction> loadFunc = instance.getFunction("load");
+        final Instance instance = module.instantiate(store);
 
-      assertTrue(storeFunc.isPresent(), "store function should be present");
-      assertTrue(loadFunc.isPresent(), "load function should be present");
+        // Get functions
+        final Optional<WasmFunction> storeFunc = instance.getFunction("store");
+        final Optional<WasmFunction> loadFunc = instance.getFunction("load");
 
-      // Store value using WASM function
-      storeFunc.get().call(WasmValue.i32(0), WasmValue.i32(42)); // store at address 0, value 42
-      LOGGER.info("Stored value 42 at address 0 using WASM function");
+        assertTrue(storeFunc.isPresent(), "store function should be present");
+        assertTrue(loadFunc.isPresent(), "load function should be present");
 
-      // Load value using WASM function
-      final WasmValue[] results = loadFunc.get().call(WasmValue.i32(0));
-      assertNotNull(results, "Load result should not be null");
-      assertEquals(1, results.length, "Should have one result");
-      assertEquals(42, results[0].asInt(), "Should load back 42");
-      LOGGER.info("Loaded value: " + results[0].asInt());
+        // Store value using WASM function
+        storeFunc.get().call(WasmValue.i32(0), WasmValue.i32(42)); // store at address 0, value 42
+        LOGGER.info("Stored value 42 at address 0 using WASM function");
 
-      // Verify we can also read via Memory interface
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
-      assertEquals(42, memOpt.get().readInt32(0), "Direct memory read should also give 42");
+        // Load value using WASM function
+        final WasmValue[] results = loadFunc.get().call(WasmValue.i32(0));
+        assertNotNull(results, "Load result should not be null");
+        assertEquals(1, results.length, "Should have one result");
+        assertEquals(42, results[0].asInt(), "Should load back 42");
+        LOGGER.info("Loaded value: " + results[0].asInt());
 
-      LOGGER.info("WASM store/load integration verified");
+        // Verify we can also read via Memory interface
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+        assertEquals(42, memOpt.get().readInt32(0), "Direct memory read should also give 42");
+
+        LOGGER.info("WASM store/load integration verified");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should share memory between Java and WASM")
-    void shouldShareMemoryBetweenJavaAndWasm() throws Exception {
+    void shouldShareMemoryBetweenJavaAndWasm(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing memory sharing between Java and WASM");
 
-      final Module module = engine.compileModule(MEMORY_FUNCS_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_FUNCS_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
-      final WasmMemory memory = memOpt.get();
+        final Instance instance = module.instantiate(store);
 
-      final Optional<WasmFunction> loadFunc = instance.getFunction("load");
-      assertTrue(loadFunc.isPresent(), "load function should be present");
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+        final WasmMemory memory = memOpt.get();
 
-      // Write directly to memory from Java
-      memory.writeInt32(100, 0x12345678);
-      LOGGER.info("Wrote 0x12345678 at address 100 from Java");
+        final Optional<WasmFunction> loadFunc = instance.getFunction("load");
+        assertTrue(loadFunc.isPresent(), "load function should be present");
 
-      // Read using WASM function
-      final WasmValue[] wasmResults = loadFunc.get().call(WasmValue.i32(100));
-      assertEquals(0x12345678, wasmResults[0].asInt(), "WASM should see Java's write");
-      LOGGER.info("WASM read: 0x" + Integer.toHexString(wasmResults[0].asInt()));
+        // Write directly to memory from Java
+        memory.writeInt32(100, 0x12345678);
+        LOGGER.info("Wrote 0x12345678 at address 100 from Java");
 
-      LOGGER.info("Memory sharing verified");
+        // Read using WASM function
+        final WasmValue[] wasmResults = loadFunc.get().call(WasmValue.i32(100));
+        assertEquals(0x12345678, wasmResults[0].asInt(), "WASM should see Java's write");
+        LOGGER.info("WASM read: 0x" + Integer.toHexString(wasmResults[0].asInt()));
+
+        LOGGER.info("Memory sharing verified");
+      }
     }
   }
 
@@ -871,167 +931,183 @@ public final class MemoryOperationsTest {
   @DisplayName("Memory Float Read/Write Tests")
   class MemoryFloatReadWriteTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should write and read float32")
-    void shouldWriteAndReadFloat32() throws Exception {
+    void shouldWriteAndReadFloat32(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing float32 write and read");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
-      final WasmMemory memory = memOpt.get();
+        final Instance instance = module.instantiate(store);
 
-      memory.writeFloat32(0, 3.14f);
-      final float result = memory.readFloat32(0);
-      assertEquals(3.14f, result, 0.0001f, "Should read back the same float32 value");
-      LOGGER.info("Float32 write/read verified: " + result);
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+        final WasmMemory memory = memOpt.get();
+
+        memory.writeFloat32(0, 3.14f);
+        final float result = memory.readFloat32(0);
+        assertEquals(3.14f, result, 0.0001f, "Should read back the same float32 value");
+        LOGGER.info("Float32 write/read verified: " + result);
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should write and read float64")
-    void shouldWriteAndReadFloat64() throws Exception {
+    void shouldWriteAndReadFloat64(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing float64 write and read");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
-      final WasmMemory memory = memOpt.get();
+        final Instance instance = module.instantiate(store);
 
-      memory.writeFloat64(0, 3.141592653589793);
-      final double result = memory.readFloat64(0);
-      assertEquals(
-          3.141592653589793, result, 0.000000000001, "Should read back the same float64 value");
-      LOGGER.info("Float64 write/read verified: " + result);
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+        final WasmMemory memory = memOpt.get();
+
+        memory.writeFloat64(0, 3.141592653589793);
+        final double result = memory.readFloat64(0);
+        assertEquals(
+            3.141592653589793, result, 0.000000000001, "Should read back the same float64 value");
+        LOGGER.info("Float64 write/read verified: " + result);
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle float32 special values")
-    void shouldHandleFloat32SpecialValues() throws Exception {
+    void shouldHandleFloat32SpecialValues(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing float32 special values");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
-      final WasmMemory memory = memOpt.get();
+        final Instance instance = module.instantiate(store);
 
-      // NaN
-      memory.writeFloat32(0, Float.NaN);
-      assertTrue(Float.isNaN(memory.readFloat32(0)), "Should preserve NaN");
-      LOGGER.info("Float32 NaN preserved");
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+        final WasmMemory memory = memOpt.get();
 
-      // Positive infinity
-      memory.writeFloat32(4, Float.POSITIVE_INFINITY);
-      assertEquals(
-          Float.POSITIVE_INFINITY, memory.readFloat32(4), "Should preserve positive infinity");
-      LOGGER.info("Float32 +Infinity preserved");
+        // NaN
+        memory.writeFloat32(0, Float.NaN);
+        assertTrue(Float.isNaN(memory.readFloat32(0)), "Should preserve NaN");
+        LOGGER.info("Float32 NaN preserved");
 
-      // Negative infinity
-      memory.writeFloat32(8, Float.NEGATIVE_INFINITY);
-      assertEquals(
-          Float.NEGATIVE_INFINITY, memory.readFloat32(8), "Should preserve negative infinity");
-      LOGGER.info("Float32 -Infinity preserved");
+        // Positive infinity
+        memory.writeFloat32(4, Float.POSITIVE_INFINITY);
+        assertEquals(
+            Float.POSITIVE_INFINITY, memory.readFloat32(4), "Should preserve positive infinity");
+        LOGGER.info("Float32 +Infinity preserved");
 
-      // Positive zero
-      memory.writeFloat32(12, 0.0f);
-      assertEquals(0.0f, memory.readFloat32(12), "Should preserve positive zero");
-      assertEquals(
-          Float.floatToRawIntBits(0.0f),
-          Float.floatToRawIntBits(memory.readFloat32(12)),
-          "Should preserve positive zero bit pattern");
-      LOGGER.info("Float32 +0.0 preserved");
+        // Negative infinity
+        memory.writeFloat32(8, Float.NEGATIVE_INFINITY);
+        assertEquals(
+            Float.NEGATIVE_INFINITY, memory.readFloat32(8), "Should preserve negative infinity");
+        LOGGER.info("Float32 -Infinity preserved");
 
-      // Negative zero
-      memory.writeFloat32(16, -0.0f);
-      assertEquals(
-          Float.floatToRawIntBits(-0.0f),
-          Float.floatToRawIntBits(memory.readFloat32(16)),
-          "Should preserve negative zero bit pattern");
-      LOGGER.info("Float32 -0.0 preserved");
+        // Positive zero
+        memory.writeFloat32(12, 0.0f);
+        assertEquals(0.0f, memory.readFloat32(12), "Should preserve positive zero");
+        assertEquals(
+            Float.floatToRawIntBits(0.0f),
+            Float.floatToRawIntBits(memory.readFloat32(12)),
+            "Should preserve positive zero bit pattern");
+        LOGGER.info("Float32 +0.0 preserved");
 
-      // Minimum positive normal
-      memory.writeFloat32(20, Float.MIN_NORMAL);
-      assertEquals(Float.MIN_NORMAL, memory.readFloat32(20), "Should preserve MIN_NORMAL");
-      LOGGER.info("Float32 MIN_NORMAL preserved");
+        // Negative zero
+        memory.writeFloat32(16, -0.0f);
+        assertEquals(
+            Float.floatToRawIntBits(-0.0f),
+            Float.floatToRawIntBits(memory.readFloat32(16)),
+            "Should preserve negative zero bit pattern");
+        LOGGER.info("Float32 -0.0 preserved");
 
-      // Minimum positive denormalized
-      memory.writeFloat32(24, Float.MIN_VALUE);
-      assertEquals(Float.MIN_VALUE, memory.readFloat32(24), "Should preserve MIN_VALUE");
-      LOGGER.info("Float32 MIN_VALUE (denormalized) preserved");
+        // Minimum positive normal
+        memory.writeFloat32(20, Float.MIN_NORMAL);
+        assertEquals(Float.MIN_NORMAL, memory.readFloat32(20), "Should preserve MIN_NORMAL");
+        LOGGER.info("Float32 MIN_NORMAL preserved");
+
+        // Minimum positive denormalized
+        memory.writeFloat32(24, Float.MIN_VALUE);
+        assertEquals(Float.MIN_VALUE, memory.readFloat32(24), "Should preserve MIN_VALUE");
+        LOGGER.info("Float32 MIN_VALUE (denormalized) preserved");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle float64 special values")
-    void shouldHandleFloat64SpecialValues() throws Exception {
+    void shouldHandleFloat64SpecialValues(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing float64 special values");
 
-      final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Module module = engine.compileModule(MEMORY_1_PAGE_WASM);
 
-      final Optional<WasmMemory> memOpt = instance.getMemory("memory");
-      assertTrue(memOpt.isPresent(), "Memory should be present");
-      final WasmMemory memory = memOpt.get();
+        final Instance instance = module.instantiate(store);
 
-      // NaN
-      memory.writeFloat64(0, Double.NaN);
-      assertTrue(Double.isNaN(memory.readFloat64(0)), "Should preserve NaN");
-      LOGGER.info("Float64 NaN preserved");
+        final Optional<WasmMemory> memOpt = instance.getMemory("memory");
+        assertTrue(memOpt.isPresent(), "Memory should be present");
+        final WasmMemory memory = memOpt.get();
 
-      // Positive infinity
-      memory.writeFloat64(8, Double.POSITIVE_INFINITY);
-      assertEquals(
-          Double.POSITIVE_INFINITY, memory.readFloat64(8), "Should preserve positive infinity");
-      LOGGER.info("Float64 +Infinity preserved");
+        // NaN
+        memory.writeFloat64(0, Double.NaN);
+        assertTrue(Double.isNaN(memory.readFloat64(0)), "Should preserve NaN");
+        LOGGER.info("Float64 NaN preserved");
 
-      // Negative infinity
-      memory.writeFloat64(16, Double.NEGATIVE_INFINITY);
-      assertEquals(
-          Double.NEGATIVE_INFINITY, memory.readFloat64(16), "Should preserve negative infinity");
-      LOGGER.info("Float64 -Infinity preserved");
+        // Positive infinity
+        memory.writeFloat64(8, Double.POSITIVE_INFINITY);
+        assertEquals(
+            Double.POSITIVE_INFINITY, memory.readFloat64(8), "Should preserve positive infinity");
+        LOGGER.info("Float64 +Infinity preserved");
 
-      // Positive zero
-      memory.writeFloat64(24, 0.0);
-      assertEquals(0.0, memory.readFloat64(24), "Should preserve positive zero");
-      assertEquals(
-          Double.doubleToRawLongBits(0.0),
-          Double.doubleToRawLongBits(memory.readFloat64(24)),
-          "Should preserve positive zero bit pattern");
-      LOGGER.info("Float64 +0.0 preserved");
+        // Negative infinity
+        memory.writeFloat64(16, Double.NEGATIVE_INFINITY);
+        assertEquals(
+            Double.NEGATIVE_INFINITY, memory.readFloat64(16), "Should preserve negative infinity");
+        LOGGER.info("Float64 -Infinity preserved");
 
-      // Negative zero
-      memory.writeFloat64(32, -0.0);
-      assertEquals(
-          Double.doubleToRawLongBits(-0.0),
-          Double.doubleToRawLongBits(memory.readFloat64(32)),
-          "Should preserve negative zero bit pattern");
-      LOGGER.info("Float64 -0.0 preserved");
+        // Positive zero
+        memory.writeFloat64(24, 0.0);
+        assertEquals(0.0, memory.readFloat64(24), "Should preserve positive zero");
+        assertEquals(
+            Double.doubleToRawLongBits(0.0),
+            Double.doubleToRawLongBits(memory.readFloat64(24)),
+            "Should preserve positive zero bit pattern");
+        LOGGER.info("Float64 +0.0 preserved");
 
-      // Minimum positive normal
-      memory.writeFloat64(40, Double.MIN_NORMAL);
-      assertEquals(Double.MIN_NORMAL, memory.readFloat64(40), "Should preserve MIN_NORMAL");
-      LOGGER.info("Float64 MIN_NORMAL preserved");
+        // Negative zero
+        memory.writeFloat64(32, -0.0);
+        assertEquals(
+            Double.doubleToRawLongBits(-0.0),
+            Double.doubleToRawLongBits(memory.readFloat64(32)),
+            "Should preserve negative zero bit pattern");
+        LOGGER.info("Float64 -0.0 preserved");
 
-      // Minimum positive denormalized
-      memory.writeFloat64(48, Double.MIN_VALUE);
-      assertEquals(Double.MIN_VALUE, memory.readFloat64(48), "Should preserve MIN_VALUE");
-      LOGGER.info("Float64 MIN_VALUE (denormalized) preserved");
+        // Minimum positive normal
+        memory.writeFloat64(40, Double.MIN_NORMAL);
+        assertEquals(Double.MIN_NORMAL, memory.readFloat64(40), "Should preserve MIN_NORMAL");
+        LOGGER.info("Float64 MIN_NORMAL preserved");
+
+        // Minimum positive denormalized
+        memory.writeFloat64(48, Double.MIN_VALUE);
+        assertEquals(Double.MIN_VALUE, memory.readFloat64(48), "Should preserve MIN_VALUE");
+        LOGGER.info("Float64 MIN_VALUE (denormalized) preserved");
+      }
     }
   }
 }

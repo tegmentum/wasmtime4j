@@ -26,19 +26,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WASI Sockets - TCP and UDP socket functionality.
@@ -49,67 +48,12 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WASI Sockets Integration Tests")
-public final class WasiSocketsTest {
+public class WasiSocketsTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiSocketsTest.class.getName());
 
-  private static boolean wasiSocketsAvailable = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
-
-  @BeforeAll
-  static void checkWasiSocketsAvailable() {
-    try {
-      sharedRuntime = WasmRuntimeFactory.create();
-      sharedEngine = sharedRuntime.createEngine();
-
-      // Try to load the JNI WASI Sockets classes to verify native implementation is available
-      final Class<?> jniNetworkClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.sockets.JniWasiNetwork");
-      final Class<?> jniTcpSocketClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.sockets.JniWasiTcpSocket");
-      final Class<?> jniUdpSocketClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.sockets.JniWasiUdpSocket");
-
-      if (jniNetworkClass != null && jniTcpSocketClass != null && jniUdpSocketClass != null) {
-        wasiSocketsAvailable = true;
-        LOGGER.info("WASI Sockets is available (JNI classes loaded successfully)");
-      }
-    } catch (final Exception e) {
-      LOGGER.warning("WASI Sockets not available: " + e.getMessage());
-      wasiSocketsAvailable = false;
-    }
-  }
-
-  @AfterAll
-  static void cleanup() {
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared runtime: " + e.getMessage());
-      }
-    }
-  }
-
-  private static void assumeWasiSocketsAvailable() {
-    assumeTrue(wasiSocketsAvailable, "WASI Sockets native implementation not available - skipping");
-  }
-
   private Engine engine;
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -123,9 +67,30 @@ public final class WasiSocketsTest {
     }
     resources.clear();
     if (engine != null) {
-      engine.close();
+      try {
+        engine.close();
+      } catch (final Exception e) {
+        LOGGER.warning("Failed to close engine: " + e.getMessage());
+      }
       engine = null;
     }
+    clearRuntimeSelection();
+  }
+
+  private static boolean isWasiSocketsAvailable() {
+    try {
+      Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.sockets.JniWasiNetwork");
+      Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.sockets.JniWasiTcpSocket");
+      Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.sockets.JniWasiUdpSocket");
+      return true;
+    } catch (final Exception e) {
+      return false;
+    }
+  }
+
+  private static void assumeWasiSocketsAvailable() {
+    assumeTrue(
+        isWasiSocketsAvailable(), "WASI Sockets native implementation not available - skipping");
   }
 
   @Nested
@@ -448,40 +413,44 @@ public final class WasiSocketsTest {
   @DisplayName("TCP Socket Native Tests")
   class TcpSocketNativeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create TCP socket with native implementation")
-    void shouldCreateTcpSocketWithNativeImplementation(final TestInfo testInfo) throws Exception {
+    void shouldCreateTcpSocketWithNativeImplementation(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiSocketsAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // This test requires actual native implementation to be available
       // The assumeWasiSocketsAvailable() guard ensures it only runs when native is available
       LOGGER.info("Native TCP socket creation test - requires JNI implementation");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should bind TCP socket to address")
-    void shouldBindTcpSocketToAddress(final TestInfo testInfo) throws Exception {
+    void shouldBindTcpSocketToAddress(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiSocketsAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       LOGGER.info("Native TCP socket bind test - requires JNI implementation");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should connect TCP socket to remote")
-    void shouldConnectTcpSocketToRemote(final TestInfo testInfo) throws Exception {
+    void shouldConnectTcpSocketToRemote(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiSocketsAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       LOGGER.info("Native TCP socket connect test - requires JNI implementation");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should listen on TCP socket")
-    void shouldListenOnTcpSocket(final TestInfo testInfo) throws Exception {
+    void shouldListenOnTcpSocket(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiSocketsAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       LOGGER.info("Native TCP socket listen test - requires JNI implementation");
     }
@@ -491,20 +460,22 @@ public final class WasiSocketsTest {
   @DisplayName("UDP Socket Native Tests")
   class UdpSocketNativeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create UDP socket with native implementation")
-    void shouldCreateUdpSocketWithNativeImplementation(final TestInfo testInfo) throws Exception {
+    void shouldCreateUdpSocketWithNativeImplementation(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiSocketsAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       LOGGER.info("Native UDP socket creation test - requires JNI implementation");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should send UDP datagram")
-    void shouldSendUdpDatagram(final TestInfo testInfo) throws Exception {
+    void shouldSendUdpDatagram(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiSocketsAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       LOGGER.info("Native UDP datagram send test - requires JNI implementation");
     }
@@ -514,11 +485,12 @@ public final class WasiSocketsTest {
   @DisplayName("DNS Resolution Native Tests")
   class DnsResolutionNativeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should resolve hostname with native implementation")
-    void shouldResolveHostnameWithNativeImplementation(final TestInfo testInfo) throws Exception {
+    void shouldResolveHostnameWithNativeImplementation(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiSocketsAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       LOGGER.info("Native hostname resolution test - requires JNI implementation");
     }

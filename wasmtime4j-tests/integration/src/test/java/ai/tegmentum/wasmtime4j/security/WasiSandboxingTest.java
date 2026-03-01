@@ -17,25 +17,22 @@
 package ai.tegmentum.wasmtime4j.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Security tests for WASI filesystem sandboxing.
@@ -46,61 +43,14 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("WASI Sandboxing Tests")
 @Tag("integration")
 @Tag("security")
-class WasiSandboxingTest {
+class WasiSandboxingTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiSandboxingTest.class.getName());
 
-  private static boolean runtimeAvailable;
-  private static boolean wasiAvailable;
-  private static String unavailableReason;
-
-  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
 
   @TempDir Path tempDir;
-
-  @BeforeAll
-  static void checkRuntimeAndWasiAvailability() {
-    LOGGER.info("Checking runtime and WASI availability for sandboxing tests");
-    try {
-      runtimeAvailable =
-          WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI)
-              || WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
-
-      if (runtimeAvailable) {
-        // Check if WASI is available by trying to create a config
-        try {
-          WasiConfig.defaultConfig();
-          wasiAvailable = true;
-        } catch (final Exception e) {
-          wasiAvailable = false;
-          unavailableReason = "WASI not available: " + e.getMessage();
-        }
-      }
-      LOGGER.info("Runtime available: " + runtimeAvailable);
-      LOGGER.info("WASI available: " + wasiAvailable);
-    } catch (final Exception e) {
-      unavailableReason = "Failed to check runtime: " + e.getMessage();
-      LOGGER.warning(unavailableReason);
-    }
-  }
-
-  @BeforeEach
-  void setUp() {
-    assumeTrue(runtimeAvailable, "Runtime not available: " + unavailableReason);
-    assumeTrue(wasiAvailable, "WASI not available: " + unavailableReason);
-
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-      store = engine.createStore();
-      LOGGER.info("Test runtime setup complete");
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to set up runtime: " + e.getMessage());
-      assumeTrue(false, "Runtime setup failed: " + e.getMessage());
-    }
-  }
 
   @AfterEach
   void tearDown() {
@@ -118,22 +68,21 @@ class WasiSandboxingTest {
         LOGGER.warning("Error closing engine: " + e.getMessage());
       }
     }
-    if (runtime != null) {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing runtime: " + e.getMessage());
-      }
-    }
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Preopened Directory Sandboxing Tests")
   class PreopenedDirectorySandboxingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should only allow access to preopened directories")
-    void shouldOnlyAllowAccessToPreopenedDirectories() throws Exception {
+    void shouldOnlyAllowAccessToPreopenedDirectories(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       // Create allowed and disallowed directories
       final Path allowedDir = Files.createDirectory(tempDir.resolve("allowed"));
       final Path disallowedDir = Files.createDirectory(tempDir.resolve("disallowed"));
@@ -156,9 +105,14 @@ class WasiSandboxingTest {
           "WASI config created with preopened directory: " + config.getPreopenDirectories());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should allow multiple preopened directories")
-    void shouldAllowMultiplePreopenedDirectories() throws Exception {
+    void shouldAllowMultiplePreopenedDirectories(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Path dir1 = Files.createDirectory(tempDir.resolve("dir1"));
       final Path dir2 = Files.createDirectory(tempDir.resolve("dir2"));
       final Path dir3 = Files.createDirectory(tempDir.resolve("dir3"));
@@ -176,9 +130,14 @@ class WasiSandboxingTest {
       LOGGER.info("Multiple preopened directories configured: " + config.getPreopenDirectories());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should prevent path traversal in guest path")
-    void shouldPreventPathTraversalInGuestPath() throws Exception {
+    void shouldPreventPathTraversalInGuestPath(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Path safeDir = Files.createDirectory(tempDir.resolve("safe"));
 
       // Try to configure with path traversal attempts
@@ -198,9 +157,15 @@ class WasiSandboxingTest {
   @DisplayName("Environment Variable Sandboxing Tests")
   class EnvironmentVariableSandboxingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should only expose explicitly configured environment variables")
-    void shouldOnlyExposeConfiguredEnvironmentVariables() throws Exception {
+    void shouldOnlyExposeConfiguredEnvironmentVariables(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       // Create config with specific environment variables
       final WasiConfig config =
           WasiConfig.builder()
@@ -220,9 +185,14 @@ class WasiSandboxingTest {
       LOGGER.info("Environment sandboxing verified: " + config.getEnvironment());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should not expose sensitive environment variables by default")
-    void shouldNotExposeSensitiveVariablesByDefault() throws Exception {
+    void shouldNotExposeSensitiveVariablesByDefault(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasiConfig config = WasiConfig.defaultConfig();
 
       // Default config should have empty environment
@@ -236,9 +206,14 @@ class WasiSandboxingTest {
   @DisplayName("Command Line Argument Sandboxing Tests")
   class CommandLineArgumentSandboxingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should only expose configured command line arguments")
-    void shouldOnlyExposeConfiguredArguments() throws Exception {
+    void shouldOnlyExposeConfiguredArguments(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasiConfig config =
           WasiConfig.builder()
               .withArgument("--config")
@@ -253,9 +228,14 @@ class WasiSandboxingTest {
       LOGGER.info("Arguments sandboxed: " + config.getArguments());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should have empty arguments by default")
-    void shouldHaveEmptyArgumentsByDefault() throws Exception {
+    void shouldHaveEmptyArgumentsByDefault(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasiConfig config = WasiConfig.defaultConfig();
 
       assertThat(config.getArguments()).isEmpty();
@@ -268,9 +248,14 @@ class WasiSandboxingTest {
   @DisplayName("WASI Context Isolation Tests")
   class WasiContextIsolationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create isolated WASI configs per use case")
-    void shouldCreateIsolatedWasiConfigsPerUseCase() throws Exception {
+    void shouldCreateIsolatedWasiConfigsPerUseCase(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Path dir1 = Files.createDirectory(tempDir.resolve("ctx1_dir"));
       final Path dir2 = Files.createDirectory(tempDir.resolve("ctx2_dir"));
 
@@ -307,9 +292,14 @@ class WasiSandboxingTest {
   @DisplayName("Default Sandbox Configuration Tests")
   class DefaultSandboxConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should have minimal permissions by default")
-    void shouldHaveMinimalPermissionsByDefault() throws Exception {
+    void shouldHaveMinimalPermissionsByDefault(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasiConfig config = WasiConfig.defaultConfig();
 
       // Default config should be maximally restrictive
@@ -320,9 +310,15 @@ class WasiSandboxingTest {
       LOGGER.info("Default WASI config has minimal permissions");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should require explicit configuration for filesystem access")
-    void shouldRequireExplicitConfigForFilesystemAccess() throws Exception {
+    void shouldRequireExplicitConfigForFilesystemAccess(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       // Without any preopened directories, filesystem should be inaccessible
       final WasiConfig config = WasiConfig.builder().build();
 

@@ -22,23 +22,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WASI HTTP request/response handling.
@@ -49,71 +47,12 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WASI HTTP Request/Response Integration Tests")
-public final class WasiHttpRequestResponseTest {
+public class WasiHttpRequestResponseTest extends DualRuntimeTest {
 
   private static final Logger LOGGER =
       Logger.getLogger(WasiHttpRequestResponseTest.class.getName());
 
-  private static boolean wasiHttpAvailable = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
-  private static String unavailableReason;
-
-  @BeforeAll
-  static void checkWasiHttpAvailable() {
-    try {
-      sharedRuntime = WasmRuntimeFactory.create();
-      sharedEngine = sharedRuntime.createEngine();
-
-      // Try to load WASI HTTP classes to verify implementation is available
-      final Class<?> jniConfigClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpConfig");
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-
-      if (jniConfigClass != null && jniContextClass != null) {
-        wasiHttpAvailable = true;
-        LOGGER.info("WASI HTTP is available (JNI classes loaded successfully)");
-      }
-    } catch (final ClassNotFoundException e) {
-      unavailableReason = "JNI HTTP classes not found: " + e.getMessage();
-      LOGGER.warning("WASI HTTP not available: " + unavailableReason);
-      wasiHttpAvailable = false;
-    } catch (final Exception e) {
-      unavailableReason = "Failed to initialize: " + e.getMessage();
-      LOGGER.warning("WASI HTTP not available: " + unavailableReason);
-      wasiHttpAvailable = false;
-    }
-  }
-
-  @AfterAll
-  static void cleanup() {
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared runtime: " + e.getMessage());
-      }
-    }
-  }
-
-  private static void assumeWasiHttpAvailable() {
-    assumeTrue(wasiHttpAvailable, "WASI HTTP not available: " + unavailableReason);
-  }
-
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -126,6 +65,21 @@ public final class WasiHttpRequestResponseTest {
       }
     }
     resources.clear();
+    clearRuntimeSelection();
+  }
+
+  private static boolean isWasiHttpAvailable() {
+    try {
+      Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpConfig");
+      Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
+      return true;
+    } catch (final ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  private static void assumeWasiHttpAvailable() {
+    assumeTrue(isWasiHttpAvailable(), "WASI HTTP not available: JNI HTTP classes not found");
   }
 
   @Nested
@@ -407,9 +361,11 @@ public final class WasiHttpRequestResponseTest {
   @DisplayName("Native HTTP Context Tests")
   class NativeHttpContextTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create default HTTP config")
-    void shouldCreateDefaultHttpConfig(final TestInfo testInfo) {
+    void shouldCreateDefaultHttpConfig(final RuntimeType runtime, final TestInfo testInfo) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
@@ -426,9 +382,11 @@ public final class WasiHttpRequestResponseTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create HTTP context from config")
-    void shouldCreateHttpContextFromConfig(final TestInfo testInfo) {
+    void shouldCreateHttpContextFromConfig(final RuntimeType runtime, final TestInfo testInfo) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
@@ -446,9 +404,11 @@ public final class WasiHttpRequestResponseTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should close HTTP context properly")
-    void shouldCloseHttpContextProperly(final TestInfo testInfo) {
+    void shouldCloseHttpContextProperly(final RuntimeType runtime, final TestInfo testInfo) {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 

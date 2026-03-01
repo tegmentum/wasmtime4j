@@ -23,23 +23,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WebAssembly Engine configuration options.
@@ -51,7 +51,7 @@ import org.junit.jupiter.api.TestInfo;
  */
 @DisplayName("Engine Configuration Integration Tests")
 @SuppressWarnings("deprecation")
-public final class EngineConfigurationTest {
+public class EngineConfigurationTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(EngineConfigurationTest.class.getName());
 
@@ -100,15 +100,7 @@ public final class EngineConfigurationTest {
     0x0B // end
   };
 
-  private WasmRuntime runtime;
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-    runtime = WasmRuntimeFactory.create();
-    resources.add(runtime);
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -121,18 +113,22 @@ public final class EngineConfigurationTest {
       }
     }
     resources.clear();
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Default Configuration Tests")
   class DefaultConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with default configuration")
-    void shouldCreateEngineWithDefaultConfiguration(final TestInfo testInfo) throws Exception {
+    void shouldCreateEngineWithDefaultConfiguration(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Engine engine = runtime.createEngine();
+      final Engine engine = Engine.create();
       resources.add(0, engine);
 
       assertNotNull(engine, "Engine should be created");
@@ -160,16 +156,19 @@ public final class EngineConfigurationTest {
   @DisplayName("Custom Configuration Tests")
   class CustomConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with custom optimization level")
-    void shouldCreateEngineWithCustomOptimizationLevel(final TestInfo testInfo) throws Exception {
+    void shouldCreateEngineWithCustomOptimizationLevel(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Create config with speed optimization
       final EngineConfig config = new EngineConfig();
       config.optimizationLevel(OptimizationLevel.SPEED);
 
-      final Engine engine = runtime.createEngine(config);
+      final Engine engine = Engine.create(config);
       resources.add(0, engine);
 
       assertNotNull(engine, "Engine should be created");
@@ -191,15 +190,18 @@ public final class EngineConfigurationTest {
       LOGGER.info("Speed optimization works correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with size optimization")
-    void shouldCreateEngineWithSizeOptimization(final TestInfo testInfo) throws Exception {
+    void shouldCreateEngineWithSizeOptimization(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final EngineConfig config = new EngineConfig();
       config.optimizationLevel(OptimizationLevel.SPEED_AND_SIZE);
 
-      final Engine engine = runtime.createEngine(config);
+      final Engine engine = Engine.create(config);
       resources.add(0, engine);
 
       final Store store = engine.createStore();
@@ -218,15 +220,18 @@ public final class EngineConfigurationTest {
       LOGGER.info("Size optimization works correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with no optimization")
-    void shouldCreateEngineWithNoOptimization(final TestInfo testInfo) throws Exception {
+    void shouldCreateEngineWithNoOptimization(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final EngineConfig config = new EngineConfig();
       config.optimizationLevel(OptimizationLevel.NONE);
 
-      final Engine engine = runtime.createEngine(config);
+      final Engine engine = Engine.create(config);
       resources.add(0, engine);
 
       final Store store = engine.createStore();
@@ -250,15 +255,18 @@ public final class EngineConfigurationTest {
   @DisplayName("Feature Flag Tests")
   class FeatureFlagTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with SIMD enabled")
-    void shouldCreateEngineWithSimdEnabled(final TestInfo testInfo) throws Exception {
+    void shouldCreateEngineWithSimdEnabled(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final EngineConfig config = new EngineConfig();
       config.addWasmFeature(WasmFeature.SIMD);
 
-      final Engine engine = runtime.createEngine(config);
+      final Engine engine = Engine.create(config);
       resources.add(0, engine);
 
       assertNotNull(engine, "Engine should be created with SIMD enabled");
@@ -280,15 +288,18 @@ public final class EngineConfigurationTest {
       LOGGER.info("SIMD enabled engine works correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with bulk memory enabled")
-    void shouldCreateEngineWithBulkMemoryEnabled(final TestInfo testInfo) throws Exception {
+    void shouldCreateEngineWithBulkMemoryEnabled(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final EngineConfig config = new EngineConfig();
       config.addWasmFeature(WasmFeature.BULK_MEMORY);
 
-      final Engine engine = runtime.createEngine(config);
+      final Engine engine = Engine.create(config);
       resources.add(0, engine);
 
       assertNotNull(engine, "Engine should be created with bulk memory enabled");
@@ -309,15 +320,18 @@ public final class EngineConfigurationTest {
       LOGGER.info("Bulk memory enabled engine works correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with reference types enabled")
-    void shouldCreateEngineWithReferenceTypesEnabled(final TestInfo testInfo) throws Exception {
+    void shouldCreateEngineWithReferenceTypesEnabled(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final EngineConfig config = new EngineConfig();
       config.addWasmFeature(WasmFeature.REFERENCE_TYPES);
 
-      final Engine engine = runtime.createEngine(config);
+      final Engine engine = Engine.create(config);
       resources.add(0, engine);
 
       assertNotNull(engine, "Engine should be created with reference types enabled");
@@ -338,9 +352,12 @@ public final class EngineConfigurationTest {
       LOGGER.info("Reference types enabled engine works correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with multiple features enabled")
-    void shouldCreateEngineWithMultipleFeaturesEnabled(final TestInfo testInfo) throws Exception {
+    void shouldCreateEngineWithMultipleFeaturesEnabled(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final EngineConfig config = new EngineConfig();
@@ -349,7 +366,7 @@ public final class EngineConfigurationTest {
       config.addWasmFeature(WasmFeature.REFERENCE_TYPES);
       config.optimizationLevel(OptimizationLevel.SPEED);
 
-      final Engine engine = runtime.createEngine(config);
+      final Engine engine = Engine.create(config);
       resources.add(0, engine);
 
       assertNotNull(engine, "Engine should be created with multiple features enabled");
@@ -375,22 +392,24 @@ public final class EngineConfigurationTest {
   @DisplayName("Engine Lifecycle Tests")
   class EngineLifecycleTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle multiple engines with different configurations")
-    void shouldHandleMultipleEnginesWithDifferentConfigurations(final TestInfo testInfo)
-        throws Exception {
+    void shouldHandleMultipleEnginesWithDifferentConfigurations(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Create first engine with speed optimization
       final EngineConfig config1 = new EngineConfig();
       config1.optimizationLevel(OptimizationLevel.SPEED);
-      final Engine engine1 = runtime.createEngine(config1);
+      final Engine engine1 = Engine.create(config1);
       resources.add(0, engine1);
 
       // Create second engine with size optimization
       final EngineConfig config2 = new EngineConfig();
       config2.optimizationLevel(OptimizationLevel.SPEED_AND_SIZE);
-      final Engine engine2 = runtime.createEngine(config2);
+      final Engine engine2 = Engine.create(config2);
       resources.add(0, engine2);
 
       // Both engines should be functional
@@ -424,13 +443,16 @@ public final class EngineConfigurationTest {
       LOGGER.info("Multiple engines with different configurations work correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should gracefully handle engine close and recreation")
-    void shouldGracefullyHandleEngineCloseAndRecreation(final TestInfo testInfo) throws Exception {
+    void shouldGracefullyHandleEngineCloseAndRecreation(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Create and use first engine
-      Engine engine = runtime.createEngine();
+      Engine engine = Engine.create();
       Store store = engine.createStore();
       Module module = engine.compileModule(ADD_WASM);
       Instance instance = store.createInstance(module);
@@ -446,7 +468,7 @@ public final class EngineConfigurationTest {
       engine.close();
 
       // Create new engine and verify it works
-      engine = runtime.createEngine();
+      engine = Engine.create();
       resources.add(0, engine);
       store = engine.createStore();
       resources.add(0, store);

@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Comprehensive tests for atomic memory operations API.
@@ -19,18 +21,17 @@ import org.junit.jupiter.api.Test;
  * <p>Note: These tests focus on the Java API surface. Full functional testing of atomic operations
  * requires shared memory support which depends on Wasmtime configuration.
  */
-class AtomicMemoryOperationsTest {
+class AtomicMemoryOperationsTest extends DualRuntimeTest {
 
-  private Engine engine;
-  private Store store;
-  private Module module;
-  private Instance instance;
-  private WasmMemory memory;
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
 
-  @BeforeEach
-  void setUp() throws WasmException, IOException {
-    engine = Engine.create();
-    store = Store.create(engine);
+  private WasmMemory createTestMemory(final RuntimeType runtime) throws WasmException, IOException {
+    setRuntime(runtime);
+    final Engine engine = Engine.create();
+    final Store store = Store.create(engine);
 
     // Create a simple module with memory
     final String wat =
@@ -43,31 +44,18 @@ class AtomicMemoryOperationsTest {
             + "  )\n"
             + ")";
 
-    module = engine.compileWat(wat);
-    instance = module.instantiate(store);
-    memory = instance.getMemory("memory").orElseThrow();
-  }
-
-  @AfterEach
-  void tearDown() {
-    if (instance != null) {
-      instance.close();
-    }
-    if (module != null) {
-      module.close();
-    }
-    if (store != null) {
-      store.close();
-    }
-    if (engine != null) {
-      engine.close();
-    }
+    final Module module = engine.compileWat(wat);
+    final Instance instance = module.instantiate(store);
+    return instance.getMemory("memory").orElseThrow();
   }
 
   // ===== Compare-and-Swap Tests =====
 
-  @Test
-  void testAtomicCompareAndSwapInt() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicCompareAndSwapInt")
+  void testAtomicCompareAndSwapInt(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     // Test basic API - actual functionality requires shared memory
     assertDoesNotThrow(
         () -> {
@@ -83,8 +71,11 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicCompareAndSwapIntInvalidOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicCompareAndSwapIntInvalidOffset")
+  void testAtomicCompareAndSwapIntInvalidOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     // Test alignment validation
     assertThrows(
         IllegalArgumentException.class,
@@ -92,16 +83,22 @@ class AtomicMemoryOperationsTest {
         "Offset must be 4-byte aligned");
   }
 
-  @Test
-  void testAtomicCompareAndSwapIntNegativeOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicCompareAndSwapIntNegativeOffset")
+  void testAtomicCompareAndSwapIntNegativeOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicCompareAndSwapInt(-4, 0, 42),
         "Offset must be non-negative");
   }
 
-  @Test
-  void testAtomicCompareAndSwapLong() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicCompareAndSwapLong")
+  void testAtomicCompareAndSwapLong(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -113,8 +110,11 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicCompareAndSwapLongInvalidOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicCompareAndSwapLongInvalidOffset")
+  void testAtomicCompareAndSwapLongInvalidOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicCompareAndSwapLong(4, 0L, 42L), // Misaligned for i64
@@ -123,8 +123,11 @@ class AtomicMemoryOperationsTest {
 
   // ===== Load/Store Tests =====
 
-  @Test
-  void testAtomicLoadInt() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicLoadInt")
+  void testAtomicLoadInt(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -136,16 +139,22 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicLoadIntInvalidOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicLoadIntInvalidOffset")
+  void testAtomicLoadIntInvalidOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicLoadInt(3), // Misaligned
         "Offset must be 4-byte aligned");
   }
 
-  @Test
-  void testAtomicLoadLong() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicLoadLong")
+  void testAtomicLoadLong(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -157,8 +166,11 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicStoreInt() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicStoreInt")
+  void testAtomicStoreInt(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -170,16 +182,22 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicStoreIntInvalidOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicStoreIntInvalidOffset")
+  void testAtomicStoreIntInvalidOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicStoreInt(2, 42), // Misaligned
         "Offset must be 4-byte aligned");
   }
 
-  @Test
-  void testAtomicStoreLong() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicStoreLong")
+  void testAtomicStoreLong(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -192,8 +210,11 @@ class AtomicMemoryOperationsTest {
 
   // ===== Arithmetic Operations Tests =====
 
-  @Test
-  void testAtomicAddInt() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicAddInt")
+  void testAtomicAddInt(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -205,16 +226,22 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicAddIntInvalidOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicAddIntInvalidOffset")
+  void testAtomicAddIntInvalidOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicAddInt(1, 5), // Misaligned
         "Offset must be 4-byte aligned");
   }
 
-  @Test
-  void testAtomicAddLong() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicAddLong")
+  void testAtomicAddLong(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -228,8 +255,11 @@ class AtomicMemoryOperationsTest {
 
   // ===== Bitwise Operations Tests =====
 
-  @Test
-  void testAtomicAndInt() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicAndInt")
+  void testAtomicAndInt(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -241,8 +271,11 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicOrInt() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicOrInt")
+  void testAtomicOrInt(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -254,8 +287,11 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicXorInt() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicXorInt")
+  void testAtomicXorInt(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -269,8 +305,11 @@ class AtomicMemoryOperationsTest {
 
   // ===== Synchronization Operations Tests =====
 
-  @Test
-  void testAtomicFence() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicFence")
+  void testAtomicFence(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -281,8 +320,11 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicNotify() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicNotify")
+  void testAtomicNotify(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -294,24 +336,33 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicNotifyInvalidOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicNotifyInvalidOffset")
+  void testAtomicNotifyInvalidOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicNotify(3, 1), // Misaligned
         "Offset must be 4-byte aligned");
   }
 
-  @Test
-  void testAtomicNotifyNegativeCount() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicNotifyNegativeCount")
+  void testAtomicNotifyNegativeCount(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicNotify(0, -1),
         "Count cannot be negative");
   }
 
-  @Test
-  void testAtomicWait32() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicWait32")
+  void testAtomicWait32(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -323,24 +374,33 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicWait32InvalidOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicWait32InvalidOffset")
+  void testAtomicWait32InvalidOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicWait32(1, 0, 1000L), // Misaligned
         "Offset must be 4-byte aligned");
   }
 
-  @Test
-  void testAtomicWait32InvalidTimeout() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicWait32InvalidTimeout")
+  void testAtomicWait32InvalidTimeout(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicWait32(0, 0, -2L), // Invalid timeout (only -1 allowed)
         "Timeout must be non-negative or -1");
   }
 
-  @Test
-  void testAtomicWait64() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicWait64")
+  void testAtomicWait64(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertDoesNotThrow(
         () -> {
           try {
@@ -352,8 +412,11 @@ class AtomicMemoryOperationsTest {
         });
   }
 
-  @Test
-  void testAtomicWait64InvalidOffset() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAtomicWait64InvalidOffset")
+  void testAtomicWait64InvalidOffset(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(
         IllegalArgumentException.class,
         () -> memory.atomicWait64(4, 0L, 1000L), // Misaligned for i64
@@ -365,8 +428,11 @@ class AtomicMemoryOperationsTest {
    *
    * <p>This is a comprehensive test ensuring defensive programming is maintained.
    */
-  @Test
-  void testAllAtomicOperationsValidateAlignment() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAllAtomicOperationsValidateAlignment")
+  void testAllAtomicOperationsValidateAlignment(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     // All i32 operations require 4-byte alignment
     assertThrows(IllegalArgumentException.class, () -> memory.atomicCompareAndSwapInt(1, 0, 0));
     assertThrows(IllegalArgumentException.class, () -> memory.atomicLoadInt(2));
@@ -387,8 +453,11 @@ class AtomicMemoryOperationsTest {
   }
 
   /** Validates that all atomic operations properly validate negative offsets. */
-  @Test
-  void testAllAtomicOperationsRejectNegativeOffsets() {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testAllAtomicOperationsRejectNegativeOffsets")
+  void testAllAtomicOperationsRejectNegativeOffsets(final RuntimeType runtime) throws Exception {
+    final WasmMemory memory = createTestMemory(runtime);
     assertThrows(IllegalArgumentException.class, () -> memory.atomicCompareAndSwapInt(-4, 0, 0));
     assertThrows(IllegalArgumentException.class, () -> memory.atomicCompareAndSwapLong(-8, 0L, 0L));
     assertThrows(IllegalArgumentException.class, () -> memory.atomicLoadInt(-4));

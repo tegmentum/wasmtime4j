@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -27,21 +26,19 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.TrapException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Security tests for resource limit enforcement.
@@ -53,15 +50,11 @@ import org.junit.jupiter.api.Test;
 @Tag("integration")
 @Tag("security")
 @SuppressWarnings("deprecation")
-class ResourceLimitEnforcementTest {
+class ResourceLimitEnforcementTest extends DualRuntimeTest {
 
   private static final Logger LOGGER =
       Logger.getLogger(ResourceLimitEnforcementTest.class.getName());
 
-  private static boolean runtimeAvailable;
-  private static String unavailableReason;
-
-  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
 
@@ -264,35 +257,6 @@ class ResourceLimitEnforcementTest {
         0x0B // end
       };
 
-  @BeforeAll
-  static void checkRuntimeAvailability() {
-    LOGGER.info("Checking runtime availability for resource limit tests");
-    try {
-      runtimeAvailable =
-          WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI)
-              || WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
-      LOGGER.info("Runtime available: " + runtimeAvailable);
-    } catch (final Exception e) {
-      unavailableReason = "Failed to check runtime: " + e.getMessage();
-      LOGGER.warning(unavailableReason);
-    }
-  }
-
-  @BeforeEach
-  void setUp() {
-    assumeTrue(runtimeAvailable, "Runtime not available: " + unavailableReason);
-
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-      store = engine.createStore();
-      LOGGER.info("Test runtime setup complete");
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to set up runtime: " + e.getMessage());
-      assumeTrue(false, "Runtime setup failed: " + e.getMessage());
-    }
-  }
-
   @AfterEach
   void tearDown() {
     if (store != null) {
@@ -309,22 +273,21 @@ class ResourceLimitEnforcementTest {
         LOGGER.warning("Error closing engine: " + e.getMessage());
       }
     }
-    if (runtime != null) {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing runtime: " + e.getMessage());
-      }
-    }
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Memory Limit Enforcement Tests")
   class MemoryLimitEnforcementTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enforce memory maximum limit")
-    void shouldEnforceMemoryMaximumLimit() throws Exception {
+    void shouldEnforceMemoryMaximumLimit(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_GROW_WASM);
 
       try {
@@ -359,9 +322,14 @@ class ResourceLimitEnforcementTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enforce memory initial minimum")
-    void shouldEnforceMemoryInitialMinimum() throws Exception {
+    void shouldEnforceMemoryInitialMinimum(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_GROW_WASM);
 
       try {
@@ -383,9 +351,14 @@ class ResourceLimitEnforcementTest {
   @DisplayName("Table Limit Enforcement Tests")
   class TableLimitEnforcementTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enforce table maximum size")
-    void shouldEnforceTableMaximumSize() throws Exception {
+    void shouldEnforceTableMaximumSize(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final int initialSize = 5;
       final int maxSize = 10;
 
@@ -407,9 +380,14 @@ class ResourceLimitEnforcementTest {
       LOGGER.info("Table growth beyond max prevented");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should reject table creation with invalid limits")
-    void shouldRejectTableCreationWithInvalidLimits() {
+    void shouldRejectTableCreationWithInvalidLimits(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       // Max < initial should be rejected
       assertThatThrownBy(() -> store.createTable(WasmValueType.FUNCREF, 10, 5))
           .satisfies(
@@ -423,51 +401,49 @@ class ResourceLimitEnforcementTest {
   @DisplayName("Fuel Consumption Tests")
   class FuelConsumptionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should limit execution via fuel")
-    void shouldLimitExecutionViaFuel() throws Exception {
+    void shouldLimitExecutionViaFuel(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       // Create engine with fuel consumption enabled
-      try {
-        final EngineConfig fuelConfig = new EngineConfig();
-        fuelConfig.consumeFuel(true);
+      final EngineConfig fuelConfig = new EngineConfig();
+      fuelConfig.consumeFuel(true);
 
-        try (Engine fuelEngine = runtime.createEngine(fuelConfig);
-            Store fuelStore = fuelEngine.createStore()) {
+      try (Engine fuelEngine = Engine.create(fuelConfig);
+          Store fuelStore = fuelEngine.createStore()) {
 
-          final Module module = fuelEngine.compileModule(FUEL_CONSUMER_WASM);
+        final Module module = fuelEngine.compileModule(FUEL_CONSUMER_WASM);
 
-          try {
-            final Instance instance = fuelStore.createInstance(module);
-            final WasmFunction consumerFunc = instance.getFunction("consumer").orElse(null);
+        try {
+          final Instance instance = fuelStore.createInstance(module);
+          final WasmFunction consumerFunc = instance.getFunction("consumer").orElse(null);
 
-            assertThat(consumerFunc).isNotNull();
+          assertThat(consumerFunc).isNotNull();
 
-            // Set a limited amount of fuel
-            fuelStore.setFuel(1000);
-            LOGGER.info("Set initial fuel to 1000");
+          // Set a limited amount of fuel
+          fuelStore.setFuel(1000);
+          LOGGER.info("Set initial fuel to 1000");
 
-            // Run with small number of iterations - should succeed
-            final WasmValue[] result1 = consumerFunc.call(WasmValue.i32(10));
-            LOGGER.info("Small iteration result: " + result1[0].asInt());
-            LOGGER.info("Remaining fuel: " + fuelStore.getFuel());
+          // Run with small number of iterations - should succeed
+          final WasmValue[] result1 = consumerFunc.call(WasmValue.i32(10));
+          LOGGER.info("Small iteration result: " + result1[0].asInt());
+          LOGGER.info("Remaining fuel: " + fuelStore.getFuel());
 
-            // Set fuel again for larger test
-            fuelStore.setFuel(100);
+          // Set fuel again for larger test
+          fuelStore.setFuel(100);
 
-            // Run with large number of iterations - should run out of fuel
-            assertThatThrownBy(() -> consumerFunc.call(WasmValue.i32(10000)))
-                .isInstanceOf(TrapException.class)
-                .satisfies(
-                    e -> {
-                      LOGGER.info("Fuel exhausted trap: " + e.getMessage());
-                    });
-          } finally {
-            module.close();
-          }
+          // Run with large number of iterations - should run out of fuel
+          assertThatThrownBy(() -> consumerFunc.call(WasmValue.i32(10000)))
+              .isInstanceOf(TrapException.class)
+              .satisfies(
+                  e -> {
+                    LOGGER.info("Fuel exhausted trap: " + e.getMessage());
+                  });
+        } finally {
+          module.close();
         }
-      } catch (final UnsupportedOperationException e) {
-        LOGGER.info("Fuel consumption not supported: " + e.getMessage());
-        assumeTrue(false, "Fuel consumption not supported");
       }
     }
   }
@@ -476,61 +452,59 @@ class ResourceLimitEnforcementTest {
   @DisplayName("Epoch Interruption Tests")
   class EpochInterruptionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should interrupt long-running execution via epochs")
-    void shouldInterruptViaEpochs() throws Exception {
+    void shouldInterruptViaEpochs(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       // Create engine with epoch interruption
-      try {
-        final EngineConfig epochConfig = new EngineConfig();
-        epochConfig.epochInterruption(true);
+      final EngineConfig epochConfig = new EngineConfig();
+      epochConfig.epochInterruption(true);
 
-        try (Engine epochEngine = runtime.createEngine(epochConfig);
-            Store epochStore = epochEngine.createStore()) {
+      try (Engine epochEngine = Engine.create(epochConfig);
+          Store epochStore = epochEngine.createStore()) {
 
-          final Module module = epochEngine.compileModule(INFINITE_LOOP_WASM);
+        final Module module = epochEngine.compileModule(INFINITE_LOOP_WASM);
 
-          try {
-            final Instance instance = epochStore.createInstance(module);
-            final WasmFunction loopFunc = instance.getFunction("loop").orElse(null);
+        try {
+          final Instance instance = epochStore.createInstance(module);
+          final WasmFunction loopFunc = instance.getFunction("loop").orElse(null);
 
-            assertThat(loopFunc).isNotNull();
+          assertThat(loopFunc).isNotNull();
 
-            // Set deadline 1 tick in the future
-            epochStore.setEpochDeadline(1);
-            LOGGER.info("Set epoch deadline to 1 tick");
+          // Set deadline 1 tick in the future
+          epochStore.setEpochDeadline(1);
+          LOGGER.info("Set epoch deadline to 1 tick");
 
-            // Increment the engine epoch to trigger interruption
-            // Start the infinite loop in a thread and interrupt it
-            final Thread interrupterThread =
-                new Thread(
-                    () -> {
-                      try {
-                        Thread.sleep(100); // Give the loop time to start
-                        epochEngine.incrementEpoch();
-                        LOGGER.info("Incremented engine epoch");
-                      } catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                      }
-                    });
+          // Increment the engine epoch to trigger interruption
+          // Start the infinite loop in a thread and interrupt it
+          final Thread interrupterThread =
+              new Thread(
+                  () -> {
+                    try {
+                      Thread.sleep(100); // Give the loop time to start
+                      epochEngine.incrementEpoch();
+                      LOGGER.info("Incremented engine epoch");
+                    } catch (final InterruptedException e) {
+                      Thread.currentThread().interrupt();
+                    }
+                  });
 
-            interrupterThread.start();
+          interrupterThread.start();
 
-            // This should be interrupted
-            assertThatThrownBy(() -> loopFunc.call())
-                .isInstanceOf(TrapException.class)
-                .satisfies(
-                    e -> {
-                      LOGGER.info("Epoch interruption trap: " + e.getMessage());
-                    });
+          // This should be interrupted
+          assertThatThrownBy(() -> loopFunc.call())
+              .isInstanceOf(TrapException.class)
+              .satisfies(
+                  e -> {
+                    LOGGER.info("Epoch interruption trap: " + e.getMessage());
+                  });
 
-            interrupterThread.join(5000);
-          } finally {
-            module.close();
-          }
+          interrupterThread.join(5000);
+        } finally {
+          module.close();
         }
-      } catch (final UnsupportedOperationException e) {
-        LOGGER.info("Epoch interruption not supported: " + e.getMessage());
-        assumeTrue(false, "Epoch interruption not supported");
       }
     }
   }
@@ -539,9 +513,14 @@ class ResourceLimitEnforcementTest {
   @DisplayName("Combined Resource Limit Tests")
   class CombinedResourceLimitTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enforce multiple limits simultaneously")
-    void shouldEnforceMultipleLimitsSimultaneously() throws Exception {
+    void shouldEnforceMultipleLimitsSimultaneously(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_GROW_WASM);
 
       try {

@@ -4,10 +4,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Tests for calling WebAssembly functions with no parameters.
@@ -15,11 +19,18 @@ import org.junit.jupiter.api.Test;
  * <p>Validates that functions without parameters can be called correctly and return expected
  * values.
  */
-public class SimpleNoParamTest {
+public class SimpleNoParamTest extends DualRuntimeTest {
 
-  @Test
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Call function with no parameters")
-  public void testNoParamFunction() throws Exception {
+  public void testNoParamFunction(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module

@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Linker;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import java.io.IOException;
@@ -16,10 +16,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Tests for WASI Preview 1 backward compatibility.
@@ -28,43 +29,37 @@ import org.junit.jupiter.api.io.TempDir;
  * compatibility with WASI Preview 1 functionality, allowing existing WebAssembly modules to
  * continue working without modification.
  */
-public class WasiBackwardCompatibilityTest {
+public class WasiBackwardCompatibilityTest extends DualRuntimeTest {
 
   private static final Logger LOGGER =
       Logger.getLogger(WasiBackwardCompatibilityTest.class.getName());
 
-  private WasmRuntime runtime;
   private Engine engine;
 
   @TempDir Path tempDir;
 
-  @BeforeEach
-  void setUp(TestInfo testInfo) {
-    LOGGER.info("Setting up backward compatibility test: " + testInfo.getDisplayName());
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-    } catch (WasmException e) {
-      fail("Failed to set up runtime: " + e.getMessage(), e);
-    }
-  }
-
   @AfterEach
   void tearDown(TestInfo testInfo) {
     LOGGER.info("Tearing down backward compatibility test: " + testInfo.getDisplayName());
-    if (runtime != null) {
+    if (engine != null) {
       try {
-        runtime.close();
+        engine.close();
       } catch (Exception e) {
-        LOGGER.warning("Failed to close runtime: " + e.getMessage());
+        LOGGER.warning("Failed to close engine: " + e.getMessage());
       }
     }
+    clearRuntimeSelection();
   }
 
-  @Test
-  void testPreview1ContextCreation() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testPreview1ContextCreation")
+  void testPreview1ContextCreation(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // Create traditional WASI context (Preview 1 style)
-    WasiContext context = runtime.createWasiContext();
+    WasiContext context = WasiContext.create();
     assertNotNull(context, "WASI context should be created");
 
     // Configure with Preview 1 methods only
@@ -73,9 +68,14 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully created WASI Preview 1 compatible context");
   }
 
-  @Test
-  void testPreview1LinkerCreation() throws WasmException {
-    WasiContext context = runtime.createWasiContext().inheritStdio().inheritEnv();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testPreview1LinkerCreation")
+  void testPreview1LinkerCreation(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create().inheritStdio().inheritEnv();
 
     // Create traditional WASI linker (Preview 1)
     Linker<WasiContext> linker = WasiLinkerUtils.createLinker(engine, context);
@@ -88,12 +88,17 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully created WASI Preview 1 linker");
   }
 
-  @Test
-  void testTraditionalWasiLinkerMethods() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testTraditionalWasiLinkerMethods")
+  void testTraditionalWasiLinkerMethods(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Test the static utility methods from WasiLinker
-    Linker<WasiContext> linker1 = runtime.createLinker(engine);
+    Linker<WasiContext> linker1 = Linker.create(engine);
     assertDoesNotThrow(
         () -> {
           WasiLinkerUtils.addToLinker(linker1, context);
@@ -101,7 +106,7 @@ public class WasiBackwardCompatibilityTest {
         "Adding WASI to linker should not throw");
 
     // Test convenience method with default context
-    Linker<WasiContext> linker2 = runtime.createLinker(engine);
+    Linker<WasiContext> linker2 = Linker.create(engine);
     assertDoesNotThrow(
         () -> {
           WasiLinkerUtils.addToLinker(linker2);
@@ -118,9 +123,14 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated traditional WasiLinker methods");
   }
 
-  @Test
-  void testEnvironmentVariableHandling() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testEnvironmentVariableHandling")
+  void testEnvironmentVariableHandling(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Test individual environment variable setting
     assertDoesNotThrow(
@@ -151,9 +161,14 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated environment variable handling");
   }
 
-  @Test
-  void testCommandLineArgumentHandling() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testCommandLineArgumentHandling")
+  void testCommandLineArgumentHandling(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Test various argument configurations
     String[] args1 = {"program"};
@@ -180,9 +195,14 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated command line argument handling");
   }
 
-  @Test
-  void testStdioRedirection() throws WasmException, IOException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testStdioRedirection")
+  void testStdioRedirection(final RuntimeType runtime) throws WasmException, IOException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Create test files for stdio redirection
     Path stdinFile = tempDir.resolve("input.txt");
@@ -208,9 +228,14 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated stdio redirection");
   }
 
-  @Test
-  void testFilesystemAccess() throws WasmException, IOException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testFilesystemAccess")
+  void testFilesystemAccess(final RuntimeType runtime) throws WasmException, IOException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Create test directories
     Path testDir1 = tempDir.resolve("test1");
@@ -242,9 +267,14 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated filesystem access");
   }
 
-  @Test
-  void testResourceLimiting() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testResourceLimiting")
+  void testResourceLimiting(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Test file descriptor limiting
     assertDoesNotThrow(
@@ -268,9 +298,14 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated resource limiting");
   }
 
-  @Test
-  void testNetworkConfiguration() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testNetworkConfiguration")
+  void testNetworkConfiguration(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Test network enabling/disabling
     assertDoesNotThrow(
@@ -288,12 +323,16 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated network configuration");
   }
 
-  @Test
-  void testPreview1AndPreview2Coexistence() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testPreview1AndPreview2Coexistence")
+  void testPreview1AndPreview2Coexistence(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // Create context with Preview 1 configuration
     WasiContext context =
-        runtime
-            .createWasiContext()
+        WasiContext.create()
             .inheritStdio()
             .inheritEnv()
             .setNetworkEnabled(true)
@@ -317,9 +356,14 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated Preview 1 and Preview 2 coexistence");
   }
 
-  @Test
-  void testErrorHandlingBackwardCompatibility() throws WasmException {
-    WasiContext context = runtime.createWasiContext();
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testErrorHandlingBackwardCompatibility")
+  void testErrorHandlingBackwardCompatibility(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
+    WasiContext context = WasiContext.create();
 
     // Test error conditions that should behave the same in both versions
     assertThrows(
@@ -360,14 +404,18 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated error handling backward compatibility");
   }
 
-  @Test
-  void testMethodChainingCompatibility() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testMethodChainingCompatibility")
+  void testMethodChainingCompatibility(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // Test that method chaining works the same way in both versions
     WasiContext context =
         assertDoesNotThrow(
             () -> {
-              return runtime
-                  .createWasiContext()
+              return WasiContext.create()
                   .inheritStdio()
                   .inheritEnv()
                   .setNetworkEnabled(true)
@@ -381,10 +429,15 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated method chaining compatibility");
   }
 
-  @Test
-  void testLegacyWasmModuleCompatibility() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testLegacyWasmModuleCompatibility")
+  void testLegacyWasmModuleCompatibility(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // Test that legacy WASM modules expecting Preview 1 still work
-    WasiContext context = runtime.createWasiContext().inheritStdio().inheritEnv();
+    WasiContext context = WasiContext.create().inheritStdio().inheritEnv();
 
     Linker<WasiContext> linker = WasiLinkerUtils.createLinker(engine, context);
 
@@ -399,14 +452,18 @@ public class WasiBackwardCompatibilityTest {
     LOGGER.info("Successfully validated legacy WASM module compatibility");
   }
 
-  @Test
-  void testConfigurationMigrationPath() throws WasmException {
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("testConfigurationMigrationPath")
+  void testConfigurationMigrationPath(final RuntimeType runtime) throws WasmException {
+    setRuntime(runtime);
+    engine = Engine.create();
+
     // Test that configurations can be migrated from Preview 1 to Preview 2 style
 
     // Start with Preview 1 style configuration
     WasiContext context =
-        runtime
-            .createWasiContext()
+        WasiContext.create()
             .inheritStdio()
             .inheritEnv()
             .setNetworkEnabled(true)

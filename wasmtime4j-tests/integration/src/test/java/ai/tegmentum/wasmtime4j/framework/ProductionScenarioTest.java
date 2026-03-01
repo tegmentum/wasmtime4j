@@ -21,9 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,8 +40,9 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Production scenario integration tests validating enterprise-grade functionality.
@@ -51,7 +54,7 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Production Scenario Integration Tests")
-public class ProductionScenarioTest {
+public class ProductionScenarioTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ProductionScenarioTest.class.getName());
 
@@ -68,6 +71,7 @@ public class ProductionScenarioTest {
   @AfterEach
   void tearDown(final TestInfo testInfo) {
     LOGGER.info("Tearing down production scenario test: " + testInfo.getDisplayName());
+    clearRuntimeSelection();
     if (executorService != null) {
       executorService.shutdown();
       try {
@@ -81,9 +85,11 @@ public class ProductionScenarioTest {
     }
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("System Resilience and Recovery Testing")
-  void testSystemResilienceAndRecovery() {
+  void testSystemResilienceAndRecovery(final RuntimeType runtime) {
+    setRuntime(runtime);
     LOGGER.info("Testing system resilience and recovery capabilities");
 
     final ResilienceTestFramework framework = new ResilienceTestFramework();

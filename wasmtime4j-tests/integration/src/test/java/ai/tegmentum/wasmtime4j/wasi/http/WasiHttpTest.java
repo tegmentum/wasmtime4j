@@ -24,22 +24,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WASI HTTP - HTTP client and server functionality.
@@ -50,76 +48,12 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("WASI HTTP Integration Tests")
-public final class WasiHttpTest {
+public class WasiHttpTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiHttpTest.class.getName());
 
-  private static boolean wasiHttpAvailable = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
-  private static WasiHttpContext sharedHttpContext;
-
-  @BeforeAll
-  static void checkWasiHttpAvailable() {
-    try {
-      sharedRuntime = WasmRuntimeFactory.create();
-      sharedEngine = sharedRuntime.createEngine();
-
-      // Try to create a WASI HTTP context using JNI directly to avoid Panama crash
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      sharedHttpContext =
-          (WasiHttpContext)
-              jniContextClass
-                  .getConstructor(WasiHttpConfig.class)
-                  .newInstance(WasiHttpConfig.defaultConfig());
-
-      if (sharedHttpContext != null) {
-        wasiHttpAvailable = true;
-        LOGGER.info("WASI HTTP is available (using JNI implementation)");
-      }
-    } catch (final Exception e) {
-      LOGGER.warning("WASI HTTP not available: " + e.getMessage());
-      wasiHttpAvailable = false;
-    }
-  }
-
-  @AfterAll
-  static void cleanup() {
-    if (sharedHttpContext != null) {
-      try {
-        sharedHttpContext.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared HTTP context: " + e.getMessage());
-      }
-    }
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared runtime: " + e.getMessage());
-      }
-    }
-  }
-
-  private static void assumeWasiHttpAvailable() {
-    assumeTrue(wasiHttpAvailable, "WASI HTTP native implementation not available - skipping");
-  }
-
   private Engine engine;
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -133,20 +67,46 @@ public final class WasiHttpTest {
     }
     resources.clear();
     if (engine != null) {
-      engine.close();
+      try {
+        engine.close();
+      } catch (final Exception e) {
+        LOGGER.warning("Failed to close engine: " + e.getMessage());
+      }
       engine = null;
     }
+    clearRuntimeSelection();
+  }
+
+  private static boolean isWasiHttpAvailable() {
+    try {
+      Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
+      return true;
+    } catch (final Exception e) {
+      return false;
+    }
+  }
+
+  private static void assumeWasiHttpAvailable() {
+    assumeTrue(isWasiHttpAvailable(), "WASI HTTP native implementation not available - skipping");
+  }
+
+  private WasiHttpContext createJniHttpContext(final WasiHttpConfig config) throws Exception {
+    final Class<?> jniContextClass =
+        Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
+    return (WasiHttpContext)
+        jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
   }
 
   @Nested
   @DisplayName("HTTP Config Tests")
   class ConfigTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure HTTP with builder")
-    void shouldConfigureHttpWithBuilder(final TestInfo testInfo) throws Exception {
+    void shouldConfigureHttpWithBuilder(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Build a configuration with various settings
       final WasiHttpConfig config =
@@ -184,11 +144,12 @@ public final class WasiHttpTest {
       LOGGER.info("Config verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should set allowed host patterns")
-    void shouldSetAllowedHostPatterns(final TestInfo testInfo) throws Exception {
+    void shouldSetAllowedHostPatterns(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Test wildcard patterns
       final WasiHttpConfig config =
@@ -218,11 +179,12 @@ public final class WasiHttpTest {
               + " blocked");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure timeouts")
-    void shouldConfigureTimeouts(final TestInfo testInfo) throws Exception {
+    void shouldConfigureTimeouts(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Configure all timeout types
       final WasiHttpConfig config =
@@ -250,11 +212,12 @@ public final class WasiHttpTest {
       LOGGER.info("Timeout configuration verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure connection limits")
-    void shouldConfigureConnectionLimits(final TestInfo testInfo) throws Exception {
+    void shouldConfigureConnectionLimits(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Configure connection limits
       final WasiHttpConfig config =
@@ -287,11 +250,12 @@ public final class WasiHttpTest {
       LOGGER.info("Connection limits verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should validate configuration")
-    void shouldValidateConfiguration(final TestInfo testInfo) throws Exception {
+    void shouldValidateConfiguration(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Test that valid config passes validation
       final WasiHttpConfig validConfig =
@@ -305,11 +269,12 @@ public final class WasiHttpTest {
       LOGGER.info("Default config passed validation");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure HTTP/2 and connection pooling")
-    void shouldConfigureHttp2AndPooling(final TestInfo testInfo) throws Exception {
+    void shouldConfigureHttp2AndPooling(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Test HTTP/2 enabled
       final WasiHttpConfig configWithHttp2 =
@@ -329,11 +294,12 @@ public final class WasiHttpTest {
       LOGGER.info("HTTP/2 and pooling configuration verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure redirect behavior")
-    void shouldConfigureRedirectBehavior(final TestInfo testInfo) throws Exception {
+    void shouldConfigureRedirectBehavior(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Test with redirects enabled
       final WasiHttpConfig configFollowRedirects =
@@ -353,11 +319,12 @@ public final class WasiHttpTest {
       LOGGER.info("Redirect behavior configuration verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure user agent")
-    void shouldConfigureUserAgent(final TestInfo testInfo) throws Exception {
+    void shouldConfigureUserAgent(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final String userAgent = "Wasmtime4j/1.0.0";
       final WasiHttpConfig config = WasiHttpConfig.builder().withUserAgent(userAgent).build();
@@ -369,11 +336,12 @@ public final class WasiHttpTest {
       LOGGER.info("User agent configuration verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure allowed methods")
-    void shouldConfigureAllowedMethods(final TestInfo testInfo) throws Exception {
+    void shouldConfigureAllowedMethods(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config =
           WasiHttpConfig.builder().allowMethods("GET", "POST", "PUT").build();
@@ -388,11 +356,12 @@ public final class WasiHttpTest {
       LOGGER.info("Allowed methods configuration verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should support toBuilder for modification")
-    void shouldSupportToBuilder(final TestInfo testInfo) throws Exception {
+    void shouldSupportToBuilder(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Create initial config
       final WasiHttpConfig original =
@@ -424,26 +393,30 @@ public final class WasiHttpTest {
   @DisplayName("HTTP Context Tests")
   class ContextTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create HTTP context with config")
-    void shouldCreateHttpContextWithConfig(final TestInfo testInfo) throws Exception {
+    void shouldCreateHttpContextWithConfig(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config = WasiHttpConfig.builder().allowHost("api.example.com").build();
 
-      // Create context - use JNI implementation directly since sharedHttpContext is already created
-      assertNotNull(sharedHttpContext, "Shared HTTP context should exist");
-      assertTrue(sharedHttpContext.isValid(), "Context should be valid");
+      final WasiHttpContext context = createJniHttpContext(WasiHttpConfig.defaultConfig());
+      resources.add(context);
+
+      assertNotNull(context, "HTTP context should exist");
+      assertTrue(context.isValid(), "Context should be valid");
 
       LOGGER.info("HTTP context creation verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should check host allowed status")
-    void shouldCheckHostAllowedStatus(final TestInfo testInfo) throws Exception {
+    void shouldCheckHostAllowedStatus(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Create context with specific allowed hosts
       final WasiHttpConfig config =
@@ -453,12 +426,7 @@ public final class WasiHttpTest {
               .blockHost("blocked.trusted.org")
               .build();
 
-      // Create context using JNI directly
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      final WasiHttpContext context =
-          (WasiHttpContext)
-              jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
+      final WasiHttpContext context = createJniHttpContext(config);
       resources.add(context);
 
       // Test exact match
@@ -477,11 +445,12 @@ public final class WasiHttpTest {
       LOGGER.info("Host allowed status verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return context config")
-    void shouldReturnContextConfig(final TestInfo testInfo) throws Exception {
+    void shouldReturnContextConfig(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config =
           WasiHttpConfig.builder()
@@ -489,11 +458,7 @@ public final class WasiHttpTest {
               .withConnectTimeout(Duration.ofSeconds(45))
               .build();
 
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      final WasiHttpContext context =
-          (WasiHttpContext)
-              jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
+      final WasiHttpContext context = createJniHttpContext(config);
       resources.add(context);
 
       final WasiHttpConfig returnedConfig = context.getConfig();
@@ -509,19 +474,16 @@ public final class WasiHttpTest {
       LOGGER.info("Context config retrieval verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should close context properly")
-    void shouldCloseContextProperly(final TestInfo testInfo) throws Exception {
+    void shouldCloseContextProperly(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config = WasiHttpConfig.defaultConfig();
 
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      final WasiHttpContext context =
-          (WasiHttpContext)
-              jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
+      final WasiHttpContext context = createJniHttpContext(config);
 
       assertTrue(context.isValid(), "Context should be valid before close");
 
@@ -535,20 +497,17 @@ public final class WasiHttpTest {
       LOGGER.info("Context close verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should block all hosts with default config")
-    void shouldBlockAllHostsWithDefaultConfig(final TestInfo testInfo) throws Exception {
+    void shouldBlockAllHostsWithDefaultConfig(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Default config has no allowed hosts
       final WasiHttpConfig config = WasiHttpConfig.defaultConfig();
 
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      final WasiHttpContext context =
-          (WasiHttpContext)
-              jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
+      final WasiHttpContext context = createJniHttpContext(config);
       resources.add(context);
 
       // All hosts should be blocked
@@ -559,19 +518,16 @@ public final class WasiHttpTest {
       LOGGER.info("Default config blocking verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should allow all hosts with allowAllHosts")
-    void shouldAllowAllHostsWithAllowAll(final TestInfo testInfo) throws Exception {
+    void shouldAllowAllHostsWithAllowAll(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config = WasiHttpConfig.builder().allowAllHosts().build();
 
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      final WasiHttpContext context =
-          (WasiHttpContext)
-              jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
+      final WasiHttpContext context = createJniHttpContext(config);
       resources.add(context);
 
       // All hosts should be allowed
@@ -583,19 +539,16 @@ public final class WasiHttpTest {
       LOGGER.info("allowAllHosts verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should reject null host in isHostAllowed")
-    void shouldRejectNullHostInIsHostAllowed(final TestInfo testInfo) throws Exception {
+    void shouldRejectNullHostInIsHostAllowed(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config = WasiHttpConfig.builder().allowHost("example.com").build();
 
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      final WasiHttpContext context =
-          (WasiHttpContext)
-              jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
+      final WasiHttpContext context = createJniHttpContext(config);
       resources.add(context);
 
       assertThrows(
@@ -611,11 +564,12 @@ public final class WasiHttpTest {
   @DisplayName("HTTP Security Tests")
   class SecurityTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should require HTTPS when configured")
-    void shouldRequireHttpsWhenConfigured(final TestInfo testInfo) throws Exception {
+    void shouldRequireHttpsWhenConfigured(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       final WasiHttpConfig config =
           WasiHttpConfig.builder().requireHttps(true).withCertificateValidation(true).build();
@@ -627,11 +581,12 @@ public final class WasiHttpTest {
       LOGGER.info("HTTPS requirement verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should block hosts even when allowed pattern matches")
-    void shouldBlockHostsEvenWhenAllowedPatternMatches(final TestInfo testInfo) throws Exception {
+    void shouldBlockHostsEvenWhenAllowedPatternMatches(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Allow all subdomains but block specific one
       final WasiHttpConfig config =
@@ -640,11 +595,7 @@ public final class WasiHttpTest {
               .blockHost("secret.example.com")
               .build();
 
-      final Class<?> jniContextClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.http.JniWasiHttpContext");
-      final WasiHttpContext context =
-          (WasiHttpContext)
-              jniContextClass.getConstructor(WasiHttpConfig.class).newInstance(config);
+      final WasiHttpContext context = createJniHttpContext(config);
       resources.add(context);
 
       // Wildcard allows most subdomains
@@ -658,11 +609,12 @@ public final class WasiHttpTest {
       LOGGER.info("Block list priority verification passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure certificate validation")
-    void shouldConfigureCertificateValidation(final TestInfo testInfo) throws Exception {
+    void shouldConfigureCertificateValidation(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeWasiHttpAvailable();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
 
       // Test with validation enabled
       final WasiHttpConfig configEnabled =

@@ -24,25 +24,23 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WebAssembly tail call optimization.
@@ -59,13 +57,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Tail Call Optimization Integration Tests")
-public final class TailCallOptimizationTest {
+public class TailCallOptimizationTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(TailCallOptimizationTest.class.getName());
-
-  private static boolean tailCallSupported = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
 
   // WAT module with tail call optimization for factorial
   private static final String TAIL_CALL_FACTORIAL_WAT =
@@ -157,62 +151,23 @@ public final class TailCallOptimizationTest {
           + "  )\n"
           + ")";
 
-  @BeforeAll
-  static void checkTailCallSupport() {
-    LOGGER.info("Checking tail call support...");
+  private boolean probeTailCallSupported() {
     try {
-      sharedRuntime = WasmRuntimeFactory.create();
-
-      // Create engine with tail call enabled
       final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
-      sharedEngine = sharedRuntime.createEngine(config);
-
-      // Try to compile a module with tail calls
-      final Module testModule = sharedEngine.compileWat(TAIL_CALL_FACTORIAL_WAT);
-      if (testModule != null) {
-        tailCallSupported = true;
-        testModule.close();
-        LOGGER.info("Tail call optimization is supported");
+      try (Engine engine = Engine.create(config)) {
+        final Module testModule = engine.compileWat(TAIL_CALL_FACTORIAL_WAT);
+        if (testModule != null) {
+          testModule.close();
+          return true;
+        }
       }
     } catch (final Exception e) {
       LOGGER.warning("Tail call not supported: " + e.getMessage());
-      tailCallSupported = false;
     }
+    return false;
   }
 
-  @AfterAll
-  static void cleanup() {
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared runtime: " + e.getMessage());
-      }
-    }
-  }
-
-  private static void assumeTailCallSupported() {
-    assumeTrue(tailCallSupported, "Tail call optimization not supported - skipping");
-  }
-
-  private Store store;
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-    if (tailCallSupported && sharedRuntime != null && sharedEngine != null) {
-      store = sharedRuntime.createStore(sharedEngine);
-      resources.add(store);
-    }
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -225,34 +180,51 @@ public final class TailCallOptimizationTest {
       }
     }
     resources.clear();
-    store = null;
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Return Call Tests")
   class ReturnCallTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should compile module with return_call")
-    void shouldCompileModuleWithReturnCall(final TestInfo testInfo) throws Exception {
-      assumeTailCallSupported();
+    void shouldCompileModuleWithReturnCall(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(TAIL_CALL_FACTORIAL_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(TAIL_CALL_FACTORIAL_WAT);
       resources.add(module);
 
       assertNotNull(module, "Module with return_call should compile");
       LOGGER.info("Module with return_call compiled successfully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should compute factorial correctly with tail recursion")
-    void shouldComputeFactorialCorrectlyWithTailRecursion(final TestInfo testInfo)
-        throws Exception {
-      assumeTailCallSupported();
+    void shouldComputeFactorialCorrectlyWithTailRecursion(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(TAIL_CALL_FACTORIAL_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(TAIL_CALL_FACTORIAL_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -280,13 +252,22 @@ public final class TailCallOptimizationTest {
   @DisplayName("Deep Recursion Tests")
   class DeepRecursionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle deep recursion without stack overflow")
-    void shouldHandleDeepRecursionWithoutStackOverflow(final TestInfo testInfo) throws Exception {
-      assumeTailCallSupported();
+    void shouldHandleDeepRecursionWithoutStackOverflow(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(DEEP_TAIL_RECURSION_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(DEEP_TAIL_RECURSION_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -308,13 +289,22 @@ public final class TailCallOptimizationTest {
       LOGGER.info("Deep tail recursion handled without stack overflow");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle very deep recursion")
-    void shouldHandleVeryDeepRecursion(final TestInfo testInfo) throws Exception {
-      assumeTailCallSupported();
+    void shouldHandleVeryDeepRecursion(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(DEEP_TAIL_RECURSION_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(DEEP_TAIL_RECURSION_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -338,27 +328,44 @@ public final class TailCallOptimizationTest {
   @DisplayName("Mutual Tail Recursion Tests")
   class MutualTailRecursionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should compile module with mutual tail recursion")
-    void shouldCompileModuleWithMutualTailRecursion(final TestInfo testInfo) throws Exception {
-      assumeTailCallSupported();
+    void shouldCompileModuleWithMutualTailRecursion(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(MUTUAL_TAIL_RECURSION_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(MUTUAL_TAIL_RECURSION_WAT);
       resources.add(module);
 
       assertNotNull(module, "Module with mutual tail recursion should compile");
       LOGGER.info("Module with mutual tail recursion compiled successfully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should determine even/odd correctly with mutual tail recursion")
-    void shouldDetermineEvenOddCorrectlyWithMutualTailRecursion(final TestInfo testInfo)
-        throws Exception {
-      assumeTailCallSupported();
+    void shouldDetermineEvenOddCorrectlyWithMutualTailRecursion(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(MUTUAL_TAIL_RECURSION_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(MUTUAL_TAIL_RECURSION_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -383,13 +390,22 @@ public final class TailCallOptimizationTest {
       LOGGER.info("Even/odd with mutual tail recursion verified");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle deep mutual tail recursion")
-    void shouldHandleDeepMutualTailRecursion(final TestInfo testInfo) throws Exception {
-      assumeTailCallSupported();
+    void shouldHandleDeepMutualTailRecursion(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(MUTUAL_TAIL_RECURSION_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(MUTUAL_TAIL_RECURSION_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -413,26 +429,44 @@ public final class TailCallOptimizationTest {
   @DisplayName("Return Call Indirect Tests")
   class ReturnCallIndirectTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should compile module with return_call_indirect")
-    void shouldCompileModuleWithReturnCallIndirect(final TestInfo testInfo) throws Exception {
-      assumeTailCallSupported();
+    void shouldCompileModuleWithReturnCallIndirect(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(RETURN_CALL_INDIRECT_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(RETURN_CALL_INDIRECT_WAT);
       resources.add(module);
 
       assertNotNull(module, "Module with return_call_indirect should compile");
       LOGGER.info("Module with return_call_indirect compiled successfully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function indirectly via table using return_call_indirect")
-    void shouldCallFunctionIndirectlyViaTable(final TestInfo testInfo) throws Exception {
-      assumeTailCallSupported();
+    void shouldCallFunctionIndirectlyViaTable(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final Module module = sharedEngine.compileWat(RETURN_CALL_INDIRECT_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(RETURN_CALL_INDIRECT_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -455,15 +489,18 @@ public final class TailCallOptimizationTest {
   @DisplayName("Configuration Tests")
   class ConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enable tail call via engine config")
-    void shouldEnableTailCallViaEngineConfig(final TestInfo testInfo) throws Exception {
-      assumeTailCallSupported();
+    void shouldEnableTailCallViaEngineConfig(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeTailCallSupported(), "Tail call optimization not supported - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
+      final EngineConfig tailCallConfig = new EngineConfig().addWasmFeature(WasmFeature.TAIL_CALL);
 
-      try (Engine engine = sharedRuntime.createEngine(config)) {
+      try (Engine engine = Engine.create(tailCallConfig)) {
         assertNotNull(engine, "Engine with tail call should be created");
 
         // Verify module with tail calls can be compiled

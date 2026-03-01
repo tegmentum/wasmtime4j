@@ -17,7 +17,6 @@
 package ai.tegmentum.wasmtime4j.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -27,10 +26,9 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -42,12 +40,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for concurrent access error handling.
@@ -57,14 +54,10 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("Concurrent Access Error Tests")
 @Tag("integration")
-class ConcurrentAccessErrorTest {
+class ConcurrentAccessErrorTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ConcurrentAccessErrorTest.class.getName());
 
-  private static boolean runtimeAvailable;
-  private static String unavailableReason;
-
-  private WasmRuntime runtime;
   private Engine engine;
 
   // Simple counter module - increment a global
@@ -156,34 +149,6 @@ class ConcurrentAccessErrorTest {
         0x0B // end
       };
 
-  @BeforeAll
-  static void checkRuntimeAvailability() {
-    LOGGER.info("Checking runtime availability for concurrent access tests");
-    try {
-      runtimeAvailable =
-          WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI)
-              || WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
-      LOGGER.info("Runtime available: " + runtimeAvailable);
-    } catch (final Exception e) {
-      unavailableReason = "Failed to check runtime: " + e.getMessage();
-      LOGGER.warning(unavailableReason);
-    }
-  }
-
-  @BeforeEach
-  void setUp() {
-    assumeTrue(runtimeAvailable, "Runtime not available: " + unavailableReason);
-
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-      LOGGER.info("Test runtime setup complete");
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to set up runtime: " + e.getMessage());
-      assumeTrue(false, "Runtime setup failed: " + e.getMessage());
-    }
-  }
-
   @AfterEach
   void tearDown() {
     if (engine != null) {
@@ -193,22 +158,20 @@ class ConcurrentAccessErrorTest {
         LOGGER.warning("Error closing engine: " + e.getMessage());
       }
     }
-    if (runtime != null) {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing runtime: " + e.getMessage());
-      }
-    }
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Engine Thread Safety Tests")
   class EngineThreadSafetyTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should allow concurrent module compilation from same engine")
-    void shouldAllowConcurrentModuleCompilation() throws Exception {
+    void shouldAllowConcurrentModuleCompilation(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+
       final int numThreads = 4;
       final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       final List<Future<Module>> futures = new ArrayList<>();
@@ -247,9 +210,13 @@ class ConcurrentAccessErrorTest {
   @DisplayName("Store Thread Safety Tests")
   class StoreThreadSafetyTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle separate stores in separate threads correctly")
-    void shouldHandleSeparateStoresInSeparateThreads() throws Exception {
+    void shouldHandleSeparateStoresInSeparateThreads(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+
       final int numThreads = 4;
       final int incrementsPerThread = 100;
       final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
@@ -312,9 +279,14 @@ class ConcurrentAccessErrorTest {
   @DisplayName("Global Concurrent Access Tests")
   class GlobalConcurrentAccessTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle concurrent global access with separate stores")
-    void shouldHandleConcurrentGlobalAccessWithSeparateStores() throws Exception {
+    void shouldHandleConcurrentGlobalAccessWithSeparateStores(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+
       final int numThreads = 4;
       final int operationsPerThread = 50;
       final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
@@ -404,9 +376,14 @@ class ConcurrentAccessErrorTest {
           0x00 // memory index
         };
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle concurrent memory operations with separate stores")
-    void shouldHandleConcurrentMemoryOperationsWithSeparateStores() throws Exception {
+    void shouldHandleConcurrentMemoryOperationsWithSeparateStores(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+
       final int numThreads = 4;
       final ExecutorService executor = Executors.newFixedThreadPool(numThreads);
       final List<Future<Boolean>> futures = new ArrayList<>();
@@ -473,9 +450,13 @@ class ConcurrentAccessErrorTest {
   @DisplayName("Race Condition Detection Tests")
   class RaceConditionDetectionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should detect or handle concurrent store access properly")
-    void shouldHandleConcurrentStoreAccessProperly() throws Exception {
+    void shouldHandleConcurrentStoreAccessProperly(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+
       final Store store = engine.createStore();
       final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(0));
 

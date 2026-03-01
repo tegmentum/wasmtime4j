@@ -23,11 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -44,7 +46,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for multi-threaded Store access patterns.
@@ -55,7 +58,7 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Multi-Threaded Store Integration Tests")
-class MultiThreadedStoreTest {
+class MultiThreadedStoreTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(MultiThreadedStoreTest.class.getName());
 
@@ -121,15 +124,18 @@ class MultiThreadedStoreTest {
       }
     }
     resources.clear();
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Store Per Thread Tests")
   class StorePerThreadTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create separate stores per thread")
-    void shouldCreateSeparateStoresPerThread() throws Exception {
+    void shouldCreateSeparateStoresPerThread(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing separate stores per thread");
 
@@ -191,9 +197,11 @@ class MultiThreadedStoreTest {
       LOGGER.info("Separate stores per thread test passed: " + successCount.get() + " threads");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle concurrent engine creation")
-    void shouldHandleConcurrentEngineCreation() throws Exception {
+    void shouldHandleConcurrentEngineCreation(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing concurrent engine creation");
 
@@ -241,9 +249,12 @@ class MultiThreadedStoreTest {
   @DisplayName("Shared Engine Tests")
   class SharedEngineTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should share engine across multiple stores in different threads")
-    void shouldShareEngineAcrossMultipleStoresInDifferentThreads() throws Exception {
+    void shouldShareEngineAcrossMultipleStoresInDifferentThreads(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing shared engine across multiple stores");
 
@@ -314,9 +325,11 @@ class MultiThreadedStoreTest {
   @DisplayName("Shared Memory Tests")
   class SharedMemoryTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create shared memory with threads feature")
-    void shouldCreateSharedMemoryWithThreadsFeature() throws Exception {
+    void shouldCreateSharedMemoryWithThreadsFeature(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       assumeThreadsSupported();
       LOGGER.info("Testing shared memory creation");
@@ -342,9 +355,12 @@ class MultiThreadedStoreTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should verify memory isolation between non-shared stores")
-    void shouldVerifyMemoryIsolationBetweenNonSharedStores() throws Exception {
+    void shouldVerifyMemoryIsolationBetweenNonSharedStores(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing memory isolation between stores");
 
@@ -372,9 +388,12 @@ class MultiThreadedStoreTest {
   @DisplayName("Concurrent Store Operation Tests")
   class ConcurrentOperationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle concurrent fuel operations on separate stores")
-    void shouldHandleConcurrentFuelOperationsOnSeparateStores() throws Exception {
+    void shouldHandleConcurrentFuelOperationsOnSeparateStores(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing concurrent fuel operations");
 
@@ -433,9 +452,11 @@ class MultiThreadedStoreTest {
       LOGGER.info("Concurrent fuel operations test passed: " + successCount.get() + " threads");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle concurrent store data operations")
-    void shouldHandleConcurrentStoreDataOperations() throws Exception {
+    void shouldHandleConcurrentStoreDataOperations(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing concurrent store data operations");
 
@@ -501,9 +522,12 @@ class MultiThreadedStoreTest {
   @DisplayName("Store Lifecycle Tests")
   class LifecycleTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle concurrent store creation and destruction")
-    void shouldHandleConcurrentStoreCreationAndDestruction() throws Exception {
+    void shouldHandleConcurrentStoreCreationAndDestruction(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing concurrent store creation and destruction");
 
@@ -562,9 +586,11 @@ class MultiThreadedStoreTest {
               + " stores created/destroyed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should verify store validity after close")
-    void shouldVerifyStoreValidityAfterClose() throws Exception {
+    void shouldVerifyStoreValidityAfterClose(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing store validity after close");
 
@@ -585,9 +611,12 @@ class MultiThreadedStoreTest {
   @DisplayName("Thread Safety Pattern Tests")
   class ThreadSafetyPatternTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should demonstrate proper synchronization for shared resources")
-    void shouldDemonstrateProperSynchronizationForSharedResources() throws Exception {
+    void shouldDemonstrateProperSynchronizationForSharedResources(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing proper synchronization patterns");
 
@@ -625,9 +654,11 @@ class MultiThreadedStoreTest {
       LOGGER.info("Synchronization patterns test passed: counter=" + sharedCounter.get());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should verify per-thread store ownership pattern")
-    void shouldVerifyPerThreadStoreOwnershipPattern() throws Exception {
+    void shouldVerifyPerThreadStoreOwnershipPattern(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       assumeNativeLibraryLoaded();
       LOGGER.info("Testing per-thread store ownership pattern");
 

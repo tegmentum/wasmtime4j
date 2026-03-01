@@ -24,13 +24,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for MemoryType.fromNative() functionality.
@@ -42,186 +46,77 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("MemoryType fromNative Integration Tests")
-public final class MemoryTypeFromNativeTest {
+public class MemoryTypeFromNativeTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(MemoryTypeFromNativeTest.class.getName());
 
-  /**
-   * Creates a simple WebAssembly module with a memory export with minimum only.
-   *
-   * <pre>
-   * (module
-   *   (memory (export "memory") 1))
-   * </pre>
-   */
   private static byte[] createMinOnlyMemoryModule() {
-    // WebAssembly binary format for module with 1-page minimum memory
     return new byte[] {
-      // Magic number and version
-      0x00,
-      0x61,
-      0x73,
-      0x6D, // magic
-      0x01,
-      0x00,
-      0x00,
-      0x00, // version 1
-      // Memory section (section 5)
-      0x05, // section id
-      0x03, // section size (3 bytes)
-      0x01, // number of memories
-      0x00, // limits flags: no max
-      0x01, // min = 1 page
-      // Export section (section 7)
-      0x07, // section id
-      0x0A, // section size (10 bytes)
-      0x01, // number of exports
-      0x06, // name length
-      'm',
-      'e',
-      'm',
-      'o',
-      'r',
-      'y', // name: "memory"
-      0x02, // export kind: memory
-      0x00 // memory index: 0
+      0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x03, 0x01, 0x00, 0x01, 0x07, 0x0A,
+      0x01, 0x06, 'm', 'e', 'm', 'o', 'r', 'y', 0x02, 0x00
     };
   }
 
-  /**
-   * Creates a WebAssembly module with a memory export with min and max.
-   *
-   * <pre>
-   * (module
-   *   (memory (export "memory") 1 10))
-   * </pre>
-   */
   private static byte[] createMinMaxMemoryModule() {
     return new byte[] {
-      // Magic number and version
-      0x00,
-      0x61,
-      0x73,
-      0x6D, // magic
-      0x01,
-      0x00,
-      0x00,
-      0x00, // version 1
-      // Memory section (section 5)
-      0x05, // section id
-      0x04, // section size (4 bytes)
-      0x01, // number of memories
-      0x01, // limits flags: has max
-      0x01, // min = 1 page
-      0x0A, // max = 10 pages
-      // Export section (section 7)
-      0x07, // section id
-      0x0A, // section size (10 bytes)
-      0x01, // number of exports
-      0x06, // name length
-      'm',
-      'e',
-      'm',
-      'o',
-      'r',
-      'y', // name: "memory"
-      0x02, // export kind: memory
-      0x00 // memory index: 0
+      0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x04, 0x01, 0x01, 0x01, 0x0A, 0x07,
+      0x0A, 0x01, 0x06, 'm', 'e', 'm', 'o', 'r', 'y', 0x02, 0x00
     };
   }
 
-  /**
-   * Creates a WebAssembly module with a larger memory configuration.
-   *
-   * <pre>
-   * (module
-   *   (memory (export "memory") 16 256))
-   * </pre>
-   */
   private static byte[] createLargerMemoryModule() {
     return new byte[] {
-      // Magic number and version
       0x00,
       0x61,
       0x73,
-      0x6D, // magic
+      0x6D,
       0x01,
       0x00,
       0x00,
-      0x00, // version 1
-      // Memory section (section 5)
-      0x05, // section id
-      0x05, // section size (5 bytes)
-      0x01, // number of memories
-      0x01, // limits flags: has max
-      0x10, // min = 16 pages (LEB128)
+      0x00,
+      0x05,
+      0x05,
+      0x01,
+      0x01,
+      0x10,
       (byte) 0x80,
-      0x02, // max = 256 pages (LEB128: 0x100)
-      // Export section (section 7)
-      0x07, // section id
-      0x0A, // section size (10 bytes)
-      0x01, // number of exports
-      0x06, // name length
+      0x02,
+      0x07,
+      0x0A,
+      0x01,
+      0x06,
       'm',
       'e',
       'm',
       'o',
       'r',
-      'y', // name: "memory"
-      0x02, // export kind: memory
-      0x00 // memory index: 0
+      'y',
+      0x02,
+      0x00
     };
   }
 
-  /**
-   * Creates a WebAssembly module with zero-minimum memory.
-   *
-   * <pre>
-   * (module
-   *   (memory (export "memory") 0 100))
-   * </pre>
-   */
   private static byte[] createZeroMinMemoryModule() {
     return new byte[] {
-      // Magic number and version
-      0x00,
-      0x61,
-      0x73,
-      0x6D, // magic
-      0x01,
-      0x00,
-      0x00,
-      0x00, // version 1
-      // Memory section (section 5)
-      0x05, // section id
-      0x04, // section size (4 bytes)
-      0x01, // number of memories
-      0x01, // limits flags: has max
-      0x00, // min = 0 pages
-      0x64, // max = 100 pages
-      // Export section (section 7)
-      0x07, // section id
-      0x0A, // section size (10 bytes)
-      0x01, // number of exports
-      0x06, // name length
-      'm',
-      'e',
-      'm',
-      'o',
-      'r',
-      'y', // name: "memory"
-      0x02, // export kind: memory
-      0x00 // memory index: 0
+      0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x04, 0x01, 0x01, 0x00, 0x64, 0x07,
+      0x0A, 0x01, 0x06, 'm', 'e', 'm', 'o', 'r', 'y', 0x02, 0x00
     };
+  }
+
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Module.getMemoryType() Tests")
   class ModuleGetMemoryTypeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get memory type with minimum only from module")
-    void shouldGetMemoryTypeWithMinOnlyFromModule() throws Exception {
+    void shouldGetMemoryTypeWithMinOnlyFromModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Module.getMemoryType() for minimum-only memory");
 
       try (final Engine engine = Engine.create();
@@ -243,9 +138,11 @@ public final class MemoryTypeFromNativeTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get memory type with min and max from module")
-    void shouldGetMemoryTypeWithMinMaxFromModule() throws Exception {
+    void shouldGetMemoryTypeWithMinMaxFromModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Module.getMemoryType() for min/max memory");
 
       try (final Engine engine = Engine.create();
@@ -265,9 +162,11 @@ public final class MemoryTypeFromNativeTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get larger memory type from module")
-    void shouldGetLargerMemoryTypeFromModule() throws Exception {
+    void shouldGetLargerMemoryTypeFromModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Module.getMemoryType() for larger memory");
 
       try (final Engine engine = Engine.create();
@@ -286,9 +185,11 @@ public final class MemoryTypeFromNativeTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get zero-minimum memory type from module")
-    void shouldGetZeroMinMemoryTypeFromModule() throws Exception {
+    void shouldGetZeroMinMemoryTypeFromModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Module.getMemoryType() for zero-minimum memory");
 
       try (final Engine engine = Engine.create();
@@ -307,9 +208,11 @@ public final class MemoryTypeFromNativeTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return empty for non-existent memory")
-    void shouldReturnEmptyForNonExistentMemory() throws Exception {
+    void shouldReturnEmptyForNonExistentMemory(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Module.getMemoryType() for non-existent memory");
 
       try (final Engine engine = Engine.create();
@@ -328,9 +231,11 @@ public final class MemoryTypeFromNativeTest {
   @DisplayName("Instance Memory Type via getMemory() Tests")
   class InstanceGetMemoryTypeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get memory type from instance via getMemory()")
-    void shouldGetMemoryTypeFromInstance() throws Exception {
+    void shouldGetMemoryTypeFromInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Instance memory type via getMemory()");
 
       try (final Engine engine = Engine.create();
@@ -357,9 +262,11 @@ public final class MemoryTypeFromNativeTest {
   @DisplayName("Module.getMemoryTypes() List Tests")
   class ModuleGetMemoryTypesListTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get all memory types from module")
-    void shouldGetAllMemoryTypesFromModule() throws Exception {
+    void shouldGetAllMemoryTypesFromModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Module.getMemoryTypes() list");
 
       try (final Engine engine = Engine.create();
@@ -385,9 +292,11 @@ public final class MemoryTypeFromNativeTest {
   @DisplayName("MemoryType Consistency Tests")
   class MemoryTypeConsistencyTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("module and instance memory types should match")
-    void moduleAndInstanceMemoryTypesShouldMatch() throws Exception {
+    void moduleAndInstanceMemoryTypesShouldMatch(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing consistency between module and instance memory types");
 
       try (final Engine engine = Engine.create();
@@ -432,40 +341,18 @@ public final class MemoryTypeFromNativeTest {
   @DisplayName("Memory Limits Edge Cases Tests")
   class MemoryLimitsEdgeCasesTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle memory with equal min and max")
-    void shouldHandleMemoryWithEqualMinMax() throws Exception {
+    void shouldHandleMemoryWithEqualMinMax(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing memory with equal min and max");
 
       // Create module with min = max = 5
       final byte[] wasmBytes =
           new byte[] {
-            0x00,
-            0x61,
-            0x73,
-            0x6D, // magic
-            0x01,
-            0x00,
-            0x00,
-            0x00, // version 1
-            0x05, // memory section
-            0x04, // section size
-            0x01, // 1 memory
-            0x01, // has max
-            0x05, // min = 5
-            0x05, // max = 5
-            0x07, // export section
-            0x0A, // section size
-            0x01, // 1 export
-            0x06,
-            'm',
-            'e',
-            'm',
-            'o',
-            'r',
-            'y', // name
-            0x02, // memory export
-            0x00 // index 0
+            0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, 0x05, 0x04, 0x01, 0x01, 0x05, 0x05,
+            0x07, 0x0A, 0x01, 0x06, 'm', 'e', 'm', 'o', 'r', 'y', 0x02, 0x00
           };
 
       try (final Engine engine = Engine.create();

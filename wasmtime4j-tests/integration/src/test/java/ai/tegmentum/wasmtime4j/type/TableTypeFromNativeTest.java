@@ -23,13 +23,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for TableType.fromNative() functionality.
@@ -41,7 +45,7 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("TableType fromNative Integration Tests")
-public final class TableTypeFromNativeTest {
+public class TableTypeFromNativeTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(TableTypeFromNativeTest.class.getName());
 
@@ -53,14 +57,21 @@ public final class TableTypeFromNativeTest {
   private static final String TABLE_MIN_MAX_WAT =
       "(module\n" + "  (table (export \"table\") 2 100 funcref))\n";
 
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
+
   @Nested
   @DisplayName("Module.hasExport() Verification Tests")
   class ModuleHasExportTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should verify hasExport works for table")
     @SuppressWarnings("deprecation")
-    void shouldVerifyHasExportWorksForTable() throws Exception {
+    void shouldVerifyHasExportWorksForTable(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Verifying hasExport works for table export");
 
       try (final Engine engine = Engine.create();
@@ -84,9 +95,12 @@ public final class TableTypeFromNativeTest {
   @DisplayName("Module.getTableType() Tests")
   class ModuleGetTableTypeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get funcref table type with minimum only from module")
-    void shouldGetFuncrefTableTypeWithMinOnlyFromModule() throws Exception {
+    void shouldGetFuncrefTableTypeWithMinOnlyFromModule(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Module.getTableType() for funcref table with minimum only");
 
       try (final Engine engine = Engine.create();
@@ -105,9 +119,11 @@ public final class TableTypeFromNativeTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get funcref table type with min and max from module")
-    void shouldGetFuncrefTableTypeWithMinMaxFromModule() throws Exception {
+    void shouldGetFuncrefTableTypeWithMinMaxFromModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Module.getTableType() for funcref table with min/max");
 
       try (final Engine engine = Engine.create();
@@ -131,9 +147,11 @@ public final class TableTypeFromNativeTest {
   @DisplayName("Instance Table Type via getTable() Tests")
   class InstanceGetTableTypeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get table type from instance via getTable()")
-    void shouldGetTableTypeFromInstance() throws Exception {
+    void shouldGetTableTypeFromInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing Instance table type via getTable()");
 
       try (final Engine engine = Engine.create();

@@ -24,9 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.Engine;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -35,10 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -63,60 +58,11 @@ import org.junit.jupiter.params.provider.ValueSource;
  * @since 1.1.0
  */
 @DisplayName("WASI Socket Timeout Integration Tests")
-public final class WasiSocketTimeoutTest {
+public class WasiSocketTimeoutTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiSocketTimeoutTest.class.getName());
 
-  private static boolean wasiSocketsAvailable = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
-
-  @BeforeAll
-  static void checkWasiSocketsAvailable() {
-    try {
-      sharedRuntime = WasmRuntimeFactory.create();
-      sharedEngine = sharedRuntime.createEngine();
-
-      // Try to load the JNI WASI Sockets classes to verify native implementation
-      final Class<?> jniTcpSocketClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.sockets.JniWasiTcpSocket");
-      final Class<?> jniUdpSocketClass =
-          Class.forName("ai.tegmentum.wasmtime4j.jni.wasi.sockets.JniWasiUdpSocket");
-
-      if (jniTcpSocketClass != null && jniUdpSocketClass != null) {
-        wasiSocketsAvailable = true;
-        LOGGER.info("WASI Sockets is available (JNI classes loaded successfully)");
-      }
-    } catch (final Exception e) {
-      LOGGER.warning("WASI Sockets not available: " + e.getMessage());
-      wasiSocketsAvailable = false;
-    }
-  }
-
-  @AfterAll
-  static void cleanup() {
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared runtime: " + e.getMessage());
-      }
-    }
-  }
-
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -129,6 +75,7 @@ public final class WasiSocketTimeoutTest {
       }
     }
     resources.clear();
+    clearRuntimeSelection();
   }
 
   @Nested

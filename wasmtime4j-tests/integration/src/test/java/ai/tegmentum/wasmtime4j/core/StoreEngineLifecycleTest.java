@@ -34,14 +34,17 @@ import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.func.CallHook;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for Store and Engine lifecycle management.
@@ -51,9 +54,14 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Store and Engine Lifecycle Integration Tests")
-public final class StoreEngineLifecycleTest {
+public class StoreEngineLifecycleTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(StoreEngineLifecycleTest.class.getName());
+
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
 
   /** Simple WebAssembly module that exports an add function. */
   private static final byte[] ADD_WASM =
@@ -105,9 +113,11 @@ public final class StoreEngineLifecycleTest {
   @DisplayName("Engine Creation Tests")
   class EngineCreationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with default configuration")
-    void shouldCreateEngineWithDefaultConfiguration() throws Exception {
+    void shouldCreateEngineWithDefaultConfiguration(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing default engine creation");
 
       try (final Engine engine = Engine.create()) {
@@ -117,9 +127,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with custom configuration")
-    void shouldCreateEngineWithCustomConfiguration() throws Exception {
+    void shouldCreateEngineWithCustomConfiguration(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing engine with custom configuration");
 
       final EngineConfig config = new EngineConfig();
@@ -131,9 +143,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create multiple independent engines")
-    void shouldCreateMultipleIndependentEngines() throws Exception {
+    void shouldCreateMultipleIndependentEngines(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing multiple independent engines");
 
       try (final Engine engine1 = Engine.create();
@@ -154,9 +168,11 @@ public final class StoreEngineLifecycleTest {
   @DisplayName("Store Creation Tests")
   class StoreCreationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create store from engine")
-    void shouldCreateStoreFromEngine() throws Exception {
+    void shouldCreateStoreFromEngine(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing store creation from engine");
 
       try (final Engine engine = Engine.create();
@@ -167,9 +183,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create multiple stores from same engine")
-    void shouldCreateMultipleStoresFromSameEngine() throws Exception {
+    void shouldCreateMultipleStoresFromSameEngine(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing multiple stores from same engine");
 
       try (final Engine engine = Engine.create();
@@ -186,9 +204,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get engine from store")
-    void shouldGetEngineFromStore() throws Exception {
+    void shouldGetEngineFromStore(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing engine retrieval from store");
 
       try (final Engine engine = Engine.create();
@@ -204,9 +224,11 @@ public final class StoreEngineLifecycleTest {
   @DisplayName("Resource Lifecycle Tests")
   class ResourceLifecycleTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should invalidate engine after close")
-    void shouldInvalidateEngineAfterClose() throws Exception {
+    void shouldInvalidateEngineAfterClose(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing engine invalidation after close");
 
       final Engine engine = Engine.create();
@@ -217,9 +239,11 @@ public final class StoreEngineLifecycleTest {
       LOGGER.info("Engine correctly invalidated after close");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should invalidate store after close")
-    void shouldInvalidateStoreAfterClose() throws Exception {
+    void shouldInvalidateStoreAfterClose(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing store invalidation after close");
 
       try (final Engine engine = Engine.create()) {
@@ -232,9 +256,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle multiple close calls gracefully")
-    void shouldHandleMultipleCloseCallsGracefully() throws Exception {
+    void shouldHandleMultipleCloseCallsGracefully(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing multiple close calls");
 
       final Engine engine = Engine.create();
@@ -245,9 +271,11 @@ public final class StoreEngineLifecycleTest {
       LOGGER.info("Multiple close calls handled gracefully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should properly close resources in correct order")
-    void shouldProperlyCloseResourcesInCorrectOrder() throws Exception {
+    void shouldProperlyCloseResourcesInCorrectOrder(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing proper resource closure order");
 
       final List<AutoCloseable> resources = new ArrayList<>();
@@ -282,9 +310,11 @@ public final class StoreEngineLifecycleTest {
   @DisplayName("Store Isolation Tests")
   class StoreIsolationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should isolate instances in different stores")
-    void shouldIsolateInstancesInDifferentStores() throws Exception {
+    void shouldIsolateInstancesInDifferentStores(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing instance isolation between stores");
 
       try (final Engine engine = Engine.create();
@@ -323,9 +353,11 @@ public final class StoreEngineLifecycleTest {
   @DisplayName("Runtime Factory Tests")
   class RuntimeFactoryTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should detect available runtimes")
-    void shouldDetectAvailableRuntimes() {
+    void shouldDetectAvailableRuntimes(final RuntimeType runtime) {
+      setRuntime(runtime);
       LOGGER.info("Testing runtime availability detection");
 
       final boolean jniAvailable = WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI);
@@ -338,9 +370,11 @@ public final class StoreEngineLifecycleTest {
       assertTrue(jniAvailable || panamaAvailable, "At least one runtime should be available");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get current runtime type")
-    void shouldGetCurrentRuntimeType() throws WasmException {
+    void shouldGetCurrentRuntimeType(final RuntimeType runtime) throws WasmException {
+      setRuntime(runtime);
       LOGGER.info("Testing current runtime type");
 
       try (final Engine engine = Engine.create()) {
@@ -355,9 +389,11 @@ public final class StoreEngineLifecycleTest {
   @DisplayName("Engine Configuration Tests")
   class EngineConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with debug info disabled")
-    void shouldCreateEngineWithDebugInfoDisabled() throws Exception {
+    void shouldCreateEngineWithDebugInfoDisabled(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing engine with debug info disabled");
 
       final EngineConfig config = new EngineConfig().debugInfo(false);
@@ -369,9 +405,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with fuel consumption enabled")
-    void shouldCreateEngineWithFuelConsumptionEnabled() throws Exception {
+    void shouldCreateEngineWithFuelConsumptionEnabled(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing engine with fuel consumption enabled");
 
       final EngineConfig config = new EngineConfig().consumeFuel(true);
@@ -383,9 +421,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create engine with wasm threads disabled")
-    void shouldCreateEngineWithWasmThreadsDisabled() throws Exception {
+    void shouldCreateEngineWithWasmThreadsDisabled(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing engine with wasm threads disabled");
 
       final EngineConfig config = new EngineConfig();
@@ -402,9 +442,11 @@ public final class StoreEngineLifecycleTest {
   @DisplayName("Fuel Management Tests")
   class FuelManagementTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should set and get fuel on store")
-    void shouldSetAndGetFuelOnStore() throws Exception {
+    void shouldSetAndGetFuelOnStore(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing fuel management on store");
 
       final EngineConfig config = new EngineConfig().consumeFuel(true);
@@ -423,9 +465,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should consume fuel during execution")
-    void shouldConsumeFuelDuringExecution() throws Exception {
+    void shouldConsumeFuelDuringExecution(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing fuel consumption during execution");
 
       final EngineConfig config = new EngineConfig().consumeFuel(true);
@@ -459,9 +503,11 @@ public final class StoreEngineLifecycleTest {
   @DisplayName("Call Hook Tests")
   class CallHookTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should invoke call hook on WASM call")
-    void shouldInvokeCallHookOnWasmCall() throws Exception {
+    void shouldInvokeCallHookOnWasmCall(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing call hook invocation on WASM call");
 
       final List<CallHook> hooks = new CopyOnWriteArrayList<>();
@@ -503,9 +549,11 @@ public final class StoreEngineLifecycleTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle call hook exception gracefully")
-    void shouldHandleCallHookExceptionGracefully() throws Exception {
+    void shouldHandleCallHookExceptionGracefully(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing call hook exception handling");
 
       try (final Engine engine = Engine.create()) {

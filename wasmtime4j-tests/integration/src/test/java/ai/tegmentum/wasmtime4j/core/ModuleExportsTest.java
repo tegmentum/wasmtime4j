@@ -24,13 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
 import java.util.ArrayList;
@@ -38,11 +38,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WebAssembly module and instance exports enumeration.
@@ -53,25 +53,11 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Module Exports Integration Tests")
-public final class ModuleExportsTest {
+public final class ModuleExportsTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ModuleExportsTest.class.getName());
 
-  private WasmRuntime runtime;
-  private Engine engine;
-  private Store store;
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-    runtime = WasmRuntimeFactory.create();
-    engine = runtime.createEngine();
-    store = engine.createStore();
-    resources.add(store);
-    resources.add(engine);
-    resources.add(runtime);
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -84,16 +70,23 @@ public final class ModuleExportsTest {
       }
     }
     resources.clear();
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Function Export Tests")
   class FunctionExportTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enumerate single function export")
-    void shouldEnumerateSingleFunctionExport(final TestInfo testInfo) throws Exception {
+    void shouldEnumerateSingleFunctionExport(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
 
       // Module with single function export: (func (export "add") ...)
       final byte[] wasm = {
@@ -154,10 +147,16 @@ public final class ModuleExportsTest {
       LOGGER.info("Found export: " + export.getName() + " of type " + export.getType().getKind());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enumerate multiple function exports")
-    void shouldEnumerateMultipleFunctionExports(final TestInfo testInfo) throws Exception {
+    void shouldEnumerateMultipleFunctionExports(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
 
       // Module with multiple function exports
       final byte[] wasm = {
@@ -253,10 +252,16 @@ public final class ModuleExportsTest {
   @DisplayName("Memory Export Tests")
   class MemoryExportTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enumerate memory export")
-    void shouldEnumerateMemoryExport(final TestInfo testInfo) throws Exception {
+    void shouldEnumerateMemoryExport(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
 
       // Module with memory export: (memory (export "memory") 1)
       final byte[] wasm = {
@@ -300,10 +305,18 @@ public final class ModuleExportsTest {
       LOGGER.info("Found memory export: " + export.getName());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should access memory export from instance")
-    void shouldAccessMemoryExportFromInstance(final TestInfo testInfo) throws Exception {
+    void shouldAccessMemoryExportFromInstance(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Module with memory export
       final byte[] wasm = {
@@ -357,10 +370,18 @@ public final class ModuleExportsTest {
   @DisplayName("Global Export Tests")
   class GlobalExportTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enumerate global export")
-    void shouldEnumerateGlobalExport(final TestInfo testInfo) throws Exception {
+    void shouldEnumerateGlobalExport(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Module with global export: (global (export "counter") (mut i32) (i32.const 0))
       final byte[] wasm = {
@@ -408,10 +429,18 @@ public final class ModuleExportsTest {
       LOGGER.info("Found global export: " + export.getName());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should access mutable global from instance")
-    void shouldAccessMutableGlobalFromInstance(final TestInfo testInfo) throws Exception {
+    void shouldAccessMutableGlobalFromInstance(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Module with mutable global
       final byte[] wasm = {
@@ -467,10 +496,18 @@ public final class ModuleExportsTest {
       LOGGER.info("Global value: " + global.get().asInt());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should access immutable global from instance")
-    void shouldAccessImmutableGlobalFromInstance(final TestInfo testInfo) throws Exception {
+    void shouldAccessImmutableGlobalFromInstance(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Module with immutable global
       // Note: 99 in signed LEB128 requires 0xE3, 0x00 (since 99 > 63, it needs the extra byte
@@ -528,10 +565,18 @@ public final class ModuleExportsTest {
   @DisplayName("Table Export Tests")
   class TableExportTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enumerate table export")
-    void shouldEnumerateTableExport(final TestInfo testInfo) throws Exception {
+    void shouldEnumerateTableExport(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Module with table export: (table (export "table") 1 funcref)
       final byte[] wasm = {
@@ -575,10 +620,18 @@ public final class ModuleExportsTest {
       LOGGER.info("Found table export: " + export.getName());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should access table export from instance")
-    void shouldAccessTableExportFromInstance(final TestInfo testInfo) throws Exception {
+    void shouldAccessTableExportFromInstance(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Module with table export
       final byte[] wasm = {
@@ -631,10 +684,18 @@ public final class ModuleExportsTest {
   @DisplayName("Mixed Export Tests")
   class MixedExportTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enumerate all export types")
-    void shouldEnumerateAllExportTypes(final TestInfo testInfo) throws Exception {
+    void shouldEnumerateAllExportTypes(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(0, engine);
+      final Store store = engine.createStore();
+      resources.add(0, store);
 
       // Module with function, memory, global, and table exports
       final byte[] wasm = {

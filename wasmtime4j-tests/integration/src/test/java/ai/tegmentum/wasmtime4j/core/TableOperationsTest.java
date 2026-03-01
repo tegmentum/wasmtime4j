@@ -25,21 +25,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import java.util.ArrayList;
-import java.util.List;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WebAssembly table operations.
@@ -50,7 +49,7 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Table Operations Integration Tests")
-public final class TableOperationsTest {
+public class TableOperationsTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(TableOperationsTest.class.getName());
 
@@ -326,91 +325,75 @@ public final class TableOperationsTest {
         0x0b // call function
       };
 
-  private Engine engine;
-  private Store store;
-  private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws WasmException {
-    LOGGER.info("Setting up test: " + testInfo.getDisplayName());
-    engine = Engine.create();
-    resources.add(engine);
-    store = engine.createStore();
-    resources.add(store);
-    LOGGER.info("Test setup completed");
-  }
-
   @AfterEach
-  void tearDown(final TestInfo testInfo) {
-    LOGGER.info("Cleaning up test: " + testInfo.getDisplayName());
-    for (int i = resources.size() - 1; i >= 0; i--) {
-      try {
-        resources.get(i).close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close resource: " + e.getMessage());
-      }
-    }
-    resources.clear();
-    LOGGER.info("Test cleanup completed");
+  void cleanup() {
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Table Size Tests")
   class TableSizeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should report correct initial table size")
-    void shouldReportCorrectInitialTableSize() throws Exception {
+    void shouldReportCorrectInitialTableSize(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing initial table size");
 
-      final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table should be present");
 
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Table should be present");
-
-      final WasmTable table = tableOpt.get();
-      assertEquals(4, table.getSize(), "Table should have 4 elements initially");
-      LOGGER.info("Table size: " + table.getSize() + " elements");
+        final WasmTable table = tableOpt.get();
+        assertEquals(4, table.getSize(), "Table should have 4 elements initially");
+        LOGGER.info("Table size: " + table.getSize() + " elements");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should verify table is accessible from instance")
-    void shouldVerifyTableAccessibleFromInstance() throws Exception {
+    void shouldVerifyTableAccessibleFromInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing table accessibility");
 
-      final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
-
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Should be able to get 'table' export");
-      LOGGER.info("Table 'table' is accessible: " + tableOpt.isPresent());
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Should be able to get 'table' export");
+        LOGGER.info("Table 'table' is accessible: " + tableOpt.isPresent());
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should report correct size for funcref table with limits")
-    void shouldReportCorrectSizeForFuncrefTableWithLimits() throws Exception {
+    void shouldReportCorrectSizeForFuncrefTableWithLimits(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing funcref table with limits");
 
-      final Module module = engine.compileModule(TABLE_FUNCREF_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(TABLE_FUNCREF_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table should be present");
 
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Table should be present");
-
-      final WasmTable table = tableOpt.get();
-      assertEquals(2, table.getSize(), "Table should have 2 elements initially");
-      assertEquals(10, table.getMaxSize(), "Table should have max size of 10");
-      LOGGER.info("Table size: " + table.getSize() + " elements, max: " + table.getMaxSize());
+        final WasmTable table = tableOpt.get();
+        assertEquals(2, table.getSize(), "Table should have 2 elements initially");
+        assertEquals(10, table.getMaxSize(), "Table should have max size of 10");
+        LOGGER.info("Table size: " + table.getSize() + " elements, max: " + table.getMaxSize());
+      }
     }
   }
 
@@ -418,60 +401,64 @@ public final class TableOperationsTest {
   @DisplayName("Table Grow Tests")
   class TableGrowTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should grow table by specified number of elements")
-    void shouldGrowTableBySpecifiedNumberOfElements() throws Exception {
+    void shouldGrowTableBySpecifiedNumberOfElements(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing table grow");
 
-      final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table should be present");
 
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Table should be present");
+        final WasmTable table = tableOpt.get();
+        final int initialSize = table.getSize();
+        assertEquals(4, initialSize, "Initial size should be 4");
 
-      final WasmTable table = tableOpt.get();
-      final int initialSize = table.getSize();
-      assertEquals(4, initialSize, "Initial size should be 4");
+        // Grow by 2 elements (null as init value for funcref)
+        final int previousSize = table.grow(2, null);
+        assertEquals(4, previousSize, "Previous size should be 4");
+        assertEquals(6, table.getSize(), "New size should be 6");
 
-      // Grow by 2 elements (null as init value for funcref)
-      final int previousSize = table.grow(2, null);
-      assertEquals(4, previousSize, "Previous size should be 4");
-      assertEquals(6, table.getSize(), "New size should be 6");
-
-      LOGGER.info("Table grew from " + previousSize + " to " + table.getSize() + " elements");
+        LOGGER.info("Table grew from " + previousSize + " to " + table.getSize() + " elements");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should respect table maximum limit when growing")
-    void shouldRespectTableMaximumLimitWhenGrowing() throws Exception {
+    void shouldRespectTableMaximumLimitWhenGrowing(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing table grow with max limit");
 
-      final Module module = engine.compileModule(TABLE_FUNCREF_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(TABLE_FUNCREF_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table should be present");
 
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Table should be present");
+        final WasmTable table = tableOpt.get();
+        assertEquals(2, table.getSize(), "Initial size should be 2");
+        assertEquals(10, table.getMaxSize(), "Max size should be 10");
 
-      final WasmTable table = tableOpt.get();
-      assertEquals(2, table.getSize(), "Initial size should be 2");
-      assertEquals(10, table.getMaxSize(), "Max size should be 10");
+        // Grow to maximum
+        table.grow(8, null);
+        assertEquals(10, table.getSize(), "Should grow to max size 10");
 
-      // Grow to maximum
-      table.grow(8, null);
-      assertEquals(10, table.getSize(), "Should grow to max size 10");
+        // Try to grow beyond maximum - should fail
+        final int result = table.grow(1, null);
+        assertEquals(-1, result, "Growing beyond max should return -1");
+        assertEquals(10, table.getSize(), "Size should still be 10");
 
-      // Try to grow beyond maximum - should fail
-      final int result = table.grow(1, null);
-      assertEquals(-1, result, "Growing beyond max should return -1");
-      assertEquals(10, table.getSize(), "Size should still be 10");
-
-      LOGGER.info("Table maximum limit enforced correctly");
+        LOGGER.info("Table maximum limit enforced correctly");
+      }
     }
   }
 
@@ -479,87 +466,94 @@ public final class TableOperationsTest {
   @DisplayName("Table Element Access Tests")
   class TableElementAccessTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get null for uninitialized funcref table element")
-    void shouldGetNullForUninitializedFuncrefTableElement() throws Exception {
+    void shouldGetNullForUninitializedFuncrefTableElement(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing uninitialized table element access");
 
-      final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table should be present");
 
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Table should be present");
+        final WasmTable table = tableOpt.get();
 
-      final WasmTable table = tableOpt.get();
-
-      // Uninitialized funcref elements should be null
-      final Object element = table.get(0);
-      // Element can be null or a null reference
-      LOGGER.info("Uninitialized table element at index 0: " + element);
+        // Uninitialized funcref elements should be null
+        final Object element = table.get(0);
+        // Element can be null or a null reference
+        LOGGER.info("Uninitialized table element at index 0: " + element);
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for out-of-bounds table access")
-    void shouldThrowExceptionForOutOfBoundsTableAccess() throws Exception {
+    void shouldThrowExceptionForOutOfBoundsTableAccess(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing out-of-bounds table access");
 
-      final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table should be present");
 
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Table should be present");
+        final WasmTable table = tableOpt.get();
+        assertEquals(4, table.getSize(), "Table size should be 4");
 
-      final WasmTable table = tableOpt.get();
-      assertEquals(4, table.getSize(), "Table size should be 4");
+        // Access beyond table size should throw (may be WasmException or IndexOutOfBoundsException
+        // depending on where bounds checking occurs - Java side or native side)
+        final Exception tableException =
+            assertThrows(
+                Exception.class,
+                () -> table.get(4),
+                "Should throw exception for out-of-bounds access");
+        assertTrue(
+            tableException instanceof WasmException
+                || tableException instanceof IndexOutOfBoundsException,
+            "Should throw WasmException or IndexOutOfBoundsException, got: "
+                + tableException.getClass().getName());
 
-      // Access beyond table size should throw (may be WasmException or IndexOutOfBoundsException
-      // depending on where bounds checking occurs - Java side or native side)
-      final Exception tableException =
-          assertThrows(
-              Exception.class,
-              () -> table.get(4),
-              "Should throw exception for out-of-bounds access");
-      assertTrue(
-          tableException instanceof WasmException
-              || tableException instanceof IndexOutOfBoundsException,
-          "Should throw WasmException or IndexOutOfBoundsException, got: "
-              + tableException.getClass().getName());
-
-      LOGGER.info("Out-of-bounds table access check passed");
+        LOGGER.info("Out-of-bounds table access check passed");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should access initialized funcref elements")
-    void shouldAccessInitializedFuncrefElements() throws Exception {
+    void shouldAccessInitializedFuncrefElements(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing initialized funcref element access");
 
-      final Module module = engine.compileModule(TABLE_FUNCREF_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(TABLE_FUNCREF_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table should be present");
 
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Table should be present");
+        final WasmTable table = tableOpt.get();
 
-      final WasmTable table = tableOpt.get();
+        // The table was initialized with add and sub functions at indices 0 and 1
+        final Object element0 = table.get(0);
+        final Object element1 = table.get(1);
 
-      // The table was initialized with add and sub functions at indices 0 and 1
-      final Object element0 = table.get(0);
-      final Object element1 = table.get(1);
+        // Elements should be function references (non-null for initialized elements)
+        assertNotNull(element0, "Element 0 should not be null (add function)");
+        assertNotNull(element1, "Element 1 should not be null (sub function)");
 
-      // Elements should be function references (non-null for initialized elements)
-      assertNotNull(element0, "Element 0 should not be null (add function)");
-      assertNotNull(element1, "Element 1 should not be null (sub function)");
-
-      LOGGER.info("Element 0: " + element0);
-      LOGGER.info("Element 1: " + element1);
+        LOGGER.info("Element 0: " + element0);
+        LOGGER.info("Element 1: " + element1);
+      }
     }
   }
 
@@ -567,62 +561,67 @@ public final class TableOperationsTest {
   @DisplayName("Call Indirect Tests")
   class CallIndirectTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call function through table using call_indirect")
-    void shouldCallFunctionThroughTableUsingCallIndirect() throws Exception {
+    void shouldCallFunctionThroughTableUsingCallIndirect(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing call_indirect through table");
 
-      final Module module = engine.compileModule(CALL_INDIRECT_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(CALL_INDIRECT_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmFunction> callFunc = instance.getFunction("call");
+        assertTrue(callFunc.isPresent(), "call function should be present");
 
-      final Optional<WasmFunction> callFunc = instance.getFunction("call");
-      assertTrue(callFunc.isPresent(), "call function should be present");
+        final WasmFunction call = callFunc.get();
 
-      final WasmFunction call = callFunc.get();
+        // Call add function (index 0): call(5, 3, 0) should return 8
+        final WasmValue[] addResults =
+            call.call(WasmValue.i32(5), WasmValue.i32(3), WasmValue.i32(0));
+        assertNotNull(addResults, "Add results should not be null");
+        assertEquals(1, addResults.length, "Should have one result");
+        assertEquals(8, addResults[0].asInt(), "5 + 3 should equal 8");
+        LOGGER.info("call(5, 3, 0) = " + addResults[0].asInt() + " (add)");
 
-      // Call add function (index 0): call(5, 3, 0) should return 8
-      final WasmValue[] addResults =
-          call.call(WasmValue.i32(5), WasmValue.i32(3), WasmValue.i32(0));
-      assertNotNull(addResults, "Add results should not be null");
-      assertEquals(1, addResults.length, "Should have one result");
-      assertEquals(8, addResults[0].asInt(), "5 + 3 should equal 8");
-      LOGGER.info("call(5, 3, 0) = " + addResults[0].asInt() + " (add)");
-
-      // Call sub function (index 1): call(10, 4, 1) should return 6
-      final WasmValue[] subResults =
-          call.call(WasmValue.i32(10), WasmValue.i32(4), WasmValue.i32(1));
-      assertNotNull(subResults, "Sub results should not be null");
-      assertEquals(1, subResults.length, "Should have one result");
-      assertEquals(6, subResults[0].asInt(), "10 - 4 should equal 6");
-      LOGGER.info("call(10, 4, 1) = " + subResults[0].asInt() + " (sub)");
+        // Call sub function (index 1): call(10, 4, 1) should return 6
+        final WasmValue[] subResults =
+            call.call(WasmValue.i32(10), WasmValue.i32(4), WasmValue.i32(1));
+        assertNotNull(subResults, "Sub results should not be null");
+        assertEquals(1, subResults.length, "Should have one result");
+        assertEquals(6, subResults[0].asInt(), "10 - 4 should equal 6");
+        LOGGER.info("call(10, 4, 1) = " + subResults[0].asInt() + " (sub)");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should trap when calling invalid table index")
-    void shouldTrapWhenCallingInvalidTableIndex() throws Exception {
+    void shouldTrapWhenCallingInvalidTableIndex(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing call_indirect with invalid index");
 
-      final Module module = engine.compileModule(CALL_INDIRECT_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(CALL_INDIRECT_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmFunction> callFunc = instance.getFunction("call");
+        assertTrue(callFunc.isPresent(), "call function should be present");
 
-      final Optional<WasmFunction> callFunc = instance.getFunction("call");
-      assertTrue(callFunc.isPresent(), "call function should be present");
+        final WasmFunction call = callFunc.get();
 
-      final WasmFunction call = callFunc.get();
+        // Call with invalid table index should trap
+        assertThrows(
+            WasmException.class,
+            () -> call.call(WasmValue.i32(5), WasmValue.i32(3), WasmValue.i32(99)),
+            "Should trap when calling invalid table index");
 
-      // Call with invalid table index should trap
-      assertThrows(
-          WasmException.class,
-          () -> call.call(WasmValue.i32(5), WasmValue.i32(3), WasmValue.i32(99)),
-          "Should trap when calling invalid table index");
-
-      LOGGER.info("Invalid table index trap check passed");
+        LOGGER.info("Invalid table index trap check passed");
+      }
     }
   }
 
@@ -630,39 +629,43 @@ public final class TableOperationsTest {
   @DisplayName("Table Validity Tests")
   class TableValidityTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should report table as valid")
-    void shouldReportTableAsValid() throws Exception {
+    void shouldReportTableAsValid(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing table validity");
 
-      final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Table should be present");
 
-      final Optional<WasmTable> tableOpt = instance.getTable("table");
-      assertTrue(tableOpt.isPresent(), "Table should be present");
-
-      final WasmTable table = tableOpt.get();
-      assertNotNull(table, "Table should not be null");
-      LOGGER.info("Table retrieved successfully");
+        final WasmTable table = tableOpt.get();
+        assertNotNull(table, "Table should not be null");
+        LOGGER.info("Table retrieved successfully");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return empty optional for non-existent table")
-    void shouldReturnEmptyOptionalForNonExistentTable() throws Exception {
+    void shouldReturnEmptyOptionalForNonExistentTable(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
       LOGGER.info("Testing non-existent table lookup");
 
-      final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(SIMPLE_TABLE_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
-
-      final Optional<WasmTable> tableOpt = instance.getTable("does_not_exist");
-      assertFalse(tableOpt.isPresent(), "Non-existent table should return empty Optional");
-      LOGGER.info("Non-existent table lookup returned empty Optional as expected");
+        final Optional<WasmTable> tableOpt = instance.getTable("does_not_exist");
+        assertFalse(tableOpt.isPresent(), "Non-existent table should return empty Optional");
+        LOGGER.info("Non-existent table lookup returned empty Optional as expected");
+      }
     }
   }
 }

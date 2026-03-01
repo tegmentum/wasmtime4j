@@ -27,21 +27,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.StoreBuilder;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Comprehensive integration tests for Configuration Builder classes.
@@ -53,7 +53,7 @@ import org.junit.jupiter.api.TestInfo;
  */
 @DisplayName("Configuration Builder Integration Tests")
 @SuppressWarnings("deprecation")
-public final class ConfigurationBuilderTest {
+public class ConfigurationBuilderTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ConfigurationBuilderTest.class.getName());
 
@@ -102,15 +102,7 @@ public final class ConfigurationBuilderTest {
     0x0B // end
   };
 
-  private WasmRuntime runtime;
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-    runtime = WasmRuntimeFactory.create();
-    resources.add(runtime);
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -123,6 +115,7 @@ public final class ConfigurationBuilderTest {
       }
     }
     resources.clear();
+    clearRuntimeSelection();
   }
 
   // ========================================================================
@@ -137,9 +130,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Default Values Tests")
     class DefaultValuesTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should have zero defaults (unlimited)")
-      void shouldHaveZeroDefaultsUnlimited(final TestInfo testInfo) {
+      void shouldHaveZeroDefaultsUnlimited(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits limits = StoreLimits.builder().build();
@@ -159,9 +154,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Setter Method Tests")
     class SetterMethodTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set memory size correctly")
-      void shouldSetMemorySizeCorrectly(final TestInfo testInfo) {
+      void shouldSetMemorySizeCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final long expectedSize = 10L * 1024L * 1024L; // 10 MB
@@ -172,9 +169,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Memory size set to: " + expectedSize);
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set table elements correctly")
-      void shouldSetTableElementsCorrectly(final TestInfo testInfo) {
+      void shouldSetTableElementsCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final long expectedElements = 10000L;
@@ -186,9 +185,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Table elements set to: " + expectedElements);
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set instances correctly")
-      void shouldSetInstancesCorrectly(final TestInfo testInfo) {
+      void shouldSetInstancesCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final long expectedInstances = 50L;
@@ -199,9 +200,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Instances set to: " + expectedInstances);
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set tables correctly")
-      void shouldSetTablesCorrectly(final TestInfo testInfo) {
+      void shouldSetTablesCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final long expectedTables = 25L;
@@ -212,9 +215,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Tables set to: " + expectedTables);
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set memories correctly")
-      void shouldSetMemoriesCorrectly(final TestInfo testInfo) {
+      void shouldSetMemoriesCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final long expectedMemories = 5L;
@@ -225,9 +230,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Memories set to: " + expectedMemories);
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should allow setting zero (unlimited)")
-      void shouldAllowSettingZeroUnlimited(final TestInfo testInfo) {
+      void shouldAllowSettingZeroUnlimited(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits limits =
@@ -253,9 +260,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Builder Chaining Tests")
     class BuilderChainingTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should support fluent method chaining")
-      void shouldSupportFluentMethodChaining(final TestInfo testInfo) {
+      void shouldSupportFluentMethodChaining(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits.Builder builder = StoreLimits.builder();
@@ -270,9 +279,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("All methods return same builder instance for chaining");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should allow chaining all methods in one statement")
-      void shouldAllowChainingAllMethodsInOneStatement(final TestInfo testInfo) {
+      void shouldAllowChainingAllMethodsInOneStatement(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits limits =
@@ -297,9 +309,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Validation Tests")
     class ValidationTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative memory size")
-      void shouldRejectNegativeMemorySize(final TestInfo testInfo) {
+      void shouldRejectNegativeMemorySize(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final IllegalArgumentException exception =
@@ -315,9 +329,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative memory size rejected with message: " + exception.getMessage());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative table elements")
-      void shouldRejectNegativeTableElements(final TestInfo testInfo) {
+      void shouldRejectNegativeTableElements(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final IllegalArgumentException exception =
@@ -333,9 +349,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative table elements rejected with message: " + exception.getMessage());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative instances")
-      void shouldRejectNegativeInstances(final TestInfo testInfo) {
+      void shouldRejectNegativeInstances(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final IllegalArgumentException exception =
@@ -351,9 +369,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative instances rejected with message: " + exception.getMessage());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative tables")
-      void shouldRejectNegativeTables(final TestInfo testInfo) {
+      void shouldRejectNegativeTables(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final IllegalArgumentException exception =
@@ -369,9 +389,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative tables rejected with message: " + exception.getMessage());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative memories")
-      void shouldRejectNegativeMemories(final TestInfo testInfo) {
+      void shouldRejectNegativeMemories(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final IllegalArgumentException exception =
@@ -387,9 +409,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative memories rejected with message: " + exception.getMessage());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should accept maximum long value")
-      void shouldAcceptMaximumLongValue(final TestInfo testInfo) {
+      void shouldAcceptMaximumLongValue(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         assertDoesNotThrow(
@@ -416,9 +440,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Build Result Tests")
     class BuildResultTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should build with default values")
-      void shouldBuildWithDefaultValues(final TestInfo testInfo) {
+      void shouldBuildWithDefaultValues(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits limits = StoreLimits.builder().build();
@@ -431,9 +457,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Built StoreLimits with default values successfully");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should build with custom values")
-      void shouldBuildWithCustomValues(final TestInfo testInfo) {
+      void shouldBuildWithCustomValues(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final long expectedMemory = 5L * 1024L * 1024L;
@@ -456,9 +484,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Built StoreLimits with custom values successfully");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should allow building multiple times from same builder")
-      void shouldAllowBuildingMultipleTimesFromSameBuilder(final TestInfo testInfo) {
+      void shouldAllowBuildingMultipleTimesFromSameBuilder(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits.Builder builder =
@@ -478,9 +509,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Multiple builds from same builder successful");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("builder changes should not affect already built objects")
-      void builderChangesShouldNotAffectAlreadyBuiltObjects(final TestInfo testInfo) {
+      void builderChangesShouldNotAffectAlreadyBuiltObjects(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits.Builder builder =
@@ -522,9 +556,12 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Default Values Tests")
     class DefaultValuesTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should have correct default optimization level")
-      void shouldHaveCorrectDefaultOptimizationLevel(final TestInfo testInfo) {
+      void shouldHaveCorrectDefaultOptimizationLevel(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -535,9 +572,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Default optimization level: " + config.getOptimizationLevel());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should have debug info disabled by default")
-      void shouldHaveDebugInfoDisabledByDefault(final TestInfo testInfo) {
+      void shouldHaveDebugInfoDisabledByDefault(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -547,9 +587,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Debug info is disabled by default");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should have guest debug disabled by default")
-      void shouldHaveGuestDebugDisabledByDefault(final TestInfo testInfo) {
+      void shouldHaveGuestDebugDisabledByDefault(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -559,9 +602,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Guest debug is disabled by default");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should have fuel consumption disabled by default")
-      void shouldHaveFuelConsumptionDisabledByDefault(final TestInfo testInfo) {
+      void shouldHaveFuelConsumptionDisabledByDefault(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -571,9 +617,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Fuel consumption is disabled by default");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should have epoch interruption disabled by default")
-      void shouldHaveEpochInterruptionDisabledByDefault(final TestInfo testInfo) {
+      void shouldHaveEpochInterruptionDisabledByDefault(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -589,9 +638,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Setter Method Tests")
     class SetterMethodTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set optimization level correctly")
-      void shouldSetOptimizationLevelCorrectly(final TestInfo testInfo) {
+      void shouldSetOptimizationLevelCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -617,9 +668,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Optimization level setter works correctly");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set debug info correctly")
-      void shouldSetDebugInfoCorrectly(final TestInfo testInfo) {
+      void shouldSetDebugInfoCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -633,9 +686,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Debug info setter works correctly");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set guest debug correctly")
-      void shouldSetGuestDebugCorrectly(final TestInfo testInfo) {
+      void shouldSetGuestDebugCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -649,9 +704,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Guest debug setter works correctly");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set fuel consumption correctly")
-      void shouldSetFuelConsumptionCorrectly(final TestInfo testInfo) {
+      void shouldSetFuelConsumptionCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -665,9 +722,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Fuel consumption setter works correctly");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set epoch interruption correctly")
-      void shouldSetEpochInterruptionCorrectly(final TestInfo testInfo) {
+      void shouldSetEpochInterruptionCorrectly(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -681,9 +740,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Epoch interruption setter works correctly");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should set parallel compilation correctly")
-      void shouldSetParallelCompilationCorrectly(final TestInfo testInfo) {
+      void shouldSetParallelCompilationCorrectly(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -702,9 +764,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Builder Chaining Tests")
     class BuilderChainingTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should support fluent method chaining")
-      void shouldSupportFluentMethodChaining(final TestInfo testInfo) {
+      void shouldSupportFluentMethodChaining(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig();
@@ -726,9 +790,12 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("All methods return same config instance for chaining");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should allow chaining all methods in one statement")
-      void shouldAllowChainingAllMethodsInOneStatement(final TestInfo testInfo) {
+      void shouldAllowChainingAllMethodsInOneStatement(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config =
@@ -758,9 +825,12 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Factory Method Tests")
     class FactoryMethodTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("forSize should configure for size optimization")
-      void forSizeShouldConfigureForSizeOptimization(final TestInfo testInfo) {
+      void forSizeShouldConfigureForSizeOptimization(
+          final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = EngineConfig.forSize();
@@ -773,9 +843,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("forSize configuration: opt=" + config.getOptimizationLevel());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("forDebug should configure for debugging")
-      void forDebugShouldConfigureForDebugging(final TestInfo testInfo) {
+      void forDebugShouldConfigureForDebugging(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = EngineConfig.forDebug();
@@ -797,15 +869,18 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Integration Tests")
     class IntegrationTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should create functional engine with custom config")
-      void shouldCreateFunctionalEngineWithCustomConfig(final TestInfo testInfo) throws Exception {
+      void shouldCreateFunctionalEngineWithCustomConfig(
+          final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config =
             new EngineConfig().optimizationLevel(OptimizationLevel.SPEED).parallelCompilation(true);
 
-        final Engine engine = runtime.createEngine(config);
+        final Engine engine = Engine.create(config);
         resources.add(0, engine);
 
         assertNotNull(engine, "Engine should be created");
@@ -829,14 +904,17 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Custom config engine works correctly");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should create engine with fuel enabled")
-      void shouldCreateEngineWithFuelEnabled(final TestInfo testInfo) throws Exception {
+      void shouldCreateEngineWithFuelEnabled(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig().consumeFuel(true);
 
-        final Engine engine = runtime.createEngine(config);
+        final Engine engine = Engine.create(config);
         resources.add(0, engine);
 
         assertTrue(engine.isValid(), "Engine should be valid");
@@ -853,15 +931,17 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Engine with fuel enabled works correctly, initial fuel: " + fuel);
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should create engine with epoch interruption enabled")
-      void shouldCreateEngineWithEpochInterruptionEnabled(final TestInfo testInfo)
-          throws Exception {
+      void shouldCreateEngineWithEpochInterruptionEnabled(
+          final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig().epochInterruption(true);
 
-        final Engine engine = runtime.createEngine(config);
+        final Engine engine = Engine.create(config);
         resources.add(0, engine);
 
         assertTrue(engine.isValid(), "Engine should be valid");
@@ -885,14 +965,17 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Validation Tests")
     class ValidationTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject null engine")
-      void shouldRejectNullEngine(final TestInfo testInfo) throws Exception {
+      void shouldRejectNullEngine(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         // Can't test directly since StoreBuilder constructor is package-private
         // But Store.builder(null) should reject null
-        final Engine engine = runtime.createEngine();
+        final Engine engine = Engine.create();
         resources.add(0, engine);
 
         // Verify that Store.builder exists and works with non-null engine
@@ -902,12 +985,15 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("StoreBuilder validation for null engine verified");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative fuel")
-      void shouldRejectNegativeFuel(final TestInfo testInfo) throws Exception {
+      void shouldRejectNegativeFuel(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final Engine engine = runtime.createEngine();
+        final Engine engine = Engine.create();
         resources.add(0, engine);
 
         final StoreBuilder<?> builder = Store.builder(engine);
@@ -925,12 +1011,15 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative fuel rejected with message: " + exception.getMessage());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative epoch deadline")
-      void shouldRejectNegativeEpochDeadline(final TestInfo testInfo) throws Exception {
+      void shouldRejectNegativeEpochDeadline(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final Engine engine = runtime.createEngine();
+        final Engine engine = Engine.create();
         resources.add(0, engine);
 
         final StoreBuilder<?> builder = Store.builder(engine);
@@ -948,12 +1037,15 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative epoch deadline rejected with message: " + exception.getMessage());
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject null limits")
-      void shouldRejectNullLimits(final TestInfo testInfo) throws Exception {
+      void shouldRejectNullLimits(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final Engine engine = runtime.createEngine();
+        final Engine engine = Engine.create();
         resources.add(0, engine);
 
         final StoreBuilder<?> builder = Store.builder(engine);
@@ -976,12 +1068,15 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Builder Chaining Tests")
     class BuilderChainingTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should support fluent method chaining")
-      void shouldSupportFluentMethodChaining(final TestInfo testInfo) throws Exception {
+      void shouldSupportFluentMethodChaining(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final Engine engine = runtime.createEngine();
+        final Engine engine = Engine.create();
         resources.add(0, engine);
 
         final StoreBuilder<String> builder = Store.builder(engine);
@@ -1005,14 +1100,16 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Build Result Tests")
     class BuildResultTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should build store with fuel when engine has fuel enabled")
-      void shouldBuildStoreWithFuelWhenEngineHasFuelEnabled(final TestInfo testInfo)
-          throws Exception {
+      void shouldBuildStoreWithFuelWhenEngineHasFuelEnabled(
+          final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig().consumeFuel(true);
-        final Engine engine = runtime.createEngine(config);
+        final Engine engine = Engine.create(config);
         resources.add(0, engine);
 
         final Store store = Store.builder(engine).withFuel(5000L).build();
@@ -1027,14 +1124,16 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Store built with fuel: " + fuel);
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should build store with epoch deadline when engine has epoch enabled")
-      void shouldBuildStoreWithEpochDeadlineWhenEngineHasEpochEnabled(final TestInfo testInfo)
-          throws Exception {
+      void shouldBuildStoreWithEpochDeadlineWhenEngineHasEpochEnabled(
+          final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig().epochInterruption(true);
-        final Engine engine = runtime.createEngine(config);
+        final Engine engine = Engine.create(config);
         resources.add(0, engine);
 
         final Store store = Store.builder(engine).withEpochDeadline(100L).build();
@@ -1046,12 +1145,15 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Store built with epoch deadline successfully");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should build store with user data")
-      void shouldBuildStoreWithUserData(final TestInfo testInfo) throws Exception {
+      void shouldBuildStoreWithUserData(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final Engine engine = runtime.createEngine();
+        final Engine engine = Engine.create();
         resources.add(0, engine);
 
         final String userData = "test-user-data";
@@ -1069,12 +1171,15 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Store built with user data: " + retrievedData);
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should build store with limits")
-      void shouldBuildStoreWithLimits(final TestInfo testInfo) throws Exception {
+      void shouldBuildStoreWithLimits(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final Engine engine = runtime.createEngine();
+        final Engine engine = Engine.create();
         resources.add(0, engine);
 
         final StoreLimits limits =
@@ -1103,13 +1208,16 @@ public final class ConfigurationBuilderTest {
         }
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should build store with all options")
-      void shouldBuildStoreWithAllOptions(final TestInfo testInfo) throws Exception {
+      void shouldBuildStoreWithAllOptions(final RuntimeType runtime, final TestInfo testInfo)
+          throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final EngineConfig config = new EngineConfig().consumeFuel(true).epochInterruption(true);
-        final Engine engine = runtime.createEngine(config);
+        final Engine engine = Engine.create(config);
         resources.add(0, engine);
 
         final StoreLimits limits =
@@ -1142,12 +1250,15 @@ public final class ConfigurationBuilderTest {
         }
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should produce functional store that can run modules")
-      void shouldProduceFunctionalStoreThatCanRunModules(final TestInfo testInfo) throws Exception {
+      void shouldProduceFunctionalStoreThatCanRunModules(
+          final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
-        final Engine engine = runtime.createEngine();
+        final Engine engine = Engine.create();
         resources.add(0, engine);
 
         final Store store = Store.builder(engine).withData("functional-test").build();
@@ -1181,9 +1292,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Default Values Tests")
     class DefaultValuesTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should have zero defaults (unlimited)")
-      void shouldHaveZeroDefaultsUnlimited(final TestInfo testInfo) {
+      void shouldHaveZeroDefaultsUnlimited(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits limits = StoreLimits.builder().build();
@@ -1201,9 +1314,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Builder Chaining Tests")
     class BuilderChainingTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should allow chaining all methods")
-      void shouldAllowChainingAllMethods(final TestInfo testInfo) {
+      void shouldAllowChainingAllMethods(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final StoreLimits limits =
@@ -1225,9 +1340,11 @@ public final class ConfigurationBuilderTest {
     @DisplayName("Validation Tests")
     class ValidationTests {
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative memory size")
-      void shouldRejectNegativeMemorySize(final TestInfo testInfo) {
+      void shouldRejectNegativeMemorySize(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final IllegalArgumentException exception =
@@ -1243,9 +1360,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative memory size rejected");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative table elements")
-      void shouldRejectNegativeTableElements(final TestInfo testInfo) {
+      void shouldRejectNegativeTableElements(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final IllegalArgumentException exception =
@@ -1261,9 +1380,11 @@ public final class ConfigurationBuilderTest {
         LOGGER.info("Negative table elements rejected");
       }
 
-      @Test
+      @ParameterizedTest
+      @ArgumentsSource(RuntimeProvider.class)
       @DisplayName("should reject negative instances")
-      void shouldRejectNegativeInstances(final TestInfo testInfo) {
+      void shouldRejectNegativeInstances(final RuntimeType runtime, final TestInfo testInfo) {
+        setRuntime(runtime);
         LOGGER.info("Testing: " + testInfo.getDisplayName());
 
         final IllegalArgumentException exception =

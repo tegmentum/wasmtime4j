@@ -24,12 +24,12 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.ExnRef;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.memory.Tag;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.type.TagType;
 import java.lang.reflect.Method;
@@ -38,14 +38,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WebAssembly exception handling - Tags, TagTypes, and ExnRefs.
@@ -55,73 +53,28 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Exception Handling Integration Tests")
-public final class ExceptionHandlingTest {
+public class ExceptionHandlingTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ExceptionHandlingTest.class.getName());
 
-  private static boolean exceptionHandlingAvailable = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
-
-  @BeforeAll
-  static void checkExceptionHandlingAvailable() {
+  private boolean probeExceptionHandlingAvailable() {
     try {
-      sharedRuntime = WasmRuntimeFactory.create();
-      sharedEngine = sharedRuntime.createEngine();
-
-      // Try to create a simple tag to check if exception handling is available
-      final Store testStore = sharedRuntime.createStore(sharedEngine);
-      final FunctionType funcType =
-          new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
-      final TagType tagType = TagType.create(funcType);
-      final Tag testTag = sharedRuntime.createTag(testStore, tagType);
-
-      if (testTag != null) {
-        exceptionHandlingAvailable = true;
-        LOGGER.info("Exception handling is available");
+      try (Engine engine = Engine.create()) {
+        final Store testStore = engine.createStore();
+        final FunctionType funcType =
+            new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
+        final TagType tagType = TagType.create(funcType);
+        final Tag testTag = Tag.create(testStore, tagType);
+        testStore.close();
+        return testTag != null;
       }
-      testStore.close();
     } catch (final Exception e) {
       LOGGER.warning("Exception handling not available: " + e.getMessage());
-      exceptionHandlingAvailable = false;
     }
+    return false;
   }
 
-  @AfterAll
-  static void cleanup() {
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared runtime: " + e.getMessage());
-      }
-    }
-  }
-
-  private static void assumeExceptionHandlingAvailable() {
-    assumeTrue(
-        exceptionHandlingAvailable,
-        "Exception handling native implementation not available - skipping");
-  }
-
-  private Store store;
   private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-    if (exceptionHandlingAvailable && sharedRuntime != null && sharedEngine != null) {
-      store = sharedRuntime.createStore(sharedEngine);
-      resources.add(store);
-    }
-  }
 
   @AfterEach
   void tearDown(final TestInfo testInfo) {
@@ -134,42 +87,58 @@ public final class ExceptionHandlingTest {
       }
     }
     resources.clear();
-    store = null;
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Tag Creation Tests")
   class TagCreationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create exception tag")
-    void shouldCreateExceptionTag(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldCreateExceptionTag(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create a simple tag with no payload
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       assertNotNull(tag, "Tag should not be null");
       assertTrue(tag.getNativeHandle() != 0, "Tag should have a valid native handle");
       LOGGER.info("Created tag with handle: 0x" + Long.toHexString(tag.getNativeHandle()));
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create tag with payload types")
-    void shouldCreateTagWithPayloadTypes(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldCreateTagWithPayloadTypes(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create a tag with i32 and i64 payload types
       final FunctionType funcType =
           new FunctionType(
               new WasmValueType[] {WasmValueType.I32, WasmValueType.I64}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       assertNotNull(tag, "Tag should not be null");
 
@@ -187,11 +156,18 @@ public final class ExceptionHandlingTest {
   @DisplayName("TagType Tests")
   class TagTypeTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create TagType")
-    void shouldCreateTagType(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldCreateTagType(final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create a TagType
       final FunctionType funcType =
@@ -203,11 +179,19 @@ public final class ExceptionHandlingTest {
       LOGGER.info("Created TagType with function type: " + tagType.getFunctionType());
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return parameter types")
-    void shouldReturnParameterTypes(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldReturnParameterTypes(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create a TagType with specific parameter types
       final WasmValueType[] params = {WasmValueType.I32, WasmValueType.F64};
@@ -228,17 +212,22 @@ public final class ExceptionHandlingTest {
   @DisplayName("ExnRef API Structure Tests")
   class ExnRefApiStructureTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("ExnRef should be an interface")
-    void exnRefShouldBeAnInterface(final TestInfo testInfo) {
+    void exnRefShouldBeAnInterface(final RuntimeType runtime, final TestInfo testInfo) {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       assertTrue(ExnRef.class.isInterface(), "ExnRef should be an interface");
       LOGGER.info("ExnRef is correctly an interface");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("ExnRef should have getTag method")
-    void exnRefShouldHaveGetTagMethod(final TestInfo testInfo) throws NoSuchMethodException {
+    void exnRefShouldHaveGetTagMethod(final RuntimeType runtime, final TestInfo testInfo)
+        throws NoSuchMethodException {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = ExnRef.class.getMethod("getTag", Store.class);
       assertNotNull(method, "getTag method should exist");
@@ -246,10 +235,12 @@ public final class ExceptionHandlingTest {
       LOGGER.info("ExnRef has getTag(Store) method returning Tag");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("ExnRef should have getNativeHandle method")
-    void exnRefShouldHaveGetNativeHandleMethod(final TestInfo testInfo)
+    void exnRefShouldHaveGetNativeHandleMethod(final RuntimeType runtime, final TestInfo testInfo)
         throws NoSuchMethodException {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = ExnRef.class.getMethod("getNativeHandle");
       assertNotNull(method, "getNativeHandle method should exist");
@@ -257,9 +248,12 @@ public final class ExceptionHandlingTest {
       LOGGER.info("ExnRef has getNativeHandle() method returning long");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("ExnRef should have isValid method")
-    void exnRefShouldHaveIsValidMethod(final TestInfo testInfo) throws NoSuchMethodException {
+    void exnRefShouldHaveIsValidMethod(final RuntimeType runtime, final TestInfo testInfo)
+        throws NoSuchMethodException {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = ExnRef.class.getMethod("isValid");
       assertNotNull(method, "isValid method should exist");
@@ -267,9 +261,11 @@ public final class ExceptionHandlingTest {
       LOGGER.info("ExnRef has isValid() method returning boolean");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("ExnRef should have exactly 3 methods")
-    void exnRefShouldHaveExactlyThreeMethods(final TestInfo testInfo) {
+    void exnRefShouldHaveExactlyThreeMethods(final RuntimeType runtime, final TestInfo testInfo) {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       assertEquals(
           3, ExnRef.class.getDeclaredMethods().length, "ExnRef should have exactly 3 methods");
@@ -281,21 +277,37 @@ public final class ExceptionHandlingTest {
   @DisplayName("Store Exception Handling Tests")
   class StoreExceptionHandlingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should report no pending exception initially")
-    void shouldReportNoPendingExceptionInitially(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldReportNoPendingExceptionInitially(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       assertFalse(store.hasPendingException(), "Store should not have pending exception initially");
       LOGGER.info("Store correctly reports no pending exception");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return null when taking non-existent exception")
-    void shouldReturnNullWhenTakingNonExistentException(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldReturnNullWhenTakingNonExistentException(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       final ExnRef exnRef = store.takePendingException();
       // Should return null when no exception is pending
@@ -306,10 +318,12 @@ public final class ExceptionHandlingTest {
           "takePendingException should return null or invalid when no exception pending");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("Store should have hasPendingException method")
-    void storeShouldHaveHasPendingExceptionMethod(final TestInfo testInfo)
-        throws NoSuchMethodException {
+    void storeShouldHaveHasPendingExceptionMethod(
+        final RuntimeType runtime, final TestInfo testInfo) throws NoSuchMethodException {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = Store.class.getMethod("hasPendingException");
       assertNotNull(method, "hasPendingException method should exist");
@@ -318,10 +332,12 @@ public final class ExceptionHandlingTest {
       LOGGER.info("Store has hasPendingException() method");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("Store should have takePendingException method")
-    void storeShouldHaveTakePendingExceptionMethod(final TestInfo testInfo)
-        throws NoSuchMethodException {
+    void storeShouldHaveTakePendingExceptionMethod(
+        final RuntimeType runtime, final TestInfo testInfo) throws NoSuchMethodException {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = Store.class.getMethod("takePendingException");
       assertNotNull(method, "takePendingException method should exist");
@@ -330,9 +346,12 @@ public final class ExceptionHandlingTest {
       LOGGER.info("Store has takePendingException() method returning ExnRef");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("Store should have throwException method")
-    void storeShouldHaveThrowExceptionMethod(final TestInfo testInfo) throws NoSuchMethodException {
+    void storeShouldHaveThrowExceptionMethod(final RuntimeType runtime, final TestInfo testInfo)
+        throws NoSuchMethodException {
+      setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       final Method method = Store.class.getMethod("throwException", ExnRef.class);
       assertNotNull(method, "throwException method should exist");
@@ -346,17 +365,24 @@ public final class ExceptionHandlingTest {
   @DisplayName("ThrownException Tests")
   class ThrownExceptionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create ThrownException with tag and empty payload")
-    void shouldCreateThrownExceptionWithTagAndEmptyPayload(final TestInfo testInfo)
-        throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldCreateThrownExceptionWithTagAndEmptyPayload(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       final ThrownException thrownException = new ThrownException(tag, Collections.emptyList());
 
@@ -368,17 +394,25 @@ public final class ExceptionHandlingTest {
       LOGGER.info("Created ThrownException: " + thrownException);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create ThrownException with payload values")
-    void shouldCreateThrownExceptionWithPayloadValues(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldCreateThrownExceptionWithPayloadValues(
+        final RuntimeType runtime, final TestInfo testInfo) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       final FunctionType funcType =
           new FunctionType(
               new WasmValueType[] {WasmValueType.I32, WasmValueType.I64}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       final List<WasmValue> payload = Arrays.asList(WasmValue.i32(42), WasmValue.i64(1234567890L));
 
@@ -391,16 +425,24 @@ public final class ExceptionHandlingTest {
       LOGGER.info("Created ThrownException with payload: " + thrownException);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should access payload values by index")
-    void shouldAccessPayloadValuesByIndex(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldAccessPayloadValuesByIndex(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       final WasmValue value = WasmValue.i32(99);
       final ThrownException thrownException =
@@ -411,16 +453,24 @@ public final class ExceptionHandlingTest {
       LOGGER.info("Retrieved payload value: " + retrieved);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should build ThrownException using builder")
-    void shouldBuildThrownExceptionUsingBuilder(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldBuildThrownExceptionUsingBuilder(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {WasmValueType.F64}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       final ThrownException thrownException =
           ThrownException.builder(tag)
@@ -433,16 +483,24 @@ public final class ExceptionHandlingTest {
       LOGGER.info("Built ThrownException using builder: " + thrownException);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should support equals and hashCode")
-    void shouldSupportEqualsAndHashCode(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldSupportEqualsAndHashCode(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       final ThrownException te1 = new ThrownException(tag, Collections.emptyList());
       final ThrownException te2 = new ThrownException(tag, Collections.emptyList());
@@ -452,16 +510,24 @@ public final class ExceptionHandlingTest {
       LOGGER.info("ThrownException equals and hashCode work correctly");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should have meaningful toString")
-    void shouldHaveMeaningfulToString(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldHaveMeaningfulToString(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       final ThrownException thrownException = new ThrownException(tag, Collections.emptyList());
       final String toString = thrownException.toString();
@@ -478,17 +544,25 @@ public final class ExceptionHandlingTest {
   @DisplayName("Exception Lifecycle Tests")
   class ExceptionLifecycleTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should close exception resources properly")
-    void shouldCloseExceptionResourcesProperly(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldCloseExceptionResourcesProperly(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create a tag and verify it can be used and cleaned up
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       assertNotNull(tag, "Tag should be created successfully");
 
@@ -504,39 +578,55 @@ public final class ExceptionHandlingTest {
   @DisplayName("Tag Equality Tests")
   class TagEqualityTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should detect equal tags")
-    void shouldDetectEqualTags(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldDetectEqualTags(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create a tag
       final FunctionType funcType =
           new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final TagType tagType = TagType.create(funcType);
-      final Tag tag = sharedRuntime.createTag(store, tagType);
+      final Tag tag = Tag.create(store, tagType);
 
       // A tag should be equal to itself
       assertTrue(tag.equals(tag, store), "Tag should be equal to itself");
       LOGGER.info("Tag equality test passed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should detect different tags")
-    void shouldDetectDifferentTags(final TestInfo testInfo) throws Exception {
-      assumeExceptionHandlingAvailable();
+    void shouldDetectDifferentTags(final RuntimeType runtime, final TestInfo testInfo)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeExceptionHandlingAvailable(), "Exception handling not available - skipping");
       LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final Engine engine = Engine.create();
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create two different tags
       final FunctionType funcType1 =
           new FunctionType(new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {});
       final TagType tagType1 = TagType.create(funcType1);
-      final Tag tag1 = sharedRuntime.createTag(store, tagType1);
+      final Tag tag1 = Tag.create(store, tagType1);
 
       final FunctionType funcType2 =
           new FunctionType(new WasmValueType[] {WasmValueType.I64}, new WasmValueType[] {});
       final TagType tagType2 = TagType.create(funcType2);
-      final Tag tag2 = sharedRuntime.createTag(store, tagType2);
+      final Tag tag2 = Tag.create(store, tagType2);
 
       // Different tags should not be equal
       assertFalse(tag1.equals(tag2, store), "Different tags should not be equal");

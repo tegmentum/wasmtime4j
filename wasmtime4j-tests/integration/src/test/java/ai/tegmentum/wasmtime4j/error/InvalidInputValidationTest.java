@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -29,19 +28,17 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for input validation error handling.
@@ -51,14 +48,10 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("Invalid Input Validation Tests")
 @Tag("integration")
-class InvalidInputValidationTest {
+class InvalidInputValidationTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(InvalidInputValidationTest.class.getName());
 
-  private static boolean runtimeAvailable;
-  private static String unavailableReason;
-
-  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
 
@@ -150,35 +143,6 @@ class InvalidInputValidationTest {
         0x0B // end
       };
 
-  @BeforeAll
-  static void checkRuntimeAvailability() {
-    LOGGER.info("Checking runtime availability for input validation tests");
-    try {
-      runtimeAvailable =
-          WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI)
-              || WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
-      LOGGER.info("Runtime available: " + runtimeAvailable);
-    } catch (final Exception e) {
-      unavailableReason = "Failed to check runtime: " + e.getMessage();
-      LOGGER.warning(unavailableReason);
-    }
-  }
-
-  @BeforeEach
-  void setUp() {
-    assumeTrue(runtimeAvailable, "Runtime not available: " + unavailableReason);
-
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-      store = engine.createStore();
-      LOGGER.info("Test runtime setup complete");
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to set up runtime: " + e.getMessage());
-      assumeTrue(false, "Runtime setup failed: " + e.getMessage());
-    }
-  }
-
   @AfterEach
   void tearDown() {
     if (store != null) {
@@ -195,22 +159,21 @@ class InvalidInputValidationTest {
         LOGGER.warning("Error closing engine: " + e.getMessage());
       }
     }
-    if (runtime != null) {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing runtime: " + e.getMessage());
-      }
-    }
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Null Parameter Validation Tests")
   class NullParameterValidationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for null WASM bytes")
-    void shouldThrowExceptionForNullWasmBytes() {
+    void shouldThrowExceptionForNullWasmBytes(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> engine.compileModule(null))
           .satisfies(
               e -> {
@@ -220,9 +183,14 @@ class InvalidInputValidationTest {
               });
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for null linker in instantiate")
-    void shouldThrowExceptionForNullLinker() throws Exception {
+    void shouldThrowExceptionForNullLinker(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         assertThatThrownBy(() -> ((Linker) null).instantiate(store, module))
@@ -232,9 +200,14 @@ class InvalidInputValidationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for null store in instantiate")
-    void shouldThrowExceptionForNullStore() throws Exception {
+    void shouldThrowExceptionForNullStore(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         assertThatThrownBy(() -> ((Store) null).createInstance(module))
@@ -244,9 +217,14 @@ class InvalidInputValidationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for null function name lookup")
-    void shouldThrowExceptionForNullFunctionName() throws Exception {
+    void shouldThrowExceptionForNullFunctionName(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         final Instance instance = store.createInstance(module);
@@ -263,9 +241,14 @@ class InvalidInputValidationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for null global value type")
-    void shouldThrowExceptionForNullGlobalValueType() {
+    void shouldThrowExceptionForNullGlobalValueType(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> store.createGlobal(null, true, WasmValue.i32(0)))
           .satisfies(
               e -> {
@@ -280,9 +263,15 @@ class InvalidInputValidationTest {
   @DisplayName("Invalid Function Call Parameter Tests")
   class InvalidFunctionCallParameterTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for wrong number of parameters")
-    void shouldThrowExceptionForWrongNumberOfParameters() throws Exception {
+    void shouldThrowExceptionForWrongNumberOfParameters(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         final Instance instance = store.createInstance(module);
@@ -310,9 +299,14 @@ class InvalidInputValidationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for wrong parameter type")
-    void shouldThrowExceptionForWrongParameterType() throws Exception {
+    void shouldThrowExceptionForWrongParameterType(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         final Instance instance = store.createInstance(module);
@@ -337,9 +331,14 @@ class InvalidInputValidationTest {
   @DisplayName("Export Name Validation Tests")
   class ExportNameValidationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return empty for non-existent function")
-    void shouldReturnEmptyForNonExistentFunction() throws Exception {
+    void shouldReturnEmptyForNonExistentFunction(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         final Instance instance = store.createInstance(module);
@@ -353,9 +352,14 @@ class InvalidInputValidationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return empty for non-existent memory")
-    void shouldReturnEmptyForNonExistentMemory() throws Exception {
+    void shouldReturnEmptyForNonExistentMemory(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         final Instance instance = store.createInstance(module);
@@ -374,9 +378,14 @@ class InvalidInputValidationTest {
   @DisplayName("Memory Access Validation Tests")
   class MemoryAccessValidationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for negative memory offset")
-    void shouldThrowExceptionForNegativeMemoryOffset() throws Exception {
+    void shouldThrowExceptionForNegativeMemoryOffset(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         final Instance instance = store.createInstance(module);
@@ -395,9 +404,15 @@ class InvalidInputValidationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for out of bounds memory access")
-    void shouldThrowExceptionForOutOfBoundsMemoryAccess() throws Exception {
+    void shouldThrowExceptionForOutOfBoundsMemoryAccess(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
         final Instance instance = store.createInstance(module);
@@ -424,9 +439,14 @@ class InvalidInputValidationTest {
   @DisplayName("Table Access Validation Tests")
   class TableAccessValidationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for negative table index")
-    void shouldThrowExceptionForNegativeTableIndex() throws Exception {
+    void shouldThrowExceptionForNegativeTableIndex(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, 10, 100);
 
       assertThat(table).isNotNull();
@@ -439,9 +459,14 @@ class InvalidInputValidationTest {
               });
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for out of bounds table index")
-    void shouldThrowExceptionForOutOfBoundsTableIndex() throws Exception {
+    void shouldThrowExceptionForOutOfBoundsTableIndex(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, 10, 100);
 
       assertThat(table).isNotNull();
@@ -461,9 +486,14 @@ class InvalidInputValidationTest {
   @DisplayName("Global Value Type Validation Tests")
   class GlobalValueTypeValidationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for setting immutable global")
-    void shouldThrowExceptionForSettingImmutableGlobal() throws Exception {
+    void shouldThrowExceptionForSettingImmutableGlobal(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasmGlobal immutableGlobal =
           store.createGlobal(WasmValueType.I32, false, WasmValue.i32(42));
 
@@ -478,9 +508,14 @@ class InvalidInputValidationTest {
               });
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for wrong global type access")
-    void shouldThrowExceptionForWrongGlobalTypeAccess() throws Exception {
+    void shouldThrowExceptionForWrongGlobalTypeAccess(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasmGlobal i32Global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(42));
 
       assertThat(i32Global).isNotNull();
@@ -499,9 +534,14 @@ class InvalidInputValidationTest {
   @DisplayName("Invalid Configuration Tests")
   class InvalidConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for invalid table size")
-    void shouldThrowExceptionForInvalidTableSize() {
+    void shouldThrowExceptionForInvalidTableSize(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       // Max size less than initial size
       assertThatThrownBy(() -> store.createTable(WasmValueType.FUNCREF, 100, 10))
           .satisfies(

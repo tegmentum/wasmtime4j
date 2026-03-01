@@ -25,23 +25,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.ExportType;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for Module compilation, Instance creation, and Function invocation.
@@ -52,7 +52,7 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Module and Instance Integration Tests")
-public final class ModuleInstanceTest {
+public final class ModuleInstanceTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ModuleInstanceTest.class.getName());
 
@@ -243,122 +243,118 @@ public final class ModuleInstanceTest {
         0x0B // local.get 0, i32.const 1, i32.add, end
       };
 
-  private Engine engine;
-  private Store store;
-  private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws WasmException {
-    LOGGER.info("Setting up test: " + testInfo.getDisplayName());
-    engine = Engine.create();
-    resources.add(engine);
-    store = engine.createStore();
-    resources.add(store);
-    LOGGER.info("Test setup completed");
-  }
-
   @AfterEach
-  void tearDown(final TestInfo testInfo) {
-    LOGGER.info("Cleaning up test: " + testInfo.getDisplayName());
-    for (int i = resources.size() - 1; i >= 0; i--) {
-      try {
-        resources.get(i).close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close resource: " + e.getMessage());
-      }
-    }
-    resources.clear();
-    LOGGER.info("Test cleanup completed");
+  void cleanup() {
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Module Compilation Tests")
   class ModuleCompilationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should compile valid WebAssembly bytecode")
-    void shouldCompileValidWasmBytecode() throws Exception {
-      LOGGER.info("Testing compilation of valid WASM bytecode");
+    void shouldCompileValidWasmBytecode(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing compilation of valid WASM bytecode [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Module module = engine.compileModule(ADD_WASM)) {
 
-      assertNotNull(module, "Compiled module should not be null");
-      assertTrue(module.isValid(), "Compiled module should be valid");
-      LOGGER.info("Module compiled successfully, valid=" + module.isValid());
+        assertNotNull(module, "Compiled module should not be null");
+        assertTrue(module.isValid(), "Compiled module should be valid");
+        LOGGER.info("Module compiled successfully, valid=" + module.isValid());
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for invalid bytecode")
-    void shouldThrowExceptionForInvalidBytecode() {
-      LOGGER.info("Testing compilation of invalid bytecode");
+    void shouldThrowExceptionForInvalidBytecode(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing compilation of invalid bytecode [" + runtime + "]");
 
-      final byte[] invalidWasm = new byte[] {0x00, 0x01, 0x02, 0x03};
-      assertThrows(
-          WasmException.class,
-          () -> engine.compileModule(invalidWasm),
-          "Should throw WasmException for invalid bytecode");
+      try (final Engine engine = Engine.create()) {
+        final byte[] invalidWasm = new byte[] {0x00, 0x01, 0x02, 0x03};
+        assertThrows(
+            WasmException.class,
+            () -> engine.compileModule(invalidWasm),
+            "Should throw WasmException for invalid bytecode");
+      }
 
       LOGGER.info("Correctly threw exception for invalid bytecode");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for empty bytecode")
-    void shouldThrowExceptionForEmptyBytecode() {
-      LOGGER.info("Testing compilation of empty bytecode");
+    void shouldThrowExceptionForEmptyBytecode(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing compilation of empty bytecode [" + runtime + "]");
 
-      final byte[] emptyWasm = new byte[0];
-      assertThrows(
-          Exception.class,
-          () -> engine.compileModule(emptyWasm),
-          "Should throw exception for empty bytecode");
+      try (final Engine engine = Engine.create()) {
+        final byte[] emptyWasm = new byte[0];
+        assertThrows(
+            Exception.class,
+            () -> engine.compileModule(emptyWasm),
+            "Should throw exception for empty bytecode");
+      }
 
       LOGGER.info("Correctly threw exception for empty bytecode");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should list exports from compiled module")
-    void shouldListExportsFromCompiledModule() throws Exception {
-      LOGGER.info("Testing export listing from compiled module");
+    void shouldListExportsFromCompiledModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing export listing from compiled module [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Module module = engine.compileModule(ADD_WASM)) {
 
-      final List<ExportType> exports = module.getExports();
-      assertNotNull(exports, "Exports list should not be null");
-      assertFalse(exports.isEmpty(), "Exports list should not be empty");
-      LOGGER.info("Found " + exports.size() + " exports");
+        final List<ExportType> exports = module.getExports();
+        assertNotNull(exports, "Exports list should not be null");
+        assertFalse(exports.isEmpty(), "Exports list should not be empty");
+        LOGGER.info("Found " + exports.size() + " exports");
 
-      boolean foundAdd = false;
-      for (final ExportType export : exports) {
-        LOGGER.info("Export: " + export.getName() + " (kind: " + export.getType().getKind() + ")");
-        if ("add".equals(export.getName())) {
-          foundAdd = true;
+        boolean foundAdd = false;
+        for (final ExportType export : exports) {
+          LOGGER.info(
+              "Export: " + export.getName() + " (kind: " + export.getType().getKind() + ")");
+          if ("add".equals(export.getName())) {
+            foundAdd = true;
+          }
         }
+        assertTrue(foundAdd, "Should find 'add' export");
       }
-      assertTrue(foundAdd, "Should find 'add' export");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should list exports from module with memory")
-    void shouldListExportsFromModuleWithMemory() throws Exception {
-      LOGGER.info("Testing export listing from module with memory");
+    void shouldListExportsFromModuleWithMemory(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing export listing from module with memory [" + runtime + "]");
 
-      final Module module = engine.compileModule(MEMORY_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Module module = engine.compileModule(MEMORY_WASM)) {
 
-      final List<ExportType> exports = module.getExports();
-      assertNotNull(exports, "Exports list should not be null");
-      LOGGER.info("Found " + exports.size() + " exports from memory module");
+        final List<ExportType> exports = module.getExports();
+        assertNotNull(exports, "Exports list should not be null");
+        LOGGER.info("Found " + exports.size() + " exports from memory module");
 
-      boolean foundMemory = false;
-      for (final ExportType export : exports) {
-        LOGGER.info("Export: " + export.getName() + " (kind: " + export.getType().getKind() + ")");
-        if ("memory".equals(export.getName())) {
-          foundMemory = true;
+        boolean foundMemory = false;
+        for (final ExportType export : exports) {
+          LOGGER.info(
+              "Export: " + export.getName() + " (kind: " + export.getType().getKind() + ")");
+          if ("memory".equals(export.getName())) {
+            foundMemory = true;
+          }
         }
+        assertTrue(foundMemory, "Should find 'memory' export");
       }
-      assertTrue(foundMemory, "Should find 'memory' export");
     }
   }
 
@@ -366,93 +362,100 @@ public final class ModuleInstanceTest {
   @DisplayName("Instance Creation Tests")
   class InstanceCreationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create instance from compiled module")
-    void shouldCreateInstanceFromCompiledModule() throws Exception {
-      LOGGER.info("Testing instance creation from compiled module");
+    void shouldCreateInstanceFromCompiledModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing instance creation from compiled module [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(ADD_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
-
-      assertNotNull(instance, "Instance should not be null");
-      assertTrue(instance.isValid(), "Instance should be valid");
-      LOGGER.info("Instance created successfully, valid=" + instance.isValid());
+        assertNotNull(instance, "Instance should not be null");
+        assertTrue(instance.isValid(), "Instance should be valid");
+        LOGGER.info("Instance created successfully, valid=" + instance.isValid());
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should list function names from instance")
-    void shouldListFunctionNamesFromInstance() throws Exception {
-      LOGGER.info("Testing function name listing from instance");
+    void shouldListFunctionNamesFromInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing function name listing from instance [" + runtime + "]");
 
-      final Module module = engine.compileModule(MULTI_FUNC_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(MULTI_FUNC_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final String[] exportNames = instance.getExportNames();
+        assertNotNull(exportNames, "Export names list should not be null");
+        LOGGER.info("Found exports: " + java.util.Arrays.toString(exportNames));
 
-      final String[] exportNames = instance.getExportNames();
-      assertNotNull(exportNames, "Export names list should not be null");
-      LOGGER.info("Found exports: " + java.util.Arrays.toString(exportNames));
-
-      boolean foundAdd = false;
-      boolean foundIncr = false;
-      for (final String name : exportNames) {
-        if ("add".equals(name)) {
-          foundAdd = true;
+        boolean foundAdd = false;
+        boolean foundIncr = false;
+        for (final String name : exportNames) {
+          if ("add".equals(name)) {
+            foundAdd = true;
+          }
+          if ("incr".equals(name)) {
+            foundIncr = true;
+          }
         }
-        if ("incr".equals(name)) {
-          foundIncr = true;
-        }
+        assertTrue(foundAdd, "Should contain 'add' function");
+        assertTrue(foundIncr, "Should contain 'incr' function");
       }
-      assertTrue(foundAdd, "Should contain 'add' function");
-      assertTrue(foundIncr, "Should contain 'incr' function");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get exports map from instance")
-    void shouldGetExportsMapFromInstance() throws Exception {
-      LOGGER.info("Testing exports map from instance");
+    void shouldGetExportsMapFromInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing exports map from instance [" + runtime + "]");
 
-      final Module module = engine.compileModule(MULTI_FUNC_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(MULTI_FUNC_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final List<Map.Entry<String, ai.tegmentum.wasmtime4j.Extern>> exports =
+            instance.getExports();
+        assertNotNull(exports, "Exports list should not be null");
+        assertFalse(exports.isEmpty(), "Exports list should not be empty");
 
-      final List<Map.Entry<String, ai.tegmentum.wasmtime4j.Extern>> exports = instance.getExports();
-      assertNotNull(exports, "Exports list should not be null");
-      assertFalse(exports.isEmpty(), "Exports list should not be empty");
-
-      LOGGER.info("Exports list has " + exports.size() + " entries");
-      for (final Map.Entry<String, ai.tegmentum.wasmtime4j.Extern> entry : exports) {
-        LOGGER.info(
-            "Export: " + entry.getKey() + " -> " + entry.getValue().getClass().getSimpleName());
+        LOGGER.info("Exports list has " + exports.size() + " entries");
+        for (final Map.Entry<String, ai.tegmentum.wasmtime4j.Extern> entry : exports) {
+          LOGGER.info(
+              "Export: " + entry.getKey() + " -> " + entry.getValue().getClass().getSimpleName());
+        }
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create multiple instances from same module")
-    void shouldCreateMultipleInstancesFromSameModule() throws Exception {
-      LOGGER.info("Testing multiple instance creation from same module");
+    void shouldCreateMultipleInstancesFromSameModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing multiple instance creation from same module [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(ADD_WASM);
+          final Instance instance1 = module.instantiate(store);
+          final Instance instance2 = module.instantiate(store)) {
 
-      final Instance instance1 = module.instantiate(store);
-      resources.add(instance1);
+        assertNotNull(instance1, "First instance should not be null");
+        assertNotNull(instance2, "Second instance should not be null");
+        assertTrue(instance1.isValid(), "First instance should be valid");
+        assertTrue(instance2.isValid(), "Second instance should be valid");
 
-      final Instance instance2 = module.instantiate(store);
-      resources.add(instance2);
-
-      assertNotNull(instance1, "First instance should not be null");
-      assertNotNull(instance2, "Second instance should not be null");
-      assertTrue(instance1.isValid(), "First instance should be valid");
-      assertTrue(instance2.isValid(), "Second instance should be valid");
-
-      LOGGER.info("Both instances created successfully");
+        LOGGER.info("Both instances created successfully");
+      }
     }
   }
 
@@ -460,139 +463,152 @@ public final class ModuleInstanceTest {
   @DisplayName("Function Invocation Tests")
   class FunctionInvocationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should invoke add function with two i32 arguments")
-    void shouldInvokeAddFunctionWithTwoI32Arguments() throws Exception {
-      LOGGER.info("Testing add function invocation");
+    void shouldInvokeAddFunctionWithTwoI32Arguments(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing add function invocation [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(ADD_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmFunction> addFunc = instance.getFunction("add");
+        assertTrue(addFunc.isPresent(), "Should find 'add' function");
 
-      final Optional<WasmFunction> addFunc = instance.getFunction("add");
-      assertTrue(addFunc.isPresent(), "Should find 'add' function");
+        final WasmFunction add = addFunc.get();
+        LOGGER.info("Found add function");
 
-      final WasmFunction add = addFunc.get();
-      LOGGER.info("Found add function");
+        final WasmValue[] results = add.call(WasmValue.i32(5), WasmValue.i32(3));
+        assertNotNull(results, "Results should not be null");
+        assertTrue(results.length > 0, "Should have at least one result");
+        LOGGER.info("add(5, 3) = " + results[0].asInt());
 
-      final WasmValue[] results = add.call(WasmValue.i32(5), WasmValue.i32(3));
-      assertNotNull(results, "Results should not be null");
-      assertTrue(results.length > 0, "Should have at least one result");
-      LOGGER.info("add(5, 3) = " + results[0].asInt());
-
-      assertEquals(8, results[0].asInt(), "5 + 3 should equal 8");
+        assertEquals(8, results[0].asInt(), "5 + 3 should equal 8");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should invoke constant function with no arguments")
-    void shouldInvokeConstantFunctionWithNoArguments() throws Exception {
-      LOGGER.info("Testing constant function invocation");
+    void shouldInvokeConstantFunctionWithNoArguments(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing constant function invocation [" + runtime + "]");
 
-      final Module module = engine.compileModule(CONST_42_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(CONST_42_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmFunction> getFunc = instance.getFunction("get_42");
+        assertTrue(getFunc.isPresent(), "Should find 'get_42' function");
 
-      final Optional<WasmFunction> getFunc = instance.getFunction("get_42");
-      assertTrue(getFunc.isPresent(), "Should find 'get_42' function");
+        final WasmFunction get42 = getFunc.get();
+        assertEquals(
+            0, get42.getFunctionType().getParamTypes().length, "get_42 should have 0 parameters");
 
-      final WasmFunction get42 = getFunc.get();
-      assertEquals(
-          0, get42.getFunctionType().getParamTypes().length, "get_42 should have 0 parameters");
+        final WasmValue[] results = get42.call();
+        assertNotNull(results, "Results should not be null");
+        assertTrue(results.length > 0, "Should have at least one result");
+        LOGGER.info("get_42() = " + results[0].asInt());
 
-      final WasmValue[] results = get42.call();
-      assertNotNull(results, "Results should not be null");
-      assertTrue(results.length > 0, "Should have at least one result");
-      LOGGER.info("get_42() = " + results[0].asInt());
-
-      assertEquals(42, results[0].asInt(), "get_42() should return 42");
+        assertEquals(42, results[0].asInt(), "get_42() should return 42");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should invoke multiple functions from same instance")
-    void shouldInvokeMultipleFunctionsFromSameInstance() throws Exception {
-      LOGGER.info("Testing multiple function invocations");
+    void shouldInvokeMultipleFunctionsFromSameInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing multiple function invocations [" + runtime + "]");
 
-      final Module module = engine.compileModule(MULTI_FUNC_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(MULTI_FUNC_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        // Test add function
+        final Optional<WasmFunction> addFunc = instance.getFunction("add");
+        assertTrue(addFunc.isPresent(), "Should find 'add' function");
+        final WasmValue[] addResults = addFunc.get().call(WasmValue.i32(10), WasmValue.i32(20));
+        assertEquals(30, addResults[0].asInt(), "10 + 20 should equal 30");
+        LOGGER.info("add(10, 20) = " + addResults[0].asInt());
 
-      // Test add function
-      final Optional<WasmFunction> addFunc = instance.getFunction("add");
-      assertTrue(addFunc.isPresent(), "Should find 'add' function");
-      final WasmValue[] addResults = addFunc.get().call(WasmValue.i32(10), WasmValue.i32(20));
-      assertEquals(30, addResults[0].asInt(), "10 + 20 should equal 30");
-      LOGGER.info("add(10, 20) = " + addResults[0].asInt());
-
-      // Test incr function
-      final Optional<WasmFunction> incrFunc = instance.getFunction("incr");
-      assertTrue(incrFunc.isPresent(), "Should find 'incr' function");
-      final WasmValue[] incrResults = incrFunc.get().call(WasmValue.i32(99));
-      assertEquals(100, incrResults[0].asInt(), "incr(99) should equal 100");
-      LOGGER.info("incr(99) = " + incrResults[0].asInt());
+        // Test incr function
+        final Optional<WasmFunction> incrFunc = instance.getFunction("incr");
+        assertTrue(incrFunc.isPresent(), "Should find 'incr' function");
+        final WasmValue[] incrResults = incrFunc.get().call(WasmValue.i32(99));
+        assertEquals(100, incrResults[0].asInt(), "incr(99) should equal 100");
+        LOGGER.info("incr(99) = " + incrResults[0].asInt());
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return empty optional for non-existent function")
-    void shouldReturnEmptyOptionalForNonExistentFunction() throws Exception {
-      LOGGER.info("Testing non-existent function lookup");
+    void shouldReturnEmptyOptionalForNonExistentFunction(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing non-existent function lookup [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(ADD_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmFunction> nonExistent = instance.getFunction("does_not_exist");
+        assertFalse(nonExistent.isPresent(), "Non-existent function should return empty Optional");
 
-      final Optional<WasmFunction> nonExistent = instance.getFunction("does_not_exist");
-      assertFalse(nonExistent.isPresent(), "Non-existent function should return empty Optional");
-
-      LOGGER.info("Correctly returned empty Optional for non-existent function");
+        LOGGER.info("Correctly returned empty Optional for non-existent function");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle negative i32 arguments")
-    void shouldHandleNegativeI32Arguments() throws Exception {
-      LOGGER.info("Testing add function with negative arguments");
+    void shouldHandleNegativeI32Arguments(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing add function with negative arguments [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(ADD_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmFunction> addFunc = instance.getFunction("add");
+        assertTrue(addFunc.isPresent(), "Should find 'add' function");
 
-      final Optional<WasmFunction> addFunc = instance.getFunction("add");
-      assertTrue(addFunc.isPresent(), "Should find 'add' function");
-
-      final WasmValue[] results = addFunc.get().call(WasmValue.i32(-10), WasmValue.i32(5));
-      LOGGER.info("add(-10, 5) = " + results[0].asInt());
-      assertEquals(-5, results[0].asInt(), "-10 + 5 should equal -5");
+        final WasmValue[] results = addFunc.get().call(WasmValue.i32(-10), WasmValue.i32(5));
+        LOGGER.info("add(-10, 5) = " + results[0].asInt());
+        assertEquals(-5, results[0].asInt(), "-10 + 5 should equal -5");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle i32 overflow correctly")
-    void shouldHandleI32OverflowCorrectly() throws Exception {
-      LOGGER.info("Testing add function with overflow");
+    void shouldHandleI32OverflowCorrectly(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing add function with overflow [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(ADD_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmFunction> addFunc = instance.getFunction("add");
+        assertTrue(addFunc.isPresent(), "Should find 'add' function");
 
-      final Optional<WasmFunction> addFunc = instance.getFunction("add");
-      assertTrue(addFunc.isPresent(), "Should find 'add' function");
-
-      // Integer.MAX_VALUE + 1 should overflow
-      final WasmValue[] results =
-          addFunc.get().call(WasmValue.i32(Integer.MAX_VALUE), WasmValue.i32(1));
-      LOGGER.info("add(MAX_VALUE, 1) = " + results[0].asInt());
-      assertEquals(
-          Integer.MIN_VALUE, results[0].asInt(), "MAX_VALUE + 1 should overflow to MIN_VALUE");
+        // Integer.MAX_VALUE + 1 should overflow
+        final WasmValue[] results =
+            addFunc.get().call(WasmValue.i32(Integer.MAX_VALUE), WasmValue.i32(1));
+        LOGGER.info("add(MAX_VALUE, 1) = " + results[0].asInt());
+        assertEquals(
+            Integer.MIN_VALUE, results[0].asInt(), "MAX_VALUE + 1 should overflow to MIN_VALUE");
+      }
     }
   }
 
@@ -600,67 +616,73 @@ public final class ModuleInstanceTest {
   @DisplayName("Memory Export Tests")
   class MemoryExportTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get exported memory from instance")
-    void shouldGetExportedMemoryFromInstance() throws Exception {
-      LOGGER.info("Testing memory export retrieval");
+    void shouldGetExportedMemoryFromInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing memory export retrieval [" + runtime + "]");
 
-      final Module module = engine.compileModule(MEMORY_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(MEMORY_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
+        final Optional<WasmMemory> memory = instance.getMemory("memory");
+        assertTrue(memory.isPresent(), "Should find 'memory' export");
 
-      final Optional<WasmMemory> memory = instance.getMemory("memory");
-      assertTrue(memory.isPresent(), "Should find 'memory' export");
+        final WasmMemory mem = memory.get();
+        assertNotNull(mem, "Memory should not be null");
+        LOGGER.info("Memory size: " + mem.getSize() + " pages (" + mem.dataSize() + " bytes)");
 
-      final WasmMemory mem = memory.get();
-      assertNotNull(mem, "Memory should not be null");
-      LOGGER.info("Memory size: " + mem.getSize() + " pages (" + mem.dataSize() + " bytes)");
-
-      // Should have at least 1 page (64KB)
-      assertTrue(mem.getSize() >= 1, "Memory should have at least 1 page");
-      assertTrue(mem.dataSize() >= 65536, "Memory should have at least 64KB");
-    }
-
-    @Test
-    @DisplayName("should list memory names from instance")
-    void shouldListMemoryNamesFromInstance() throws Exception {
-      LOGGER.info("Testing memory name listing");
-
-      final Module module = engine.compileModule(MEMORY_WASM);
-      resources.add(module);
-
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
-
-      final String[] exportNames = instance.getExportNames();
-      assertNotNull(exportNames, "Export names should not be null");
-      boolean foundMemory = false;
-      for (final String name : exportNames) {
-        if ("memory".equals(name)) {
-          foundMemory = true;
-          break;
-        }
+        // Should have at least 1 page (64KB)
+        assertTrue(mem.getSize() >= 1, "Memory should have at least 1 page");
+        assertTrue(mem.dataSize() >= 65536, "Memory should have at least 64KB");
       }
-      assertTrue(foundMemory, "Should contain 'memory' export");
-      LOGGER.info("Export names: " + java.util.Arrays.toString(exportNames));
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
+    @DisplayName("should list memory names from instance")
+    void shouldListMemoryNamesFromInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing memory name listing [" + runtime + "]");
+
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(MEMORY_WASM);
+          final Instance instance = module.instantiate(store)) {
+
+        final String[] exportNames = instance.getExportNames();
+        assertNotNull(exportNames, "Export names should not be null");
+        boolean foundMemory = false;
+        for (final String name : exportNames) {
+          if ("memory".equals(name)) {
+            foundMemory = true;
+            break;
+          }
+        }
+        assertTrue(foundMemory, "Should contain 'memory' export");
+        LOGGER.info("Export names: " + java.util.Arrays.toString(exportNames));
+      }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get default memory from instance")
-    void shouldGetDefaultMemoryFromInstance() throws Exception {
-      LOGGER.info("Testing default memory retrieval");
+    void shouldGetDefaultMemoryFromInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing default memory retrieval [" + runtime + "]");
 
-      final Module module = engine.compileModule(MEMORY_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(MEMORY_WASM);
+          final Instance instance = module.instantiate(store)) {
 
-      final Instance instance = module.instantiate(store);
-      resources.add(instance);
-
-      final Optional<WasmMemory> defaultMemory = instance.getDefaultMemory();
-      assertTrue(defaultMemory.isPresent(), "Should have default memory");
-      LOGGER.info("Default memory found with size: " + defaultMemory.get().getSize() + " pages");
+        final Optional<WasmMemory> defaultMemory = instance.getDefaultMemory();
+        assertTrue(defaultMemory.isPresent(), "Should have default memory");
+        LOGGER.info("Default memory found with size: " + defaultMemory.get().getSize() + " pages");
+      }
     }
   }
 
@@ -668,38 +690,48 @@ public final class ModuleInstanceTest {
   @DisplayName("Resource Lifecycle Tests")
   class ResourceLifecycleTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should close instance before module")
-    void shouldCloseInstanceBeforeModule() throws Exception {
-      LOGGER.info("Testing resource closure order");
+    void shouldCloseInstanceBeforeModule(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing resource closure order [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      final Instance instance = module.instantiate(store);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore()) {
 
-      assertTrue(instance.isValid(), "Instance should be valid before close");
-      assertTrue(module.isValid(), "Module should be valid before close");
+        final Module module = engine.compileModule(ADD_WASM);
+        final Instance instance = module.instantiate(store);
 
-      instance.close();
-      LOGGER.info("Instance closed");
+        assertTrue(instance.isValid(), "Instance should be valid before close");
+        assertTrue(module.isValid(), "Module should be valid before close");
 
-      module.close();
-      LOGGER.info("Module closed");
+        instance.close();
+        LOGGER.info("Instance closed");
+
+        module.close();
+        LOGGER.info("Module closed");
+      }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should invalidate instance after close")
-    void shouldInvalidateInstanceAfterClose() throws Exception {
-      LOGGER.info("Testing instance invalidation after close");
+    void shouldInvalidateInstanceAfterClose(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing instance invalidation after close [" + runtime + "]");
 
-      final Module module = engine.compileModule(ADD_WASM);
-      resources.add(module);
+      try (final Engine engine = Engine.create();
+          final Store store = engine.createStore();
+          final Module module = engine.compileModule(ADD_WASM)) {
 
-      final Instance instance = module.instantiate(store);
-      assertTrue(instance.isValid(), "Instance should be valid before close");
+        final Instance instance = module.instantiate(store);
+        assertTrue(instance.isValid(), "Instance should be valid before close");
 
-      instance.close();
-      assertFalse(instance.isValid(), "Instance should be invalid after close");
-      LOGGER.info("Instance correctly invalidated after close");
+        instance.close();
+        assertFalse(instance.isValid(), "Instance should be invalid after close");
+        LOGGER.info("Instance correctly invalidated after close");
+      }
     }
   }
 }

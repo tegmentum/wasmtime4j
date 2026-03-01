@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -26,20 +25,18 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.TrapException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for resource exhaustion handling.
@@ -49,14 +46,10 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("Resource Exhaustion Tests")
 @Tag("integration")
-class ResourceExhaustionTest {
+class ResourceExhaustionTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ResourceExhaustionTest.class.getName());
 
-  private static boolean runtimeAvailable;
-  private static String unavailableReason;
-
-  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
 
@@ -185,35 +178,6 @@ class ResourceExhaustionTest {
         0x0B // end
       };
 
-  @BeforeAll
-  static void checkRuntimeAvailability() {
-    LOGGER.info("Checking runtime availability for resource exhaustion tests");
-    try {
-      runtimeAvailable =
-          WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI)
-              || WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
-      LOGGER.info("Runtime available: " + runtimeAvailable);
-    } catch (final Exception e) {
-      unavailableReason = "Failed to check runtime: " + e.getMessage();
-      LOGGER.warning(unavailableReason);
-    }
-  }
-
-  @BeforeEach
-  void setUp() {
-    assumeTrue(runtimeAvailable, "Runtime not available: " + unavailableReason);
-
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-      store = engine.createStore();
-      LOGGER.info("Test runtime setup complete");
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to set up runtime: " + e.getMessage());
-      assumeTrue(false, "Runtime setup failed: " + e.getMessage());
-    }
-  }
-
   @AfterEach
   void tearDown() {
     if (store != null) {
@@ -230,22 +194,22 @@ class ResourceExhaustionTest {
         LOGGER.warning("Error closing engine: " + e.getMessage());
       }
     }
-    if (runtime != null) {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing runtime: " + e.getMessage());
-      }
-    }
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Memory Exhaustion Tests")
   class MemoryExhaustionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return -1 when memory growth exceeds limit")
-    void shouldReturnNegativeOneWhenMemoryGrowthExceedsLimit() throws Exception {
+    void shouldReturnNegativeOneWhenMemoryGrowthExceedsLimit(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_GROW_WASM);
 
       try {
@@ -266,9 +230,14 @@ class ResourceExhaustionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should successfully grow memory within limits")
-    void shouldSuccessfullyGrowMemoryWithinLimits() throws Exception {
+    void shouldSuccessfullyGrowMemoryWithinLimits(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_GROW_WASM);
 
       try {
@@ -294,9 +263,15 @@ class ResourceExhaustionTest {
   @DisplayName("Table Growth Limit Tests")
   class TableGrowthLimitTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return -1 when table growth exceeds limit")
-    void shouldReturnNegativeOneWhenTableGrowthExceedsLimit() throws Exception {
+    void shouldReturnNegativeOneWhenTableGrowthExceedsLimit(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       // Create a table with limited size
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, 5, 10);
 
@@ -312,9 +287,14 @@ class ResourceExhaustionTest {
       assertThat(result).isEqualTo(-1);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should successfully grow table within limits")
-    void shouldSuccessfullyGrowTableWithinLimits() throws Exception {
+    void shouldSuccessfullyGrowTableWithinLimits(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, 5, 10);
 
       assertThat(table).isNotNull();
@@ -335,9 +315,14 @@ class ResourceExhaustionTest {
   @DisplayName("Stack Overflow Tests")
   class StackOverflowTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should trap on stack overflow from infinite recursion")
-    void shouldTrapOnStackOverflow() throws Exception {
+    void shouldTrapOnStackOverflow(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(STACK_OVERFLOW_WASM);
 
       try {
@@ -433,9 +418,14 @@ class ResourceExhaustionTest {
           0x0B // end
         };
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should trap on out of bounds memory read")
-    void shouldTrapOnOutOfBoundsMemoryRead() throws Exception {
+    void shouldTrapOnOutOfBoundsMemoryRead(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(OOB_READ_WASM);
 
       try {

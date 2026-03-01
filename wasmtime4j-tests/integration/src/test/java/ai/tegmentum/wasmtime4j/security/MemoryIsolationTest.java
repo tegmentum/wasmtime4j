@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -27,18 +26,16 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.TrapException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Security tests for memory isolation.
@@ -49,14 +46,10 @@ import org.junit.jupiter.api.Test;
 @DisplayName("Memory Isolation Tests")
 @Tag("integration")
 @Tag("security")
-class MemoryIsolationTest {
+class MemoryIsolationTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(MemoryIsolationTest.class.getName());
 
-  private static boolean runtimeAvailable;
-  private static String unavailableReason;
-
-  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
 
@@ -214,35 +207,6 @@ class MemoryIsolationTest {
         0x0B // end
       };
 
-  @BeforeAll
-  static void checkRuntimeAvailability() {
-    LOGGER.info("Checking runtime availability for memory isolation tests");
-    try {
-      runtimeAvailable =
-          WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI)
-              || WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
-      LOGGER.info("Runtime available: " + runtimeAvailable);
-    } catch (final Exception e) {
-      unavailableReason = "Failed to check runtime: " + e.getMessage();
-      LOGGER.warning(unavailableReason);
-    }
-  }
-
-  @BeforeEach
-  void setUp() {
-    assumeTrue(runtimeAvailable, "Runtime not available: " + unavailableReason);
-
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-      store = engine.createStore();
-      LOGGER.info("Test runtime setup complete");
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to set up runtime: " + e.getMessage());
-      assumeTrue(false, "Runtime setup failed: " + e.getMessage());
-    }
-  }
-
   @AfterEach
   void tearDown() {
     if (store != null) {
@@ -259,22 +223,21 @@ class MemoryIsolationTest {
         LOGGER.warning("Error closing engine: " + e.getMessage());
       }
     }
-    if (runtime != null) {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing runtime: " + e.getMessage());
-      }
-    }
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Memory Bounds Enforcement Tests")
   class MemoryBoundsEnforcementTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enforce memory bounds on read operations")
-    void shouldEnforceMemoryBoundsOnRead() throws Exception {
+    void shouldEnforceMemoryBoundsOnRead(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_BOUNDS_WASM);
 
       try {
@@ -305,9 +268,14 @@ class MemoryIsolationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enforce memory bounds on write operations")
-    void shouldEnforceMemoryBoundsOnWrite() throws Exception {
+    void shouldEnforceMemoryBoundsOnWrite(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_BOUNDS_WASM);
 
       try {
@@ -342,9 +310,14 @@ class MemoryIsolationTest {
   @DisplayName("Instance Memory Isolation Tests")
   class InstanceMemoryIsolationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should isolate memory between different instances")
-    void shouldIsolateMemoryBetweenInstances() throws Exception {
+    void shouldIsolateMemoryBetweenInstances(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_BOUNDS_WASM);
 
       try {
@@ -376,9 +349,14 @@ class MemoryIsolationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should isolate memory between stores")
-    void shouldIsolateMemoryBetweenStores() throws Exception {
+    void shouldIsolateMemoryBetweenStores(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_BOUNDS_WASM);
 
       try (Store store2 = engine.createStore()) {
@@ -408,9 +386,14 @@ class MemoryIsolationTest {
   @DisplayName("Host Memory Protection Tests")
   class HostMemoryProtectionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should prevent WASM from accessing host memory")
-    void shouldPreventWasmFromAccessingHostMemory() throws Exception {
+    void shouldPreventWasmFromAccessingHostMemory(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_BOUNDS_WASM);
 
       try {
@@ -430,9 +413,14 @@ class MemoryIsolationTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should validate all memory operations")
-    void shouldValidateAllMemoryOperations() throws Exception {
+    void shouldValidateAllMemoryOperations(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(MEMORY_BOUNDS_WASM);
 
       try {
@@ -467,9 +455,14 @@ class MemoryIsolationTest {
   @DisplayName("Memory Zeroing Tests")
   class MemoryZeroingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should initialize memory to zeros")
-    void shouldInitializeMemoryToZeros() throws Exception {
+    void shouldInitializeMemoryToZeros(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(TWO_MEMORIES_WASM);
 
       try {

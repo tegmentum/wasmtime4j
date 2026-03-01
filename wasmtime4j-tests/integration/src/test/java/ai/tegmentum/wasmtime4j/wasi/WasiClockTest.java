@@ -17,26 +17,23 @@
 package ai.tegmentum.wasmtime4j.wasi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WASI clock operations.
@@ -52,7 +49,7 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("WASI Clock Integration Tests")
 @Tag("integration")
-class WasiClockTest {
+class WasiClockTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiClockTest.class.getName());
 
@@ -109,70 +106,12 @@ class WasiClockTest {
           + "    i64.load)\n"
           + ")";
 
-  private static boolean wasiClockAvailable = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
-
+  private Engine engine;
   private Store store;
   private WasiContext wasiContext;
   private Module module;
   private Instance instance;
   private Linker<WasiContext> linker;
-
-  @BeforeAll
-  static void checkWasiClockAvailable() {
-    LOGGER.info("Checking WASI clock availability");
-    try {
-      sharedRuntime = WasmRuntimeFactory.create();
-      sharedEngine = sharedRuntime.createEngine();
-
-      // Check if WASI is available by trying to compile the clock module
-      final Module testModule = sharedRuntime.compileModuleWat(sharedEngine, CLOCK_MODULE_WAT);
-      testModule.close();
-
-      wasiClockAvailable = true;
-      LOGGER.info("WASI clock is available");
-    } catch (final Exception e) {
-      LOGGER.warning("WASI clock not available: " + e.getMessage());
-      wasiClockAvailable = false;
-    }
-  }
-
-  @AfterAll
-  static void cleanupSharedResources() {
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing shared engine: " + e.getMessage());
-      }
-    }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing shared runtime: " + e.getMessage());
-      }
-    }
-  }
-
-  @BeforeEach
-  void setUp() throws Exception {
-    assumeTrue(wasiClockAvailable, "WASI clock must be available for these tests");
-
-    LOGGER.info("Setting up clock test resources");
-
-    wasiContext = WasiContext.create().inheritStdio();
-
-    store = sharedRuntime.createStore(sharedEngine);
-    module = sharedRuntime.compileModuleWat(sharedEngine, CLOCK_MODULE_WAT);
-
-    // Link WASI and instantiate
-    linker = WasiLinkerUtils.createLinker(sharedEngine, wasiContext);
-    instance = linker.instantiate(store, module);
-
-    LOGGER.info("Clock test resources created");
-  }
 
   @AfterEach
   void tearDown() {
@@ -182,6 +121,8 @@ class WasiClockTest {
     closeQuietly(linker, "linker");
     closeQuietly(module, "module");
     closeQuietly(store, "store");
+    closeQuietly(engine, "engine");
+    clearRuntimeSelection();
   }
 
   private void closeQuietly(final AutoCloseable resource, final String name) {
@@ -195,13 +136,34 @@ class WasiClockTest {
     }
   }
 
+  private void setUpClockResources(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+
+    LOGGER.info("Setting up clock test resources");
+
+    engine = Engine.create();
+    wasiContext = WasiContext.create().inheritStdio();
+
+    store = engine.createStore();
+    module = engine.compileWat(CLOCK_MODULE_WAT);
+
+    // Link WASI and instantiate
+    linker = WasiLinkerUtils.createLinker(engine, wasiContext);
+    instance = linker.instantiate(store, module);
+
+    LOGGER.info("Clock test resources created");
+  }
+
   @Nested
   @DisplayName("Realtime Clock Tests")
   class RealtimeClockTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return positive realtime clock value")
-    void shouldReturnPositiveRealtimeValue() throws Exception {
+    void shouldReturnPositiveRealtimeValue(final RuntimeType runtime) throws Exception {
+      setUpClockResources(runtime);
+
       final WasmFunction getRealtime = instance.getFunction("get_realtime").orElseThrow();
       final WasmValue[] result = getRealtime.call();
 
@@ -214,9 +176,12 @@ class WasiClockTest {
       assertThat(timeNanos).isGreaterThan(1577836800000000000L);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return increasing realtime clock values")
-    void shouldReturnIncreasingRealtimeValues() throws Exception {
+    void shouldReturnIncreasingRealtimeValues(final RuntimeType runtime) throws Exception {
+      setUpClockResources(runtime);
+
       final WasmFunction getRealtime = instance.getFunction("get_realtime").orElseThrow();
 
       final WasmValue[] result1 = getRealtime.call();
@@ -235,9 +200,12 @@ class WasiClockTest {
       assertThat(time2).isGreaterThan(time1);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return realtime clock resolution")
-    void shouldReturnRealtimeClockResolution() throws Exception {
+    void shouldReturnRealtimeClockResolution(final RuntimeType runtime) throws Exception {
+      setUpClockResources(runtime);
+
       final WasmFunction getResolution =
           instance.getFunction("get_realtime_resolution").orElseThrow();
       final WasmValue[] result = getResolution.call();
@@ -256,9 +224,12 @@ class WasiClockTest {
   @DisplayName("Monotonic Clock Tests")
   class MonotonicClockTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return positive monotonic clock value")
-    void shouldReturnPositiveMonotonicValue() throws Exception {
+    void shouldReturnPositiveMonotonicValue(final RuntimeType runtime) throws Exception {
+      setUpClockResources(runtime);
+
       final WasmFunction getMonotonic = instance.getFunction("get_monotonic").orElseThrow();
       final WasmValue[] result = getMonotonic.call();
 
@@ -270,9 +241,12 @@ class WasiClockTest {
       assertThat(timeNanos).isGreaterThanOrEqualTo(0);
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return monotonically increasing values")
-    void shouldReturnMonotonicallyIncreasingValues() throws Exception {
+    void shouldReturnMonotonicallyIncreasingValues(final RuntimeType runtime) throws Exception {
+      setUpClockResources(runtime);
+
       final WasmFunction getMonotonic = instance.getFunction("get_monotonic").orElseThrow();
 
       long previousTime = 0;
@@ -288,9 +262,12 @@ class WasiClockTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should return monotonic clock resolution")
-    void shouldReturnMonotonicClockResolution() throws Exception {
+    void shouldReturnMonotonicClockResolution(final RuntimeType runtime) throws Exception {
+      setUpClockResources(runtime);
+
       final WasmFunction getResolution =
           instance.getFunction("get_monotonic_resolution").orElseThrow();
       final WasmValue[] result = getResolution.call();
@@ -304,9 +281,12 @@ class WasiClockTest {
       assertThat(resolution).isLessThanOrEqualTo(1000000000L); // At most 1 second
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should measure elapsed time accurately")
-    void shouldMeasureElapsedTimeAccurately() throws Exception {
+    void shouldMeasureElapsedTimeAccurately(final RuntimeType runtime) throws Exception {
+      setUpClockResources(runtime);
+
       final WasmFunction getMonotonic = instance.getFunction("get_monotonic").orElseThrow();
 
       final WasmValue[] startResult = getMonotonic.call();
@@ -334,9 +314,12 @@ class WasiClockTest {
   @DisplayName("Clock Comparison Tests")
   class ClockComparisonTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("realtime clock should be larger than monotonic (epoch vs uptime)")
-    void realtimeShouldBeLargerThanMonotonic() throws Exception {
+    void realtimeShouldBeLargerThanMonotonic(final RuntimeType runtime) throws Exception {
+      setUpClockResources(runtime);
+
       final WasmFunction getRealtime = instance.getFunction("get_realtime").orElseThrow();
       final WasmFunction getMonotonic = instance.getFunction("get_monotonic").orElseThrow();
 

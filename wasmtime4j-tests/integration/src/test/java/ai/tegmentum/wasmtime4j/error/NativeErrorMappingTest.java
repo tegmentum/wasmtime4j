@@ -18,7 +18,6 @@ package ai.tegmentum.wasmtime4j.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -26,18 +25,16 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.exception.TrapException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for native error mapping.
@@ -47,14 +44,10 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("Native Error Mapping Tests")
 @Tag("integration")
-class NativeErrorMappingTest {
+class NativeErrorMappingTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(NativeErrorMappingTest.class.getName());
 
-  private static boolean runtimeAvailable;
-  private static String unavailableReason;
-
-  private WasmRuntime runtime;
   private Engine engine;
   private Store store;
 
@@ -191,35 +184,6 @@ class NativeErrorMappingTest {
         0x0B // end
       };
 
-  @BeforeAll
-  static void checkRuntimeAvailability() {
-    LOGGER.info("Checking runtime availability for error mapping tests");
-    try {
-      runtimeAvailable =
-          WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.JNI)
-              || WasmRuntimeFactory.isRuntimeAvailable(RuntimeType.PANAMA);
-      LOGGER.info("Runtime available: " + runtimeAvailable);
-    } catch (final Exception e) {
-      unavailableReason = "Failed to check runtime: " + e.getMessage();
-      LOGGER.warning(unavailableReason);
-    }
-  }
-
-  @BeforeEach
-  void setUp() {
-    assumeTrue(runtimeAvailable, "Runtime not available: " + unavailableReason);
-
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-      store = engine.createStore();
-      LOGGER.info("Test runtime setup complete");
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to set up runtime: " + e.getMessage());
-      assumeTrue(false, "Runtime setup failed: " + e.getMessage());
-    }
-  }
-
   @AfterEach
   void tearDown() {
     if (store != null) {
@@ -236,22 +200,21 @@ class NativeErrorMappingTest {
         LOGGER.warning("Error closing engine: " + e.getMessage());
       }
     }
-    if (runtime != null) {
-      try {
-        runtime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing runtime: " + e.getMessage());
-      }
-    }
+    clearRuntimeSelection();
   }
 
   @Nested
   @DisplayName("Module Compilation Error Tests")
   class ModuleCompilationErrorTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw ValidationException for invalid WASM magic")
-    void shouldThrowValidationExceptionForInvalidMagic() {
+    void shouldThrowValidationExceptionForInvalidMagic(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> engine.compileModule(INVALID_MAGIC_WASM))
           .isInstanceOf(WasmException.class)
           .satisfies(
@@ -262,9 +225,14 @@ class NativeErrorMappingTest {
               });
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw ValidationException for invalid WASM version")
-    void shouldThrowValidationExceptionForInvalidVersion() {
+    void shouldThrowValidationExceptionForInvalidVersion(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> engine.compileModule(INVALID_VERSION_WASM))
           .isInstanceOf(WasmException.class)
           .satisfies(
@@ -275,9 +243,14 @@ class NativeErrorMappingTest {
               });
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw CompilationException for truncated WASM")
-    void shouldThrowCompilationExceptionForTruncatedWasm() {
+    void shouldThrowCompilationExceptionForTruncatedWasm(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> engine.compileModule(TRUNCATED_WASM))
           .isInstanceOf(WasmException.class)
           .satisfies(
@@ -288,9 +261,14 @@ class NativeErrorMappingTest {
               });
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw appropriate exception for null WASM bytes")
-    void shouldThrowExceptionForNullWasm() {
+    void shouldThrowExceptionForNullWasm(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> engine.compileModule(null))
           .isInstanceOf(
               Exception.class) // Could be IllegalArgumentException or NullPointerException
@@ -301,9 +279,14 @@ class NativeErrorMappingTest {
               });
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw appropriate exception for empty WASM bytes")
-    void shouldThrowExceptionForEmptyWasm() {
+    void shouldThrowExceptionForEmptyWasm(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> engine.compileModule(new byte[0]))
           .isInstanceOf(WasmException.class)
           .satisfies(
@@ -319,9 +302,14 @@ class NativeErrorMappingTest {
   @DisplayName("Trap Error Mapping Tests")
   class TrapErrorMappingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw TrapException for unreachable instruction")
-    void shouldThrowTrapExceptionForUnreachable() throws Exception {
+    void shouldThrowTrapExceptionForUnreachable(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(TRAP_UNREACHABLE_WASM);
 
       try {
@@ -344,9 +332,14 @@ class NativeErrorMappingTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw TrapException for division by zero")
-    void shouldThrowTrapExceptionForDivisionByZero() throws Exception {
+    void shouldThrowTrapExceptionForDivisionByZero(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       final Module module = engine.compileModule(TRAP_DIV_ZERO_WASM);
 
       try {
@@ -374,9 +367,14 @@ class NativeErrorMappingTest {
   @DisplayName("Error Message Quality Tests")
   class ErrorMessageQualityTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should provide meaningful error messages for compilation failures")
-    void shouldProvideMeaningfulCompilationErrors() {
+    void shouldProvideMeaningfulCompilationErrors(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> engine.compileModule(INVALID_MAGIC_WASM))
           .isInstanceOf(WasmException.class)
           .satisfies(
@@ -389,9 +387,14 @@ class NativeErrorMappingTest {
               });
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should include context in error messages when available")
-    void shouldIncludeContextInErrorMessages() {
+    void shouldIncludeContextInErrorMessages(final RuntimeType runtime) {
+      setRuntime(runtime);
+      engine = Engine.create();
+      store = engine.createStore();
+
       assertThatThrownBy(() -> engine.compileModule(TRUNCATED_WASM))
           .isInstanceOf(WasmException.class)
           .satisfies(

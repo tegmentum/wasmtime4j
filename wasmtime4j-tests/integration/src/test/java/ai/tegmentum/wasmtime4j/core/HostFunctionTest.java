@@ -26,19 +26,24 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for Host function support.
@@ -48,7 +53,7 @@ import org.junit.jupiter.api.Test;
  * @since 1.0.0
  */
 @DisplayName("Host Function Integration Tests")
-public final class HostFunctionTest {
+public final class HostFunctionTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(HostFunctionTest.class.getName());
 
@@ -284,9 +289,9 @@ public final class HostFunctionTest {
 
         // Code section (id=10)
         0x0A,
-        0x06, // section id and size (6 bytes: 1 num_funcs + 1 body_size + 4 body)
+        0x06, // section id and size
         0x01, // number of functions
-        0x04, // function body size (4 bytes: 1 locals + 3 instructions)
+        0x04, // function body size
         0x00, // local count
         0x10,
         0x00, // call 0
@@ -400,14 +405,21 @@ public final class HostFunctionTest {
         0x0B // end
       };
 
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
+
   @Nested
   @DisplayName("Basic Host Function Tests")
   class BasicHostFunctionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create linker and define host function")
-    void shouldCreateLinkerAndDefineHostFunction() throws Exception {
-      LOGGER.info("Testing linker creation and host function definition");
+    void shouldCreateLinkerAndDefineHostFunction(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing linker creation and host function definition [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine)) {
@@ -435,10 +447,12 @@ public final class HostFunctionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call host function from WebAssembly")
-    void shouldCallHostFunctionFromWebAssembly() throws Exception {
-      LOGGER.info("Testing host function invocation from WebAssembly");
+    void shouldCallHostFunctionFromWebAssembly(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing host function invocation from WebAssembly [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine);
@@ -474,10 +488,12 @@ public final class HostFunctionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call host function with various integer values")
-    void shouldCallHostFunctionWithVariousIntegerValues() throws Exception {
-      LOGGER.info("Testing host function with various integer values");
+    void shouldCallHostFunctionWithVariousIntegerValues(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing host function with various integer values [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine);
@@ -522,10 +538,12 @@ public final class HostFunctionTest {
   @DisplayName("Void Host Function Tests")
   class VoidHostFunctionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call void host function with side effects")
-    void shouldCallVoidHostFunctionWithSideEffects() throws Exception {
-      LOGGER.info("Testing void host function with side effects");
+    void shouldCallVoidHostFunctionWithSideEffects(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing void host function with side effects [" + runtime + "]");
 
       final AtomicInteger loggedValue = new AtomicInteger(-1);
 
@@ -558,10 +576,12 @@ public final class HostFunctionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call void host function multiple times")
-    void shouldCallVoidHostFunctionMultipleTimes() throws Exception {
-      LOGGER.info("Testing void host function multiple calls");
+    void shouldCallVoidHostFunctionMultipleTimes(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing void host function multiple calls [" + runtime + "]");
 
       final AtomicInteger callCount = new AtomicInteger(0);
 
@@ -597,10 +617,12 @@ public final class HostFunctionTest {
   @DisplayName("Host Function Factory Method Tests")
   class HostFunctionFactoryMethodTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create single value host function")
-    void shouldCreateSingleValueHostFunction() throws Exception {
-      LOGGER.info("Testing single value host function factory");
+    void shouldCreateSingleValueHostFunction(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing single value host function factory [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine);
@@ -652,10 +674,12 @@ public final class HostFunctionTest {
   @DisplayName("Multiple Host Functions Tests")
   class MultipleHostFunctionsTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should define and call multiple host functions")
-    void shouldDefineAndCallMultipleHostFunctions() throws Exception {
-      LOGGER.info("Testing multiple host functions");
+    void shouldDefineAndCallMultipleHostFunctions(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing multiple host functions [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine);
@@ -700,10 +724,12 @@ public final class HostFunctionTest {
   @DisplayName("Linker Lifecycle Tests")
   class LinkerLifecycleTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should properly close linker")
-    void shouldProperlyCloseLinker() throws Exception {
-      LOGGER.info("Testing linker close");
+    void shouldProperlyCloseLinker(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing linker close [" + runtime + "]");
 
       final Linker<Void> linker;
       try (final Engine engine = Engine.create()) {
@@ -718,10 +744,12 @@ public final class HostFunctionTest {
       LOGGER.info("Linker close test completed");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle multiple close calls gracefully")
-    void shouldHandleMultipleCloseCallsGracefully() throws Exception {
-      LOGGER.info("Testing multiple linker close calls");
+    void shouldHandleMultipleCloseCallsGracefully(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing multiple linker close calls [" + runtime + "]");
 
       try (final Engine engine = Engine.create()) {
         final Linker<Void> linker = Linker.create(engine);
@@ -733,10 +761,12 @@ public final class HostFunctionTest {
       LOGGER.info("Multiple close calls handled gracefully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get engine from linker")
-    void shouldGetEngineFromLinker() throws Exception {
-      LOGGER.info("Testing engine retrieval from linker");
+    void shouldGetEngineFromLinker(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing engine retrieval from linker [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine)) {
@@ -753,10 +783,12 @@ public final class HostFunctionTest {
   @DisplayName("Linker Configuration Tests")
   class LinkerConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should allow shadowing when configured")
-    void shouldAllowShadowingWhenConfigured() throws Exception {
-      LOGGER.info("Testing linker shadowing configuration");
+    void shouldAllowShadowingWhenConfigured(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing linker shadowing configuration [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine)) {
@@ -782,10 +814,12 @@ public final class HostFunctionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should check if import is defined")
-    void shouldCheckIfImportIsDefined() throws Exception {
-      LOGGER.info("Testing hasImport check");
+    void shouldCheckIfImportIsDefined(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing hasImport check [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine)) {
@@ -807,10 +841,12 @@ public final class HostFunctionTest {
   @DisplayName("Host Function Exception Handling Tests")
   class HostFunctionExceptionHandlingTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should propagate exception from host function as trap")
-    void shouldPropagateExceptionFromHostFunctionAsTrap() throws Exception {
-      LOGGER.info("Testing host function exception propagation");
+    void shouldPropagateExceptionFromHostFunctionAsTrap(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      LOGGER.info("Testing host function exception propagation [" + runtime + "]");
 
       try (final Engine engine = Engine.create();
           final Linker<Void> linker = Linker.create(engine);

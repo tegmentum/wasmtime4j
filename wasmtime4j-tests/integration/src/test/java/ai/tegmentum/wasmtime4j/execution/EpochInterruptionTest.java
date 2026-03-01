@@ -27,6 +27,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
@@ -34,6 +35,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -43,10 +45,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for epoch-based interruption functionality.
@@ -58,11 +61,9 @@ import org.junit.jupiter.api.Test;
  */
 @DisplayName("Epoch Interruption Integration Tests")
 @SuppressWarnings("deprecation")
-public final class EpochInterruptionTest {
+public class EpochInterruptionTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(EpochInterruptionTest.class.getName());
-
-  private static boolean epochInterruptionAvailable = false;
 
   /** Simple WebAssembly module that exports an add function. */
   private static final byte[] ADD_WASM =
@@ -169,17 +170,21 @@ public final class EpochInterruptionTest {
         0x0B // end
       };
 
-  @BeforeAll
-  static void checkEpochInterruptionAvailable() {
+  @AfterEach
+  void tearDown() {
+    clearRuntimeSelection();
+  }
+
+  private boolean checkEpochInterruptionAvailable(final RuntimeType runtime) {
     try {
+      setRuntime(runtime);
       final EngineConfig config = new EngineConfig().epochInterruption(true);
       try (final Engine engine = Engine.create(config)) {
-        epochInterruptionAvailable = engine.isEpochInterruptionEnabled();
-        LOGGER.info("Epoch interruption available: " + epochInterruptionAvailable);
+        return engine.isEpochInterruptionEnabled();
       }
     } catch (final Exception e) {
       LOGGER.warning("Epoch interruption not available: " + e.getMessage());
-      epochInterruptionAvailable = false;
+      return false;
     }
   }
 
@@ -187,10 +192,12 @@ public final class EpochInterruptionTest {
   @DisplayName("Epoch Configuration Tests")
   class EpochConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should enable epoch interruption via engine config")
-    void shouldEnableEpochInterruptionViaEngineConfig() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldEnableEpochInterruptionViaEngineConfig(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch interruption enablement");
 
@@ -203,9 +210,12 @@ public final class EpochInterruptionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should not enable epoch interruption by default")
-    void shouldNotEnableEpochInterruptionByDefault() throws Exception {
+    void shouldNotEnableEpochInterruptionByDefault(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+
       LOGGER.info("Testing default epoch interruption configuration");
 
       final EngineConfig config = new EngineConfig();
@@ -221,10 +231,12 @@ public final class EpochInterruptionTest {
   @DisplayName("Epoch Deadline Tests")
   class EpochDeadlineTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should set epoch deadline on store")
-    void shouldSetEpochDeadlineOnStore() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldSetEpochDeadlineOnStore(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch deadline setting");
 
@@ -240,10 +252,12 @@ public final class EpochInterruptionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure epoch deadline trap")
-    void shouldConfigureEpochDeadlineTrap() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldConfigureEpochDeadlineTrap(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch deadline trap configuration");
 
@@ -252,13 +266,8 @@ public final class EpochInterruptionTest {
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
 
-        try {
-          store.epochDeadlineTrap();
-          LOGGER.info("Successfully configured epoch deadline trap");
-        } catch (final UnsatisfiedLinkError e) {
-          LOGGER.warning("Native method not implemented: " + e.getMessage());
-          assumeTrue(false, "Native method not implemented: " + e.getMessage());
-        }
+        store.epochDeadlineTrap();
+        LOGGER.info("Successfully configured epoch deadline trap");
       }
     }
   }
@@ -267,10 +276,12 @@ public final class EpochInterruptionTest {
   @DisplayName("Epoch Increment Tests")
   class EpochIncrementTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should increment epoch on engine")
-    void shouldIncrementEpochOnEngine() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldIncrementEpochOnEngine(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch increment");
 
@@ -288,10 +299,12 @@ public final class EpochInterruptionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should be thread-safe when incrementing epoch")
-    void shouldBeThreadSafeWhenIncrementingEpoch() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldBeThreadSafeWhenIncrementingEpoch(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing thread-safe epoch increment");
 
@@ -333,26 +346,17 @@ public final class EpochInterruptionTest {
   @DisplayName("Epoch Interruption Tests")
   class EpochInterruptionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should interrupt execution when epoch deadline is reached")
-    void shouldInterruptExecutionWhenEpochDeadlineIsReached() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldInterruptExecutionWhenEpochDeadlineIsReached(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing execution interruption at epoch deadline");
 
       final EngineConfig config = new EngineConfig().epochInterruption(true);
-
-      Module module;
-      try (final Engine engine = Engine.create(config)) {
-        try {
-          module = engine.compileModule(LOOP_WASM);
-        } catch (final Exception e) {
-          LOGGER.warning(
-              "WASM compilation failed - test bytecode may need updating: " + e.getMessage());
-          assumeTrue(false, "WASM bytecode compilation failed: " + e.getMessage());
-          return;
-        }
-      }
 
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore();
@@ -361,13 +365,7 @@ public final class EpochInterruptionTest {
 
         // Set a very short deadline
         store.setEpochDeadline(1L);
-        try {
-          store.epochDeadlineTrap();
-        } catch (final UnsatisfiedLinkError e) {
-          LOGGER.warning("Native method not implemented: " + e.getMessage());
-          assumeTrue(false, "epochDeadlineTrap native method not available");
-          return;
-        }
+        store.epochDeadlineTrap();
 
         // Start a thread to increment the epoch
         final Thread incrementer =
@@ -399,10 +397,13 @@ public final class EpochInterruptionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should not interrupt when epoch deadline is not reached")
-    void shouldNotInterruptWhenEpochDeadlineIsNotReached() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldNotInterruptWhenEpochDeadlineIsNotReached(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing execution without interruption");
 
@@ -432,10 +433,12 @@ public final class EpochInterruptionTest {
   @DisplayName("Epoch Callback Tests")
   class EpochCallbackTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should invoke epoch deadline callback")
-    void shouldInvokeEpochDeadlineCallback() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldInvokeEpochDeadlineCallback(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch deadline callback");
 
@@ -446,28 +449,25 @@ public final class EpochInterruptionTest {
 
         final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
 
-        try {
-          store.epochDeadlineCallback(
-              epoch -> {
-                LOGGER.info("Epoch deadline callback invoked, epoch: " + epoch);
-                callbackInvoked.set(true);
-                return Store.EpochDeadlineAction.trap();
-              });
+        store.epochDeadlineCallback(
+            epoch -> {
+              LOGGER.info("Epoch deadline callback invoked, epoch: " + epoch);
+              callbackInvoked.set(true);
+              return Store.EpochDeadlineAction.trap();
+            });
 
-          store.setEpochDeadline(1L);
+        store.setEpochDeadline(1L);
 
-          LOGGER.info("Epoch deadline callback configured");
-        } catch (final UnsatisfiedLinkError e) {
-          LOGGER.warning("Native method not implemented: " + e.getMessage());
-          assumeTrue(false, "Native method not implemented: " + e.getMessage());
-        }
+        LOGGER.info("Epoch deadline callback configured");
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle epoch deadline action continue")
-    void shouldHandleEpochDeadlineActionContinue() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldHandleEpochDeadlineActionContinue(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch deadline action continue");
 
@@ -479,10 +479,12 @@ public final class EpochInterruptionTest {
       LOGGER.info("Continue action correctly configured");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle epoch deadline action trap")
-    void shouldHandleEpochDeadlineActionTrap() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldHandleEpochDeadlineActionTrap(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch deadline action trap");
 
@@ -493,10 +495,13 @@ public final class EpochInterruptionTest {
       LOGGER.info("Trap action correctly configured");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should complete finite loop when callback continues execution")
-    void shouldCompleteFiniteLoopWhenCallbackContinuesExecution() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldCompleteFiniteLoopWhenCallbackContinuesExecution(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch callback continuation allows loop to complete");
 
@@ -529,19 +534,13 @@ public final class EpochInterruptionTest {
         final int targetCount = 100000;
 
         // Set callback that continues execution with more ticks
-        try {
-          store.epochDeadlineCallback(
-              epoch -> {
-                final int count = callbackCount.incrementAndGet();
-                LOGGER.fine("Epoch callback invoked, count: " + count);
-                // Continue with 10 more ticks (low value to trigger more callbacks)
-                return Store.EpochDeadlineAction.continueWith(10);
-              });
-        } catch (final UnsatisfiedLinkError e) {
-          LOGGER.warning("Native method not implemented: " + e.getMessage());
-          assumeTrue(false, "epochDeadlineCallback native method not available");
-          return;
-        }
+        store.epochDeadlineCallback(
+            epoch -> {
+              final int count = callbackCount.incrementAndGet();
+              LOGGER.fine("Epoch callback invoked, count: " + count);
+              // Continue with 10 more ticks (low value to trigger more callbacks)
+              return Store.EpochDeadlineAction.continueWith(10);
+            });
 
         // Thread to increment epochs rapidly
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -567,44 +566,18 @@ public final class EpochInterruptionTest {
           final Optional<WasmFunction> countFunc = instance.getFunction("count_to");
           assertTrue(countFunc.isPresent(), "Should have count_to function");
 
-          // Execute the counting loop - may either complete or trap
-          try {
-            final WasmValue[] result = countFunc.get().call(WasmValue.i32(targetCount));
+          // Execute the counting loop
+          final WasmValue[] result = countFunc.get().call(WasmValue.i32(targetCount));
 
-            assertNotNull(result, "Result should not be null");
-            assertEquals(1, result.length, "Should have one result");
-            assertEquals(targetCount, result[0].asInt(), "Counter should reach target value");
+          assertNotNull(result, "Result should not be null");
+          assertEquals(1, result.length, "Should have one result");
+          assertEquals(targetCount, result[0].asInt(), "Counter should reach target value");
 
-            LOGGER.info(
-                "Loop completed successfully. Callback invoked "
-                    + callbackCount.get()
-                    + " times, final count: "
-                    + result[0].asInt());
-          } catch (final WasmException e) {
-            // If epoch callback continuation is not fully implemented, we get a trap
-            // This is expected behavior until the feature is complete
-            if (e.getMessage() != null && e.getMessage().contains("interrupt")) {
-              LOGGER.info(
-                  "Epoch interrupted execution. Callback invoked "
-                      + callbackCount.get()
-                      + " times before trap.");
-              // If callback was invoked but didn't continue, the continuation may not be working
-              if (callbackCount.get() > 0) {
-                LOGGER.warning(
-                    "Callback was invoked but did not continue execution - "
-                        + "epoch callback continuation may not be fully implemented");
-              } else {
-                LOGGER.info(
-                    "Callback was not invoked before trap - " + "default trap behavior occurred");
-              }
-              // Skip test if callback continuation is not working
-              assumeTrue(
-                  false,
-                  "Epoch callback continuation not fully implemented - "
-                      + "execution trapped instead of continuing");
-            }
-            throw e;
-          }
+          LOGGER.info(
+              "Loop completed successfully. Callback invoked "
+                  + callbackCount.get()
+                  + " times, final count: "
+                  + result[0].asInt());
         } finally {
           running.set(false);
           epochIncrementer.interrupt();
@@ -613,10 +586,13 @@ public final class EpochInterruptionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle exception thrown by epoch callback gracefully")
-    void shouldHandleExceptionThrownByEpochCallbackGracefully() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldHandleExceptionThrownByEpochCallbackGracefully(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch callback exception handling");
 
@@ -640,18 +616,12 @@ public final class EpochInterruptionTest {
         final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
 
         // Set callback that throws an exception
-        try {
-          store.epochDeadlineCallback(
-              epoch -> {
-                callbackInvoked.set(true);
-                LOGGER.info("Epoch callback throwing exception");
-                throw new RuntimeException("Test exception from epoch callback");
-              });
-        } catch (final UnsatisfiedLinkError e) {
-          LOGGER.warning("Native method not implemented: " + e.getMessage());
-          assumeTrue(false, "epochDeadlineCallback native method not available");
-          return;
-        }
+        store.epochDeadlineCallback(
+            epoch -> {
+              callbackInvoked.set(true);
+              LOGGER.info("Epoch callback throwing exception");
+              throw new RuntimeException("Test exception from epoch callback");
+            });
 
         // Thread to increment epochs rapidly
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -701,10 +671,12 @@ public final class EpochInterruptionTest {
   @DisplayName("Async Epoch Configuration Tests")
   class AsyncEpochConfigurationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should configure async yield and update")
-    void shouldConfigureAsyncYieldAndUpdate() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldConfigureAsyncYieldAndUpdate(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing async epoch yield and update configuration");
 
@@ -713,21 +685,8 @@ public final class EpochInterruptionTest {
       try (final Engine engine = Engine.create(config);
           final Store store = engine.createStore()) {
 
-        try {
-          store.epochDeadlineAsyncYieldAndUpdate(50L);
-          LOGGER.info("Successfully configured async epoch yield and update");
-        } catch (final UnsatisfiedLinkError e) {
-          LOGGER.warning("Native method not implemented: " + e.getMessage());
-          assumeTrue(false, "Native method not implemented: " + e.getMessage());
-        } catch (final ai.tegmentum.wasmtime4j.exception.WasmException e) {
-          // Async support not fully implemented in native bindings yet
-          if (e.getMessage() != null && e.getMessage().contains("async support")) {
-            LOGGER.warning("Async support not implemented: " + e.getMessage());
-            assumeTrue(false, "Async support not implemented in native bindings");
-          } else {
-            throw e;
-          }
-        }
+        store.epochDeadlineAsyncYieldAndUpdate(50L);
+        LOGGER.info("Successfully configured async epoch yield and update");
       }
     }
   }
@@ -736,10 +695,12 @@ public final class EpochInterruptionTest {
   @DisplayName("Epoch Boundary Condition Tests")
   class EpochBoundaryConditionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle zero epoch deadline")
-    void shouldHandleZeroEpochDeadline() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldHandleZeroEpochDeadline(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing zero epoch deadline");
 
@@ -754,10 +715,12 @@ public final class EpochInterruptionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle large epoch deadline")
-    void shouldHandleLargeEpochDeadline() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldHandleLargeEpochDeadline(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing large epoch deadline");
 
@@ -773,10 +736,12 @@ public final class EpochInterruptionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle rapid epoch increments")
-    void shouldHandleRapidEpochIncrements() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldHandleRapidEpochIncrements(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing rapid epoch increments");
 
@@ -796,10 +761,12 @@ public final class EpochInterruptionTest {
   @DisplayName("Combined Fuel and Epoch Tests")
   class CombinedFuelAndEpochTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should work with both fuel and epoch enabled")
-    void shouldWorkWithBothFuelAndEpochEnabled() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldWorkWithBothFuelAndEpochEnabled(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing combined fuel and epoch configuration");
 
@@ -829,10 +796,12 @@ public final class EpochInterruptionTest {
   @DisplayName("Epoch and Host Function Interaction Tests")
   class EpochHostFunctionInteractionTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should not interrupt host function execution")
-    void shouldNotInterruptHostFunctionExecution() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldNotInterruptHostFunctionExecution(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch behavior during host function execution");
 
@@ -885,19 +854,13 @@ public final class EpochInterruptionTest {
         final Instance instance = linker.instantiate(store, module);
 
         // Configure callback to continue execution
-        try {
-          store.epochDeadlineCallback(
-              epoch -> {
-                epochCallbackCount.incrementAndGet();
-                LOGGER.info("Epoch callback invoked, count: " + epochCallbackCount.get());
-                // Continue with more ticks
-                return Store.EpochDeadlineAction.continueWith(1000);
-              });
-        } catch (final UnsatisfiedLinkError e) {
-          LOGGER.warning("Native method not implemented: " + e.getMessage());
-          assumeTrue(false, "epochDeadlineCallback native method not available");
-          return;
-        }
+        store.epochDeadlineCallback(
+            epoch -> {
+              epochCallbackCount.incrementAndGet();
+              LOGGER.info("Epoch callback invoked, count: " + epochCallbackCount.get());
+              // Continue with more ticks
+              return Store.EpochDeadlineAction.continueWith(1000);
+            });
 
         // Set deadline AFTER configuring callback
         store.setEpochDeadline(1L);
@@ -926,31 +889,18 @@ public final class EpochInterruptionTest {
           final Optional<WasmFunction> callSlowAdd = instance.getFunction("call_slow_add");
           assertTrue(callSlowAdd.isPresent(), "Should have call_slow_add function");
 
-          // Call the function - may complete or trap depending on callback implementation
-          try {
-            final WasmValue[] result = callSlowAdd.get().call(WasmValue.i32(10), WasmValue.i32(20));
+          // Call the function
+          final WasmValue[] result = callSlowAdd.get().call(WasmValue.i32(10), WasmValue.i32(20));
 
-            assertNotNull(result, "Result should not be null");
-            assertEquals(1, result.length, "Should have one result");
-            assertEquals(30, result[0].asInt(), "10 + 20 should equal 30");
+          assertNotNull(result, "Result should not be null");
+          assertEquals(1, result.length, "Should have one result");
+          assertEquals(30, result[0].asInt(), "10 + 20 should equal 30");
 
-            assertTrue(hostFunctionStarted.get(), "Host function should have started");
-            assertTrue(hostFunctionCompleted.get(), "Host function should have completed");
+          assertTrue(hostFunctionStarted.get(), "Host function should have started");
+          assertTrue(hostFunctionCompleted.get(), "Host function should have completed");
 
-            LOGGER.info(
-                "Host function completed successfully. Epoch callbacks: "
-                    + epochCallbackCount.get());
-          } catch (final WasmException e) {
-            if (e.getMessage() != null && e.getMessage().contains("interrupt")) {
-              LOGGER.info(
-                  "Epoch interrupted execution. Callback count: " + epochCallbackCount.get());
-              assumeTrue(
-                  false,
-                  "Epoch callback continuation not fully implemented - "
-                      + "test requires callback to continue execution");
-            }
-            throw e;
-          }
+          LOGGER.info(
+              "Host function completed successfully. Epoch callbacks: " + epochCallbackCount.get());
         } finally {
           running.set(false);
           epochIncrementer.interrupt();
@@ -960,10 +910,12 @@ public final class EpochInterruptionTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should check epoch after host function returns")
-    void shouldCheckEpochAfterHostFunctionReturns() throws Exception {
-      assumeTrue(epochInterruptionAvailable, "Epoch interruption not available");
+    void shouldCheckEpochAfterHostFunctionReturns(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(checkEpochInterruptionAvailable(runtime), "Epoch interruption not available");
 
       LOGGER.info("Testing epoch check after host function returns");
 
@@ -1015,18 +967,12 @@ public final class EpochInterruptionTest {
 
         final AtomicInteger callbackCount = new AtomicInteger(0);
 
-        try {
-          store.epochDeadlineCallback(
-              epoch -> {
-                callbackCount.incrementAndGet();
-                // Continue with large delta to let the loop complete
-                return Store.EpochDeadlineAction.continueWith(1000);
-              });
-        } catch (final UnsatisfiedLinkError e) {
-          LOGGER.warning("Native method not implemented: " + e.getMessage());
-          assumeTrue(false, "epochDeadlineCallback native method not available");
-          return;
-        }
+        store.epochDeadlineCallback(
+            epoch -> {
+              callbackCount.incrementAndGet();
+              // Continue with large delta to let the loop complete
+              return Store.EpochDeadlineAction.continueWith(1000);
+            });
 
         // Set short deadline AFTER callback
         store.setEpochDeadline(1L);
@@ -1057,42 +1003,25 @@ public final class EpochInterruptionTest {
 
           final int iterations = 100;
 
-          try {
-            final WasmValue[] result = loopFunc.get().call(WasmValue.i32(iterations));
+          final WasmValue[] result = loopFunc.get().call(WasmValue.i32(iterations));
 
-            assertNotNull(result, "Result should not be null");
-            assertEquals(iterations, result[0].asInt(), "Counter should equal iterations");
-            assertEquals(
-                iterations,
-                hostCallCount.get(),
-                "Host function should be called for each iteration");
+          assertNotNull(result, "Result should not be null");
+          assertEquals(iterations, result[0].asInt(), "Counter should equal iterations");
+          assertEquals(
+              iterations, hostCallCount.get(), "Host function should be called for each iteration");
 
-            LOGGER.info(
-                "Loop completed. Host calls: "
-                    + hostCallCount.get()
-                    + ", Epoch callbacks: "
-                    + callbackCount.get());
+          LOGGER.info(
+              "Loop completed. Host calls: "
+                  + hostCallCount.get()
+                  + ", Epoch callbacks: "
+                  + callbackCount.get());
 
-            // Callback may or may not be invoked depending on timing
-            // The main assertion is that the loop completed successfully
-            if (callbackCount.get() > 0) {
-              LOGGER.info("Epoch callback was invoked after host function returns");
-            } else {
-              LOGGER.info("Loop completed before epoch deadline was reached");
-            }
-          } catch (final WasmException e) {
-            if (e.getMessage() != null && e.getMessage().contains("interrupt")) {
-              LOGGER.info(
-                  "Epoch interrupted execution. Host calls: "
-                      + hostCallCount.get()
-                      + ", Callbacks: "
-                      + callbackCount.get());
-              assumeTrue(
-                  false,
-                  "Epoch callback continuation not fully implemented - "
-                      + "test requires callback to continue execution");
-            }
-            throw e;
+          // Callback may or may not be invoked depending on timing
+          // The main assertion is that the loop completed successfully
+          if (callbackCount.get() > 0) {
+            LOGGER.info("Epoch callback was invoked after host function returns");
+          } else {
+            LOGGER.info("Loop completed before epoch deadline was reached");
           }
         } finally {
           running.set(false);

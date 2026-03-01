@@ -25,15 +25,15 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
-import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.test.TestUtils;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -42,14 +42,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WebAssembly shared memory functionality.
@@ -66,14 +64,9 @@ import org.junit.jupiter.api.TestInfo;
  * @since 1.0.0
  */
 @DisplayName("Shared Memory Integration Tests")
-public final class SharedMemoryTest {
+public class SharedMemoryTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(SharedMemoryTest.class.getName());
-
-  private static boolean sharedMemorySupported = false;
-  private static boolean sharedMemoryExportSupported = false;
-  private static WasmRuntime sharedRuntime;
-  private static Engine sharedEngine;
 
   // WAT module with shared memory for atomic operations
   private static final String SHARED_MEMORY_WAT =
@@ -127,106 +120,61 @@ public final class SharedMemoryTest {
           + "  )\n"
           + ")";
 
-  @BeforeAll
-  static void checkSharedMemorySupport() {
-    LOGGER.info("Checking shared memory support...");
+  private final List<AutoCloseable> resources = new ArrayList<>();
+
+  private boolean probeSharedMemorySupported() {
     try {
-      sharedRuntime = WasmRuntimeFactory.create();
-
-      // Create engine with threads enabled (required for shared memory)
       final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
-      sharedEngine = sharedRuntime.createEngine(config);
-
-      // Try to compile AND instantiate a module with shared memory
-      // Compilation may succeed but instantiation fails if shared_memory config is not enabled
-      final Module testModule = sharedEngine.compileWat(SHARED_MEMORY_WAT);
-      if (testModule != null) {
-        try {
-          final Store testStore = sharedRuntime.createStore(sharedEngine);
-          try {
+      try (Engine engine = Engine.create(config)) {
+        final Module testModule = engine.compileWat(SHARED_MEMORY_WAT);
+        if (testModule != null) {
+          try (Store testStore = engine.createStore()) {
             final Instance testInstance = testModule.instantiate(testStore);
             if (testInstance != null) {
-              sharedMemorySupported = true;
-              // Check if memory export retrieval actually works for shared memory
-              // The Optional may be present but the underlying pointer null for shared memory
-              final java.util.Optional<WasmMemory> memoryOpt = testInstance.getMemory("memory");
-              if (memoryOpt.isPresent()) {
-                try {
-                  // Actually try to use the memory to verify pointer is valid
-                  memoryOpt.get().isShared();
-                  sharedMemoryExportSupported = true;
-                  LOGGER.info("Shared memory export retrieval is supported");
-                } catch (final IllegalArgumentException e) {
-                  LOGGER.warning(
-                      "Shared memory export retrieval returns memory with null pointer "
-                          + "- known Panama/JNI issue: "
-                          + e.getMessage());
-                }
-              } else {
-                LOGGER.warning(
-                    "Shared memory instantiation works but export retrieval "
-                        + "returns empty - known JNI issue");
-              }
               testInstance.close();
-              LOGGER.info("Shared memory is supported");
+              testModule.close();
+              return true;
             }
-          } finally {
-            testStore.close();
           }
-        } catch (final Exception e) {
-          LOGGER.warning("Shared memory instantiation not supported: " + e.getMessage());
-          sharedMemorySupported = false;
+          testModule.close();
         }
-        testModule.close();
       }
     } catch (final Exception e) {
       LOGGER.warning("Shared memory not supported: " + e.getMessage());
-      sharedMemorySupported = false;
     }
+    return false;
   }
 
-  @AfterAll
-  static void cleanup() {
-    if (sharedEngine != null) {
-      try {
-        sharedEngine.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared engine: " + e.getMessage());
+  private boolean probeSharedMemoryExportSupported() {
+    try {
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      try (Engine engine = Engine.create(config)) {
+        final Module testModule = engine.compileWat(SHARED_MEMORY_WAT);
+        if (testModule != null) {
+          try (Store testStore = engine.createStore()) {
+            final Instance testInstance = testModule.instantiate(testStore);
+            if (testInstance != null) {
+              final java.util.Optional<WasmMemory> memoryOpt = testInstance.getMemory("memory");
+              if (memoryOpt.isPresent()) {
+                try {
+                  memoryOpt.get().isShared();
+                  testInstance.close();
+                  testModule.close();
+                  return true;
+                } catch (final IllegalArgumentException e) {
+                  LOGGER.warning("Shared memory export returns null pointer: " + e.getMessage());
+                }
+              }
+              testInstance.close();
+            }
+          }
+          testModule.close();
+        }
       }
+    } catch (final Exception e) {
+      LOGGER.warning("Shared memory export not supported: " + e.getMessage());
     }
-    if (sharedRuntime != null) {
-      try {
-        sharedRuntime.close();
-      } catch (final Exception e) {
-        LOGGER.warning("Failed to close shared runtime: " + e.getMessage());
-      }
-    }
-    // Clear global handle registries to prevent stale handles from causing
-    // validation failures in subsequent tests when running the full test suite.
-    TestUtils.clearHandleRegistries();
-  }
-
-  private static void assumeSharedMemorySupported() {
-    assumeTrue(sharedMemorySupported, "Shared memory not supported - skipping");
-  }
-
-  private static void assumeSharedMemoryExportSupported() {
-    assumeSharedMemorySupported();
-    assumeTrue(
-        sharedMemoryExportSupported,
-        "Shared memory export retrieval not supported (known JNI issue) - skipping");
-  }
-
-  private Store store;
-  private final List<AutoCloseable> resources = new ArrayList<>();
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) throws Exception {
-    LOGGER.info("Setting up: " + testInfo.getDisplayName());
-    if (sharedMemorySupported && sharedRuntime != null && sharedEngine != null) {
-      store = sharedRuntime.createStore(sharedEngine);
-      resources.add(store);
-    }
+    return false;
   }
 
   @AfterEach
@@ -240,33 +188,50 @@ public final class SharedMemoryTest {
       }
     }
     resources.clear();
-    store = null;
+    clearRuntimeSelection();
+    TestUtils.clearHandleRegistries();
   }
 
   @Nested
   @DisplayName("Shared Memory Creation Tests")
   class SharedMemoryCreationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should create module with shared memory")
-    void shouldCreateModuleWithSharedMemory(final TestInfo testInfo) throws Exception {
-      assumeSharedMemorySupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldCreateModuleWithSharedMemory(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeSharedMemorySupported(), "Shared memory not supported - skipping");
+      LOGGER.info("Testing: should create module with shared memory");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
 
       assertNotNull(module, "Module should be created");
       LOGGER.info("Module with shared memory created successfully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should instantiate module with shared memory")
-    void shouldInstantiateModuleWithSharedMemory(final TestInfo testInfo) throws Exception {
-      assumeSharedMemoryExportSupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldInstantiateModuleWithSharedMemory(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(
+          probeSharedMemoryExportSupported(),
+          "Shared memory export retrieval not supported - skipping");
+      LOGGER.info("Testing: should instantiate module with shared memory");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
 
       final Instance instance = module.instantiate(store);
@@ -282,13 +247,23 @@ public final class SharedMemoryTest {
       LOGGER.info("Instance with shared memory created successfully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should report memory as shared")
-    void shouldReportMemoryAsShared(final TestInfo testInfo) throws Exception {
-      assumeSharedMemoryExportSupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldReportMemoryAsShared(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(
+          probeSharedMemoryExportSupported(),
+          "Shared memory export retrieval not supported - skipping");
+      LOGGER.info("Testing: should report memory as shared");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
 
       final Instance instance = module.instantiate(store);
@@ -305,14 +280,24 @@ public final class SharedMemoryTest {
   @DisplayName("Shared Memory Import Tests")
   class SharedMemoryImportTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should import shared memory into second instance")
-    void shouldImportSharedMemoryIntoSecondInstance(final TestInfo testInfo) throws Exception {
-      assumeSharedMemoryExportSupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldImportSharedMemoryIntoSecondInstance(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(
+          probeSharedMemoryExportSupported(),
+          "Shared memory export retrieval not supported - skipping");
+      LOGGER.info("Testing: should import shared memory into second instance");
+
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create first module with shared memory export
-      final Module exportModule = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final Module exportModule = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(exportModule);
 
       final Instance exportInstance = exportModule.instantiate(store);
@@ -322,11 +307,11 @@ public final class SharedMemoryTest {
       final WasmMemory sharedMemory = exportInstance.getMemory("memory").orElseThrow();
 
       // Create second module that imports shared memory
-      final Module importModule = sharedEngine.compileWat(IMPORT_SHARED_MEMORY_WAT);
+      final Module importModule = engine.compileWat(IMPORT_SHARED_MEMORY_WAT);
       resources.add(importModule);
 
       // Link shared memory to second module
-      final Linker<Void> linker = sharedRuntime.createLinker(sharedEngine);
+      final Linker<Void> linker = engine.getRuntime().createLinker(engine);
       resources.add(linker);
       linker.defineMemory(store, "env", "memory", sharedMemory);
 
@@ -337,14 +322,25 @@ public final class SharedMemoryTest {
       LOGGER.info("Shared memory imported successfully");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should share data between instances via shared memory")
-    void shouldShareDataBetweenInstancesViaSharedMemory(final TestInfo testInfo) throws Exception {
-      assumeSharedMemoryExportSupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldShareDataBetweenInstancesViaSharedMemory(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(
+          probeSharedMemoryExportSupported(),
+          "Shared memory export retrieval not supported - skipping");
+      LOGGER.info("Testing: should share data between instances via shared memory");
+
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
 
       // Create exporter instance
-      final Module exportModule = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final Module exportModule = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(exportModule);
       final Instance exportInstance = exportModule.instantiate(store);
       resources.add(exportInstance);
@@ -355,10 +351,10 @@ public final class SharedMemoryTest {
 
       // Create importer instance with same shared memory
       final WasmMemory sharedMemory = exportInstance.getMemory("memory").orElseThrow();
-      final Module importModule = sharedEngine.compileWat(IMPORT_SHARED_MEMORY_WAT);
+      final Module importModule = engine.compileWat(IMPORT_SHARED_MEMORY_WAT);
       resources.add(importModule);
 
-      final Linker<Void> linker = sharedRuntime.createLinker(sharedEngine);
+      final Linker<Void> linker = engine.getRuntime().createLinker(engine);
       resources.add(linker);
       linker.defineMemory(store, "env", "memory", sharedMemory);
 
@@ -378,13 +374,21 @@ public final class SharedMemoryTest {
   @DisplayName("Atomic Operations Tests")
   class AtomicOperationsTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should perform atomic load")
-    void shouldPerformAtomicLoad(final TestInfo testInfo) throws Exception {
-      assumeSharedMemorySupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldPerformAtomicLoad(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeSharedMemorySupported(), "Shared memory not supported - skipping");
+      LOGGER.info("Testing: should perform atomic load");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -400,13 +404,21 @@ public final class SharedMemoryTest {
       LOGGER.info("Atomic load verified");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should perform atomic add")
-    void shouldPerformAtomicAdd(final TestInfo testInfo) throws Exception {
-      assumeSharedMemorySupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldPerformAtomicAdd(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeSharedMemorySupported(), "Shared memory not supported - skipping");
+      LOGGER.info("Testing: should perform atomic add");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -429,13 +441,21 @@ public final class SharedMemoryTest {
       LOGGER.info("Atomic add verified");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should perform atomic compare-and-swap")
-    void shouldPerformAtomicCompareAndSwap(final TestInfo testInfo) throws Exception {
-      assumeSharedMemorySupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldPerformAtomicCompareAndSwap(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeSharedMemorySupported(), "Shared memory not supported - skipping");
+      LOGGER.info("Testing: should perform atomic compare-and-swap");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -473,17 +493,23 @@ public final class SharedMemoryTest {
   @DisplayName("Thread Synchronization Tests")
   class ThreadSynchronizationTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle concurrent atomic increments")
-    void shouldHandleConcurrentAtomicIncrements(final TestInfo testInfo) throws Exception {
-      // This test requires memory export retrieval to properly share memory between threads.
-      // Each thread needs its own store (Wasmtime stores are not thread-safe), and the shared
-      // memory must be imported into each thread's instance. Without memory export retrieval,
-      // this test cannot properly verify concurrent atomic operations.
-      assumeSharedMemoryExportSupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldHandleConcurrentAtomicIncrements(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(
+          probeSharedMemoryExportSupported(),
+          "Shared memory export retrieval not supported - skipping");
+      LOGGER.info("Testing: should handle concurrent atomic increments");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -502,8 +528,7 @@ public final class SharedMemoryTest {
       final AtomicBoolean hasError = new AtomicBoolean(false);
 
       // Pre-compile the import module once before spawning threads.
-      // Compiling modules concurrently from multiple threads can cause race conditions.
-      final Module importModule = sharedEngine.compileWat(IMPORT_SHARED_MEMORY_WAT);
+      final Module importModule = engine.compileWat(IMPORT_SHARED_MEMORY_WAT);
       resources.add(importModule);
 
       final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
@@ -517,28 +542,21 @@ public final class SharedMemoryTest {
               try {
                 startLatch.await();
                 // Each thread creates its own store and imports the shared memory
-                localStore = sharedRuntime.createStore(sharedEngine);
-                localLinker = sharedRuntime.createLinker(sharedEngine);
+                localStore = engine.createStore();
+                localLinker = engine.getRuntime().createLinker(engine);
                 localLinker.defineMemory(localStore, "env", "memory", sharedMemory);
 
                 localInstance = localLinker.instantiate(localStore, importModule);
 
-                // Each thread has its own function handle - atomics work on shared memory
-                // The "read" function does atomic load, but we need an add function
-                // Since IMPORT_SHARED_MEMORY_WAT doesn't have add, use simple increment
                 final WasmFunction read = localInstance.getFunction("read").orElseThrow();
-                final WasmFunction write = localInstance.getFunction("write").orElseThrow();
 
                 for (int i = 0; i < incrementsPerThread; i++) {
-                  // Simple increment using CAS pattern would be better, but for test
-                  // purposes just verify threads can call atomics without crashing
                   read.call(WasmValue.i32(0));
                 }
               } catch (final Exception e) {
                 LOGGER.warning("Thread error: " + e.getMessage());
                 hasError.set(true);
               } finally {
-                // Clean up thread-local resources - ignore cleanup failures
                 try {
                   if (localInstance != null) {
                     localInstance.close();
@@ -569,13 +587,9 @@ public final class SharedMemoryTest {
       startLatch.countDown();
       assertTrue(doneLatch.await(30, TimeUnit.SECONDS), "All threads should complete");
       executor.shutdown();
-      // Wait for executor to fully terminate before test completes
-      // This ensures all thread-local native resources are fully cleaned up
       assertTrue(
           executor.awaitTermination(30, TimeUnit.SECONDS), "Executor should terminate gracefully");
 
-      // Verify no errors occurred during concurrent access
-      // The actual atomic increment test would require an import module with atomic_add
       if (!hasError.get()) {
         LOGGER.info("Concurrent atomic operations completed without errors");
       } else {
@@ -583,19 +597,27 @@ public final class SharedMemoryTest {
       }
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should support multiple memory offsets concurrently")
-    void shouldSupportMultipleMemoryOffsetsConcurrently(final TestInfo testInfo) throws Exception {
-      assumeSharedMemorySupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldSupportMultipleMemoryOffsetsConcurrently(final RuntimeType runtime)
+        throws Exception {
+      setRuntime(runtime);
+      assumeTrue(probeSharedMemorySupported(), "Shared memory not supported - skipping");
+      LOGGER.info("Testing: should support multiple memory offsets concurrently");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
 
       final WasmFunction atomicStore = instance.getFunction("atomic_store").orElseThrow();
-      final WasmFunction atomicAdd = instance.getFunction("atomic_add").orElseThrow();
       final WasmFunction atomicLoad = instance.getFunction("atomic_load").orElseThrow();
 
       // Test with multiple offsets (must be 4-byte aligned)
@@ -614,12 +636,15 @@ public final class SharedMemoryTest {
       LOGGER.info("Multiple memory offsets verified");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should handle concurrent atomic write contention correctly")
-    void shouldHandleConcurrentAtomicWriteContention(final TestInfo testInfo) throws Exception {
-      // This test requires memory export retrieval to properly share memory between threads.
-      assumeSharedMemoryExportSupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldHandleConcurrentAtomicWriteContention(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(
+          probeSharedMemoryExportSupported(),
+          "Shared memory export retrieval not supported - skipping");
+      LOGGER.info("Testing: should handle concurrent atomic write contention correctly");
 
       // WAT module with atomic add that exports shared memory
       final String atomicAddModuleWat =
@@ -654,7 +679,13 @@ public final class SharedMemoryTest {
               + "  )\n"
               + ")";
 
-      final Module exportModule = sharedEngine.compileWat(atomicAddModuleWat);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module exportModule = engine.compileWat(atomicAddModuleWat);
       resources.add(exportModule);
       final Instance exportInstance = exportModule.instantiate(store);
       resources.add(exportInstance);
@@ -676,7 +707,7 @@ public final class SharedMemoryTest {
       final ExecutorService executor = Executors.newFixedThreadPool(threadCount);
 
       // Compile the import module once
-      final Module importModule = sharedEngine.compileWat(atomicAddImportWat);
+      final Module importModule = engine.compileWat(atomicAddImportWat);
       resources.add(importModule);
 
       for (int t = 0; t < threadCount; t++) {
@@ -689,9 +720,8 @@ public final class SharedMemoryTest {
               try {
                 startLatch.await();
 
-                // Each thread creates its own store and imports the shared memory
-                localStore = sharedRuntime.createStore(sharedEngine);
-                localLinker = sharedRuntime.createLinker(sharedEngine);
+                localStore = engine.createStore();
+                localLinker = engine.getRuntime().createLinker(engine);
                 localLinker.defineMemory(localStore, "env", "memory", sharedMemory);
 
                 localInstance = localLinker.instantiate(localStore, importModule);
@@ -699,9 +729,7 @@ public final class SharedMemoryTest {
                 final WasmFunction atomicAdd =
                     localInstance.getFunction("atomic_add").orElseThrow();
 
-                // Each thread atomically increments the counter
                 for (int i = 0; i < incrementsPerThread; i++) {
-                  // atomic_add returns old value, we just need to call it
                   atomicAdd.call(WasmValue.i32(0), WasmValue.i32(1));
                 }
 
@@ -713,7 +741,6 @@ public final class SharedMemoryTest {
                 }
                 hasError.set(true);
               } finally {
-                // Clean up thread-local resources
                 try {
                   if (localInstance != null) {
                     localInstance.close();
@@ -747,7 +774,6 @@ public final class SharedMemoryTest {
       assertTrue(
           executor.awaitTermination(30, TimeUnit.SECONDS), "Executor should terminate gracefully");
 
-      // Report any errors
       if (hasError.get()) {
         LOGGER.warning("Errors occurred: " + errors);
       }
@@ -785,13 +811,23 @@ public final class SharedMemoryTest {
   @DisplayName("Shared Memory API Tests")
   class SharedMemoryApiTests {
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should get memory size")
-    void shouldGetMemorySize(final TestInfo testInfo) throws Exception {
-      assumeSharedMemoryExportSupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldGetMemorySize(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(
+          probeSharedMemoryExportSupported(),
+          "Shared memory export retrieval not supported - skipping");
+      LOGGER.info("Testing: should get memory size");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
@@ -806,13 +842,23 @@ public final class SharedMemoryTest {
       LOGGER.info("Memory size: " + sizeInPages + " pages, " + sizeInBytes + " bytes");
     }
 
-    @Test
+    @ParameterizedTest
+    @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should read and write bytes to shared memory")
-    void shouldReadAndWriteBytesToSharedMemory(final TestInfo testInfo) throws Exception {
-      assumeSharedMemoryExportSupported();
-      LOGGER.info("Testing: " + testInfo.getDisplayName());
+    void shouldReadAndWriteBytesToSharedMemory(final RuntimeType runtime) throws Exception {
+      setRuntime(runtime);
+      assumeTrue(
+          probeSharedMemoryExportSupported(),
+          "Shared memory export retrieval not supported - skipping");
+      LOGGER.info("Testing: should read and write bytes to shared memory");
 
-      final Module module = sharedEngine.compileWat(SHARED_MEMORY_WAT);
+      final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.THREADS);
+      final Engine engine = Engine.create(config);
+      resources.add(engine);
+      final Store store = engine.createStore();
+      resources.add(store);
+
+      final Module module = engine.compileWat(SHARED_MEMORY_WAT);
       resources.add(module);
       final Instance instance = module.instantiate(store);
       resources.add(instance);
