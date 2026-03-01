@@ -749,52 +749,144 @@ public final class EngineConfig {
     return coredumpOnTrap;
   }
 
+  /**
+   * Returns a copy of the Cranelift compiler settings configured on this engine.
+   *
+   * @return a mutable copy of the Cranelift settings map
+   * @since 1.0.0
+   */
   public java.util.Map<String, String> getCraneliftSettings() {
     return new java.util.HashMap<>(craneliftSettings);
   }
 
+  /**
+   * Returns the set of WebAssembly features that are currently enabled in this configuration.
+   *
+   * <p>The returned set reflects the current state of all individual feature flags. Only features
+   * that are explicitly enabled will be included in the set.
+   *
+   * @return an immutable set of enabled {@link WasmFeature} values
+   * @since 1.0.0
+   */
   public java.util.Set<WasmFeature> getWasmFeatures() {
     final java.util.Set<WasmFeature> features = java.util.EnumSet.noneOf(WasmFeature.class);
-    if (wasmReferenceTypes) features.add(WasmFeature.REFERENCE_TYPES);
-    if (wasmSimd) features.add(WasmFeature.SIMD);
-    if (wasmRelaxedSimd) features.add(WasmFeature.RELAXED_SIMD);
-    if (wasmMultiValue) features.add(WasmFeature.MULTI_VALUE);
-    if (wasmBulkMemory) features.add(WasmFeature.BULK_MEMORY);
-    if (wasmThreads) features.add(WasmFeature.THREADS);
-    if (wasmTailCall) features.add(WasmFeature.TAIL_CALL);
-    if (wasmMultiMemory) features.add(WasmFeature.MULTI_MEMORY);
-    if (wasmMemory64) features.add(WasmFeature.MEMORY64);
-    if (wasmGc) features.add(WasmFeature.GC);
-    if (wasmExceptions) features.add(WasmFeature.EXCEPTIONS);
-    if (wasmFunctionReferences) features.add(WasmFeature.TYPED_FUNCTION_REFERENCES);
-    if (wasmWideArithmetic) features.add(WasmFeature.WIDE_ARITHMETIC);
-    if (wasmComponentModel) features.add(WasmFeature.COMPONENT_MODEL);
-    if (wasmStackSwitching) features.add(WasmFeature.STACK_SWITCHING);
-    if (wasmExtendedConstExpressions) features.add(WasmFeature.EXTENDED_CONST_EXPRESSIONS);
-    if (wasmCustomPageSizes) features.add(WasmFeature.CUSTOM_PAGE_SIZES);
-    if (wasmSharedEverythingThreads) features.add(WasmFeature.SHARED_EVERYTHING_THREADS);
-    if (wasmComponentModelAsync) features.add(WasmFeature.COMPONENT_MODEL_ASYNC);
-    if (wasmComponentModelAsyncBuiltins) features.add(WasmFeature.COMPONENT_MODEL_ASYNC_BUILTINS);
-    if (wasmComponentModelAsyncStackful) features.add(WasmFeature.COMPONENT_MODEL_ASYNC_STACKFUL);
-    if (wasmComponentModelErrorContext) features.add(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT);
-    if (wasmComponentModelGc) features.add(WasmFeature.COMPONENT_MODEL_GC);
-    if (wasmComponentModelThreading) features.add(WasmFeature.COMPONENT_MODEL_THREADING);
-    if (wasmComponentModelFixedLengthLists)
+    if (wasmReferenceTypes) {
+      features.add(WasmFeature.REFERENCE_TYPES);
+    }
+    if (wasmSimd) {
+      features.add(WasmFeature.SIMD);
+    }
+    if (wasmRelaxedSimd) {
+      features.add(WasmFeature.RELAXED_SIMD);
+    }
+    if (wasmMultiValue) {
+      features.add(WasmFeature.MULTI_VALUE);
+    }
+    if (wasmBulkMemory) {
+      features.add(WasmFeature.BULK_MEMORY);
+    }
+    if (wasmThreads) {
+      features.add(WasmFeature.THREADS);
+    }
+    if (wasmTailCall) {
+      features.add(WasmFeature.TAIL_CALL);
+    }
+    if (wasmMultiMemory) {
+      features.add(WasmFeature.MULTI_MEMORY);
+    }
+    if (wasmMemory64) {
+      features.add(WasmFeature.MEMORY64);
+    }
+    if (wasmGc) {
+      features.add(WasmFeature.GC);
+    }
+    if (wasmExceptions) {
+      features.add(WasmFeature.EXCEPTIONS);
+    }
+    if (wasmFunctionReferences) {
+      features.add(WasmFeature.TYPED_FUNCTION_REFERENCES);
+    }
+    if (wasmWideArithmetic) {
+      features.add(WasmFeature.WIDE_ARITHMETIC);
+    }
+    if (wasmComponentModel) {
+      features.add(WasmFeature.COMPONENT_MODEL);
+    }
+    if (wasmStackSwitching) {
+      features.add(WasmFeature.STACK_SWITCHING);
+    }
+    if (wasmExtendedConstExpressions) {
+      features.add(WasmFeature.EXTENDED_CONST_EXPRESSIONS);
+    }
+    if (wasmCustomPageSizes) {
+      features.add(WasmFeature.CUSTOM_PAGE_SIZES);
+    }
+    if (wasmSharedEverythingThreads) {
+      features.add(WasmFeature.SHARED_EVERYTHING_THREADS);
+    }
+    if (wasmComponentModelAsync) {
+      features.add(WasmFeature.COMPONENT_MODEL_ASYNC);
+    }
+    if (wasmComponentModelAsyncBuiltins) {
+      features.add(WasmFeature.COMPONENT_MODEL_ASYNC_BUILTINS);
+    }
+    if (wasmComponentModelAsyncStackful) {
+      features.add(WasmFeature.COMPONENT_MODEL_ASYNC_STACKFUL);
+    }
+    if (wasmComponentModelErrorContext) {
+      features.add(WasmFeature.COMPONENT_MODEL_ERROR_CONTEXT);
+    }
+    if (wasmComponentModelGc) {
+      features.add(WasmFeature.COMPONENT_MODEL_GC);
+    }
+    if (wasmComponentModelThreading) {
+      features.add(WasmFeature.COMPONENT_MODEL_THREADING);
+    }
+    if (wasmComponentModelFixedLengthLists) {
       features.add(WasmFeature.COMPONENT_MODEL_FIXED_LENGTH_LISTS);
-    if (wasmMutableGlobal) features.add(WasmFeature.MUTABLE_GLOBAL);
-    if (wasmSaturatingFloatToInt) features.add(WasmFeature.SATURATING_FLOAT_TO_INT);
-    if (wasmSignExtension) features.add(WasmFeature.SIGN_EXTENSION);
-    if (wasmFloats) features.add(WasmFeature.FLOATS);
-    if (wasmMemoryControl) features.add(WasmFeature.MEMORY_CONTROL);
-    if (wasmLegacyExceptions) features.add(WasmFeature.LEGACY_EXCEPTIONS);
-    if (wasmGcTypes) features.add(WasmFeature.GC_TYPES);
-    if (wasmComponentModelValues) features.add(WasmFeature.COMPONENT_MODEL_VALUES);
-    if (wasmComponentModelNestedNames) features.add(WasmFeature.COMPONENT_MODEL_NESTED_NAMES);
-    if (wasmComponentModelMap) features.add(WasmFeature.COMPONENT_MODEL_MAP);
-    if (wasmCallIndirectOverlong) features.add(WasmFeature.CALL_INDIRECT_OVERLONG);
-    if (wasmBulkMemoryOpt) features.add(WasmFeature.BULK_MEMORY_OPT);
-    if (wasmCustomDescriptors) features.add(WasmFeature.CUSTOM_DESCRIPTORS);
-    if (wasmCompactImports) features.add(WasmFeature.COMPACT_IMPORTS);
+    }
+    if (wasmMutableGlobal) {
+      features.add(WasmFeature.MUTABLE_GLOBAL);
+    }
+    if (wasmSaturatingFloatToInt) {
+      features.add(WasmFeature.SATURATING_FLOAT_TO_INT);
+    }
+    if (wasmSignExtension) {
+      features.add(WasmFeature.SIGN_EXTENSION);
+    }
+    if (wasmFloats) {
+      features.add(WasmFeature.FLOATS);
+    }
+    if (wasmMemoryControl) {
+      features.add(WasmFeature.MEMORY_CONTROL);
+    }
+    if (wasmLegacyExceptions) {
+      features.add(WasmFeature.LEGACY_EXCEPTIONS);
+    }
+    if (wasmGcTypes) {
+      features.add(WasmFeature.GC_TYPES);
+    }
+    if (wasmComponentModelValues) {
+      features.add(WasmFeature.COMPONENT_MODEL_VALUES);
+    }
+    if (wasmComponentModelNestedNames) {
+      features.add(WasmFeature.COMPONENT_MODEL_NESTED_NAMES);
+    }
+    if (wasmComponentModelMap) {
+      features.add(WasmFeature.COMPONENT_MODEL_MAP);
+    }
+    if (wasmCallIndirectOverlong) {
+      features.add(WasmFeature.CALL_INDIRECT_OVERLONG);
+    }
+    if (wasmBulkMemoryOpt) {
+      features.add(WasmFeature.BULK_MEMORY_OPT);
+    }
+    if (wasmCustomDescriptors) {
+      features.add(WasmFeature.CUSTOM_DESCRIPTORS);
+    }
+    if (wasmCompactImports) {
+      features.add(WasmFeature.COMPACT_IMPORTS);
+    }
     return features;
   }
 

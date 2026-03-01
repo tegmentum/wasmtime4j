@@ -259,62 +259,6 @@ public interface Store extends Closeable {
       throws WasmException;
 
   /**
-   * Creates a new WebAssembly linear memory with the specified size.
-   *
-   * <p>Linear memory is a contiguous, mutable array of raw bytes that can be read and written by
-   * WebAssembly code. Memory is measured in pages, where each page is 64 KiB (65,536 bytes).
-   *
-   * @param initialPages the initial number of 64KB pages
-   * @param maxPages the maximum number of pages, or -1 for unlimited
-   * @return a new WasmMemory that can be used in import maps or accessed directly
-   * @throws WasmException if memory creation fails
-   * @throws IllegalArgumentException if initialPages or maxPages is invalid
-   * @since 1.0.0
-   */
-  WasmMemory createMemory(int initialPages, int maxPages) throws WasmException;
-
-  /**
-   * Creates a new shared WebAssembly linear memory for thread communication.
-   *
-   * <p>Shared memory can be accessed atomically by multiple threads, enabling concurrent
-   * WebAssembly execution. This is essential for the WebAssembly threads proposal.
-   *
-   * <p>Shared memory provides:
-   *
-   * <ul>
-   *   <li>Atomic load/store operations for thread-safe access
-   *   <li>Compare-and-swap operations for lock-free synchronization
-   *   <li>Wait/notify primitives for thread coordination
-   * </ul>
-   *
-   * <p>Note: The engine must be configured with threads support enabled.
-   *
-   * @param initialPages the initial number of 64KB pages
-   * @param maxPages the maximum number of pages (required for shared memory)
-   * @return a new shared WasmMemory that can be accessed atomically
-   * @throws WasmException if shared memory creation fails
-   * @throws IllegalArgumentException if initialPages or maxPages is invalid
-   * @throws UnsupportedOperationException if threads support is not enabled
-   * @since 1.0.0
-   */
-  WasmMemory createSharedMemory(int initialPages, int maxPages) throws WasmException;
-
-  /**
-   * Creates a new WebAssembly linear memory from a memory type descriptor.
-   *
-   * <p>This method creates a memory with full type information, supporting features like 64-bit
-   * addressing and shared memory in a single call. The memory type encodes minimum and maximum page
-   * counts, whether the memory is shared, and whether it uses 64-bit addressing.
-   *
-   * @param memoryType the memory type descriptor specifying all memory attributes
-   * @return a new WasmMemory matching the specified type
-   * @throws WasmException if memory creation fails
-   * @throws IllegalArgumentException if memoryType is null
-   * @since 1.1.0
-   */
-  WasmMemory createMemory(MemoryType memoryType) throws WasmException;
-
-  /**
    * Creates a new WebAssembly table from a table type descriptor.
    *
    * <p>This method creates a table with full type information, supporting features like 64-bit
@@ -343,6 +287,62 @@ public interface Store extends Closeable {
    * @since 1.1.0
    */
   WasmTable createTable(TableType tableType, WasmValue initValue) throws WasmException;
+
+  /**
+   * Creates a new WebAssembly linear memory with the specified size.
+   *
+   * <p>Linear memory is a contiguous, mutable array of raw bytes that can be read and written by
+   * WebAssembly code. Memory is measured in pages, where each page is 64 KiB (65,536 bytes).
+   *
+   * @param initialPages the initial number of 64KB pages
+   * @param maxPages the maximum number of pages, or -1 for unlimited
+   * @return a new WasmMemory that can be used in import maps or accessed directly
+   * @throws WasmException if memory creation fails
+   * @throws IllegalArgumentException if initialPages or maxPages is invalid
+   * @since 1.0.0
+   */
+  WasmMemory createMemory(int initialPages, int maxPages) throws WasmException;
+
+  /**
+   * Creates a new WebAssembly linear memory from a memory type descriptor.
+   *
+   * <p>This method creates a memory with full type information, supporting features like 64-bit
+   * addressing and shared memory in a single call. The memory type encodes minimum and maximum page
+   * counts, whether the memory is shared, and whether it uses 64-bit addressing.
+   *
+   * @param memoryType the memory type descriptor specifying all memory attributes
+   * @return a new WasmMemory matching the specified type
+   * @throws WasmException if memory creation fails
+   * @throws IllegalArgumentException if memoryType is null
+   * @since 1.1.0
+   */
+  WasmMemory createMemory(MemoryType memoryType) throws WasmException;
+
+  /**
+   * Creates a new shared WebAssembly linear memory for thread communication.
+   *
+   * <p>Shared memory can be accessed atomically by multiple threads, enabling concurrent
+   * WebAssembly execution. This is essential for the WebAssembly threads proposal.
+   *
+   * <p>Shared memory provides:
+   *
+   * <ul>
+   *   <li>Atomic load/store operations for thread-safe access
+   *   <li>Compare-and-swap operations for lock-free synchronization
+   *   <li>Wait/notify primitives for thread coordination
+   * </ul>
+   *
+   * <p>Note: The engine must be configured with threads support enabled.
+   *
+   * @param initialPages the initial number of 64KB pages
+   * @param maxPages the maximum number of pages (required for shared memory)
+   * @return a new shared WasmMemory that can be accessed atomically
+   * @throws WasmException if shared memory creation fails
+   * @throws IllegalArgumentException if initialPages or maxPages is invalid
+   * @throws UnsupportedOperationException if threads support is not enabled
+   * @since 1.0.0
+   */
+  WasmMemory createSharedMemory(int initialPages, int maxPages) throws WasmException;
 
   /**
    * Creates a function reference from a host function.
@@ -1053,26 +1053,6 @@ public interface Store extends Closeable {
   }
 
   /**
-   * Tries to create a new Store for the given engine, returning empty on allocation failure.
-   *
-   * <p>Unlike {@link #create(Engine)}, this method returns an empty Optional instead of throwing if
-   * the store allocation fails (e.g., out of memory). This is useful in memory-constrained
-   * environments where OOM should be handled gracefully rather than crashing.
-   *
-   * @param engine the engine to create the store for
-   * @return an Optional containing the new Store, or empty if allocation failed
-   * @throws IllegalArgumentException if engine is null
-   * @since 1.1.0
-   */
-  static java.util.Optional<Store> tryCreate(final Engine engine) {
-    try {
-      return java.util.Optional.of(engine.getRuntime().tryCreateStore(engine));
-    } catch (final WasmException e) {
-      return java.util.Optional.empty();
-    }
-  }
-
-  /**
    * Creates a new Store with custom configuration.
    *
    * <p>This factory method allows creating a store with specific fuel limits, memory limits, and
@@ -1117,6 +1097,26 @@ public interface Store extends Closeable {
       throw new IllegalArgumentException("StoreLimits cannot be null");
     }
     return engine.getRuntime().createStore(engine, limits);
+  }
+
+  /**
+   * Tries to create a new Store for the given engine, returning empty on allocation failure.
+   *
+   * <p>Unlike {@link #create(Engine)}, this method returns an empty Optional instead of throwing if
+   * the store allocation fails (e.g., out of memory). This is useful in memory-constrained
+   * environments where OOM should be handled gracefully rather than crashing.
+   *
+   * @param engine the engine to create the store for
+   * @return an Optional containing the new Store, or empty if allocation failed
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.1.0
+   */
+  static java.util.Optional<Store> tryCreate(final Engine engine) {
+    try {
+      return java.util.Optional.of(engine.getRuntime().tryCreateStore(engine));
+    } catch (final WasmException e) {
+      return java.util.Optional.empty();
+    }
   }
 
   /**

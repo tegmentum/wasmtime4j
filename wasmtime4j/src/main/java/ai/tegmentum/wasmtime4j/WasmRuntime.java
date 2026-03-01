@@ -101,20 +101,6 @@ public interface WasmRuntime extends Closeable {
   Store createStore(final Engine engine) throws WasmException;
 
   /**
-   * Tries to create a new store, returning the store or throwing on allocation failure.
-   *
-   * <p>Unlike {@link #createStore(Engine)}, this method uses OOM-safe allocation internally.
-   * Returns the store on success, or throws WasmException if allocation fails.
-   *
-   * @param engine the engine to create the store for
-   * @return a new Store instance
-   * @throws WasmException if store allocation fails
-   * @throws IllegalArgumentException if engine is null
-   * @since 1.1.0
-   */
-  Store tryCreateStore(final Engine engine) throws WasmException;
-
-  /**
    * Creates a new store with custom configuration.
    *
    * <p>This method allows creating a store with specific fuel limits, memory limits, and execution
@@ -151,6 +137,20 @@ public interface WasmRuntime extends Closeable {
    * @since 1.0.0
    */
   Store createStore(final Engine engine, final StoreLimits limits) throws WasmException;
+
+  /**
+   * Tries to create a new store, returning the store or throwing on allocation failure.
+   *
+   * <p>Unlike {@link #createStore(Engine)}, this method uses OOM-safe allocation internally.
+   * Returns the store on success, or throws WasmException if allocation fails.
+   *
+   * @param engine the engine to create the store for
+   * @return a new Store instance
+   * @throws WasmException if store allocation fails
+   * @throws IllegalArgumentException if engine is null
+   * @since 1.1.0
+   */
+  Store tryCreateStore(final Engine engine) throws WasmException;
 
   /**
    * Creates a new exception tag with the specified type in the given store.

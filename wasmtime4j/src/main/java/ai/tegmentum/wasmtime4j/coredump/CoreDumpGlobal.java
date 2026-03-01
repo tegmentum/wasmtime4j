@@ -78,6 +78,12 @@ public final class CoreDumpGlobal {
     return rawValue.clone();
   }
 
+  /**
+   * Returns the global's value interpreted as a 32-bit integer.
+   *
+   * @return the i32 value
+   * @throws IllegalStateException if the value type is not {@link WasmValueType#I32}
+   */
   public int getI32Value() {
     if (valueType != WasmValueType.I32) {
       throw new IllegalStateException("Value type is not I32: " + valueType);
@@ -85,6 +91,12 @@ public final class CoreDumpGlobal {
     return ByteBuffer.wrap(rawValue).order(ByteOrder.LITTLE_ENDIAN).getInt();
   }
 
+  /**
+   * Returns the global's value interpreted as a 64-bit integer.
+   *
+   * @return the i64 value
+   * @throws IllegalStateException if the value type is not {@link WasmValueType#I64}
+   */
   public long getI64Value() {
     if (valueType != WasmValueType.I64) {
       throw new IllegalStateException("Value type is not I64: " + valueType);
@@ -92,6 +104,12 @@ public final class CoreDumpGlobal {
     return ByteBuffer.wrap(rawValue).order(ByteOrder.LITTLE_ENDIAN).getLong();
   }
 
+  /**
+   * Returns the global's value interpreted as a 32-bit float.
+   *
+   * @return the f32 value
+   * @throws IllegalStateException if the value type is not {@link WasmValueType#F32}
+   */
   public float getF32Value() {
     if (valueType != WasmValueType.F32) {
       throw new IllegalStateException("Value type is not F32: " + valueType);
@@ -99,6 +117,12 @@ public final class CoreDumpGlobal {
     return ByteBuffer.wrap(rawValue).order(ByteOrder.LITTLE_ENDIAN).getFloat();
   }
 
+  /**
+   * Returns the global's value interpreted as a 64-bit float.
+   *
+   * @return the f64 value
+   * @throws IllegalStateException if the value type is not {@link WasmValueType#F64}
+   */
   public double getF64Value() {
     if (valueType != WasmValueType.F64) {
       throw new IllegalStateException("Value type is not F64: " + valueType);

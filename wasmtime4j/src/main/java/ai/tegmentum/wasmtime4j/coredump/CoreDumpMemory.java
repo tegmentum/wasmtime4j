@@ -98,6 +98,15 @@ public final class CoreDumpMemory {
     return segments;
   }
 
+  /**
+   * Reads a range of bytes from this memory dump.
+   *
+   * @param offset the byte offset to start reading from
+   * @param length the number of bytes to read
+   * @return a byte array containing the requested range
+   * @throws IndexOutOfBoundsException if offset or length is negative, or range exceeds memory
+   *     bounds
+   */
   public byte[] read(final long offset, final int length) {
     if (offset < 0 || length < 0) {
       throw new IndexOutOfBoundsException("Offset and length must be non-negative");

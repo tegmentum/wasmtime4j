@@ -155,6 +155,30 @@ public final class ExternRef<T> {
   }
 
   /**
+   * Creates an ExternRef from a raw GC heap index representation.
+   *
+   * <p>This is a low-level API used for typed function calls and ValRaw operations. The raw value
+   * is a GC heap index. A raw value that decodes to a null reference returns a null ExternRef.
+   *
+   * @param store the store context
+   * @param raw the raw u32 representation
+   * @return a new ExternRef, or a null ExternRef if the raw value is invalid
+   * @throws WasmException if creation fails
+   * @throws IllegalArgumentException if store is null
+   * @since 1.1.0
+   */
+  public static ExternRef<Object> fromRaw(final Store store, final long raw) throws WasmException {
+    if (store == null) {
+      throw new IllegalArgumentException("store cannot be null");
+    }
+    long resultId = WasmRuntimeFactory.create().externRefFromRaw(store, raw);
+    if (resultId == Long.MIN_VALUE) {
+      return new ExternRef<>(null, Object.class);
+    }
+    return new ExternRef<>(resultId, Object.class);
+  }
+
+  /**
    * Creates an ExternRef from a WasmValue.
    *
    * @param wasmValue the WasmValue containing an externref
@@ -330,30 +354,6 @@ public final class ExternRef<T> {
       throw new IllegalArgumentException("store cannot be null");
     }
     return WasmRuntimeFactory.create().externRefToRaw(store, id);
-  }
-
-  /**
-   * Creates an ExternRef from a raw GC heap index representation.
-   *
-   * <p>This is a low-level API used for typed function calls and ValRaw operations. The raw value
-   * is a GC heap index. A raw value that decodes to a null reference returns a null ExternRef.
-   *
-   * @param store the store context
-   * @param raw the raw u32 representation
-   * @return a new ExternRef, or a null ExternRef if the raw value is invalid
-   * @throws WasmException if creation fails
-   * @throws IllegalArgumentException if store is null
-   * @since 1.1.0
-   */
-  public static ExternRef<Object> fromRaw(final Store store, final long raw) throws WasmException {
-    if (store == null) {
-      throw new IllegalArgumentException("store cannot be null");
-    }
-    long resultId = WasmRuntimeFactory.create().externRefFromRaw(store, raw);
-    if (resultId == Long.MIN_VALUE) {
-      return new ExternRef<>(null, Object.class);
-    }
-    return new ExternRef<>(resultId, Object.class);
   }
 
   /**

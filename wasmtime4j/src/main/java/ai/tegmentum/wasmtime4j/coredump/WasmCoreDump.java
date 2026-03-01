@@ -84,6 +84,12 @@ public final class WasmCoreDump {
     return memories;
   }
 
+  /**
+   * Serializes this core dump to its binary representation.
+   *
+   * @return a copy of the serialized core dump bytes
+   * @throws UnsupportedOperationException if serialization data is not available
+   */
   public byte[] serialize() {
     if (serializedData == null) {
       throw new UnsupportedOperationException("Serialization not available for this coredump");
@@ -91,6 +97,12 @@ public final class WasmCoreDump {
     return serializedData.clone();
   }
 
+  /**
+   * Returns the total size of this core dump in bytes, including serialized data and all memory
+   * segments.
+   *
+   * @return the total size in bytes
+   */
   public long getSize() {
     long size = 0;
     if (serializedData != null) {
