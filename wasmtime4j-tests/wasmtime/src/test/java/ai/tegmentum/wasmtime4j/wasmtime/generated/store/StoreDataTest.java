@@ -11,7 +11,6 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -53,14 +52,9 @@ public final class StoreDataTest extends DualRuntimeTest {
 
     try (final Engine engine = Engine.create()) {
       final String customData = "my custom data";
-      try {
-        try (final Store store = engine.createStore(customData)) {
-          assertNotNull(store, "Store with data should be created");
-          assertEquals(customData, store.getData(), "Store should contain custom data");
-        }
-      } catch (final UnsupportedOperationException e) {
-        // Skip if createStore(Object) is not implemented yet
-        Assumptions.assumeTrue(false, "createStore(Object) not yet implemented: " + e.getMessage());
+      try (final Store store = engine.createStore(customData)) {
+        assertNotNull(store, "Store with data should be created");
+        assertEquals(customData, store.getData(), "Store should contain custom data");
       }
     }
   }
@@ -102,18 +96,13 @@ public final class StoreDataTest extends DualRuntimeTest {
         };
 
     try (final Engine engine = Engine.create()) {
-      try {
-        try (final Store store = engine.createStore(customData)) {
-          // Access the data multiple times
-          store.getData().toString();
-          store.getData().toString();
-          store.getData().toString();
+      try (final Store store = engine.createStore(customData)) {
+        // Access the data multiple times
+        store.getData().toString();
+        store.getData().toString();
+        store.getData().toString();
 
-          assertEquals(3, accessCount.get(), "Data should be accessed 3 times");
-        }
-      } catch (final UnsupportedOperationException e) {
-        // Skip if createStore(Object) is not implemented yet
-        Assumptions.assumeTrue(false, "createStore(Object) not yet implemented: " + e.getMessage());
+        assertEquals(3, accessCount.get(), "Data should be accessed 3 times");
       }
     }
   }
@@ -125,24 +114,19 @@ public final class StoreDataTest extends DualRuntimeTest {
     setRuntime(runtime);
 
     try (final Engine engine = Engine.create()) {
-      try {
-        try (final Store store1 = engine.createStore("data1");
-            final Store store2 = engine.createStore("data2");
-            final Store store3 = engine.createStore("data3")) {
+      try (final Store store1 = engine.createStore("data1");
+          final Store store2 = engine.createStore("data2");
+          final Store store3 = engine.createStore("data3")) {
 
-          // Each store should have independent data
-          assertEquals("data1", store1.getData());
-          assertEquals("data2", store2.getData());
-          assertEquals("data3", store3.getData());
+        // Each store should have independent data
+        assertEquals("data1", store1.getData());
+        assertEquals("data2", store2.getData());
+        assertEquals("data3", store3.getData());
 
-          // All stores should reference the same engine
-          assertEquals(engine, store1.getEngine());
-          assertEquals(engine, store2.getEngine());
-          assertEquals(engine, store3.getEngine());
-        }
-      } catch (final UnsupportedOperationException e) {
-        // Skip if createStore(Object) is not implemented yet
-        Assumptions.assumeTrue(false, "createStore(Object) not yet implemented: " + e.getMessage());
+        // All stores should reference the same engine
+        assertEquals(engine, store1.getEngine());
+        assertEquals(engine, store2.getEngine());
+        assertEquals(engine, store3.getEngine());
       }
     }
   }

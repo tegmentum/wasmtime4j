@@ -384,7 +384,7 @@ public final class TrapsTest extends DualRuntimeTest {
             fail("Expected trap to propagate through host");
           } catch (final Exception e) {
             // Trap should propagate
-            assertTrue(true, "Trap propagated: " + e.getMessage());
+            assertNotNull(e.getMessage(), "Trap propagated through host should have a message");
           }
         }
       }

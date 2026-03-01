@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasmtime.generated.func;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -14,12 +15,10 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -196,15 +195,11 @@ public final class FunctionTest extends DualRuntimeTest {
         results = instance.callFunction("two_args", WasmValue.i32(10), WasmValue.i32(20));
         assertEquals(30, results[0].asInt(), "two_args should return sum");
 
-        // Test multi_result function (if supported)
-        try {
-          results = instance.callFunction("multi_result", WasmValue.i32(5));
-          assertEquals(2, results.length, "multi_result should have 2 results");
-          assertEquals(5, results[0].asInt(), "First result should be input");
-          assertEquals(6, results[1].asInt(), "Second result should be input + 1");
-        } catch (final WasmException | UnsupportedOperationException e) {
-          Assumptions.assumeTrue(false, "Multi-value returns not yet supported: " + e.getMessage());
-        }
+        // Test multi_result function
+        results = instance.callFunction("multi_result", WasmValue.i32(5));
+        assertEquals(2, results.length, "multi_result should have 2 results");
+        assertEquals(5, results[0].asInt(), "First result should be input");
+        assertEquals(6, results[1].asInt(), "Second result should be input + 1");
       }
       module.close();
     }
@@ -373,15 +368,11 @@ public final class FunctionTest extends DualRuntimeTest {
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          final WasmValue[] results =
-              instance.callFunction("swap", WasmValue.i32(10), WasmValue.i32(20));
-          assertEquals(2, results.length, "swap should return 2 values");
-          assertEquals(20, results[0].asInt(), "First result should be 20");
-          assertEquals(10, results[1].asInt(), "Second result should be 10");
-        } catch (final WasmException | UnsupportedOperationException e) {
-          Assumptions.assumeTrue(false, "Multi-value returns not yet supported: " + e.getMessage());
-        }
+        final WasmValue[] results =
+            instance.callFunction("swap", WasmValue.i32(10), WasmValue.i32(20));
+        assertEquals(2, results.length, "swap should return 2 values");
+        assertEquals(20, results[0].asInt(), "First result should be 20");
+        assertEquals(10, results[1].asInt(), "Second result should be 10");
       }
       module.close();
     }
@@ -586,7 +577,7 @@ public final class FunctionTest extends DualRuntimeTest {
           fail("Expected exception for wrong number of parameters");
         } catch (final Exception e) {
           // Expected - wrong number of parameters
-          assertTrue(true, "Exception expected: " + e.getMessage());
+          assertNotNull(e.getMessage(), "Exception for wrong params should have a message");
         }
       }
       module.close();

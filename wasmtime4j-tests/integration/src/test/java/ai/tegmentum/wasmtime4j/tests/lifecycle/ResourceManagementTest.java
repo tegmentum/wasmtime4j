@@ -5,26 +5,43 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /** Tests for proper resource lifecycle management and cleanup. */
-public class ResourceManagementTest {
+public class ResourceManagementTest extends DualRuntimeTest {
 
-  @Test
+  private static final Logger LOGGER = Logger.getLogger(ResourceManagementTest.class.getName());
+
+  /** Clears the runtime selection after each test. */
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Engine creation and disposal")
-  public void testEngineLifecycle() throws Exception {
+  public void testEngineLifecycle(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final Engine engine = Engine.create();
     assertNotNull(engine);
     engine.close();
     // No exception = success
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Store creation and disposal")
-  public void testStoreLifecycle() throws Exception {
+  public void testStoreLifecycle(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final Engine engine = Engine.create();
     final Store store = engine.createStore();
     assertNotNull(store);
@@ -32,9 +49,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Module compilation and disposal")
-  public void testModuleLifecycle() throws Exception {
+  public void testModuleLifecycle(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -50,9 +69,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Instance creation and disposal")
-  public void testInstanceLifecycle() throws Exception {
+  public void testInstanceLifecycle(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -74,9 +95,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Multiple stores from same engine")
-  public void testMultipleStores() throws Exception {
+  public void testMultipleStores(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final Engine engine = Engine.create();
 
     final Store store1 = engine.createStore();
@@ -93,9 +116,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Multiple instances from same module")
-  public void testMultipleInstances() throws Exception {
+  public void testMultipleInstances(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -133,9 +158,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Reuse engine for multiple modules")
-  public void testEngineReuse() throws Exception {
+  public void testEngineReuse(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat1 =
         """
         (module
@@ -175,9 +202,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Sequential function calls on same instance")
-  public void testSequentialCalls() throws Exception {
+  public void testSequentialCalls(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -212,9 +241,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Close resources in correct order")
-  public void testProperCloseOrder() throws Exception {
+  public void testProperCloseOrder(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -239,9 +270,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Idempotent close operations")
-  public void testIdempotentClose() throws Exception {
+  public void testIdempotentClose(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final Engine engine = Engine.create();
     final Store store = engine.createStore();
 
@@ -255,9 +288,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Create many instances in sequence")
-  public void testManySequentialInstances() throws Exception {
+  public void testManySequentialInstances(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -283,9 +318,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory cleanup between instances")
-  public void testMemoryCleanup() throws Exception {
+  public void testMemoryCleanup(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -323,9 +360,11 @@ public class ResourceManagementTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Global state isolation between instances")
-  public void testGlobalStateIsolation() throws Exception {
+  public void testGlobalStateIsolation(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -362,5 +401,112 @@ public class ResourceManagementTest {
     instance2.close();
     store.close();
     engine.close();
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("Use after engine close throws exception")
+  public void testUseAfterEngineCloseThrows(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    final String wat =
+        """
+        (module
+          (func (export "test") (result i32)
+            i32.const 42
+          )
+        )
+        """;
+
+    final Engine engine = Engine.create();
+    final Module module = engine.compileWat(wat);
+
+    // Verify module works before close
+    final Store store = engine.createStore();
+    final Instance instance = module.instantiate(store);
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(42, results[0].asInt(), "Function should work before engine close");
+
+    // Close everything
+    instance.close();
+    store.close();
+    module.close();
+    engine.close();
+
+    // Compiling on a closed engine should throw
+    assertThrows(
+        Exception.class, () -> engine.compileWat(wat), "Compiling on a closed engine should throw");
+
+    LOGGER.info("[" + runtime + "] Use-after-engine-close correctly throws exception");
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("Use after instance close throws exception")
+  public void testUseAfterInstanceCloseThrows(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    final String wat =
+        """
+        (module
+          (func (export "test") (result i32)
+            i32.const 42
+          )
+        )
+        """;
+
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
+    final Module module = engine.compileWat(wat);
+    final Instance instance = module.instantiate(store);
+
+    // Verify instance works
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(42, results[0].asInt(), "Function should work before instance close");
+
+    // Close instance
+    instance.close();
+
+    // Calling a function on a closed instance should throw
+    assertThrows(
+        Exception.class,
+        () -> instance.callFunction("test"),
+        "Calling function on a closed instance should throw");
+
+    store.close();
+    engine.close();
+
+    LOGGER.info("[" + runtime + "] Use-after-instance-close correctly throws exception");
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  @DisplayName("Close in creation order does not crash")
+  public void testCloseInCreationOrder(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    final String wat =
+        """
+        (module
+          (func (export "test") (result i32)
+            i32.const 42
+          )
+        )
+        """;
+
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
+    final Module module = engine.compileWat(wat);
+    final Instance instance = module.instantiate(store);
+
+    // Verify it works
+    final WasmValue[] results = instance.callFunction("test");
+    assertEquals(42, results[0].asInt());
+
+    // Close in creation order (not the recommended reverse order)
+    // This should not crash the JVM — implementations must handle this gracefully
+    engine.close();
+    module.close();
+    store.close();
+    instance.close();
+
+    LOGGER.info("[" + runtime + "] Close in creation order completed without crash");
   }
 }

@@ -9,7 +9,6 @@ import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -52,12 +51,7 @@ public final class EngineConfigurationTest extends DualRuntimeTest {
 
     try (final Engine engine = Engine.create(config)) {
       assertNotNull(engine, "Engine with fuel should be created");
-      try {
-        assertTrue(engine.isFuelEnabled(), "Fuel should be enabled");
-      } catch (final UnsupportedOperationException | IllegalArgumentException e) {
-        // Skip if isFuelEnabled() is not implemented yet
-        Assumptions.assumeTrue(false, "isFuelEnabled() not yet implemented: " + e.getMessage());
-      }
+      assertTrue(engine.isFuelEnabled(), "Fuel should be enabled");
     }
   }
 
@@ -72,12 +66,7 @@ public final class EngineConfigurationTest extends DualRuntimeTest {
 
     try (final Engine engine = Engine.create(config)) {
       assertNotNull(engine, "Engine without fuel should be created");
-      try {
-        assertFalse(engine.isFuelEnabled(), "Fuel should be disabled");
-      } catch (final UnsupportedOperationException | IllegalArgumentException e) {
-        // Skip if isFuelEnabled() is not implemented yet
-        Assumptions.assumeTrue(false, "isFuelEnabled() not yet implemented: " + e.getMessage());
-      }
+      assertFalse(engine.isFuelEnabled(), "Fuel should be disabled");
     }
   }
 
@@ -92,13 +81,7 @@ public final class EngineConfigurationTest extends DualRuntimeTest {
 
     try (final Engine engine = Engine.create(config)) {
       assertNotNull(engine, "Engine with epoch interruption should be created");
-      try {
-        assertTrue(engine.isEpochInterruptionEnabled(), "Epoch interruption should be enabled");
-      } catch (final UnsupportedOperationException | IllegalArgumentException e) {
-        // Skip if isEpochInterruptionEnabled() is not implemented yet
-        Assumptions.assumeTrue(
-            false, "isEpochInterruptionEnabled() not yet implemented: " + e.getMessage());
-      }
+      assertTrue(engine.isEpochInterruptionEnabled(), "Epoch interruption should be enabled");
     }
   }
 
@@ -135,17 +118,12 @@ public final class EngineConfigurationTest extends DualRuntimeTest {
     try (final Engine engine1 = Engine.create(config1);
         final Engine engine2 = Engine.create(config2)) {
 
-      try {
-        // Note: Engine.same() may check identity, not configuration equality
-        // Different implementations may have different semantics
-        final boolean result = engine1.same(engine2);
-        // Just verify the method can be called without error
-        // The result may be true (config equality) or false (identity check)
-        assertTrue(result || !result, "Engine.same() should return a boolean");
-      } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        // Skip if same() is not implemented yet
-        Assumptions.assumeTrue(false, "Engine.same() not yet implemented: " + e.getMessage());
-      }
+      // Note: Engine.same() may check identity, not configuration equality
+      // Different implementations may have different semantics
+      final boolean result = engine1.same(engine2);
+      // Just verify the method can be called without error
+      // The result may be true (config equality) or false (identity check)
+      assertTrue(result || !result, "Engine.same() should return a boolean");
     }
   }
 
@@ -162,13 +140,8 @@ public final class EngineConfigurationTest extends DualRuntimeTest {
     try (final Engine engine1 = Engine.create(config1);
         final Engine engine2 = Engine.create(config2)) {
 
-      try {
-        // Engines with different config should not be the same
-        assertFalse(engine1.same(engine2), "Engines with different config should not be same");
-      } catch (final UnsatisfiedLinkError | UnsupportedOperationException e) {
-        // Skip if same() is not implemented yet
-        Assumptions.assumeTrue(false, "Engine.same() not yet implemented: " + e.getMessage());
-      }
+      // Engines with different config should not be the same
+      assertFalse(engine1.same(engine2), "Engines with different config should not be same");
     }
   }
 

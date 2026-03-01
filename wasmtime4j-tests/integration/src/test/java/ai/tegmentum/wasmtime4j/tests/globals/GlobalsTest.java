@@ -6,43 +6,32 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmGlobal;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /** Comprehensive tests for WebAssembly globals import/export. */
-public class GlobalsTest {
+public class GlobalsTest extends DualRuntimeTest {
 
-  private Engine engine;
-  private Store store;
-
-  /** Sets up the test engine and store before each test. */
-  @BeforeEach
-  public void setUp() throws Exception {
-    engine = Engine.create();
-    store = engine.createStore();
-  }
-
-  /** Cleans up the test engine and store after each test. */
+  /** Clears the runtime selection after each test. */
   @AfterEach
-  public void tearDown() {
-    if (store != null) {
-      store.close();
-    }
-    if (engine != null) {
-      engine.close();
-    }
+  void cleanup() {
+    clearRuntimeSelection();
   }
 
   /** Tests exporting an immutable i32 global variable. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export immutable i32 global")
-  public void testExportImmutableI32Global() throws Exception {
+  public void testExportImmutableI32Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -50,6 +39,8 @@ public class GlobalsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -60,12 +51,16 @@ public class GlobalsTest {
     assertEquals(42, global.get().asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests exporting a mutable i32 global variable and modifying it from Java and WebAssembly. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export mutable i32 global")
-  public void testExportMutableI32Global() throws Exception {
+  public void testExportMutableI32Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -79,6 +74,8 @@ public class GlobalsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -100,12 +97,16 @@ public class GlobalsTest {
     assertEquals(11, global.get().asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests exporting and modifying a mutable i64 global variable. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export i64 global")
-  public void testExportI64Global() throws Exception {
+  public void testExportI64Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -113,6 +114,8 @@ public class GlobalsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -124,12 +127,16 @@ public class GlobalsTest {
     assertEquals(123456789L, global.get().asLong());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests exporting and modifying a mutable f32 global variable. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export f32 global")
-  public void testExportF32Global() throws Exception {
+  public void testExportF32Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -137,6 +144,8 @@ public class GlobalsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -148,12 +157,16 @@ public class GlobalsTest {
     assertEquals(2.71828f, global.get().asFloat(), 0.00001f);
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests exporting and modifying a mutable f64 global variable. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export f64 global")
-  public void testExportF64Global() throws Exception {
+  public void testExportF64Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -161,6 +174,8 @@ public class GlobalsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -172,12 +187,16 @@ public class GlobalsTest {
     assertEquals(3.14159, global.get().asDouble(), 0.00001);
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests exporting multiple global variables with different types and mutability. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Multiple exported globals")
-  public void testMultipleExportedGlobals() throws Exception {
+  public void testMultipleExportedGlobals(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -188,6 +207,8 @@ public class GlobalsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -207,12 +228,19 @@ public class GlobalsTest {
     assertEquals(40.5f, d.get().asFloat(), 0.01f);
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests importing an immutable i32 global from Java into WebAssembly. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import immutable i32 global")
-  public void testImportImmutableI32Global() throws Exception {
+  public void testImportImmutableI32Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
+
     // Create a global in Java
     final WasmGlobal importedGlobal =
         store.createImmutableGlobal(WasmValueType.I32, WasmValue.i32(42));
@@ -239,12 +267,19 @@ public class GlobalsTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests importing a mutable i32 global that is shared between Java and WebAssembly. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import mutable i32 global")
-  public void testImportMutableI32Global() throws Exception {
+  public void testImportMutableI32Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
+
     // Create a mutable global in Java
     final WasmGlobal importedGlobal =
         store.createMutableGlobal(WasmValueType.I32, WasmValue.i32(0));
@@ -292,12 +327,19 @@ public class GlobalsTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests importing a mutable i64 global and modifying it from WebAssembly. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import i64 global")
-  public void testImportI64Global() throws Exception {
+  public void testImportI64Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
+
     final WasmGlobal importedGlobal =
         store.createMutableGlobal(WasmValueType.I64, WasmValue.i64(1000000000000L));
 
@@ -330,12 +372,19 @@ public class GlobalsTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests importing a mutable f32 global and using it in WebAssembly calculations. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import f32 global")
-  public void testImportF32Global() throws Exception {
+  public void testImportF32Global(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
+
     final WasmGlobal importedGlobal =
         store.createMutableGlobal(WasmValueType.F32, WasmValue.f32(1.5f));
 
@@ -362,12 +411,19 @@ public class GlobalsTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests a module that both imports and exports global variables. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import and export globals in same module")
-  public void testImportAndExportGlobals() throws Exception {
+  public void testImportAndExportGlobals(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
+
     final WasmGlobal importedGlobal =
         store.createMutableGlobal(WasmValueType.I32, WasmValue.i32(5));
 
@@ -404,12 +460,16 @@ public class GlobalsTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests a global variable being shared and modified by multiple WebAssembly functions. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Global used in multiple functions")
-  public void testGlobalSharedAcrossFunctions() throws Exception {
+  public void testGlobalSharedAcrossFunctions(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -433,6 +493,8 @@ public class GlobalsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -455,12 +517,16 @@ public class GlobalsTest {
     assertEquals(0, state.get().asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests that attempting to set an immutable global variable throws an exception. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Attempt to set immutable global throws exception")
-  public void testSetImmutableGlobalThrows() throws Exception {
+  public void testSetImmutableGlobalThrows(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -468,6 +534,8 @@ public class GlobalsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -475,5 +543,7 @@ public class GlobalsTest {
     assertThrows(Exception.class, () -> global.set(WasmValue.i32(100)));
 
     instance.close();
+    store.close();
+    engine.close();
   }
 }

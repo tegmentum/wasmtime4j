@@ -8,9 +8,11 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,8 +24,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Tests for thread-safety and concurrent execution.
@@ -31,13 +35,21 @@ import org.junit.jupiter.api.Test;
  * <p>IMPORTANT: Wasmtime's Store is NOT thread-safe. Each thread must have its own Store. Engine
  * and Module compilation ARE thread-safe and can be shared across threads.
  */
-public class ConcurrencyTest {
+public class ConcurrencyTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(ConcurrencyTest.class.getName());
 
-  @Test
+  /** Clears the runtime selection after each test. */
+  @AfterEach
+  void cleanup() {
+    clearRuntimeSelection();
+  }
+
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Parallel instance creation with per-thread stores")
-  public void testParallelInstanceCreation() throws Exception {
+  public void testParallelInstanceCreation(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -86,9 +98,11 @@ public class ConcurrencyTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Parallel function calls with per-thread stores")
-  public void testParallelFunctionCalls() throws Exception {
+  public void testParallelFunctionCalls(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -158,9 +172,11 @@ public class ConcurrencyTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Sequential calls maintain state")
-  public void testSequentialStateConsistency() throws Exception {
+  public void testSequentialStateConsistency(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -191,9 +207,11 @@ public class ConcurrencyTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Multiple engines in parallel")
-  public void testMultipleEngines() throws Exception {
+  public void testMultipleEngines(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -236,9 +254,11 @@ public class ConcurrencyTest {
     assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Stress test with many short-lived instances using per-thread stores")
-  public void testStressShortLivedInstances() throws Exception {
+  public void testStressShortLivedInstances(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -308,9 +328,11 @@ public class ConcurrencyTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Module compilation in parallel")
-  public void testParallelModuleCompilation() throws Exception {
+  public void testParallelModuleCompilation(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -354,9 +376,11 @@ public class ConcurrencyTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Independent instance state with per-thread stores")
-  public void testIndependentInstanceState() throws Exception {
+  public void testIndependentInstanceState(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -412,9 +436,11 @@ public class ConcurrencyTest {
     engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Concurrent host function callbacks via per-thread stores")
-  public void testConcurrentHostFunctionCallbacks() throws Exception {
+  public void testConcurrentHostFunctionCallbacks(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module

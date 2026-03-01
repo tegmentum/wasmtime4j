@@ -11,12 +11,10 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -57,29 +55,18 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
         """;
 
     try (final Engine engine = Engine.create(config)) {
-      try {
-        assertTrue(engine.isEpochInterruptionEnabled(), "Epoch interruption should be enabled");
-      } catch (final UnsupportedOperationException | IllegalArgumentException e) {
-        // Skip if isEpochInterruptionEnabled() is not implemented yet
-        Assumptions.assumeTrue(
-            false, "isEpochInterruptionEnabled() not yet implemented: " + e.getMessage());
-      }
+      assertTrue(engine.isEpochInterruptionEnabled(), "Epoch interruption should be enabled");
 
       final Module module = engine.compileWat(wat);
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          // Set a deadline far in the future
-          store.setEpochDeadline(1000);
+        // Set a deadline far in the future
+        store.setEpochDeadline(1000);
 
-          // Function should complete without being interrupted
-          final var results = instance.callFunction("compute");
-          assertEquals(3, results[0].asInt(), "1 + 2 should equal 3");
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if epoch functions are not implemented yet
-          Assumptions.assumeTrue(false, "Epoch functions not yet implemented: " + e.getMessage());
-        }
+        // Function should complete without being interrupted
+        final var results = instance.callFunction("compute");
+        assertEquals(3, results[0].asInt(), "1 + 2 should equal 3");
       }
       module.close();
     }
@@ -109,44 +96,39 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          // Set a deadline that will be reached immediately
-          store.setEpochDeadline(1);
+        // Set a deadline that will be reached immediately
+        store.setEpochDeadline(1);
 
-          // Configure to trap on deadline
-          store.epochDeadlineTrap();
+        // Configure to trap on deadline
+        store.epochDeadlineTrap();
 
-          // Start a thread to increment epochs
-          final AtomicBoolean running = new AtomicBoolean(true);
-          final Thread epochThread =
-              new Thread(
-                  () -> {
-                    while (running.get()) {
-                      engine.incrementEpoch();
-                      try {
-                        Thread.sleep(1);
-                      } catch (final InterruptedException e) {
-                        break;
-                      }
+        // Start a thread to increment epochs
+        final AtomicBoolean running = new AtomicBoolean(true);
+        final Thread epochThread =
+            new Thread(
+                () -> {
+                  while (running.get()) {
+                    engine.incrementEpoch();
+                    try {
+                      Thread.sleep(1);
+                    } catch (final InterruptedException e) {
+                      break;
                     }
-                  });
-          epochThread.start();
+                  }
+                });
+        epochThread.start();
 
-          try {
-            // This should be interrupted by epoch
-            instance.callFunction("iloop");
-            fail("Expected epoch interruption trap");
-          } catch (final Exception e) {
-            // Expected - epoch deadline reached
-            assertTrue(true, "Epoch interruption occurred: " + e.getMessage());
-          } finally {
-            running.set(false);
-            epochThread.interrupt();
-            epochThread.join(1000);
-          }
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if epoch functions are not implemented yet
-          Assumptions.assumeTrue(false, "Epoch functions not yet implemented: " + e.getMessage());
+        try {
+          // This should be interrupted by epoch
+          instance.callFunction("iloop");
+          fail("Expected epoch interruption trap");
+        } catch (final Exception e) {
+          // Expected - epoch deadline reached
+          assertNotNull(e.getMessage(), "Epoch interruption should have a message");
+        } finally {
+          running.set(false);
+          epochThread.interrupt();
+          epochThread.join(1000);
         }
       }
       module.close();
@@ -187,63 +169,43 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          // Track how many times callback is invoked
-          final AtomicInteger callbackCount = new AtomicInteger(0);
+        // Track how many times callback is invoked
+        final AtomicInteger callbackCount = new AtomicInteger(0);
 
-          // Set callback to continue with new deadline
-          store.epochDeadlineCallback(
-              (epoch) -> {
-                callbackCount.incrementAndGet();
-                // Continue with deadline 10 ticks ahead
-                return Store.EpochDeadlineAction.continueWith(10);
-              });
+        // Set callback to continue with new deadline
+        store.epochDeadlineCallback(
+            (epoch) -> {
+              callbackCount.incrementAndGet();
+              // Continue with deadline 10 ticks ahead
+              return Store.EpochDeadlineAction.continueWith(10);
+            });
 
-          // Set initial deadline
-          store.setEpochDeadline(1);
+        // Set initial deadline
+        store.setEpochDeadline(1);
 
-          // Increment epoch a few times while function runs
-          final Thread epochThread =
-              new Thread(
-                  () -> {
-                    for (int i = 0; i < 50; i++) {
-                      engine.incrementEpoch();
-                      try {
-                        Thread.sleep(1);
-                      } catch (final InterruptedException e) {
-                        break;
-                      }
+        // Increment epoch a few times while function runs
+        final Thread epochThread =
+            new Thread(
+                () -> {
+                  for (int i = 0; i < 50; i++) {
+                    engine.incrementEpoch();
+                    try {
+                      Thread.sleep(1);
+                    } catch (final InterruptedException e) {
+                      break;
                     }
-                  });
-          epochThread.start();
+                  }
+                });
+        epochThread.start();
 
-          // Run counting function (should complete because callback continues)
-          // Note: If epoch callbacks are not fully implemented, this may trap
-          try {
-            final var results =
-                instance.callFunction("count_to", ai.tegmentum.wasmtime4j.WasmValue.i32(100));
-            assertNotNull(results, "Function should complete");
-            epochThread.join(1000);
-            // Callback may have been invoked (depending on timing)
-            // Just verify we got results
-            assertTrue(results.length > 0, "Should have results");
-          } catch (final Exception e) {
-            // Epoch callback continuation may not be fully implemented
-            // If we get an interrupt trap, the callback feature needs more work
-            final String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
-            if (msg.contains("interrupt") || msg.contains("trap") || msg.contains("epoch")) {
-              epochThread.interrupt();
-              epochThread.join(1000);
-              Assumptions.assumeTrue(
-                  false, "Epoch callback continuation not fully implemented: " + e.getMessage());
-            }
-            throw e;
-          }
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if epoch callback functions are not implemented yet
-          Assumptions.assumeTrue(
-              false, "Epoch callback functions not yet implemented: " + e.getMessage());
-        }
+        // Run counting function (should complete because callback continues)
+        final var results =
+            instance.callFunction("count_to", ai.tegmentum.wasmtime4j.WasmValue.i32(100));
+        assertNotNull(results, "Function should complete");
+        epochThread.join(1000);
+        // Callback may have been invoked (depending on timing)
+        // Just verify we got results
+        assertTrue(results.length > 0, "Should have results");
       }
       module.close();
     }
@@ -273,47 +235,41 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
+        final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
 
-          // Set callback that traps
-          store.epochDeadlineCallback(
-              (epoch) -> {
-                callbackInvoked.set(true);
-                return Store.EpochDeadlineAction.trap();
-              });
+        // Set callback that traps
+        store.epochDeadlineCallback(
+            (epoch) -> {
+              callbackInvoked.set(true);
+              return Store.EpochDeadlineAction.trap();
+            });
 
-          store.setEpochDeadline(1);
+        store.setEpochDeadline(1);
 
-          // Start epoch incrementer
-          final Thread epochThread =
-              new Thread(
-                  () -> {
-                    for (int i = 0; i < 100; i++) {
-                      engine.incrementEpoch();
-                      try {
-                        Thread.sleep(1);
-                      } catch (final InterruptedException e) {
-                        break;
-                      }
+        // Start epoch incrementer
+        final Thread epochThread =
+            new Thread(
+                () -> {
+                  for (int i = 0; i < 100; i++) {
+                    engine.incrementEpoch();
+                    try {
+                      Thread.sleep(1);
+                    } catch (final InterruptedException e) {
+                      break;
                     }
-                  });
-          epochThread.start();
+                  }
+                });
+        epochThread.start();
 
-          try {
-            instance.callFunction("iloop");
-            fail("Expected trap from callback");
-          } catch (final Exception e) {
-            // Expected - callback returned trap
-            assertTrue(true, "Trap from callback: " + e.getMessage());
-          } finally {
-            epochThread.interrupt();
-            epochThread.join(1000);
-          }
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if epoch callback functions are not implemented yet
-          Assumptions.assumeTrue(
-              false, "Epoch callback functions not yet implemented: " + e.getMessage());
+        try {
+          instance.callFunction("iloop");
+          fail("Expected trap from callback");
+        } catch (final Exception e) {
+          // Expected - callback returned trap
+          assertNotNull(e.getMessage(), "Trap from callback should have a message");
+        } finally {
+          epochThread.interrupt();
+          epochThread.join(1000);
         }
       }
       module.close();
@@ -406,17 +362,12 @@ public final class EpochInterruptionTest extends DualRuntimeTest {
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          // Set deadline far in future
-          store.setEpochDeadline(1000);
+        // Set deadline far in future
+        store.setEpochDeadline(1000);
 
-          // Should complete without interruption
-          final var results = instance.callFunction("outer");
-          assertEquals(4, results[0].asInt(), "Nested calls should produce 4");
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if epoch functions are not implemented yet
-          Assumptions.assumeTrue(false, "Epoch functions not yet implemented: " + e.getMessage());
-        }
+        // Should complete without interruption
+        final var results = instance.callFunction("outer");
+        assertEquals(4, results[0].asInt(), "Nested calls should produce 4");
       }
       module.close();
     }

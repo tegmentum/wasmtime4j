@@ -5,40 +5,29 @@ import static org.junit.jupiter.api.Assertions.*;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /** Comprehensive tests for WebAssembly memory operations. */
-public class MemoryOperationsTest {
+public class MemoryOperationsTest extends DualRuntimeTest {
 
-  private Engine engine;
-  private Store store;
-
-  /** Sets up the test engine and store before each test. */
-  @BeforeEach
-  public void setUp() throws Exception {
-    engine = Engine.create();
-    store = engine.createStore();
-  }
-
-  /** Cleans up the test engine and store after each test. */
+  /** Clears the runtime selection after each test. */
   @AfterEach
-  public void tearDown() {
-    if (store != null) {
-      store.close();
-    }
-    if (engine != null) {
-      engine.close();
-    }
+  void cleanup() {
+    clearRuntimeSelection();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Basic memory allocation")
-  public void testMemoryAllocation() throws Exception {
+  public void testMemoryAllocation(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -49,6 +38,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -58,11 +49,15 @@ public class MemoryOperationsTest {
     assertEquals(1, results[0].asInt()); // 1 page = 64KB
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory store and load i32")
-  public void testMemoryStoreLoadI32() throws Exception {
+  public void testMemoryStoreLoadI32(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -80,6 +75,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -90,11 +87,15 @@ public class MemoryOperationsTest {
     assertEquals(42, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory store and load i64")
-  public void testMemoryStoreLoadI64() throws Exception {
+  public void testMemoryStoreLoadI64(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -110,6 +111,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -120,11 +123,15 @@ public class MemoryOperationsTest {
     assertEquals(123456789L, results[0].asLong());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory store and load f32")
-  public void testMemoryStoreLoadF32() throws Exception {
+  public void testMemoryStoreLoadF32(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -140,6 +147,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -150,11 +159,15 @@ public class MemoryOperationsTest {
     assertEquals(3.14159f, results[0].asFloat(), 0.00001f);
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory store and load f64")
-  public void testMemoryStoreLoadF64() throws Exception {
+  public void testMemoryStoreLoadF64(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -170,6 +183,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -180,11 +195,15 @@ public class MemoryOperationsTest {
     assertEquals(2.718281828, results[0].asDouble(), 0.000000001);
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory store at different offsets")
-  public void testMemoryMultipleOffsets() throws Exception {
+  public void testMemoryMultipleOffsets(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -216,6 +235,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -225,11 +246,15 @@ public class MemoryOperationsTest {
     assertEquals(60, results[0].asInt()); // 10 + 20 + 30
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory growth")
-  public void testMemoryGrow() throws Exception {
+  public void testMemoryGrow(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -244,6 +269,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -260,11 +287,15 @@ public class MemoryOperationsTest {
     assertEquals(3, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory byte operations")
-  public void testMemoryByteOperations() throws Exception {
+  public void testMemoryByteOperations(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -281,6 +312,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -294,11 +327,15 @@ public class MemoryOperationsTest {
     assertEquals(255, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory boundary access")
-  public void testMemoryBoundaryAccess() throws Exception {
+  public void testMemoryBoundaryAccess(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -316,6 +353,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -325,11 +364,15 @@ public class MemoryOperationsTest {
     assertEquals(42, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory copy pattern")
-  public void testMemoryCopyPattern() throws Exception {
+  public void testMemoryCopyPattern(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -353,6 +396,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -363,11 +408,15 @@ public class MemoryOperationsTest {
     assertEquals(42, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Memory fill pattern")
-  public void testMemoryFillPattern() throws Exception {
+  public void testMemoryFillPattern(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -413,6 +462,8 @@ public class MemoryOperationsTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -422,5 +473,7 @@ public class MemoryOperationsTest {
     assertEquals(150, results[0].asInt()); // 10+20+30+40+50
 
     instance.close();
+    store.close();
+    engine.close();
   }
 }

@@ -167,8 +167,8 @@ public final class WastThreadTestRunner implements AutoCloseable {
     // This avoids Panama thread confinement issues when accessing from worker threads
     final String[] exportNames = instance.getExportNames();
     LOGGER.fine(() -> "defineSharedModule: name=" + name);
-    LOGGER.fine(() -> "Export names: "
-        + (exportNames != null ? Arrays.toString(exportNames) : "null"));
+    LOGGER.fine(
+        () -> "Export names: " + (exportNames != null ? Arrays.toString(exportNames) : "null"));
     LOGGER.fine(() -> "Export count: " + (exportNames != null ? exportNames.length : 0));
 
     if (exportNames != null) {
@@ -180,8 +180,7 @@ public final class WastThreadTestRunner implements AutoCloseable {
           memOpt.ifPresent(
               memory -> {
                 info.memories.put(exportName, memory);
-                LOGGER.fine(() -> "Stored memory: " + exportName
-                    + ", shared=" + memory.isShared());
+                LOGGER.fine(() -> "Stored memory: " + exportName + ", shared=" + memory.isShared());
               });
         } catch (final Exception e) {
           // Not a memory export, skip

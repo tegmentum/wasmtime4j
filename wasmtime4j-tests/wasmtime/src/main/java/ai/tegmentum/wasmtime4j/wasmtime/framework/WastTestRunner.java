@@ -498,7 +498,6 @@ public final class WastTestRunner implements AutoCloseable {
     }
   }
 
-
   /**
    * Gets the current instance.
    *

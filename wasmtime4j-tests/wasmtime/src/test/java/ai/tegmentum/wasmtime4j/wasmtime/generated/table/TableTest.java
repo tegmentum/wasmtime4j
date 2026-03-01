@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasmtime.generated.table;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -12,11 +13,9 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -176,25 +175,20 @@ public final class TableTest extends DualRuntimeTest {
         """;
 
     try (final Engine engine = Engine.create()) {
-      try {
-        final Module module = engine.compileWat(wat);
-        try (final Store store = engine.createStore();
-            final Instance instance = module.instantiate(store)) {
+      final Module module = engine.compileWat(wat);
+      try (final Store store = engine.createStore();
+          final Instance instance = module.instantiate(store)) {
 
-          // Fill table
-          instance.callFunction("fill");
+        // Fill table
+        instance.callFunction("fill");
 
-          // Call functions in filled range
-          for (int i = 2; i < 7; i++) {
-            final WasmValue[] results = instance.callFunction("call_at", WasmValue.i32(i));
-            assertEquals(99, results[0].asInt(), "Function at " + i + " should return 99");
-          }
+        // Call functions in filled range
+        for (int i = 2; i < 7; i++) {
+          final WasmValue[] results = instance.callFunction("call_at", WasmValue.i32(i));
+          assertEquals(99, results[0].asInt(), "Function at " + i + " should return 99");
         }
-        module.close();
-      } catch (final WasmException e) {
-        // ref.func requires function-references proposal which may not be enabled
-        Assumptions.assumeTrue(false, "table.fill with ref.func not supported: " + e.getMessage());
       }
+      module.close();
     }
   }
 
@@ -290,7 +284,7 @@ public final class TableTest extends DualRuntimeTest {
           fail("Expected trap for out-of-bounds table access");
         } catch (final Exception e) {
           // Expected - out of bounds
-          assertTrue(true, "Trap expected: " + e.getMessage());
+          assertNotNull(e.getMessage(), "Out-of-bounds trap should have a message");
         }
       }
       module.close();
@@ -326,7 +320,7 @@ public final class TableTest extends DualRuntimeTest {
           fail("Expected trap for null funcref call");
         } catch (final Exception e) {
           // Expected - null funcref
-          assertTrue(true, "Trap expected: " + e.getMessage());
+          assertNotNull(e.getMessage(), "Null funcref trap should have a message");
         }
       }
       module.close();
@@ -364,7 +358,7 @@ public final class TableTest extends DualRuntimeTest {
           fail("Expected trap for signature mismatch");
         } catch (final Exception e) {
           // Expected - indirect call type mismatch
-          assertTrue(true, "Trap expected: " + e.getMessage());
+          assertNotNull(e.getMessage(), "Signature mismatch trap should have a message");
         }
       }
       module.close();
@@ -388,27 +382,22 @@ public final class TableTest extends DualRuntimeTest {
         """;
 
     try (final Engine engine = Engine.create()) {
-      try {
-        final Module module = engine.compileWat(wat);
-        try (final Store store = engine.createStore();
-            final Instance instance = module.instantiate(store)) {
+      final Module module = engine.compileWat(wat);
+      try (final Store store = engine.createStore();
+          final Instance instance = module.instantiate(store)) {
 
-          final WasmValue[] results = instance.callFunction("size");
-          assertEquals(5, results[0].asInt(), "Externref table should have 5 elements");
+        final WasmValue[] results = instance.callFunction("size");
+        assertEquals(5, results[0].asInt(), "Externref table should have 5 elements");
 
-          final Optional<WasmTable> tableOpt = instance.getTable("table");
-          assertTrue(tableOpt.isPresent(), "Externref table should be exported");
-          final WasmValueType elementType = tableOpt.get().getElementType();
-          // Some implementations may not fully support externref tables
-          Assumptions.assumeTrue(
-              elementType == WasmValueType.EXTERNREF,
-              "Externref tables not fully supported, got: " + elementType);
-        }
-        module.close();
-      } catch (final WasmException | UnsupportedOperationException e) {
-        // Externref may not be fully supported
-        Assumptions.assumeTrue(false, "Externref tables not supported: " + e.getMessage());
+        final Optional<WasmTable> tableOpt = instance.getTable("table");
+        assertTrue(tableOpt.isPresent(), "Externref table should be exported");
+        final WasmValueType elementType = tableOpt.get().getElementType();
+        assertEquals(
+            WasmValueType.EXTERNREF,
+            elementType,
+            "Externref table element type should be EXTERNREF");
       }
+      module.close();
     }
   }
 

@@ -6,10 +6,11 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValue;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.wasi.WasiContext;
 import ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils;
 import java.nio.file.Files;
@@ -18,40 +19,27 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /** Comprehensive tests for WASI (WebAssembly System Interface) integration. */
-public class WasiTest {
-
-  private Engine engine;
-  private Store store;
+public class WasiTest extends DualRuntimeTest {
 
   @TempDir Path tempDir;
 
-  /** Sets up the test engine and store before each test. */
-  @BeforeEach
-  public void setUp() throws Exception {
-    engine = Engine.create();
-    store = engine.createStore();
-  }
-
-  /** Cleans up the test engine and store after each test. */
+  /** Clears the runtime selection after each test. */
   @AfterEach
-  public void tearDown() {
-    if (store != null) {
-      store.close();
-    }
-    if (engine != null) {
-      engine.close();
-    }
+  void cleanup() {
+    clearRuntimeSelection();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Basic WASI module instantiation")
-  public void testBasicWasiInstantiation() throws Exception {
+  public void testBasicWasiInstantiation(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -64,6 +52,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -75,21 +65,26 @@ public class WasiTest {
 
     // Calling _start invokes proc_exit(0) which causes a trap
     // This is expected WASI behavior - proc_exit terminates the process
+    // JNI throws RuntimeException, Panama throws WasmException
     try {
       instance.callFunction("_start");
       // If no exception, that's also fine (some implementations may handle exit code 0 specially)
-    } catch (WasmException e) {
+    } catch (Exception e) {
       // Expected - proc_exit causes a trap in WASI
       System.out.println("Expected trap from proc_exit: " + e.getMessage());
     }
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI environment variables")
-  public void testWasiEnvironmentVariables() throws Exception {
+  public void testWasiEnvironmentVariables(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -113,6 +108,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -129,11 +126,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI command-line arguments")
-  public void testWasiArguments() throws Exception {
+  public void testWasiArguments(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -155,6 +156,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -170,11 +173,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI file system - preopened directory")
-  public void testWasiPreopenedDirectory() throws Exception {
+  public void testWasiPreopenedDirectory(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     // Create test file
     final Path testFile = tempDir.resolve("test.txt");
     Files.writeString(testFile, "Hello WASI!");
@@ -195,6 +202,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -210,11 +219,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI read-only directory")
-  public void testWasiReadOnlyDirectory() throws Exception {
+  public void testWasiReadOnlyDirectory(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     // Create test directory with file
     final Path readOnlyDir = tempDir.resolve("readonly");
     Files.createDirectory(readOnlyDir);
@@ -236,6 +249,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -251,11 +266,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI clock operations")
-  public void testWasiClock() throws Exception {
+  public void testWasiClock(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -273,6 +292,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -286,11 +307,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI random number generation")
-  public void testWasiRandom() throws Exception {
+  public void testWasiRandom(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -313,6 +338,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -332,11 +359,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI inherit environment")
-  public void testWasiInheritEnvironment() throws Exception {
+  public void testWasiInheritEnvironment(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -355,6 +386,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -370,11 +403,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI multiple environment variable operations")
-  public void testWasiMultipleEnvVars() throws Exception {
+  public void testWasiMultipleEnvVars(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -393,6 +430,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final Map<String, String> envVars = new HashMap<>();
@@ -413,11 +452,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI working directory")
-  public void testWasiWorkingDirectory() throws Exception {
+  public void testWasiWorkingDirectory(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -434,10 +477,12 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
-    wasiCtx.setWorkingDirectory("/app");
+    wasiCtx.setWorkingDirectory(tempDir.toString());
 
     final Linker<WasiContext> linker = Linker.create(engine);
     WasiLinkerUtils.addToLinker(linker, wasiCtx);
@@ -447,11 +492,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI file descriptor limits")
-  public void testWasiFileDescriptorLimits() throws Exception {
+  public void testWasiFileDescriptorLimits(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -466,6 +515,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -480,22 +531,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI network configuration - verify disabled by default")
-  public void testWasiNetworkDisabled() throws Exception {
-    // Note: Standard WASI snapshot_preview1 does not include sock_open.
-    // Socket creation (sock_open) is a WasmEdge-specific extension.
-    // Standard WASI preview1 only has: sock_accept, sock_recv, sock_send, sock_shutdown
-    // which all require pre-existing socket file descriptors.
-    //
-    // This test verifies that the WasiContext correctly accepts network configuration.
-    // Actual socket operations require WASI Preview 2 (component model) with wasi-sockets.
-    //
-    // We verify the configuration is applied and test a simple module that
-    // doesn't require network but verifies WASI linking works with network disabled.
-
+  public void testWasiNetworkDisabled(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -513,6 +557,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -541,11 +587,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI with stdio inheritance")
-  public void testWasiStdioInheritance() throws Exception {
+  public void testWasiStdioInheritance(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -564,6 +614,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -580,11 +632,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI exit code handling")
-  public void testWasiExitCode() throws Exception {
+  public void testWasiExitCode(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -598,6 +654,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -609,12 +667,13 @@ public class WasiTest {
     // proc_exit causes Wasmtime to trap with an exit code.
     // In Wasmtime, proc_exit terminates execution immediately and throws a trap.
     // The trap message should contain information about the exit.
+    // JNI throws RuntimeException, Panama throws WasmException
     try {
       instance.callFunction("exit_with_code", WasmValue.i32(42));
       // If we reach here, proc_exit didn't trap as expected.
       // Some implementations may not trap - that's acceptable behavior.
       System.out.println("proc_exit did not trap - implementation allows continued execution");
-    } catch (WasmException e) {
+    } catch (Exception e) {
       // Expected behavior: proc_exit causes a trap
       System.out.println("proc_exit trapped as expected: " + e.getMessage());
       // The exception message should relate to exit/proc_exit
@@ -623,11 +682,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI output capture - stdout capture enabled")
-  public void testWasiStdoutCapture() throws Exception {
+  public void testWasiStdoutCapture(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -651,6 +714,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -675,11 +740,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI output capture - stderr capture enabled")
-  public void testWasiStderrCapture() throws Exception {
+  public void testWasiStderrCapture(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -703,6 +772,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -727,11 +798,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI stdin bytes - reading from byte buffer")
-  public void testWasiStdinBytes() throws Exception {
+  public void testWasiStdinBytes(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -763,6 +838,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -787,11 +864,15 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("WASI combined stdin/stdout/stderr bridging")
-  public void testWasiCombinedIoBridging() throws Exception {
+  public void testWasiCombinedIoBridging(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -839,6 +920,8 @@ public class WasiTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
 
     final WasiContext wasiCtx = WasiContext.create();
@@ -863,5 +946,7 @@ public class WasiTest {
 
     instance.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 }

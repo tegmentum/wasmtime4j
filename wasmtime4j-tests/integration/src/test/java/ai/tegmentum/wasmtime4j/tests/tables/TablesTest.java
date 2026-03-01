@@ -6,42 +6,31 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /** Comprehensive tests for WebAssembly table import/export. */
-public class TablesTest {
+public class TablesTest extends DualRuntimeTest {
 
-  private Engine engine;
-  private Store store;
-
-  /** Sets up the test engine and store before each test. */
-  @BeforeEach
-  public void setUp() throws Exception {
-    engine = Engine.create();
-    store = engine.createStore();
-  }
-
-  /** Cleans up the test engine and store after each test. */
+  /** Clears the runtime selection after each test. */
   @AfterEach
-  public void tearDown() {
-    if (store != null) {
-      store.close();
-    }
-    if (engine != null) {
-      engine.close();
-    }
+  void cleanup() {
+    clearRuntimeSelection();
   }
 
   /** Tests exporting a funcref table and querying its size. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export funcref table")
-  public void testExportFuncrefTable() throws Exception {
+  public void testExportFuncrefTable(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -52,6 +41,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -63,12 +54,16 @@ public class TablesTest {
     assertEquals(10, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests growing a table and verifying the size changes. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Table grow operation")
-  public void testTableGrow() throws Exception {
+  public void testTableGrow(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -84,6 +79,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -102,12 +99,16 @@ public class TablesTest {
     assertEquals(8, table.getSize());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests storing function references in a table and calling them indirectly. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Table get and set operations")
-  public void testTableGetSet() throws Exception {
+  public void testTableGetSet(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -135,6 +136,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -150,12 +153,16 @@ public class TablesTest {
     assertEquals(99, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests filling a range of table elements with a function reference. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Table fill operation")
-  public void testTableFill() throws Exception {
+  public void testTableFill(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -183,6 +190,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -205,12 +214,16 @@ public class TablesTest {
     assertEquals(0, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests copying elements from one table to another. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Table copy operation")
-  public void testTableCopy() throws Exception {
+  public void testTableCopy(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -245,6 +258,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -263,12 +278,16 @@ public class TablesTest {
     assertEquals(1, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests importing a table from Java (currently expects failure due to missing API). */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Import table from Java")
-  public void testImportTable() throws Exception {
+  public void testImportTable(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -292,8 +311,9 @@ public class TablesTest {
     // Since that's not in the API, this test demonstrates the pattern
     // but will fail until table creation is implemented
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Linker<Void> linker = Linker.create(engine);
-    // linker.defineTable("env", "shared_table", table); // Commented - no Store.createTable API
 
     final Module module = engine.compileWat(wat);
 
@@ -305,12 +325,16 @@ public class TablesTest {
         });
 
     linker.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests sharing a table between two modules via export and import. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Export and re-import table")
-  public void testExportReimportTable() throws Exception {
+  public void testExportReimportTable(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     // Module 1: Exports a table
     final String wat1 =
         """
@@ -340,6 +364,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module1 = engine.compileWat(wat1);
     final Instance instance1 = module1.instantiate(store);
 
@@ -363,12 +389,16 @@ public class TablesTest {
     instance2.close();
     instance1.close();
     linker.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests a module with multiple tables of different sizes. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Multiple tables in one module")
-  public void testMultipleTables() throws Exception {
+  public void testMultipleTables(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -385,6 +415,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -401,12 +433,16 @@ public class TablesTest {
     assertEquals(3, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests initializing table elements at instantiation time using element segments. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Table element initialization")
-  public void testTableElementInit() throws Exception {
+  public void testTableElementInit(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -424,6 +460,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -438,12 +476,16 @@ public class TablesTest {
     assertEquals(3, results[0].asInt());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests that table growth respects maximum size limits. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Table limits enforcement")
-  public void testTableLimits() throws Exception {
+  public void testTableLimits(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -463,6 +505,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -485,12 +529,16 @@ public class TablesTest {
     assertEquals(5, table.getSize());
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests that accessing a table element out of bounds causes a trap. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Table access out of bounds")
-  public void testTableOutOfBounds() throws Exception {
+  public void testTableOutOfBounds(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -504,6 +552,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -515,12 +565,16 @@ public class TablesTest {
         });
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests creating and using a table of externref type. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Externref table")
-  public void testExternrefTable() throws Exception {
+  public void testExternrefTable(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -538,6 +592,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -548,12 +604,16 @@ public class TablesTest {
     instance.callFunction("store_null");
 
     instance.close();
+    store.close();
+    engine.close();
   }
 
   /** Tests using passive element segments with table.init and elem.drop instructions. */
-  @Test
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("Table with passive element segment")
-  public void testPassiveElementSegment() throws Exception {
+  public void testPassiveElementSegment(final RuntimeType runtime) throws Exception {
+    setRuntime(runtime);
     final String wat =
         """
         (module
@@ -581,6 +641,8 @@ public class TablesTest {
         )
         """;
 
+    final Engine engine = Engine.create();
+    final Store store = engine.createStore();
     final Module module = engine.compileWat(wat);
     final Instance instance = module.instantiate(store);
 
@@ -598,5 +660,7 @@ public class TablesTest {
     instance.callFunction("drop_elem");
 
     instance.close();
+    store.close();
+    engine.close();
   }
 }

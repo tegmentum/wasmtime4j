@@ -14,11 +14,9 @@ import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -345,7 +343,7 @@ public final class MemoryTest extends DualRuntimeTest {
           fail("Expected trap for out-of-bounds access");
         } catch (final Exception e) {
           // Expected - out of bounds memory access
-          assertTrue(true, "Trap expected: " + e.getMessage());
+          assertNotNull(e.getMessage(), "Out-of-bounds trap should have a message");
         }
       }
       module.close();
@@ -373,8 +371,6 @@ public final class MemoryTest extends DualRuntimeTest {
 
         final WasmMemory memory = instance.getMemory("memory").get();
         final int maxSize = memory.getMaxSize();
-        // Some implementations may not support getting max size
-        Assumptions.assumeTrue(maxSize != -1, "Memory max size not supported");
         assertEquals(10, maxSize, "Max size should be 10 pages");
       }
       module.close();
@@ -489,25 +485,20 @@ public final class MemoryTest extends DualRuntimeTest {
     // Create engine with multi-memory feature enabled
     final EngineConfig config = new EngineConfig().addWasmFeature(WasmFeature.MULTI_MEMORY);
     try (final Engine engine = Engine.create(config)) {
-      try {
-        final Module module = engine.compileWat(wat);
-        try (final Store store = engine.createStore();
-            final Instance instance = module.instantiate(store)) {
+      final Module module = engine.compileWat(wat);
+      try (final Store store = engine.createStore();
+          final Instance instance = module.instantiate(store)) {
 
-          final Optional<WasmMemory> mem1 = instance.getMemory("mem1");
-          final Optional<WasmMemory> mem2 = instance.getMemory("mem2");
+        final Optional<WasmMemory> mem1 = instance.getMemory("mem1");
+        final Optional<WasmMemory> mem2 = instance.getMemory("mem2");
 
-          assertTrue(mem1.isPresent(), "mem1 should exist");
-          assertTrue(mem2.isPresent(), "mem2 should exist");
+        assertTrue(mem1.isPresent(), "mem1 should exist");
+        assertTrue(mem2.isPresent(), "mem2 should exist");
 
-          assertEquals(1, mem1.get().getSize(), "mem1 should be 1 page");
-          assertEquals(2, mem2.get().getSize(), "mem2 should be 2 pages");
-        }
-        module.close();
-      } catch (final WasmException e) {
-        // Multi-memory compilation/instantiation may still fail on some platforms
-        Assumptions.assumeTrue(false, "Multi-memory not supported: " + e.getMessage());
+        assertEquals(1, mem1.get().getSize(), "mem1 should be 1 page");
+        assertEquals(2, mem2.get().getSize(), "mem2 should be 2 pages");
       }
+      module.close();
     }
   }
 }

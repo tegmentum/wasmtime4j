@@ -18,7 +18,6 @@ import ai.tegmentum.wasmtime4j.type.ExportType;
 import ai.tegmentum.wasmtime4j.type.ImportType;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -247,29 +246,24 @@ public final class ModuleTest extends DualRuntimeTest {
     try (final Engine engine = Engine.create()) {
       final Module originalModule = engine.compileWat(wat);
 
-      try {
-        // Serialize
-        final byte[] serialized = originalModule.serialize();
-        assertNotNull(serialized, "Serialized bytes should not be null");
-        assertTrue(serialized.length > 0, "Serialized bytes should not be empty");
+      // Serialize
+      final byte[] serialized = originalModule.serialize();
+      assertNotNull(serialized, "Serialized bytes should not be null");
+      assertTrue(serialized.length > 0, "Serialized bytes should not be empty");
 
-        // Deserialize
-        final Module deserializedModule = Module.deserialize(engine, serialized);
-        assertNotNull(deserializedModule, "Deserialized module should not be null");
+      // Deserialize
+      final Module deserializedModule = Module.deserialize(engine, serialized);
+      assertNotNull(deserializedModule, "Deserialized module should not be null");
 
-        // Test the deserialized module works
-        try (final Store store = engine.createStore();
-            final Instance instance = deserializedModule.instantiate(store)) {
+      // Test the deserialized module works
+      try (final Store store = engine.createStore();
+          final Instance instance = deserializedModule.instantiate(store)) {
 
-          final WasmValue[] results = instance.callFunction("double", WasmValue.i32(21));
-          assertEquals(42, results[0].asInt(), "Deserialized module should work correctly");
-        }
-
-        deserializedModule.close();
-      } catch (final WasmException | RuntimeException e) {
-        Assumptions.assumeTrue(false, "Module serialization not supported: " + e.getMessage());
+        final WasmValue[] results = instance.callFunction("double", WasmValue.i32(21));
+        assertEquals(42, results[0].asInt(), "Deserialized module should work correctly");
       }
 
+      deserializedModule.close();
       originalModule.close();
     }
   }

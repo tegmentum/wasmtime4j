@@ -1,6 +1,7 @@
 package ai.tegmentum.wasmtime4j.wasmtime.generated.fuel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -13,11 +14,9 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -49,22 +48,17 @@ public final class FuelConsumptionTest extends DualRuntimeTest {
     try (final Engine engine = Engine.create(config);
         final Store store = engine.createStore()) {
 
-      try {
-        // Set initial fuel
-        store.setFuel(10_000L);
-        assertEquals(10_000L, store.getFuel(), "Initial fuel should be 10000");
+      // Set initial fuel
+      store.setFuel(10_000L);
+      assertEquals(10_000L, store.getFuel(), "Initial fuel should be 10000");
 
-        // Add more fuel
-        store.addFuel(5_000L);
-        assertEquals(15_000L, store.getFuel(), "Fuel after add should be 15000");
+      // Add more fuel
+      store.addFuel(5_000L);
+      assertEquals(15_000L, store.getFuel(), "Fuel after add should be 15000");
 
-        // Consume some fuel - note: consumeFuel returns remaining fuel
-        final long remaining = store.consumeFuel(1_000L);
-        assertTrue(remaining <= 15_000L, "Remaining fuel should not exceed what was added");
-      } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-        // Skip if fuel functions are not implemented yet
-        Assumptions.assumeTrue(false, "Fuel functions not yet implemented: " + e.getMessage());
-      }
+      // Consume some fuel - note: consumeFuel returns remaining fuel
+      final long remaining = store.consumeFuel(1_000L);
+      assertTrue(remaining <= 15_000L, "Remaining fuel should not exceed what was added");
     }
   }
 
@@ -96,22 +90,17 @@ public final class FuelConsumptionTest extends DualRuntimeTest {
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          // Set initial fuel
-          final long initialFuel = 10_000L;
-          store.setFuel(initialFuel);
+        // Set initial fuel
+        final long initialFuel = 10_000L;
+        store.setFuel(initialFuel);
 
-          // Run the function
-          final WasmValue[] results = instance.callFunction("run");
-          assertEquals(6, results[0].asInt(), "1+2+3 should equal 6");
+        // Run the function
+        final WasmValue[] results = instance.callFunction("run");
+        assertEquals(6, results[0].asInt(), "1+2+3 should equal 6");
 
-          // Fuel should have been consumed
-          final long remainingFuel = store.getFuel();
-          assertTrue(remainingFuel < initialFuel, "Fuel should have been consumed");
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if fuel functions are not implemented yet
-          Assumptions.assumeTrue(false, "Fuel functions not yet implemented: " + e.getMessage());
-        }
+        // Fuel should have been consumed
+        final long remainingFuel = store.getFuel();
+        assertTrue(remainingFuel < initialFuel, "Fuel should have been consumed");
       }
       module.close();
     }
@@ -142,24 +131,19 @@ public final class FuelConsumptionTest extends DualRuntimeTest {
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          // Set limited fuel
-          store.setFuel(10_000L);
+        // Set limited fuel
+        store.setFuel(10_000L);
 
-          // Should run out of fuel and throw
-          try {
-            instance.callFunction("iloop");
-            fail("Expected out of fuel exception");
-          } catch (final Exception e) {
-            // Expected - should be out of fuel trap
-            final String message = e.getMessage().toLowerCase();
-            assertTrue(
-                message.contains("fuel") || message.contains("trap") || message.contains("out of"),
-                "Exception should indicate out of fuel: " + e.getMessage());
-          }
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if fuel functions are not implemented yet
-          Assumptions.assumeTrue(false, "Fuel functions not yet implemented: " + e.getMessage());
+        // Should run out of fuel and throw
+        try {
+          instance.callFunction("iloop");
+          fail("Expected out of fuel exception");
+        } catch (final Exception e) {
+          // Expected - should be out of fuel trap
+          final String message = e.getMessage().toLowerCase();
+          assertTrue(
+              message.contains("fuel") || message.contains("trap") || message.contains("out of"),
+              "Exception should indicate out of fuel: " + e.getMessage());
         }
       }
       module.close();
@@ -189,21 +173,16 @@ public final class FuelConsumptionTest extends DualRuntimeTest {
       try (final Store store = engine.createStore();
           final Instance instance = module.instantiate(store)) {
 
-        try {
-          // Set limited fuel
-          store.setFuel(10_000L);
+        // Set limited fuel
+        store.setFuel(10_000L);
 
-          // Should run out of fuel (or stack overflow, but fuel should kick in first)
-          try {
-            instance.callFunction("recurse");
-            fail("Expected out of fuel exception");
-          } catch (final Exception e) {
-            // Expected - either out of fuel or stack overflow
-            assertTrue(true, "Exception expected: " + e.getMessage());
-          }
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if fuel functions are not implemented yet
-          Assumptions.assumeTrue(false, "Fuel functions not yet implemented: " + e.getMessage());
+        // Should run out of fuel (or stack overflow, but fuel should kick in first)
+        try {
+          instance.callFunction("recurse");
+          fail("Expected out of fuel exception");
+        } catch (final Exception e) {
+          // Expected - either out of fuel or stack overflow
+          assertNotNull(e.getMessage(), "Exception should have a message");
         }
       }
       module.close();
@@ -243,34 +222,29 @@ public final class FuelConsumptionTest extends DualRuntimeTest {
             "consume",
             funcType,
             (args) -> {
-              try {
-                // Try to consume all remaining fuel
-                store.consumeFuel(store.getFuel());
-              } catch (final Exception e) {
-                // Expected - may fail if no fuel left
+              // Try to consume all remaining fuel
+              final long available = store.getFuel();
+              if (available > 0) {
+                store.consumeFuel(available);
               }
               return new WasmValue[] {};
             });
 
-        try {
-          final long initialFuel = 100L;
-          store.setFuel(initialFuel);
+        final long initialFuel = 100L;
+        store.setFuel(initialFuel);
 
-          try (final Instance instance = linker.instantiate(store, module)) {
-            // Should eventually run out of fuel
-            try {
-              instance.callFunction("run");
-            } catch (final Exception e) {
-              // May or may not throw depending on timing
-            }
-
-            // Fuel should be very low or zero
-            final long remaining = store.getFuel();
-            assertTrue(remaining < initialFuel, "Fuel should have been consumed by host function");
+        try (final Instance instance = linker.instantiate(store, module)) {
+          // Should eventually run out of fuel
+          try {
+            instance.callFunction("run");
+          } catch (final Exception e) {
+            // May or may not throw depending on timing — either outcome is valid
+            assertNotNull(e.getMessage(), "Exception should have a message");
           }
-        } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-          // Skip if fuel functions are not implemented yet
-          Assumptions.assumeTrue(false, "Fuel functions not yet implemented: " + e.getMessage());
+
+          // Fuel should be very low or zero
+          final long remaining = store.getFuel();
+          assertTrue(remaining < initialFuel, "Fuel should have been consumed by host function");
         }
       }
       module.close();
@@ -288,22 +262,17 @@ public final class FuelConsumptionTest extends DualRuntimeTest {
     try (final Engine engine = Engine.create(config);
         final Store store = engine.createStore()) {
 
-      try {
-        // Set to a large value (may not support Long.MAX_VALUE on all implementations)
-        store.setFuel(1_000_000_000L);
-        assertTrue(store.getFuel() >= 0, "Should support large fuel value");
+      // Set to a large value (may not support Long.MAX_VALUE on all implementations)
+      store.setFuel(1_000_000_000L);
+      assertTrue(store.getFuel() >= 0, "Should support large fuel value");
 
-        // Set to a positive value (some implementations may not allow zero)
-        store.setFuel(1L);
-        assertTrue(store.getFuel() >= 0, "Should support small positive fuel");
+      // Set to a positive value (some implementations may not allow zero)
+      store.setFuel(1L);
+      assertTrue(store.getFuel() >= 0, "Should support small positive fuel");
 
-        // Set back to a larger positive
-        store.setFuel(1000L);
-        assertEquals(1000L, store.getFuel(), "Should set fuel back to positive");
-      } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-        // Skip if fuel functions are not implemented yet
-        Assumptions.assumeTrue(false, "Fuel functions not yet implemented: " + e.getMessage());
-      }
+      // Set back to a larger positive
+      store.setFuel(1000L);
+      assertEquals(1000L, store.getFuel(), "Should set fuel back to positive");
     }
   }
 
@@ -318,31 +287,24 @@ public final class FuelConsumptionTest extends DualRuntimeTest {
     try (final Engine engine = Engine.create(config);
         final Store store = engine.createStore()) {
 
-      try {
-        store.setFuel(100L);
+      store.setFuel(100L);
 
-        // Try to consume more than available - behavior varies by implementation
-        // Wasmtime's consumeFuel returns remaining fuel, and may:
-        // 1. Throw an error if not enough fuel
-        // 2. Return a negative value
-        // 3. Return remaining fuel (if it consumes what's available)
-        // The key is that the operation either fails or consumes some fuel
-        try {
-          final long remaining = store.consumeFuel(200L);
-          // If it doesn't throw, check that fuel state changed
-          // Note: some implementations may return error codes as positive values
-          // or may consume only available fuel and return that
-          final long currentFuel = store.getFuel();
-          assertTrue(
-              currentFuel <= 100L || remaining != 100L,
-              "Fuel state should have changed after consume attempt");
-        } catch (final Exception e) {
-          // This is also acceptable behavior - consuming more than available should fail
-          assertTrue(true, "Consuming more fuel than available threw: " + e.getMessage());
-        }
-      } catch (final WasmException | UnsupportedOperationException | IllegalArgumentException e) {
-        // Skip if fuel functions are not implemented yet
-        Assumptions.assumeTrue(false, "Fuel functions not yet implemented: " + e.getMessage());
+      // Try to consume more than available - behavior varies by implementation
+      // Wasmtime's consumeFuel returns remaining fuel, and may:
+      // 1. Throw an error if not enough fuel
+      // 2. Return a negative value
+      // 3. Return remaining fuel (if it consumes what's available)
+      // The key is that the operation either fails or consumes some fuel
+      try {
+        final long remaining = store.consumeFuel(200L);
+        // If it doesn't throw, check that fuel state changed
+        final long currentFuel = store.getFuel();
+        assertTrue(
+            currentFuel <= 100L || remaining != 100L,
+            "Fuel state should have changed after consume attempt");
+      } catch (final Exception e) {
+        // This is also acceptable behavior - consuming more than available should fail
+        assertNotNull(e.getMessage(), "Exception from over-consumption should have a message");
       }
     }
   }
@@ -364,7 +326,7 @@ public final class FuelConsumptionTest extends DualRuntimeTest {
         assertTrue(fuel == -1L || fuel >= 0L, "Fuel should be -1 or non-negative");
       } catch (final Exception e) {
         // Expected - fuel not enabled
-        assertTrue(true, "Exception expected when fuel not enabled");
+        assertNotNull(e.getMessage(), "Exception when fuel not enabled should have a message");
       }
     }
   }
