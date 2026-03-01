@@ -16,12 +16,19 @@
 
 package ai.tegmentum.wasmtime4j.tests;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
+import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnContext;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnExecutionTarget;
@@ -31,10 +38,10 @@ import ai.tegmentum.wasmtime4j.wasi.nn.NnTensorType;
 import java.util.Set;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
  * Integration tests for WASI-NN (WebAssembly System Interface for Neural Networks).
@@ -53,37 +60,16 @@ import org.junit.jupiter.api.condition.EnabledIf;
  * ONNX Runtime, OpenVINO, or WinML) to be available. Tests that require actual inference are
  * conditionally enabled based on backend availability.
  */
-public class WasiNnTest {
+public class WasiNnTest extends DualRuntimeTest {
 
   private static final Logger LOGGER = Logger.getLogger(WasiNnTest.class.getName());
 
-  private WasmRuntime runtime;
-  private Engine engine;
-
-  @BeforeEach
-  void setUp(final TestInfo testInfo) {
-    LOGGER.info("Setting up test: " + testInfo.getDisplayName());
-    try {
-      runtime = WasmRuntimeFactory.create();
-      engine = runtime.createEngine();
-    } catch (WasmException e) {
-      fail("Failed to set up runtime: " + e.getMessage(), e);
-    }
-  }
-
   @AfterEach
-  void tearDown(final TestInfo testInfo) {
-    LOGGER.info("Tearing down test: " + testInfo.getDisplayName());
-    if (runtime != null) {
-      try {
-        runtime.close();
-      } catch (Exception e) {
-        LOGGER.warning("Failed to close runtime: " + e.getMessage());
-      }
-    }
+  void tearDown() {
+    clearRuntimeSelection();
   }
 
-  // ==================== Tensor Tests ====================
+  // ==================== Tensor Tests (pure Java, no native calls) ====================
 
   @Test
   void testTensorCreationFromFloatArray() {
@@ -288,7 +274,7 @@ public class WasiNnTest {
     LOGGER.info("Successfully validated tensor equality");
   }
 
-  // ==================== TensorType Tests ====================
+  // ==================== TensorType Tests (pure Java, no native calls) ====================
 
   @Test
   void testTensorTypeProperties() {
@@ -363,16 +349,16 @@ public class WasiNnTest {
     LOGGER.info("Successfully validated native code parsing");
   }
 
-  // ==================== NnContext Tests ====================
+  // ==================== NnContext Tests (native calls, dual-runtime) ====================
 
-  @Test
-  void testNnAvailabilityCheck() {
-    LOGGER.info("Testing WASI-NN availability check");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnAvailabilityCheck(final RuntimeType runtime) {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing WASI-NN availability check");
 
-    // Check if JNI NN classes are available to determine NN availability
-    // This avoids calling the native method which may not be implemented
-    boolean nnAvailable = isNnAvailable();
-    LOGGER.info("WASI-NN availability (via JNI class check): " + nnAvailable);
+    boolean nnAvailable = isNnAvailableForRuntime(runtime);
+    LOGGER.info("[" + runtime + "] WASI-NN availability: " + nnAvailable);
 
     // This test verifies the availability check works without throwing
     // The actual availability depends on the Wasmtime build and ML backend configuration
@@ -380,29 +366,35 @@ public class WasiNnTest {
   }
 
   @EnabledIf("isNnAvailable")
-  @Test
-  void testNnContextCreation() throws NnException {
-    LOGGER.info("Testing NnContext creation");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnContextCreation(final RuntimeType runtime) throws NnException {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing NnContext creation");
 
-    try (NnContext context = runtime.createNnContext()) {
+    try (WasmRuntime rt = WasmRuntimeFactory.create(runtime);
+        NnContext context = rt.createNnContext()) {
       assertNotNull(context, "NnContext should be created");
       assertTrue(context.isAvailable(), "Context should be available");
       assertTrue(context.isValid(), "Context should be valid");
 
-      LOGGER.info("Successfully created NnContext");
+      LOGGER.info("[" + runtime + "] Successfully created NnContext");
     }
   }
 
   @EnabledIf("isNnAvailable")
-  @Test
-  void testNnContextSupportedEncodings() throws NnException {
-    LOGGER.info("Testing NnContext supported encodings query");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnContextSupportedEncodings(final RuntimeType runtime) throws NnException {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing NnContext supported encodings query");
 
-    try (NnContext context = runtime.createNnContext()) {
+    try (WasmRuntime rt = WasmRuntimeFactory.create(runtime);
+        NnContext context = rt.createNnContext()) {
       Set<NnGraphEncoding> supportedEncodings = context.getSupportedEncodings();
       assertNotNull(supportedEncodings, "Supported encodings should not be null");
 
-      LOGGER.info("Supported encodings: " + supportedEncodings);
+      LOGGER.info("[" + runtime + "] Supported encodings: " + supportedEncodings);
 
       for (NnGraphEncoding encoding : supportedEncodings) {
         assertTrue(
@@ -413,15 +405,18 @@ public class WasiNnTest {
   }
 
   @EnabledIf("isNnAvailable")
-  @Test
-  void testNnContextSupportedTargets() throws NnException {
-    LOGGER.info("Testing NnContext supported targets query");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnContextSupportedTargets(final RuntimeType runtime) throws NnException {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing NnContext supported targets query");
 
-    try (NnContext context = runtime.createNnContext()) {
+    try (WasmRuntime rt = WasmRuntimeFactory.create(runtime);
+        NnContext context = rt.createNnContext()) {
       Set<NnExecutionTarget> supportedTargets = context.getSupportedTargets();
       assertNotNull(supportedTargets, "Supported targets should not be null");
 
-      LOGGER.info("Supported targets: " + supportedTargets);
+      LOGGER.info("[" + runtime + "] Supported targets: " + supportedTargets);
 
       for (NnExecutionTarget target : supportedTargets) {
         assertTrue(
@@ -432,60 +427,74 @@ public class WasiNnTest {
   }
 
   @EnabledIf("isNnAvailable")
-  @Test
-  void testNnContextImplementationInfo() throws NnException {
-    LOGGER.info("Testing NnContext implementation info");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnContextImplementationInfo(final RuntimeType runtime) throws NnException {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing NnContext implementation info");
 
-    try (NnContext context = runtime.createNnContext()) {
+    try (WasmRuntime rt = WasmRuntimeFactory.create(runtime);
+        NnContext context = rt.createNnContext()) {
       NnContext.NnImplementationInfo info = context.getImplementationInfo();
       assertNotNull(info, "Implementation info should not be null");
 
-      LOGGER.info("Implementation version: " + info.getVersion());
-      LOGGER.info("Available backends: " + info.getBackends());
-      LOGGER.info("Default backend: " + info.getDefaultBackend());
+      LOGGER.info("[" + runtime + "] Implementation version: " + info.getVersion());
+      LOGGER.info("[" + runtime + "] Available backends: " + info.getBackends());
+      LOGGER.info("[" + runtime + "] Default backend: " + info.getDefaultBackend());
     }
   }
 
   @EnabledIf("isNnAvailable")
-  @Test
-  void testNnContextLifecycle() throws NnException {
-    LOGGER.info("Testing NnContext lifecycle");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnContextLifecycle(final RuntimeType runtime) throws NnException {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing NnContext lifecycle");
 
-    NnContext context = runtime.createNnContext();
-    assertNotNull(context, "Context should be created");
-    assertTrue(context.isValid(), "Context should be valid after creation");
+    try (WasmRuntime rt = WasmRuntimeFactory.create(runtime)) {
+      NnContext context = rt.createNnContext();
+      assertNotNull(context, "Context should be created");
+      assertTrue(context.isValid(), "Context should be valid after creation");
 
-    context.close();
-    assertFalse(context.isValid(), "Context should be invalid after close");
+      context.close();
+      assertFalse(context.isValid(), "Context should be invalid after close");
 
-    // Double close should not throw
-    assertDoesNotThrow(context::close, "Double close should not throw");
+      // Double close should not throw
+      assertDoesNotThrow(context::close, "Double close should not throw");
 
-    LOGGER.info("Successfully validated context lifecycle");
+      LOGGER.info("[" + runtime + "] Successfully validated context lifecycle");
+    }
   }
 
   @EnabledIf("isNnAvailable")
-  @Test
-  void testNnContextMultipleCreation() throws NnException {
-    LOGGER.info("Testing multiple NnContext creation");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnContextMultipleCreation(final RuntimeType runtime) throws NnException {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing multiple NnContext creation");
 
-    for (int i = 0; i < 5; i++) {
-      try (NnContext context = runtime.createNnContext()) {
-        assertNotNull(context, "Context " + i + " should be created");
-        assertTrue(context.isValid(), "Context " + i + " should be valid");
-        LOGGER.fine("Created context iteration: " + i);
+    try (WasmRuntime rt = WasmRuntimeFactory.create(runtime)) {
+      for (int i = 0; i < 5; i++) {
+        try (NnContext context = rt.createNnContext()) {
+          assertNotNull(context, "Context " + i + " should be created");
+          assertTrue(context.isValid(), "Context " + i + " should be valid");
+          LOGGER.fine("[" + runtime + "] Created context iteration: " + i);
+        }
       }
     }
 
-    LOGGER.info("Successfully created and closed multiple contexts");
+    LOGGER.info("[" + runtime + "] Successfully created and closed multiple contexts");
   }
 
   @EnabledIf("isNnAvailable")
-  @Test
-  void testNnGraphLoadingWithInvalidData() throws NnException {
-    LOGGER.info("Testing NnGraph loading with invalid data");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnGraphLoadingWithInvalidData(final RuntimeType runtime) throws NnException {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing NnGraph loading with invalid data");
 
-    try (NnContext context = runtime.createNnContext()) {
+    try (WasmRuntime rt = WasmRuntimeFactory.create(runtime);
+        NnContext context = rt.createNnContext()) {
       // Empty model data should fail
       assertThrows(
           Exception.class,
@@ -499,16 +508,19 @@ public class WasiNnTest {
           () -> context.loadGraph(invalidData, NnGraphEncoding.ONNX, NnExecutionTarget.CPU),
           "Invalid model data should throw");
 
-      LOGGER.info("Successfully validated graph loading error handling");
+      LOGGER.info("[" + runtime + "] Successfully validated graph loading error handling");
     }
   }
 
   @EnabledIf("isNnAvailable")
-  @Test
-  void testNnGraphLoadingNullParameters() throws NnException {
-    LOGGER.info("Testing NnGraph loading with null parameters");
+  @ParameterizedTest
+  @ArgumentsSource(RuntimeProvider.class)
+  void testNnGraphLoadingNullParameters(final RuntimeType runtime) throws NnException {
+    setRuntime(runtime);
+    LOGGER.info("[" + runtime + "] Testing NnGraph loading with null parameters");
 
-    try (NnContext context = runtime.createNnContext()) {
+    try (WasmRuntime rt = WasmRuntimeFactory.create(runtime);
+        NnContext context = rt.createNnContext()) {
       assertThrows(
           NullPointerException.class,
           () -> context.loadGraph((byte[]) null, NnGraphEncoding.ONNX, NnExecutionTarget.CPU),
@@ -524,11 +536,11 @@ public class WasiNnTest {
           () -> context.loadGraph(new byte[] {1, 2, 3}, NnGraphEncoding.ONNX, null),
           "Null target should throw NullPointerException");
 
-      LOGGER.info("Successfully validated null parameter handling");
+      LOGGER.info("[" + runtime + "] Successfully validated null parameter handling");
     }
   }
 
-  // ==================== Encoding and Target Enum Tests ====================
+  // ==================== Encoding and Target Enum Tests (pure Java) ====================
 
   @Test
   void testNnGraphEncodingValues() {
@@ -574,7 +586,23 @@ public class WasiNnTest {
 
   // ==================== Helper Methods ====================
 
-  /** Checks if WASI-NN is available in the current runtime. Used by @EnabledIf annotations. */
+  /**
+   * Checks if WASI-NN is available for a specific runtime type.
+   *
+   * @param runtime the runtime type to check
+   * @return true if WASI-NN is available
+   */
+  private static boolean isNnAvailableForRuntime(final RuntimeType runtime) {
+    try {
+      try (WasmRuntime testRuntime = WasmRuntimeFactory.create(runtime)) {
+        return testRuntime.isNnAvailable();
+      }
+    } catch (final Exception e) {
+      return false;
+    }
+  }
+
+  /** Checks if WASI-NN is available in any runtime. Used by @EnabledIf annotations. */
   static boolean isNnAvailable() {
     try {
       // Check if JNI NN classes are available (native implementation exists)

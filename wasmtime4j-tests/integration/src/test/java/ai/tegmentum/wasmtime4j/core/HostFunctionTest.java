@@ -491,7 +491,8 @@ public final class HostFunctionTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should call host function with various integer values")
-    void shouldCallHostFunctionWithVariousIntegerValues(final RuntimeType runtime) throws Exception {
+    void shouldCallHostFunctionWithVariousIntegerValues(final RuntimeType runtime)
+        throws Exception {
       setRuntime(runtime);
       LOGGER.info("Testing host function with various integer values [" + runtime + "]");
 
@@ -844,7 +845,8 @@ public final class HostFunctionTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should propagate exception from host function as trap")
-    void shouldPropagateExceptionFromHostFunctionAsTrap(final RuntimeType runtime) throws Exception {
+    void shouldPropagateExceptionFromHostFunctionAsTrap(final RuntimeType runtime)
+        throws Exception {
       setRuntime(runtime);
       LOGGER.info("Testing host function exception propagation [" + runtime + "]");
 
