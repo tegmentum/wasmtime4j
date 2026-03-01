@@ -65,9 +65,9 @@
         <checkstyle.plugin.version>3.3.0</checkstyle.plugin.version>
         <checkstyle.version>10.12.3</checkstyle.version>
         <spotless.plugin.version>2.46.1</spotless.plugin.version>
-        <spotbugs.plugin.version>4.8.6.4</spotbugs.plugin.version>
-        <spotbugs.version>4.8.6</spotbugs.version>
-        <findsecbugs.version>1.12.0</findsecbugs.version>
+        <spotbugs.plugin.version>4.9.8.2</spotbugs.plugin.version>
+        <spotbugs.version>4.9.8</spotbugs.version>
+        <findsecbugs.version>1.14.0</findsecbugs.version>
         <pmd.plugin.version>3.25.0</pmd.plugin.version>
         <pmd.version>7.6.0</pmd.version>
         <jacoco.plugin.version>0.8.14</jacoco.plugin.version>
