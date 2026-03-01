@@ -22,6 +22,7 @@
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
 use std::panic;
+use std::sync::LazyLock;
 use wasmtime::{Engine, Module};
 
 /// Structured input for module serialization fuzzing.
@@ -52,20 +53,19 @@ const VALID_MODULE_WAT: &str = r#"
 )
 "#;
 
+static ENGINE: LazyLock<Engine> = LazyLock::new(Engine::default);
+
+/// Cached compiled module and its serialized bytes.
+static MODULE_AND_SERIALIZED: LazyLock<(Module, Vec<u8>)> = LazyLock::new(|| {
+    let module = Module::new(&*ENGINE, VALID_MODULE_WAT)
+        .expect("test module WAT should compile");
+    let serialized = module.serialize()
+        .expect("module serialization should succeed");
+    (module, serialized)
+});
+
 fuzz_target!(|input: ModuleSerializeInput| {
-    let engine = Engine::default();
-
-    // Compile a valid module
-    let module = match Module::new(&engine, VALID_MODULE_WAT) {
-        Ok(m) => m,
-        Err(_) => return,
-    };
-
-    // Serialize the module
-    let serialized = match module.serialize() {
-        Ok(s) => s,
-        Err(_) => return,
-    };
+    let (_, serialized) = &*MODULE_AND_SERIALIZED;
 
     if serialized.is_empty() {
         return;
@@ -118,6 +118,6 @@ fuzz_target!(|input: ModuleSerializeInput| {
     // when deserializing corrupted data. This allows us to continue fuzzing rather than
     // terminating on the first assertion failure.
     let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| {
-        unsafe { Module::deserialize(&engine, &mutated) }
+        unsafe { Module::deserialize(&*ENGINE, &mutated) }
     }));
 });

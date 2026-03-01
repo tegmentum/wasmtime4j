@@ -23,11 +23,13 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.wasi.WasiLinker;
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Fuzz tests for WASI (WebAssembly System Interface) operations.
@@ -91,72 +93,64 @@ public class WasiFuzzer {
       """;
 
   /**
-   * Fuzz test for WASI file-related operations.
+   * Fuzz test for WASI argument and environment passing.
    *
-   * <p>This test configures WASI with fuzzed directory mappings and attempts file operations. The
-   * runtime should handle invalid paths and operations gracefully.
+   * <p>This test configures WASI with fuzzed command-line arguments and environment variables, then
+   * calls WASI functions that read args/environ sizes. This exercises the actual WASI
+   * argument/environment passing path with fuzzed data.
    *
    * @param data fuzzed data provider
    */
   @FuzzTest
   public void fuzzWasiFileOperations(final FuzzedDataProvider data) {
-    // Generate fuzzed path components
-    final String pathComponent = data.consumeString(100);
+    // Generate fuzzed arguments
+    final int argCount = data.consumeInt(0, 20);
+    final List<String> fuzzedArgs = new ArrayList<>();
+    for (int i = 0; i < argCount; i++) {
+      fuzzedArgs.add(data.consumeString(200));
+    }
+
+    // Generate fuzzed environment variables
+    final int envCount = data.consumeInt(0, 20);
+    final Map<String, String> fuzzedEnv = new HashMap<>();
+    for (int i = 0; i < envCount; i++) {
+      final String key = data.consumeString(100);
+      final String value = data.consumeString(200);
+      if (!key.isEmpty()) {
+        fuzzedEnv.put(key, value);
+      }
+    }
 
     try (Engine engine = Engine.create();
         Store store = engine.createStore();
-        Linker<Void> linker = Linker.create(engine)) {
+        WasiLinker wasiLinker = WasiLinker.create(engine)) {
 
-      // Enable WASI
-      linker.enableWasi();
+      // Configure WASI with fuzzed arguments and environment
+      wasiLinker.setArguments(fuzzedArgs);
+      wasiLinker.setEnvironmentVariables(fuzzedEnv);
 
-      // Create a temporary directory for safe file operations
-      final Path tempDir = Files.createTempDirectory("wasmtime4j-fuzz");
-      try {
-        // Try to create a file with a fuzzed name component
-        // Sanitize the path to avoid path traversal
-        final String safeName =
-            pathComponent
-                .replaceAll("[^a-zA-Z0-9._-]", "_")
-                .substring(0, Math.min(50, pathComponent.length()));
+      // Compile and instantiate the WASI args module
+      try (Module module = engine.compileWat(WASI_ARGS_MODULE_WAT);
+          Instance instance = wasiLinker.instantiate(store, module)) {
 
-        if (!safeName.isEmpty()) {
-          final Path testFile = tempDir.resolve(safeName);
-          final byte[] content = data.consumeBytes(1024);
-
-          try {
-            Files.write(testFile, content);
-
-            // Verify the file was written
-            if (Files.exists(testFile)) {
-              final byte[] readBack = Files.readAllBytes(testFile);
-              if (readBack.length != content.length) {
-                throw new AssertionError("File content length mismatch");
-              }
-            }
-          } catch (java.io.IOException e) {
-            // Expected for invalid paths or I/O errors
-          }
+        // Call get_args_sizes — reads the fuzzed args through WASI
+        final WasmValue[] argsResults = instance.callFunction("get_args_sizes");
+        if (argsResults != null && argsResults.length > 0) {
+          // Return code should be 0 (success) or a valid WASI error code
+          argsResults[0].asInt();
         }
 
-        // Compile a simple WASI module
-        try (Module module = engine.compileWat(WASI_ARGS_MODULE_WAT);
-            Instance instance = linker.instantiate(store, module)) {
-
-          // Call the get_args_sizes function
-          final WasmValue[] results = instance.callFunction("get_args_sizes");
-          // Result should be 0 (WASI_ESUCCESS) or an error code
+        // Call get_environ_sizes — reads the fuzzed env through WASI
+        final WasmValue[] envResults = instance.callFunction("get_environ_sizes");
+        if (envResults != null && envResults.length > 0) {
+          envResults[0].asInt();
         }
-
-      } finally {
-        // Clean up temp directory
-        deleteRecursively(tempDir.toFile());
       }
 
     } catch (WasmException e) {
       // Expected for various WASI errors
-    } catch (java.io.IOException e) {
-      // Expected for I/O errors
+    } catch (IllegalArgumentException e) {
+      // Expected for invalid args/env values
     } catch (Exception e) {
       throw e;
     }
@@ -285,20 +279,4 @@ public class WasiFuzzer {
     }
   }
 
-  /**
-   * Recursively deletes a directory and its contents.
-   *
-   * @param file the file or directory to delete
-   */
-  private void deleteRecursively(final File file) {
-    if (file.isDirectory()) {
-      final File[] children = file.listFiles();
-      if (children != null) {
-        for (File child : children) {
-          deleteRecursively(child);
-        }
-      }
-    }
-    file.delete();
-  }
 }

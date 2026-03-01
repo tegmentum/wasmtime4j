@@ -16,6 +16,7 @@
 
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
+use std::sync::LazyLock;
 use wasmtime::{Engine, Func, FuncType, Instance, Module, Store, Val, ValType};
 
 /// Structured input for function call fuzzing
@@ -59,18 +60,16 @@ const TEST_MODULE_WAT: &str = r#"
 )
 "#;
 
+static ENGINE: LazyLock<Engine> = LazyLock::new(Engine::default);
+static MODULE: LazyLock<Module> = LazyLock::new(|| {
+    Module::new(&*ENGINE, TEST_MODULE_WAT).expect("test module WAT should compile")
+});
+
 fuzz_target!(|input: FuncCallInput| {
-    // Create engine and store
-    let engine = Engine::default();
-    let mut store = Store::new(&engine, ());
+    let mut store = Store::new(&*ENGINE, ());
 
-    // Compile and instantiate the test module
-    let module = match Module::new(&engine, TEST_MODULE_WAT) {
-        Ok(m) => m,
-        Err(_) => return,
-    };
-
-    let instance = match Instance::new(&mut store, &module, &[]) {
+    // Instantiate from cached module
+    let instance = match Instance::new(&mut store, &*MODULE, &[]) {
         Ok(i) => i,
         Err(_) => return,
     };

@@ -33,6 +33,13 @@ on:
           - wit_deserialize
           - memory_access
           - func_call
+          - module_serialize
+          - error_message
+      java_fuzz_duration:
+        description: 'Java fuzz duration per test in seconds'
+        required: false
+        default: '60'
+        type: string
 
   push:
     paths:
@@ -66,10 +73,19 @@ jobs:
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz
 
+      - name: Compile all fuzz targets
+        working-directory: wasmtime4j-native
+        run: |
+          for target in module_parse wit_deserialize memory_access func_call module_serialize error_message; do
+            echo "::group::Compiling $target"
+            cargo +nightly fuzz build $target
+            echo "::endgroup::"
+          done
+
       - name: Run quick fuzz test (60s each)
         working-directory: wasmtime4j-native
         run: |
-          for target in module_parse wit_deserialize memory_access func_call; do
+          for target in module_parse wit_deserialize memory_access func_call module_serialize error_message; do
             echo "::group::Fuzzing $target"
             cargo +nightly fuzz run $target -- -max_total_time=60 || true
             echo "::endgroup::"
@@ -97,6 +113,8 @@ jobs:
           - wit_deserialize
           - memory_access
           - func_call
+          - module_serialize
+          - error_message
 
     steps:
       - name: Checkout repository
@@ -155,6 +173,56 @@ jobs:
           path: wasmtime4j-native/fuzz/corpus/${{ matrix.target }}/
           if-no-files-found: ignore
 
+  # Java Jazzer fuzz tests (scheduled or manual dispatch only)
+  fuzz-java:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    name: Fuzz Java (Jazzer)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 23
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '23'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build project (skip tests)
+        run: |
+          ./mvnw clean install -DskipTests -q \
+            -Dspotbugs.skip=true -Dcheckstyle.skip=true \
+            -Djacoco.skip=true -Dspotless.check.skip=true \
+            -Dpmd.skip=true -Dmaven.javadoc.skip=true
+
+      - name: Determine Java fuzz duration
+        id: java-duration
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "seconds=60" >> $GITHUB_OUTPUT
+          else
+            echo "seconds=${{ inputs.java_fuzz_duration || '60' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Java fuzz tests
+        run: |
+          ./mvnw test -pl wasmtime4j-tests/fuzz -Pfuzz \
+            -Dfuzz.duration=${{ steps.java-duration.outputs.seconds }} -q
+
+      - name: Upload Java fuzz findings
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-fuzz-findings
+          path: |
+            wasmtime4j-tests/fuzz/target/surefire-reports/
+            wasmtime4j-tests/fuzz/.cifuzz-corpus/
+          if-no-files-found: ignore
+
   # Coverage report for fuzzed code paths
   fuzz-coverage:
     if: github.event_name == 'schedule'
@@ -187,7 +255,7 @@ jobs:
         working-directory: wasmtime4j-native
         run: |
           # Run each target briefly to generate coverage
-          for target in module_parse wit_deserialize memory_access func_call; do
+          for target in module_parse wit_deserialize memory_access func_call module_serialize error_message; do
             echo "::group::Coverage for $target"
             cargo +nightly fuzz coverage $target fuzz/corpus/$target -- -runs=0 || true
             echo "::endgroup::"
@@ -203,7 +271,7 @@ jobs:
   # Notify on crashes found during scheduled runs
   notify-crashes:
     if: github.event_name == 'schedule' && failure()
-    needs: fuzz-rust
+    needs: [fuzz-rust, fuzz-java]
     runs-on: ubuntu-latest
     name: Notify Crashes
 
@@ -212,7 +280,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const title = `🐛 Fuzz testing found crashes - ${new Date().toISOString().split('T')[0]}`;
+            const title = `Fuzz testing found crashes - ${new Date().toISOString().split('T')[0]}`;
             const body = `## Fuzz Testing Crash Report
 
             The scheduled fuzz testing run found one or more crashes.

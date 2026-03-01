@@ -18,6 +18,8 @@ mkdir -p "$CORPUS_DIR/module_parse"
 mkdir -p "$CORPUS_DIR/wit_deserialize"
 mkdir -p "$CORPUS_DIR/memory_access"
 mkdir -p "$CORPUS_DIR/func_call"
+mkdir -p "$CORPUS_DIR/module_serialize"
+mkdir -p "$CORPUS_DIR/error_message"
 
 # =============================================================================
 # module_parse corpus
@@ -158,11 +160,58 @@ printf '\x03\x00\x00\x00\x00\x00' > "$CORPUS_DIR/func_call/const.bin"
 printf '\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00' > "$CORPUS_DIR/func_call/type_mismatch.bin"
 
 # =============================================================================
+# module_serialize corpus
+# =============================================================================
+echo "Generating module_serialize corpus..."
+
+# module_serialize uses Arbitrary-derived struct input. The fuzzer compiles its own
+# module from VALID_MODULE_WAT and serializes it internally. libfuzzer generates
+# the Arbitrary struct automatically, so no binary seeds are strictly needed.
+# We provide a few minimal seeds to give the fuzzer starting points for each operation.
+
+# Operation 0: bit flip (mutation_offset=0, mutation_byte=0xFF, truncate_len=0, operation=0)
+printf '\x00\x00\xff\x00\x00\x00\x00' > "$CORPUS_DIR/module_serialize/bit_flip.bin"
+
+# Operation 1: truncate (mutation_offset=0, mutation_byte=0, truncate_len=16, operation=1)
+printf '\x00\x00\x00\x10\x00\x01\x00' > "$CORPUS_DIR/module_serialize/truncate.bin"
+
+# Operation 2: append garbage (mutation_offset=0, mutation_byte=0, truncate_len=0, operation=2)
+printf '\x00\x00\x00\x00\x00\x02\xde\xad\xbe\xef' > "$CORPUS_DIR/module_serialize/append.bin"
+
+# Operation 3: zero out range (mutation_offset=0, mutation_byte=8, truncate_len=0, operation=3)
+printf '\x00\x00\x08\x00\x00\x03\x00' > "$CORPUS_DIR/module_serialize/zero_range.bin"
+
+# =============================================================================
+# error_message corpus
+# =============================================================================
+echo "Generating error_message corpus..."
+
+# error_message uses Arbitrary-derived struct with message_bytes, error_category,
+# include_context, and context_bytes. We provide seeds with varying categories.
+
+# Category 0 (Compilation), short message, no context
+printf '\x05hello\x00\x00\x00' > "$CORPUS_DIR/error_message/compilation.bin"
+
+# Category 3 (Runtime with backtrace), include context
+printf '\x07runtime\x03\x01\x03ctx' > "$CORPUS_DIR/error_message/runtime.bin"
+
+# Category 26 (TypeMismatch), with expected/actual strings
+printf '\x08expected\x1a\x01\x06actual' > "$CORPUS_DIR/error_message/type_mismatch.bin"
+
+# Empty message (edge case)
+printf '\x00\x00\x00\x00' > "$CORPUS_DIR/error_message/empty.bin"
+
+# Large category value (tests modulo behavior)
+printf '\x03abc\xff\x00\x00' > "$CORPUS_DIR/error_message/large_category.bin"
+
+# =============================================================================
 # Summary
 # =============================================================================
 echo ""
 echo "Corpus generation complete!"
-echo "  module_parse:    $(ls -1 "$CORPUS_DIR/module_parse" 2>/dev/null | wc -l) files"
-echo "  wit_deserialize: $(ls -1 "$CORPUS_DIR/wit_deserialize" 2>/dev/null | wc -l) files"
-echo "  memory_access:   $(ls -1 "$CORPUS_DIR/memory_access" 2>/dev/null | wc -l) files"
-echo "  func_call:       $(ls -1 "$CORPUS_DIR/func_call" 2>/dev/null | wc -l) files"
+echo "  module_parse:      $(ls -1 "$CORPUS_DIR/module_parse" 2>/dev/null | wc -l) files"
+echo "  wit_deserialize:   $(ls -1 "$CORPUS_DIR/wit_deserialize" 2>/dev/null | wc -l) files"
+echo "  memory_access:     $(ls -1 "$CORPUS_DIR/memory_access" 2>/dev/null | wc -l) files"
+echo "  func_call:         $(ls -1 "$CORPUS_DIR/func_call" 2>/dev/null | wc -l) files"
+echo "  module_serialize:  $(ls -1 "$CORPUS_DIR/module_serialize" 2>/dev/null | wc -l) files"
+echo "  error_message:     $(ls -1 "$CORPUS_DIR/error_message" 2>/dev/null | wc -l) files"

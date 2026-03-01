@@ -15,6 +15,7 @@
 
 use arbitrary::Arbitrary;
 use libfuzzer_sys::fuzz_target;
+use std::sync::LazyLock;
 use wasmtime::{Engine, Instance, Memory, MemoryType, Module, Store};
 
 /// Structured input for memory access fuzzing
@@ -40,13 +41,13 @@ const MINIMAL_MEMORY_MODULE: &[u8] = &[
     0x07, 0x08, 0x01, 0x04, 0x6D, 0x65, 0x6D, 0x30, 0x02, 0x00, // export section: "mem0" = memory 0
 ];
 
+static ENGINE: LazyLock<Engine> = LazyLock::new(Engine::default);
+
 fuzz_target!(|input: MemoryAccessInput| {
-    // Create engine and store
-    let engine = Engine::default();
-    let mut store = Store::new(&engine, ());
+    let mut store = Store::new(&*ENGINE, ());
 
     // Approach 1: Use module with memory
-    if let Ok(module) = Module::new(&engine, MINIMAL_MEMORY_MODULE) {
+    if let Ok(module) = Module::new(&*ENGINE, MINIMAL_MEMORY_MODULE) {
         if let Ok(instance) = Instance::new(&mut store, &module, &[]) {
             if let Some(memory_export) = instance.get_memory(&mut store, "mem0") {
                 fuzz_memory_operations(&mut store, memory_export, &input);

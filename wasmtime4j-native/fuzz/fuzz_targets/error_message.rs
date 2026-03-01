@@ -30,9 +30,12 @@ fuzz_target!(|input: ErrorMessageInput| {
         &input.context_bytes.iter().take(1024).copied().collect::<Vec<u8>>()
     ).into_owned();
 
-    // Construct various error types based on category selector
-    // Using wasmtime4j::error::WasmtimeError variants
-    let error = match input.error_category % 20 {
+    // Construct various error types based on category selector.
+    // Covers all variants that take simple String fields.
+    // Skipped: Io (requires io::Error), Multiple (requires Vec<WasmtimeError>),
+    //          WasiExit (requires i32), WastExecutionError (tuple variant),
+    //          JniError (tuple variant)
+    let error = match input.error_category % 29 {
         0 => wasmtime4j::error::WasmtimeError::Compilation { message: message.clone() },
         1 => wasmtime4j::error::WasmtimeError::Validation { message: message.clone() },
         2 => wasmtime4j::error::WasmtimeError::Module { message: message.clone() },
@@ -40,7 +43,7 @@ fuzz_target!(|input: ErrorMessageInput| {
             message: message.clone(),
             backtrace: None,
         },
-        4 => wasmtime4j::error::WasmtimeError::InvalidParameter { message: message.clone() },
+        4 => wasmtime4j::error::WasmtimeError::EngineConfig { message: message.clone() },
         5 => wasmtime4j::error::WasmtimeError::Store { message: message.clone() },
         6 => wasmtime4j::error::WasmtimeError::Instance { message: message.clone() },
         7 => wasmtime4j::error::WasmtimeError::Function { message: message.clone() },
@@ -48,17 +51,26 @@ fuzz_target!(|input: ErrorMessageInput| {
         9 => wasmtime4j::error::WasmtimeError::Table { message: message.clone() },
         10 => wasmtime4j::error::WasmtimeError::Global { message: message.clone() },
         11 => wasmtime4j::error::WasmtimeError::Linker { message: message.clone() },
-        12 => wasmtime4j::error::WasmtimeError::Wasi { message: message.clone() },
-        13 => wasmtime4j::error::WasmtimeError::Security { message: message.clone() },
-        14 => wasmtime4j::error::WasmtimeError::Component { message: message.clone() },
-        15 => wasmtime4j::error::WasmtimeError::Serialization { message: message.clone() },
-        16 => wasmtime4j::error::WasmtimeError::TypeMismatch {
+        12 => wasmtime4j::error::WasmtimeError::ImportExport { message: message.clone() },
+        13 => wasmtime4j::error::WasmtimeError::Type { message: message.clone() },
+        14 => wasmtime4j::error::WasmtimeError::Resource { message: message.clone() },
+        15 => wasmtime4j::error::WasmtimeError::InvalidParameter { message: message.clone() },
+        16 => wasmtime4j::error::WasmtimeError::Concurrency { message: message.clone() },
+        17 => wasmtime4j::error::WasmtimeError::Wasi { message: message.clone() },
+        18 => wasmtime4j::error::WasmtimeError::Security { message: message.clone() },
+        19 => wasmtime4j::error::WasmtimeError::Component { message: message.clone() },
+        20 => wasmtime4j::error::WasmtimeError::Interface { message: message.clone() },
+        21 => wasmtime4j::error::WasmtimeError::Internal { message: message.clone() },
+        22 => wasmtime4j::error::WasmtimeError::Execution { message: message.clone() },
+        23 => wasmtime4j::error::WasmtimeError::Instantiation { message: message.clone() },
+        24 => wasmtime4j::error::WasmtimeError::CallerContextError { message: message.clone() },
+        25 => wasmtime4j::error::WasmtimeError::UnsupportedFeature { message: message.clone() },
+        26 => wasmtime4j::error::WasmtimeError::TypeMismatch {
             expected: message.clone(),
             actual: context_msg.clone(),
         },
-        17 => wasmtime4j::error::WasmtimeError::ExportNotFound { name: message.clone() },
-        18 => wasmtime4j::error::WasmtimeError::Utf8Error { message: message.clone() },
-        19 => wasmtime4j::error::WasmtimeError::ResourceLimit { message: message.clone() },
+        27 => wasmtime4j::error::WasmtimeError::ExportNotFound { name: message.clone() },
+        28 => wasmtime4j::error::WasmtimeError::Utf8Error { message: message.clone() },
         _ => unreachable!(),
     };
 

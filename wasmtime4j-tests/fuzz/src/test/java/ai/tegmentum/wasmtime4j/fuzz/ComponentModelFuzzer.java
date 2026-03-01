@@ -17,34 +17,43 @@
 package ai.tegmentum.wasmtime4j.fuzz;
 
 import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmValue;
+import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import ai.tegmentum.wasmtime4j.type.FunctionType;
 import com.code_intelligence.jazzer.api.FuzzedDataProvider;
 import com.code_intelligence.jazzer.junit.FuzzTest;
 
 /**
- * Fuzz tests for WebAssembly Component Model operations.
+ * Fuzz tests for module operations via Linker and fuzzed bytecode compilation.
  *
- * <p>This fuzzer tests the robustness of Component Model operations including:
+ * <p>This fuzzer tests the robustness of:
  *
  * <ul>
- *   <li>Component/module instantiation with fuzzed bytecode
- *   <li>Module linking and dependency resolution
- *   <li>Module export inspection
+ *   <li>Module compilation from arbitrary byte sequences
+ *   <li>Linker host function definition with fuzzed names and signatures
+ *   <li>Module instantiation via Linker with defined host functions
+ *   <li>Export and import inspection of fuzzed modules
  * </ul>
  *
- * <p>Note: Component Model support may vary by engine. This fuzzer focuses on core module
- * operations that are universally available.
+ * <p>Note: Full Component Model (WIT components) is not yet exposed via the Java API. These tests
+ * exercise core module operations through the Linker, which is the primary module composition
+ * mechanism available.
  *
  * @since 1.0.0
  */
 public class ComponentModelFuzzer {
 
   /**
-   * Fuzz test for component/module instantiation with fuzzed bytes.
+   * Fuzz test for module compilation from arbitrary byte sequences.
    *
-   * <p>This test feeds arbitrary byte sequences to the module loader. The module loader should
-   * handle all inputs gracefully without crashing.
+   * <p>This test feeds arbitrary byte sequences to the module compiler. The compiler should handle
+   * all inputs gracefully without crashing. Unlike ModuleLoadFuzzer, this also attempts
+   * instantiation via a Linker when compilation succeeds.
    *
    * @param data fuzzed data provider
    */
@@ -52,132 +61,195 @@ public class ComponentModelFuzzer {
   public void fuzzComponentInstantiation(final FuzzedDataProvider data) {
     final byte[] moduleBytes = data.consumeRemainingAsBytes();
 
-    try (Engine engine = Engine.create()) {
+    try (Engine engine = Engine.create();
+        Store store = engine.createStore();
+        Linker<Void> linker = Linker.create(engine)) {
+
       // Try to compile arbitrary bytes as a module
       try (Module module = engine.compileModule(moduleBytes)) {
-        // If compilation succeeded, try to get some metadata
-        module.getExports();
-        module.getImports();
+        // If compilation succeeded, try instantiation via Linker
+        // This may fail if the module has unsatisfied imports
+        try (Instance instance = linker.instantiate(store, module)) {
+          instance.getExportNames();
+        }
+      }
+    } catch (WasmException e) {
+      // Expected for invalid module bytes or unsatisfied imports
+    } catch (IllegalArgumentException e) {
+      // Expected for null/empty input
+    } catch (Exception e) {
+      throw e;
+    }
+  }
+
+  /**
+   * Fuzz test for Linker host function definition with fuzzed names and signatures.
+   *
+   * <p>This test defines host functions in a Linker using fuzzed module names, function names, and
+   * type signatures, then attempts to instantiate a module that imports a function. The Linker
+   * should handle all valid and invalid inputs gracefully.
+   *
+   * @param data fuzzed data provider
+   */
+  @FuzzTest
+  public void fuzzComponentLinking(final FuzzedDataProvider data) {
+    final String moduleName = data.consumeString(100);
+    final String funcName = data.consumeString(100);
+    final int paramCount = data.consumeInt(0, 7);
+    final int resultCount = data.consumeInt(0, 4);
+
+    try (Engine engine = Engine.create();
+        Store store = engine.createStore();
+        Linker<Void> linker = Linker.create(engine)) {
+
+      // Build fuzzed parameter types
+      final WasmValueType[] params = new WasmValueType[paramCount];
+      for (int i = 0; i < paramCount; i++) {
+        params[i] = pickRandomType(data);
+      }
+
+      // Build fuzzed result types
+      final WasmValueType[] results = new WasmValueType[resultCount];
+      for (int i = 0; i < resultCount; i++) {
+        results[i] = pickRandomType(data);
+      }
+
+      // Define a host function with fuzzed signature
+      final FunctionType funcType = FunctionType.of(params, results);
+      linker.defineHostFunction(
+          moduleName,
+          funcName,
+          funcType,
+          (args) -> {
+            final WasmValue[] returnValues = new WasmValue[results.length];
+            for (int i = 0; i < results.length; i++) {
+              returnValues[i] = defaultValueForType(results[i]);
+            }
+            return returnValues;
+          });
+
+      // Also define a known "env"/"host_func" so we can test instantiation
+      final FunctionType envFuncType =
+          FunctionType.of(
+              new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
+      linker.defineHostFunction(
+          "env",
+          "host_func",
+          envFuncType,
+          (args) -> new WasmValue[] {WasmValue.i32(args[0].asInt())});
+
+      // Attempt instantiation with a module that imports "env"/"host_func"
+      final String importModuleWat =
+          """
+          (module
+              (import "env" "host_func" (func $hf (param i32) (result i32)))
+              (func (export "call_host") (param i32) (result i32)
+                  local.get 0
+                  call $hf)
+          )
+          """;
+
+      try (Module module = engine.compileWat(importModuleWat);
+          Instance instance = linker.instantiate(store, module)) {
+        final WasmValue[] callResults =
+            instance.callFunction("call_host", WasmValue.i32(42));
+        if (callResults != null && callResults.length > 0) {
+          final int result = callResults[0].asInt();
+          if (result != 42) {
+            throw new AssertionError(
+                "Host function identity expected 42 but got " + result);
+          }
+        }
+      }
+
+    } catch (WasmException e) {
+      // Expected for invalid module/function names or linking errors
+    } catch (IllegalArgumentException e) {
+      // Expected for null/empty inputs
+    } catch (Exception e) {
+      throw e;
+    }
+  }
+
+  /**
+   * Fuzz test for compiling fuzzed byte sequences and inspecting exports/imports.
+   *
+   * <p>This test attempts to compile fuzzed byte sequences as WASM modules and inspect their
+   * exports and imports. This exercises the module metadata extraction path with arbitrary input.
+   *
+   * @param data fuzzed data provider
+   */
+  @FuzzTest
+  public void fuzzComponentExports(final FuzzedDataProvider data) {
+    final byte[] moduleBytes = data.consumeRemainingAsBytes();
+
+    try (Engine engine = Engine.create()) {
+      // Attempt to compile fuzzed bytes
+      try (Module module = engine.compileModule(moduleBytes)) {
+        // Inspect exports
+        final var exports = module.getExports();
+        if (exports != null) {
+          for (var export : exports) {
+            // Access all export properties to exercise the metadata path
+            export.getName();
+            export.getType();
+          }
+        }
+
+        // Inspect imports
+        final var imports = module.getImports();
+        if (imports != null) {
+          for (var imp : imports) {
+            // Access all import properties
+            imp.getModuleName();
+            imp.getName();
+            imp.getType();
+          }
+        }
       }
     } catch (WasmException e) {
       // Expected for invalid module bytes
     } catch (IllegalArgumentException e) {
       // Expected for null/empty input
     } catch (Exception e) {
-      // Unexpected exception - might indicate a bug
       throw e;
     }
   }
 
   /**
-   * Fuzz test for module linking with fuzzed export names.
-   *
-   * <p>This test checks module exports with fuzzed export names. The runtime should handle invalid
-   * export names gracefully.
+   * Picks a random WebAssembly value type based on fuzzed input.
    *
    * @param data fuzzed data provider
+   * @return a random WasmValueType
    */
-  @FuzzTest
-  public void fuzzComponentLinking(final FuzzedDataProvider data) {
-    final String exportName = data.consumeString(200);
-
-    try (Engine engine = Engine.create()) {
-      // Create a minimal valid module
-      final byte[] minimalModule = createMinimalModuleBytes();
-
-      try (Module module = engine.compileModule(minimalModule)) {
-        // Check if the fuzzed export name exists (it almost certainly won't)
-        final var exports = module.getExports();
-        final var imports = module.getImports();
-
-        // These should never be null
-        if (exports == null || imports == null) {
-          throw new AssertionError("Export/Import lists should not be null");
-        }
-
-        // Check if any export matches the fuzzed name
-        boolean found = false;
-        for (var export : exports) {
-          if (export.getName().equals(exportName)) {
-            found = true;
-            break;
-          }
-        }
-        // Whether found or not is fine - we're testing for crashes
-      }
-    } catch (WasmException e) {
-      // Expected for various module errors
-    } catch (IllegalArgumentException e) {
-      // Expected for null/invalid inputs
-    } catch (Exception e) {
-      throw e;
-    }
-  }
-
-  /**
-   * Fuzz test for module export inspection.
-   *
-   * <p>This test inspects module exports and metadata. The runtime should handle all queries
-   * gracefully.
-   *
-   * @param data fuzzed data provider
-   */
-  @FuzzTest
-  public void fuzzComponentExports(final FuzzedDataProvider data) {
-    final boolean inspectExports = data.consumeBoolean();
-    final boolean inspectImports = data.consumeBoolean();
-
-    try (Engine engine = Engine.create()) {
-      // Try to create and inspect a module
-      final byte[] moduleBytes = createMinimalModuleBytes();
-
-      try (Module module = engine.compileModule(moduleBytes)) {
-        // Get exports
-        if (inspectExports) {
-          final var exports = module.getExports();
-          if (exports != null) {
-            for (var export : exports) {
-              // Access export properties to ensure they work
-              export.getName();
-              export.getType();
-            }
-          }
-        }
-
-        // Get imports
-        if (inspectImports) {
-          final var imports = module.getImports();
-          if (imports != null) {
-            for (var imp : imports) {
-              // Access import properties to ensure they work
-              imp.getModuleName();
-              imp.getName();
-              imp.getType();
-            }
-          }
-        }
-      }
-    } catch (WasmException e) {
-      // Expected for various module errors
-    } catch (Exception e) {
-      throw e;
-    }
-  }
-
-  /**
-   * Creates minimal module bytes for testing.
-   *
-   * <p>This returns a valid minimal WebAssembly module binary.
-   *
-   * @return minimal module bytes
-   */
-  private byte[] createMinimalModuleBytes() {
-    // A minimal valid WebAssembly module:
-    // Magic number: 0x00 0x61 0x73 0x6D ("\0asm")
-    // Version: 0x01 0x00 0x00 0x00 (version 1)
-    return new byte[] {
-      0x00, 0x61, 0x73, 0x6D, // magic: \0asm
-      0x01, 0x00, 0x00, 0x00 // version 1
+  private WasmValueType pickRandomType(final FuzzedDataProvider data) {
+    final int choice = data.consumeInt(0, 3);
+    return switch (choice) {
+      case 0 -> WasmValueType.I32;
+      case 1 -> WasmValueType.I64;
+      case 2 -> WasmValueType.F32;
+      case 3 -> WasmValueType.F64;
+      default -> WasmValueType.I32;
     };
+  }
+
+  /**
+   * Creates a default WasmValue for the given type.
+   *
+   * @param type the WebAssembly value type
+   * @return a default value for that type
+   */
+  private WasmValue defaultValueForType(final WasmValueType type) {
+    if (type == WasmValueType.I32) {
+      return WasmValue.i32(0);
+    } else if (type == WasmValueType.I64) {
+      return WasmValue.i64(0L);
+    } else if (type == WasmValueType.F32) {
+      return WasmValue.f32(0.0f);
+    } else if (type == WasmValueType.F64) {
+      return WasmValue.f64(0.0);
+    } else {
+      return WasmValue.i32(0);
+    }
   }
 }
