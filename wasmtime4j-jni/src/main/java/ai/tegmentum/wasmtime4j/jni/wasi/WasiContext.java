@@ -248,6 +248,17 @@ public final class WasiContext extends JniResource {
       throws JniException;
 
   /**
+   * Native method to rebuild the WASI context after configuration changes.
+   *
+   * <p>Must be called after setting network config, blocking, or random seed to apply the changes.
+   * This avoids redundant rebuilds when multiple settings are configured at once.
+   *
+   * @param handle the native handle for the WASI context
+   * @throws JniException if the rebuild fails
+   */
+  static native void nativeRebuildContext(long handle) throws JniException;
+
+  /**
    * Native method to add a directory mapping to the WASI context.
    *
    * @param handle the native handle for the WASI context

@@ -343,6 +343,9 @@ public final class WasiContextBuilder {
         WasiContext.nativeSetInsecureRandomSeed(nativeHandle, insecureRandomSeed, 0);
       }
 
+      // Rebuild context once after all configuration changes
+      WasiContext.nativeRebuildContext(nativeHandle);
+
       // Create and return Java wrapper
       return new WasiContext(nativeHandle, this);
 

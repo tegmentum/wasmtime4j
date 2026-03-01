@@ -24,7 +24,7 @@ pub struct WasiContext {
     /// The underlying Wasmtime WASI Preview 1 context
     inner: Arc<Mutex<WasiP1Ctx>>,
     /// Configuration metadata
-    pub(crate) config: WasiConfig,
+    config: WasiConfig,
     /// Directory mappings for filesystem access
     directory_mappings: HashMap<String, DirectoryMapping>,
     /// Environment variables
@@ -715,6 +715,31 @@ impl WasiContext {
         Ok(())
     }
 
+    /// Set network configuration fields.
+    pub(crate) fn set_network_config(
+        &mut self,
+        allow_network: bool,
+        allow_tcp: bool,
+        allow_udp: bool,
+        allow_ip_name_lookup: bool,
+    ) {
+        self.config.allow_network = allow_network;
+        self.config.allow_tcp = allow_tcp;
+        self.config.allow_udp = allow_udp;
+        self.config.allow_ip_name_lookup = allow_ip_name_lookup;
+        self.network_enabled = allow_network;
+    }
+
+    /// Set whether blocking the current thread is allowed.
+    pub(crate) fn set_allow_blocking(&mut self, allow: bool) {
+        self.config.allow_blocking_current_thread = allow;
+    }
+
+    /// Set the insecure random seed for deterministic testing.
+    pub(crate) fn set_insecure_random_seed(&mut self, seed: u128) {
+        self.config.insecure_random_seed = seed;
+    }
+
     /// Rebuild the WASI context with current configuration
     pub(crate) fn rebuild_context(&mut self) -> WasmtimeResult<()> {
         let mut builder = WasiCtxBuilder::new();
@@ -966,12 +991,12 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_network_config(
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
-        ctx.config.allow_network = allow_network != 0;
-        ctx.config.allow_tcp = allow_tcp != 0;
-        ctx.config.allow_udp = allow_udp != 0;
-        ctx.config.allow_ip_name_lookup = allow_ip_name_lookup != 0;
-        ctx.network_enabled = allow_network != 0;
-        ctx.rebuild_context()?;
+        ctx.set_network_config(
+            allow_network != 0,
+            allow_tcp != 0,
+            allow_udp != 0,
+            allow_ip_name_lookup != 0,
+        );
         Ok(())
     })
 }
@@ -984,8 +1009,7 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_allow_blocking(
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
-        ctx.config.allow_blocking_current_thread = allow != 0;
-        ctx.rebuild_context()?;
+        ctx.set_allow_blocking(allow != 0);
         Ok(())
     })
 }
@@ -1002,7 +1026,22 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_insecure_random_seed(
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
-        ctx.config.insecure_random_seed = (seed_hi as u128) << 64 | (seed_lo as u128);
+        ctx.set_insecure_random_seed((seed_hi as u128) << 64 | (seed_lo as u128));
+        Ok(())
+    })
+}
+
+/// Rebuild the WASI context after configuration changes.
+///
+/// Must be called after setting network config, blocking, or random seed
+/// to apply the changes. This avoids redundant rebuilds when multiple
+/// settings are configured at once.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_rebuild(
+    ctx_ptr: *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
         ctx.rebuild_context()?;
         Ok(())
     })

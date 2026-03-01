@@ -49,6 +49,14 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeS
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeRebuildContext
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeRebuildContext
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
  * Method:    nativeAddDirectory
  * Signature: (JLjava/lang/String;Ljava/lang/String;ZZZ)Z
  */

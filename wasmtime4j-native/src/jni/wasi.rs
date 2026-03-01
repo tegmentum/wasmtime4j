@@ -50,12 +50,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeS
         let (ctx, _) = unsafe {
             &mut *(context_handle as *mut (WasiContext, WasiFileDescriptorManager))
         };
-        ctx.config.allow_network = allow_network != 0;
-        ctx.config.allow_tcp = allow_tcp != 0;
-        ctx.config.allow_udp = allow_udp != 0;
-        ctx.config.allow_ip_name_lookup = allow_ip_name_lookup != 0;
-        ctx.network_enabled = allow_network != 0;
-        ctx.rebuild_context()?;
+        ctx.set_network_config(
+            allow_network != 0,
+            allow_tcp != 0,
+            allow_udp != 0,
+            allow_ip_name_lookup != 0,
+        );
         Ok(())
     });
 }
@@ -72,8 +72,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeS
         let (ctx, _) = unsafe {
             &mut *(context_handle as *mut (WasiContext, WasiFileDescriptorManager))
         };
-        ctx.config.allow_blocking_current_thread = allow != 0;
-        ctx.rebuild_context()?;
+        ctx.set_allow_blocking(allow != 0);
         Ok(())
     });
 }
@@ -91,7 +90,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeS
         let (ctx, _) = unsafe {
             &mut *(context_handle as *mut (WasiContext, WasiFileDescriptorManager))
         };
-        ctx.config.insecure_random_seed = (seed_hi as u128) << 64 | (seed_lo as u64 as u128);
+        ctx.set_insecure_random_seed((seed_hi as u128) << 64 | (seed_lo as u64 as u128));
+        Ok(())
+    });
+}
+
+/// Rebuild the WASI context after configuration changes.
+///
+/// Must be called after setting network config, blocking, or random seed
+/// to apply the changes.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeRebuildContext(
+    mut env: JNIEnv,
+    _class: JClass,
+    context_handle: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        let (ctx, _) = unsafe {
+            &mut *(context_handle as *mut (WasiContext, WasiFileDescriptorManager))
+        };
         ctx.rebuild_context()?;
         Ok(())
     });

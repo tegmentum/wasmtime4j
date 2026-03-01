@@ -658,4 +658,18 @@ public final class NativeWasiBindings extends NativeBindingsBase {
         seedLo,
         seedHi);
   }
+
+  /**
+   * Rebuilds the WASI context after configuration changes.
+   *
+   * <p>Must be called after setting network config, blocking, or random seed to apply the changes.
+   * This avoids redundant rebuilds when multiple settings are configured at once.
+   *
+   * @param contextHandle the WASI context handle
+   * @return 0 on success, non-zero on failure
+   */
+  public int wasiContextRebuild(final MemorySegment contextHandle) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction("wasmtime4j_wasi_context_rebuild", Integer.class, contextHandle);
+  }
 }

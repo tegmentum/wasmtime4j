@@ -350,17 +350,32 @@ public final class WasiContextBuilder {
 
       // Create native WASI context using Panama FFI
       final MemorySegment nativeHandle =
-          nativeCreate(
-              envArray,
-              argArray,
-              preopenArray,
-              workingDirStr,
-              allowNetwork,
-              allowTcp,
-              allowUdp,
-              allowIpNameLookup,
-              allowBlockingCurrentThread,
-              insecureRandomSeed);
+          nativeCreate(envArray, argArray, preopenArray, workingDirStr);
+
+      // Apply configuration via separate FFI calls
+      final ai.tegmentum.wasmtime4j.panama.NativeWasiBindings bindings =
+          ai.tegmentum.wasmtime4j.panama.NativeWasiBindings.getInstance();
+
+      // Apply network configuration
+      bindings.wasiContextSetNetworkConfig(
+          nativeHandle,
+          allowNetwork ? 1 : 0,
+          allowTcp ? 1 : 0,
+          allowUdp ? 1 : 0,
+          allowIpNameLookup ? 1 : 0);
+
+      // Apply blocking configuration
+      if (allowBlockingCurrentThread) {
+        bindings.wasiContextSetAllowBlocking(nativeHandle, 1);
+      }
+
+      // Apply insecure random seed
+      if (insecureRandomSeed != 0) {
+        bindings.wasiContextSetInsecureRandomSeed(nativeHandle, insecureRandomSeed, 0);
+      }
+
+      // Rebuild context once after all configuration changes
+      bindings.wasiContextRebuild(nativeHandle);
 
       // Create and return Java wrapper
       return new WasiContext(nativeHandle, resourceManager, this);
@@ -454,6 +469,10 @@ public final class WasiContextBuilder {
   /**
    * Native method to create a new WASI context using Panama FFI.
    *
+   * <p>Creates the context and configures environment, arguments, and pre-opened directories.
+   * Network, blocking, and random seed configuration should be applied separately via FFI setters
+   * followed by a single rebuild call.
+   *
    * @param environment environment variables as key=value pairs
    * @param arguments command-line arguments
    * @param preopenDirs pre-opened directory mappings
@@ -465,13 +484,7 @@ public final class WasiContextBuilder {
       final String[] environment,
       final String[] arguments,
       final String[] preopenDirs,
-      final String workingDir,
-      final boolean allowNetwork,
-      final boolean allowTcp,
-      final boolean allowUdp,
-      final boolean allowIpNameLookup,
-      final boolean allowBlockingCurrentThread,
-      final long insecureRandomSeed) {
+      final String workingDir) {
 
     LOGGER.fine(
         String.format(
@@ -495,41 +508,6 @@ public final class WasiContextBuilder {
       }
 
       LOGGER.fine("Created native WASI context with handle: " + contextHandle.address());
-
-      // Apply network configuration
-      int netResult =
-          bindings.wasiContextSetNetworkConfig(
-              contextHandle,
-              allowNetwork ? 1 : 0,
-              allowTcp ? 1 : 0,
-              allowUdp ? 1 : 0,
-              allowIpNameLookup ? 1 : 0);
-      if (netResult != 0) {
-        LOGGER.warning(
-            "Failed to set network configuration: "
-                + PanamaErrorMapper.getErrorDescription(netResult));
-      }
-
-      // Apply blocking configuration
-      if (allowBlockingCurrentThread) {
-        int blockResult = bindings.wasiContextSetAllowBlocking(contextHandle, 1);
-        if (blockResult != 0) {
-          LOGGER.warning(
-              "Failed to set allow blocking: "
-                  + PanamaErrorMapper.getErrorDescription(blockResult));
-        }
-      }
-
-      // Apply insecure random seed
-      if (insecureRandomSeed != 0) {
-        int seedResult =
-            bindings.wasiContextSetInsecureRandomSeed(contextHandle, insecureRandomSeed, 0);
-        if (seedResult != 0) {
-          LOGGER.warning(
-              "Failed to set insecure random seed: "
-                  + PanamaErrorMapper.getErrorDescription(seedResult));
-        }
-      }
 
       // Configure environment variables
       if (environment.length > 0) {
