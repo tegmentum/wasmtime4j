@@ -54,6 +54,12 @@ echo "Updating wasmtime4j-native/Cargo.toml package version..."
 sed -i.bak -E "s/^version = \"[0-9.-]+\"/version = \"${PKG_VERSION}\"/" "$PROJECT_ROOT/wasmtime4j-native/Cargo.toml"
 rm -f "$PROJECT_ROOT/wasmtime4j-native/Cargo.toml.bak"
 
+# Update fuzz/Cargo.toml wasmtime dependency version
+echo "Updating fuzz/Cargo.toml wasmtime version..."
+sed -i.bak -E "s/(^\[dependencies\.wasmtime\]$)/\1/" "$PROJECT_ROOT/wasmtime4j-native/fuzz/Cargo.toml"
+sed -i.bak -E "/^\[dependencies\.wasmtime\]/{n;s/version = \"[0-9.]+\"/version = \"${WASMTIME_VERSION}\"/;}" "$PROJECT_ROOT/wasmtime4j-native/fuzz/Cargo.toml"
+rm -f "$PROJECT_ROOT/wasmtime4j-native/fuzz/Cargo.toml.bak"
+
 # Update lib.rs WASMTIME_VERSION constant
 echo "Updating lib.rs WASMTIME_VERSION..."
 sed -i.bak -E "s/(WASMTIME_VERSION: &str = \")[0-9.]+\"/\1${WASMTIME_VERSION}\"/" "$PROJECT_ROOT/wasmtime4j-native/src/lib.rs"
