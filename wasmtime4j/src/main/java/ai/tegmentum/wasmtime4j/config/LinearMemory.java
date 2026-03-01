@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.config;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
