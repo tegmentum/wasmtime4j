@@ -141,6 +141,27 @@ pub fn take_resource(handle_id: u64) -> Option<ResourceAny> {
 /// - The data length is incorrect for the type
 /// - The data cannot be deserialized
 pub fn deserialize_to_val(type_discriminator: i32, data: &[u8]) -> Result<Val, WasmtimeError> {
+    deserialize_to_val_inner(type_discriminator, data, 0)
+}
+
+/// Maximum nesting depth for recursive container deserialization.
+/// Prevents stack overflow from deeply nested list/record/tuple/variant/option/result structures.
+const MAX_NESTING_DEPTH: usize = 128;
+
+fn deserialize_to_val_inner(
+    type_discriminator: i32,
+    data: &[u8],
+    depth: usize,
+) -> Result<Val, WasmtimeError> {
+    if depth > MAX_NESTING_DEPTH {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "Deserialization nesting depth {} exceeds maximum {}",
+                depth, MAX_NESTING_DEPTH
+            ),
+        });
+    }
+
     match type_discriminator {
         1 => deserialize_bool(data),
         2 => deserialize_s32(data),
@@ -148,15 +169,15 @@ pub fn deserialize_to_val(type_discriminator: i32, data: &[u8]) -> Result<Val, W
         4 => deserialize_float64(data),
         5 => deserialize_char(data),
         6 => deserialize_string(data),
-        7 => deserialize_record(data),
-        8 => deserialize_tuple(data),
+        7 => deserialize_record(data, depth),
+        8 => deserialize_tuple(data, depth),
         9 => deserialize_u32(data),
         10 => deserialize_u64(data),
-        11 => deserialize_list(data),
-        12 => deserialize_variant(data),
+        11 => deserialize_list(data, depth),
+        12 => deserialize_variant(data, depth),
         13 => deserialize_enum(data),
-        14 => deserialize_option(data),
-        15 => deserialize_result(data),
+        14 => deserialize_option(data, depth),
+        15 => deserialize_result(data, depth),
         16 => deserialize_flags(data),
         17 => deserialize_s8(data),
         18 => deserialize_s16(data),
@@ -633,7 +654,7 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_validate_discriminator(
 /// * `ptr` - Pointer to the buffer to free
 /// * `len` - Length of the buffer
 // Record deserialization
-fn deserialize_record(data: &[u8]) -> Result<Val, WasmtimeError> {
+fn deserialize_record(data: &[u8], depth: usize) -> Result<Val, WasmtimeError> {
     if data.len() < 4 {
         return Err(WasmtimeError::InvalidParameter {
             message: "Record data too short for field count".to_string(),
@@ -641,6 +662,19 @@ fn deserialize_record(data: &[u8]) -> Result<Val, WasmtimeError> {
     }
 
     let field_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+
+    // Each record field requires at minimum 12 bytes: 4 (name_len) + 4 (discriminator) + 4 (data_len)
+    let remaining = data.len() - 4;
+    let max_fields = remaining / 12;
+    if field_count > max_fields {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "Record field count {} exceeds maximum possible {} for {} bytes of data",
+                field_count, max_fields, remaining
+            ),
+        });
+    }
+
     let mut offset = 4;
     let mut fields = Vec::with_capacity(field_count);
 
@@ -713,7 +747,7 @@ fn deserialize_record(data: &[u8]) -> Result<Val, WasmtimeError> {
 
         // Read and deserialize field data
         let field_data = &data[offset..offset + length];
-        let field_val = deserialize_to_val(discriminator, field_data)?;
+        let field_val = deserialize_to_val_inner(discriminator, field_data, depth + 1)?;
         fields.push((field_name, field_val));
         offset += length;
     }
@@ -722,7 +756,7 @@ fn deserialize_record(data: &[u8]) -> Result<Val, WasmtimeError> {
 }
 
 // Tuple deserialization
-fn deserialize_tuple(data: &[u8]) -> Result<Val, WasmtimeError> {
+fn deserialize_tuple(data: &[u8], depth: usize) -> Result<Val, WasmtimeError> {
     if data.len() < 4 {
         return Err(WasmtimeError::InvalidParameter {
             message: "Tuple data too short for element count".to_string(),
@@ -730,11 +764,24 @@ fn deserialize_tuple(data: &[u8]) -> Result<Val, WasmtimeError> {
     }
 
     let element_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+
+    // Each tuple element requires at minimum 8 bytes: 4 (discriminator) + 4 (data_len)
+    let remaining = data.len() - 4;
+    let max_elements = remaining / 8;
+    if element_count > max_elements {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "Tuple element count {} exceeds maximum possible {} for {} bytes of data",
+                element_count, max_elements, remaining
+            ),
+        });
+    }
+
     let mut offset = 4;
     let mut elements = Vec::with_capacity(element_count);
 
     for _ in 0..element_count {
-        if offset >= data.len() {
+        if offset + 8 > data.len() {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Tuple data truncated".to_string(),
             });
@@ -763,7 +810,7 @@ fn deserialize_tuple(data: &[u8]) -> Result<Val, WasmtimeError> {
         }
 
         let element_data = &data[offset..offset + length];
-        let element_val = deserialize_to_val(discriminator, element_data)?;
+        let element_val = deserialize_to_val_inner(discriminator, element_data, depth + 1)?;
         elements.push(element_val);
         offset += length;
     }
@@ -771,7 +818,7 @@ fn deserialize_tuple(data: &[u8]) -> Result<Val, WasmtimeError> {
     Ok(Val::Tuple(elements.into()))
 }
 
-fn deserialize_list(data: &[u8]) -> Result<Val, WasmtimeError> {
+fn deserialize_list(data: &[u8], depth: usize) -> Result<Val, WasmtimeError> {
     if data.len() < 4 {
         return Err(WasmtimeError::InvalidParameter {
             message: "List data too short for element count".to_string(),
@@ -779,11 +826,24 @@ fn deserialize_list(data: &[u8]) -> Result<Val, WasmtimeError> {
     }
 
     let element_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+
+    // Each list element requires at minimum 8 bytes: 4 (discriminator) + 4 (data_len)
+    let remaining = data.len() - 4;
+    let max_elements = remaining / 8;
+    if element_count > max_elements {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "List element count {} exceeds maximum possible {} for {} bytes of data",
+                element_count, max_elements, remaining
+            ),
+        });
+    }
+
     let mut offset = 4;
     let mut elements = Vec::with_capacity(element_count);
 
     for _ in 0..element_count {
-        if offset >= data.len() {
+        if offset + 8 > data.len() {
             return Err(WasmtimeError::InvalidParameter {
                 message: "List data truncated".to_string(),
             });
@@ -812,7 +872,7 @@ fn deserialize_list(data: &[u8]) -> Result<Val, WasmtimeError> {
         }
 
         let element_data = &data[offset..offset + length];
-        let element_val = deserialize_to_val(discriminator, element_data)?;
+        let element_val = deserialize_to_val_inner(discriminator, element_data, depth + 1)?;
         elements.push(element_val);
         offset += length;
     }
@@ -820,7 +880,7 @@ fn deserialize_list(data: &[u8]) -> Result<Val, WasmtimeError> {
     Ok(Val::List(elements.into()))
 }
 
-fn deserialize_variant(data: &[u8]) -> Result<Val, WasmtimeError> {
+fn deserialize_variant(data: &[u8], depth: usize) -> Result<Val, WasmtimeError> {
     if data.len() < 4 {
         return Err(WasmtimeError::InvalidParameter {
             message: "Variant data too short for case name length".to_string(),
@@ -887,7 +947,7 @@ fn deserialize_variant(data: &[u8]) -> Result<Val, WasmtimeError> {
         }
 
         let payload_data = &data[offset..offset + length];
-        let payload_val = deserialize_to_val(discriminator, payload_data)?;
+        let payload_val = deserialize_to_val_inner(discriminator, payload_data, depth + 1)?;
         Some(Box::new(payload_val))
     } else {
         None
@@ -920,7 +980,7 @@ fn deserialize_enum(data: &[u8]) -> Result<Val, WasmtimeError> {
     Ok(Val::Enum(discriminant))
 }
 
-fn deserialize_option(data: &[u8]) -> Result<Val, WasmtimeError> {
+fn deserialize_option(data: &[u8], depth: usize) -> Result<Val, WasmtimeError> {
     if data.is_empty() {
         return Err(WasmtimeError::InvalidParameter {
             message: "Option data too short for is_some flag".to_string(),
@@ -960,7 +1020,7 @@ fn deserialize_option(data: &[u8]) -> Result<Val, WasmtimeError> {
         }
 
         let val_data = &data[offset..offset + length];
-        let val = deserialize_to_val(discriminator, val_data)?;
+        let val = deserialize_to_val_inner(discriminator, val_data, depth + 1)?;
         Some(Box::new(val))
     } else {
         None
@@ -969,7 +1029,7 @@ fn deserialize_option(data: &[u8]) -> Result<Val, WasmtimeError> {
     Ok(Val::Option(value))
 }
 
-fn deserialize_result(data: &[u8]) -> Result<Val, WasmtimeError> {
+fn deserialize_result(data: &[u8], depth: usize) -> Result<Val, WasmtimeError> {
     if data.len() < 2 {
         return Err(WasmtimeError::InvalidParameter {
             message: "Result data too short for flags".to_string(),
@@ -1010,7 +1070,7 @@ fn deserialize_result(data: &[u8]) -> Result<Val, WasmtimeError> {
         }
 
         let val_data = &data[offset..offset + length];
-        let val = deserialize_to_val(discriminator, val_data)?;
+        let val = deserialize_to_val_inner(discriminator, val_data, depth + 1)?;
         Some(Box::new(val))
     } else {
         None
@@ -1031,6 +1091,19 @@ fn deserialize_flags(data: &[u8]) -> Result<Val, WasmtimeError> {
     }
 
     let flag_count = u32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+
+    // Each flag requires at minimum 4 bytes: 4 (name_len) + 0 (empty name)
+    let remaining = data.len() - 4;
+    let max_flags = remaining / 4;
+    if flag_count > max_flags {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "Flags count {} exceeds maximum possible {} for {} bytes of data",
+                flag_count, max_flags, remaining
+            ),
+        });
+    }
+
     let mut offset = 4;
     let mut flags = Vec::with_capacity(flag_count);
 
