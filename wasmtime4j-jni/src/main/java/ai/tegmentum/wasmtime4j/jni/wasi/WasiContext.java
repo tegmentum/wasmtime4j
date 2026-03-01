@@ -210,6 +210,44 @@ public final class WasiContext extends JniResource {
       throws JniException;
 
   /**
+   * Native method to set network configuration on a WASI context.
+   *
+   * @param handle the native handle for the WASI context
+   * @param allowNetwork whether to allow network access (inherit_network)
+   * @param allowTcp whether to allow TCP socket creation
+   * @param allowUdp whether to allow UDP socket creation
+   * @param allowIpNameLookup whether to allow IP name lookups
+   * @throws JniException if the operation fails
+   */
+  static native void nativeSetNetworkConfig(
+      long handle,
+      boolean allowNetwork,
+      boolean allowTcp,
+      boolean allowUdp,
+      boolean allowIpNameLookup)
+      throws JniException;
+
+  /**
+   * Native method to set whether blocking the current thread is allowed.
+   *
+   * @param handle the native handle for the WASI context
+   * @param allow whether to allow blocking
+   * @throws JniException if the operation fails
+   */
+  static native void nativeSetAllowBlocking(long handle, boolean allow) throws JniException;
+
+  /**
+   * Native method to set the insecure random seed.
+   *
+   * @param handle the native handle for the WASI context
+   * @param seedLo low 64 bits of the u128 seed
+   * @param seedHi high 64 bits of the u128 seed
+   * @throws JniException if the operation fails
+   */
+  static native void nativeSetInsecureRandomSeed(long handle, long seedLo, long seedHi)
+      throws JniException;
+
+  /**
    * Native method to add a directory mapping to the WASI context.
    *
    * @param handle the native handle for the WASI context

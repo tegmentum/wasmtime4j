@@ -167,6 +167,29 @@ public final class NativeWasiBindings extends NativeBindingsBase {
         "wasmtime4j_wasi_context_has_stderr_capture",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
+    // WASI context configuration functions
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_set_network_config",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_set_allow_blocking",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+    addFunctionBinding(
+        "wasmtime4j_wasi_context_set_insecure_random_seed",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.JAVA_LONG));
+
     // WASI store and linker integration
     addFunctionBinding(
         "wasi_ctx_add_to_store",
@@ -573,5 +596,66 @@ public final class NativeWasiBindings extends NativeBindingsBase {
   public int linkerAddWasi(final MemorySegment linkerHandle) {
     validatePointer(linkerHandle, "linkerHandle");
     return callNativeFunction("wasmtime4j_linker_add_wasi", Integer.class, linkerHandle);
+  }
+
+  // ===== WASI Context Configuration =====
+
+  /**
+   * Sets network configuration on a WASI context.
+   *
+   * @param contextHandle the WASI context handle
+   * @param allowNetwork 1 to allow network access (inherit_network), 0 to deny
+   * @param allowTcp 1 to allow TCP socket creation, 0 to deny
+   * @param allowUdp 1 to allow UDP socket creation, 0 to deny
+   * @param allowIpNameLookup 1 to allow IP name lookups (DNS), 0 to deny
+   * @return 0 on success, non-zero on failure
+   */
+  public int wasiContextSetNetworkConfig(
+      final MemorySegment contextHandle,
+      final int allowNetwork,
+      final int allowTcp,
+      final int allowUdp,
+      final int allowIpNameLookup) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_network_config",
+        Integer.class,
+        contextHandle,
+        allowNetwork,
+        allowTcp,
+        allowUdp,
+        allowIpNameLookup);
+  }
+
+  /**
+   * Sets whether blocking the current thread is allowed.
+   *
+   * @param contextHandle the WASI context handle
+   * @param allow 1 to allow blocking, 0 to deny
+   * @return 0 on success, non-zero on failure
+   */
+  public int wasiContextSetAllowBlocking(final MemorySegment contextHandle, final int allow) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_allow_blocking", Integer.class, contextHandle, allow);
+  }
+
+  /**
+   * Sets the insecure random seed for deterministic testing.
+   *
+   * @param contextHandle the WASI context handle
+   * @param seedLo low 64 bits of the u128 seed
+   * @param seedHi high 64 bits of the u128 seed
+   * @return 0 on success, non-zero on failure
+   */
+  public int wasiContextSetInsecureRandomSeed(
+      final MemorySegment contextHandle, final long seedLo, final long seedHi) {
+    validatePointer(contextHandle, "contextHandle");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_insecure_random_seed",
+        Integer.class,
+        contextHandle,
+        seedLo,
+        seedHi);
   }
 }

@@ -25,6 +25,30 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_native
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeSetNetworkConfig
+ * Signature: (JZZZZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeSetNetworkConfig
+  (JNIEnv *, jclass, jlong, jboolean, jboolean, jboolean, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeSetAllowBlocking
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeSetAllowBlocking
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
+ * Method:    nativeSetInsecureRandomSeed
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_WasiContext_nativeSetInsecureRandomSeed
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_WasiContext
  * Method:    nativeAddDirectory
  * Signature: (JLjava/lang/String;Ljava/lang/String;ZZZ)Z
  */

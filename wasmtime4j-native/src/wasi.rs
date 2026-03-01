@@ -24,7 +24,7 @@ pub struct WasiContext {
     /// The underlying Wasmtime WASI Preview 1 context
     inner: Arc<Mutex<WasiP1Ctx>>,
     /// Configuration metadata
-    config: WasiConfig,
+    pub(crate) config: WasiConfig,
     /// Directory mappings for filesystem access
     directory_mappings: HashMap<String, DirectoryMapping>,
     /// Environment variables
@@ -134,8 +134,18 @@ impl std::fmt::Debug for WasiContext {
 /// WASI configuration options
 #[derive(Debug, Clone)]
 pub struct WasiConfig {
-    /// Whether to allow network access
+    /// Whether to allow network access (calls inherit_network on builder)
     pub allow_network: bool,
+    /// Whether to allow TCP socket creation
+    pub allow_tcp: bool,
+    /// Whether to allow UDP socket creation
+    pub allow_udp: bool,
+    /// Whether to allow IP name lookups (DNS)
+    pub allow_ip_name_lookup: bool,
+    /// Whether to allow blocking the current thread
+    pub allow_blocking_current_thread: bool,
+    /// Insecure random seed (0 means use default)
+    pub insecure_random_seed: u128,
     /// Whether to allow arbitrary directory access
     pub allow_arbitrary_fs: bool,
     /// Maximum file size for operations (in bytes)
@@ -342,6 +352,11 @@ impl Default for WasiConfig {
     fn default() -> Self {
         Self {
             allow_network: false,
+            allow_tcp: true,
+            allow_udp: true,
+            allow_ip_name_lookup: true,
+            allow_blocking_current_thread: false,
+            insecure_random_seed: 0,
             allow_arbitrary_fs: false,
             max_file_size: Some(100 * 1024 * 1024), // 100MB default
             max_open_files: Some(1024),
@@ -432,6 +447,7 @@ impl WasiContext {
         // Build the WASI Preview 1 context
         let wasi_ctx = builder.build_p1();
 
+        let network_enabled = config.allow_network;
         let default_args = vec!["wasmtime4j".to_string()];
         Ok(WasiContext {
             inner: Arc::new(Mutex::new(wasi_ctx)),
@@ -449,7 +465,7 @@ impl WasiContext {
             exit_code: Arc::new(RwLock::new(None)),
             initial_cwd: Arc::new(RwLock::new(None)),
             next_operation_id: std::sync::atomic::AtomicU64::new(100), // Start at 100 to avoid conflicts with stdio handles
-            network_enabled: false,
+            network_enabled,
             async_io_enabled: false,
             process_enabled: false,
             component_model_enabled: false,
@@ -663,6 +679,7 @@ impl WasiContext {
 
     /// Populate a WasiCtxBuilder with directory mappings, environment variables, and arguments.
     fn populate_builder(&self, builder: &mut WasiCtxBuilder) -> WasmtimeResult<()> {
+        // Apply directory mappings
         for (guest_path, mapping) in &self.directory_mappings {
             builder
                 .preopened_dir(
@@ -675,15 +692,31 @@ impl WasiContext {
                     message: format!("Failed to add directory mapping {}: {}", guest_path, e),
                 })?;
         }
+        // Apply environment variables and arguments
         for (key, value) in &self.environment {
             builder.env(key, value);
         }
         builder.args(&self.arguments);
+
+        // Apply network configuration
+        if self.config.allow_network {
+            builder.inherit_network();
+        }
+        builder.allow_tcp(self.config.allow_tcp);
+        builder.allow_udp(self.config.allow_udp);
+        builder.allow_ip_name_lookup(self.config.allow_ip_name_lookup);
+
+        // Apply blocking and random configuration
+        builder.allow_blocking_current_thread(self.config.allow_blocking_current_thread);
+        if self.config.insecure_random_seed != 0 {
+            builder.insecure_random_seed(self.config.insecure_random_seed);
+        }
+
         Ok(())
     }
 
     /// Rebuild the WASI context with current configuration
-    fn rebuild_context(&mut self) -> WasmtimeResult<()> {
+    pub(crate) fn rebuild_context(&mut self) -> WasmtimeResult<()> {
         let mut builder = WasiCtxBuilder::new();
         self.populate_builder(&mut builder)?;
         let (stdout_pipe, stderr_pipe) =
@@ -912,10 +945,66 @@ pub unsafe extern "C" fn wasi_ctx_new_with_config(
             } else {
                 None
             },
-            env_policy: EnvironmentPolicy::Custom,
+            ..WasiConfig::default()
         };
         let ctx = WasiContext::with_config(config)?;
         Ok(Box::new(ctx))
+    })
+}
+
+/// Set network configuration on a WASI context.
+///
+/// Controls TCP, UDP, and IP name lookup access.
+/// The context must be rebuilt for changes to take effect.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_network_config(
+    ctx_ptr: *mut c_void,
+    allow_network: c_int,
+    allow_tcp: c_int,
+    allow_udp: c_int,
+    allow_ip_name_lookup: c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        ctx.config.allow_network = allow_network != 0;
+        ctx.config.allow_tcp = allow_tcp != 0;
+        ctx.config.allow_udp = allow_udp != 0;
+        ctx.config.allow_ip_name_lookup = allow_ip_name_lookup != 0;
+        ctx.network_enabled = allow_network != 0;
+        ctx.rebuild_context()?;
+        Ok(())
+    })
+}
+
+/// Set whether blocking the current thread is allowed.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_allow_blocking(
+    ctx_ptr: *mut c_void,
+    allow: c_int,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        ctx.config.allow_blocking_current_thread = allow != 0;
+        ctx.rebuild_context()?;
+        Ok(())
+    })
+}
+
+/// Set the insecure random seed for deterministic testing.
+///
+/// The seed is passed as two 64-bit halves (low and high) to form a u128.
+/// A seed of 0 (both halves zero) means use the default random source.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_insecure_random_seed(
+    ctx_ptr: *mut c_void,
+    seed_lo: u64,
+    seed_hi: u64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        ctx.config.insecure_random_seed = (seed_hi as u128) << 64 | (seed_lo as u128);
+        ctx.rebuild_context()?;
+        Ok(())
     })
 }
 
@@ -1741,6 +1830,7 @@ mod tests {
             max_file_size: Some(1000),
             max_open_files: Some(10),
             env_policy: EnvironmentPolicy::Custom,
+            ..WasiConfig::default()
         };
 
         let ctx = WasiContext::with_config(config);
@@ -2153,6 +2243,7 @@ mod tests {
             max_file_size: Some(1024 * 1024),
             max_open_files: Some(256),
             env_policy: EnvironmentPolicy::Inherit,
+            ..WasiConfig::default()
         };
 
         assert!(config.allow_network);

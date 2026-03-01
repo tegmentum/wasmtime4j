@@ -72,6 +72,24 @@ public final class WasiContextBuilder {
   /** Working directory for the WASI context. */
   private Path workingDirectory = Paths.get(DEFAULT_WORKING_DIR);
 
+  /** Whether to allow network access (calls inherit_network on the native builder). */
+  private boolean allowNetwork = false;
+
+  /** Whether to allow TCP socket creation. */
+  private boolean allowTcp = true;
+
+  /** Whether to allow UDP socket creation. */
+  private boolean allowUdp = true;
+
+  /** Whether to allow IP name lookups (DNS). */
+  private boolean allowIpNameLookup = true;
+
+  /** Whether to allow blocking the current thread. */
+  private boolean allowBlockingCurrentThread = false;
+
+  /** Insecure random seed (0 means use default). */
+  private long insecureRandomSeed = 0;
+
   /** Package-private constructor - use WasiContext.builder() to create. */
   WasiContextBuilder() {
     LOGGER.fine("Created new WASI context builder");
@@ -219,6 +237,72 @@ public final class WasiContextBuilder {
   }
 
   /**
+   * Configures network access for the WASI context.
+   *
+   * @param allow true to enable network access (inherit_network)
+   * @return this builder for method chaining
+   */
+  public WasiContextBuilder withAllowNetwork(final boolean allow) {
+    this.allowNetwork = allow;
+    return this;
+  }
+
+  /**
+   * Configures TCP socket creation for the WASI context.
+   *
+   * @param allow true to allow TCP socket creation
+   * @return this builder for method chaining
+   */
+  public WasiContextBuilder withAllowTcp(final boolean allow) {
+    this.allowTcp = allow;
+    return this;
+  }
+
+  /**
+   * Configures UDP socket creation for the WASI context.
+   *
+   * @param allow true to allow UDP socket creation
+   * @return this builder for method chaining
+   */
+  public WasiContextBuilder withAllowUdp(final boolean allow) {
+    this.allowUdp = allow;
+    return this;
+  }
+
+  /**
+   * Configures IP name lookup (DNS) access for the WASI context.
+   *
+   * @param allow true to allow IP name lookups
+   * @return this builder for method chaining
+   */
+  public WasiContextBuilder withAllowIpNameLookup(final boolean allow) {
+    this.allowIpNameLookup = allow;
+    return this;
+  }
+
+  /**
+   * Configures whether blocking the current thread is allowed.
+   *
+   * @param allow true to allow blocking the current thread
+   * @return this builder for method chaining
+   */
+  public WasiContextBuilder withAllowBlockingCurrentThread(final boolean allow) {
+    this.allowBlockingCurrentThread = allow;
+    return this;
+  }
+
+  /**
+   * Sets the insecure random seed for deterministic testing.
+   *
+   * @param seed the random seed (0 means use default random source)
+   * @return this builder for method chaining
+   */
+  public WasiContextBuilder withInsecureRandomSeed(final long seed) {
+    this.insecureRandomSeed = seed;
+    return this;
+  }
+
+  /**
    * Creates a WASI context with the configured settings.
    *
    * @return the configured WASI context
@@ -244,6 +328,20 @@ public final class WasiContextBuilder {
       // Create native WASI context
       final long nativeHandle =
           WasiContext.nativeCreate(envArray, argArray, preopenArray, workingDirStr);
+
+      // Apply network configuration
+      WasiContext.nativeSetNetworkConfig(
+          nativeHandle, allowNetwork, allowTcp, allowUdp, allowIpNameLookup);
+
+      // Apply blocking configuration
+      if (allowBlockingCurrentThread) {
+        WasiContext.nativeSetAllowBlocking(nativeHandle, true);
+      }
+
+      // Apply insecure random seed
+      if (insecureRandomSeed != 0) {
+        WasiContext.nativeSetInsecureRandomSeed(nativeHandle, insecureRandomSeed, 0);
+      }
 
       // Create and return Java wrapper
       return new WasiContext(nativeHandle, this);
