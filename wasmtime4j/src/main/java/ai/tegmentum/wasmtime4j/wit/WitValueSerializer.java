@@ -615,32 +615,36 @@ public final class WitValueSerializer {
   /**
    * Serializes an owned resource handle value.
    *
-   * <p>Format: [handle_id: u64] (8 bytes, little-endian)
-   *
-   * <p>The handle index is serialized as a u64 to match the Rust resource registry format.
+   * <p>Format: [type_name_length: i32][type_name: UTF-8][index: i32] (little-endian)
    *
    * @param own the owned resource handle value
    * @return serialized bytes
    */
   private static byte[] serializeOwn(final WitOwn own) {
-    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
-    buffer.putLong((long) own.getIndex());
+    final byte[] typeNameBytes = own.getResourceType().getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + typeNameBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(typeNameBytes.length);
+    buffer.put(typeNameBytes);
+    buffer.putInt(own.getIndex());
     return buffer.array();
   }
 
   /**
    * Serializes a borrowed resource handle value.
    *
-   * <p>Format: [handle_id: u64] (8 bytes, little-endian)
-   *
-   * <p>The handle index is serialized as a u64 to match the Rust resource registry format.
+   * <p>Format: [type_name_length: i32][type_name: UTF-8][index: i32] (little-endian)
    *
    * @param borrow the borrowed resource handle value
    * @return serialized bytes
    */
   private static byte[] serializeBorrow(final WitBorrow borrow) {
-    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
-    buffer.putLong((long) borrow.getIndex());
+    final byte[] typeNameBytes = borrow.getResourceType().getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + typeNameBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(typeNameBytes.length);
+    buffer.put(typeNameBytes);
+    buffer.putInt(borrow.getIndex());
     return buffer.array();
   }
 

@@ -769,46 +769,70 @@ public final class WitValueDeserializer {
   /**
    * Deserializes an owned resource handle value.
    *
-   * <p>Format: [handle_id: u64] (8 bytes, little-endian)
-   *
-   * <p>The handle ID is a u64 matching the Rust resource registry format. It is stored as the
-   * resource handle index.
+   * <p>Format: [type_name_length: i32][type_name: UTF-8][index: i32] (little-endian)
    *
    * @param data the serialized bytes
    * @return the owned resource handle value
    * @throws ValidationException if data is invalid
    */
   private static WitOwn deserializeOwn(final byte[] data) throws ValidationException {
-    if (data.length != 8) {
-      throw new ValidationException("Invalid own data size: expected 8, got " + data.length);
+    if (data.length < 8) {
+      throw new ValidationException(
+          "Own data too short: need at least 8 bytes, got " + data.length);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
-    final long handleId = buffer.getLong();
+    final int typeNameLength = buffer.getInt();
 
-    return WitOwn.of("resource", (int) handleId);
+    if (typeNameLength < 0) {
+      throw new ValidationException("Invalid resource type name length: " + typeNameLength);
+    }
+
+    if (buffer.remaining() < typeNameLength + 4) {
+      throw new ValidationException("Own resource type name truncated");
+    }
+
+    final byte[] typeNameBytes = new byte[typeNameLength];
+    buffer.get(typeNameBytes);
+    final String resourceType = new String(typeNameBytes, StandardCharsets.UTF_8);
+
+    final int index = buffer.getInt();
+    final String effectiveType = resourceType.isEmpty() ? "resource" : resourceType;
+    return WitOwn.of(effectiveType, index);
   }
 
   /**
    * Deserializes a borrowed resource handle value.
    *
-   * <p>Format: [handle_id: u64] (8 bytes, little-endian)
-   *
-   * <p>The handle ID is a u64 matching the Rust resource registry format. It is stored as the
-   * resource handle index.
+   * <p>Format: [type_name_length: i32][type_name: UTF-8][index: i32] (little-endian)
    *
    * @param data the serialized bytes
    * @return the borrowed resource handle value
    * @throws ValidationException if data is invalid
    */
   private static WitBorrow deserializeBorrow(final byte[] data) throws ValidationException {
-    if (data.length != 8) {
-      throw new ValidationException("Invalid borrow data size: expected 8, got " + data.length);
+    if (data.length < 8) {
+      throw new ValidationException(
+          "Borrow data too short: need at least 8 bytes, got " + data.length);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
-    final long handleId = buffer.getLong();
+    final int typeNameLength = buffer.getInt();
 
-    return WitBorrow.of("resource", (int) handleId);
+    if (typeNameLength < 0) {
+      throw new ValidationException("Invalid resource type name length: " + typeNameLength);
+    }
+
+    if (buffer.remaining() < typeNameLength + 4) {
+      throw new ValidationException("Borrow resource type name truncated");
+    }
+
+    final byte[] typeNameBytes = new byte[typeNameLength];
+    buffer.get(typeNameBytes);
+    final String resourceType = new String(typeNameBytes, StandardCharsets.UTF_8);
+
+    final int index = buffer.getInt();
+    final String effectiveType = resourceType.isEmpty() ? "resource" : resourceType;
+    return WitBorrow.of(effectiveType, index);
   }
 }
