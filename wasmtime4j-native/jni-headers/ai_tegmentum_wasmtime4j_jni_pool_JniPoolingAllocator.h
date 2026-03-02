@@ -17,6 +17,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocato
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator
+ * Method:    nativeCreateFromJsonConfig
+ * Signature: ([B)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator_nativeCreateFromJsonConfig
+  (JNIEnv *, jclass, jbyteArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator
  * Method:    nativeAllocateInstance
  * Signature: (J)J
  */

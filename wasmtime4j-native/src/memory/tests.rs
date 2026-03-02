@@ -585,7 +585,7 @@ fn test_from_wasmtime_memory() {
         .expect("Memory export not found");
 
     match &mem_export.export_type {
-        crate::module::ExportKind::Memory(min, max, _, _) => {
+        crate::module::ExportKind::Memory(min, max, _, _, _) => {
             assert!(*min > 0, "Memory should have minimum pages");
             assert!(max.is_some(), "Memory should have maximum pages");
         }

@@ -247,6 +247,48 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   }
 
   @Override
+  public WasiContext setStdoutAppend(final Path path) {
+    if (path == null) {
+      throw new IllegalArgumentException("Stdout append path cannot be null");
+    }
+    ensureNotClosed();
+
+    try {
+      final int result = nativeSetStdoutAppend(nativeHandle, path.toString());
+      if (result != 0) {
+        throw new RuntimeException("Failed to set stdout append path");
+      }
+      return this;
+    } catch (Exception e) {
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      }
+      throw new RuntimeException("Failed to set stdout append path", e);
+    }
+  }
+
+  @Override
+  public WasiContext setStderrAppend(final Path path) {
+    if (path == null) {
+      throw new IllegalArgumentException("Stderr append path cannot be null");
+    }
+    ensureNotClosed();
+
+    try {
+      final int result = nativeSetStderrAppend(nativeHandle, path.toString());
+      if (result != 0) {
+        throw new RuntimeException("Failed to set stderr append path");
+      }
+      return this;
+    } catch (Exception e) {
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      }
+      throw new RuntimeException("Failed to set stderr append path", e);
+    }
+  }
+
+  @Override
   public WasiContext preopenedDir(Path hostPath, String guestPath) throws WasmException {
     if (hostPath == null) {
       throw new IllegalArgumentException("Host path cannot be null");
@@ -586,6 +628,10 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
   private static native int nativeSetStdout(long contextHandle, String path);
 
   private static native int nativeSetStderr(long contextHandle, String path);
+
+  private static native int nativeSetStdoutAppend(long contextHandle, String path);
+
+  private static native int nativeSetStderrAppend(long contextHandle, String path);
 
   private static native int nativePreopenedDir(
       long contextHandle, String hostPath, String guestPath);

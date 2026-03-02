@@ -69,6 +69,12 @@ pub fn throw_jni_exception(env: &mut jni::JNIEnv, error: &WasmtimeError) {
             // TrapException requires TrapType enum
             throw_trap_exception(env, &message)
         }
+        WasmtimeError::Runtime {
+            ref message, ..
+        } if message.contains("[trap_code:") => {
+            // Runtime error with embedded trap code — throw as TrapException
+            throw_trap_exception(env, message)
+        }
         WasmtimeError::WasiExit { exit_code } => {
             // I32ExitException requires int exit code constructor
             throw_i32_exit_exception(env, *exit_code)
@@ -120,16 +126,86 @@ fn throw_linking_exception(env: &mut jni::JNIEnv, message: &str) -> Result<(), j
 }
 
 #[cfg(feature = "jni-bindings")]
-/// Helper to throw TrapException with TrapType.UNKNOWN
+/// Map a numeric trap code to the Java `TrapType` enum field name.
+fn trap_code_to_field_name(code: i32) -> &'static str {
+    use crate::panama::trap::trap_codes;
+    match code {
+        trap_codes::STACK_OVERFLOW => "STACK_OVERFLOW",
+        trap_codes::MEMORY_OUT_OF_BOUNDS => "MEMORY_OUT_OF_BOUNDS",
+        trap_codes::HEAP_MISALIGNED => "HEAP_MISALIGNED",
+        trap_codes::TABLE_OUT_OF_BOUNDS => "TABLE_OUT_OF_BOUNDS",
+        trap_codes::INDIRECT_CALL_TO_NULL => "INDIRECT_CALL_TO_NULL",
+        trap_codes::BAD_SIGNATURE => "BAD_SIGNATURE",
+        trap_codes::INTEGER_OVERFLOW => "INTEGER_OVERFLOW",
+        trap_codes::INTEGER_DIVISION_BY_ZERO => "INTEGER_DIVISION_BY_ZERO",
+        trap_codes::BAD_CONVERSION_TO_INTEGER => "BAD_CONVERSION_TO_INTEGER",
+        trap_codes::UNREACHABLE_CODE_REACHED => "UNREACHABLE_CODE_REACHED",
+        trap_codes::INTERRUPT => "INTERRUPT",
+        trap_codes::ALWAYS_TRAP_ADAPTER => "ALWAYS_TRAP_ADAPTER",
+        trap_codes::OUT_OF_FUEL => "OUT_OF_FUEL",
+        trap_codes::ATOMIC_WAIT_NON_SHARED_MEMORY => "ATOMIC_WAIT_NON_SHARED_MEMORY",
+        trap_codes::NULL_REFERENCE => "NULL_REFERENCE",
+        trap_codes::ARRAY_OUT_OF_BOUNDS => "ARRAY_OUT_OF_BOUNDS",
+        trap_codes::ALLOCATION_TOO_LARGE => "ALLOCATION_TOO_LARGE",
+        trap_codes::CAST_FAILURE => "CAST_FAILURE",
+        trap_codes::CANNOT_ENTER_COMPONENT => "CANNOT_ENTER_COMPONENT",
+        trap_codes::NO_ASYNC_RESULT => "NO_ASYNC_RESULT",
+        trap_codes::UNHANDLED_TAG => "UNHANDLED_TAG",
+        trap_codes::CONTINUATION_ALREADY_CONSUMED => "CONTINUATION_ALREADY_CONSUMED",
+        trap_codes::DISABLED_OPCODE => "DISABLED_OPCODE",
+        trap_codes::ASYNC_DEADLOCK => "ASYNC_DEADLOCK",
+        trap_codes::CANNOT_LEAVE_COMPONENT => "CANNOT_LEAVE_COMPONENT",
+        trap_codes::CANNOT_BLOCK_SYNC_TASK => "CANNOT_BLOCK_SYNC_TASK",
+        trap_codes::INVALID_CHAR => "INVALID_CHAR",
+        trap_codes::STRING_OUT_OF_BOUNDS => "STRING_OUT_OF_BOUNDS",
+        trap_codes::LIST_OUT_OF_BOUNDS => "LIST_OUT_OF_BOUNDS",
+        trap_codes::INVALID_DISCRIMINANT => "INVALID_DISCRIMINANT",
+        trap_codes::UNALIGNED_POINTER => "UNALIGNED_POINTER",
+        trap_codes::DEBUG_ASSERT_STRING_ENCODING_FINISHED => {
+            "DEBUG_ASSERT_STRING_ENCODING_FINISHED"
+        }
+        trap_codes::DEBUG_ASSERT_EQUAL_CODE_UNITS => "DEBUG_ASSERT_EQUAL_CODE_UNITS",
+        trap_codes::DEBUG_ASSERT_MAY_ENTER_UNSET => "DEBUG_ASSERT_MAY_ENTER_UNSET",
+        trap_codes::DEBUG_ASSERT_POINTER_ALIGNED => "DEBUG_ASSERT_POINTER_ALIGNED",
+        trap_codes::DEBUG_ASSERT_UPPER_BITS_UNSET => "DEBUG_ASSERT_UPPER_BITS_UNSET",
+        _ => "UNKNOWN",
+    }
+}
+
+#[cfg(feature = "jni-bindings")]
+/// Extract a numeric trap code from a `[trap_code:N]` prefix in the message.
+fn extract_trap_code_from_message(message: &str) -> Option<i32> {
+    const PREFIX: &str = "[trap_code:";
+    if let Some(start) = message.find(PREFIX) {
+        let after = &message[start + PREFIX.len()..];
+        if let Some(end) = after.find(']') {
+            if let Ok(code) = after[..end].parse::<i32>() {
+                return Some(code);
+            }
+        }
+    }
+    None
+}
+
+#[cfg(feature = "jni-bindings")]
+/// Helper to throw TrapException with the correct TrapType resolved from the message.
+///
+/// Parses the `[trap_code:N]` prefix to determine the exact TrapType enum variant.
+/// Falls back to UNKNOWN if no prefix is present.
 fn throw_trap_exception(env: &mut jni::JNIEnv, message: &str) -> Result<(), jni::errors::Error> {
     use jni::objects::{JThrowable, JValue};
 
-    // Get TrapType.UNKNOWN enum value
+    // Resolve TrapType field name from [trap_code:N] prefix
+    let field_name = extract_trap_code_from_message(message)
+        .map(trap_code_to_field_name)
+        .unwrap_or("UNKNOWN");
+
+    // Get TrapType enum value
     let error_type_class =
         env.find_class("ai/tegmentum/wasmtime4j/exception/TrapException$TrapType")?;
-    let unknown_field = env.get_static_field(
+    let trap_field = env.get_static_field(
         error_type_class,
-        "UNKNOWN",
+        field_name,
         "Lai/tegmentum/wasmtime4j/exception/TrapException$TrapType;",
     )?;
 
@@ -140,7 +216,7 @@ fn throw_trap_exception(env: &mut jni::JNIEnv, message: &str) -> Result<(), jni:
     let exception_obj = env.new_object(
         exception_class,
         "(Lai/tegmentum/wasmtime4j/exception/TrapException$TrapType;Ljava/lang/String;)V",
-        &[(&unknown_field).into(), JValue::Object(&message_jstring)],
+        &[(&trap_field).into(), JValue::Object(&message_jstring)],
     )?;
 
     env.throw(JThrowable::from(exception_obj))

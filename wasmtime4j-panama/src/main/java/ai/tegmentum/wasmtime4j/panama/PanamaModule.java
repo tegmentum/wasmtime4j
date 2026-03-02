@@ -867,7 +867,7 @@ public final class PanamaModule implements Module {
   /**
    * Parses memory type JSON.
    *
-   * @param memoryArray JSON array [min, max(optional), isShared]
+   * @param memoryArray JSON array [min, max(optional), is64, isShared, pageSizeLog2]
    * @return MemoryType instance
    */
   private ai.tegmentum.wasmtime4j.type.MemoryType parseMemoryType(
@@ -875,10 +875,12 @@ public final class PanamaModule implements Module {
     final long minimum = memoryArray.get(0).getAsLong();
     final com.google.gson.JsonElement maxElement = memoryArray.get(1);
     final Long maximum = maxElement.isJsonNull() ? null : maxElement.getAsLong();
-    final boolean isShared = memoryArray.get(2).getAsBoolean();
+    final boolean is64Bit = memoryArray.get(2).getAsBoolean();
+    final boolean isShared = memoryArray.get(3).getAsBoolean();
+    final int pageSizeLog2 = memoryArray.size() > 4 ? memoryArray.get(4).getAsInt() : 16;
 
     return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
-        minimum, maximum, false, isShared);
+        minimum, maximum, is64Bit, isShared, pageSizeLog2);
   }
 
   /**

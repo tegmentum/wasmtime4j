@@ -534,8 +534,19 @@ public final class PanamaMemory implements WasmMemory {
     final long maxValue = maximumOut.get(ValueLayout.JAVA_LONG, 0);
     final Long maximum = maxValue == -1 ? null : maxValue;
 
+    // Get page size log2 from native
+    final MemorySegment pageSizeLog2Out = arena.allocate(ValueLayout.JAVA_INT);
+    final int psResult =
+        NATIVE_BINDINGS.panamaMemoryGetPageSizeLog2(memPtr, storePtr, pageSizeLog2Out);
+    final int pageSizeLog2;
+    if (psResult != 0) {
+      pageSizeLog2 = 16; // Default to standard 64KB page size
+    } else {
+      pageSizeLog2 = pageSizeLog2Out.get(ValueLayout.JAVA_INT, 0);
+    }
+
     return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
-        minimum, maximum, is64Bit, sharedFlag);
+        minimum, maximum, is64Bit, sharedFlag, pageSizeLog2);
   }
 
   /**

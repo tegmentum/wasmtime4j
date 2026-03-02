@@ -81,6 +81,22 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeSetStdoutAppend
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeSetStdoutAppend
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
+ * Method:    nativeSetStderrAppend
+ * Signature: (JLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeSetStderrAppend
+  (JNIEnv *, jclass, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl
  * Method:    nativePreopenedDir
  * Signature: (JLjava/lang/String;Ljava/lang/String;)I
  */

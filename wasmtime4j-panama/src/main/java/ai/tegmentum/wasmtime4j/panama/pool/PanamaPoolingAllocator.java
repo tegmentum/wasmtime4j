@@ -63,18 +63,28 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
     this.arena = Arena.ofShared();
     this.createdAt = Instant.now();
 
-    // Create native allocator with configuration
-    this.nativeAllocator =
-        NATIVE_BINDINGS.poolingAllocatorCreateWithConfig(
-            config.getInstancePoolSize(),
-            config.getMaxMemoryPerInstance(),
-            config.getStackSize(),
-            config.getMaxStacks(),
-            config.getMaxTablesPerInstance(),
-            config.getMaxTables(),
-            config.isMemoryDecommitEnabled(),
-            config.isPoolWarmingEnabled(),
-            config.getPoolWarmingPercentage());
+    // Create native allocator using JSON config path — all fields are wired
+    final byte[] jsonConfig =
+        (config instanceof ai.tegmentum.wasmtime4j.pool.AbstractPoolingAllocatorConfig)
+            ? ((ai.tegmentum.wasmtime4j.pool.AbstractPoolingAllocatorConfig) config).toJson()
+            : null;
+
+    if (jsonConfig != null) {
+      this.nativeAllocator = NATIVE_BINDINGS.poolingAllocatorCreateFromJson(jsonConfig);
+    } else {
+      // Fallback: legacy positional parameter path
+      this.nativeAllocator =
+          NATIVE_BINDINGS.poolingAllocatorCreateWithConfig(
+              config.getInstancePoolSize(),
+              config.getMaxMemoryPerInstance(),
+              config.getStackSize(),
+              config.getMaxStacks(),
+              config.getMaxTablesPerInstance(),
+              config.getMaxTables(),
+              config.isMemoryDecommitEnabled(),
+              config.isPoolWarmingEnabled(),
+              config.getPoolWarmingPercentage());
+    }
 
     if (this.nativeAllocator == null || this.nativeAllocator.equals(MemorySegment.NULL)) {
       arena.close();

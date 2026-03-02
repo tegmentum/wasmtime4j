@@ -231,8 +231,10 @@ pub enum StdioSink {
     Inherit,
     /// Capture to byte buffer
     Buffer,
-    /// Write to file
+    /// Write to file (create/truncate)
     File(PathBuf),
+    /// Write to file (append)
+    FileAppend(PathBuf),
     /// Discard output
     Null,
 }
@@ -783,14 +785,24 @@ impl WasiContext {
         existing_stdout: Option<&MemoryOutputPipe>,
         existing_stderr: Option<&MemoryOutputPipe>,
     ) -> (Option<MemoryOutputPipe>, Option<MemoryOutputPipe>) {
+        use wasmtime_wasi::cli::{InputFile, OutputFile};
         use wasmtime_wasi::p2::pipe::MemoryInputPipe;
         const DEFAULT_BUFFER_CAPACITY: usize = 64 * 1024;
 
         // Configure stdin
         match &stdio_config.stdin {
-            StdioSource::Inherit | StdioSource::File(_) => {
+            StdioSource::Inherit => {
                 builder.inherit_stdin();
             }
+            StdioSource::File(path) => match std::fs::File::open(path) {
+                Ok(file) => {
+                    builder.stdin(InputFile::new(file));
+                }
+                Err(e) => {
+                    log::warn!("Failed to open stdin file {:?}: {}, falling back to null", path, e);
+                    builder.stdin(MemoryInputPipe::new(Vec::new()));
+                }
+            },
             StdioSource::Buffer(data) => {
                 builder.stdin(MemoryInputPipe::new(data.clone()));
             }
@@ -801,8 +813,32 @@ impl WasiContext {
 
         // Configure stdout
         let stdout_pipe = match &stdio_config.stdout {
-            StdioSink::Inherit | StdioSink::File(_) => {
+            StdioSink::Inherit => {
                 builder.inherit_stdout();
+                None
+            }
+            StdioSink::File(path) => {
+                match std::fs::File::create(path) {
+                    Ok(file) => {
+                        builder.stdout(OutputFile::new(file));
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to create stdout file {:?}: {}, falling back to inherit", path, e);
+                        builder.inherit_stdout();
+                    }
+                }
+                None
+            }
+            StdioSink::FileAppend(path) => {
+                match std::fs::OpenOptions::new().append(true).create(true).open(path) {
+                    Ok(file) => {
+                        builder.stdout(OutputFile::new(file));
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to open stdout file for append {:?}: {}, falling back to inherit", path, e);
+                        builder.inherit_stdout();
+                    }
+                }
                 None
             }
             StdioSink::Buffer => {
@@ -820,8 +856,32 @@ impl WasiContext {
 
         // Configure stderr
         let stderr_pipe = match &stdio_config.stderr {
-            StdioSink::Inherit | StdioSink::File(_) => {
+            StdioSink::Inherit => {
                 builder.inherit_stderr();
+                None
+            }
+            StdioSink::File(path) => {
+                match std::fs::File::create(path) {
+                    Ok(file) => {
+                        builder.stderr(OutputFile::new(file));
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to create stderr file {:?}: {}, falling back to inherit", path, e);
+                        builder.inherit_stderr();
+                    }
+                }
+                None
+            }
+            StdioSink::FileAppend(path) => {
+                match std::fs::OpenOptions::new().append(true).create(true).open(path) {
+                    Ok(file) => {
+                        builder.stderr(OutputFile::new(file));
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to open stderr file for append {:?}: {}, falling back to inherit", path, e);
+                        builder.inherit_stderr();
+                    }
+                }
                 None
             }
             StdioSink::Buffer => {
@@ -1167,6 +1227,14 @@ pub unsafe extern "C" fn wasi_ctx_configure_stdio(
                     StdioSink::File(PathBuf::from(path_str))
                 }
             }
+            3 => {
+                if stdout_data.is_null() {
+                    StdioSink::Null
+                } else {
+                    let path_str = ffi_utils::c_str_to_string(stdout_data, "stdout file path")?;
+                    StdioSink::FileAppend(PathBuf::from(path_str))
+                }
+            }
             _ => StdioSink::Null,
         };
 
@@ -1180,6 +1248,14 @@ pub unsafe extern "C" fn wasi_ctx_configure_stdio(
                 } else {
                     let path_str = ffi_utils::c_str_to_string(stderr_data, "stderr file path")?;
                     StdioSink::File(PathBuf::from(path_str))
+                }
+            }
+            3 => {
+                if stderr_data.is_null() {
+                    StdioSink::Null
+                } else {
+                    let path_str = ffi_utils::c_str_to_string(stderr_data, "stderr file path")?;
+                    StdioSink::FileAppend(PathBuf::from(path_str))
                 }
             }
             _ => StdioSink::Null,
@@ -1488,6 +1564,42 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stderr(
             ctx.stdio_config.stdin.clone(),
             ctx.stdio_config.stdout.clone(),
             StdioSink::File(PathBuf::from(path_str)),
+        )?;
+        Ok(())
+    })
+}
+
+/// Set stdout to append to file (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdout_append(
+    ctx_ptr: *mut c_void,
+    path: *const c_char,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        let path_str = ffi_utils::c_str_to_string(path, "stdout file path")?;
+        ctx.configure_stdio_streams(
+            ctx.stdio_config.stdin.clone(),
+            StdioSink::FileAppend(PathBuf::from(path_str)),
+            ctx.stdio_config.stderr.clone(),
+        )?;
+        Ok(())
+    })
+}
+
+/// Set stderr to append to file (Panama FFI version)
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stderr_append(
+    ctx_ptr: *mut c_void,
+    path: *const c_char,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        let path_str = ffi_utils::c_str_to_string(path, "stderr file path")?;
+        ctx.configure_stdio_streams(
+            ctx.stdio_config.stdin.clone(),
+            ctx.stdio_config.stdout.clone(),
+            StdioSink::FileAppend(PathBuf::from(path_str)),
         )?;
         Ok(())
     })

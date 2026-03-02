@@ -793,6 +793,70 @@ pub mod jni_wasi {
     }
 
     #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeSetStdoutAppend(
+        mut env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+        path: JString,
+    ) -> jint {
+        if context_handle == 0 {
+            return -1;
+        }
+
+        match (|| -> crate::error::WasmtimeResult<i32> {
+            let path_str: String = env.get_string(&path)?.into();
+            let path_cstr = CString::new(path_str).map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
+                    message: "Invalid path string".to_string(),
+                }
+            })?;
+
+            let result = unsafe {
+                wasi::wasmtime4j_wasi_context_set_stdout_append(
+                    context_handle as *mut c_void,
+                    path_cstr.as_ptr(),
+                )
+            };
+            Ok(result)
+        })() {
+            Ok(result) => result,
+            Err(_) => -1,
+        }
+    }
+
+    #[no_mangle]
+    pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativeSetStderrAppend(
+        mut env: JNIEnv,
+        _class: JClass,
+        context_handle: jlong,
+        path: JString,
+    ) -> jint {
+        if context_handle == 0 {
+            return -1;
+        }
+
+        match (|| -> crate::error::WasmtimeResult<i32> {
+            let path_str: String = env.get_string(&path)?.into();
+            let path_cstr = CString::new(path_str).map_err(|_| {
+                crate::error::WasmtimeError::InvalidParameter {
+                    message: "Invalid path string".to_string(),
+                }
+            })?;
+
+            let result = unsafe {
+                wasi::wasmtime4j_wasi_context_set_stderr_append(
+                    context_handle as *mut c_void,
+                    path_cstr.as_ptr(),
+                )
+            };
+            Ok(result)
+        })() {
+            Ok(result) => result,
+            Err(_) => -1,
+        }
+    }
+
+    #[no_mangle]
     pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasiContextImpl_nativePreopenedDir(
         mut env: JNIEnv,
         _class: JClass,

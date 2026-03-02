@@ -345,6 +345,28 @@ pub extern "C" fn wasmtime4j_panama_memory_get_maximum(
     })
 }
 
+/// Get memory type page size log2
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_memory_get_page_size_log2(
+    memory_ptr: *mut c_void,
+    _store_ptr: *mut c_void,
+    page_size_log2_out: *mut u32,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        // Get Memory through ValidatedMemory wrapper
+        let memory = unsafe { crate::memory::core::get_memory_ref(memory_ptr)? };
+
+        // Use cached memory type from our wrapper
+        let page_size_log2 = memory.memory_type.page_size_log2();
+
+        unsafe {
+            *page_size_log2_out = page_size_log2 as u32;
+        }
+
+        Ok(())
+    })
+}
+
 /// Get memory size in pages using 64-bit return value (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_memory_size_pages64(

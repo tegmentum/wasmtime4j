@@ -176,8 +176,8 @@ pub enum ImportKind {
     Function(FunctionSignature),
     /// Global variable import with type and mutability
     Global(ModuleValueType, bool), // (type, mutable)
-    /// Memory import with initial size, optional max size, is_64, and sharing
-    Memory(u64, Option<u64>, bool, bool), // (initial, max, is_64, shared)
+    /// Memory import with initial size, optional max size, is_64, sharing, and page_size_log2
+    Memory(u64, Option<u64>, bool, bool, u32), // (initial, max, is_64, shared, page_size_log2)
     /// Table import with element type, initial size, and optional max size
     Table(ModuleValueType, u32, Option<u32>), // (element_type, initial, max)
 }
@@ -189,8 +189,8 @@ pub enum ExportKind {
     Function(FunctionSignature),
     /// Global variable export with type and mutability
     Global(ModuleValueType, bool),
-    /// Memory export with initial size, optional max size, is_64, and sharing
-    Memory(u64, Option<u64>, bool, bool),
+    /// Memory export with initial size, optional max size, is_64, sharing, and page_size_log2
+    Memory(u64, Option<u64>, bool, bool, u32),
     /// Table export with element type, initial size, and optional max size
     Table(ModuleValueType, u32, Option<u32>),
 }
@@ -491,7 +491,7 @@ impl Module {
         self.metadata
             .exports
             .iter()
-            .filter(|exp| matches!(exp.export_type, ExportKind::Memory(_, _, _, _)))
+            .filter(|exp| matches!(exp.export_type, ExportKind::Memory(_, _, _, _, _)))
             .collect()
     }
 
@@ -970,6 +970,7 @@ fn convert_import_type(ty: wasmtime::ExternType) -> WasmtimeResult<ImportKind> {
             memory_type.maximum(),
             memory_type.is_64(),
             memory_type.is_shared(),
+            memory_type.page_size_log2() as u32,
         )),
         wasmtime::ExternType::Table(table_type) => Ok(ImportKind::Table(
             convert_ref_type(table_type.element().clone())?,
@@ -1001,6 +1002,7 @@ fn convert_export_type(ty: wasmtime::ExternType) -> WasmtimeResult<ExportKind> {
             memory_type.maximum(),
             memory_type.is_64(),
             memory_type.is_shared(),
+            memory_type.page_size_log2() as u32,
         )),
         wasmtime::ExternType::Table(table_type) => Ok(ExportKind::Table(
             convert_ref_type(table_type.element().clone())?,
@@ -1083,8 +1085,8 @@ fn import_types_compatible(required: &ImportKind, available: &ImportKind) -> boo
             req_type == avail_type && req_mut <= avail_mut
         }
         (
-            ImportKind::Memory(req_min, req_max, req_64, req_shared),
-            ImportKind::Memory(avail_min, avail_max, avail_64, avail_shared),
+            ImportKind::Memory(req_min, req_max, req_64, req_shared, _),
+            ImportKind::Memory(avail_min, avail_max, avail_64, avail_shared, _),
         ) => {
             req_64 == avail_64
                 && avail_min >= req_min
@@ -1575,7 +1577,7 @@ mod tests {
             returns: vec![ModuleValueType::I32],
         });
         let global_import = ImportKind::Global(ModuleValueType::I64, true);
-        let memory_import = ImportKind::Memory(1, Some(10), false, false);
+        let memory_import = ImportKind::Memory(1, Some(10), false, false, 16);
         let table_import = ImportKind::Table(ModuleValueType::FuncRef, 1, Some(100));
 
         // Verify Debug works
@@ -1592,7 +1594,7 @@ mod tests {
             returns: vec![ModuleValueType::I64],
         });
         let global_export = ExportKind::Global(ModuleValueType::F32, false);
-        let memory_export = ExportKind::Memory(1, None, false, false);
+        let memory_export = ExportKind::Memory(1, None, false, false, 16);
         let table_export = ExportKind::Table(ModuleValueType::FuncRef, 10, None);
 
         // Verify Clone works

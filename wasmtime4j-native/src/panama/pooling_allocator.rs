@@ -63,6 +63,37 @@ pub extern "C" fn wasmtime4j_pooling_allocator_create_with_config(
     }
 }
 
+/// Create a pooling allocator from JSON configuration bytes (Panama FFI)
+///
+/// All fields in the JSON map directly to wasmtime's `PoolingAllocationConfig` API.
+///
+/// # Safety
+/// - json_ptr must point to valid UTF-8 bytes of length json_len
+/// - Caller must free the returned pointer using wasmtime4j_pooling_allocator_destroy
+#[no_mangle]
+pub extern "C" fn wasmtime4j_pooling_allocator_create_from_json(
+    json_ptr: *const u8,
+    json_len: usize,
+) -> *mut c_void {
+    if json_ptr.is_null() || json_len == 0 {
+        crate::error::ffi_utils::set_last_error(crate::error::WasmtimeError::InvalidParameter {
+            message: "JSON config pointer is null or length is zero".to_string(),
+        });
+        return std::ptr::null_mut();
+    }
+
+    let json_bytes = unsafe { std::slice::from_raw_parts(json_ptr, json_len) };
+    match JniPoolingAllocatorWrapper::new_from_json(json_bytes) {
+        Ok(wrapper) => Box::into_raw(Box::new(wrapper)) as *mut c_void,
+        Err(e) => {
+            crate::error::ffi_utils::set_last_error(crate::error::WasmtimeError::EngineConfig {
+                message: e,
+            });
+            std::ptr::null_mut()
+        }
+    }
+}
+
 /// Allocate an instance from the pool (Panama FFI)
 ///
 /// # Safety

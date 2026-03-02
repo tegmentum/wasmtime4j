@@ -6,11 +6,137 @@
 use jni::objects::JClass;
 use jni::sys::{jboolean, jfloat, jint, jlong, jlongArray, JNI_FALSE, JNI_TRUE};
 use jni::JNIEnv;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::RwLock;
 use std::time::Instant;
 use wasmtime::{InstanceAllocationStrategy, PoolingAllocationConfig};
+
+/// JSON-serializable pooling allocator configuration.
+///
+/// All fields are optional. Omitted fields use wasmtime defaults.
+/// Field names use camelCase to match the Java getter convention.
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PoolingAllocatorConfigFfi {
+    pub total_core_instances: Option<u32>,
+    pub total_component_instances: Option<u32>,
+    pub total_memories: Option<u32>,
+    pub total_tables: Option<u32>,
+    pub total_stacks: Option<u32>,
+    pub total_gc_heaps: Option<u32>,
+    pub max_memory_size: Option<usize>,
+    pub max_tables_per_module: Option<u32>,
+    pub max_tables_per_component: Option<u32>,
+    pub max_memories_per_module: Option<u32>,
+    pub max_memories_per_component: Option<u32>,
+    pub max_core_instances_per_component: Option<u32>,
+    pub max_core_instance_size: Option<usize>,
+    pub max_component_instance_size: Option<usize>,
+    pub table_elements: Option<usize>,
+    pub decommit_batch_size: Option<usize>,
+    pub linear_memory_keep_resident: Option<usize>,
+    pub table_keep_resident: Option<usize>,
+    pub async_stack_keep_resident: Option<usize>,
+    pub max_unused_warm_slots: Option<u32>,
+    pub memory_protection_keys: Option<String>,
+    pub max_memory_protection_keys: Option<usize>,
+    /// "yes", "no", or "auto" (maps to wasmtime::Enabled)
+    pub pagemap_scan: Option<String>,
+}
+
+/// Create a `PoolingAllocationConfig` from a deserialized `PoolingAllocatorConfigFfi`,
+/// applying all fields to the wasmtime config.
+pub fn build_pooling_config_from_ffi(
+    ffi: &PoolingAllocatorConfigFfi,
+) -> PoolingAllocationConfig {
+    let mut config = PoolingAllocationConfig::new();
+
+    if let Some(v) = ffi.total_core_instances {
+        config.total_core_instances(v);
+    }
+    if let Some(v) = ffi.total_component_instances {
+        config.total_component_instances(v);
+    }
+    if let Some(v) = ffi.total_memories {
+        config.total_memories(v);
+    }
+    if let Some(v) = ffi.total_tables {
+        config.total_tables(v);
+    }
+    if let Some(v) = ffi.total_stacks {
+        config.total_stacks(v);
+    }
+    if let Some(v) = ffi.total_gc_heaps {
+        config.total_gc_heaps(v);
+    }
+    if let Some(v) = ffi.max_memory_size {
+        config.max_memory_size(v);
+    }
+    if let Some(v) = ffi.max_tables_per_module {
+        config.max_tables_per_module(v);
+    }
+    if let Some(v) = ffi.max_tables_per_component {
+        config.max_tables_per_component(v);
+    }
+    if let Some(v) = ffi.max_memories_per_module {
+        config.max_memories_per_module(v);
+    }
+    if let Some(v) = ffi.max_memories_per_component {
+        config.max_memories_per_component(v);
+    }
+    if let Some(v) = ffi.max_core_instances_per_component {
+        config.max_core_instances_per_component(v);
+    }
+    if let Some(v) = ffi.max_core_instance_size {
+        config.max_core_instance_size(v);
+    }
+    if let Some(v) = ffi.max_component_instance_size {
+        config.max_component_instance_size(v);
+    }
+    if let Some(v) = ffi.table_elements {
+        config.table_elements(v);
+    }
+    if let Some(v) = ffi.decommit_batch_size {
+        config.decommit_batch_size(v);
+    }
+    if let Some(v) = ffi.linear_memory_keep_resident {
+        config.linear_memory_keep_resident(v);
+    }
+    if let Some(v) = ffi.table_keep_resident {
+        config.table_keep_resident(v);
+    }
+    if let Some(v) = ffi.async_stack_keep_resident {
+        config.async_stack_keep_resident(v);
+    }
+    if let Some(v) = ffi.max_unused_warm_slots {
+        config.max_unused_warm_slots(v);
+    }
+    #[cfg(feature = "memory-protection-keys")]
+    if let Some(ref v) = ffi.memory_protection_keys {
+        let enabled = match v.as_str() {
+            "yes" => wasmtime::Enabled::Yes,
+            "auto" => wasmtime::Enabled::Auto,
+            _ => wasmtime::Enabled::No,
+        };
+        config.memory_protection_keys(enabled);
+    }
+    #[cfg(feature = "memory-protection-keys")]
+    if let Some(v) = ffi.max_memory_protection_keys {
+        config.max_memory_protection_keys(v);
+    }
+    if let Some(ref v) = ffi.pagemap_scan {
+        let enabled = match v.as_str() {
+            "yes" => wasmtime::Enabled::Yes,
+            "auto" => wasmtime::Enabled::Auto,
+            _ => wasmtime::Enabled::No,
+        };
+        config.pagemap_scan(enabled);
+    }
+
+    config
+}
 
 /// Instance state for tracking
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -106,6 +232,33 @@ impl JniPoolingAllocatorWrapper {
             let warm_slots = ((instance_pool_size as f32) * pool_warming_percentage) as u32;
             config.max_unused_warm_slots(warm_slots.max(1));
         }
+
+        Ok(Self {
+            config,
+            closed: AtomicBool::new(false),
+            instances: RwLock::new(HashMap::new()),
+            next_instance_id: AtomicU64::new(1),
+            stats: RwLock::new(PoolingStatistics::default()),
+            instance_pool_size,
+            max_memory_per_instance,
+            pool_warming_enabled,
+            pool_warming_percentage,
+        })
+    }
+
+    /// Create a new pooling allocator wrapper from JSON configuration bytes.
+    ///
+    /// All fields are mapped to the wasmtime `PoolingAllocationConfig` API.
+    pub fn new_from_json(json_bytes: &[u8]) -> Result<Self, String> {
+        let ffi: PoolingAllocatorConfigFfi =
+            serde_json::from_slice(json_bytes).map_err(|e| format!("Invalid JSON config: {}", e))?;
+
+        let config = build_pooling_config_from_ffi(&ffi);
+
+        let instance_pool_size = ffi.total_core_instances.unwrap_or(100);
+        let max_memory_per_instance = ffi.max_memory_size.unwrap_or(1 << 26);
+        let pool_warming_enabled = ffi.max_unused_warm_slots.map_or(false, |v| v > 0);
+        let pool_warming_percentage = 0.0f32; // Warm slots set directly via JSON, not via pct
 
         Ok(Self {
             config,
@@ -349,6 +502,33 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator
     };
 
     Box::into_raw(Box::new(wrapper)) as jlong
+}
+
+/// Create a new pooling allocator from JSON configuration bytes (JNI)
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_pool_JniPoolingAllocator_nativeCreateFromJsonConfig(
+    mut env: JNIEnv,
+    _class: JClass,
+    json_bytes: jni::objects::JByteArray,
+) -> jlong {
+    let bytes = match crate::error::jni_utils::get_byte_array_bytes(&env, &json_bytes) {
+        Ok(b) => b,
+        Err(e) => {
+            let _ = env.throw_new("java/lang/IllegalArgumentException", e.to_string());
+            return 0;
+        }
+    };
+
+    match JniPoolingAllocatorWrapper::new_from_json(&bytes) {
+        Ok(wrapper) => Box::into_raw(Box::new(wrapper)) as jlong,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/WasmException",
+                e,
+            );
+            0
+        }
+    }
 }
 
 /// Allocate an instance from the pool

@@ -37,9 +37,10 @@ public final class JniMemoryType implements MemoryType {
   private final Optional<Long> maximum;
   private final boolean is64Bit;
   private final boolean isShared;
+  private final int pageSizeLog2;
 
   /**
-   * Creates a new JniMemoryType instance.
+   * Creates a new JniMemoryType instance with default page size.
    *
    * @param minimum the minimum number of memory pages
    * @param maximum the maximum number of memory pages (null if unlimited)
@@ -48,6 +49,24 @@ public final class JniMemoryType implements MemoryType {
    */
   public JniMemoryType(
       final long minimum, final Long maximum, final boolean is64Bit, final boolean isShared) {
+    this(minimum, maximum, is64Bit, isShared, 16);
+  }
+
+  /**
+   * Creates a new JniMemoryType instance.
+   *
+   * @param minimum the minimum number of memory pages
+   * @param maximum the maximum number of memory pages (null if unlimited)
+   * @param is64Bit true if this is 64-bit addressable memory
+   * @param isShared true if this is shared memory
+   * @param pageSizeLog2 the log2 of the page size (e.g. 16 for 65536 bytes)
+   */
+  public JniMemoryType(
+      final long minimum,
+      final Long maximum,
+      final boolean is64Bit,
+      final boolean isShared,
+      final int pageSizeLog2) {
     if (minimum < 0) {
       throw new IllegalArgumentException("Minimum page count cannot be negative: " + minimum);
     }
@@ -60,11 +79,12 @@ public final class JniMemoryType implements MemoryType {
     this.maximum = Optional.ofNullable(maximum);
     this.is64Bit = is64Bit;
     this.isShared = isShared;
+    this.pageSizeLog2 = pageSizeLog2;
 
     LOGGER.fine(
         String.format(
-            "Created JniMemoryType: min=%d, max=%s, 64bit=%b, shared=%b",
-            minimum, maximum, is64Bit, isShared));
+            "Created JniMemoryType: min=%d, max=%s, 64bit=%b, shared=%b, pageSizeLog2=%d",
+            minimum, maximum, is64Bit, isShared, pageSizeLog2));
   }
 
   /**
@@ -78,7 +98,7 @@ public final class JniMemoryType implements MemoryType {
     Validation.requireValidHandle(nativeHandle, "nativeHandle");
 
     final long[] typeInfo = nativeGetMemoryTypeInfo(nativeHandle);
-    if (typeInfo.length < 4) {
+    if (typeInfo.length < 5) {
       throw new IllegalStateException("Invalid memory type info from native");
     }
 
@@ -86,8 +106,9 @@ public final class JniMemoryType implements MemoryType {
     final Long maximum = typeInfo[1] == -1 ? null : typeInfo[1];
     final boolean is64Bit = typeInfo[2] != 0;
     final boolean isShared = typeInfo[3] != 0;
+    final int pageSizeLog2 = (int) typeInfo[4];
 
-    return new JniMemoryType(minimum, maximum, is64Bit, isShared);
+    return new JniMemoryType(minimum, maximum, is64Bit, isShared, pageSizeLog2);
   }
 
   @Override
@@ -111,6 +132,16 @@ public final class JniMemoryType implements MemoryType {
   }
 
   @Override
+  public long getPageSize() {
+    return 1L << pageSizeLog2;
+  }
+
+  @Override
+  public int getPageSizeLog2() {
+    return pageSizeLog2;
+  }
+
+  @Override
   public WasmTypeKind getKind() {
     return WasmTypeKind.MEMORY;
   }
@@ -128,26 +159,32 @@ public final class JniMemoryType implements MemoryType {
     return minimum == other.getMinimum()
         && maximum.equals(other.getMaximum())
         && is64Bit == other.is64Bit()
-        && isShared == other.isShared();
+        && isShared == other.isShared()
+        && getPageSize() == other.getPageSize();
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(minimum, maximum, is64Bit, isShared);
+    return java.util.Objects.hash(minimum, maximum, is64Bit, isShared, pageSizeLog2);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "MemoryType{min=%d, max=%s, 64bit=%b, shared=%b}",
-        minimum, maximum.map(String::valueOf).orElse("unlimited"), is64Bit, isShared);
+        "MemoryType{min=%d, max=%s, 64bit=%b, shared=%b, pageSize=%d}",
+        minimum,
+        maximum.map(String::valueOf).orElse("unlimited"),
+        is64Bit,
+        isShared,
+        getPageSize());
   }
 
   /**
    * Native method to get memory type information.
    *
    * @param nativeHandle the native handle to the memory type
-   * @return array containing [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1)]
+   * @return array containing [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1),
+   *     pageSizeLog2]
    */
   private static native long[] nativeGetMemoryTypeInfo(long nativeHandle);
 }

@@ -147,6 +147,32 @@ public interface WasiContext {
   WasiContext setStderr(Path path);
 
   /**
+   * Redirects stdout to append to the specified file.
+   *
+   * <p>Unlike {@link #setStdout(Path)} which truncates the file, this method opens the file in
+   * append mode, preserving existing content.
+   *
+   * @param path the file to append stdout to
+   * @return this WasiContext for method chaining
+   * @throws IllegalArgumentException if path is null
+   * @since 1.0.0
+   */
+  WasiContext setStdoutAppend(Path path);
+
+  /**
+   * Redirects stderr to append to the specified file.
+   *
+   * <p>Unlike {@link #setStderr(Path)} which truncates the file, this method opens the file in
+   * append mode, preserving existing content.
+   *
+   * @param path the file to append stderr to
+   * @return this WasiContext for method chaining
+   * @throws IllegalArgumentException if path is null
+   * @since 1.0.0
+   */
+  WasiContext setStderrAppend(Path path);
+
+  /**
    * Grants the WASI module access to a directory on the host file system.
    *
    * <p>The host directory will be mapped to the specified guest path, allowing the WebAssembly

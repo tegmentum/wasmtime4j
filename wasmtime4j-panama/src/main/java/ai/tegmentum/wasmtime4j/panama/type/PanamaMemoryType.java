@@ -40,6 +40,7 @@ public final class PanamaMemoryType implements MemoryType {
   private final Optional<Long> maximum;
   private final boolean is64Bit;
   private final boolean isShared;
+  private final int pageSizeLog2;
   private final Arena arena;
   private final MemorySegment nativeHandle;
 
@@ -56,6 +57,24 @@ public final class PanamaMemoryType implements MemoryType {
    */
   public PanamaMemoryType(
       final long minimum, final Long maximum, final boolean is64Bit, final boolean isShared) {
+    this(minimum, maximum, is64Bit, isShared, 16);
+  }
+
+  /**
+   * Creates a new PanamaMemoryType instance with just the type values including page size.
+   *
+   * @param minimum the minimum number of memory pages
+   * @param maximum the maximum number of memory pages (null if unlimited)
+   * @param is64Bit true if this is 64-bit addressable memory
+   * @param isShared true if this is shared memory
+   * @param pageSizeLog2 the log2 of the page size (e.g. 16 for 65536 bytes)
+   */
+  public PanamaMemoryType(
+      final long minimum,
+      final Long maximum,
+      final boolean is64Bit,
+      final boolean isShared,
+      final int pageSizeLog2) {
     if (minimum < 0) {
       throw new IllegalArgumentException("Minimum page count cannot be negative: " + minimum);
     }
@@ -68,17 +87,18 @@ public final class PanamaMemoryType implements MemoryType {
     this.maximum = Optional.ofNullable(maximum);
     this.is64Bit = is64Bit;
     this.isShared = isShared;
+    this.pageSizeLog2 = pageSizeLog2;
     this.arena = null;
     this.nativeHandle = null;
 
     LOGGER.fine(
         String.format(
-            "Created PanamaMemoryType: min=%d, max=%s, 64bit=%b, shared=%b",
-            minimum, maximum, is64Bit, isShared));
+            "Created PanamaMemoryType: min=%d, max=%s, 64bit=%b, shared=%b, pageSizeLog2=%d",
+            minimum, maximum, is64Bit, isShared, pageSizeLog2));
   }
 
   /**
-   * Creates a new PanamaMemoryType instance with native handle.
+   * Creates a new PanamaMemoryType instance with native handle and default page size.
    *
    * @param minimum the minimum number of memory pages
    * @param maximum the maximum number of memory pages (null if unlimited)
@@ -92,6 +112,28 @@ public final class PanamaMemoryType implements MemoryType {
       final Long maximum,
       final boolean is64Bit,
       final boolean isShared,
+      final Arena arena,
+      final MemorySegment nativeHandle) {
+    this(minimum, maximum, is64Bit, isShared, 16, arena, nativeHandle);
+  }
+
+  /**
+   * Creates a new PanamaMemoryType instance with native handle.
+   *
+   * @param minimum the minimum number of memory pages
+   * @param maximum the maximum number of memory pages (null if unlimited)
+   * @param is64Bit true if this is 64-bit addressable memory
+   * @param isShared true if this is shared memory
+   * @param pageSizeLog2 the log2 of the page size (e.g. 16 for 65536 bytes)
+   * @param arena the memory arena for resource management
+   * @param nativeHandle the native handle to the memory type
+   */
+  public PanamaMemoryType(
+      final long minimum,
+      final Long maximum,
+      final boolean is64Bit,
+      final boolean isShared,
+      final int pageSizeLog2,
       final Arena arena,
       final MemorySegment nativeHandle) {
     if (minimum < 0) {
@@ -108,13 +150,14 @@ public final class PanamaMemoryType implements MemoryType {
     this.maximum = Optional.ofNullable(maximum);
     this.is64Bit = is64Bit;
     this.isShared = isShared;
+    this.pageSizeLog2 = pageSizeLog2;
     this.arena = arena;
     this.nativeHandle = nativeHandle;
 
     LOGGER.fine(
         String.format(
-            "Created PanamaMemoryType: min=%d, max=%s, 64bit=%b, shared=%b",
-            minimum, maximum, is64Bit, isShared));
+            "Created PanamaMemoryType: min=%d, max=%s, 64bit=%b, shared=%b, pageSizeLog2=%d",
+            minimum, maximum, is64Bit, isShared, pageSizeLog2));
   }
 
   /**
@@ -130,7 +173,7 @@ public final class PanamaMemoryType implements MemoryType {
     Validation.requireNonNull(arena, "arena");
 
     // Allocate memory for the type info result
-    final MemorySegment typeInfoSegment = arena.allocate(32); // 4 longs * 8 bytes
+    final MemorySegment typeInfoSegment = arena.allocate(40); // 5 longs * 8 bytes
 
     // Call native function to get memory type info
     nativeGetMemoryTypeInfo(nativeHandle, typeInfoSegment);
@@ -140,8 +183,10 @@ public final class PanamaMemoryType implements MemoryType {
     final Long maximum = maxValue == -1 ? null : maxValue;
     final boolean is64Bit = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 16) != 0;
     final boolean isShared = typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 24) != 0;
+    final int pageSizeLog2 = (int) typeInfoSegment.get(java.lang.foreign.ValueLayout.JAVA_LONG, 32);
 
-    return new PanamaMemoryType(minimum, maximum, is64Bit, isShared, arena, nativeHandle);
+    return new PanamaMemoryType(
+        minimum, maximum, is64Bit, isShared, pageSizeLog2, arena, nativeHandle);
   }
 
   @Override
@@ -162,6 +207,16 @@ public final class PanamaMemoryType implements MemoryType {
   @Override
   public boolean isShared() {
     return isShared;
+  }
+
+  @Override
+  public long getPageSize() {
+    return 1L << pageSizeLog2;
+  }
+
+  @Override
+  public int getPageSizeLog2() {
+    return pageSizeLog2;
   }
 
   @Override
@@ -200,19 +255,24 @@ public final class PanamaMemoryType implements MemoryType {
     return minimum == other.getMinimum()
         && maximum.equals(other.getMaximum())
         && is64Bit == other.is64Bit()
-        && isShared == other.isShared();
+        && isShared == other.isShared()
+        && getPageSize() == other.getPageSize();
   }
 
   @Override
   public int hashCode() {
-    return java.util.Objects.hash(minimum, maximum, is64Bit, isShared);
+    return java.util.Objects.hash(minimum, maximum, is64Bit, isShared, pageSizeLog2);
   }
 
   @Override
   public String toString() {
     return String.format(
-        "MemoryType{min=%d, max=%s, 64bit=%b, shared=%b}",
-        minimum, maximum.map(String::valueOf).orElse("unlimited"), is64Bit, isShared);
+        "MemoryType{min=%d, max=%s, 64bit=%b, shared=%b, pageSize=%d}",
+        minimum,
+        maximum.map(String::valueOf).orElse("unlimited"),
+        is64Bit,
+        isShared,
+        getPageSize());
   }
 
   /**
@@ -220,7 +280,7 @@ public final class PanamaMemoryType implements MemoryType {
    *
    * @param nativeHandle the native handle to the memory type
    * @param resultBuffer the buffer to store the result [minimum, maximum(-1 if unlimited),
-   *     is64Bit(0/1), isShared(0/1)]
+   *     is64Bit(0/1), isShared(0/1), pageSizeLog2]
    */
   private static native void nativeGetMemoryTypeInfo(
       MemorySegment nativeHandle, MemorySegment resultBuffer);

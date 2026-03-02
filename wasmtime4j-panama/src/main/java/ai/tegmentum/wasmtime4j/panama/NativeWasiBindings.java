@@ -396,6 +396,36 @@ public final class NativeWasiBindings extends NativeBindingsBase {
         "wasmtime4j_wasi_context_set_stderr", Integer.class, contextHandle, path);
   }
 
+  /**
+   * Sets stdout to append to a file.
+   *
+   * @param contextHandle the WASI context handle
+   * @param path the file path (C string)
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextSetStdoutAppend(
+      final MemorySegment contextHandle, final MemorySegment path) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(path, "path");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_stdout_append", Integer.class, contextHandle, path);
+  }
+
+  /**
+   * Sets stderr to append to a file.
+   *
+   * @param contextHandle the WASI context handle
+   * @param path the file path (C string)
+   * @return 0 on success, non-zero on error
+   */
+  public int wasiContextSetStderrAppend(
+      final MemorySegment contextHandle, final MemorySegment path) {
+    validatePointer(contextHandle, "contextHandle");
+    validatePointer(path, "path");
+    return callNativeFunction(
+        "wasmtime4j_wasi_context_set_stderr_append", Integer.class, contextHandle, path);
+  }
+
   // ===== WASI Context Directory Pre-Opening =====
 
   /**

@@ -166,10 +166,11 @@ public final class ErrorMapper {
       return new WasmRuntimeException("Unknown runtime error");
     }
 
-    // Check for coredump prefix and/or trap indicator
-    String workingMessage = message;
-    if (workingMessage.startsWith("[coredump:") || workingMessage.contains("WebAssembly trap:")) {
-      return TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, workingMessage);
+    // Check for trap code prefix, coredump prefix, and/or trap indicator
+    if (message.contains("[trap_code:")
+        || message.startsWith("[coredump:")
+        || message.contains("WebAssembly trap:")) {
+      return TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, message);
     }
 
     return new WasmRuntimeException(message);

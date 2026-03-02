@@ -408,6 +408,46 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
     return pagemapScanEnabled;
   }
 
+  /**
+   * Serializes this configuration to JSON bytes for native FFI.
+   *
+   * <p>The JSON uses camelCase field names matching the Rust {@code PoolingAllocatorConfigFfi}
+   * struct. All wasmtime {@code PoolingAllocationConfig} fields are included.
+   *
+   * @return UTF-8 JSON bytes
+   */
+  public byte[] toJson() {
+    final StringBuilder sb = new StringBuilder(512);
+    sb.append('{');
+    sb.append("\"totalCoreInstances\":").append(totalCoreInstances);
+    sb.append(",\"totalComponentInstances\":").append(totalComponentInstances);
+    sb.append(",\"totalMemories\":").append(totalMemories);
+    sb.append(",\"totalTables\":").append(maxTables);
+    sb.append(",\"totalStacks\":").append(maxStacks);
+    sb.append(",\"totalGcHeaps\":").append(totalGcHeaps);
+    sb.append(",\"maxMemorySize\":").append(maxMemorySize);
+    sb.append(",\"maxTablesPerModule\":").append(maxTablesPerInstance);
+    sb.append(",\"maxTablesPerComponent\":").append(maxTablesPerComponent);
+    sb.append(",\"maxMemoriesPerModule\":").append(maxMemoriesPerModule);
+    sb.append(",\"maxMemoriesPerComponent\":").append(maxMemoriesPerComponent);
+    sb.append(",\"maxCoreInstancesPerComponent\":").append(maxCoreInstancesPerComponent);
+    sb.append(",\"maxCoreInstanceSize\":").append(maxCoreInstanceSize);
+    sb.append(",\"maxComponentInstanceSize\":").append(maxComponentInstanceSize);
+    sb.append(",\"tableElements\":").append(tableElements);
+    sb.append(",\"decommitBatchSize\":").append(decommitBatchSize);
+    sb.append(",\"linearMemoryKeepResident\":").append(linearMemoryKeepResident);
+    sb.append(",\"tableKeepResident\":").append(tableKeepResident);
+    sb.append(",\"asyncStackKeepResident\":").append(asyncStackKeepResident);
+    sb.append(",\"maxUnusedWarmSlots\":").append(maxUnusedWarmSlots);
+    sb.append(",\"memoryProtectionKeys\":\"")
+        .append(memoryProtectionKeysEnabled.name().toLowerCase())
+        .append('"');
+    sb.append(",\"maxMemoryProtectionKeys\":").append(maxMemoryProtectionKeys);
+    sb.append(",\"pagemapScan\":\"").append(pagemapScanEnabled.name().toLowerCase()).append('"');
+    sb.append('}');
+    return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+  }
+
   @Override
   public void validate() {
     if (instancePoolSize <= 0) {

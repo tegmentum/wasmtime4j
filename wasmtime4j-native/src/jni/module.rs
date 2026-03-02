@@ -347,7 +347,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExpor
                 let type_str = match &export.export_type {
                     crate::module::ExportKind::Function(_) => "function",
                     crate::module::ExportKind::Global(_, _) => "global",
-                    crate::module::ExportKind::Memory(_, _, _, _) => "memory",
+                    crate::module::ExportKind::Memory(_, _, _, _, _) => "memory",
                     crate::module::ExportKind::Table(_, _, _) => "table",
                 };
 
@@ -392,7 +392,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetImpor
                 let type_str = match &import.import_type {
                     crate::module::ImportKind::Function(_) => "function",
                     crate::module::ImportKind::Global(_, _) => "global",
-                    crate::module::ImportKind::Memory(_, _, _, _) => "memory",
+                    crate::module::ImportKind::Memory(_, _, _, _, _) => "memory",
                     crate::module::ImportKind::Table(_, _, _) => "table",
                 };
 
@@ -956,13 +956,14 @@ fn create_jni_global_type<'a>(
     .ok()
 }
 
-/// Helper: Create JniMemoryType from initial, max, is_64, and shared
+/// Helper: Create JniMemoryType from initial, max, is_64, shared, and page_size_log2
 fn create_jni_memory_type<'a>(
     env: &mut JNIEnv<'a>,
     initial: u64,
     max: Option<u64>,
     is_64: bool,
     shared: bool,
+    page_size_log2: u32,
 ) -> Option<JObject<'a>> {
     let memory_type_class = env
         .find_class("ai/tegmentum/wasmtime4j/jni/type/JniMemoryType")
@@ -977,15 +978,16 @@ fn create_jni_memory_type<'a>(
         JObject::null()
     };
 
-    // JniMemoryType(long minimum, Long maximum, boolean is64Bit, boolean isShared)
+    // JniMemoryType(long minimum, Long maximum, boolean is64Bit, boolean isShared, int pageSizeLog2)
     env.new_object(
         memory_type_class,
-        "(JLjava/lang/Long;ZZ)V",
+        "(JLjava/lang/Long;ZZI)V",
         &[
             JValue::Long(initial as i64),
             JValue::Object(&max_obj),
             JValue::Bool(is_64 as jboolean),
             JValue::Bool(shared as jboolean),
+            JValue::Int(page_size_log2 as jint),
         ],
     )
     .ok()
@@ -1091,8 +1093,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             crate::module::ExportKind::Global(val_type, mutable) => {
                 create_jni_global_type(&mut env, val_type, *mutable)
             }
-            crate::module::ExportKind::Memory(initial, max, is_64, shared) => {
-                create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared)
+            crate::module::ExportKind::Memory(initial, max, is_64, shared, page_size_log2) => {
+                create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared, *page_size_log2)
             }
             crate::module::ExportKind::Table(elem_type, initial, max) => {
                 create_jni_table_type(&mut env, elem_type, *initial, *max)
@@ -1203,8 +1205,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
                     None => continue,
                 }
             }
-            crate::module::ImportKind::Memory(initial, max, is_64, shared) => {
-                match create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared) {
+            crate::module::ImportKind::Memory(initial, max, is_64, shared, page_size_log2) => {
+                match create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared, *page_size_log2) {
                     Some(obj) => obj,
                     None => continue,
                 }

@@ -376,8 +376,10 @@ public final class JniWasiLinker implements WasiLinker {
         // Will be handled by inheritStdio or individually
         break;
       case FILE:
-      case FILE_APPEND:
         context.setStdout(config.getFilePath());
+        break;
+      case FILE_APPEND:
+        context.setStdoutAppend(config.getFilePath());
         break;
       case NULL:
         // Null stdout - output discarded
@@ -403,8 +405,10 @@ public final class JniWasiLinker implements WasiLinker {
         // Will be handled by inheritStdio or individually
         break;
       case FILE:
-      case FILE_APPEND:
         context.setStderr(config.getFilePath());
+        break;
+      case FILE_APPEND:
+        context.setStderrAppend(config.getFilePath());
         break;
       case NULL:
         // Null stderr - error output discarded

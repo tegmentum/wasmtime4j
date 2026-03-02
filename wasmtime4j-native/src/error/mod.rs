@@ -522,11 +522,62 @@ impl WasmtimeError {
         }
     }
 
-    /// Create from Wasmtime trap
+    /// Convert a `wasmtime::Trap` enum variant to its numeric trap code.
+    ///
+    /// Returns a code matching the Java `TrapException.TrapType` enum ordinals
+    /// and the `panama::trap::trap_codes` constants.
+    pub fn trap_to_code(trap: &Trap) -> i32 {
+        use crate::panama::trap::trap_codes;
+        match trap {
+            Trap::StackOverflow => trap_codes::STACK_OVERFLOW,
+            Trap::MemoryOutOfBounds => trap_codes::MEMORY_OUT_OF_BOUNDS,
+            Trap::HeapMisaligned => trap_codes::HEAP_MISALIGNED,
+            Trap::TableOutOfBounds => trap_codes::TABLE_OUT_OF_BOUNDS,
+            Trap::IndirectCallToNull => trap_codes::INDIRECT_CALL_TO_NULL,
+            Trap::BadSignature => trap_codes::BAD_SIGNATURE,
+            Trap::IntegerOverflow => trap_codes::INTEGER_OVERFLOW,
+            Trap::IntegerDivisionByZero => trap_codes::INTEGER_DIVISION_BY_ZERO,
+            Trap::BadConversionToInteger => trap_codes::BAD_CONVERSION_TO_INTEGER,
+            Trap::UnreachableCodeReached => trap_codes::UNREACHABLE_CODE_REACHED,
+            Trap::Interrupt => trap_codes::INTERRUPT,
+            Trap::OutOfFuel => trap_codes::OUT_OF_FUEL,
+            Trap::AtomicWaitNonSharedMemory => trap_codes::ATOMIC_WAIT_NON_SHARED_MEMORY,
+            Trap::NullReference => trap_codes::NULL_REFERENCE,
+            Trap::ArrayOutOfBounds => trap_codes::ARRAY_OUT_OF_BOUNDS,
+            Trap::AllocationTooLarge => trap_codes::ALLOCATION_TOO_LARGE,
+            Trap::CastFailure => trap_codes::CAST_FAILURE,
+            Trap::CannotEnterComponent => trap_codes::CANNOT_ENTER_COMPONENT,
+            Trap::NoAsyncResult => trap_codes::NO_ASYNC_RESULT,
+            Trap::UnhandledTag => trap_codes::UNHANDLED_TAG,
+            Trap::ContinuationAlreadyConsumed => trap_codes::CONTINUATION_ALREADY_CONSUMED,
+            Trap::DisabledOpcode => trap_codes::DISABLED_OPCODE,
+            Trap::AsyncDeadlock => trap_codes::ASYNC_DEADLOCK,
+            Trap::CannotLeaveComponent => trap_codes::CANNOT_LEAVE_COMPONENT,
+            Trap::CannotBlockSyncTask => trap_codes::CANNOT_BLOCK_SYNC_TASK,
+            Trap::InvalidChar => trap_codes::INVALID_CHAR,
+            Trap::DebugAssertStringEncodingFinished => {
+                trap_codes::DEBUG_ASSERT_STRING_ENCODING_FINISHED
+            }
+            Trap::DebugAssertEqualCodeUnits => trap_codes::DEBUG_ASSERT_EQUAL_CODE_UNITS,
+            Trap::DebugAssertPointerAligned => trap_codes::DEBUG_ASSERT_POINTER_ALIGNED,
+            Trap::DebugAssertUpperBitsUnset => trap_codes::DEBUG_ASSERT_UPPER_BITS_UNSET,
+            Trap::StringOutOfBounds => trap_codes::STRING_OUT_OF_BOUNDS,
+            Trap::ListOutOfBounds => trap_codes::LIST_OUT_OF_BOUNDS,
+            Trap::InvalidDiscriminant => trap_codes::INVALID_DISCRIMINANT,
+            Trap::UnalignedPointer => trap_codes::UNALIGNED_POINTER,
+            _ => trap_codes::UNKNOWN,
+        }
+    }
+
+    /// Create from Wasmtime trap.
+    ///
+    /// Embeds a `[trap_code:N]` prefix in the message so that both Panama and JNI
+    /// paths can resolve the exact trap type without fragile string matching.
     pub fn from_trap(trap: Trap) -> Self {
+        let code = Self::trap_to_code(&trap);
         WasmtimeError::Runtime {
-            message: trap.to_string(),
-            backtrace: None, // trace() method removed in wasmtime 36.0.2
+            message: format!("[trap_code:{}]{}", code, trap),
+            backtrace: None,
         }
     }
 
@@ -546,23 +597,25 @@ impl WasmtimeError {
         if let Some(exit) = error.downcast_ref::<wasmtime_wasi::I32Exit>() {
             return WasmtimeError::WasiExit { exit_code: exit.0 };
         }
-        // Extract trap message before potentially moving the error into the coredump registry
-        let trap_msg = error
+        // Extract trap code and message before potentially moving the error into the coredump
+        // registry
+        let trap_info = error
             .downcast_ref::<Trap>()
-            .map(|t| format!("WebAssembly trap: {}", t));
+            .map(|t| (Self::trap_to_code(t), format!("WebAssembly trap: {}", t)));
         let has_coredump = error.downcast_ref::<wasmtime::WasmCoreDump>().is_some();
 
-        if let Some(msg) = trap_msg {
+        if let Some((code, trap_msg)) = trap_info {
+            let trap_prefix = format!("[trap_code:{}]", code);
             if has_coredump {
                 // Register the error (which contains the WasmCoreDump) in the coredump registry
-                let coredump_id = crate::coredump::register_error(error, msg.clone());
+                let coredump_id = crate::coredump::register_error(error, trap_msg.clone());
                 return WasmtimeError::Runtime {
-                    message: format!("[coredump:{}]{}", coredump_id, msg),
+                    message: format!("[coredump:{}]{}{}", coredump_id, trap_prefix, trap_msg),
                     backtrace: None,
                 };
             }
             return WasmtimeError::Runtime {
-                message: msg,
+                message: format!("{}{}", trap_prefix, trap_msg),
                 backtrace: None,
             };
         }

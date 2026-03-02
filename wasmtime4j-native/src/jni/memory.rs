@@ -1545,13 +1545,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemor
         } else {
             0i64
         };
+        let page_size_log2 = memory.memory_type.page_size_log2() as i64;
 
-        // Create long array with [minimum, maximum, is64Bit, isShared]
-        let result_array = env.new_long_array(4).map_err(|e| WasmtimeError::Memory {
+        // Create long array with [minimum, maximum, is64Bit, isShared, pageSizeLog2]
+        let result_array = env.new_long_array(5).map_err(|e| WasmtimeError::Memory {
             message: format!("Failed to create long array: {}", e),
         })?;
 
-        let values = vec![minimum, maximum, is_64_bit, is_shared];
+        let values = vec![minimum, maximum, is_64_bit, is_shared, page_size_log2];
         env.set_long_array_region(&result_array, 0, &values)
             .map_err(|e| WasmtimeError::Memory {
                 message: format!("Failed to set long array region: {}", e),

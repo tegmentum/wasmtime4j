@@ -504,6 +504,26 @@ public final class NativeExecutionBindings extends NativeBindingsBase {
   }
 
   /**
+   * Creates a pooling allocator from JSON configuration bytes.
+   *
+   * <p>All fields in the JSON map directly to wasmtime's PoolingAllocationConfig API. This is the
+   * preferred creation path as it wires all configuration options.
+   *
+   * @param jsonBytes UTF-8 JSON configuration bytes
+   * @return pointer to the allocator, or null on failure
+   */
+  public MemorySegment poolingAllocatorCreateFromJson(final byte[] jsonBytes) {
+    try (Arena localArena = Arena.ofConfined()) {
+      final MemorySegment jsonSegment = localArena.allocateFrom(ValueLayout.JAVA_BYTE, jsonBytes);
+      return callNativeFunction(
+          "wasmtime4j_pooling_allocator_create_from_json",
+          MemorySegment.class,
+          jsonSegment,
+          (long) jsonBytes.length);
+    }
+  }
+
+  /**
    * Allocates an instance from the pool.
    *
    * @param allocatorPtr pointer to the allocator

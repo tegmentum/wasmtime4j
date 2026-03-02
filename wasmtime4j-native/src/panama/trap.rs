@@ -84,10 +84,28 @@ pub mod trap_codes {
     pub const UNKNOWN: i32 = 36;
 }
 
+/// Extract a numeric trap code from a `[trap_code:N]` prefix in the message.
+///
+/// Returns `Some(code)` if the prefix is found, `None` otherwise.
+fn extract_trap_code_prefix(msg: &str) -> Option<i32> {
+    const PREFIX: &str = "[trap_code:";
+    if let Some(start) = msg.find(PREFIX) {
+        let after = &msg[start + PREFIX.len()..];
+        if let Some(end) = after.find(']') {
+            if let Ok(code) = after[..end].parse::<i32>() {
+                return Some(code);
+            }
+        }
+    }
+    None
+}
+
 /// Parse a trap code from an error message string
 ///
-/// This function analyzes the error message to determine the trap type.
-/// It returns the trap code constant that matches the Java TrapType enum.
+/// This function first checks for a `[trap_code:N]` numeric prefix embedded by
+/// `WasmtimeError::from_trap()` / `from_wasmtime_error()`, which gives an exact
+/// match against the `wasmtime::Trap` enum variant. If no prefix is present it
+/// falls back to heuristic string matching for backward compatibility.
 ///
 /// # Parameters
 /// - error_message: Pointer to null-terminated C string containing the error message
@@ -100,10 +118,18 @@ pub extern "C" fn wasmtime4j_panama_trap_parse_code(error_message: *const c_char
         return trap_codes::UNKNOWN;
     }
 
-    let msg = match unsafe { std::ffi::CStr::from_ptr(error_message) }.to_str() {
-        Ok(s) => s.to_lowercase(),
+    let raw_msg = match unsafe { std::ffi::CStr::from_ptr(error_message) }.to_str() {
+        Ok(s) => s,
         Err(_) => return trap_codes::UNKNOWN,
     };
+
+    // Fast path: extract numeric trap code from [trap_code:N] prefix
+    if let Some(code) = extract_trap_code_prefix(raw_msg) {
+        return code;
+    }
+
+    // Slow path: heuristic string matching (backward compatibility)
+    let msg = raw_msg.to_lowercase();
 
     // Parse trap type from message content using Wasmtime's error messages.
     // Order matters: more specific patterns must come before more general ones.
@@ -131,7 +157,9 @@ pub extern "C" fn wasmtime4j_panama_trap_parse_code(error_message: *const c_char
         trap_codes::INTERRUPT
     } else if msg.contains("always trap adapter") || msg.contains("alwaystrapadapter") {
         trap_codes::ALWAYS_TRAP_ADAPTER
-    } else if msg.contains("fuel") && (msg.contains("out of") || msg.contains("ran out")) {
+    } else if msg.contains("fuel")
+        && (msg.contains("out of") || msg.contains("ran out") || msg.contains("consumed"))
+    {
         trap_codes::OUT_OF_FUEL
     } else if msg.contains("atomic wait") && msg.contains("non-shared") {
         trap_codes::ATOMIC_WAIT_NON_SHARED_MEMORY
@@ -276,6 +304,33 @@ pub extern "C" fn wasmtime4j_panama_trap_code_name(trap_code: c_int) -> *const c
     };
 
     name.as_ptr() as *const c_char
+}
+
+/// Get the numeric trap code from the last error message.
+///
+/// This function reads the thread-local last error message and extracts the
+/// `[trap_code:N]` prefix if present. This is more reliable than string parsing
+/// because the trap code was determined by direct pattern matching on the
+/// `wasmtime::Trap` enum variant at error creation time.
+///
+/// # Returns
+/// The trap code constant, or -1 if no trap code is available
+#[no_mangle]
+pub extern "C" fn wasmtime4j_get_last_trap_code() -> c_int {
+    let msg_ptr = crate::error::ffi_utils::get_last_error_message();
+    if msg_ptr.is_null() {
+        return -1;
+    }
+    let result = unsafe { std::ffi::CStr::from_ptr(msg_ptr) }
+        .to_str()
+        .ok()
+        .and_then(extract_trap_code_prefix)
+        .unwrap_or(-1);
+    // Free the allocated C string
+    unsafe {
+        crate::error::ffi_utils::free_error_message(msg_ptr);
+    }
+    result
 }
 
 /// Check if an error message indicates a trap condition

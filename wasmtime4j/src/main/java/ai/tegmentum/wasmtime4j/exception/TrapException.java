@@ -160,6 +160,9 @@ public class TrapException extends WasmException {
   /** Prefix used by the native layer to embed coredump IDs in error messages. */
   private static final String COREDUMP_PREFIX = "[coredump:";
 
+  /** Prefix used by the native layer to embed numeric trap codes in error messages. */
+  private static final String TRAP_CODE_PREFIX = "[trap_code:";
+
   /**
    * Creates a new trap exception with the specified trap type and message.
    *
@@ -251,21 +254,42 @@ public class TrapException extends WasmException {
       return new TrapException(trapType, "Unknown trap");
     }
     long parsedCoredumpId = -1L;
+    TrapType resolvedType = trapType;
     String cleanMessage = nativeMessage;
 
-    if (nativeMessage.startsWith(COREDUMP_PREFIX)) {
-      final int closeBracket = nativeMessage.indexOf(']', COREDUMP_PREFIX.length());
+    // Strip [coredump:ID] prefix if present
+    if (cleanMessage.startsWith(COREDUMP_PREFIX)) {
+      final int closeBracket = cleanMessage.indexOf(']', COREDUMP_PREFIX.length());
       if (closeBracket > 0) {
         try {
           parsedCoredumpId =
-              Long.parseLong(nativeMessage.substring(COREDUMP_PREFIX.length(), closeBracket));
-          cleanMessage = nativeMessage.substring(closeBracket + 1);
+              Long.parseLong(cleanMessage.substring(COREDUMP_PREFIX.length(), closeBracket));
+          cleanMessage = cleanMessage.substring(closeBracket + 1);
         } catch (NumberFormatException ignored) {
           // Not a valid coredump prefix, use message as-is
         }
       }
     }
-    return new TrapException(trapType, cleanMessage, null, null, null, null, parsedCoredumpId);
+
+    // Strip [trap_code:N] prefix if present and resolve TrapType from ordinal
+    if (cleanMessage.startsWith(TRAP_CODE_PREFIX)) {
+      final int closeBracket = cleanMessage.indexOf(']', TRAP_CODE_PREFIX.length());
+      if (closeBracket > 0) {
+        try {
+          final int code =
+              Integer.parseInt(cleanMessage.substring(TRAP_CODE_PREFIX.length(), closeBracket));
+          final TrapType[] values = TrapType.values();
+          if (code >= 0 && code < values.length) {
+            resolvedType = values[code];
+          }
+          cleanMessage = cleanMessage.substring(closeBracket + 1);
+        } catch (NumberFormatException ignored) {
+          // Not a valid trap code prefix, use message as-is
+        }
+      }
+    }
+
+    return new TrapException(resolvedType, cleanMessage, null, null, null, null, parsedCoredumpId);
   }
 
   /**

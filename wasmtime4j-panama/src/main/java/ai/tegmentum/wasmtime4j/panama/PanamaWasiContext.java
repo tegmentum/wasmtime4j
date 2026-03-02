@@ -261,6 +261,42 @@ public final class PanamaWasiContext implements WasiContext {
   }
 
   @Override
+  public WasiContext setStdoutAppend(final Path path) {
+    if (path == null) {
+      throw new IllegalArgumentException("Stdout append path cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment pathStr = arena.allocateFrom(path.toString());
+
+      final int result = NATIVE_BINDINGS.wasiContextSetStdoutAppend(contextHandle, pathStr);
+      if (result != 0) {
+        throw new RuntimeException("Failed to set stdout append path");
+      }
+    }
+    return this;
+  }
+
+  @Override
+  public WasiContext setStderrAppend(final Path path) {
+    if (path == null) {
+      throw new IllegalArgumentException("Stderr append path cannot be null");
+    }
+    ensureNotClosed();
+
+    try (Arena arena = Arena.ofConfined()) {
+      final MemorySegment pathStr = arena.allocateFrom(path.toString());
+
+      final int result = NATIVE_BINDINGS.wasiContextSetStderrAppend(contextHandle, pathStr);
+      if (result != 0) {
+        throw new RuntimeException("Failed to set stderr append path");
+      }
+    }
+    return this;
+  }
+
+  @Override
   public WasiContext preopenedDir(final Path hostPath, final String guestPath)
       throws WasmException {
     if (hostPath == null) {

@@ -661,6 +661,9 @@ pub struct ComponentLinker {
     wasi_p2_enabled: bool,
     /// Whether WASI HTTP is enabled
     wasi_http_enabled: bool,
+    /// WASI HTTP field size limit (if configured)
+    #[cfg(feature = "wasi-http")]
+    wasi_http_field_size_limit: Option<usize>,
     /// WASI Preview 2 configuration
     wasi_p2_config: WasiP2Config,
     /// Whether this linker has been disposed
@@ -692,6 +695,8 @@ impl ComponentLinker {
             interface_function_entries: HashMap::new(),
             wasi_p2_enabled: false,
             wasi_http_enabled: false,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_field_size_limit: None,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -719,6 +724,8 @@ impl ComponentLinker {
             interface_function_entries: HashMap::new(),
             wasi_p2_enabled: false,
             wasi_http_enabled: false,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_field_size_limit: None,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -1460,6 +1467,34 @@ impl ComponentLinker {
         Ok(())
     }
 
+    /// Enable WASI HTTP support with a custom field size limit
+    ///
+    /// The field size limit controls the maximum size for HTTP header fields
+    /// resources created by the WASI HTTP context.
+    #[cfg(feature = "wasi-http")]
+    pub fn enable_wasi_http_with_field_size_limit(
+        &mut self,
+        field_size_limit: usize,
+    ) -> WasmtimeResult<()> {
+        self.enable_wasi_http()?;
+        self.wasi_http_field_size_limit = Some(field_size_limit);
+        log::debug!(
+            "WASI HTTP field size limit set to {} bytes",
+            field_size_limit
+        );
+        Ok(())
+    }
+
+    /// Create a configured WasiHttpCtx, applying any stored configuration
+    #[cfg(feature = "wasi-http")]
+    fn create_wasi_http_ctx(&self) -> wasmtime_wasi_http::WasiHttpCtx {
+        let mut ctx = wasmtime_wasi_http::WasiHttpCtx::new();
+        if let Some(limit) = self.wasi_http_field_size_limit {
+            ctx.set_field_size_limit(limit);
+        }
+        ctx
+    }
+
     #[cfg(not(feature = "wasi-http"))]
     pub fn enable_wasi_http(&mut self) -> WasmtimeResult<()> {
         Err(WasmtimeError::Runtime {
@@ -1492,7 +1527,7 @@ impl ComponentLinker {
                 wasi_ctx: self.build_wasi_ctx(),
                 #[cfg(feature = "wasi-http")]
                 wasi_http_ctx: if self.wasi_http_enabled {
-                    Some(wasmtime_wasi_http::WasiHttpCtx::new())
+                    Some(self.create_wasi_http_ctx())
                 } else {
                     None
                 },
@@ -1556,6 +1591,8 @@ impl ComponentLinker {
             engine: self.engine.clone(),
             wasi_p2_enabled: self.wasi_p2_enabled,
             wasi_http_enabled: self.wasi_http_enabled,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_field_size_limit: self.wasi_http_field_size_limit,
             wasi_p2_config: self.wasi_p2_config.clone(),
             preparation_time_ns,
             instance_count: AtomicU64::new(0),
@@ -1645,6 +1682,9 @@ pub struct ComponentInstancePreWrapper {
     wasi_p2_enabled: bool,
     /// Whether WASI HTTP is enabled
     wasi_http_enabled: bool,
+    /// WASI HTTP field size limit (if configured)
+    #[cfg(feature = "wasi-http")]
+    wasi_http_field_size_limit: Option<usize>,
     /// WASI P2 configuration (cloned from linker at creation time)
     wasi_p2_config: WasiP2Config,
     /// Preparation time in nanoseconds
@@ -1656,6 +1696,16 @@ pub struct ComponentInstancePreWrapper {
 }
 
 impl ComponentInstancePreWrapper {
+    /// Create a configured WasiHttpCtx, applying any stored configuration
+    #[cfg(feature = "wasi-http")]
+    fn create_wasi_http_ctx(&self) -> wasmtime_wasi_http::WasiHttpCtx {
+        let mut ctx = wasmtime_wasi_http::WasiHttpCtx::new();
+        if let Some(limit) = self.wasi_http_field_size_limit {
+            ctx.set_field_size_limit(limit);
+        }
+        ctx
+    }
+
     /// Instantiate the component, creating a fresh store with the configured WASI context.
     pub fn instantiate(&self) -> WasmtimeResult<Arc<ComponentInstance>> {
         let start = Instant::now();
@@ -1670,7 +1720,7 @@ impl ComponentInstancePreWrapper {
                 wasi_ctx: self.wasi_p2_config.build_wasi_ctx(),
                 #[cfg(feature = "wasi-http")]
                 wasi_http_ctx: if self.wasi_http_enabled {
-                    Some(wasmtime_wasi_http::WasiHttpCtx::new())
+                    Some(self.create_wasi_http_ctx())
                 } else {
                     None
                 },
@@ -2030,6 +2080,8 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(
             interface_function_entries: HashMap::new(),
             wasi_p2_enabled: false,
             wasi_http_enabled: false,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_field_size_limit: None,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -2642,6 +2694,36 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_http(
         Ok(()) => FFI_SUCCESS,
         Err(e) => {
             log::error!("Failed to enable WASI HTTP: {}", e);
+            FFI_ERROR
+        }
+    }
+}
+
+/// Enable WASI HTTP support with a custom field size limit
+///
+/// The field_size_limit controls the maximum size for HTTP header fields
+/// resources created by the WASI HTTP context. Pass 0 to use the default limit.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_http_with_config(
+    linker_ptr: *mut c_void,
+    field_size_limit: u64,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+    let result = if field_size_limit > 0 {
+        linker.enable_wasi_http_with_field_size_limit(field_size_limit as usize)
+    } else {
+        linker.enable_wasi_http()
+    };
+
+    match result {
+        Ok(()) => FFI_SUCCESS,
+        Err(e) => {
+            log::error!("Failed to enable WASI HTTP with config: {}", e);
             FFI_ERROR
         }
     }

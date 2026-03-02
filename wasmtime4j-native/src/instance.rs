@@ -492,6 +492,7 @@ impl Instance {
                     mem_ty.maximum(),
                     mem_ty.is_64(),
                     mem_ty.is_shared(),
+                    mem_ty.page_size_log2() as u32,
                 ),
                 wasmtime::ExternType::Table(table_ty) => {
                     let elem_type = Self::convert_ref_type(&table_ty.element())?;
@@ -583,7 +584,7 @@ impl Instance {
                     Ok(())
                 }),
             (
-                ImportKind::Memory(_req_min, _req_max, _req_64, _req_shared),
+                ImportKind::Memory(_req_min, _req_max, _req_64, _req_shared, _),
                 Extern::Memory(_memory),
             ) => {
                 // Memory compatibility validation could be more sophisticated

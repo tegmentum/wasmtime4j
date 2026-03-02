@@ -59,18 +59,28 @@ public final class JniPoolingAllocator implements PoolingAllocator {
     this.config = config;
     this.createdAt = Instant.now();
 
-    // Create native allocator with configuration
-    this.nativeHandle =
-        nativeCreateWithConfig(
-            config.getInstancePoolSize(),
-            config.getMaxMemoryPerInstance(),
-            config.getStackSize(),
-            config.getMaxStacks(),
-            config.getMaxTablesPerInstance(),
-            config.getMaxTables(),
-            config.isMemoryDecommitEnabled(),
-            config.isPoolWarmingEnabled(),
-            config.getPoolWarmingPercentage());
+    // Create native allocator using JSON config path — all fields are wired
+    final byte[] jsonConfig =
+        (config instanceof ai.tegmentum.wasmtime4j.pool.AbstractPoolingAllocatorConfig)
+            ? ((ai.tegmentum.wasmtime4j.pool.AbstractPoolingAllocatorConfig) config).toJson()
+            : null;
+
+    if (jsonConfig != null) {
+      this.nativeHandle = nativeCreateFromJsonConfig(jsonConfig);
+    } else {
+      // Fallback: legacy positional parameter path
+      this.nativeHandle =
+          nativeCreateWithConfig(
+              config.getInstancePoolSize(),
+              config.getMaxMemoryPerInstance(),
+              config.getStackSize(),
+              config.getMaxStacks(),
+              config.getMaxTablesPerInstance(),
+              config.getMaxTables(),
+              config.isMemoryDecommitEnabled(),
+              config.isPoolWarmingEnabled(),
+              config.getPoolWarmingPercentage());
+    }
 
     if (this.nativeHandle == 0) {
       throw new WasmException("Failed to create native pooling allocator");
@@ -226,6 +236,8 @@ public final class JniPoolingAllocator implements PoolingAllocator {
       boolean memoryDecommitEnabled,
       boolean poolWarmingEnabled,
       float poolWarmingPercentage);
+
+  private static native long nativeCreateFromJsonConfig(byte[] jsonConfig);
 
   private static native long nativeAllocateInstance(long allocatorHandle);
 

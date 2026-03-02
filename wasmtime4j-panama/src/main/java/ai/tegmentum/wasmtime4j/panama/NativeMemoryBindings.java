@@ -227,6 +227,14 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // maximum_out (i64, -1 if unlimited)
 
     addFunctionBinding(
+        "wasmtime4j_panama_memory_get_page_size_log2",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return code
+            ValueLayout.ADDRESS, // memory_ptr
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS)); // page_size_log2_out (u32)
+
+    addFunctionBinding(
         "wasmtime4j_panama_memory_init",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
@@ -1052,6 +1060,30 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
 
     return callNativeFunction(
         "wasmtime4j_panama_memory_get_maximum", Integer.class, memoryPtr, storePtr, maximumOutPtr);
+  }
+
+  /**
+   * Gets memory type page size log2 (Panama FFI version).
+   *
+   * @param memoryPtr pointer to the memory
+   * @param storePtr pointer to the store
+   * @param pageSizeLog2OutPtr pointer to store the page size log2 (32-bit unsigned)
+   * @return 0 on success, negative error code on failure
+   */
+  public int panamaMemoryGetPageSizeLog2(
+      final MemorySegment memoryPtr,
+      final MemorySegment storePtr,
+      final MemorySegment pageSizeLog2OutPtr) {
+    validatePointer(memoryPtr, "memoryPtr");
+    validatePointer(storePtr, "storePtr");
+    validatePointer(pageSizeLog2OutPtr, "pageSizeLog2OutPtr");
+
+    return callNativeFunction(
+        "wasmtime4j_panama_memory_get_page_size_log2",
+        Integer.class,
+        memoryPtr,
+        storePtr,
+        pageSizeLog2OutPtr);
   }
 
   /**
