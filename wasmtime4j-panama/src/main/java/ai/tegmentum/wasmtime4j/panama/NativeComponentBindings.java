@@ -2946,6 +2946,38 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         indexPtr);
   }
 
+  /**
+   * Looks up a general export by name on a component instance.
+   *
+   * <p>Returns the export kind code (0-6) on success, -1 if not found, -2 on error. On success,
+   * writes the boxed ComponentExportIndex pointer to outIndexPtr.
+   *
+   * @param enginePtr pointer to the enhanced component engine
+   * @param instanceId the component instance ID
+   * @param parentIndexPtr pointer to parent export index (NULL for root)
+   * @param namePtr pointer to the export name bytes
+   * @param nameLen length of the export name
+   * @param outIndexPtr pointer to output export index pointer (caller-allocated)
+   * @return kind code (0-6), -1 if not found, -2 on error
+   */
+  public int enhancedComponentInstanceGetExport(
+      final MemorySegment enginePtr,
+      final long instanceId,
+      final MemorySegment parentIndexPtr,
+      final MemorySegment namePtr,
+      final long nameLen,
+      final MemorySegment outIndexPtr) {
+    return callNativeFunction(
+        "wasmtime4j_panama_enhanced_component_instance_get_export",
+        Integer.class,
+        enginePtr,
+        instanceId,
+        parentIndexPtr,
+        namePtr,
+        nameLen,
+        outIndexPtr);
+  }
+
   // ===== Concurrent Call Support =====
 
   /**

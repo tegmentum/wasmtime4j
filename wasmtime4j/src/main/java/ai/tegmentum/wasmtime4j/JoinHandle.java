@@ -19,10 +19,11 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Handle to a spawned concurrent task, providing the ability to join (await) its result.
+ * Handle to a submitted concurrent task, providing the ability to join (await) its result.
  *
- * <p>A JoinHandle is returned by {@link Store#spawn(ConcurrentTask)} and represents a concurrent
- * computation running within the store. The handle can be used to:
+ * <p>A JoinHandle is returned by {@link Store#submitTask(ConcurrentTask)} and represents a
+ * concurrent computation running within the store. This is a Java-level concurrency utility, not
+ * wasmtime's native cooperative scheduling. The handle can be used to:
  *
  * <ul>
  *   <li>Wait for the task to complete and retrieve its result via {@link #join()}
@@ -33,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  * <p>Example usage:
  *
  * <pre>{@code
- * JoinHandle<Integer> handle = store.spawn(s -> {
+ * JoinHandle<Integer> handle = store.submitTask(s -> {
  *     Instance instance = s.createInstance(module);
  *     WasmFunction func = instance.getFunction("compute");
  *     return func.call(WasmValue.fromI32(100))[0].asI32();
@@ -41,11 +42,11 @@ import java.util.concurrent.CompletableFuture;
  *
  * // Do other work...
  *
- * // Wait for the result
+ * // Wait for the result (do NOT use the store until join completes)
  * int result = handle.join();
  * }</pre>
  *
- * @param <T> the result type of the spawned task
+ * @param <T> the result type of the submitted task
  * @since 1.1.0
  */
 public interface JoinHandle<T> {

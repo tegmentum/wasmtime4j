@@ -30,7 +30,8 @@ pub mod trap_codes {
     pub const UNREACHABLE_CODE_REACHED: i32 = 9;
     /// Execution interrupted trap
     pub const INTERRUPT: i32 = 10;
-    /// Component model always-trap adapter
+    /// Component model always-trap adapter.
+    /// Reserved ordinal: does not exist in wasmtime 42.0.1. Retained for ordinal stability.
     pub const ALWAYS_TRAP_ADAPTER: i32 = 11;
     /// Out of fuel trap
     pub const OUT_OF_FUEL: i32 = 12;
@@ -74,7 +75,8 @@ pub mod trap_codes {
     pub const DEBUG_ASSERT_STRING_ENCODING_FINISHED: i32 = 31;
     /// Debug assertion: code units are not equal
     pub const DEBUG_ASSERT_EQUAL_CODE_UNITS: i32 = 32;
-    /// Debug assertion: may_enter flag was not unset
+    /// Debug assertion: may_enter flag was not unset.
+    /// Reserved ordinal: does not exist in wasmtime 42.0.1. Retained for ordinal stability.
     pub const DEBUG_ASSERT_MAY_ENTER_UNSET: i32 = 33;
     /// Debug assertion: pointer is not aligned
     pub const DEBUG_ASSERT_POINTER_ALIGNED: i32 = 34;

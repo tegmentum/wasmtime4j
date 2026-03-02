@@ -450,6 +450,21 @@ public final class JniComponent {
       long engineHandle, long instanceId, long indexPtr);
 
   /**
+   * Looks up a general export by name on a component instance.
+   *
+   * <p>Returns a long[] of [kindCode, exportIndexPtr] on success, or null if not found. Kind codes:
+   * 0=ComponentFunc, 1=CoreFunc, 2=Module, 3=Component, 4=ComponentInstance, 5=Type, 6=Resource.
+   *
+   * @param engineHandle the engine handle
+   * @param instanceId the instance ID
+   * @param parentIndexPtr the parent export index pointer (0 for root-level exports)
+   * @param name the export name to look up
+   * @return long[] of [kind, exportIndexPtr], or null if not found
+   */
+  static native long[] nativeComponentInstanceGetExport(
+      long engineHandle, long instanceId, long parentIndexPtr, String name);
+
+  /**
    * Executes multiple component function calls concurrently using native Wasmtime support.
    *
    * <p>The input and output are JSON strings matching the Rust {@code concurrent_call_json} format.

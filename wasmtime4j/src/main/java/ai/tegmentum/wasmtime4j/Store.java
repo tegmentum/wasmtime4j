@@ -976,14 +976,13 @@ public interface Store extends Closeable {
   /**
    * Runs a concurrent task on this store, returning a future for its result.
    *
-   * <p>This method is part of the shared-everything-threads proposal. The task executes
-   * concurrently within this store's context, cooperatively interleaving with other concurrent
-   * operations on the same store.
+   * <p>This is a Java-level concurrency utility, not wasmtime's native cooperative scheduling. The
+   * task receives the full Store reference and runs on the {@link
+   * java.util.concurrent.ForkJoinPool#commonPool()}. The caller must not use this store on any
+   * other thread until the returned future completes, since stores are not thread-safe.
    *
-   * <p>The default implementation executes the task asynchronously on the ForkJoinPool.
-   * Implementations should override to use native concurrent execution support when available.
-   *
-   * <p>Requires the engine to have been created with async support enabled.
+   * <p>For native concurrent component calls, use {@link
+   * ai.tegmentum.wasmtime4j.component.ComponentInstance#runConcurrent(java.util.List)}.
    *
    * @param <R> the result type of the task
    * @param task the concurrent task to execute
@@ -1007,29 +1006,46 @@ public interface Store extends Closeable {
   }
 
   /**
-   * Spawns a concurrent task on this store, returning a handle to join its result.
+   * Submits a concurrent task on this store, returning a handle to join its result.
    *
-   * <p>Unlike {@link #runConcurrent(ConcurrentTask)}, which returns a plain {@link
-   * CompletableFuture}, this method returns a {@link JoinHandle} that provides cancellation support
-   * and blocking join semantics.
+   * <p>This is a Java-level concurrency utility, not wasmtime's native {@code Store::spawn()} which
+   * uses cooperative scheduling via {@code AccessorTask<T>}. The task receives the full Store
+   * reference (unlike wasmtime's scoped {@code Accessor<T>}) and runs on the ForkJoinPool.
    *
-   * <p>The default implementation wraps the task in a {@link CompletableFuture} and provides a
-   * default JoinHandle. Implementations should override to use native spawn support when available.
+   * <p>The caller must not use this store on any other thread until the task completes or is
+   * joined, since stores are not thread-safe.
    *
-   * <p>Requires the engine to have been created with async support enabled.
+   * <p>For native concurrent component calls, use {@link
+   * ai.tegmentum.wasmtime4j.component.ComponentInstance#runConcurrent(java.util.List)}.
    *
    * @param <R> the result type of the task
-   * @param task the concurrent task to spawn
-   * @return a JoinHandle for the spawned task
+   * @param task the concurrent task to submit
+   * @return a JoinHandle for the submitted task
    * @throws IllegalArgumentException if task is null
    * @since 1.1.0
    */
-  default <R> JoinHandle<R> spawn(final ConcurrentTask<R> task) {
+  default <R> JoinHandle<R> submitTask(final ConcurrentTask<R> task) {
     if (task == null) {
       throw new IllegalArgumentException("task cannot be null");
     }
     final CompletableFuture<R> future = runConcurrent(task);
     return new DefaultJoinHandle<>(future);
+  }
+
+  /**
+   * Spawns a concurrent task on this store, returning a handle to join its result.
+   *
+   * @param <R> the result type of the task
+   * @param task the concurrent task to spawn
+   * @return a JoinHandle for the spawned task
+   * @throws IllegalArgumentException if task is null
+   * @deprecated Use {@link #submitTask(ConcurrentTask)} instead. This method is a Java-level
+   *     concurrency utility and does not correspond to wasmtime's native {@code Store::spawn()}.
+   * @since 1.1.0
+   */
+  @Deprecated
+  default <R> JoinHandle<R> spawn(final ConcurrentTask<R> task) {
+    return submitTask(task);
   }
 
   /**

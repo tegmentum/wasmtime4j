@@ -824,6 +824,7 @@ class TrapExceptionTest {
 
     @Test
     @DisplayName("isDebugAssertError should return true for DEBUG_ASSERT types")
+    @SuppressWarnings("deprecation")
     void isDebugAssertErrorShouldReturnTrueForDebugAssertTypes() {
       assertTrue(
           new TrapException(TrapException.TrapType.DEBUG_ASSERT_STRING_ENCODING_FINISHED, "test")

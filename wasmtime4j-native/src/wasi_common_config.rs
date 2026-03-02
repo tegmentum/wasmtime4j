@@ -62,6 +62,7 @@ pub fn apply_socket_addr_check(
 pub fn apply_clock_and_rng_config(
     builder: &mut WasiCtxBuilder,
     insecure_random_seed: Option<u64>,
+    max_random_size: Option<u64>,
     wall_clock: Option<crate::component::CallbackWallClock>,
     monotonic_clock: Option<crate::component::CallbackMonotonicClock>,
     secure_random: Option<crate::component::CallbackRng>,
@@ -69,6 +70,9 @@ pub fn apply_clock_and_rng_config(
 ) {
     if let Some(seed) = insecure_random_seed {
         builder.insecure_random_seed(seed as u128);
+    }
+    if let Some(max_size) = max_random_size {
+        builder.max_random_size(max_size);
     }
     if let Some(clock) = wall_clock {
         builder.wall_clock(clock);

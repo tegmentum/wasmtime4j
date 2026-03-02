@@ -189,6 +189,44 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   }
 
   @Override
+  public Optional<ai.tegmentum.wasmtime4j.component.ComponentExportItem> getExport(
+      final String name) throws WasmException {
+    return getExport(null, name);
+  }
+
+  @Override
+  public Optional<ai.tegmentum.wasmtime4j.component.ComponentExportItem> getExport(
+      final ComponentExportIndex parentIndex, final String name) throws WasmException {
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("name cannot be null or empty");
+    }
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+    try {
+      final long parentPtr = (parentIndex != null) ? parentIndex.getNativeHandle() : 0L;
+      final long[] result =
+          JniComponent.nativeComponentInstanceGetExport(
+              component.getEngine().getNativeHandle(),
+              nativeInstance.getNativeHandle(),
+              parentPtr,
+              name);
+      if (result == null) {
+        return Optional.empty();
+      }
+      final int kindCode = (int) result[0];
+      final long indexPtr = result[1];
+      final ai.tegmentum.wasmtime4j.component.ComponentItemKind kind =
+          ai.tegmentum.wasmtime4j.component.ComponentExportItem.kindFromCode(kindCode);
+      final ComponentExportIndex exportIndex = new JniComponentExportIndex(indexPtr);
+      return Optional.of(
+          new ai.tegmentum.wasmtime4j.component.ComponentExportItem(kind, exportIndex));
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get export: " + name, e);
+    }
+  }
+
+  @Override
   public Object invoke(final String functionName, final Object... args)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     Validation.requireNonEmpty(functionName, "functionName");

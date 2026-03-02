@@ -867,6 +867,83 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
     })
 }
 
+/// Look up a general export by name on a component instance.
+///
+/// Returns a long[] of [kind, export_index_ptr] on success, or null if not found.
+/// Kind codes: 0=ComponentFunc, 1=CoreFunc, 2=Module, 3=Component,
+/// 4=ComponentInstance, 5=Type, 6=Resource
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceGetExport(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    parent_index_ptr: jlong,
+    name: JString,
+) -> jlongArray {
+    let null_result: jlongArray = std::ptr::null_mut();
+
+    // Extract string before entering closure
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(e) => {
+            log::error!("Failed to get export name string: {}", e);
+            return null_result;
+        }
+    };
+
+    let engine = match unsafe {
+        crate::component_core::core::get_enhanced_component_engine_ref(
+            engine_ptr as *const std::os::raw::c_void,
+        )
+    } {
+        Ok(e) => e,
+        Err(e) => {
+            log::error!("Failed to get engine ref: {}", e);
+            return null_result;
+        }
+    };
+
+    let parent_index = if parent_index_ptr == 0 {
+        None
+    } else {
+        Some(unsafe {
+            &*(parent_index_ptr as *const wasmtime::component::ComponentExportIndex)
+        })
+    };
+
+    match engine.get_component_instance_export(instance_id as u64, parent_index, &name_str) {
+        Ok(Some((kind, boxed_index))) => {
+            let index_ptr = Box::into_raw(boxed_index) as jlong;
+            match env.new_long_array(2) {
+                Ok(result) => {
+                    let buf = [kind as jlong, index_ptr];
+                    if let Err(e) = env.set_long_array_region(&result, 0, &buf) {
+                        log::error!("Failed to set long array: {}", e);
+                        return null_result;
+                    }
+                    result.into_raw()
+                }
+                Err(e) => {
+                    log::error!("Failed to create long array: {}", e);
+                    // Clean up the boxed index we allocated
+                    unsafe {
+                        let _ = Box::from_raw(
+                            index_ptr as *mut wasmtime::component::ComponentExportIndex,
+                        );
+                    }
+                    null_result
+                }
+            }
+        }
+        Ok(None) => null_result,
+        Err(e) => {
+            log::error!("Failed to get component instance export: {}", e);
+            null_result
+        }
+    }
+}
+
 /// Run concurrent component function calls.
 ///
 /// Takes a JSON string containing the batch of calls and returns a JSON string

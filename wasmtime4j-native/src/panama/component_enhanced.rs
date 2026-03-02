@@ -547,6 +547,44 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_func_by_inde
     }
 }
 
+/// Look up a general export by name on a component instance.
+///
+/// Returns the export kind code (0-6) on success, -1 if not found, -2 on error.
+/// On success, writes the boxed ComponentExportIndex pointer to `out_index_ptr`.
+///
+/// Kind codes: 0=ComponentFunc, 1=CoreFunc, 2=Module, 3=Component,
+/// 4=ComponentInstance, 5=Type, 6=Resource
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_get_export(
+    engine_ptr: *mut c_void,
+    instance_id: c_ulong,
+    parent_index_ptr: *const c_void,
+    name_ptr: *const c_char,
+    name_len: c_ulong,
+    out_index_ptr: *mut *mut c_void,
+) -> c_int {
+    if engine_ptr.is_null() || name_ptr.is_null() || out_index_ptr.is_null() {
+        return -2;
+    }
+
+    let engine = unsafe { &*(engine_ptr as *const EnhancedComponentEngine) };
+    let name = unsafe { std::str::from_utf8_unchecked(std::slice::from_raw_parts(name_ptr as *const u8, name_len as usize)) };
+    let parent_index = if parent_index_ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { &*(parent_index_ptr as *const wasmtime::component::ComponentExportIndex) })
+    };
+
+    match engine.get_component_instance_export(instance_id as u64, parent_index, name) {
+        Ok(Some((kind, boxed_index))) => {
+            unsafe { *out_index_ptr = Box::into_raw(boxed_index) as *mut c_void };
+            kind
+        }
+        Ok(None) => -1,
+        Err(_) => -2,
+    }
+}
+
 /// Destroy an enhanced component engine
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_destroy(engine_ptr: *mut c_void) {

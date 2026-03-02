@@ -321,6 +321,14 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeComponentInstanceGetExport
+ * Signature: (JJJLjava/lang/String;)[J
+ */
+JNIEXPORT jlongArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceGetExport
+  (JNIEnv *, jclass, jlong, jlong, jlong, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
  * Method:    nativeRunConcurrentCalls
  * Signature: (JJLjava/lang/String;)Ljava/lang/String;
  */

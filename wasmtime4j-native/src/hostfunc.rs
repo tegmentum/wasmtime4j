@@ -31,25 +31,33 @@ fn valtype_eq(a: &ValType, b: &ValType) -> bool {
     }
 }
 
-/// Compare HeapType values by variant
+/// Compare HeapType values by variant, including concrete types via mutual subtype check
 fn heap_type_eq(a: &HeapType, b: &HeapType) -> bool {
-    matches!(
-        (a, b),
+    match (a, b) {
         (HeapType::Func, HeapType::Func)
-            | (HeapType::Extern, HeapType::Extern)
-            | (HeapType::Any, HeapType::Any)
-            | (HeapType::Eq, HeapType::Eq)
-            | (HeapType::I31, HeapType::I31)
-            | (HeapType::Struct, HeapType::Struct)
-            | (HeapType::Array, HeapType::Array)
-            | (HeapType::None, HeapType::None)
-            | (HeapType::NoFunc, HeapType::NoFunc)
-            | (HeapType::NoExtern, HeapType::NoExtern)
-            | (HeapType::Exn, HeapType::Exn)
-            | (HeapType::NoExn, HeapType::NoExn)
-            | (HeapType::Cont, HeapType::Cont)
-            | (HeapType::NoCont, HeapType::NoCont)
-    )
+        | (HeapType::Extern, HeapType::Extern)
+        | (HeapType::Any, HeapType::Any)
+        | (HeapType::Eq, HeapType::Eq)
+        | (HeapType::I31, HeapType::I31)
+        | (HeapType::Struct, HeapType::Struct)
+        | (HeapType::Array, HeapType::Array)
+        | (HeapType::None, HeapType::None)
+        | (HeapType::NoFunc, HeapType::NoFunc)
+        | (HeapType::NoExtern, HeapType::NoExtern)
+        | (HeapType::Exn, HeapType::Exn)
+        | (HeapType::NoExn, HeapType::NoExn)
+        | (HeapType::Cont, HeapType::Cont)
+        | (HeapType::NoCont, HeapType::NoCont) => true,
+        // Concrete types: use mutual subtype check (a matches b AND b matches a)
+        (HeapType::ConcreteFunc(_), HeapType::ConcreteFunc(_))
+        | (HeapType::ConcreteArray(_), HeapType::ConcreteArray(_))
+        | (HeapType::ConcreteStruct(_), HeapType::ConcreteStruct(_))
+        | (HeapType::ConcreteExn(_), HeapType::ConcreteExn(_))
+        | (HeapType::ConcreteCont(_), HeapType::ConcreteCont(_)) => {
+            a.matches(b) && b.matches(a)
+        }
+        _ => false,
+    }
 }
 
 /// Registry for managing host function callbacks to prevent GC

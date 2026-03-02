@@ -146,6 +146,8 @@ pub struct WasiConfig {
     pub allow_blocking_current_thread: bool,
     /// Insecure random seed (0 means use default)
     pub insecure_random_seed: u128,
+    /// Maximum random size in bytes (0 means use wasmtime default of 64 MiB)
+    pub max_random_size: u64,
     /// Whether to allow arbitrary directory access
     pub allow_arbitrary_fs: bool,
     /// Maximum file size for operations (in bytes)
@@ -353,6 +355,7 @@ impl Default for WasiConfig {
             allow_ip_name_lookup: true,
             allow_blocking_current_thread: false,
             insecure_random_seed: 0,
+            max_random_size: 0,
             allow_arbitrary_fs: false,
             max_file_size: Some(100 * 1024 * 1024), // 100MB default
             max_open_files: Some(1024),
@@ -706,6 +709,9 @@ impl WasiContext {
         if self.config.insecure_random_seed != 0 {
             builder.insecure_random_seed(self.config.insecure_random_seed);
         }
+        if self.config.max_random_size != 0 {
+            builder.max_random_size(self.config.max_random_size);
+        }
 
         Ok(())
     }
@@ -733,6 +739,11 @@ impl WasiContext {
     /// Set the insecure random seed for deterministic testing.
     pub(crate) fn set_insecure_random_seed(&mut self, seed: u128) {
         self.config.insecure_random_seed = seed;
+    }
+
+    /// Set the maximum random size in bytes.
+    pub(crate) fn set_max_random_size(&mut self, max_size: u64) {
+        self.config.max_random_size = max_size;
     }
 
     /// Rebuild the WASI context with current configuration
@@ -1080,6 +1091,21 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_insecure_random_seed(
     ffi_utils::ffi_try_code(|| {
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
         ctx.set_insecure_random_seed((seed_hi as u128) << 64 | (seed_lo as u128));
+        Ok(())
+    })
+}
+
+/// Set the maximum random size in bytes.
+///
+/// A value of 0 means use the wasmtime default (64 MiB).
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_wasi_context_set_max_random_size(
+    ctx_ptr: *mut c_void,
+    max_size: u64,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        ctx.set_max_random_size(max_size);
         Ok(())
     })
 }

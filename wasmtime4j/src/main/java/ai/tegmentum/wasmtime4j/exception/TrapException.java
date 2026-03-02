@@ -88,7 +88,14 @@ public class TrapException extends WasmException {
     UNREACHABLE_CODE_REACHED("Unreachable code was executed"),
     /** Execution has potentially run too long and was interrupted. */
     INTERRUPT("Execution interrupted (timeout or cancellation)"),
-    /** Component model canonical lift/lower adapter that always traps. */
+    /**
+     * Component model canonical lift/lower adapter that always traps.
+     *
+     * @deprecated Reserved ordinal slot for forward compatibility. This trap variant does not exist
+     *     in wasmtime 42.0.1 and is not produced by the primary trap code path. Retained to
+     *     preserve ordinal stability of subsequent enum constants.
+     */
+    @Deprecated
     ALWAYS_TRAP_ADAPTER("Component model always-trap adapter called"),
     /** Wasm code ran out of configured fuel. */
     OUT_OF_FUEL("Execution ran out of fuel"),
@@ -132,7 +139,14 @@ public class TrapException extends WasmException {
     DEBUG_ASSERT_STRING_ENCODING_FINISHED("Debug assertion failed: string encoding not finished"),
     /** Debug assertion: code units are not equal. */
     DEBUG_ASSERT_EQUAL_CODE_UNITS("Debug assertion failed: code units are not equal"),
-    /** Debug assertion: may_enter flag was not unset. */
+    /**
+     * Debug assertion: may_enter flag was not unset.
+     *
+     * @deprecated Reserved ordinal slot for forward compatibility. This trap variant does not exist
+     *     in wasmtime 42.0.1 and is not produced by the primary trap code path. Retained to
+     *     preserve ordinal stability of subsequent enum constants.
+     */
+    @Deprecated
     DEBUG_ASSERT_MAY_ENTER_UNSET("Debug assertion failed: may_enter flag was not unset"),
     /** Debug assertion: pointer is not properly aligned. */
     DEBUG_ASSERT_POINTER_ALIGNED("Debug assertion failed: pointer is not aligned"),

@@ -69,21 +69,20 @@ pub mod valtype_conversion {
             ValType::F64 => 3,
             ValType::V128 => 4,
             ValType::Ref(ref_type) => match ref_type.heap_type() {
-                HeapType::Func => 5,
+                HeapType::Func | HeapType::ConcreteFunc(_) => 5,
                 HeapType::Extern => 6,
                 HeapType::Any => 7,
                 HeapType::Eq => 8,
                 HeapType::I31 => 9,
-                HeapType::Struct => 10,
-                HeapType::Array => 11,
+                HeapType::Struct | HeapType::ConcreteStruct(_) => 10,
+                HeapType::Array | HeapType::ConcreteArray(_) => 11,
                 HeapType::None => 12,
                 HeapType::NoFunc => 13,
                 HeapType::NoExtern => 14,
-                HeapType::Exn => 15,
+                HeapType::Exn | HeapType::ConcreteExn(_) => 15,
                 HeapType::NoExn => 16,
-                HeapType::Cont => 17,
+                HeapType::Cont | HeapType::ConcreteCont(_) => 17,
                 HeapType::NoCont => 18,
-                _ => 6, // Default to EXTERNREF for unknown heap types
             },
         }
     }

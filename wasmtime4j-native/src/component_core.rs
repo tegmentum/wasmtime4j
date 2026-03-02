@@ -472,6 +472,59 @@ impl EnhancedComponentEngine {
             .is_some())
     }
 
+    /// Look up a general export by name, optionally within a parent instance export.
+    ///
+    /// Returns the kind code (0=ComponentFunc, 1=CoreFunc, 2=Module, 3=Component,
+    /// 4=ComponentInstance, 5=Type, 6=Resource) and a boxed ComponentExportIndex,
+    /// or None if the export is not found.
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance
+    /// * `parent_index` - Optional parent export index for nested lookups (None for root)
+    /// * `name` - The name of the export to look up
+    pub fn get_component_instance_export(
+        &self,
+        instance_id: u64,
+        parent_index: Option<&wasmtime::component::ComponentExportIndex>,
+        name: &str,
+    ) -> WasmtimeResult<Option<(i32, Box<wasmtime::component::ComponentExportIndex>)>> {
+        let mut instances = self
+            .instances
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
+            })?;
+
+        let handle =
+            instances
+                .get_mut(&instance_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                })?;
+
+        handle.last_accessed = Instant::now();
+
+        match handle
+            .instance
+            .get_export(&mut handle.store, parent_index, name)
+        {
+            Some((item, index)) => {
+                let kind = match item {
+                    ComponentItem::ComponentFunc(_) => 0,
+                    ComponentItem::CoreFunc(_) => 1,
+                    ComponentItem::Module(_) => 2,
+                    ComponentItem::Component(_) => 3,
+                    ComponentItem::ComponentInstance(_) => 4,
+                    ComponentItem::Type(_) => 5,
+                    ComponentItem::Resource(_) => 6,
+                };
+                Ok(Some((kind, Box::new(index))))
+            }
+            None => Ok(None),
+        }
+    }
+
     /// Check if a component instance has a specific function export
     ///
     /// # Arguments

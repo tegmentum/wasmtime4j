@@ -76,6 +76,8 @@ public final class WasiPreview2Config {
   private final boolean allowBlockingCurrentThread;
   private final long insecureRandomSeed;
   private final boolean hasInsecureRandomSeed;
+  private final long maxRandomSize;
+  private final boolean hasMaxRandomSize;
   private final WasiWallClock wallClock;
   private final WasiMonotonicClock monotonicClock;
   private final WasiRandomSource secureRandom;
@@ -102,6 +104,8 @@ public final class WasiPreview2Config {
     this.allowBlockingCurrentThread = builder.allowBlockingCurrentThread;
     this.insecureRandomSeed = builder.insecureRandomSeed;
     this.hasInsecureRandomSeed = builder.hasInsecureRandomSeed;
+    this.maxRandomSize = builder.maxRandomSize;
+    this.hasMaxRandomSize = builder.hasMaxRandomSize;
     this.wallClock = builder.wallClock;
     this.monotonicClock = builder.monotonicClock;
     this.secureRandom = builder.secureRandom;
@@ -305,6 +309,28 @@ public final class WasiPreview2Config {
   }
 
   /**
+   * Gets the maximum size in bytes for random byte generation via {@code
+   * wasi:random/random.get-random-bytes} and {@code
+   * wasi:random/insecure.get-insecure-random-bytes}.
+   *
+   * <p>Calls requesting more than this many bytes will trap. The default in Wasmtime is 64 MiB.
+   *
+   * @return the maximum random size in bytes
+   */
+  public long getMaxRandomSize() {
+    return maxRandomSize;
+  }
+
+  /**
+   * Checks if a maximum random size has been explicitly set.
+   *
+   * @return true if a maximum random size has been set
+   */
+  public boolean hasMaxRandomSize() {
+    return hasMaxRandomSize;
+  }
+
+  /**
    * Gets the custom wall clock, if set.
    *
    * @return the custom wall clock, or null if using the default
@@ -486,6 +512,8 @@ public final class WasiPreview2Config {
     private boolean allowBlockingCurrentThread = false;
     private long insecureRandomSeed = 0;
     private boolean hasInsecureRandomSeed = false;
+    private long maxRandomSize = 0;
+    private boolean hasMaxRandomSize = false;
     private WasiWallClock wallClock = null;
     private WasiMonotonicClock monotonicClock = null;
     private WasiRandomSource secureRandom = null;
@@ -823,6 +851,28 @@ public final class WasiPreview2Config {
     public Builder insecureRandomSeed(final long seed) {
       this.insecureRandomSeed = seed;
       this.hasInsecureRandomSeed = true;
+      return this;
+    }
+
+    /**
+     * Sets the maximum number of bytes that may be requested from random byte generation.
+     *
+     * <p>This limits the {@code len} parameter of {@code wasi:random/random.get-random-bytes} and
+     * {@code wasi:random/insecure.get-insecure-random-bytes}. Calls exceeding this limit will trap.
+     *
+     * <p>The default in Wasmtime is 64 MiB (67,108,864 bytes). This can be tightened for security
+     * hardening against denial-of-service, or loosened if the use case requires larger buffers.
+     *
+     * @param maxSize the maximum random size in bytes (must be positive)
+     * @return this builder
+     * @throws IllegalArgumentException if maxSize is not positive
+     */
+    public Builder maxRandomSize(final long maxSize) {
+      if (maxSize <= 0) {
+        throw new IllegalArgumentException("maxRandomSize must be positive: " + maxSize);
+      }
+      this.maxRandomSize = maxSize;
+      this.hasMaxRandomSize = true;
       return this;
     }
 

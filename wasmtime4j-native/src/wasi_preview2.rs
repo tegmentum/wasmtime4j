@@ -137,6 +137,8 @@ pub struct WasiPreview2Config {
     pub allow_blocking_current_thread: bool,
     /// Insecure random seed (if set)
     pub insecure_random_seed: Option<u64>,
+    /// Maximum random size in bytes (if set)
+    pub max_random_size: Option<u64>,
     /// Custom wall clock callback (if set)
     pub wall_clock: Option<crate::component::CallbackWallClock>,
     /// Custom monotonic clock callback (if set)
@@ -480,6 +482,7 @@ impl Default for WasiPreview2Config {
             preopened_dirs: Vec::new(),
             allow_blocking_current_thread: false,
             insecure_random_seed: None,
+            max_random_size: None,
             wall_clock: None,
             monotonic_clock: None,
             secure_random: None,
@@ -599,6 +602,7 @@ impl WasiPreview2Context {
         crate::wasi_common_config::apply_clock_and_rng_config(
             &mut builder,
             self.config.insecure_random_seed,
+            self.config.max_random_size,
             self.config.wall_clock,
             self.config.monotonic_clock,
             self.config.secure_random,

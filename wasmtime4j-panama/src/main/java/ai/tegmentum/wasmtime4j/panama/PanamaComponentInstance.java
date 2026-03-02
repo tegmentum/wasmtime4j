@@ -464,6 +464,59 @@ final class PanamaComponentInstance implements ComponentInstance {
   }
 
   @Override
+  public Optional<ai.tegmentum.wasmtime4j.component.ComponentExportItem> getExport(
+      final String name) throws WasmException {
+    return getExport(null, name);
+  }
+
+  @Override
+  public Optional<ai.tegmentum.wasmtime4j.component.ComponentExportItem> getExport(
+      final ComponentExportIndex parentIndex, final String name) throws WasmException {
+    if (name == null || name.isEmpty()) {
+      throw new IllegalArgumentException("name cannot be null or empty");
+    }
+    ensureNotClosed();
+
+    try (final Arena arena = Arena.ofConfined()) {
+      final byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
+      final MemorySegment nameSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+      final MemorySegment outIndexPtr = arena.allocate(ValueLayout.ADDRESS);
+
+      final MemorySegment parentPtr =
+          (parentIndex != null)
+              ? MemorySegment.ofAddress(parentIndex.getNativeHandle())
+              : MemorySegment.NULL;
+
+      final int kindCode =
+          NATIVE_BINDINGS.enhancedComponentInstanceGetExport(
+              enhancedEngineHandle,
+              instanceId,
+              parentPtr,
+              nameSegment,
+              nameBytes.length,
+              outIndexPtr);
+
+      if (kindCode == -1) {
+        return Optional.empty();
+      }
+      if (kindCode == -2) {
+        throw new WasmException("Native error looking up export: " + name);
+      }
+
+      final MemorySegment indexPtr = outIndexPtr.get(ValueLayout.ADDRESS, 0);
+      final ai.tegmentum.wasmtime4j.component.ComponentItemKind kind =
+          ai.tegmentum.wasmtime4j.component.ComponentExportItem.kindFromCode(kindCode);
+      final ComponentExportIndex exportIndex = new PanamaComponentExportIndex(indexPtr);
+      return Optional.of(
+          new ai.tegmentum.wasmtime4j.component.ComponentExportItem(kind, exportIndex));
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Failed to get export: " + name, e);
+    }
+  }
+
+  @Override
   public Set<String> getExportedFunctions() {
     ensureNotClosed();
 

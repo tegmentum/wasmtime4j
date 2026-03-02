@@ -104,6 +104,51 @@ public final class ConcreteHeapType {
     return Optional.ofNullable(resolvedType);
   }
 
+  /**
+   * Checks if this concrete type is a concrete function type.
+   *
+   * @return true if the abstract kind is {@link HeapType#FUNC}
+   */
+  public boolean isConcreteFunc() {
+    return abstractKind == HeapType.FUNC;
+  }
+
+  /**
+   * Checks if this concrete type is a concrete array type.
+   *
+   * @return true if the abstract kind is {@link HeapType#ARRAY}
+   */
+  public boolean isConcreteArray() {
+    return abstractKind == HeapType.ARRAY;
+  }
+
+  /**
+   * Checks if this concrete type is a concrete struct type.
+   *
+   * @return true if the abstract kind is {@link HeapType#STRUCT}
+   */
+  public boolean isConcreteStruct() {
+    return abstractKind == HeapType.STRUCT;
+  }
+
+  /**
+   * Checks if this concrete type is a concrete exception type.
+   *
+   * @return true if the abstract kind is {@link HeapType#EXN}
+   */
+  public boolean isConcreteExn() {
+    return abstractKind == HeapType.EXN;
+  }
+
+  /**
+   * Checks if this concrete type is a concrete continuation type.
+   *
+   * @return true if the abstract kind is {@link HeapType#CONT}
+   */
+  public boolean isConcreteCont() {
+    return abstractKind == HeapType.CONT;
+  }
+
   @Override
   public boolean equals(final Object obj) {
     if (this == obj) {

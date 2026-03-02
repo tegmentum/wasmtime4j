@@ -518,6 +518,8 @@ pub struct WasiP2Config {
     pub allow_blocking_current_thread: bool,
     /// Insecure random seed (if set)
     pub insecure_random_seed: Option<u64>,
+    /// Maximum random size in bytes (if set)
+    pub max_random_size: Option<u64>,
     /// Custom wall clock callback (if set)
     pub wall_clock: Option<CallbackWallClock>,
     /// Custom monotonic clock callback (if set)
@@ -549,6 +551,7 @@ impl Default for WasiP2Config {
             allow_ip_name_lookup: true,
             allow_blocking_current_thread: false,
             insecure_random_seed: None,
+            max_random_size: None,
             wall_clock: None,
             monotonic_clock: None,
             secure_random: None,
@@ -620,6 +623,7 @@ impl WasiP2Config {
         crate::wasi_common_config::apply_clock_and_rng_config(
             &mut builder,
             self.insecure_random_seed,
+            self.max_random_size,
             self.wall_clock,
             self.monotonic_clock,
             self.secure_random,
@@ -835,6 +839,11 @@ impl ComponentLinker {
     /// Set insecure random seed
     pub fn set_wasi_insecure_random_seed(&mut self, seed: u64) {
         self.wasi_p2_config.insecure_random_seed = Some(seed);
+    }
+
+    /// Set maximum random size in bytes
+    pub fn set_wasi_max_random_size(&mut self, max_size: u64) {
+        self.wasi_p2_config.max_random_size = Some(max_size);
     }
 
     /// Set custom wall clock callback
@@ -2559,6 +2568,21 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_insecure_random_se
 
     let linker = &mut *(linker_ptr as *mut ComponentLinker);
     linker.set_wasi_insecure_random_seed(seed);
+    FFI_SUCCESS
+}
+
+/// Set maximum random size in bytes
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_max_random_size(
+    linker_ptr: *mut c_void,
+    max_size: u64,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    linker.set_wasi_max_random_size(max_size);
     FFI_SUCCESS
 }
 

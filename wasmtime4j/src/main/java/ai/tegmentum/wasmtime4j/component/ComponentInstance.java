@@ -110,6 +110,52 @@ public interface ComponentInstance extends AutoCloseable {
   Optional<ComponentFunction> getFunc(ComponentExportIndex exportIndex) throws WasmException;
 
   /**
+   * Looks up an export by name on this component instance.
+   *
+   * <p>This is the general-purpose export discovery API, corresponding to Wasmtime's {@code
+   * Instance::get_export}. It returns a {@link ComponentExportItem} containing the export's kind
+   * (function, module, resource, etc.) and a pre-computed {@link ComponentExportIndex} for
+   * efficient subsequent lookups.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * Optional<ComponentExportItem> export = instance.getExport("my-func");
+   * if (export.isPresent()) {
+   *     ComponentItemKind kind = export.get().getKind();
+   *     ComponentExportIndex index = export.get().getExportIndex();
+   *     if (kind == ComponentItemKind.COMPONENT_FUNC) {
+   *         Optional<ComponentFunction> func = instance.getFunc(index);
+   *     }
+   * }
+   * }</pre>
+   *
+   * @param name the name of the export to look up
+   * @return an Optional containing the export item if found, or empty if not found
+   * @throws WasmException if the lookup fails
+   * @throws IllegalArgumentException if name is null or empty
+   * @since 1.1.0
+   */
+  Optional<ComponentExportItem> getExport(String name) throws WasmException;
+
+  /**
+   * Looks up a nested export within a parent instance export.
+   *
+   * <p>This overload allows navigating into nested component instances to discover their exports.
+   * The {@code parentIndex} identifies the parent instance obtained from a previous {@link
+   * #getExport(String)} call.
+   *
+   * @param parentIndex the parent export index for nested lookup
+   * @param name the name of the export to look up within the parent
+   * @return an Optional containing the export item if found, or empty if not found
+   * @throws WasmException if the lookup fails
+   * @throws IllegalArgumentException if name is null or empty
+   * @since 1.1.0
+   */
+  Optional<ComponentExportItem> getExport(ComponentExportIndex parentIndex, String name)
+      throws WasmException;
+
+  /**
    * Gets a typed component function by name and signature string.
    *
    * <p>This is a convenience method that combines {@link #getFunc(String)} with {@link
@@ -231,7 +277,9 @@ public interface ComponentInstance extends AutoCloseable {
    * @since 1.1.0
    */
   default Optional<ComponentInstancePre> instancePre() {
-    return Optional.empty();
+    throw new UnsupportedOperationException(
+        "instancePre() requires Rust generic type parameter T that cannot cross FFI boundary. "
+            + "Use the ComponentInstancePre reference you used to create this instance instead.");
   }
 
   /**

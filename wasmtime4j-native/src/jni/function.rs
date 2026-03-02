@@ -79,21 +79,20 @@ fn valtype_to_string(vt: &ValType) -> String {
 /// Convert HeapType to a string matching Java WasmValueType enum names
 fn heap_type_to_string(ht: &HeapType) -> String {
     match ht {
-        HeapType::Func => "funcref".to_string(),
+        HeapType::Func | HeapType::ConcreteFunc(_) => "funcref".to_string(),
         HeapType::Extern => "externref".to_string(),
         HeapType::Any => "anyref".to_string(),
         HeapType::Eq => "eqref".to_string(),
         HeapType::I31 => "i31ref".to_string(),
-        HeapType::Struct => "structref".to_string(),
-        HeapType::Array => "arrayref".to_string(),
+        HeapType::Struct | HeapType::ConcreteStruct(_) => "structref".to_string(),
+        HeapType::Array | HeapType::ConcreteArray(_) => "arrayref".to_string(),
         HeapType::None => "nullref".to_string(),
         HeapType::NoFunc => "nullfuncref".to_string(),
         HeapType::NoExtern => "nullexternref".to_string(),
-        HeapType::Exn => "exnref".to_string(),
+        HeapType::Exn | HeapType::ConcreteExn(_) => "exnref".to_string(),
         HeapType::NoExn => "nullexnref".to_string(),
-        HeapType::Cont => "contref".to_string(),
+        HeapType::Cont | HeapType::ConcreteCont(_) => "contref".to_string(),
         HeapType::NoCont => "nullcontref".to_string(),
-        _ => "externref".to_string(),
     }
 }
 
@@ -173,11 +172,18 @@ fn convert_java_params_to_wasmtime_vals(
 /// Produce the correct null Val for a given reference type's heap type
 fn null_val_for_heap_type(ht: &HeapType) -> Val {
     match ht {
-        HeapType::Func | HeapType::NoFunc => Val::null_func_ref(),
+        HeapType::Func | HeapType::NoFunc | HeapType::ConcreteFunc(_) => Val::null_func_ref(),
         HeapType::Extern | HeapType::NoExtern => Val::null_extern_ref(),
-        HeapType::Any | HeapType::Eq | HeapType::I31 | HeapType::Struct | HeapType::Array
-        | HeapType::None => Val::null_any_ref(),
-        _ => Val::null_extern_ref(),
+        HeapType::Any
+        | HeapType::Eq
+        | HeapType::I31
+        | HeapType::Struct
+        | HeapType::Array
+        | HeapType::None
+        | HeapType::ConcreteStruct(_)
+        | HeapType::ConcreteArray(_) => Val::null_any_ref(),
+        HeapType::Exn | HeapType::NoExn | HeapType::ConcreteExn(_) => Val::null_ref(ht),
+        HeapType::Cont | HeapType::NoCont | HeapType::ConcreteCont(_) => Val::null_ref(ht),
     }
 }
 
