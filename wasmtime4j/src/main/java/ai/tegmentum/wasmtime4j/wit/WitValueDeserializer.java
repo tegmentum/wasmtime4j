@@ -50,7 +50,7 @@ public final class WitValueDeserializer {
   /**
    * Deserializes a WIT value from binary format.
    *
-   * @param typeDiscriminator the type discriminator (1-16)
+   * @param typeDiscriminator the type discriminator (1-23)
    * @param data the serialized byte array
    * @return the deserialized WIT value
    * @throws ValidationException if deserialization fails
@@ -76,6 +76,8 @@ public final class WitValueDeserializer {
         return deserializeString(data);
       case 7:
         return deserializeRecord(data);
+      case 8:
+        return deserializeTuple(data);
       case 9:
         return deserializeU32(data);
       case 10:
@@ -397,6 +399,55 @@ public final class WitValueDeserializer {
   }
 
   /**
+   * Deserializes a tuple value.
+   *
+   * <p>Format: [count: u32][for each element: discriminator: i32, length: u32, data]
+   *
+   * @param data the serialized bytes
+   * @return the tuple value
+   * @throws ValidationException if data is invalid
+   */
+  private static WitTuple deserializeTuple(final byte[] data) throws ValidationException {
+    if (data.length < 4) {
+      throw new ValidationException("Tuple data too short for element count");
+    }
+
+    final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    final int elementCount = buffer.getInt();
+
+    if (elementCount < 0) {
+      throw new ValidationException("Invalid element count: " + elementCount);
+    }
+
+    final java.util.List<WitValue> elements = new java.util.ArrayList<>(elementCount);
+
+    for (int i = 0; i < elementCount; i++) {
+      if (buffer.remaining() < 8) { // Need discriminator + length
+        throw new ValidationException("Tuple data truncated at element " + i);
+      }
+
+      final int discriminator = buffer.getInt();
+      final int length = buffer.getInt();
+
+      if (length < 0) {
+        throw new ValidationException("Invalid element data length: " + length);
+      }
+
+      if (buffer.remaining() < length) {
+        throw new ValidationException("Tuple element data truncated at element " + i);
+      }
+
+      final byte[] elementData = new byte[length];
+      buffer.get(elementData);
+
+      final WitValue element = deserialize(discriminator, elementData);
+      elements.add(element);
+    }
+
+    return WitTuple.of(elements);
+  }
+
+  /**
    * Deserializes a list value.
    *
    * <p>Format: [count: u32][for each: discriminator: i32, length: u32, data]
@@ -487,8 +538,10 @@ public final class WitValueDeserializer {
     final byte hasPayload = buffer.get();
 
     if (hasPayload == 0) {
-      // Create a placeholder variant type - full implementation would need actual WitType
-      return WitVariant.of(WitType.createString(), caseName);
+      final java.util.Map<String, java.util.Optional<WitType>> cases =
+          new java.util.LinkedHashMap<>();
+      cases.put(caseName, java.util.Optional.empty());
+      return WitVariant.of(WitType.variant("deserialized_variant", cases), caseName);
     } else {
       // Read payload
       if (buffer.remaining() < 8) {
@@ -511,8 +564,10 @@ public final class WitValueDeserializer {
 
       final WitValue payload = deserialize(discriminator, payloadData);
 
-      // Create a placeholder variant type - full implementation would need actual WitType
-      return WitVariant.of(WitType.createString(), caseName, payload);
+      final java.util.Map<String, java.util.Optional<WitType>> cases =
+          new java.util.LinkedHashMap<>();
+      cases.put(caseName, java.util.Optional.of(payload.getType()));
+      return WitVariant.of(WitType.variant("deserialized_variant", cases), caseName, payload);
     }
   }
 
@@ -548,8 +603,9 @@ public final class WitValueDeserializer {
     buffer.get(nameBytes);
     final String discriminant = new String(nameBytes, StandardCharsets.UTF_8);
 
-    // Create a placeholder enum type - full implementation would need actual WitType
-    return WitEnum.of(WitType.createString(), discriminant);
+    return WitEnum.of(
+        WitType.enumType("deserialized_enum", java.util.Collections.singletonList(discriminant)),
+        discriminant);
   }
 
   /**
@@ -624,11 +680,9 @@ public final class WitValueDeserializer {
     final byte isOk = buffer.get();
     final byte hasValue = buffer.get();
 
-    // Create a placeholder result type - full implementation would need actual WitType
-    final WitType resultType =
-        WitType.result(java.util.Optional.empty(), java.util.Optional.empty());
-
     if (hasValue == 0) {
+      final WitType resultType =
+          WitType.result(java.util.Optional.empty(), java.util.Optional.empty());
       return isOk != 0 ? WitResult.ok(resultType) : WitResult.err(resultType);
     } else {
       if (buffer.remaining() < 8) {
@@ -650,6 +704,12 @@ public final class WitValueDeserializer {
       buffer.get(valueData);
 
       final WitValue value = deserialize(discriminator, valueData);
+
+      final WitType payloadType = value.getType();
+      final WitType resultType =
+          isOk != 0
+              ? WitType.result(java.util.Optional.of(payloadType), java.util.Optional.empty())
+              : WitType.result(java.util.Optional.empty(), java.util.Optional.of(payloadType));
 
       return isOk != 0 ? WitResult.ok(resultType, value) : WitResult.err(resultType, value);
     }
@@ -702,79 +762,53 @@ public final class WitValueDeserializer {
       flagNames.add(flagName);
     }
 
-    // Create a placeholder flags type - full implementation would need actual WitType
-    return WitFlags.of(WitType.flags("placeholder", java.util.Arrays.asList()), flagNames);
+    return WitFlags.of(
+        WitType.flags("deserialized_flags", new java.util.ArrayList<>(flagNames)), flagNames);
   }
 
   /**
    * Deserializes an owned resource handle value.
    *
-   * <p>Format: [resource_type_length: u32][resource_type: UTF-8][index: i32]
+   * <p>Format: [handle_id: u64] (8 bytes, little-endian)
+   *
+   * <p>The handle ID is a u64 matching the Rust resource registry format. It is stored as the
+   * resource handle index.
    *
    * @param data the serialized bytes
    * @return the owned resource handle value
    * @throws ValidationException if data is invalid
    */
   private static WitOwn deserializeOwn(final byte[] data) throws ValidationException {
-    if (data.length < 8) { // At least type name length + index
-      throw new ValidationException("Own data too short");
+    if (data.length != 8) {
+      throw new ValidationException("Invalid own data size: expected 8, got " + data.length);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    final long handleId = buffer.getLong();
 
-    // Read resource type name
-    final int typeNameLength = buffer.getInt();
-    if (typeNameLength < 0) {
-      throw new ValidationException("Invalid resource type name length: " + typeNameLength);
-    }
-
-    if (buffer.remaining() < typeNameLength + 4) { // type name + index
-      throw new ValidationException("Own data truncated");
-    }
-
-    final byte[] typeNameBytes = new byte[typeNameLength];
-    buffer.get(typeNameBytes);
-    final String resourceType = new String(typeNameBytes, StandardCharsets.UTF_8);
-
-    // Read handle index
-    final int index = buffer.getInt();
-
-    return WitOwn.of(resourceType, index);
+    return WitOwn.of("resource", (int) handleId);
   }
 
   /**
    * Deserializes a borrowed resource handle value.
    *
-   * <p>Format: [resource_type_length: u32][resource_type: UTF-8][index: i32]
+   * <p>Format: [handle_id: u64] (8 bytes, little-endian)
+   *
+   * <p>The handle ID is a u64 matching the Rust resource registry format. It is stored as the
+   * resource handle index.
    *
    * @param data the serialized bytes
    * @return the borrowed resource handle value
    * @throws ValidationException if data is invalid
    */
   private static WitBorrow deserializeBorrow(final byte[] data) throws ValidationException {
-    if (data.length < 8) { // At least type name length + index
-      throw new ValidationException("Borrow data too short");
+    if (data.length != 8) {
+      throw new ValidationException("Invalid borrow data size: expected 8, got " + data.length);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+    final long handleId = buffer.getLong();
 
-    // Read resource type name
-    final int typeNameLength = buffer.getInt();
-    if (typeNameLength < 0) {
-      throw new ValidationException("Invalid resource type name length: " + typeNameLength);
-    }
-
-    if (buffer.remaining() < typeNameLength + 4) { // type name + index
-      throw new ValidationException("Borrow data truncated");
-    }
-
-    final byte[] typeNameBytes = new byte[typeNameLength];
-    buffer.get(typeNameBytes);
-    final String resourceType = new String(typeNameBytes, StandardCharsets.UTF_8);
-
-    // Read handle index
-    final int index = buffer.getInt();
-
-    return WitBorrow.of(resourceType, index);
+    return WitBorrow.of("resource", (int) handleId);
   }
 }

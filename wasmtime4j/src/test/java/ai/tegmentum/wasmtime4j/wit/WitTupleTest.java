@@ -442,5 +442,17 @@ class WitTupleTest {
       // Both should be equal
       assertEquals(empty1, empty2, "Empty tuples from factory and builder must be equal");
     }
+
+    @Test
+    @DisplayName("getElements should contain exact values in order")
+    void getElementsShouldContainExactValuesInOrder() {
+      final WitTuple tuple = WitTuple.of(WitS32.of(10), WitS32.of(20), WitS32.of(30));
+
+      final java.util.List<WitValue> elements = tuple.getElements();
+      assertEquals(3, elements.size(), "Should have 3 elements");
+      assertEquals(10, ((WitS32) elements.get(0)).getValue(), "First element should be 10");
+      assertEquals(20, ((WitS32) elements.get(1)).getValue(), "Second element should be 20");
+      assertEquals(30, ((WitS32) elements.get(2)).getValue(), "Third element should be 30");
+    }
   }
 }

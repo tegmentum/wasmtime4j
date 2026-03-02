@@ -148,7 +148,29 @@ public final class JniTable extends JniResource implements WasmTable {
         case "externref":
           return WasmValueType.EXTERNREF;
         case "anyref":
-          return WasmValueType.EXTERNREF;
+          return WasmValueType.ANYREF;
+        case "eqref":
+          return WasmValueType.EQREF;
+        case "i31ref":
+          return WasmValueType.I31REF;
+        case "structref":
+          return WasmValueType.STRUCTREF;
+        case "arrayref":
+          return WasmValueType.ARRAYREF;
+        case "nullref":
+          return WasmValueType.NULLREF;
+        case "nullfuncref":
+          return WasmValueType.NULLFUNCREF;
+        case "nullexternref":
+          return WasmValueType.NULLEXTERNREF;
+        case "exnref":
+          return WasmValueType.EXNREF;
+        case "nullexnref":
+          return WasmValueType.NULLEXNREF;
+        case "contref":
+          return WasmValueType.CONTREF;
+        case "nullcontref":
+          return WasmValueType.NULLCONTREF;
         default:
           throw new IllegalStateException("Unknown table element type: " + typeString);
       }
@@ -329,7 +351,7 @@ public final class JniTable extends JniResource implements WasmTable {
     validateRange(src, count);
 
     try {
-      final boolean success = nativeCopy(handle, dst, src, count);
+      final boolean success = nativeCopy(handle, store.getNativeHandle(), dst, src, count);
       if (!success) {
         throw new RuntimeException("Failed to copy table elements");
       }
@@ -376,12 +398,12 @@ public final class JniTable extends JniResource implements WasmTable {
 
     // Validate source range
     final int srcTableSize = srcTable.getSize();
-    if (srcIndex + count > srcTableSize) {
+    if ((long) srcIndex + count > srcTableSize) {
       throw new IndexOutOfBoundsException(
           "Source range ["
               + srcIndex
               + ", "
-              + (srcIndex + count)
+              + ((long) srcIndex + count)
               + ") exceeds source table size "
               + srcTableSize);
     }
@@ -396,7 +418,8 @@ public final class JniTable extends JniResource implements WasmTable {
     }
 
     try {
-      final boolean success = nativeCopyFromTable(dstHandle, dst, srcHandle, srcIndex, count);
+      final boolean success =
+          nativeCopyFromTable(dstHandle, store.getNativeHandle(), dst, srcHandle, srcIndex, count);
       if (!success) {
         throw new RuntimeException("Failed to copy elements from source table");
       }
@@ -461,9 +484,9 @@ public final class JniTable extends JniResource implements WasmTable {
    */
   private void validateRange(final int start, final int count) {
     final int tableSize = getSize();
-    if (start + count > tableSize) {
+    if ((long) start + count > tableSize) {
       throw new IndexOutOfBoundsException(
-          "Range [" + start + ", " + (start + count) + ") exceeds table size " + tableSize);
+          "Range [" + start + ", " + ((long) start + count) + ") exceeds table size " + tableSize);
     }
   }
 
@@ -569,17 +592,20 @@ public final class JniTable extends JniResource implements WasmTable {
    * Copies elements within a table.
    *
    * @param tableHandle the native table handle
+   * @param storeHandle the native store handle
    * @param dst the destination starting index
    * @param src the source starting index
    * @param count the number of elements to copy
    * @return true on success, false on failure
    */
-  private static native boolean nativeCopy(long tableHandle, int dst, int src, int count);
+  private static native boolean nativeCopy(
+      long tableHandle, long storeHandle, int dst, int src, int count);
 
   /**
    * Copies elements from another table to this table.
    *
    * @param dstTableHandle the destination table handle
+   * @param storeHandle the native store handle
    * @param dst the destination starting index
    * @param srcTableHandle the source table handle
    * @param src the source starting index
@@ -587,7 +613,7 @@ public final class JniTable extends JniResource implements WasmTable {
    * @return true on success, false on failure
    */
   private static native boolean nativeCopyFromTable(
-      long dstTableHandle, int dst, long srcTableHandle, int src, int count);
+      long dstTableHandle, long storeHandle, int dst, long srcTableHandle, int src, int count);
 
   /**
    * Gets table type information directly from the table.
@@ -613,11 +639,11 @@ public final class JniTable extends JniResource implements WasmTable {
 
   @Override
   public void init(
-      final int destOffset, final int srcOffset, final int srcSegmentIndex, final int length) {
+      final int destOffset, final int elementSegmentIndex, final int srcOffset, final int length) {
     if (destOffset < 0) {
       throw new IndexOutOfBoundsException("Destination offset cannot be negative");
     }
-    if (srcSegmentIndex < 0) {
+    if (elementSegmentIndex < 0) {
       throw new IllegalArgumentException("Element segment index cannot be negative");
     }
     if (srcOffset < 0) {
@@ -637,7 +663,7 @@ public final class JniTable extends JniResource implements WasmTable {
         destOffset,
         srcOffset,
         length,
-        srcSegmentIndex);
+        elementSegmentIndex);
   }
 
   /**

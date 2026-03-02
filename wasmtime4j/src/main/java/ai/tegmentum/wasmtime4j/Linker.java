@@ -80,6 +80,11 @@ public interface Linker<T> extends Closeable {
    * future. Implementations should override to use native {@code Func::new_async()} for true
    * cooperative async behavior.
    *
+   * <p><b>Note:</b> In the default sync-fallback implementation, the {@code Caller} parameter
+   * passed to {@link HostFunctionAsync#execute(Object, Object[])} is {@code null} because no caller
+   * context is available in this path. Implementations that need caller context should override
+   * this method.
+   *
    * @param moduleName the module name for the import (e.g., "env")
    * @param name the function name for the import
    * @param functionType the WebAssembly function type signature

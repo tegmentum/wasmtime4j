@@ -3323,6 +3323,9 @@ public final class EngineConfig {
     // Core boolean settings
     first = appendJsonBool(sb, first, "debugInfo", debugInfo);
     first = appendJsonBool(sb, first, "fuelEnabled", consumeFuel);
+    if (fuelAsyncYieldInterval > 0) {
+      first = appendJsonLong(sb, first, "fuelAsyncYieldInterval", fuelAsyncYieldInterval);
+    }
     first = appendJsonBool(sb, first, "epochInterruption", epochInterruption);
     first = appendJsonBool(sb, first, "asyncSupport", asyncSupport);
     first = appendJsonBool(sb, first, "concurrencySupport", concurrencySupport);
@@ -3541,9 +3544,7 @@ public final class EngineConfig {
     }
 
     // Component model
-    if (wasmComponentModel) {
-      appendJsonBool(sb, first, "wasmComponentModel", true);
-    }
+    first = appendJsonBool(sb, first, "wasmComponentModel", wasmComponentModel);
 
     sb.append('}');
     return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);

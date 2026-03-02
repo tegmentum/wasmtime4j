@@ -699,6 +699,26 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetValue
                     }
                 }
             }
+            ValType::V128 => {
+                // V128 is passed as a byte[] from Java
+                let byte_array = jni::objects::JByteArray::from(java_object);
+                let v128_bytes = env.convert_byte_array(&byte_array).map_err(|e| {
+                    WasmtimeError::Type {
+                        message: format!("Failed to convert V128 byte array: {}", e),
+                    }
+                })?;
+                if v128_bytes.len() != 16 {
+                    return Err(WasmtimeError::Type {
+                        message: format!(
+                            "V128 byte array must be exactly 16 bytes, got {}",
+                            v128_bytes.len()
+                        ),
+                    });
+                }
+                let mut bytes = [0u8; 16];
+                bytes.copy_from_slice(&v128_bytes);
+                crate::global::GlobalValue::V128(bytes)
+            }
             _ => {
                 return Err(WasmtimeError::Type {
                     message: format!(
@@ -885,30 +905,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetDoubl
             jni_utils::throw_jni_exception(&mut env, &e);
             0 // Return false on error
         }
-    }
-}
-
-/// Destroy a global variable (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroyGlobal(
-    _env: JNIEnv,
-    _class: JClass,
-    global_ptr: jlong,
-) {
-    unsafe {
-        core::destroy_global(global_ptr as *mut std::os::raw::c_void);
-    }
-}
-
-/// Destroy a global variable (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeDestroy(
-    _env: JNIEnv,
-    _class: JClass,
-    global_ptr: jlong,
-) {
-    unsafe {
-        core::destroy_global(global_ptr as *mut std::os::raw::c_void);
     }
 }
 

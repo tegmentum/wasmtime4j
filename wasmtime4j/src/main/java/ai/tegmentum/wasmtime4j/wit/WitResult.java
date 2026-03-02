@@ -207,20 +207,12 @@ public final class WitResult extends WitValue {
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static Optional<WitType>[] extractTypes(final WitType resultType) {
-    // Get ok/error types from result type kind
-    // This is a simplified extraction - in a full implementation,
-    // WitType would provide getOkType() and getErrorType() methods
     if (resultType.getKind() == null
         || resultType.getKind().getCategory() != WitTypeCategory.RESULT) {
       throw new IllegalArgumentException("Type must be a result type");
     }
 
-    // For now, return placeholders
-    // In the full implementation, this would extract from WitType.getKind()
-    // This will be enhanced when WitTypeKind is fully implemented
-    final Optional<WitType>[] result =
-        new Optional[] {Optional.<WitType>empty(), Optional.<WitType>empty()};
-    return result;
+    return new Optional[] {resultType.getKind().getOkType(), resultType.getKind().getErrorType()};
   }
 
   @Override

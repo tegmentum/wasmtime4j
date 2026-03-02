@@ -162,6 +162,7 @@ public enum WasmValueType {
       case NULLREF:
       case NULLFUNCREF:
       case NULLEXTERNREF:
+      case EXNREF:
       case NULLEXNREF:
       case CONTREF:
       case NULLCONTREF:

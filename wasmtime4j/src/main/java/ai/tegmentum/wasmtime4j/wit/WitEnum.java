@@ -15,7 +15,6 @@
  */
 package ai.tegmentum.wasmtime4j.wit;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -104,17 +103,11 @@ public final class WitEnum extends WitValue {
    * @return a list of valid discriminant names
    */
   private static List<String> extractDiscriminants(final WitType enumType) {
-    // Get discriminants from enum type kind
-    // This is a simplified extraction - in a full implementation,
-    // WitType would provide a getDiscriminants() method
-    if (enumType.getKind() == null || !"ENUM".equals(enumType.getKind().toString())) {
+    if (enumType.getKind() == null || enumType.getKind().getCategory() != WitTypeCategory.ENUM) {
       throw new IllegalArgumentException("Type must be an enum type");
     }
 
-    // For now, return an empty list as a placeholder
-    // In the full implementation, this would extract from WitType.getKind().getValues()
-    // This will be enhanced when WitTypeKind is fully implemented
-    return Arrays.asList();
+    return enumType.getKind().getEnumValues();
   }
 
   @Override
@@ -131,7 +124,7 @@ public final class WitEnum extends WitValue {
       return false;
     }
     final WitEnum other = (WitEnum) obj;
-    return discriminant.equals(other.discriminant);
+    return Objects.equals(getType(), other.getType()) && discriminant.equals(other.discriminant);
   }
 
   @Override

@@ -908,4 +908,128 @@ final class WitValueSerializerTest {
     final byte hasPayload = buffer.get();
     assertEquals((byte) 0, hasPayload, "has_payload byte must be exactly 0 when no payload");
   }
+
+  // ============== Flags serialization tests ==============
+
+  @Test
+  @DisplayName("Serialize flags with two set flags")
+  void testSerializeFlags() throws ValidationException {
+    final WitType flagsType =
+        WitType.flags("perms", java.util.Arrays.asList("read", "write", "exec"));
+    final WitFlags value = WitFlags.of(flagsType, "read", "write");
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized flags should not be null");
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    final int count = buffer.getInt();
+    assertEquals(2, count, "Serialized flag count should be 2");
+  }
+
+  @Test
+  @DisplayName("Serialize empty flags")
+  void testSerializeEmptyFlags() throws ValidationException {
+    final WitType flagsType = WitType.flags("perms", java.util.Arrays.asList("read", "write"));
+    final WitFlags value = WitFlags.empty(flagsType);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized empty flags should not be null");
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals(0, buffer.getInt(), "Empty flags should serialize with count 0");
+    assertEquals(4, result.length, "Empty flags should be just 4 bytes (count)");
+  }
+
+  // ============== Result serialization tests ==============
+
+  @Test
+  @DisplayName("Serialize result ok without payload")
+  void testSerializeResultOkWithoutPayload() throws ValidationException {
+    final WitType resultType =
+        WitType.result(java.util.Optional.empty(), java.util.Optional.empty());
+    final WitResult value = WitResult.ok(resultType);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result ok should not be null");
+    assertEquals(2, result.length, "Result ok without payload should be 2 bytes");
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals((byte) 1, buffer.get(), "is_ok byte should be 1");
+    assertEquals((byte) 0, buffer.get(), "has_value byte should be 0");
+  }
+
+  @Test
+  @DisplayName("Serialize enum should produce roundtrippable bytes")
+  void testSerializeEnumRoundtrip() throws ValidationException {
+    final WitType enumType =
+        WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
+    final WitEnum value = WitEnum.of(enumType, "green");
+
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized enum should not be null");
+    assertTrue(result.length > 4, "Serialized enum should have length header + name bytes");
+
+    // Roundtrip: deserialize and check
+    final WitValue deserialized = WitValueDeserializer.deserialize(13, result);
+    assertInstanceOf(WitEnum.class, deserialized, "Deserialized should be WitEnum");
+    assertEquals(
+        "green", ((WitEnum) deserialized).getDiscriminant(), "Roundtrip discriminant should match");
+  }
+
+  @Test
+  @DisplayName("Serialize result ok with payload should roundtrip")
+  void testSerializeResultOkWithPayloadRoundtrip() throws ValidationException {
+    final WitType resultType =
+        WitType.result(java.util.Optional.of(WitType.createS32()), java.util.Optional.empty());
+    final WitResult value = WitResult.ok(resultType, WitS32.of(42));
+
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+    // is_ok(1) + has_value(1) + disc(4) + len(4) + data(4) = 14
+    assertEquals(14, result.length, "Result ok with S32 payload should be 14 bytes");
+
+    // Roundtrip: deserialize and check
+    final WitValue deserialized = WitValueDeserializer.deserialize(15, result);
+    assertInstanceOf(WitResult.class, deserialized, "Deserialized should be WitResult");
+    final WitResult deserializedResult = (WitResult) deserialized;
+    assertTrue(deserializedResult.isOk(), "Should be ok");
+    assertTrue(deserializedResult.getValue().isPresent(), "Should have value");
+    assertEquals(
+        42, ((WitS32) deserializedResult.getValue().get()).getValue(), "Payload should be 42");
+  }
+
+  @Test
+  @DisplayName("Serialize result err with payload should roundtrip")
+  void testSerializeResultErrWithPayloadRoundtrip() throws ValidationException {
+    final WitType resultType =
+        WitType.result(java.util.Optional.empty(), java.util.Optional.of(WitType.createS32()));
+    final WitResult value = WitResult.err(resultType, WitS32.of(99));
+
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result should not be null");
+
+    final WitValue deserialized = WitValueDeserializer.deserialize(15, result);
+    assertInstanceOf(WitResult.class, deserialized, "Deserialized should be WitResult");
+    final WitResult deserializedResult = (WitResult) deserialized;
+    assertTrue(deserializedResult.isErr(), "Should be err");
+    assertEquals(
+        99,
+        ((WitS32) deserializedResult.getValue().get()).getValue(),
+        "Error payload should be 99");
+  }
+
+  @Test
+  @DisplayName("Serialize result err without payload")
+  void testSerializeResultErrWithoutPayload() throws ValidationException {
+    final WitType resultType =
+        WitType.result(java.util.Optional.empty(), java.util.Optional.empty());
+    final WitResult value = WitResult.err(resultType);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    assertNotNull(result, "Serialized result err should not be null");
+    assertEquals(2, result.length, "Result err without payload should be 2 bytes");
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals((byte) 0, buffer.get(), "is_ok byte should be 0");
+    assertEquals((byte) 0, buffer.get(), "has_value byte should be 0");
+  }
 }

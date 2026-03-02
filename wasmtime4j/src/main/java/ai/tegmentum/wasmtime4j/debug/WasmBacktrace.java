@@ -17,9 +17,12 @@ package ai.tegmentum.wasmtime4j.debug;
 
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A WebAssembly call stack backtrace.
@@ -72,6 +75,102 @@ public final class WasmBacktrace {
       throw new IllegalArgumentException("store cannot be null");
     }
     return store.forceCaptureBacktrace();
+  }
+
+  /**
+   * Pattern matching wasmtime backtrace frame lines.
+   *
+   * <p>Format: {@code N: 0xHEX - <func_name>} or {@code N: 0xHEX - func_name}
+   */
+  private static final Pattern FRAME_PATTERN =
+      Pattern.compile("^\\s*(\\d+):\\s+0x([0-9a-fA-F]+)\\s+-\\s+(.+)$");
+
+  /**
+   * Pattern matching DWARF source location lines that follow frame lines.
+   *
+   * <p>Format: {@code at file:line:col} or {@code at file:line}
+   */
+  private static final Pattern SOURCE_PATTERN =
+      Pattern.compile("^\\s+at\\s+(.+?):(\\d+)(?::(\\d+))?$");
+
+  /**
+   * Parses a {@link WasmBacktrace} from a wasmtime error message string.
+   *
+   * <p>Wasmtime embeds backtrace text in error messages using the format:
+   *
+   * <pre>
+   * wasm trap: &lt;description&gt;
+   * wasm backtrace:
+   *     0:   0x1234 - &lt;func_name&gt;
+   *                     at &lt;file&gt;:&lt;line&gt;:&lt;col&gt;
+   *     1:   0x5678 - &lt;func_name&gt;
+   * </pre>
+   *
+   * @param message the error message that may contain a wasmtime backtrace section
+   * @return a parsed WasmBacktrace, or an empty backtrace if no backtrace section was found
+   */
+  public static WasmBacktrace fromErrorMessage(final String message) {
+    if (message == null || message.isEmpty()) {
+      return new WasmBacktrace(Collections.emptyList(), false);
+    }
+
+    final int btIndex = message.indexOf("wasm backtrace:");
+    if (btIndex < 0) {
+      return new WasmBacktrace(Collections.emptyList(), false);
+    }
+
+    final String btSection = message.substring(btIndex + "wasm backtrace:".length());
+    final String[] lines = btSection.split("\n");
+
+    final List<FrameInfo> frames = new ArrayList<>();
+    int currentFuncIndex = 0;
+    String currentFuncName = null;
+    Integer currentOffset = null;
+
+    for (int i = 0; i < lines.length; i++) {
+      final String line = lines[i];
+      final Matcher frameMatcher = FRAME_PATTERN.matcher(line);
+      if (frameMatcher.matches()) {
+        // Flush any previous frame that hasn't been added yet
+        // (handled by checking if currentOffset is set below)
+
+        currentFuncIndex = Integer.parseInt(frameMatcher.group(1));
+        try {
+          currentOffset = Integer.parseInt(frameMatcher.group(2), 16);
+        } catch (NumberFormatException e) {
+          currentOffset = null;
+        }
+        String rawName = frameMatcher.group(3).trim();
+        // Strip angle brackets: <func_name> -> func_name
+        if (rawName.startsWith("<") && rawName.endsWith(">")) {
+          rawName = rawName.substring(1, rawName.length() - 1);
+        }
+        currentFuncName = rawName;
+
+        // Check if next line is a source location
+        FrameSymbol symbol = null;
+        if (i + 1 < lines.length) {
+          final Matcher srcMatcher = SOURCE_PATTERN.matcher(lines[i + 1]);
+          if (srcMatcher.matches()) {
+            final String file = srcMatcher.group(1);
+            final Integer srcLine = Integer.parseInt(srcMatcher.group(2));
+            final Integer srcCol =
+                srcMatcher.group(3) != null ? Integer.parseInt(srcMatcher.group(3)) : null;
+            symbol = new FrameSymbol(currentFuncName, file, srcLine, srcCol);
+            i++; // skip the source line
+          }
+        }
+
+        final List<FrameSymbol> symbols =
+            symbol != null ? Collections.singletonList(symbol) : Collections.emptyList();
+        frames.add(
+            new FrameInfo(currentFuncIndex, null, currentFuncName, currentOffset, null, symbols));
+        currentOffset = null;
+        currentFuncName = null;
+      }
+    }
+
+    return new WasmBacktrace(frames, false);
   }
 
   /**

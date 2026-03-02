@@ -469,8 +469,10 @@ public final class JniInstance extends JniResource implements Instance {
       case 3:
         return new JniExternMemory(handle, jniStore);
       default:
-        LOGGER.warning("Unknown native extern type: " + nativeType);
-        return new JniExternFunc(handle, jniStore);
+        throw new IllegalStateException(
+            "Unsupported native extern type code: "
+                + nativeType
+                + ". Expected 0 (Func), 1 (Global), 2 (Table), or 3 (Memory).");
     }
   }
 

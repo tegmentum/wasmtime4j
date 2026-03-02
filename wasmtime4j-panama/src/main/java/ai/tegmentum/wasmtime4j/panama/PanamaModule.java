@@ -533,9 +533,9 @@ public final class PanamaModule implements Module {
         return name;
       }
     } catch (final Exception e) {
-      // Fall through to synthetic name
+      LOGGER.fine("Failed to get module name from native: " + e.getMessage());
     }
-    return "panama-module-" + System.identityHashCode(nativeModule);
+    return null;
   }
 
   @Override
@@ -702,35 +702,37 @@ public final class PanamaModule implements Module {
   public byte[] serialize() throws WasmException {
     ensureNotClosed();
 
-    // Allocate memory for output pointers
-    final MemorySegment dataPtrPtr = arena.allocate(ValueLayout.ADDRESS);
-    final MemorySegment lenPtr = arena.allocate(ValueLayout.JAVA_LONG);
+    try (final Arena localArena = Arena.ofConfined()) {
+      final MemorySegment dataPtrPtr = localArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment lenPtr = localArena.allocate(ValueLayout.JAVA_LONG);
 
-    // Call native serialize function
-    final int result = NATIVE_BINDINGS.moduleSerialize(nativeModule, dataPtrPtr, lenPtr);
+      final int result = NATIVE_BINDINGS.moduleSerialize(nativeModule, dataPtrPtr, lenPtr);
 
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to serialize module");
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to serialize module");
+      }
+
+      final long length = lenPtr.get(ValueLayout.JAVA_LONG, 0);
+      final MemorySegment rawDataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
+
+      if (rawDataPtr == null || rawDataPtr.equals(MemorySegment.NULL) || length == 0) {
+        return new byte[0];
+      }
+
+      try {
+        final MemorySegment dataPtr = rawDataPtr.reinterpret(length);
+        final byte[] serialized = new byte[(int) length];
+        MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, serialized, 0, (int) length);
+        LOGGER.fine("Serialized module to " + length + " bytes");
+        return serialized;
+      } finally {
+        NATIVE_BINDINGS.freeByteArray(rawDataPtr, length);
+      }
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable t) {
+      throw new WasmException("Failed to serialize module: " + t.getMessage());
     }
-
-    // Get the data pointer and length
-    final long length = lenPtr.get(ValueLayout.JAVA_LONG, 0);
-    final MemorySegment rawDataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
-
-    if (rawDataPtr == null || rawDataPtr.equals(MemorySegment.NULL) || length == 0) {
-      // Return empty array for empty serialization
-      return new byte[0];
-    }
-
-    // Reinterpret the pointer with the correct size for safe access
-    final MemorySegment dataPtr = rawDataPtr.reinterpret(length);
-
-    // Copy the serialized data into a byte array
-    final byte[] serialized = new byte[(int) length];
-    MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, serialized, 0, (int) length);
-
-    LOGGER.fine("Serialized module to " + length + " bytes");
-    return serialized;
   }
 
   @Override

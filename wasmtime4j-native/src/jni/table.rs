@@ -6,7 +6,7 @@ use jni::JNIEnv;
 
 use crate::error::{ffi_utils, jni_utils, WasmtimeError, WasmtimeResult};
 use crate::store::Store;
-use crate::table::{core, TableElement};
+use crate::table::{self, core, TableElement};
 use wasmtime::{RefType, ValType};
 
 /// Create a new WebAssembly table (JNI version)
@@ -515,6 +515,67 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableInit
         )?;
         Ok(())
     });
+}
+
+/// Copy elements within a table (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopy(
+    mut env: JNIEnv,
+    _class: JClass,
+    table_ptr: jlong,
+    store_ptr: jlong,
+    dst: jint,
+    src: jint,
+    count: jint,
+) -> jboolean {
+    let success = jni_utils::jni_try_bool(&mut env, || {
+        let store = unsafe {
+            ffi_utils::deref_ptr::<Store>(store_ptr as *const std::os::raw::c_void, "store")?
+        };
+        let table = unsafe {
+            ffi_utils::deref_ptr::<table::Table>(
+                table_ptr as *const std::os::raw::c_void,
+                "table",
+            )?
+        };
+        table.copy_within(store, dst as u32, src as u32, count as u32)?;
+        Ok(true)
+    });
+    if success { 1 } else { 0 }
+}
+
+/// Copy elements from another table (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopyFromTable(
+    mut env: JNIEnv,
+    _class: JClass,
+    dst_table_ptr: jlong,
+    store_ptr: jlong,
+    dst: jint,
+    src_table_ptr: jlong,
+    src: jint,
+    count: jint,
+) -> jboolean {
+    let success = jni_utils::jni_try_bool(&mut env, || {
+        let store = unsafe {
+            ffi_utils::deref_ptr::<Store>(store_ptr as *const std::os::raw::c_void, "store")?
+        };
+        let dst_table = unsafe {
+            ffi_utils::deref_ptr::<table::Table>(
+                dst_table_ptr as *const std::os::raw::c_void,
+                "dst_table",
+            )?
+        };
+        let src_table = unsafe {
+            ffi_utils::deref_ptr::<table::Table>(
+                src_table_ptr as *const std::os::raw::c_void,
+                "src_table",
+            )?
+        };
+        dst_table.copy_from(store, dst as u32, src_table, src as u32, count as u32)?;
+        Ok(true)
+    });
+    if success { 1 } else { 0 }
 }
 
 /// Drop an element segment (JNI version)

@@ -669,14 +669,6 @@ jni_wasi_bool_setter!(
     set_wasi_allow_ip_name_lookup
 );
 jni_wasi_bool_setter!(
-    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowClock,
-    set_wasi_allow_clock
-);
-jni_wasi_bool_setter!(
-    Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowRandom,
-    set_wasi_allow_random
-);
-jni_wasi_bool_setter!(
     Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowBlockingCurrentThread,
     set_wasi_allow_blocking_current_thread
 );

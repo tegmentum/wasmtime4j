@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -320,9 +321,120 @@ class WitTypeTest {
   }
 
   @Test
+  @DisplayName("createChar factory should return non-null with correct name")
+  void testCreateCharFactory() {
+    final WitType type = WitType.createChar();
+    assertNotNull(type, "createChar should not return null");
+    assertEquals("char", type.getName(), "Name should be 'char'");
+  }
+
+  @Test
+  @DisplayName("createFloat32 factory should return non-null with correct name")
+  void testCreateFloat32Factory() {
+    final WitType type = WitType.createFloat32();
+    assertNotNull(type, "createFloat32 should not return null");
+    assertEquals("float32", type.getName(), "Name should be 'float32'");
+  }
+
+  @Test
+  @DisplayName("createFloat64 factory should return non-null with correct name")
+  void testCreateFloat64Factory() {
+    final WitType type = WitType.createFloat64();
+    assertNotNull(type, "createFloat64 should not return null");
+    assertEquals("float64", type.getName(), "Name should be 'float64'");
+  }
+
+  @Test
+  @DisplayName("createS8 factory should return non-null with correct name")
+  void testCreateS8Factory() {
+    final WitType type = WitType.createS8();
+    assertNotNull(type, "createS8 should not return null");
+    assertEquals("s8", type.getName(), "Name should be 's8'");
+  }
+
+  @Test
+  @DisplayName("createS16 factory should return non-null with correct name")
+  void testCreateS16Factory() {
+    final WitType type = WitType.createS16();
+    assertNotNull(type, "createS16 should not return null");
+    assertEquals("s16", type.getName(), "Name should be 's16'");
+  }
+
+  @Test
+  @DisplayName("createU16 factory should return non-null with correct name")
+  void testCreateU16Factory() {
+    final WitType type = WitType.createU16();
+    assertNotNull(type, "createU16 should not return null");
+    assertEquals("u16", type.getName(), "Name should be 'u16'");
+  }
+
+  @Test
+  @DisplayName("createU64 factory should return non-null with correct name")
+  void testCreateU64Factory() {
+    final WitType type = WitType.createU64();
+    assertNotNull(type, "createU64 should not return null");
+    assertEquals("u64", type.getName(), "Name should be 'u64'");
+  }
+
+  @Test
+  @DisplayName("incompatible kinds should not be compatible")
+  void testIncompatibleKindsShouldNotBeCompatible() {
+    final WitType s32Type = WitType.createS32();
+    final WitType stringType = WitType.createString();
+
+    assertFalse(s32Type.isCompatibleWith(stringType));
+  }
+
+  @Test
+  @DisplayName("isCompatibleWith null should return false")
+  void testIsCompatibleWithNullShouldReturnFalse() {
+    final WitType type = WitType.createS32();
+
+    assertFalse(type.isCompatibleWith(null));
+  }
+
+  @Test
   @DisplayName("Test WitTypeCategory values")
   void testWitTypeCategory() {
     assertEquals(10, WitTypeCategory.values().length);
+  }
+
+  @Test
+  @DisplayName("tuple name should have comma-separated elements")
+  void tupleNameShouldHaveCommaSeparatedElements() {
+    final WitType tuple = WitType.tuple(List.of(WitType.createS32(), WitType.createString()));
+
+    assertEquals(
+        "tuple<s32, string>",
+        tuple.getName(),
+        "Tuple name should have comma-separated element types");
+  }
+
+  @Test
+  @DisplayName("tuple varargs overload should produce same result as list overload")
+  void tupleVarargsShouldProduceSameAsListOverload() {
+    final WitType listTuple = WitType.tuple(List.of(WitType.createS32(), WitType.createString()));
+    final WitType varargsTuple = WitType.tuple(WitType.createS32(), WitType.createString());
+
+    assertNotNull(varargsTuple, "Varargs tuple should not be null");
+    assertEquals(
+        listTuple.getName(),
+        varargsTuple.getName(),
+        "Names should match between list and varargs overload");
+    assertEquals(listTuple, varargsTuple, "Types should be equal");
+  }
+
+  @Test
+  @DisplayName("isCompatibleWith should delegate to kind for non-equal types")
+  void isCompatibleWithShouldDelegateToKindForNonEqualTypes() {
+    final WitTypeKind kind = WitTypeKind.enumType(List.of("a", "b"));
+    final WitType type1 = new WitType("name1", kind, Map.of(), Optional.empty());
+    final WitType type2 = new WitType("name2", kind, Map.of(), Optional.empty());
+
+    assertNotEquals(type1, type2, "Types with different names should not be equal");
+    assertTrue(
+        type1.isCompatibleWith(type2),
+        "Types with same kind but different names should be compatible");
   }
 
   @Test

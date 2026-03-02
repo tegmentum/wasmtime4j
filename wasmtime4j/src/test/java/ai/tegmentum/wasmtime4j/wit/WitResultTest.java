@@ -343,4 +343,203 @@ class WitResultTest {
       assertNotEquals(err, ok, "isOk field must be part of equals comparison (symmetric)");
     }
   }
+
+  @Nested
+  @DisplayName("Validation Tests")
+  class ValidationTests {
+
+    @Test
+    @DisplayName("ok with wrong-typed payload should throw")
+    void okWithWrongTypedPayloadShouldThrow() {
+      final WitType rt = WitType.result(Optional.of(WitType.createString()), Optional.empty());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.ok(rt, WitS32.of(42)),
+          "ok with s32 value on result<string, _> should throw");
+    }
+
+    @Test
+    @DisplayName("err with wrong-typed payload should throw")
+    void errWithWrongTypedPayloadShouldThrow() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.of(WitType.createS32()));
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.err(rt, WitString.of("wrong")),
+          "err with string value on result<_, s32> should throw");
+    }
+
+    @Test
+    @DisplayName("ok without value when ok type requires payload should throw")
+    void okWithoutValueWhenOkTypeRequiresPayloadShouldThrow() {
+      final WitType rt = WitType.result(Optional.of(WitType.createString()), Optional.empty());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.ok(rt),
+          "ok() without value on result<string, _> should throw");
+    }
+
+    @Test
+    @DisplayName("err without value when error type requires payload should throw")
+    void errWithoutValueWhenErrorTypeRequiresPayloadShouldThrow() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.of(WitType.createS32()));
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.err(rt),
+          "err() without value on result<_, s32> should throw");
+    }
+
+    @Test
+    @DisplayName("ok with value when ok type is absent should throw")
+    void okWithValueWhenOkTypeAbsentShouldThrow() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.ok(rt, WitS32.of(1)),
+          "ok with value on result<_, _> should throw");
+    }
+  }
+
+  @Nested
+  @DisplayName("GetOk and GetErr with Payload Tests")
+  class GetOkGetErrWithPayloadTests {
+
+    @Test
+    @DisplayName("getOk on ok result with payload should return the value")
+    void getOkOnOkWithPayloadShouldReturnValue() {
+      final WitType rt = WitType.result(Optional.of(WitType.createS32()), Optional.empty());
+      final WitResult ok = WitResult.ok(rt, WitS32.of(42));
+
+      assertTrue(ok.getOk().isPresent(), "getOk should be present");
+      assertEquals(42, ((WitS32) ok.getOk().get()).getValue(), "getOk value should be 42");
+    }
+
+    @Test
+    @DisplayName("getOk on err result should return empty")
+    void getOkOnErrShouldReturnEmpty() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.of(WitType.createS32()));
+      final WitResult err = WitResult.err(rt, WitS32.of(99));
+
+      assertFalse(err.getOk().isPresent(), "getOk on err result should be empty");
+    }
+
+    @Test
+    @DisplayName("getErr on err result with payload should return the value")
+    void getErrOnErrWithPayloadShouldReturnValue() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.of(WitType.createS32()));
+      final WitResult err = WitResult.err(rt, WitS32.of(99));
+
+      assertTrue(err.getErr().isPresent(), "getErr should be present");
+      assertEquals(99, ((WitS32) err.getErr().get()).getValue(), "getErr value should be 99");
+    }
+
+    @Test
+    @DisplayName("getErr on ok result should return empty")
+    void getErrOnOkShouldReturnEmpty() {
+      final WitType rt = WitType.result(Optional.of(WitType.createS32()), Optional.empty());
+      final WitResult ok = WitResult.ok(rt, WitS32.of(42));
+
+      assertFalse(ok.getErr().isPresent(), "getErr on ok result should be empty");
+    }
+  }
+
+  @Nested
+  @DisplayName("ToJava with Payload Tests")
+  class ToJavaWithPayloadTests {
+
+    @Test
+    @DisplayName("toJava for ok with payload should include ok key")
+    void toJavaOkWithPayloadShouldIncludeOkKey() {
+      final WitType rt = WitType.result(Optional.of(WitType.createS32()), Optional.empty());
+      final WitResult ok = WitResult.ok(rt, WitS32.of(42));
+
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) ok.toJava();
+      assertEquals(true, map.get("isOk"), "Should be ok");
+      assertEquals(42, map.get("ok"), "Should contain ok value");
+    }
+
+    @Test
+    @DisplayName("toJava for err with payload should include err key")
+    void toJavaErrWithPayloadShouldIncludeErrKey() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.of(WitType.createS32()));
+      final WitResult err = WitResult.err(rt, WitS32.of(99));
+
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) err.toJava();
+      assertEquals(false, map.get("isOk"), "Should be err");
+      assertEquals(99, map.get("err"), "Should contain err value");
+    }
+  }
+
+  @Nested
+  @DisplayName("ToJava and getValue Tests")
+  class ToJavaAndGetValueTests {
+
+    @Test
+    @DisplayName("toJava for ok without payload should return Map with isOk=true")
+    void toJavaOkWithoutPayloadShouldReturnMapWithIsOk() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult ok = WitResult.ok(rt);
+
+      final Object java = ok.toJava();
+      assertNotNull(java, "toJava should not return null");
+      assertTrue(java instanceof java.util.Map, "toJava should return a Map");
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) java;
+      assertEquals(true, map.get("isOk"), "Map should have isOk=true");
+    }
+
+    @Test
+    @DisplayName("toJava for err without payload should return Map with isOk=false")
+    void toJavaErrWithoutPayloadShouldReturnMapWithIsOkFalse() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult err = WitResult.err(rt);
+
+      final Object java = err.toJava();
+      assertNotNull(java, "toJava should not return null");
+      assertTrue(java instanceof java.util.Map, "toJava should return a Map");
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) java;
+      assertEquals(false, map.get("isOk"), "Map should have isOk=false");
+    }
+
+    @Test
+    @DisplayName("getValue for ok should be same as getOk")
+    void getValueForOkShouldBeSameAsGetOk() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult ok = WitResult.ok(rt);
+
+      assertEquals(ok.getOk(), ok.getValue(), "getValue should return same as getOk for ok result");
+    }
+
+    @Test
+    @DisplayName("getValue for err should be same as getErr")
+    void getValueForErrShouldBeSameAsGetErr() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult err = WitResult.err(rt);
+
+      assertEquals(
+          err.getErr(), err.getValue(), "getValue should return same as getErr for err result");
+    }
+
+    @Test
+    @DisplayName("ok factory with null value should create ok with empty value")
+    void okFactoryWithNullValueShouldCreateEmptyOk() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult ok = WitResult.ok(rt, null);
+
+      assertTrue(ok.isOk(), "Should be ok");
+      assertFalse(ok.getValue().isPresent(), "Value should be empty for null");
+    }
+
+    @Test
+    @DisplayName("err factory with null value should create err with empty value")
+    void errFactoryWithNullValueShouldCreateEmptyErr() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult err = WitResult.err(rt, null);
+
+      assertTrue(err.isErr(), "Should be err");
+      assertFalse(err.getValue().isPresent(), "Value should be empty for null");
+    }
+  }
 }

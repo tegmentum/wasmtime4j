@@ -8,8 +8,8 @@ use super::pool::{
     acquire_pooled_engine, engine_pool_cleanup, engine_pool_max_size, engine_pool_size,
     get_shared_engine, release_pooled_engine, wasmtime_full_cleanup,
 };
-use super::{core, Engine, WasmFeature};
-use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
+use super::{core, Engine};
+use crate::shared_ffi::{FfiWasmFeature, FFI_ERROR, FFI_SUCCESS};
 
 /// Create a new engine with default configuration
 ///
@@ -70,13 +70,9 @@ pub unsafe extern "C" fn wasmtime4j_engine_supports_feature(
 ) -> c_int {
     match core::get_engine_ref(engine_ptr) {
         Ok(engine) => {
-            let wasm_feature = match feature {
-                0 => WasmFeature::Threads,
-                1 => WasmFeature::ReferenceTypes,
-                2 => WasmFeature::Simd,
-                3 => WasmFeature::BulkMemory,
-                4 => WasmFeature::MultiValue,
-                _ => return FFI_ERROR,
+            let wasm_feature = match FfiWasmFeature::from_ffi(feature) {
+                Ok(f) => f,
+                Err(_) => return FFI_ERROR,
             };
             if core::check_feature_support(engine, wasm_feature) {
                 1
@@ -367,12 +363,20 @@ pub unsafe extern "C" fn wasmtime4j_engine_table_lazy_init_enabled(
 /// # Safety
 ///
 /// The returned pointer is valid for the lifetime of the process.
+/// Wrapper to allow *const c_void in OnceLock (raw pointers are not Send+Sync)
+struct SharedEnginePtr(*const c_void);
+unsafe impl Send for SharedEnginePtr {}
+unsafe impl Sync for SharedEnginePtr {}
+
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_engine_get_shared() -> *const c_void {
-    let engine = get_shared_engine();
-    // Leak the engine to get a stable pointer
-    // This is intentional - the shared engine lives forever
-    Box::into_raw(Box::new(engine)) as *const c_void
+    static SHARED_ENGINE_PTR: std::sync::OnceLock<SharedEnginePtr> = std::sync::OnceLock::new();
+    SHARED_ENGINE_PTR
+        .get_or_init(|| {
+            let engine = get_shared_engine();
+            SharedEnginePtr(Box::into_raw(Box::new(engine)) as *const c_void)
+        })
+        .0
 }
 
 /// Acquire an engine from the pool.

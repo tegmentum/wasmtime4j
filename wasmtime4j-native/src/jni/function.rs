@@ -7,7 +7,7 @@ use jni::JNIEnv;
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 use crate::ffi_common::memory_utils;
 use crate::store::Store;
-use wasmtime::{Func, Val, ValType};
+use wasmtime::{Func, HeapType, Val, ValType};
 
 /// Function handle that stores both the Wasmtime function and its type information
 /// This allows for efficient type introspection without requiring a store context
@@ -64,7 +64,7 @@ impl FunctionHandle {
     }
 }
 
-/// Convert ValType to string representation
+/// Convert ValType to string representation matching Java WasmValueType enum names
 fn valtype_to_string(vt: &ValType) -> String {
     match vt {
         ValType::I32 => "i32".to_string(),
@@ -72,11 +72,28 @@ fn valtype_to_string(vt: &ValType) -> String {
         ValType::F32 => "f32".to_string(),
         ValType::F64 => "f64".to_string(),
         ValType::V128 => "v128".to_string(),
-        ValType::Ref(ref_type) => match ref_type {
-            _ if ref_type.heap_type().is_func() => "funcref".to_string(),
-            _ if ref_type.heap_type().is_extern() => "externref".to_string(),
-            _ => "ref".to_string(),
-        },
+        ValType::Ref(ref_type) => heap_type_to_string(ref_type.heap_type()),
+    }
+}
+
+/// Convert HeapType to a string matching Java WasmValueType enum names
+fn heap_type_to_string(ht: &HeapType) -> String {
+    match ht {
+        HeapType::Func => "funcref".to_string(),
+        HeapType::Extern => "externref".to_string(),
+        HeapType::Any => "anyref".to_string(),
+        HeapType::Eq => "eqref".to_string(),
+        HeapType::I31 => "i31ref".to_string(),
+        HeapType::Struct => "structref".to_string(),
+        HeapType::Array => "arrayref".to_string(),
+        HeapType::None => "nullref".to_string(),
+        HeapType::NoFunc => "nullfuncref".to_string(),
+        HeapType::NoExtern => "nullexternref".to_string(),
+        HeapType::Exn => "exnref".to_string(),
+        HeapType::NoExn => "nullexnref".to_string(),
+        HeapType::Cont => "contref".to_string(),
+        HeapType::NoCont => "nullcontref".to_string(),
+        _ => "externref".to_string(),
     }
 }
 
@@ -153,6 +170,17 @@ fn convert_java_params_to_wasmtime_vals(
     Ok(vals)
 }
 
+/// Produce the correct null Val for a given reference type's heap type
+fn null_val_for_heap_type(ht: &HeapType) -> Val {
+    match ht {
+        HeapType::Func | HeapType::NoFunc => Val::null_func_ref(),
+        HeapType::Extern | HeapType::NoExtern => Val::null_extern_ref(),
+        HeapType::Any | HeapType::Eq | HeapType::I31 | HeapType::Struct | HeapType::Array
+        | HeapType::None => Val::null_any_ref(),
+        _ => Val::null_extern_ref(),
+    }
+}
+
 /// Convert a single Java Object to a Wasmtime Val based on expected type
 fn convert_java_object_to_wasmtime_val(
     env: &mut JNIEnv,
@@ -161,7 +189,7 @@ fn convert_java_object_to_wasmtime_val(
 ) -> WasmtimeResult<Val> {
     if obj.is_null() {
         return match expected_type {
-            ValType::Ref(_) => Ok(Val::null_extern_ref()),
+            ValType::Ref(ref_type) => Ok(null_val_for_heap_type(ref_type.heap_type())),
             _ => Err(WasmtimeError::Function {
                 message: format!("Null parameter for non-reference type: {:?}", expected_type),
             }),
@@ -337,9 +365,13 @@ fn convert_java_object_to_wasmtime_val(
             }
         }
 
-        ValType::Ref(_) => {
-            // For now, we'll handle references as null or set externref to null
-            Ok(Val::null_extern_ref())
+        ValType::Ref(ref_type) => {
+            // Non-null reference marshalling requires Store context which is not
+            // available in this conversion path. Produce the correct null type.
+            log::warn!("Non-null Java object passed for reference type {:?}; \
+                        only null references are currently supported in this path",
+                       ref_type.heap_type());
+            Ok(null_val_for_heap_type(ref_type.heap_type()))
         }
     }
 }
@@ -588,6 +620,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAs
             std::ptr::null_mut()
         }
     }
+}
+
+/// Fallback when async feature is not compiled in
+#[no_mangle]
+#[cfg(not(feature = "async"))]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAsync(
+    mut env: JNIEnv,
+    _class: JClass,
+    _function_ptr: jlong,
+    _store_handle: jlong,
+    _params: jobjectArray,
+) -> jobjectArray {
+    jni_utils::throw_jni_exception(
+        &mut env,
+        &WasmtimeError::Function {
+            message: "Async function calls are not available: \
+                      the native library was compiled without async support"
+                .to_string(),
+        },
+    );
+    std::ptr::null_mut()
 }
 
 /// Call a function with multiple return values (JNI version)

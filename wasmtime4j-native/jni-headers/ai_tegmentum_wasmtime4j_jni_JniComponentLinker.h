@@ -201,22 +201,6 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
- * Method:    nativeSetWasiAllowClock
- * Signature: (JZ)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowClock
-  (JNIEnv *, jclass, jlong, jboolean);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
- * Method:    nativeSetWasiAllowRandom
- * Signature: (JZ)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiAllowRandom
-  (JNIEnv *, jclass, jlong, jboolean);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
  * Method:    nativeSetWasiAllowBlockingCurrentThread
  * Signature: (JZ)V
  */

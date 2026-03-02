@@ -111,6 +111,14 @@ fn get_async_val_registry() -> &'static StdMutex<AsyncValRegistry> {
     ASYNC_VAL_REGISTRY.get_or_init(|| StdMutex::new(AsyncValRegistry::new()))
 }
 
+/// Remove and return an async val from the registry, evicting the entry.
+pub fn take_async_val(id: u64) -> Option<Val> {
+    let mut registry = get_async_val_registry()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    registry.remove(id)
+}
+
 struct AsyncValRegistry {
     next_id: u64,
     vals: HashMap<u64, Val>,
@@ -133,6 +141,10 @@ impl AsyncValRegistry {
 
     fn get(&self, id: u64) -> Option<&Val> {
         self.vals.get(&id)
+    }
+
+    fn remove(&mut self, id: u64) -> Option<Val> {
+        self.vals.remove(&id)
     }
 }
 
@@ -220,62 +232,81 @@ pub fn val_to_component_value(val: &Val) -> ComponentValue {
 }
 
 /// Convert a `ComponentValue` to a wasmtime `Val`.
-pub fn component_value_to_val(cv: &ComponentValue) -> Val {
+///
+/// Returns an error if a resource or async handle is not found in the registry,
+/// instead of silently returning `Val::Bool(false)`.
+pub fn component_value_to_val(cv: &ComponentValue) -> Result<Val, WasmtimeError> {
     match cv {
-        ComponentValue::Bool(b) => Val::Bool(*b),
-        ComponentValue::S8(v) => Val::S8(*v),
-        ComponentValue::S16(v) => Val::S16(*v),
-        ComponentValue::S32(v) => Val::S32(*v),
-        ComponentValue::S64(v) => Val::S64(*v),
-        ComponentValue::U8(v) => Val::U8(*v),
-        ComponentValue::U16(v) => Val::U16(*v),
-        ComponentValue::U32(v) => Val::U32(*v),
-        ComponentValue::U64(v) => Val::U64(*v),
-        ComponentValue::F32(v) => Val::Float32(*v),
-        ComponentValue::F64(v) => Val::Float64(*v),
-        ComponentValue::Char(c) => Val::Char(*c),
-        ComponentValue::String(s) => Val::String(s.clone().into()),
+        ComponentValue::Bool(b) => Ok(Val::Bool(*b)),
+        ComponentValue::S8(v) => Ok(Val::S8(*v)),
+        ComponentValue::S16(v) => Ok(Val::S16(*v)),
+        ComponentValue::S32(v) => Ok(Val::S32(*v)),
+        ComponentValue::S64(v) => Ok(Val::S64(*v)),
+        ComponentValue::U8(v) => Ok(Val::U8(*v)),
+        ComponentValue::U16(v) => Ok(Val::U16(*v)),
+        ComponentValue::U32(v) => Ok(Val::U32(*v)),
+        ComponentValue::U64(v) => Ok(Val::U64(*v)),
+        ComponentValue::F32(v) => Ok(Val::Float32(*v)),
+        ComponentValue::F64(v) => Ok(Val::Float64(*v)),
+        ComponentValue::Char(c) => Ok(Val::Char(*c)),
+        ComponentValue::String(s) => Ok(Val::String(s.clone().into())),
         ComponentValue::List(items) => {
-            Val::List(items.iter().map(component_value_to_val).collect())
+            let vals: Result<Vec<Val>, _> = items.iter().map(component_value_to_val).collect();
+            Ok(Val::List(vals?))
         }
-        ComponentValue::Record(fields) => Val::Record(
-            fields
+        ComponentValue::Record(fields) => {
+            let vals: Result<Vec<_>, _> = fields
                 .iter()
-                .map(|(name, val)| (name.clone().into(), component_value_to_val(val)))
-                .collect(),
-        ),
-        ComponentValue::Tuple(elements) => {
-            Val::Tuple(elements.iter().map(component_value_to_val).collect())
+                .map(|(name, val)| {
+                    component_value_to_val(val).map(|v| (name.clone().into(), v))
+                })
+                .collect();
+            Ok(Val::Record(vals?))
         }
-        ComponentValue::Variant { case_name, payload } => Val::Variant(
-            case_name.clone().into(),
-            payload
-                .as_ref()
-                .map(|v| Box::new(component_value_to_val(v))),
-        ),
-        ComponentValue::Enum(name) => Val::Enum(name.clone().into()),
+        ComponentValue::Tuple(elements) => {
+            let vals: Result<Vec<Val>, _> =
+                elements.iter().map(component_value_to_val).collect();
+            Ok(Val::Tuple(vals?))
+        }
+        ComponentValue::Variant { case_name, payload } => {
+            let mapped = match payload {
+                Some(v) => Some(Box::new(component_value_to_val(v)?)),
+                None => None,
+            };
+            Ok(Val::Variant(case_name.clone().into(), mapped))
+        }
+        ComponentValue::Enum(name) => Ok(Val::Enum(name.clone().into())),
         ComponentValue::Option(opt) => {
-            Val::Option(opt.as_ref().map(|v| Box::new(component_value_to_val(v))))
+            let mapped = match opt {
+                Some(v) => Some(Box::new(component_value_to_val(v)?)),
+                None => None,
+            };
+            Ok(Val::Option(mapped))
         }
         ComponentValue::Result { ok, err, is_ok } => {
             if *is_ok {
-                Val::Result(Ok(ok.as_ref().map(|v| Box::new(component_value_to_val(v)))))
+                let mapped = match ok {
+                    Some(v) => Ok(Some(Box::new(component_value_to_val(v)?))),
+                    None => Ok(None),
+                };
+                Ok(Val::Result(mapped))
             } else {
-                Val::Result(Err(err
-                    .as_ref()
-                    .map(|v| Box::new(component_value_to_val(v)))))
+                let mapped = match err {
+                    Some(v) => Err(Some(Box::new(component_value_to_val(v)?))),
+                    None => Err(None),
+                };
+                Ok(Val::Result(mapped))
             }
         }
         ComponentValue::Flags(flags) => {
-            Val::Flags(flags.iter().map(|f| f.clone().into()).collect())
+            Ok(Val::Flags(flags.iter().map(|f| f.clone().into()).collect()))
         }
         ComponentValue::Own(handle) | ComponentValue::Borrow(handle) => {
-            if let Some(resource) = crate::wit_value_marshal::get_resource(*handle) {
-                Val::Resource(resource)
-            } else {
-                log::warn!("Resource handle {} not found in registry", handle);
-                Val::Bool(false)
-            }
+            crate::wit_value_marshal::get_resource(*handle)
+                .map(Val::Resource)
+                .ok_or_else(|| WasmtimeError::Resource {
+                    message: format!("Resource handle {} not found in registry", handle),
+                })
         }
         ComponentValue::Future(handle)
         | ComponentValue::Stream(handle)
@@ -283,12 +314,12 @@ pub fn component_value_to_val(cv: &ComponentValue) -> Val {
             let registry = get_async_val_registry()
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
-            if let Some(val) = registry.get(*handle) {
-                val.clone()
-            } else {
-                log::warn!("Async handle {} not found in registry", handle);
-                Val::Bool(false)
-            }
+            registry
+                .get(*handle)
+                .cloned()
+                .ok_or_else(|| WasmtimeError::Resource {
+                    message: format!("Async handle {} not found in registry", handle),
+                })
         }
     }
 }
@@ -483,10 +514,6 @@ pub struct WasiP2Config {
     pub allow_udp: bool,
     /// Allow IP name lookup (DNS)
     pub allow_ip_name_lookup: bool,
-    /// Allow clock access (reserved for future use — WasiCtxBuilder enables clocks by default)
-    pub allow_clock: bool,
-    /// Allow random number generation (reserved for future use — WasiCtxBuilder enables RNG by default)
-    pub allow_random: bool,
     /// Allow blocking the current thread
     pub allow_blocking_current_thread: bool,
     /// Insecure random seed (if set)
@@ -520,8 +547,6 @@ impl Default for WasiP2Config {
             allow_tcp: true,
             allow_udp: true,
             allow_ip_name_lookup: true,
-            allow_clock: false,
-            allow_random: false,
             allow_blocking_current_thread: false,
             insecure_random_seed: None,
             wall_clock: None,
@@ -758,16 +783,6 @@ impl ComponentLinker {
     /// Set whether network access is allowed
     pub fn set_wasi_allow_network(&mut self, allow: bool) {
         self.wasi_p2_config.allow_network = allow;
-    }
-
-    /// Set whether clock access is allowed
-    pub fn set_wasi_allow_clock(&mut self, allow: bool) {
-        self.wasi_p2_config.allow_clock = allow;
-    }
-
-    /// Set whether random number generation is allowed
-    pub fn set_wasi_allow_random(&mut self, allow: bool) {
-        self.wasi_p2_config.allow_random = allow;
     }
 
     /// Set stdin bytes (overrides inherit_stdin when set)
@@ -1041,7 +1056,12 @@ impl ComponentLinker {
                                 })?;
                             for (i, cv) in cv_results.iter().enumerate() {
                                 if i < results.len() {
-                                    results[i] = component_value_to_val(cv);
+                                    results[i] = component_value_to_val(cv).map_err(|e| {
+                                        wasmtime::Error::msg(format!(
+                                            "Failed to convert result value: {}",
+                                            e
+                                        ))
+                                    })?;
                                 }
                             }
                             Ok(())
@@ -1073,7 +1093,12 @@ impl ComponentLinker {
                             })?;
                         for (i, cv) in cv_results.iter().enumerate() {
                             if i < results.len() {
-                                results[i] = component_value_to_val(cv);
+                                results[i] = component_value_to_val(cv).map_err(|e| {
+                                    wasmtime::Error::msg(format!(
+                                        "Failed to convert result value: {}",
+                                        e
+                                    ))
+                                })?;
                             }
                         }
                         Ok(())
@@ -2341,36 +2366,6 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_network(
 
     let linker = &mut *(linker_ptr as *mut ComponentLinker);
     linker.set_wasi_allow_network(allow != 0);
-    FFI_SUCCESS
-}
-
-/// Set whether clock access is allowed
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_clock(
-    linker_ptr: *mut c_void,
-    allow: c_int,
-) -> c_int {
-    if linker_ptr.is_null() {
-        return FFI_ERROR;
-    }
-
-    let linker = &mut *(linker_ptr as *mut ComponentLinker);
-    linker.set_wasi_allow_clock(allow != 0);
-    FFI_SUCCESS
-}
-
-/// Set whether random number generation is allowed
-#[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_component_linker_set_wasi_allow_random(
-    linker_ptr: *mut c_void,
-    allow: c_int,
-) -> c_int {
-    if linker_ptr.is_null() {
-        return FFI_ERROR;
-    }
-
-    let linker = &mut *(linker_ptr as *mut ComponentLinker);
-    linker.set_wasi_allow_random(allow != 0);
     FFI_SUCCESS
 }
 

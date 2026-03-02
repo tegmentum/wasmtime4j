@@ -654,6 +654,9 @@ public interface WasmMemory {
    */
   default void readBytes64(
       final long offset, final byte[] dest, final int destOffset, final int length) {
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
     if (offset > Integer.MAX_VALUE) {
       throw new IndexOutOfBoundsException("Offset exceeds 32-bit memory addressing: " + offset);
     }
@@ -675,6 +678,9 @@ public interface WasmMemory {
    */
   default void writeBytes64(
       final long offset, final byte[] src, final int srcOffset, final int length) {
+    if (offset < 0) {
+      throw new IndexOutOfBoundsException("Offset cannot be negative: " + offset);
+    }
     if (offset > Integer.MAX_VALUE) {
       throw new IndexOutOfBoundsException("Offset exceeds 32-bit memory addressing: " + offset);
     }
@@ -953,6 +959,10 @@ public interface WasmMemory {
    * <p>Standard WebAssembly page size is 64KB (65536 bytes). Custom page sizes are available via
    * the custom-page-sizes proposal.
    *
+   * <p><b>Note:</b> This default implementation assumes standard 64KB pages. Implementations
+   * supporting custom page sizes should override this method to query the native memory's actual
+   * page size.
+   *
    * @return the page size in bytes (typically 65536)
    * @since 1.1.0
    */
@@ -965,6 +975,9 @@ public interface WasmMemory {
    *
    * <p>For standard 64KB pages, this returns 16. This is useful for efficient page calculations
    * using bit shifts instead of division.
+   *
+   * <p><b>Note:</b> This default implementation assumes standard 64KB pages. Implementations
+   * supporting custom page sizes should override this method.
    *
    * @return the log2 of page size (typically 16)
    * @since 1.1.0

@@ -233,6 +233,34 @@ class WitTypeKindTest {
     void variantShouldThrowOnNullCases() {
       assertThrows(NullPointerException.class, () -> WitTypeKind.variant(null));
     }
+
+    @Test
+    @DisplayName("same variants should be compatible")
+    void sameVariantsShouldBeCompatible() {
+      final Map<String, Optional<WitType>> cases = Map.of("ok", Optional.empty());
+      final WitTypeKind kind1 = WitTypeKind.variant(cases);
+      final WitTypeKind kind2 = WitTypeKind.variant(cases);
+
+      assertTrue(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("different variants should not be compatible")
+    void differentVariantsShouldNotBeCompatible() {
+      final WitTypeKind kind1 = WitTypeKind.variant(Map.of("ok", Optional.empty()));
+      final WitTypeKind kind2 = WitTypeKind.variant(Map.of("err", Optional.empty()));
+
+      assertFalse(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("variant should not be compatible with non-variant")
+    void variantShouldNotBeCompatibleWithNonVariant() {
+      final WitTypeKind variant = WitTypeKind.variant(Map.of("ok", Optional.empty()));
+      final WitTypeKind primitive = WitTypeKind.primitive(WitPrimitiveType.S32);
+
+      assertFalse(variant.isCompatibleWith(primitive));
+    }
   }
 
   @Nested
@@ -275,6 +303,24 @@ class WitTypeKindTest {
 
       assertTrue(kind1.isCompatibleWith(kind2));
     }
+
+    @Test
+    @DisplayName("different enums should not be compatible")
+    void differentEnumsShouldNotBeCompatible() {
+      final WitTypeKind kind1 = WitTypeKind.enumType(List.of("a", "b"));
+      final WitTypeKind kind2 = WitTypeKind.enumType(List.of("a", "c"));
+
+      assertFalse(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("enum should return values via getEnumValues")
+    void enumShouldReturnValues() {
+      final List<String> values = List.of("red", "green");
+      final WitTypeKind kind = WitTypeKind.enumType(values);
+
+      assertEquals(values, kind.getEnumValues());
+    }
   }
 
   @Nested
@@ -316,6 +362,76 @@ class WitTypeKindTest {
     void flagsShouldThrowOnNull() {
       assertThrows(NullPointerException.class, () -> WitTypeKind.flags(null));
     }
+
+    @Test
+    @DisplayName("8 flags should return 1 byte")
+    void eightFlagsShouldReturn1Byte() {
+      final List<String> flags = List.of("a", "b", "c", "d", "e", "f", "g", "h");
+      assertEquals(Optional.of(1), WitTypeKind.flags(flags).getSizeBytes());
+    }
+
+    @Test
+    @DisplayName("9 flags should return 2 bytes")
+    void nineFlagsShouldReturn2Bytes() {
+      final List<String> flags = List.of("a", "b", "c", "d", "e", "f", "g", "h", "i");
+      assertEquals(Optional.of(2), WitTypeKind.flags(flags).getSizeBytes());
+    }
+
+    @Test
+    @DisplayName("16 flags should return 2 bytes")
+    void sixteenFlagsShouldReturn2Bytes() {
+      final List<String> flags =
+          List.of("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p");
+      assertEquals(Optional.of(2), WitTypeKind.flags(flags).getSizeBytes());
+    }
+
+    @Test
+    @DisplayName("17 flags should return 4 bytes")
+    void seventeenFlagsShouldReturn4Bytes() {
+      final List<String> flags =
+          List.of(
+              "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q");
+      assertEquals(Optional.of(4), WitTypeKind.flags(flags).getSizeBytes());
+    }
+
+    @Test
+    @DisplayName("32 flags should return 4 bytes")
+    void thirtyTwoFlagsShouldReturn4Bytes() {
+      final List<String> flags =
+          List.of(
+              "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q",
+              "r", "s", "t", "u", "v", "w", "x", "y", "z", "aa", "ab", "ac", "ad", "ae", "af");
+      assertEquals(Optional.of(4), WitTypeKind.flags(flags).getSizeBytes());
+    }
+
+    @Test
+    @DisplayName("33 flags should return 8 bytes")
+    void thirtyThreeFlagsShouldReturn8Bytes() {
+      final List<String> flags =
+          List.of(
+              "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q",
+              "r", "s", "t", "u", "v", "w", "x", "y", "z", "aa", "ab", "ac", "ad", "ae", "af",
+              "ag");
+      assertEquals(Optional.of(8), WitTypeKind.flags(flags).getSizeBytes());
+    }
+
+    @Test
+    @DisplayName("same flags should be compatible")
+    void sameFlagsShouldBeCompatible() {
+      final WitTypeKind kind1 = WitTypeKind.flags(List.of("r", "w"));
+      final WitTypeKind kind2 = WitTypeKind.flags(List.of("r", "w"));
+
+      assertTrue(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("different flags should not be compatible")
+    void differentFlagsShouldNotBeCompatible() {
+      final WitTypeKind kind1 = WitTypeKind.flags(List.of("r", "w"));
+      final WitTypeKind kind2 = WitTypeKind.flags(List.of("r", "x"));
+
+      assertFalse(kind1.isCompatibleWith(kind2));
+    }
   }
 
   @Nested
@@ -355,6 +471,25 @@ class WitTypeKindTest {
       final WitTypeKind kind2 = WitTypeKind.list(WitType.createU8());
 
       assertTrue(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("different element type lists should not be compatible")
+    void differentListsShouldNotBeCompatible() {
+      final WitTypeKind kind1 = WitTypeKind.list(WitType.createU8());
+      final WitTypeKind kind2 = WitTypeKind.list(WitType.createS32());
+
+      assertFalse(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("list should return inner type via getInnerType")
+    void listShouldReturnInnerType() {
+      final WitType elementType = WitType.createU8();
+      final WitTypeKind kind = WitTypeKind.list(elementType);
+
+      assertTrue(kind.getInnerType().isPresent());
+      assertEquals("u8", kind.getInnerType().get().getName());
     }
   }
 
@@ -396,6 +531,33 @@ class WitTypeKindTest {
     @DisplayName("option should throw on null inner type")
     void optionShouldThrowOnNullInnerType() {
       assertThrows(NullPointerException.class, () -> WitTypeKind.option(null));
+    }
+
+    @Test
+    @DisplayName("same options should be compatible")
+    void sameOptionsShouldBeCompatible() {
+      final WitTypeKind kind1 = WitTypeKind.option(WitType.createString());
+      final WitTypeKind kind2 = WitTypeKind.option(WitType.createString());
+
+      assertTrue(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("different options should not be compatible")
+    void differentOptionsShouldNotBeCompatible() {
+      final WitTypeKind kind1 = WitTypeKind.option(WitType.createString());
+      final WitTypeKind kind2 = WitTypeKind.option(WitType.createS32());
+
+      assertFalse(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("option should not be compatible with non-option")
+    void optionShouldNotBeCompatibleWithNonOption() {
+      final WitTypeKind option = WitTypeKind.option(WitType.createString());
+      final WitTypeKind list = WitTypeKind.list(WitType.createString());
+
+      assertFalse(option.isCompatibleWith(list));
     }
   }
 
@@ -441,6 +603,29 @@ class WitTypeKindTest {
           WitTypeKind.result(Optional.of(WitType.createString()), Optional.empty());
 
       assertTrue(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("results with different error types should not be compatible")
+    void differentResultErrorTypeShouldNotBeCompatible() {
+      final WitTypeKind kind1 =
+          WitTypeKind.result(Optional.of(WitType.createString()), Optional.of(WitType.createU8()));
+      final WitTypeKind kind2 =
+          WitTypeKind.result(Optional.of(WitType.createString()), Optional.of(WitType.createS32()));
+
+      assertFalse(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("result should return ok and error types")
+    void resultShouldReturnOkAndErrorTypes() {
+      final WitTypeKind kind =
+          WitTypeKind.result(Optional.of(WitType.createString()), Optional.of(WitType.createU32()));
+
+      assertTrue(kind.getOkType().isPresent());
+      assertEquals("string", kind.getOkType().get().getName());
+      assertTrue(kind.getErrorType().isPresent());
+      assertEquals("u32", kind.getErrorType().get().getName());
     }
   }
 
@@ -493,6 +678,27 @@ class WitTypeKindTest {
 
       assertFalse(kind1.isCompatibleWith(kind2));
     }
+
+    @Test
+    @DisplayName("tuples with different element types should not be compatible")
+    void differentElementTypesTuplesShouldNotBeCompatible() {
+      final WitTypeKind kind1 = WitTypeKind.tuple(List.of(WitType.createS32(), WitType.createU8()));
+      final WitTypeKind kind2 =
+          WitTypeKind.tuple(List.of(WitType.createS32(), WitType.createString()));
+
+      assertFalse(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("tuple should return element types via getTupleElements")
+    void tupleShouldReturnTupleElements() {
+      final List<WitType> elements = List.of(WitType.createS32(), WitType.createString());
+      final WitTypeKind kind = WitTypeKind.tuple(elements);
+
+      assertEquals(2, kind.getTupleElements().size());
+      assertEquals("s32", kind.getTupleElements().get(0).getName());
+      assertEquals("string", kind.getTupleElements().get(1).getName());
+    }
   }
 
   @Nested
@@ -536,10 +742,19 @@ class WitTypeKindTest {
     @Test
     @DisplayName("different resources should not be compatible")
     void differentResourcesShouldNotBeCompatible() {
-      final WitTypeKind kind1 = WitTypeKind.resource("resource1");
-      final WitTypeKind kind2 = WitTypeKind.resource("resource2");
+      final WitTypeKind kind1 = WitTypeKind.resource("resource-a");
+      final WitTypeKind kind2 = WitTypeKind.resource("resource-b");
 
       assertFalse(kind1.isCompatibleWith(kind2));
+    }
+
+    @Test
+    @DisplayName("resource should return resourceId")
+    void resourceShouldReturnResourceId() {
+      final WitTypeKind kind = WitTypeKind.resource("wasi:io/stream");
+
+      assertTrue(kind.getResourceId().isPresent());
+      assertEquals("wasi:io/stream", kind.getResourceId().get());
     }
   }
 
@@ -572,6 +787,51 @@ class WitTypeKindTest {
       final WitTypeKind option = WitTypeKind.option(WitType.createU8());
 
       assertFalse(list.isCompatibleWith(option));
+    }
+
+    @Test
+    @DisplayName("tuple should not be compatible with non-tuple")
+    void tupleShouldNotBeCompatibleWithNonTuple() {
+      final WitTypeKind tuple = WitTypeKind.tuple(List.of(WitType.createS32()));
+      final WitTypeKind flags = WitTypeKind.flags(List.of("a"));
+
+      assertFalse(tuple.isCompatibleWith(flags));
+    }
+
+    @Test
+    @DisplayName("resource should not be compatible with non-resource")
+    void resourceShouldNotBeCompatibleWithNonResource() {
+      final WitTypeKind resource = WitTypeKind.resource("test");
+      final WitTypeKind enumKind = WitTypeKind.enumType(List.of("a"));
+
+      assertFalse(resource.isCompatibleWith(enumKind));
+    }
+
+    @Test
+    @DisplayName("flags should not be compatible with non-flags")
+    void flagsShouldNotBeCompatibleWithNonFlags() {
+      final WitTypeKind flags = WitTypeKind.flags(List.of("r", "w"));
+      final WitTypeKind result = WitTypeKind.result(Optional.empty(), Optional.empty());
+
+      assertFalse(flags.isCompatibleWith(result));
+    }
+
+    @Test
+    @DisplayName("result should not be compatible with non-result")
+    void resultShouldNotBeCompatibleWithNonResult() {
+      final WitTypeKind result = WitTypeKind.result(Optional.empty(), Optional.empty());
+      final WitTypeKind tuple = WitTypeKind.tuple(List.of(WitType.createS32()));
+
+      assertFalse(result.isCompatibleWith(tuple));
+    }
+
+    @Test
+    @DisplayName("enum should not be compatible with non-enum")
+    void enumShouldNotBeCompatibleWithNonEnum() {
+      final WitTypeKind enumKind = WitTypeKind.enumType(List.of("a", "b"));
+      final WitTypeKind variant = WitTypeKind.variant(Map.of("ok", Optional.empty()));
+
+      assertFalse(enumKind.isCompatibleWith(variant));
     }
   }
 

@@ -184,7 +184,7 @@ fn deserialize_to_val_inner(
         19 => deserialize_u8(data),
         20 => deserialize_u16(data),
         21 => deserialize_float32(data),
-        22 => deserialize_resource(data),
+        22 | 23 => deserialize_resource(data),
         _ => Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid type discriminator: {}", type_discriminator),
         }),
@@ -642,7 +642,7 @@ pub unsafe extern "C" fn wasmtime4j_wit_value_validate_discriminator(
     type_discriminator: c_int,
 ) -> c_int {
     match type_discriminator {
-        1..=22 => 1,
+        1..=23 => 1,
         _ => 0,
     }
 }

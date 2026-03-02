@@ -210,7 +210,9 @@ public final class WitVariant extends WitValue {
       return false;
     }
     final WitVariant other = (WitVariant) obj;
-    return caseName.equals(other.caseName) && payload.equals(other.payload);
+    return Objects.equals(getType(), other.getType())
+        && caseName.equals(other.caseName)
+        && payload.equals(other.payload);
   }
 
   @Override

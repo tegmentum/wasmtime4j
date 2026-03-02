@@ -84,6 +84,24 @@ class WitU8Test {
       final WitU8 value = WitU8.ofUnsigned(255);
       assertEquals(255, value.toUnsignedInt(), "Unsigned value should be 255");
     }
+
+    @Test
+    @DisplayName("ofUnsigned at zero boundary should return correct value")
+    void ofUnsignedAtZeroBoundaryShouldReturnCorrectValue() {
+      final WitU8 value = WitU8.ofUnsigned(0);
+      assertEquals(0, value.toUnsignedInt(), "Unsigned value at zero boundary should be 0");
+    }
+
+    @Test
+    @DisplayName("ofUnsigned at exact max should equal getValue cast to unsigned")
+    void ofUnsignedAtExactMaxShouldEqualGetValueCast() {
+      final WitU8 value = WitU8.ofUnsigned(255);
+      assertEquals((byte) -1, value.getValue(), "Raw byte for 255 should be -1");
+      assertEquals(
+          255,
+          Byte.toUnsignedInt(value.getValue()),
+          "Byte.toUnsignedInt of raw value should be 255");
+    }
   }
 
   @Nested

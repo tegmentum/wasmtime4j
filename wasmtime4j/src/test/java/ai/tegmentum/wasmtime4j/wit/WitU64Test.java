@@ -94,6 +94,26 @@ class WitU64Test {
       final WitU64 value = WitU64.ofUnsigned(maxU64);
       assertEquals(maxU64, value.toUnsignedBigInteger(), "Unsigned value should be max u64");
     }
+
+    @Test
+    @DisplayName("ofUnsigned at zero boundary should return correct value")
+    void ofUnsignedAtZeroBoundaryShouldReturnCorrectValue() {
+      final WitU64 value = WitU64.ofUnsigned(BigInteger.ZERO);
+      assertEquals(
+          BigInteger.ZERO,
+          value.toUnsignedBigInteger(),
+          "Unsigned value at zero boundary should be 0");
+    }
+
+    @Test
+    @DisplayName("ofUnsigned at exact max should equal getValue interpreted as unsigned")
+    void ofUnsignedAtExactMaxShouldEqualGetValueUnsigned() {
+      final BigInteger maxU64 = new BigInteger("18446744073709551615");
+      final WitU64 value = WitU64.ofUnsigned(maxU64);
+      assertEquals(-1L, value.getValue(), "Raw long for max u64 should be -1");
+      assertEquals(
+          maxU64, value.toUnsignedBigInteger(), "toUnsignedBigInteger should return max u64");
+    }
   }
 
   @Nested

@@ -431,11 +431,11 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
 
     // GC settings
     if let Some(ref v) = config.gc_support {
-        builder = builder.gc_support(match v.as_str() {
-            "yes" | "true" => true,
-            "no" | "false" => false,
-            _ => true, // auto defaults to enabled
-        });
+        match v.as_str() {
+            "yes" | "true" => { builder = builder.gc_support(true); }
+            "no" | "false" => { builder = builder.gc_support(false); }
+            _ => { /* "auto" — let wasmtime decide by not calling gc_support() */ }
+        }
     }
     if let Some(ref c) = config.collector {
         builder = builder.collector(match c.as_str() {

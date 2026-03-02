@@ -701,7 +701,7 @@ impl EnhancedComponentEngine {
             Type::U64 => ComponentValueType::U64,
             Type::Float32 => ComponentValueType::Float32,
             Type::Float64 => ComponentValueType::Float64,
-            Type::Char => ComponentValueType::U32, // Unicode scalar value
+            Type::Char => ComponentValueType::Char,
             Type::String => ComponentValueType::String,
             Type::List(inner) => ComponentValueType::List(Box::new(
                 self.convert_wasmtime_type_to_component_type(&inner.ty()),

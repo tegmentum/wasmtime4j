@@ -7,7 +7,6 @@
 
 use crate::element_segment::ElementItem;
 use crate::error::{WasmtimeError, WasmtimeResult};
-use crate::global::ReferenceType;
 use crate::instance::Instance;
 use crate::store::Store;
 use std::collections::HashMap;
@@ -1384,15 +1383,6 @@ pub mod core {
             TableElement::FuncRef(ref_id) => *ref_id,
             TableElement::ExternRef(ref_id) => *ref_id,
             TableElement::AnyRef(ref_id) => *ref_id,
-        }
-    }
-
-    /// Helper function to get TableElement type
-    pub fn get_table_element_type(element: &TableElement) -> ReferenceType {
-        match element {
-            TableElement::FuncRef(_) => ReferenceType::FuncRef,
-            TableElement::ExternRef(_) => ReferenceType::ExternRef,
-            TableElement::AnyRef(_) => ReferenceType::AnyRef,
         }
     }
 

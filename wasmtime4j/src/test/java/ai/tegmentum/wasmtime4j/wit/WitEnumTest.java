@@ -15,6 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.wit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +55,43 @@ class WitEnumTest {
           IllegalArgumentException.class,
           () -> WitEnum.of(enumType, ""),
           "of with empty discriminant should throw IllegalArgumentException");
+    }
+  }
+
+  @Nested
+  @DisplayName("Valid Creation Tests")
+  class ValidCreationTests {
+
+    @Test
+    @DisplayName("of with valid discriminant should create enum")
+    void ofWithValidDiscriminantShouldCreateEnum() {
+      final var enumType =
+          WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
+      final WitEnum value = WitEnum.of(enumType, "red");
+
+      assertNotNull(value, "Enum should not be null");
+      assertEquals("red", value.getDiscriminant(), "Discriminant should be 'red'");
+    }
+
+    @Test
+    @DisplayName("toJava should return discriminant string")
+    void toJavaShouldReturnDiscriminant() {
+      final var enumType =
+          WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
+      final WitEnum value = WitEnum.of(enumType, "green");
+
+      assertEquals("green", value.toJava(), "toJava should return the discriminant");
+    }
+
+    @Test
+    @DisplayName("getType should return the enum type")
+    void getTypeShouldReturnEnumType() {
+      final var enumType =
+          WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
+      final WitEnum value = WitEnum.of(enumType, "blue");
+
+      assertNotNull(value.getType(), "Type should not be null");
+      assertEquals("color", value.getType().getName(), "Type name should be 'color'");
     }
   }
 }

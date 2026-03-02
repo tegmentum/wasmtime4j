@@ -15,6 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.exception;
 
+import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
+
 /**
  * Base class for all WebAssembly trap exceptions.
  *
@@ -55,6 +57,9 @@ public class TrapException extends WasmException {
 
   /** Recovery suggestion for this trap type. */
   private final String recoverySuggestion;
+
+  /** Structured backtrace parsed from the error message (if available). */
+  private final transient WasmBacktrace structuredBacktrace;
 
   /** Coredump ID in the native registry, or -1 if no coredump is available. */
   private final long coredumpId;
@@ -221,6 +226,10 @@ public class TrapException extends WasmException {
     this.functionName = functionName;
     this.instructionOffset = instructionOffset;
     this.recoverySuggestion = generateRecoverySuggestion(this.trapType);
+    this.structuredBacktrace =
+        wasmBacktrace != null
+            ? WasmBacktrace.fromErrorMessage(wasmBacktrace)
+            : WasmBacktrace.fromErrorMessage(message);
     this.coredumpId = coredumpId;
   }
 
@@ -275,6 +284,19 @@ public class TrapException extends WasmException {
    */
   public String getWasmBacktrace() {
     return wasmBacktrace;
+  }
+
+  /**
+   * Gets the structured backtrace parsed from the error message.
+   *
+   * <p>This provides access to individual {@link ai.tegmentum.wasmtime4j.debug.FrameInfo} frames
+   * parsed from the wasmtime backtrace text format, enabling programmatic inspection of the call
+   * stack.
+   *
+   * @return the structured backtrace (may be empty if no backtrace was present)
+   */
+  public WasmBacktrace getStructuredBacktrace() {
+    return structuredBacktrace;
   }
 
   /**

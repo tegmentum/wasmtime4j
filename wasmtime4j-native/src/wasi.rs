@@ -185,12 +185,10 @@ pub struct DirectoryMapping {
 /// WASI directory permissions wrapper
 #[derive(Debug, Clone)]
 pub struct WasiDirPermissions {
-    /// Can create directories
-    pub create: bool,
     /// Can read directory contents
     pub read: bool,
-    /// Can remove directories
-    pub remove: bool,
+    /// Can mutate directory (create/remove entries)
+    pub mutate: bool,
 }
 
 /// WASI file permissions wrapper
@@ -200,10 +198,6 @@ pub struct WasiFilePermissions {
     pub read: bool,
     /// Can write to files
     pub write: bool,
-    /// Can create new files
-    pub create: bool,
-    /// Can truncate files
-    pub truncate: bool,
 }
 
 /// Standard I/O configuration
@@ -368,9 +362,8 @@ impl Default for WasiConfig {
 impl Default for WasiDirPermissions {
     fn default() -> Self {
         Self {
-            create: false,
             read: true,
-            remove: false,
+            mutate: false,
         }
     }
 }
@@ -380,8 +373,6 @@ impl Default for WasiFilePermissions {
         Self {
             read: true,
             write: false,
-            create: false,
-            truncate: false,
         }
     }
 }
@@ -403,7 +394,9 @@ impl WasiDirPermissions {
         if self.read {
             perms |= DirPerms::READ;
         }
-        // Note: CREATE and REMOVE permissions might not be available in this version
+        if self.mutate {
+            perms |= DirPerms::MUTATE;
+        }
         perms
     }
 }
@@ -1067,16 +1060,13 @@ pub unsafe extern "C" fn wasi_ctx_add_dir(
         let guest_path_str = ffi_utils::c_str_to_string(guest_path, "guest path")?;
 
         let dir_perms = WasiDirPermissions {
-            create: can_create != 0,
             read: can_read != 0,
-            remove: can_remove != 0,
+            mutate: can_create != 0 || can_remove != 0,
         };
 
         let file_perms = WasiFilePermissions {
             read: file_read != 0,
-            write: file_write != 0,
-            create: file_create != 0,
-            truncate: file_truncate != 0,
+            write: file_write != 0 || file_create != 0 || file_truncate != 0,
         };
 
         ctx.add_directory_mapping(&host_path_str, &guest_path_str, dir_perms, file_perms)?;
@@ -1380,10 +1370,11 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_env(
 pub unsafe extern "C" fn wasmtime4j_wasi_context_inherit_env(ctx_ptr: *mut c_void) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
-        // Set all current environment variables
+        // Batch-insert all env vars, then rebuild context once
         for (key, value) in std::env::vars() {
-            ctx.set_environment_variable(&key, &value)?;
+            ctx.environment.insert(key, value);
         }
+        ctx.rebuild_context()?;
         Ok(())
     })
 }
@@ -1419,15 +1410,16 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdin(
     ctx_ptr: *mut c_void,
     path: *const c_char,
 ) -> c_int {
-    wasi_ctx_configure_stdio(
-        ctx_ptr,
-        2, // stdin: File
-        path,
-        0, // stdout: Inherit (keep current)
-        std::ptr::null(),
-        0, // stderr: Inherit (keep current)
-        std::ptr::null(),
-    )
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        let path_str = ffi_utils::c_str_to_string(path, "stdin file path")?;
+        ctx.configure_stdio_streams(
+            StdioSource::File(PathBuf::from(path_str)),
+            ctx.stdio_config.stdout.clone(),
+            ctx.stdio_config.stderr.clone(),
+        )?;
+        Ok(())
+    })
 }
 
 /// Set stdin from binary data buffer (supports binary data with null bytes)
@@ -1471,15 +1463,16 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stdout(
     ctx_ptr: *mut c_void,
     path: *const c_char,
 ) -> c_int {
-    wasi_ctx_configure_stdio(
-        ctx_ptr,
-        0, // stdin: Inherit (keep current)
-        std::ptr::null(),
-        2, // stdout: File
-        path,
-        0, // stderr: Inherit (keep current)
-        std::ptr::null(),
-    )
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        let path_str = ffi_utils::c_str_to_string(path, "stdout file path")?;
+        ctx.configure_stdio_streams(
+            ctx.stdio_config.stdin.clone(),
+            StdioSink::File(PathBuf::from(path_str)),
+            ctx.stdio_config.stderr.clone(),
+        )?;
+        Ok(())
+    })
 }
 
 /// Set stderr to write to file (Panama FFI version)
@@ -1488,15 +1481,16 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_set_stderr(
     ctx_ptr: *mut c_void,
     path: *const c_char,
 ) -> c_int {
-    wasi_ctx_configure_stdio(
-        ctx_ptr,
-        0, // stdin: Inherit (keep current)
-        std::ptr::null(),
-        0, // stdout: Inherit (keep current)
-        std::ptr::null(),
-        2, // stderr: File
-        path,
-    )
+    ffi_utils::ffi_try_code(|| {
+        let ctx = ffi_utils::deref_ptr_mut::<WasiContext>(ctx_ptr, "WASI context")?;
+        let path_str = ffi_utils::c_str_to_string(path, "stderr file path")?;
+        ctx.configure_stdio_streams(
+            ctx.stdio_config.stdin.clone(),
+            ctx.stdio_config.stdout.clone(),
+            StdioSink::File(PathBuf::from(path_str)),
+        )?;
+        Ok(())
+    })
 }
 
 /// Enable output capture for stdout and stderr
@@ -1964,16 +1958,13 @@ mod tests {
         let mut ctx = WasiContext::new().unwrap();
 
         let dir_perms = WasiDirPermissions {
-            create: true,
             read: true,
-            remove: false,
+            mutate: true,
         };
 
         let file_perms = WasiFilePermissions {
             read: true,
             write: true,
-            create: true,
-            truncate: false,
         };
 
         assert!(ctx
@@ -1986,7 +1977,7 @@ mod tests {
 
         let mapping = &mappings["/sandbox"];
         assert_eq!(mapping.guest_path, "/sandbox");
-        assert_eq!(mapping.dir_perms.create, dir_perms.create);
+        assert_eq!(mapping.dir_perms.mutate, dir_perms.mutate);
         assert_eq!(mapping.dir_perms.read, dir_perms.read);
         assert_eq!(mapping.file_perms.read, file_perms.read);
         assert_eq!(mapping.file_perms.write, file_perms.write);
@@ -2067,20 +2058,17 @@ mod tests {
     #[test]
     fn test_permission_conversions() {
         let dir_perms = WasiDirPermissions {
-            create: true,
             read: true,
-            remove: false,
+            mutate: true,
         };
 
         let wasi_perms = dir_perms.to_wasmtime_perms();
         assert!(wasi_perms.contains(DirPerms::READ));
-        // Note: CREATE and REMOVE permissions might not be available in this version
+        assert!(wasi_perms.contains(DirPerms::MUTATE));
 
         let file_perms = WasiFilePermissions {
             read: true,
             write: false,
-            create: false,
-            truncate: false,
         };
 
         let wasi_perms = file_perms.to_wasmtime_perms();
@@ -2097,15 +2085,12 @@ mod tests {
         assert_eq!(config.max_open_files, Some(1024));
 
         let dir_perms = WasiDirPermissions::default();
-        assert!(!dir_perms.create);
         assert!(dir_perms.read);
-        assert!(!dir_perms.remove);
+        assert!(!dir_perms.mutate);
 
         let file_perms = WasiFilePermissions::default();
         assert!(file_perms.read);
         assert!(!file_perms.write);
-        assert!(!file_perms.create);
-        assert!(!file_perms.truncate);
 
         let stdio_config = StdioConfig::default();
         assert!(matches!(stdio_config.stdin, StdioSource::Null));
@@ -2363,13 +2348,13 @@ mod tests {
     #[test]
     fn test_wasi_dir_permissions_full_access() {
         let dir_perms = WasiDirPermissions {
-            create: true,
             read: true,
-            remove: true,
+            mutate: true,
         };
 
         let wasi_perms = dir_perms.to_wasmtime_perms();
         assert!(wasi_perms.contains(DirPerms::READ));
+        assert!(wasi_perms.contains(DirPerms::MUTATE));
     }
 
     #[test]
@@ -2377,8 +2362,6 @@ mod tests {
         let file_perms = WasiFilePermissions {
             read: true,
             write: true,
-            create: true,
-            truncate: true,
         };
 
         let wasi_perms = file_perms.to_wasmtime_perms();
@@ -2530,6 +2513,8 @@ pub struct WasiFileDescriptor {
 /// Represents an open directory descriptor
 #[derive(Debug)]
 pub struct WasiDirectoryDescriptor {
+    /// The path used to open this directory
+    path: String,
     /// The rights associated with this descriptor
     rights: u64,
     /// Cached directory entries
@@ -2582,6 +2567,10 @@ impl WasiFileDescriptorManager {
 
     pub fn get_directory_mut(&mut self, fd: u32) -> Option<&mut WasiDirectoryDescriptor> {
         self.open_directories.get_mut(&fd)
+    }
+
+    pub fn get_directory_path(&self, fd: u32) -> Option<&str> {
+        self.open_directories.get(&fd).map(|d| d.path.as_str())
     }
 
     pub fn close_file(&mut self, fd: u32) -> Option<WasiFileDescriptor> {
@@ -2640,7 +2629,11 @@ impl WasiDirectoryDescriptor {
             });
         }
 
-        Ok(Self { rights, entries })
+        Ok(Self {
+            path,
+            rights,
+            entries,
+        })
     }
 
     fn extract_times(metadata: &Metadata) -> (u64, u64, u64) {
@@ -2701,9 +2694,15 @@ impl WasiContext {
             // AT_FDCWD or root - use path as-is
             path.to_string()
         } else {
-            // TODO: Resolve relative to directory fd
-            // For now, treat as absolute path
-            path.to_string()
+            // Resolve relative to directory fd
+            match fd_manager.get_directory_path(dir_fd) {
+                Some(dir_path) => format!("{}/{}", dir_path.trim_end_matches('/'), path),
+                None => {
+                    return Err(WasmtimeError::Wasi {
+                        message: format!("Bad file descriptor: {}", dir_fd),
+                    });
+                }
+            }
         };
 
         // Create OpenOptions based on flags

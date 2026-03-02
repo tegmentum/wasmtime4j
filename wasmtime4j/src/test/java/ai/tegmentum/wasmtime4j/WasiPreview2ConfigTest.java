@@ -60,8 +60,6 @@ final class WasiPreview2ConfigTest {
       assertFalse(config.isInheritEnv(), "Minimal config should not inherit env");
       assertFalse(config.isInheritStdio(), "Minimal config should not inherit stdio");
       assertFalse(config.isAllowNetwork(), "Minimal config should not allow network");
-      assertFalse(config.isAllowClock(), "Minimal config should not allow clock");
-      assertFalse(config.isAllowRandom(), "Minimal config should not allow random");
     }
 
     @Test
@@ -82,14 +80,6 @@ final class WasiPreview2ConfigTest {
       final WasiPreview2Config config = WasiPreview2Config.inherited();
       assertTrue(config.isInheritStdio(), "Inherited config should inherit stdio");
       assertTrue(config.isInheritEnv(), "Inherited config should inherit env");
-    }
-
-    @Test
-    @DisplayName("should create inherited config with clock and random enabled")
-    void shouldCreateInheritedConfigWithClockAndRandom() {
-      final WasiPreview2Config config = WasiPreview2Config.inherited();
-      assertTrue(config.isAllowClock(), "Inherited config should allow clock");
-      assertTrue(config.isAllowRandom(), "Inherited config should allow random");
     }
   }
 
@@ -199,20 +189,6 @@ final class WasiPreview2ConfigTest {
     void shouldEnableNetwork() {
       final WasiPreview2Config config = WasiPreview2Config.builder().allowNetwork(true).build();
       assertTrue(config.isAllowNetwork(), "Network should be allowed");
-    }
-
-    @Test
-    @DisplayName("should enable clock access")
-    void shouldEnableClock() {
-      final WasiPreview2Config config = WasiPreview2Config.builder().allowClock(true).build();
-      assertTrue(config.isAllowClock(), "Clock should be allowed");
-    }
-
-    @Test
-    @DisplayName("should enable random access")
-    void shouldEnableRandom() {
-      final WasiPreview2Config config = WasiPreview2Config.builder().allowRandom(true).build();
-      assertTrue(config.isAllowRandom(), "Random should be allowed");
     }
 
     @Test

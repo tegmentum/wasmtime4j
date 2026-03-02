@@ -26,17 +26,6 @@ pub struct GlobalMetadata {
     pub name: Option<String>,
 }
 
-/// Reference types that can be stored in globals
-#[derive(Debug, Clone, PartialEq)]
-pub enum ReferenceType {
-    /// Function reference type
-    FuncRef,
-    /// External reference type
-    ExternRef,
-    /// Any reference type (where supported)
-    AnyRef,
-}
-
 /// Type-safe value container for global variables
 #[derive(Debug, Clone)]
 pub enum GlobalValue {
@@ -233,17 +222,16 @@ impl Global {
                     Val::FuncRef(None)
                 }
             }
-            GlobalValue::ExternRef(_extern_id) => {
-                // ExternRef requires Store context to create Rooted<ExternRef>
-                // Since global value conversion happens without Store context,
-                // we can only pass null externref values
-                // Full externref support requires Store-aware APIs
+            GlobalValue::ExternRef(extern_id) => {
+                if extern_id.is_some() {
+                    log::warn!("Non-null ExternRef in global discarded; Store context required");
+                }
                 Val::ExternRef(None)
             }
-            GlobalValue::AnyRef(_ref_id) => {
-                // AnyRef supports null values directly
-                // Non-null AnyRef would require Store context for GC-managed objects
-                // For now, only null anyref is supported for global creation
+            GlobalValue::AnyRef(ref_id) => {
+                if ref_id.is_some() {
+                    log::warn!("Non-null AnyRef in global discarded; Store context required");
+                }
                 Val::AnyRef(None)
             }
             GlobalValue::EqRef(_ref_id) => {
@@ -298,16 +286,16 @@ impl Global {
                     GlobalValue::FuncRef(None)
                 }
             }
-            Val::ExternRef(_extern_ref) => {
-                // ExternRef is a GC object that requires Store context to access
-                // Cannot extract data without Store, so store as null
-                // Full externref support requires Store-aware APIs
+            Val::ExternRef(extern_ref) => {
+                if extern_ref.is_some() {
+                    log::warn!("Non-null ExternRef value discarded; Store context required");
+                }
                 GlobalValue::ExternRef(None)
             }
-            Val::AnyRef(_any_ref) => {
-                // AnyRef is part of GC proposal and requires Store context
-                // Cannot extract data without Store, so store as null
-                // Full anyref support requires Store-aware APIs
+            Val::AnyRef(any_ref) => {
+                if any_ref.is_some() {
+                    log::warn!("Non-null AnyRef value discarded; Store context required");
+                }
                 GlobalValue::AnyRef(None)
             }
             Val::ExnRef(_) => {

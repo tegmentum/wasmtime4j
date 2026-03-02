@@ -17,8 +17,10 @@ package ai.tegmentum.wasmtime4j.type;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -315,6 +317,24 @@ public final class FunctionType implements FuncType {
   @Override
   public WasmTypeKind getKind() {
     return WasmTypeKind.FUNCTION;
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof FunctionType)) {
+      return false;
+    }
+    final FunctionType other = (FunctionType) obj;
+    return Arrays.equals(paramTypes, other.paramTypes)
+        && Arrays.equals(returnTypes, other.returnTypes);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(Arrays.hashCode(paramTypes), Arrays.hashCode(returnTypes));
   }
 
   @Override

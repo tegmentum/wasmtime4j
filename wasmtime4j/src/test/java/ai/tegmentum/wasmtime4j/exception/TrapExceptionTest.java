@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -718,6 +719,227 @@ class TrapExceptionTest {
           new TrapException(TrapException.TrapType.UNKNOWN, "test message");
       assertNull(
           exception.getInstructionOffset(), "Instruction offset should be null when not set");
+    }
+  }
+
+  @Nested
+  @DisplayName("FromNativeMessage Tests")
+  class FromNativeMessageTests {
+
+    @Test
+    @DisplayName("fromNativeMessage with null message should return 'Unknown trap'")
+    void fromNativeMessageWithNullShouldReturnUnknownTrap() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, null);
+
+      assertNotNull(exception, "Exception should not be null");
+      assertTrue(
+          exception.getMessage().contains("Unknown trap"),
+          "Message should contain 'Unknown trap': " + exception.getMessage());
+      assertEquals(-1L, exception.getCoredumpId(), "Coredump ID should be -1");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage without coredump prefix should use message as-is")
+    void fromNativeMessageWithoutCoredumpPrefixShouldUseMessageAsIs() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(
+              TrapException.TrapType.MEMORY_OUT_OF_BOUNDS, "out of bounds memory access");
+
+      assertTrue(
+          exception.getMessage().contains("out of bounds memory access"),
+          "Message should contain original text: " + exception.getMessage());
+      assertEquals(-1L, exception.getCoredumpId(), "Coredump ID should be -1 without prefix");
+      assertFalse(exception.hasCoreDump(), "Should not have coredump");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with valid coredump prefix should parse ID and message")
+    void fromNativeMessageWithValidCoredumpPrefixShouldParseIdAndMessage() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(
+              TrapException.TrapType.UNREACHABLE_CODE_REACHED, "[coredump:42]actual message");
+
+      assertTrue(
+          exception.getMessage().contains("actual message"),
+          "Message should contain cleaned text: " + exception.getMessage());
+      assertFalse(
+          exception.getMessage().contains("]actual"),
+          "Message should not contain ']' before the actual text: " + exception.getMessage());
+      assertEquals(42L, exception.getCoredumpId(), "Coredump ID should be 42");
+      assertTrue(exception.hasCoreDump(), "Should have coredump");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with invalid coredump number should use full string as message")
+    void fromNativeMessageWithInvalidCoredumpNumberShouldUseFull() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, "[coredump:abc]msg");
+
+      assertTrue(
+          exception.getMessage().contains("[coredump:abc]msg"),
+          "Message should contain full string: " + exception.getMessage());
+      assertEquals(-1L, exception.getCoredumpId(), "Coredump ID should be -1 for invalid number");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with coredump ID 0 should still be valid coredump")
+    void fromNativeMessageWithCoredumpIdZero() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(
+              TrapException.TrapType.UNKNOWN, "[coredump:0]zero id msg");
+
+      assertEquals(0L, exception.getCoredumpId(), "Coredump ID should be 0");
+      assertTrue(exception.hasCoreDump(), "ID 0 should count as having coredump");
+    }
+  }
+
+  @Nested
+  @DisplayName("CoreDump Tests")
+  class CoreDumpTests {
+
+    @Test
+    @DisplayName("hasCoreDump should return false when coredump ID is -1")
+    void hasCoreDumpShouldReturnFalseForDefault() {
+      final TrapException exception = new TrapException(TrapException.TrapType.UNKNOWN, "test");
+
+      assertFalse(exception.hasCoreDump(), "Should not have coredump with default -1 ID");
+      assertEquals(-1L, exception.getCoredumpId(), "Default coredump ID should be -1");
+    }
+
+    @Test
+    @DisplayName("hasCoreDump should return true when coredump ID is >= 0")
+    void hasCoreDumpShouldReturnTrueForValidId() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, "[coredump:5]msg");
+
+      assertTrue(exception.hasCoreDump(), "Should have coredump with positive ID");
+      assertEquals(5L, exception.getCoredumpId(), "Coredump ID should be 5");
+    }
+  }
+
+  @Nested
+  @DisplayName("Debug Assert Tests")
+  class DebugAssertTests {
+
+    @Test
+    @DisplayName("isDebugAssertError should return true for DEBUG_ASSERT types")
+    void isDebugAssertErrorShouldReturnTrueForDebugAssertTypes() {
+      assertTrue(
+          new TrapException(TrapException.TrapType.DEBUG_ASSERT_STRING_ENCODING_FINISHED, "test")
+              .isDebugAssertError(),
+          "DEBUG_ASSERT_STRING_ENCODING_FINISHED should be debug assert error");
+      assertTrue(
+          new TrapException(TrapException.TrapType.DEBUG_ASSERT_EQUAL_CODE_UNITS, "test")
+              .isDebugAssertError(),
+          "DEBUG_ASSERT_EQUAL_CODE_UNITS should be debug assert error");
+      assertTrue(
+          new TrapException(TrapException.TrapType.DEBUG_ASSERT_MAY_ENTER_UNSET, "test")
+              .isDebugAssertError(),
+          "DEBUG_ASSERT_MAY_ENTER_UNSET should be debug assert error");
+      assertTrue(
+          new TrapException(TrapException.TrapType.DEBUG_ASSERT_POINTER_ALIGNED, "test")
+              .isDebugAssertError(),
+          "DEBUG_ASSERT_POINTER_ALIGNED should be debug assert error");
+      assertTrue(
+          new TrapException(TrapException.TrapType.DEBUG_ASSERT_UPPER_BITS_UNSET, "test")
+              .isDebugAssertError(),
+          "DEBUG_ASSERT_UPPER_BITS_UNSET should be debug assert error");
+    }
+
+    @Test
+    @DisplayName("isDebugAssertError should return false for non-debug-assert types")
+    void isDebugAssertErrorShouldReturnFalseForOtherTypes() {
+      assertFalse(
+          new TrapException(TrapException.TrapType.STACK_OVERFLOW, "test").isDebugAssertError(),
+          "STACK_OVERFLOW should not be debug assert error");
+      assertFalse(
+          new TrapException(TrapException.TrapType.UNKNOWN, "test").isDebugAssertError(),
+          "UNKNOWN should not be debug assert error");
+      assertFalse(
+          new TrapException(TrapException.TrapType.UNREACHABLE_CODE_REACHED, "test")
+              .isDebugAssertError(),
+          "UNREACHABLE_CODE_REACHED should not be debug assert error");
+    }
+  }
+
+  @Nested
+  @DisplayName("Structured Backtrace Tests")
+  class StructuredBacktraceTests {
+
+    @Test
+    @DisplayName("getStructuredBacktrace should return empty backtrace for plain message")
+    void shouldReturnEmptyForPlainMessage() {
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNREACHABLE_CODE_REACHED, "simple error");
+      final WasmBacktrace bt = exception.getStructuredBacktrace();
+      assertNotNull(bt, "Structured backtrace should not be null");
+      assertTrue(bt.isEmpty(), "Should be empty when no backtrace in message");
+    }
+
+    @Test
+    @DisplayName("getStructuredBacktrace should parse backtrace from message")
+    void shouldParseBacktraceFromMessage() {
+      final String msg =
+          "wasm trap: unreachable\n"
+              + "wasm backtrace:\n"
+              + "    0:   0x1234 - my_func\n"
+              + "    1:   0x5678 - caller\n";
+      final TrapException exception =
+          new TrapException(
+              TrapException.TrapType.UNREACHABLE_CODE_REACHED, msg, null, null, null, null);
+      final WasmBacktrace bt = exception.getStructuredBacktrace();
+      assertNotNull(bt, "Structured backtrace should not be null");
+      assertEquals(2, bt.getFrameCount(), "Should have 2 frames");
+      assertEquals(
+          "my_func",
+          bt.getFrames().get(0).getFuncName().orElse(null),
+          "First frame should be my_func");
+      assertEquals(
+          "caller",
+          bt.getFrames().get(1).getFuncName().orElse(null),
+          "Second frame should be caller");
+    }
+
+    @Test
+    @DisplayName("getStructuredBacktrace should prefer wasmBacktrace field over message")
+    void shouldPreferWasmBacktraceFieldOverMessage() {
+      final String btString = "wasm backtrace:\n    0:   0xaaa - from_bt_field\n";
+      final TrapException exception =
+          new TrapException(
+              TrapException.TrapType.UNREACHABLE_CODE_REACHED,
+              "msg without backtrace",
+              btString,
+              null,
+              null,
+              null);
+      final WasmBacktrace bt = exception.getStructuredBacktrace();
+      assertFalse(bt.isEmpty(), "Should have parsed frames from wasmBacktrace field");
+      assertEquals(
+          "from_bt_field",
+          bt.getFrames().get(0).getFuncName().orElse(null),
+          "Should use wasmBacktrace field");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage should populate structured backtrace")
+    void fromNativeMessageShouldPopulateStructuredBacktrace() {
+      final String nativeMsg =
+          "wasm trap: unreachable\n"
+              + "wasm backtrace:\n"
+              + "    0:   0xf00d - native_func\n"
+              + "                    at test.c:10:3\n";
+      final TrapException exception =
+          TrapException.fromNativeMessage(
+              TrapException.TrapType.UNREACHABLE_CODE_REACHED, nativeMsg);
+      final WasmBacktrace bt = exception.getStructuredBacktrace();
+      assertNotNull(bt, "Structured backtrace should not be null");
+      assertEquals(1, bt.getFrameCount(), "Should have 1 frame");
+      assertEquals(
+          "native_func",
+          bt.getFrames().get(0).getFuncName().orElse(null),
+          "Function name should be parsed");
+      assertFalse(bt.getFrames().get(0).getSymbols().isEmpty(), "Should have source symbol info");
     }
   }
 }

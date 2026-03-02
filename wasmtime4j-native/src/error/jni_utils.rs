@@ -37,7 +37,7 @@ pub fn error_to_exception_class(error: &WasmtimeError) -> &'static str {
         }
         WasmtimeError::Wasi { .. } => "ai/tegmentum/wasmtime4j/exception/WasiException",
         WasmtimeError::WasiExit { .. } => "ai/tegmentum/wasmtime4j/exception/I32ExitException",
-        WasmtimeError::Security { .. } => "ai/tegmentum/wasmtime4j/exception/SecurityException",
+        WasmtimeError::Security { .. } => "ai/tegmentum/wasmtime4j/exception/WasmSecurityException",
         WasmtimeError::Internal { .. } => "ai/tegmentum/wasmtime4j/exception/WasmRuntimeException",
         WasmtimeError::Execution { .. } => "ai/tegmentum/wasmtime4j/exception/TrapException",
         WasmtimeError::ExportNotFound { .. } => {

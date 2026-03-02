@@ -54,14 +54,12 @@ public class JniModule extends JniResource implements Module {
   public String getName() {
     ensureNotClosed();
     try {
-      final String nativeName = nativeGetModuleName(nativeHandle);
-      if (nativeName != null) {
-        return nativeName;
-      }
+      return nativeGetModuleName(nativeHandle);
     } catch (final Exception e) {
-      // Fall through to synthetic name
+      java.util.logging.Logger.getLogger(JniModule.class.getName())
+          .fine("Failed to get module name from native: " + e.getMessage());
+      return null;
     }
-    return "jni-module-" + nativeHandle;
   }
 
   @Override
@@ -350,16 +348,16 @@ public class JniModule extends JniResource implements Module {
   }
 
   @Override
-  public byte[] serialize() {
+  public byte[] serialize() throws ai.tegmentum.wasmtime4j.exception.WasmException {
     if (isClosed()) {
-      return new byte[0];
+      throw new IllegalStateException("Cannot serialize a closed module");
     }
 
     try {
       return nativeSerializeModule(nativeHandle);
     } catch (final Throwable t) {
-      // Defensive: Return empty array on native error instead of crashing JVM
-      return new byte[0];
+      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+          "Failed to serialize module: " + t.getMessage());
     }
   }
 
@@ -571,8 +569,6 @@ public class JniModule extends JniResource implements Module {
   private native long nativeGetExportIndex(long moduleHandle, String exportName);
 
   private native long nativeGetModuleExport(long moduleHandle, String exportName);
-
-  private static native void nativeDestroyModuleExport(long moduleExportHandle);
 
   private static native boolean nativeInitializeCopyOnWriteImage(long moduleHandle);
 

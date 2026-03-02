@@ -775,20 +775,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
     }
 }
 
-/// Destroy a ModuleExport handle (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModuleExport(
-    _env: JNIEnv,
-    _class: JClass,
-    module_export_ptr: jlong,
-) {
-    if module_export_ptr != 0 {
-        unsafe {
-            core::destroy_module_export(module_export_ptr as *mut std::os::raw::c_void);
-        }
-    }
-}
-
 /// Get compiled machine code text from module
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModuleText(

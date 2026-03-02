@@ -15,6 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.exception;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -262,6 +264,37 @@ class ErrorMapperTest {
                 + errorCode.getCode()
                 + ") should produce a non-null exception");
       }
+    }
+
+    @Test
+    @DisplayName("Runtime error with trap message should produce TrapException")
+    void runtimeErrorWithTrapMessageShouldProduceTrapException() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-3, "WebAssembly trap: unreachable");
+      assertInstanceOf(
+          TrapException.class,
+          ex,
+          "Runtime error with 'WebAssembly trap:' should produce TrapException, got: "
+              + ex.getClass().getName());
+      assertTrue(
+          ex.getMessage().contains("unreachable"),
+          "Message should contain trap detail. Got: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("WASI_EXIT with no colon should default to exit code 1")
+    void wasiExitWithNoColonShouldDefaultToExitCode1() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-27, "no colon here");
+      assertInstanceOf(I32ExitException.class, ex, "WASI_EXIT should produce I32ExitException");
+      assertEquals(
+          1, ((I32ExitException) ex).getExitCode(), "Default exit code should be 1 when no colon");
+    }
+
+    @Test
+    @DisplayName("WASI_EXIT with colon and valid exit code should parse exit code")
+    void wasiExitWithColonShouldParseExitCode() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-27, "exit_code:42");
+      assertInstanceOf(I32ExitException.class, ex, "WASI_EXIT should produce I32ExitException");
+      assertEquals(42, ((I32ExitException) ex).getExitCode(), "Parsed exit code should be 42");
     }
   }
 }

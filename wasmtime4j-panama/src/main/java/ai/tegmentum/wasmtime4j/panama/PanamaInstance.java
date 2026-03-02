@@ -631,8 +631,10 @@ public final class PanamaInstance implements Instance {
       case 3:
         return new PanamaExternMemory(handle, panamaStore);
       default:
-        LOGGER.warning("Unknown native extern type: " + nativeType);
-        return new PanamaExternFunc(handle, panamaStore);
+        throw new IllegalStateException(
+            "Unsupported native extern type code: "
+                + nativeType
+                + ". Expected 0 (Func), 1 (Global), 2 (Table), or 3 (Memory).");
     }
   }
 

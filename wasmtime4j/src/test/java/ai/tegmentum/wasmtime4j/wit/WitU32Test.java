@@ -84,6 +84,24 @@ class WitU32Test {
       final WitU32 value = WitU32.ofUnsigned(4294967295L);
       assertEquals(4294967295L, value.toUnsignedLong(), "Unsigned value should be 4294967295");
     }
+
+    @Test
+    @DisplayName("ofUnsigned at zero boundary should return correct value")
+    void ofUnsignedAtZeroBoundaryShouldReturnCorrectValue() {
+      final WitU32 value = WitU32.ofUnsigned(0L);
+      assertEquals(0L, value.toUnsignedLong(), "Unsigned value at zero boundary should be 0");
+    }
+
+    @Test
+    @DisplayName("ofUnsigned at exact max should equal getValue cast to unsigned")
+    void ofUnsignedAtExactMaxShouldEqualGetValueCast() {
+      final WitU32 value = WitU32.ofUnsigned(4294967295L);
+      assertEquals(-1, value.getValue(), "Raw int for max u32 should be -1");
+      assertEquals(
+          4294967295L,
+          Integer.toUnsignedLong(value.getValue()),
+          "Integer.toUnsignedLong of raw value should be max u32");
+    }
   }
 
   @Nested

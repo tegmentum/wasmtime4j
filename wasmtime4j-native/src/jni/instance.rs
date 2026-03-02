@@ -5,92 +5,9 @@ use jni::sys::{jboolean, jint, jintArray, jlong, jobject, jobjectArray};
 use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
-use crate::instance::{core, InstanceState};
+use crate::instance::core;
 
 use std::os::raw::c_void;
-
-/// Get the current lifecycle state of an instance (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetState(
-    mut env: JNIEnv,
-    _obj: jobject,
-    instance_ptr: jlong,
-) -> jint {
-    jni_utils::jni_try_with_default(&mut env, -1, || {
-        let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
-        let state = core::get_instance_state(instance);
-        Ok(state as i32)
-    })
-}
-
-/// Perform comprehensive resource cleanup for an instance (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCleanupResources(
-    mut env: JNIEnv,
-    _obj: jobject,
-    instance_ptr: jlong,
-) -> jboolean {
-    jni_utils::jni_try_with_default(&mut env, 0, || {
-        let instance = unsafe { core::get_instance_mut(instance_ptr as *mut c_void)? };
-        let cleaned_up = core::cleanup_instance_resources(instance)?;
-        Ok(if cleaned_up { 1 } else { 0 })
-    })
-}
-
-/// Check if instance has been cleaned up (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeIsCleanedUp(
-    mut env: JNIEnv,
-    _obj: jobject,
-    instance_ptr: jlong,
-) -> jboolean {
-    jni_utils::jni_try_with_default(&mut env, 0, || {
-        let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
-        let is_cleaned = core::is_instance_cleaned_up(instance);
-        Ok(if is_cleaned { 1 } else { 0 })
-    })
-}
-
-/// Validate cross-thread instance access (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeValidateThreadAccess(
-    mut env: JNIEnv,
-    _obj: jobject,
-    instance_ptr: jlong,
-) -> jboolean {
-    jni_utils::jni_try_with_default(&mut env, 0, || {
-        let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
-        match core::validate_instance_thread_access(instance) {
-            Ok(_) => Ok(1),
-            Err(_) => Ok(0),
-        }
-    })
-}
-
-/// Set the lifecycle state of an instance (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeSetState(
-    mut env: JNIEnv,
-    _obj: jobject,
-    instance_ptr: jlong,
-    state: jint,
-) -> jboolean {
-    jni_utils::jni_try_with_default(&mut env, 0, || {
-        let instance = unsafe { core::get_instance_mut(instance_ptr as *mut c_void)? };
-        let instance_state = match state {
-            0 => InstanceState::Creating,
-            1 => InstanceState::Created,
-            2 => InstanceState::Running,
-            3 => InstanceState::Suspended,
-            4 => InstanceState::Error,
-            5 => InstanceState::Disposed,
-            6 => InstanceState::Destroying,
-            _ => return Ok(0), // Invalid state
-        };
-        core::set_instance_state(instance, instance_state);
-        Ok(1)
-    })
-}
 
 /// Get all export names from an instance
 #[no_mangle]
@@ -103,8 +20,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetExp
         let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
         let exports = core::get_all_exports(instance);
 
-        // Get the keys (export names) from the HashMap
-        let export_names: Vec<String> = exports.keys().cloned().collect();
+        // Get the keys (export names) sorted for deterministic ordering
+        let mut export_names: Vec<String> = exports.keys().cloned().collect();
+        export_names.sort();
 
         // Create a Java String array
         let string_class =

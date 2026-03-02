@@ -754,4 +754,49 @@ class WasiExceptionTest {
       assertTrue(message.contains("13"), "Should contain errno 13 for EACCES");
     }
   }
+
+  @Nested
+  @DisplayName("Retryable Error Code Derivation Tests")
+  class RetryableErrorCodeDerivationTests {
+
+    @Test
+    @DisplayName("EAGAIN error code should make exception retryable")
+    void eagainShouldBeRetryable() {
+      final WasiException exception = new WasiException("retry", WasiErrorCode.EAGAIN);
+
+      assertTrue(exception.isRetryable(), "EAGAIN should be retryable");
+      assertNotNull(exception.getErrorCode(), "Error code should not be null");
+      assertTrue(
+          exception.getErrorCode().isRetryable(), "EAGAIN error code itself should be retryable");
+    }
+
+    @Test
+    @DisplayName("EPERM error code should not make exception retryable")
+    void epermShouldNotBeRetryable() {
+      final WasiException exception = new WasiException("denied", WasiErrorCode.EPERM);
+
+      assertFalse(exception.isRetryable(), "EPERM should not be retryable");
+    }
+
+    @Test
+    @DisplayName("null error code should make exception not retryable")
+    void nullErrorCodeShouldNotBeRetryable() {
+      final WasiException exception = new WasiException("plain error");
+
+      assertFalse(exception.isRetryable(), "Null error code should not be retryable");
+      assertNull(
+          exception.getErrorCode(), "Error code should be null for plain message constructor");
+    }
+
+    @Test
+    @DisplayName("null error code should derive SYSTEM category")
+    void nullErrorCodeShouldDeriveSystemCategory() {
+      final WasiException exception = new WasiException("some error", (WasiErrorCode) null);
+
+      assertEquals(
+          WasiException.ErrorCategory.SYSTEM,
+          exception.getCategory(),
+          "Null error code should derive SYSTEM category");
+    }
+  }
 }

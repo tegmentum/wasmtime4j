@@ -568,10 +568,6 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     nativeSetWasiAllowUdp(nativeHandle, config.isAllowUdp());
     nativeSetWasiAllowIpNameLookup(nativeHandle, config.isAllowIpNameLookup());
 
-    // Apply clock and random
-    nativeSetWasiAllowClock(nativeHandle, config.isAllowClock());
-    nativeSetWasiAllowRandom(nativeHandle, config.isAllowRandom());
-
     // Apply blocking current thread
     nativeSetWasiAllowBlockingCurrentThread(nativeHandle, config.isAllowBlockingCurrentThread());
 
@@ -925,10 +921,6 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private static native void nativeSetWasiAllowUdp(long linkerHandle, boolean allow);
 
   private static native void nativeSetWasiAllowIpNameLookup(long linkerHandle, boolean allow);
-
-  private static native void nativeSetWasiAllowClock(long linkerHandle, boolean allow);
-
-  private static native void nativeSetWasiAllowRandom(long linkerHandle, boolean allow);
 
   private static native void nativeSetWasiAllowBlockingCurrentThread(
       long linkerHandle, boolean allow);

@@ -70,8 +70,18 @@ pub mod trap_codes {
     pub const INVALID_DISCRIMINANT: i32 = 29;
     /// Unaligned pointer in component operation
     pub const UNALIGNED_POINTER: i32 = 30;
+    /// Debug assertion: string encoding not finished
+    pub const DEBUG_ASSERT_STRING_ENCODING_FINISHED: i32 = 31;
+    /// Debug assertion: code units are not equal
+    pub const DEBUG_ASSERT_EQUAL_CODE_UNITS: i32 = 32;
+    /// Debug assertion: may_enter flag was not unset
+    pub const DEBUG_ASSERT_MAY_ENTER_UNSET: i32 = 33;
+    /// Debug assertion: pointer is not aligned
+    pub const DEBUG_ASSERT_POINTER_ALIGNED: i32 = 34;
+    /// Debug assertion: upper bits are not unset
+    pub const DEBUG_ASSERT_UPPER_BITS_UNSET: i32 = 35;
     /// Unknown trap type
-    pub const UNKNOWN: i32 = 31;
+    pub const UNKNOWN: i32 = 36;
 }
 
 /// Parse a trap code from an error message string
@@ -159,6 +169,16 @@ pub extern "C" fn wasmtime4j_panama_trap_parse_code(error_message: *const c_char
         trap_codes::INVALID_DISCRIMINANT
     } else if msg.contains("unaligned pointer") {
         trap_codes::UNALIGNED_POINTER
+    } else if msg.contains("string encoding") && msg.contains("finished") {
+        trap_codes::DEBUG_ASSERT_STRING_ENCODING_FINISHED
+    } else if msg.contains("code units") && msg.contains("equal") {
+        trap_codes::DEBUG_ASSERT_EQUAL_CODE_UNITS
+    } else if msg.contains("may_enter") {
+        trap_codes::DEBUG_ASSERT_MAY_ENTER_UNSET
+    } else if msg.contains("pointer") && msg.contains("aligned") && !msg.contains("unaligned") {
+        trap_codes::DEBUG_ASSERT_POINTER_ALIGNED
+    } else if msg.contains("upper bits") {
+        trap_codes::DEBUG_ASSERT_UPPER_BITS_UNSET
     } else {
         trap_codes::UNKNOWN
     }
@@ -205,6 +225,12 @@ pub extern "C" fn wasmtime4j_panama_trap_code_name(trap_code: c_int) -> *const c
     static LIST_OUT_OF_BOUNDS: &[u8] = b"LIST_OUT_OF_BOUNDS\0";
     static INVALID_DISCRIMINANT: &[u8] = b"INVALID_DISCRIMINANT\0";
     static UNALIGNED_POINTER: &[u8] = b"UNALIGNED_POINTER\0";
+    static DEBUG_ASSERT_STRING_ENCODING_FINISHED: &[u8] =
+        b"DEBUG_ASSERT_STRING_ENCODING_FINISHED\0";
+    static DEBUG_ASSERT_EQUAL_CODE_UNITS: &[u8] = b"DEBUG_ASSERT_EQUAL_CODE_UNITS\0";
+    static DEBUG_ASSERT_MAY_ENTER_UNSET: &[u8] = b"DEBUG_ASSERT_MAY_ENTER_UNSET\0";
+    static DEBUG_ASSERT_POINTER_ALIGNED: &[u8] = b"DEBUG_ASSERT_POINTER_ALIGNED\0";
+    static DEBUG_ASSERT_UPPER_BITS_UNSET: &[u8] = b"DEBUG_ASSERT_UPPER_BITS_UNSET\0";
     static UNKNOWN: &[u8] = b"UNKNOWN\0";
 
     let name = match trap_code {
@@ -239,6 +265,13 @@ pub extern "C" fn wasmtime4j_panama_trap_code_name(trap_code: c_int) -> *const c
         trap_codes::LIST_OUT_OF_BOUNDS => LIST_OUT_OF_BOUNDS,
         trap_codes::INVALID_DISCRIMINANT => INVALID_DISCRIMINANT,
         trap_codes::UNALIGNED_POINTER => UNALIGNED_POINTER,
+        trap_codes::DEBUG_ASSERT_STRING_ENCODING_FINISHED => {
+            DEBUG_ASSERT_STRING_ENCODING_FINISHED
+        }
+        trap_codes::DEBUG_ASSERT_EQUAL_CODE_UNITS => DEBUG_ASSERT_EQUAL_CODE_UNITS,
+        trap_codes::DEBUG_ASSERT_MAY_ENTER_UNSET => DEBUG_ASSERT_MAY_ENTER_UNSET,
+        trap_codes::DEBUG_ASSERT_POINTER_ALIGNED => DEBUG_ASSERT_POINTER_ALIGNED,
+        trap_codes::DEBUG_ASSERT_UPPER_BITS_UNSET => DEBUG_ASSERT_UPPER_BITS_UNSET,
         _ => UNKNOWN,
     };
 
@@ -288,7 +321,8 @@ pub extern "C" fn wasmtime4j_panama_trap_is_trap(error_message: *const c_char) -
         || (msg.contains("async") && msg.contains("deadlock"))
         || msg.contains("unhandled tag")
         || msg.contains("invalid discriminant")
-        || msg.contains("unaligned pointer");
+        || msg.contains("unaligned pointer")
+        || (msg.contains("debug") && msg.contains("assert"));
 
     if is_trap {
         1

@@ -371,7 +371,29 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
       case "externref":
         return WasmValueType.EXTERNREF;
       case "anyref":
-        return WasmValueType.EXTERNREF;
+        return WasmValueType.ANYREF;
+      case "eqref":
+        return WasmValueType.EQREF;
+      case "i31ref":
+        return WasmValueType.I31REF;
+      case "structref":
+        return WasmValueType.STRUCTREF;
+      case "arrayref":
+        return WasmValueType.ARRAYREF;
+      case "nullref":
+        return WasmValueType.NULLREF;
+      case "nullfuncref":
+        return WasmValueType.NULLFUNCREF;
+      case "nullexternref":
+        return WasmValueType.NULLEXTERNREF;
+      case "exnref":
+        return WasmValueType.EXNREF;
+      case "nullexnref":
+        return WasmValueType.NULLEXNREF;
+      case "contref":
+        return WasmValueType.CONTREF;
+      case "nullcontref":
+        return WasmValueType.NULLCONTREF;
       default:
         throw new IllegalStateException("Unknown global type: " + typeString);
     }

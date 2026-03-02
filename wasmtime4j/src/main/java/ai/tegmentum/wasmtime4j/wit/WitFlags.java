@@ -206,7 +206,7 @@ public final class WitFlags extends WitValue {
       return false;
     }
     final WitFlags other = (WitFlags) obj;
-    return setFlags.equals(other.setFlags);
+    return Objects.equals(getType(), other.getType()) && setFlags.equals(other.setFlags);
   }
 
   @Override

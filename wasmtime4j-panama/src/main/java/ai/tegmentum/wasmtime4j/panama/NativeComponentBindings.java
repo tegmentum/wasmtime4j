@@ -599,20 +599,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT)); // allow flag
 
     addFunctionBinding(
-        "wasmtime4j_component_linker_set_wasi_allow_clock",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns result code
-            ValueLayout.ADDRESS, // linker pointer
-            ValueLayout.JAVA_INT)); // allow flag
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_set_wasi_allow_random",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns result code
-            ValueLayout.ADDRESS, // linker pointer
-            ValueLayout.JAVA_INT)); // allow flag
-
-    addFunctionBinding(
         "wasmtime4j_component_linker_set_wasi_inherit_stdin",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns result code
@@ -2138,32 +2124,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     validatePointer(linkerPtr, "linkerPtr");
     return callNativeFunction(
         "wasmtime4j_component_linker_set_wasi_allow_network", Integer.class, linkerPtr, allow);
-  }
-
-  /**
-   * Sets whether clock access is allowed in WASI Preview 2.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @param allow 1 to allow, 0 to disallow
-   * @return 0 on success, non-zero on error
-   */
-  public int componentLinkerSetWasiAllowClock(final MemorySegment linkerPtr, final int allow) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_set_wasi_allow_clock", Integer.class, linkerPtr, allow);
-  }
-
-  /**
-   * Sets whether random number generation is allowed in WASI Preview 2.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @param allow 1 to allow, 0 to disallow
-   * @return 0 on success, non-zero on error
-   */
-  public int componentLinkerSetWasiAllowRandom(final MemorySegment linkerPtr, final int allow) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_set_wasi_allow_random", Integer.class, linkerPtr, allow);
   }
 
   /**

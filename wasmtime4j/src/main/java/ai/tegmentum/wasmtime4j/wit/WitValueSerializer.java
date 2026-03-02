@@ -86,6 +86,8 @@ public final class WitValueSerializer {
       return serializeOption((WitOption) value);
     } else if (value instanceof WitResult) {
       return serializeResult((WitResult) value);
+    } else if (value instanceof WitTuple) {
+      return serializeTuple((WitTuple) value);
     } else if (value instanceof WitFlags) {
       return serializeFlags((WitFlags) value);
     } else if (value instanceof WitOwn) {
@@ -569,42 +571,76 @@ public final class WitValueSerializer {
   }
 
   /**
+   * Serializes a tuple value.
+   *
+   * <p>Format: [count: u32][for each element: discriminator: i32, length: u32, data]
+   *
+   * @param tuple the tuple value
+   * @return serialized bytes
+   * @throws ValidationException if serialization fails
+   */
+  private static byte[] serializeTuple(final WitTuple tuple) throws ValidationException {
+    final java.util.List<WitValue> elements = tuple.getElements();
+
+    // Calculate total size
+    int totalSize = 4; // element count
+    final java.util.List<byte[]> elementData = new java.util.ArrayList<>(elements.size());
+
+    for (final WitValue element : elements) {
+      final byte[] data = serialize(element);
+      totalSize += 4; // discriminator
+      totalSize += 4; // length
+      totalSize += data.length; // element data
+      elementData.add(data);
+    }
+
+    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
+
+    // Write element count
+    buffer.putInt(elements.size());
+
+    // Write each element
+    for (int i = 0; i < elements.size(); i++) {
+      final WitValue element = elements.get(i);
+      final byte[] data = elementData.get(i);
+
+      buffer.putInt(getTypeDiscriminator(element));
+      buffer.putInt(data.length);
+      buffer.put(data);
+    }
+
+    return buffer.array();
+  }
+
+  /**
    * Serializes an owned resource handle value.
    *
-   * <p>Format: [resource_type_length: u32][resource_type: UTF-8][index: i32]
+   * <p>Format: [handle_id: u64] (8 bytes, little-endian)
+   *
+   * <p>The handle index is serialized as a u64 to match the Rust resource registry format.
    *
    * @param own the owned resource handle value
    * @return serialized bytes
    */
   private static byte[] serializeOwn(final WitOwn own) {
-    final byte[] typeNameBytes = own.getResourceType().getBytes(StandardCharsets.UTF_8);
-    final int totalSize = 4 + typeNameBytes.length + 4; // type name length + type name + index
-
-    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
-    buffer.putInt(typeNameBytes.length);
-    buffer.put(typeNameBytes);
-    buffer.putInt(own.getIndex());
-
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong((long) own.getIndex());
     return buffer.array();
   }
 
   /**
    * Serializes a borrowed resource handle value.
    *
-   * <p>Format: [resource_type_length: u32][resource_type: UTF-8][index: i32]
+   * <p>Format: [handle_id: u64] (8 bytes, little-endian)
+   *
+   * <p>The handle index is serialized as a u64 to match the Rust resource registry format.
    *
    * @param borrow the borrowed resource handle value
    * @return serialized bytes
    */
   private static byte[] serializeBorrow(final WitBorrow borrow) {
-    final byte[] typeNameBytes = borrow.getResourceType().getBytes(StandardCharsets.UTF_8);
-    final int totalSize = 4 + typeNameBytes.length + 4; // type name length + type name + index
-
-    final ByteBuffer buffer = ByteBuffer.allocate(totalSize).order(ByteOrder.LITTLE_ENDIAN);
-    buffer.putInt(typeNameBytes.length);
-    buffer.put(typeNameBytes);
-    buffer.putInt(borrow.getIndex());
-
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong((long) borrow.getIndex());
     return buffer.array();
   }
 
@@ -621,7 +657,7 @@ public final class WitValueSerializer {
    *   <li>5 = char
    *   <li>6 = string
    *   <li>7 = record
-   *   <li>8 = tuple (reserved)
+   *   <li>8 = tuple
    *   <li>9 = u32
    *   <li>10 = u64
    *   <li>11 = list
@@ -662,6 +698,8 @@ public final class WitValueSerializer {
       return 6;
     } else if (value instanceof WitRecord) {
       return 7;
+    } else if (value instanceof WitTuple) {
+      return 8;
     } else if (value instanceof WitU32) {
       return 9;
     } else if (value instanceof WitU64) {

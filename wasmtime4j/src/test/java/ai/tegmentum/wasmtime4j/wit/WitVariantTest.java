@@ -323,4 +323,20 @@ class WitVariantTest {
       assertFalse(variant.equals(different), "Different payload must not be equal");
     }
   }
+
+  @Nested
+  @DisplayName("Type Validation Tests")
+  class TypeValidationTests {
+
+    @Test
+    @DisplayName("creating variant with non-variant type should throw IllegalArgumentException")
+    void creatingVariantWithNonVariantTypeShouldThrow() {
+      final WitType primitiveType = WitType.createS32();
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitVariant.of(primitiveType, "test"),
+          "Should throw IAE when type is not a variant type");
+    }
+  }
 }

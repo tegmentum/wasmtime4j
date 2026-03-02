@@ -1990,9 +1990,10 @@ pub mod core {
             WasmValue::V128(bytes) => {
                 wasmtime::Val::V128(wasmtime::V128::from(u128::from_le_bytes(*bytes)))
             }
-            WasmValue::ExternRef(_ref_id) => {
-                // ExternRef creation requires Store context
-                // Always pass NULL for now
+            WasmValue::ExternRef(ref_id) => {
+                if ref_id.is_some() {
+                    log::warn!("Non-null ExternRef value discarded; Store context required");
+                }
                 wasmtime::Val::null_extern_ref()
             }
             WasmValue::FuncRef(_) => wasmtime::Val::null_func_ref(),
@@ -2014,8 +2015,16 @@ pub mod core {
                 // For now, just preserve None
                 WasmValue::ExternRef(None)
             }
-            wasmtime::Val::AnyRef(_) => WasmValue::ExternRef(None),
-            wasmtime::Val::ExnRef(_) => WasmValue::ExternRef(None),
+            wasmtime::Val::AnyRef(_) => {
+                // AnyRef is a GC type distinct from ExternRef; WasmValue lacks
+                // a dedicated variant, so we use ExternRef(None) as a placeholder.
+                log::warn!("AnyRef mapped to ExternRef(None) — WasmValue lacks AnyRef variant");
+                WasmValue::ExternRef(None)
+            }
+            wasmtime::Val::ExnRef(_) => {
+                log::warn!("ExnRef mapped to ExternRef(None) — WasmValue lacks ExnRef variant");
+                WasmValue::ExternRef(None)
+            }
             wasmtime::Val::ContRef(_) => WasmValue::ContRef,
         })
     }

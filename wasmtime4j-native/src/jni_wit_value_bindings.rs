@@ -129,7 +129,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWitValueMarshaller_wi
     type_discriminator: jint,
 ) -> jboolean {
     match type_discriminator {
-        1..=6 => 1, // true in JNI
-        _ => 0,     // false in JNI
+        1..=23 => 1, // true in JNI — matches all WIT value type discriminators
+        _ => 0,      // false in JNI
     }
 }

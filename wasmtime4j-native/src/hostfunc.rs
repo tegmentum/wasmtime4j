@@ -25,12 +25,31 @@ fn valtype_eq(a: &ValType, b: &ValType) -> bool {
         (ValType::F64, ValType::F64) => true,
         (ValType::V128, ValType::V128) => true,
         (ValType::Ref(ra), ValType::Ref(rb)) => {
-            // Compare ref types by heap type category and nullability
-            ra.is_nullable() == rb.is_nullable()
-                && format!("{:?}", ra.heap_type()) == format!("{:?}", rb.heap_type())
+            ra.is_nullable() == rb.is_nullable() && heap_type_eq(ra.heap_type(), rb.heap_type())
         }
         _ => false,
     }
+}
+
+/// Compare HeapType values by variant
+fn heap_type_eq(a: &HeapType, b: &HeapType) -> bool {
+    matches!(
+        (a, b),
+        (HeapType::Func, HeapType::Func)
+            | (HeapType::Extern, HeapType::Extern)
+            | (HeapType::Any, HeapType::Any)
+            | (HeapType::Eq, HeapType::Eq)
+            | (HeapType::I31, HeapType::I31)
+            | (HeapType::Struct, HeapType::Struct)
+            | (HeapType::Array, HeapType::Array)
+            | (HeapType::None, HeapType::None)
+            | (HeapType::NoFunc, HeapType::NoFunc)
+            | (HeapType::NoExtern, HeapType::NoExtern)
+            | (HeapType::Exn, HeapType::Exn)
+            | (HeapType::NoExn, HeapType::NoExn)
+            | (HeapType::Cont, HeapType::Cont)
+            | (HeapType::NoCont, HeapType::NoCont)
+    )
 }
 
 /// Registry for managing host function callbacks to prevent GC

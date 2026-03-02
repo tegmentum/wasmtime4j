@@ -152,7 +152,7 @@ pub mod gc_types;
 // Re-export core types for convenience
 pub use engine::{Engine, EngineBuilder, WasmFeature};
 pub use error::{ErrorCode, WasmtimeError, WasmtimeResult};
-pub use global::{Global, GlobalMetadata, GlobalValue, ReferenceType as GlobalReferenceType};
+pub use global::{Global, GlobalMetadata, GlobalValue};
 pub use hostfunc::{HostFunction, HostFunctionBuilder, HostFunctionCallback, MarshallingResult};
 pub use instance::{
     ExecutionResult, ExportBinding, ImportBinding, Instance, InstanceMetadata, WasmValue,

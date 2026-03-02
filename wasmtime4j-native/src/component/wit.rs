@@ -141,6 +141,8 @@ pub enum ComponentValueType {
     Float32,
     /// 64-bit floating point
     Float64,
+    /// Unicode character (Unicode scalar value)
+    Char,
     /// Unicode string
     String,
     /// List of values
@@ -179,6 +181,10 @@ pub enum ComponentTypeKind {
     Variant(Vec<CaseType>),
     /// Enum type with named values
     Enum(Vec<String>),
+    /// Flags type with named bits
+    Flags(Vec<String>),
+    /// Tuple type with indexed elements
+    Tuple(Vec<ComponentValueType>),
     /// Type alias
     Alias(ComponentValueType),
 }

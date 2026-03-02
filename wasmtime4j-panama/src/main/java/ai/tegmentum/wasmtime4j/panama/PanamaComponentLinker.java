@@ -636,26 +636,6 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
               + PanamaErrorMapper.getErrorDescription(allowNetworkResult));
     }
 
-    // Apply allow clock flag
-    final int allowClockResult =
-        NATIVE_BINDINGS.componentLinkerSetWasiAllowClock(
-            nativeLinker, config.isAllowClock() ? 1 : 0);
-    if (allowClockResult != 0) {
-      LOGGER.warning(
-          "Failed to set WASI allow clock flag: "
-              + PanamaErrorMapper.getErrorDescription(allowClockResult));
-    }
-
-    // Apply allow random flag
-    final int allowRandomResult =
-        NATIVE_BINDINGS.componentLinkerSetWasiAllowRandom(
-            nativeLinker, config.isAllowRandom() ? 1 : 0);
-    if (allowRandomResult != 0) {
-      LOGGER.warning(
-          "Failed to set WASI allow random flag: "
-              + PanamaErrorMapper.getErrorDescription(allowRandomResult));
-    }
-
     // Apply individual stdio config
     applyStdinConfig(config, nativeLinker);
     applyStdoutConfig(config, nativeLinker);

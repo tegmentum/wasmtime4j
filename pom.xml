@@ -641,8 +641,6 @@
                             <param>ai.tegmentum.wasmtime4j.wit.*</param>
                             <!-- Exception handling - critical for error mapping -->
                             <param>ai.tegmentum.wasmtime4j.exception.*</param>
-                            <!-- Serialization - critical for module caching -->
-                            <param>ai.tegmentum.wasmtime4j.serialization.*</param>
                             <!-- Execution context - core runtime behavior -->
                             <param>ai.tegmentum.wasmtime4j.execution.*</param>
                             <!-- Validation - critical for safety -->
@@ -659,7 +657,10 @@
                             <!-- Additional operators for thorough testing -->
                             <mutator>CONSTRUCTOR_CALLS</mutator>
                             <mutator>INLINE_CONSTS</mutator>
-                            <mutator>REMOVE_CONDITIONALS</mutator>
+                            <mutator>REMOVE_CONDITIONALS_EQUAL_IF</mutator>
+                            <mutator>REMOVE_CONDITIONALS_EQUAL_ELSE</mutator>
+                            <mutator>REMOVE_CONDITIONALS_ORDER_IF</mutator>
+                            <mutator>REMOVE_CONDITIONALS_ORDER_ELSE</mutator>
                             <mutator>REMOVE_INCREMENTS</mutator>
                         </mutators>
                         <!-- Excluded classes (generated code, constants, etc.) -->
@@ -1166,6 +1167,7 @@
                         <executions>
                             <execution>
                                 <id>mutation-testing</id>
+                                <phase>test</phase>
                                 <goals>
                                     <goal>mutationCoverage</goal>
                                 </goals>
@@ -1177,7 +1179,7 @@
         </profile>
 
         <!-- Profile for quick mutation testing (PR-level, faster) -->
-        <!-- Usage: ./mvnw test -P mutation-tests-quick -->
+        <!-- Usage: ./mvnw test -P mutation-tests-quick -pl wasmtime4j -->
         <profile>
             <id>mutation-tests-quick</id>
             <build>
@@ -1192,7 +1194,11 @@
                                 <mutator>NEGATE_CONDITIONALS</mutator>
                                 <mutator>MATH</mutator>
                                 <mutator>VOID_METHOD_CALLS</mutator>
-                                <mutator>RETURN_VALS</mutator>
+                                <mutator>FALSE_RETURNS</mutator>
+                                <mutator>TRUE_RETURNS</mutator>
+                                <mutator>EMPTY_RETURNS</mutator>
+                                <mutator>NULL_RETURNS</mutator>
+                                <mutator>PRIMITIVE_RETURNS</mutator>
                             </mutators>
                             <!-- Lower thresholds for quick checks -->
                             <mutationThreshold>50</mutationThreshold>
@@ -1204,6 +1210,7 @@
                         <executions>
                             <execution>
                                 <id>quick-mutation-testing</id>
+                                <phase>test</phase>
                                 <goals>
                                     <goal>mutationCoverage</goal>
                                 </goals>
@@ -1229,7 +1236,6 @@
                                 <!-- Core semantic packages -->
                                 <param>ai.tegmentum.wasmtime4j.wit.*</param>
                                 <param>ai.tegmentum.wasmtime4j.exception.*</param>
-                                <param>ai.tegmentum.wasmtime4j.serialization.*</param>
                                 <param>ai.tegmentum.wasmtime4j.execution.*</param>
                                 <param>ai.tegmentum.wasmtime4j.validation.*</param>
                                 <!-- Medium priority packages -->
@@ -1257,6 +1263,7 @@
                         <executions>
                             <execution>
                                 <id>thorough-mutation-testing</id>
+                                <phase>test</phase>
                                 <goals>
                                     <goal>mutationCoverage</goal>
                                 </goals>
@@ -1293,6 +1300,7 @@
                         <executions>
                             <execution>
                                 <id>jni-mutation-testing</id>
+                                <phase>test</phase>
                                 <goals>
                                     <goal>mutationCoverage</goal>
                                 </goals>
@@ -1333,6 +1341,7 @@
                         <executions>
                             <execution>
                                 <id>panama-mutation-testing</id>
+                                <phase>test</phase>
                                 <goals>
                                     <goal>mutationCoverage</goal>
                                 </goals>

@@ -121,14 +121,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModu
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
- * Method:    nativeDestroyModuleExport
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModuleExport
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
  * Method:    nativeInitializeCopyOnWriteImage
  * Signature: (J)Z
  */

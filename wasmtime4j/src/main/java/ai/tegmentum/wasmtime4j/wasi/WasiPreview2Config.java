@@ -73,8 +73,6 @@ public final class WasiPreview2Config {
   private final boolean allowTcp;
   private final boolean allowUdp;
   private final boolean allowIpNameLookup;
-  private final boolean allowClock;
-  private final boolean allowRandom;
   private final boolean allowBlockingCurrentThread;
   private final long insecureRandomSeed;
   private final boolean hasInsecureRandomSeed;
@@ -101,8 +99,6 @@ public final class WasiPreview2Config {
     this.allowTcp = builder.allowTcp;
     this.allowUdp = builder.allowUdp;
     this.allowIpNameLookup = builder.allowIpNameLookup;
-    this.allowClock = builder.allowClock;
-    this.allowRandom = builder.allowRandom;
     this.allowBlockingCurrentThread = builder.allowBlockingCurrentThread;
     this.insecureRandomSeed = builder.insecureRandomSeed;
     this.hasInsecureRandomSeed = builder.hasInsecureRandomSeed;
@@ -277,24 +273,6 @@ public final class WasiPreview2Config {
   }
 
   /**
-   * Checks if clock access is allowed.
-   *
-   * @return true if clock is allowed
-   */
-  public boolean isAllowClock() {
-    return allowClock;
-  }
-
-  /**
-   * Checks if random number generation is allowed.
-   *
-   * @return true if random is allowed
-   */
-  public boolean isAllowRandom() {
-    return allowRandom;
-  }
-
-  /**
    * Checks if blocking the current thread is allowed.
    *
    * <p>When true, WASI operations may block the current thread for I/O.
@@ -395,13 +373,7 @@ public final class WasiPreview2Config {
    * @return a config with inherited stdio and env
    */
   public static WasiPreview2Config inherited() {
-    return builder()
-        .inheritStdio()
-        .inheritArgs()
-        .inheritEnv()
-        .allowClock(true)
-        .allowRandom(true)
-        .build();
+    return builder().inheritStdio().inheritArgs().inheritEnv().build();
   }
 
   /** Represents a preopened directory mapping. */
@@ -511,8 +483,6 @@ public final class WasiPreview2Config {
     private boolean allowTcp = true;
     private boolean allowUdp = true;
     private boolean allowIpNameLookup = true;
-    private boolean allowClock = false;
-    private boolean allowRandom = false;
     private boolean allowBlockingCurrentThread = false;
     private long insecureRandomSeed = 0;
     private boolean hasInsecureRandomSeed = false;
@@ -824,28 +794,6 @@ public final class WasiPreview2Config {
      */
     public Builder allowIpNameLookup(final boolean allow) {
       this.allowIpNameLookup = allow;
-      return this;
-    }
-
-    /**
-     * Sets whether clock access is allowed.
-     *
-     * @param allow true to allow clock
-     * @return this builder
-     */
-    public Builder allowClock(final boolean allow) {
-      this.allowClock = allow;
-      return this;
-    }
-
-    /**
-     * Sets whether random number generation is allowed.
-     *
-     * @param allow true to allow random
-     * @return this builder
-     */
-    public Builder allowRandom(final boolean allow) {
-      this.allowRandom = allow;
       return this;
     }
 

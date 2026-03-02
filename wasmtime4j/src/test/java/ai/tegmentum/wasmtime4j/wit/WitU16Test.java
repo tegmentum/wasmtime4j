@@ -84,6 +84,24 @@ class WitU16Test {
       final WitU16 value = WitU16.ofUnsigned(65535);
       assertEquals(65535, value.toUnsignedInt(), "Unsigned value should be 65535");
     }
+
+    @Test
+    @DisplayName("ofUnsigned at zero boundary should return correct value")
+    void ofUnsignedAtZeroBoundaryShouldReturnCorrectValue() {
+      final WitU16 value = WitU16.ofUnsigned(0);
+      assertEquals(0, value.toUnsignedInt(), "Unsigned value at zero boundary should be 0");
+    }
+
+    @Test
+    @DisplayName("ofUnsigned at exact max should equal getValue cast to unsigned")
+    void ofUnsignedAtExactMaxShouldEqualGetValueCast() {
+      final WitU16 value = WitU16.ofUnsigned(65535);
+      assertEquals((short) -1, value.getValue(), "Raw short for 65535 should be -1");
+      assertEquals(
+          65535,
+          Short.toUnsignedInt(value.getValue()),
+          "Short.toUnsignedInt of raw value should be 65535");
+    }
   }
 
   @Nested

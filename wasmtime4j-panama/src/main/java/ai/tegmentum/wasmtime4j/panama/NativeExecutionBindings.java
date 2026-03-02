@@ -648,17 +648,83 @@ public final class NativeExecutionBindings extends NativeBindingsBase {
     /** Interrupt trap. */
     public static final int INTERRUPT = 10;
 
+    /** Component model always-trap adapter. */
+    public static final int ALWAYS_TRAP_ADAPTER = 11;
+
     /** Out of fuel trap. */
-    public static final int OUT_OF_FUEL = 11;
+    public static final int OUT_OF_FUEL = 12;
+
+    /** Atomic wait on non-shared memory. */
+    public static final int ATOMIC_WAIT_NON_SHARED_MEMORY = 13;
 
     /** Null reference trap. */
-    public static final int NULL_REFERENCE = 12;
+    public static final int NULL_REFERENCE = 14;
 
     /** Array out of bounds trap. */
-    public static final int ARRAY_OUT_OF_BOUNDS = 13;
+    public static final int ARRAY_OUT_OF_BOUNDS = 15;
+
+    /** Allocation too large trap. */
+    public static final int ALLOCATION_TOO_LARGE = 16;
+
+    /** Cast failure trap. */
+    public static final int CAST_FAILURE = 17;
+
+    /** Cannot enter component due to reentrance. */
+    public static final int CANNOT_ENTER_COMPONENT = 18;
+
+    /** Async export did not produce a result. */
+    public static final int NO_ASYNC_RESULT = 19;
+
+    /** Unhandled tag during suspension. */
+    public static final int UNHANDLED_TAG = 20;
+
+    /** Continuation already consumed. */
+    public static final int CONTINUATION_ALREADY_CONSUMED = 21;
+
+    /** Disabled opcode executed. */
+    public static final int DISABLED_OPCODE = 22;
+
+    /** Async event loop deadlocked. */
+    public static final int ASYNC_DEADLOCK = 23;
+
+    /** Cannot leave component from current context. */
+    public static final int CANNOT_LEAVE_COMPONENT = 24;
+
+    /** Synchronous task cannot make blocking call. */
+    public static final int CANNOT_BLOCK_SYNC_TASK = 25;
+
+    /** Invalid character bit pattern. */
+    public static final int INVALID_CHAR = 26;
+
+    /** String access out of bounds. */
+    public static final int STRING_OUT_OF_BOUNDS = 27;
+
+    /** List access out of bounds. */
+    public static final int LIST_OUT_OF_BOUNDS = 28;
+
+    /** Invalid discriminant for variant. */
+    public static final int INVALID_DISCRIMINANT = 29;
+
+    /** Unaligned pointer in component operation. */
+    public static final int UNALIGNED_POINTER = 30;
+
+    /** Debug assertion: string encoding not finished. */
+    public static final int DEBUG_ASSERT_STRING_ENCODING_FINISHED = 31;
+
+    /** Debug assertion: code units are not equal. */
+    public static final int DEBUG_ASSERT_EQUAL_CODE_UNITS = 32;
+
+    /** Debug assertion: may_enter flag was not unset. */
+    public static final int DEBUG_ASSERT_MAY_ENTER_UNSET = 33;
+
+    /** Debug assertion: pointer is not aligned. */
+    public static final int DEBUG_ASSERT_POINTER_ALIGNED = 34;
+
+    /** Debug assertion: upper bits are not unset. */
+    public static final int DEBUG_ASSERT_UPPER_BITS_UNSET = 35;
 
     /** Unknown trap type. */
-    public static final int UNKNOWN = 14;
+    public static final int UNKNOWN = 36;
 
     private TrapCodes() {}
   }

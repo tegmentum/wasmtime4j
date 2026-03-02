@@ -16,6 +16,7 @@
 package ai.tegmentum.wasmtime4j;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -261,6 +262,22 @@ class ImportValidationTest {
           new ImportValidation(true, Collections.emptyList(), Collections.emptyList(), 0, 0);
 
       assertNotNull(v.toString(), "toString should not return null");
+    }
+  }
+
+  @Nested
+  @DisplayName("Validity Tests")
+  class ValidityTests {
+
+    @Test
+    @DisplayName("isValid should return false when constructed with valid=false")
+    void isValidShouldReturnFalseWhenConstructedWithFalse() {
+      final ImportValidation v =
+          new ImportValidation(false, Collections.emptyList(), Collections.emptyList(), 5, 3);
+
+      assertFalse(v.isValid(), "isValid should return false");
+      assertEquals(5, v.getTotalImports(), "Total imports should be 5");
+      assertEquals(3, v.getValidImports(), "Valid imports should be 3");
     }
   }
 }

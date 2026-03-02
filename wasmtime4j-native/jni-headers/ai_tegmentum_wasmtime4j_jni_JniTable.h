@@ -66,18 +66,18 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableFill
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeCopy
- * Signature: (JIII)Z
+ * Signature: (JJIII)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopy
-  (JNIEnv *, jclass, jlong, jint, jint, jint);
+  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable
  * Method:    nativeCopyFromTable
- * Signature: (JIJII)Z
+ * Signature: (JJIJII)Z
  */
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopyFromTable
-  (JNIEnv *, jclass, jlong, jint, jlong, jint, jint);
+  (JNIEnv *, jclass, jlong, jlong, jint, jlong, jint, jint);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniTable

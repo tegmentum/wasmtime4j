@@ -324,6 +324,8 @@ fn test_component_type_kind_enum() {
         ComponentTypeKind::Record(vec![]),
         ComponentTypeKind::Variant(vec![]),
         ComponentTypeKind::Enum(vec!["A".to_string(), "B".to_string()]),
+        ComponentTypeKind::Flags(vec!["read".to_string(), "write".to_string()]),
+        ComponentTypeKind::Tuple(vec![ComponentValueType::U32, ComponentValueType::String]),
         ComponentTypeKind::Alias(ComponentValueType::Bool),
     ];
 
@@ -574,11 +576,7 @@ fn test_component_linker_wasi_permissions() {
     let mut linker = ComponentLinker::new(&wasmtime_engine).expect("Failed to create linker");
 
     linker.set_wasi_allow_network(true);
-    linker.set_wasi_allow_clock(true);
-    linker.set_wasi_allow_random(true);
 
     let wasi_config = linker.wasi_p2_config();
     assert!(wasi_config.allow_network, "allow_network should be true");
-    assert!(wasi_config.allow_clock, "allow_clock should be true");
-    assert!(wasi_config.allow_random, "allow_random should be true");
 }

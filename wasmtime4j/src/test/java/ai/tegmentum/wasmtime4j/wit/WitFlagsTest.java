@@ -371,4 +371,22 @@ class WitFlagsTest {
       assertFalse(empty.equals(flags), "empty.equals(non-empty) must return false");
     }
   }
+
+  @Nested
+  @DisplayName("Content Assertion Tests")
+  class ContentAssertionTests {
+
+    @Test
+    @DisplayName("getSetFlags should contain exact flag names")
+    void getSetFlagsShouldContainExactFlagNames() {
+      final WitType ft = createFlagsType();
+      final WitFlags flags = WitFlags.of(ft, "read", "execute");
+
+      final Set<String> setFlags = flags.getSetFlags();
+      assertEquals(2, setFlags.size(), "Should have 2 flags");
+      assertTrue(setFlags.contains("read"), "Should contain 'read'");
+      assertTrue(setFlags.contains("execute"), "Should contain 'execute'");
+      assertFalse(setFlags.contains("write"), "Should not contain 'write'");
+    }
+  }
 }
