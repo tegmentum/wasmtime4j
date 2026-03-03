@@ -160,11 +160,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCr
 /// Destroy a host function (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeDestroyHostFunction(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     host_func_handle: jlong,
 ) {
-    jni_utils::jni_try_default(&env, (), || {
+    jni_utils::jni_try_with_default(&mut env, (), || {
         if host_func_handle == 0 {
             return Ok(());
         }

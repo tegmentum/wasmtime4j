@@ -1208,7 +1208,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeReapplyWa
     store_ptr: jlong,
     wasi_ctx_ptr: jlong,
 ) -> jint {
-    jni_utils::jni_try_default(&mut env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         if store_ptr == 0 {
             return Err(crate::error::WasmtimeError::InvalidParameter {
                 message: "Store handle cannot be null".to_string(),

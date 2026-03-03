@@ -368,11 +368,11 @@ fn marshal_results(results: &[wasmtime::Val]) -> crate::error::WasmtimeResult<Ve
 /// This is a minimal stub that cleans up the boxed handle.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeDestroyFunctionReference(
-    env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     function_reference_handle: jlong,
 ) {
-    jni_utils::jni_try_default(&env, (), || {
+    jni_utils::jni_try_with_default(&mut env, (), || {
         if function_reference_handle == 0 {
             return Ok(());
         }

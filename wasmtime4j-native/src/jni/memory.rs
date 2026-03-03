@@ -14,7 +14,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
     _class: JClass,
     memory_ptr: jlong,
 ) -> jlong {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         // Comprehensive parameter validation with detailed error context
         if memory_ptr == 0 {
             log::error!("JNI Memory.nativeGetSize: null memory handle provided");
@@ -165,7 +165,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrow(
     store_ptr: jlong,
     pages: jlong,
 ) -> jlong {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         // Comprehensive parameter validation
         if memory_ptr == 0 {
             log::error!("JNI Memory.nativeGrow: null memory handle provided");
@@ -246,7 +246,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrowAsyn
     store_ptr: jlong,
     pages: jlong,
 ) -> jlong {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         if memory_ptr == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Memory handle cannot be null".to_string(),
@@ -280,7 +280,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
     store_ptr: jlong,
     offset: jlong,
 ) -> jint {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         // Comprehensive parameter validation with bounds checking
         if memory_ptr == 0 {
             log::error!("JNI Memory.nativeReadByte: null memory handle provided");
@@ -460,119 +460,135 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
     offset: jlong,
     buffer: JByteArray,
 ) -> jint {
-    jni_utils::jni_try_default(&env, -1, || {
-        // Comprehensive parameter validation
-        if memory_ptr == 0 {
-            log::error!("JNI Memory.nativeReadBytes: null memory handle provided");
-            return Err(WasmtimeError::InvalidParameter {
-                message: "Memory handle cannot be null for bulk read operations. Ensure memory is properly initialized.".to_string(),
-            });
-        }
+    // Validate parameters before entering panic-safe block
+    if memory_ptr == 0 {
+        log::error!("JNI Memory.nativeReadBytes: null memory handle provided");
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+            message: "Memory handle cannot be null for bulk read operations. Ensure memory is properly initialized.".to_string(),
+        });
+        return -1;
+    }
 
-        if store_ptr == 0 {
-            log::error!("JNI Memory.nativeReadBytes: null store handle provided");
-            return Err(WasmtimeError::InvalidParameter {
-                message: "Store handle cannot be null for memory operations. Ensure store is properly initialized.".to_string(),
-            });
-        }
+    if store_ptr == 0 {
+        log::error!("JNI Memory.nativeReadBytes: null store handle provided");
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+            message: "Store handle cannot be null for memory operations. Ensure store is properly initialized.".to_string(),
+        });
+        return -1;
+    }
 
-        if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!(
-                "JNI Memory.nativeReadBytes: invalid memory handle 0x{:x}",
+    if memory_ptr < 0x1000 || memory_ptr == -1 {
+        log::error!(
+            "JNI Memory.nativeReadBytes: invalid memory handle 0x{:x}",
+            memory_ptr
+        );
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+            message: format!(
+                "Invalid memory handle (0x{:x}) for bulk read operation. Handle appears corrupted or uninitialized.",
                 memory_ptr
+            ),
+        });
+        return -1;
+    }
+
+    if offset < 0 {
+        log::error!(
+            "JNI Memory.nativeReadBytes: negative offset {} for handle 0x{:x}",
+            offset,
+            memory_ptr
+        );
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
+            message: format!(
+                "Memory read offset cannot be negative (received: {}). \
+                 Specify a non-negative byte offset within memory bounds.",
+                offset
+            ),
+        });
+        return -1;
+    }
+
+    if buffer.is_null() {
+        log::error!(
+            "JNI Memory.nativeReadBytes: null buffer provided for handle 0x{:x}",
+            memory_ptr
+        );
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+            message:
+                "Buffer cannot be null for bulk read operations. Provide a valid byte array."
+                    .to_string(),
+        });
+        return -1;
+    }
+
+    // Get buffer length using env (before panic-safe block)
+    let buffer_length = match env.get_array_length(&buffer) {
+        Ok(len) => len as usize,
+        Err(e) => {
+            log::error!(
+                "Failed to get buffer length for read operation (handle 0x{:x}): {:?}",
+                memory_ptr,
+                e
             );
-            return Err(WasmtimeError::InvalidParameter {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
                 message: format!(
-                    "Invalid memory handle (0x{:x}) for bulk read operation. Handle appears corrupted or uninitialized.",
-                    memory_ptr
-                ),
-            });
-        }
-
-        if offset < 0 {
-            log::error!(
-                "JNI Memory.nativeReadBytes: negative offset {} for handle 0x{:x}",
-                offset,
-                memory_ptr
-            );
-            return Err(WasmtimeError::Memory {
-                message: format!(
-                    "Memory read offset cannot be negative (received: {}). \
-                     Specify a non-negative byte offset within memory bounds.",
-                    offset
-                ),
-            });
-        }
-
-        // Validate JNI buffer parameter
-        if buffer.is_null() {
-            log::error!(
-                "JNI Memory.nativeReadBytes: null buffer provided for handle 0x{:x}",
-                memory_ptr
-            );
-            return Err(WasmtimeError::InvalidParameter {
-                message:
-                    "Buffer cannot be null for bulk read operations. Provide a valid byte array."
-                        .to_string(),
-            });
-        }
-
-        // Get buffer length for bounds checking
-        let buffer_length = match env.get_array_length(&buffer) {
-            Ok(len) => len as usize,
-            Err(e) => {
-                log::error!(
-                    "Failed to get buffer length for read operation (handle 0x{:x}): {:?}",
-                    memory_ptr,
+                    "Cannot determine buffer size for read operation: {:?}. \
+                     Ensure buffer is a valid Java byte array.",
                     e
-                );
-                return Err(WasmtimeError::InvalidParameter {
-                    message: format!(
-                        "Cannot determine buffer size for read operation: {:?}. \
-                         Ensure buffer is a valid Java byte array.",
-                        e
-                    ),
-                });
-            }
-        };
-
-        if buffer_length == 0 {
-            log::debug!("JNI Memory.nativeReadBytes: zero-length read requested for handle 0x{:x} at offset {}", memory_ptr, offset);
-            return Ok(0); // No bytes to read, operation successful
+                ),
+            });
+            return -1;
         }
+    };
 
-        // Get memory and store references with validation
+    if buffer_length == 0 {
+        log::debug!("JNI Memory.nativeReadBytes: zero-length read requested for handle 0x{:x} at offset {}", memory_ptr, offset);
+        return 0;
+    }
+
+    // Panic-safe block for unsafe memory operations
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
         let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        core::read_memory_bytes(memory, store, offset as usize, buffer_length)
+    }));
 
-        // Perform the memory read operation with comprehensive error handling
-        match core::read_memory_bytes(memory, store, offset as usize, buffer_length) {
-            Ok(read_data) => {
-                // Copy data to Java buffer
-                let signed_data: Vec<i8> = read_data.iter().map(|&b| b as i8).collect();
-                env.set_byte_array_region(&buffer, 0, &signed_data)
-                    .map_err(|e| {
-                        log::error!("JNI Memory.nativeReadBytes: failed to set buffer data for handle 0x{:x}: {}", memory_ptr, e);
-                        WasmtimeError::Memory {
-                            message: format!("Failed to copy data to Java buffer: {}", e),
-                        }
-                    })?;
-
-                log::debug!(
-                    "JNI Memory.nativeReadBytes: successfully read {} bytes from offset {} for handle 0x{:x}",
-                    read_data.len(), offset, memory_ptr
-                );
-                Ok(read_data.len() as jint)
+    match result {
+        Ok(Ok(read_data)) => {
+            let signed_data: Vec<i8> = read_data.iter().map(|&b| b as i8).collect();
+            if let Err(e) = env.set_byte_array_region(&buffer, 0, &signed_data) {
+                log::error!("JNI Memory.nativeReadBytes: failed to set buffer data for handle 0x{:x}: {}", memory_ptr, e);
+                jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
+                    message: format!("Failed to copy data to Java buffer: {}", e),
+                });
+                return -1;
             }
-            Err(e) => {
-                log::error!(
-                    "JNI Memory.nativeReadBytes: read failed for handle 0x{:x} at offset {} length {}: {}",
-                    memory_ptr, offset, buffer_length, e
-                );
-                Err(e)
-            }
+            log::debug!(
+                "JNI Memory.nativeReadBytes: successfully read {} bytes from offset {} for handle 0x{:x}",
+                read_data.len(), offset, memory_ptr
+            );
+            read_data.len() as jint
         }
-    })
+        Ok(Err(e)) => {
+            log::error!(
+                "JNI Memory.nativeReadBytes: read failed for handle 0x{:x} at offset {} length {}: {}",
+                memory_ptr, offset, buffer_length, e
+            );
+            jni_utils::throw_jni_exception(&mut env, &e);
+            -1
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
+            -1
+        }
+    }
 }
 
 /// Write bytes from a buffer to memory (JNI version)
@@ -585,119 +601,139 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
     offset: jlong,
     buffer: JByteArray,
 ) -> jint {
-    jni_utils::jni_try_default(&env, -1, || {
-        // Comprehensive parameter validation
-        if memory_ptr == 0 {
-            log::error!("JNI Memory.nativeWriteBytes: null memory handle provided");
-            return Err(WasmtimeError::InvalidParameter {
-                message: "Memory handle cannot be null for bulk write operations. Ensure memory is properly initialized.".to_string(),
-            });
-        }
+    // Validate parameters before entering panic-safe block
+    if memory_ptr == 0 {
+        log::error!("JNI Memory.nativeWriteBytes: null memory handle provided");
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+            message: "Memory handle cannot be null for bulk write operations. Ensure memory is properly initialized.".to_string(),
+        });
+        return -1;
+    }
 
-        if store_ptr == 0 {
-            log::error!("JNI Memory.nativeWriteBytes: null store handle provided");
-            return Err(WasmtimeError::InvalidParameter {
-                message: "Store handle cannot be null for memory operations. Ensure store is properly initialized.".to_string(),
-            });
-        }
+    if store_ptr == 0 {
+        log::error!("JNI Memory.nativeWriteBytes: null store handle provided");
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+            message: "Store handle cannot be null for memory operations. Ensure store is properly initialized.".to_string(),
+        });
+        return -1;
+    }
 
-        if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!(
-                "JNI Memory.nativeWriteBytes: invalid memory handle 0x{:x}",
+    if memory_ptr < 0x1000 || memory_ptr == -1 {
+        log::error!(
+            "JNI Memory.nativeWriteBytes: invalid memory handle 0x{:x}",
+            memory_ptr
+        );
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+            message: format!(
+                "Invalid memory handle (0x{:x}) for bulk write operation. Handle appears corrupted or uninitialized.",
                 memory_ptr
-            );
-            return Err(WasmtimeError::InvalidParameter {
-                message: format!(
-                    "Invalid memory handle (0x{:x}) for bulk write operation. Handle appears corrupted or uninitialized.",
-                    memory_ptr
-                ),
-            });
-        }
+            ),
+        });
+        return -1;
+    }
 
-        if offset < 0 {
-            log::error!(
-                "JNI Memory.nativeWriteBytes: negative offset {} for handle 0x{:x}",
-                offset,
-                memory_ptr
-            );
-            return Err(WasmtimeError::Memory {
-                message: format!(
-                    "Memory write offset cannot be negative (received: {}). \
-                     Specify a non-negative byte offset within memory bounds.",
-                    offset
-                ),
-            });
-        }
+    if offset < 0 {
+        log::error!(
+            "JNI Memory.nativeWriteBytes: negative offset {} for handle 0x{:x}",
+            offset,
+            memory_ptr
+        );
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
+            message: format!(
+                "Memory write offset cannot be negative (received: {}). \
+                 Specify a non-negative byte offset within memory bounds.",
+                offset
+            ),
+        });
+        return -1;
+    }
 
-        // Validate JNI buffer parameter
-        if buffer.is_null() {
-            log::error!(
-                "JNI Memory.nativeWriteBytes: null buffer provided for handle 0x{:x}",
-                memory_ptr
-            );
-            return Err(WasmtimeError::InvalidParameter {
-                message:
-                    "Buffer cannot be null for bulk write operations. Provide a valid byte array."
-                        .to_string(),
-            });
-        }
+    if buffer.is_null() {
+        log::error!(
+            "JNI Memory.nativeWriteBytes: null buffer provided for handle 0x{:x}",
+            memory_ptr
+        );
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
+            message:
+                "Buffer cannot be null for bulk write operations. Provide a valid byte array."
+                    .to_string(),
+        });
+        return -1;
+    }
 
-        // Get buffer length with bounds checking
-        let buffer_length = env.get_array_length(&buffer).map_err(|e| {
+    // Get buffer length using env (before panic-safe block)
+    let buffer_length = match env.get_array_length(&buffer) {
+        Ok(len) => len as usize,
+        Err(e) => {
             log::error!(
                 "JNI Memory.nativeWriteBytes: failed to get buffer length for handle 0x{:x}: {}",
                 memory_ptr,
                 e
             );
-            WasmtimeError::Memory {
+            jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
                 message: format!("Failed to get buffer length for write operation: {}", e),
-            }
-        })? as usize;
-
-        if buffer_length == 0 {
-            log::debug!("JNI Memory.nativeWriteBytes: zero-length write requested for handle 0x{:x} at offset {}", memory_ptr, offset);
-            return Ok(0); // Nothing to write, operation successful
+            });
+            return -1;
         }
+    };
 
-        // Get memory and store references with validation
+    if buffer_length == 0 {
+        log::debug!("JNI Memory.nativeWriteBytes: zero-length write requested for handle 0x{:x} at offset {}", memory_ptr, offset);
+        return 0;
+    }
+
+    // Get Java buffer data using env (before panic-safe block)
+    let mut signed_buffer = vec![0i8; buffer_length];
+    if let Err(e) = env.get_byte_array_region(&buffer, 0, &mut signed_buffer) {
+        log::error!(
+            "JNI Memory.nativeWriteBytes: failed to read buffer data for handle 0x{:x}: {}",
+            memory_ptr,
+            e
+        );
+        jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
+            message: format!("Failed to read buffer data for write operation: {}", e),
+        });
+        return -1;
+    }
+
+    let write_data: Vec<u8> = signed_buffer.iter().map(|&b| b as u8).collect();
+
+    // Panic-safe block for unsafe memory operations
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
         let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::write_memory_bytes(memory, store, offset as usize, &write_data)
+    }));
 
-        // Get Java buffer data safely
-        let mut signed_buffer = vec![0i8; buffer_length];
-        env.get_byte_array_region(&buffer, 0, &mut signed_buffer)
-            .map_err(|e| {
-                log::error!(
-                    "JNI Memory.nativeWriteBytes: failed to read buffer data for handle 0x{:x}: {}",
-                    memory_ptr,
-                    e
-                );
-                WasmtimeError::Memory {
-                    message: format!("Failed to read buffer data for write operation: {}", e),
-                }
-            })?;
-
-        // Convert i8 to u8 for memory write
-        let write_data: Vec<u8> = signed_buffer.iter().map(|&b| b as u8).collect();
-
-        // Perform the memory write operation with comprehensive error handling
-        match core::write_memory_bytes(memory, store, offset as usize, &write_data) {
-            Ok(_) => {
-                log::debug!(
-                    "JNI Memory.nativeWriteBytes: successfully wrote {} bytes at offset {} for handle 0x{:x}",
-                    buffer_length, offset, memory_ptr
-                );
-                Ok(buffer_length as jint)
-            }
-            Err(e) => {
-                log::error!(
-                    "JNI Memory.nativeWriteBytes: write failed for handle 0x{:x} at offset {} length {}: {}",
-                    memory_ptr, offset, buffer_length, e
-                );
-                Err(e)
-            }
+    match result {
+        Ok(Ok(())) => {
+            log::debug!(
+                "JNI Memory.nativeWriteBytes: successfully wrote {} bytes at offset {} for handle 0x{:x}",
+                buffer_length, offset, memory_ptr
+            );
+            buffer_length as jint
         }
-    })
+        Ok(Err(e)) => {
+            log::error!(
+                "JNI Memory.nativeWriteBytes: write failed for handle 0x{:x} at offset {} length {}: {}",
+                memory_ptr, offset, buffer_length, e
+            );
+            jni_utils::throw_jni_exception(&mut env, &e);
+            -1
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
+            -1
+        }
+    }
 }
 
 /// Get direct ByteBuffer view of memory (JNI version)
@@ -885,7 +921,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageC
     _class: JClass,
     memory_ptr: jlong,
 ) -> jlong {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         // Comprehensive parameter validation with detailed error context
         if memory_ptr == 0 {
             log::error!("JNI Memory.nativeGetPageCount: null memory handle provided");
@@ -1019,7 +1055,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMaxSi
     _class: JClass,
     memory_ptr: jlong,
 ) -> jlong {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         // Comprehensive parameter validation with detailed error context
         if memory_ptr == 0 {
             log::error!("JNI Memory.nativeGetMaxSize: null memory handle provided");
@@ -1189,7 +1225,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetAcces
         return -1;
     }
 
-    jni_utils::jni_try_default(&env, -1, || unsafe {
+    jni_utils::jni_try_with_default(&mut env, -1, || unsafe {
         core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)?;
 
         let validated_memory = &*(memory_ptr as *const core::ValidatedMemory);
@@ -1674,7 +1710,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeIsShared
     memory_ptr: jlong,
     store_ptr: jlong,
 ) -> jboolean {
-    jni_utils::jni_try_default(&env, 0, || {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         if memory_ptr == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Memory handle cannot be null".to_string(),

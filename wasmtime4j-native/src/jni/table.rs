@@ -112,7 +112,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetSize(
         store_ptr
     );
 
-    let result = jni_utils::jni_try_default(&env, 0, || {
+    let result = jni_utils::jni_try_with_default(&mut env, 0, || {
         use std::os::raw::c_void;
 
         log::debug!("Getting table reference...");
@@ -141,7 +141,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMaxSiz
     table_ptr: jlong,
     store_ptr: jlong,
 ) -> jint {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         use std::os::raw::c_void;
 
         let table = unsafe { crate::table::core::get_table_ref(table_ptr as *const c_void)? };
@@ -297,7 +297,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrow
     delta: jint,
     init_value: jlong,
 ) -> jlong {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         use std::os::raw::c_void;
 
         let table = unsafe { core::get_table_ref(table_ptr as *const c_void)? };
@@ -357,7 +357,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableGrow
     delta: jint,
     init_value: jlong,
 ) -> jlong {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         use std::os::raw::c_void;
 
         let table = unsafe { core::get_table_ref(table_ptr as *const c_void)? };
@@ -418,7 +418,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableFill
     value: jlong,
     len: jint,
 ) -> jint {
-    jni_utils::jni_try_default(&env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         use std::os::raw::c_void;
 
         let table = unsafe { core::get_table_ref(table_ptr as *const c_void)? };
@@ -473,7 +473,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSupports6
     table_ptr: jlong,
     _store_ptr: jlong,
 ) -> jboolean {
-    jni_utils::jni_try_default(&env, 0, || {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
         let metadata = core::get_table_metadata(table);
         Ok(if metadata.is_64 { 1 } else { 0 })

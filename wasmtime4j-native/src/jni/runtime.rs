@@ -312,7 +312,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
     linker_handle: jlong,
     wasi_handle: jlong,
 ) -> jint {
-    jni_utils::jni_try_default(&mut env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         if runtime_handle == 0 {
             log::error!("JNI Runtime.nativeAddWasiToLinker: null runtime handle provided");
             return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -381,7 +381,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
     linker_handle: jlong,
     wasi_handle: jlong,
 ) -> jint {
-    jni_utils::jni_try_default(&mut env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         if runtime_handle == 0 {
             log::error!("JNI Runtime.nativeAddWasiPreview2ToLinker: null runtime handle provided");
             return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -446,7 +446,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeAdd
     runtime_handle: jlong,
     linker_handle: jlong,
 ) -> jint {
-    jni_utils::jni_try_default(&mut env, -1, || {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
         if runtime_handle == 0 {
             log::error!(
                 "JNI Runtime.nativeAddComponentModelToLinker: null runtime handle provided"

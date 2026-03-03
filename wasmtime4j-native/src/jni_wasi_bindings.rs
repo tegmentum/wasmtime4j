@@ -233,7 +233,7 @@ pub mod jni_wasi {
         let host_str_result = env.get_string(&host_path);
         let guest_str_result = env.get_string(&guest_path);
 
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -290,7 +290,7 @@ pub mod jni_wasi {
         let key_str_result = env.get_string(&key);
         let value_str_result = env.get_string(&value);
 
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -338,7 +338,7 @@ pub mod jni_wasi {
         // Extract string outside the closure to avoid borrowing conflicts
         let path_str_result = env.get_string(&path);
 
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -367,7 +367,7 @@ pub mod jni_wasi {
         _class: JClass,
         handle: jlong,
     ) -> jint {
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -387,7 +387,7 @@ pub mod jni_wasi {
         _class: JClass,
         handle: jlong,
     ) -> jint {
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -407,7 +407,7 @@ pub mod jni_wasi {
         _class: JClass,
         handle: jlong,
     ) -> jint {
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -428,7 +428,7 @@ pub mod jni_wasi {
         wasi_handle: jlong,
         store_handle: jlong,
     ) -> jboolean {
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if wasi_handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "WASI context handle cannot be null".to_string(),
@@ -464,7 +464,7 @@ pub mod jni_wasi {
         _class: JClass,
         store_handle: jlong,
     ) -> jlong {
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if store_handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "Store handle cannot be null".to_string(),
@@ -484,7 +484,7 @@ pub mod jni_wasi {
         _class: JClass,
         store_handle: jlong,
     ) -> jboolean {
-        jni_utils::jni_try_default(&mut env, 0, || {
+        jni_utils::jni_try_with_default(&mut env, 0, || {
             if store_handle == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: "Store handle cannot be null".to_string(),

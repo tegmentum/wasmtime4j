@@ -341,26 +341,6 @@ where
 }
 
 #[cfg(feature = "jni-bindings")]
-/// Execute operation with JNI exception throwing, returning default value on error
-pub fn jni_try_default<F, T>(_env: &jni::JNIEnv, default_value: T, operation: F) -> T
-where
-    F: FnOnce() -> WasmtimeResult<T>,
-{
-    match operation() {
-        Ok(result) => {
-            clear_last_error();
-            result
-        }
-        Err(error) => {
-            // For now, we can't throw exceptions from a ref to env
-            // This would need refactoring in the calling code
-            log::error!("Error in jni_try_default: {:?}", error);
-            default_value
-        }
-    }
-}
-
-#[cfg(feature = "jni-bindings")]
 /// Execute operation with JNI exception throwing, returning boolean result
 /// Uses catch_unwind to prevent panics from crashing the JVM
 pub fn jni_try_bool<F>(env: &mut jni::JNIEnv, operation: F) -> bool
