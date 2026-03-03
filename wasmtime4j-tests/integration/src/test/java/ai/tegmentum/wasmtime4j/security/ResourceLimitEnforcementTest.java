@@ -382,7 +382,7 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should reject table creation with invalid limits")
-    void shouldRejectTableCreationWithInvalidLimits(final RuntimeType runtime) {
+    void shouldRejectTableCreationWithInvalidLimits(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();

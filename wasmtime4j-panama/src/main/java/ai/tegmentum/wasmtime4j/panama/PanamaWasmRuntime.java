@@ -769,20 +769,13 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public ai.tegmentum.wasmtime4j.wasi.nn.NnContext createNnContext()
       throws ai.tegmentum.wasmtime4j.wasi.nn.NnException {
-    ensureNotClosed();
-    final ai.tegmentum.wasmtime4j.panama.wasi.nn.PanaNnContextFactory factory =
-        new ai.tegmentum.wasmtime4j.panama.wasi.nn.PanaNnContextFactory();
-    return factory.createNnContext();
+    throw new ai.tegmentum.wasmtime4j.wasi.nn.NnException(
+        "WASI-NN is not available via Panama. Use the component model instead.");
   }
 
   @Override
   public boolean isNnAvailable() {
-    if (resourceHandle.isClosed()) {
-      return false;
-    }
-    final ai.tegmentum.wasmtime4j.panama.wasi.nn.PanaNnContextFactory factory =
-        new ai.tegmentum.wasmtime4j.panama.wasi.nn.PanaNnContextFactory();
-    return factory.isNnAvailable();
+    return false;
   }
 
   @Override

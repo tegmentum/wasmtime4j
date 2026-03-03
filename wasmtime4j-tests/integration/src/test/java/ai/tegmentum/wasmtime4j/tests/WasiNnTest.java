@@ -29,7 +29,6 @@ import ai.tegmentum.wasmtime4j.WasmRuntime;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnContext;
-import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnExecutionTarget;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnGraphEncoding;
 import ai.tegmentum.wasmtime4j.wasi.nn.NnTensor;
@@ -367,7 +366,7 @@ public class WasiNnTest extends DualRuntimeTest {
   @EnabledIf("isNnAvailable")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  void testNnContextCreation(final RuntimeType runtime) throws NnException {
+  void testNnContextCreation(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing NnContext creation");
 
@@ -384,7 +383,7 @@ public class WasiNnTest extends DualRuntimeTest {
   @EnabledIf("isNnAvailable")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  void testNnContextSupportedEncodings(final RuntimeType runtime) throws NnException {
+  void testNnContextSupportedEncodings(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing NnContext supported encodings query");
 
@@ -406,7 +405,7 @@ public class WasiNnTest extends DualRuntimeTest {
   @EnabledIf("isNnAvailable")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  void testNnContextSupportedTargets(final RuntimeType runtime) throws NnException {
+  void testNnContextSupportedTargets(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing NnContext supported targets query");
 
@@ -428,7 +427,7 @@ public class WasiNnTest extends DualRuntimeTest {
   @EnabledIf("isNnAvailable")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  void testNnContextImplementationInfo(final RuntimeType runtime) throws NnException {
+  void testNnContextImplementationInfo(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing NnContext implementation info");
 
@@ -446,7 +445,7 @@ public class WasiNnTest extends DualRuntimeTest {
   @EnabledIf("isNnAvailable")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  void testNnContextLifecycle(final RuntimeType runtime) throws NnException {
+  void testNnContextLifecycle(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing NnContext lifecycle");
 
@@ -468,7 +467,7 @@ public class WasiNnTest extends DualRuntimeTest {
   @EnabledIf("isNnAvailable")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  void testNnContextMultipleCreation(final RuntimeType runtime) throws NnException {
+  void testNnContextMultipleCreation(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing multiple NnContext creation");
 
@@ -488,7 +487,7 @@ public class WasiNnTest extends DualRuntimeTest {
   @EnabledIf("isNnAvailable")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  void testNnGraphLoadingWithInvalidData(final RuntimeType runtime) throws NnException {
+  void testNnGraphLoadingWithInvalidData(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing NnGraph loading with invalid data");
 
@@ -514,7 +513,7 @@ public class WasiNnTest extends DualRuntimeTest {
   @EnabledIf("isNnAvailable")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
-  void testNnGraphLoadingNullParameters(final RuntimeType runtime) throws NnException {
+  void testNnGraphLoadingNullParameters(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
     LOGGER.info("[" + runtime + "] Testing NnGraph loading with null parameters");
 
