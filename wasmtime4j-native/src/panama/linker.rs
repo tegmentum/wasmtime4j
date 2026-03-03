@@ -99,7 +99,7 @@ impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
         let results: Vec<WasmValue> = ffi_results
             .iter()
             .map(FfiWasmValue::to_wasm_value)
-            .collect();
+            .collect::<crate::WasmtimeResult<Vec<WasmValue>>>()?;
 
         Ok(results)
     }

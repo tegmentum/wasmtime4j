@@ -506,7 +506,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
                 let results: Vec<WasmValue> = ffi_results
                     .iter()
                     .map(crate::instance::FfiWasmValue::to_wasm_value)
-                    .collect();
+                    .collect::<crate::WasmtimeResult<Vec<WasmValue>>>()?;
                 log::debug!(
                     "[STORE_CB] Converted {} results, execute complete",
                     results.len()
@@ -661,7 +661,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function_unchecked(
                 let results: Vec<WasmValue> = ffi_results
                     .iter()
                     .map(crate::instance::FfiWasmValue::to_wasm_value)
-                    .collect();
+                    .collect::<crate::WasmtimeResult<Vec<WasmValue>>>()?;
 
                 Ok(results)
             }

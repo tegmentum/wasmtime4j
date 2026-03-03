@@ -214,7 +214,7 @@ impl FfiWasmValue {
     /// # Safety Note
     /// The `try_into().expect()` calls below are safe because `self.value` is always
     /// a `[u8; 16]` array, so slicing to 4 or 8 bytes always succeeds.
-    pub fn to_wasm_value(&self) -> WasmValue {
+    pub fn to_wasm_value(&self) -> WasmtimeResult<WasmValue> {
         match self.tag {
             0 => {
                 // I32
@@ -223,7 +223,7 @@ impl FfiWasmValue {
                         .try_into()
                         .expect("value is [u8; 16], slice to 4 always valid"),
                 );
-                WasmValue::I32(v)
+                Ok(WasmValue::I32(v))
             }
             1 => {
                 // I64
@@ -232,7 +232,7 @@ impl FfiWasmValue {
                         .try_into()
                         .expect("value is [u8; 16], slice to 8 always valid"),
                 );
-                WasmValue::I64(v)
+                Ok(WasmValue::I64(v))
             }
             2 => {
                 // F32
@@ -241,7 +241,7 @@ impl FfiWasmValue {
                         .try_into()
                         .expect("value is [u8; 16], slice to 4 always valid"),
                 );
-                WasmValue::F32(v)
+                Ok(WasmValue::F32(v))
             }
             3 => {
                 // F64
@@ -250,13 +250,13 @@ impl FfiWasmValue {
                         .try_into()
                         .expect("value is [u8; 16], slice to 8 always valid"),
                 );
-                WasmValue::F64(v)
+                Ok(WasmValue::F64(v))
             }
             4 => {
                 // V128
                 let mut bytes = [0u8; 16];
                 bytes.copy_from_slice(&self.value);
-                WasmValue::V128(bytes)
+                Ok(WasmValue::V128(bytes))
             }
             5 => {
                 // FuncRef
@@ -266,9 +266,9 @@ impl FfiWasmValue {
                         .expect("value is [u8; 16], slice to 8 always valid"),
                 );
                 if id == 0 {
-                    WasmValue::FuncRef(None)
+                    Ok(WasmValue::FuncRef(None))
                 } else {
-                    WasmValue::FuncRef(Some(id))
+                    Ok(WasmValue::FuncRef(Some(id)))
                 }
             }
             6 => {
@@ -279,16 +279,18 @@ impl FfiWasmValue {
                         .expect("value is [u8; 16], slice to 8 always valid"),
                 );
                 if id == 0 {
-                    WasmValue::ExternRef(None)
+                    Ok(WasmValue::ExternRef(None))
                 } else {
-                    WasmValue::ExternRef(Some(id))
+                    Ok(WasmValue::ExternRef(Some(id)))
                 }
             }
             7 => {
                 // ContRef (always null/opaque)
-                WasmValue::ContRef
+                Ok(WasmValue::ContRef)
             }
-            _ => WasmValue::I32(0), // Default fallback
+            _ => Err(WasmtimeError::Type {
+                message: format!("Unknown WasmValue type tag: {}", self.tag),
+            }),
         }
     }
 }
@@ -1956,7 +1958,10 @@ pub mod core {
         let ffi_params = std::slice::from_raw_parts(params_ptr as *const FfiWasmValue, param_count);
 
         // Convert FfiWasmValue to WasmValue
-        Ok(ffi_params.iter().map(|ffi| ffi.to_wasm_value()).collect())
+        ffi_params
+            .iter()
+            .map(|ffi| ffi.to_wasm_value())
+            .collect::<WasmtimeResult<Vec<WasmValue>>>()
     }
 
     /// Convert results to FFI representation (FfiWasmValue layout)
@@ -2523,19 +2528,19 @@ mod tests {
         // Test I32 roundtrip
         let i32_val = WasmValue::I32(-12345);
         let ffi_val = FfiWasmValue::from_wasm_value(&i32_val);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         assert_eq!(i32_val, back, "I32 roundtrip should preserve value");
 
         // Test I64 roundtrip
         let i64_val = WasmValue::I64(-9876543210);
         let ffi_val = FfiWasmValue::from_wasm_value(&i64_val);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         assert_eq!(i64_val, back, "I64 roundtrip should preserve value");
 
         // Test F32 roundtrip
         let f32_val = WasmValue::F32(3.14159);
         let ffi_val = FfiWasmValue::from_wasm_value(&f32_val);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         match (f32_val, back) {
             (WasmValue::F32(a), WasmValue::F32(b)) => {
                 assert!(
@@ -2549,7 +2554,7 @@ mod tests {
         // Test F64 roundtrip
         let f64_val = WasmValue::F64(2.718281828);
         let ffi_val = FfiWasmValue::from_wasm_value(&f64_val);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         match (f64_val, back) {
             (WasmValue::F64(a), WasmValue::F64(b)) => {
                 assert!(
@@ -2563,19 +2568,19 @@ mod tests {
         // Test V128 roundtrip
         let v128_val = WasmValue::V128([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
         let ffi_val = FfiWasmValue::from_wasm_value(&v128_val);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         assert_eq!(v128_val, back, "V128 roundtrip should preserve value");
 
         // Test FuncRef roundtrip
         let funcref_val = WasmValue::FuncRef(Some(42));
         let ffi_val = FfiWasmValue::from_wasm_value(&funcref_val);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         assert_eq!(funcref_val, back, "FuncRef roundtrip should preserve value");
 
         // Test ExternRef roundtrip
         let externref_val = WasmValue::ExternRef(Some(99));
         let ffi_val = FfiWasmValue::from_wasm_value(&externref_val);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         assert_eq!(
             externref_val, back,
             "ExternRef roundtrip should preserve value"
@@ -2587,7 +2592,7 @@ mod tests {
         // Test null FuncRef
         let null_funcref = WasmValue::FuncRef(None);
         let ffi_val = FfiWasmValue::from_wasm_value(&null_funcref);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         // The roundtrip converts None to 0 and back
         match back {
             WasmValue::FuncRef(None) => { /* OK */ }
@@ -2597,7 +2602,7 @@ mod tests {
         // Test null ExternRef
         let null_externref = WasmValue::ExternRef(None);
         let ffi_val = FfiWasmValue::from_wasm_value(&null_externref);
-        let back = ffi_val.to_wasm_value();
+        let back = ffi_val.to_wasm_value().unwrap();
         match back {
             WasmValue::ExternRef(None) => { /* OK */ }
             _ => panic!("Null ExternRef should roundtrip correctly"),

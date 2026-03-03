@@ -482,7 +482,11 @@ fn register_struct_type_internal(
                     5 => FieldType::PackedI8,
                     6 => FieldType::PackedI16,
                     7 => FieldType::Reference(GcReferenceType::AnyRef),
-                    _ => FieldType::I32, // Default for unknown types
+                    other => {
+                        return Err(WasmtimeError::InvalidParameter {
+                            message: format!("Unknown GC field type code: {}", other),
+                        });
+                    }
                 }
             }
         } else {
@@ -739,7 +743,11 @@ fn struct_set_internal(
             }
         }
         6 => GcValue::Null, // Null type
-        _ => GcValue::I32(value as i32),
+        other => {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Unknown GC value type code: {}", other),
+            });
+        }
     };
 
     let result = runtime.struct_set(object_id as ObjectId, field_index as u32, gc_value);
@@ -791,7 +799,11 @@ fn array_new_internal(
                             GcValue::ObjectRef(element as u64)
                         }
                     }
-                    _ => GcValue::I32(element as i32),
+                    other => {
+                        return Err(WasmtimeError::InvalidParameter {
+                            message: format!("Unsupported array element type: {:?}", other),
+                        });
+                    }
                 };
                 gc_elements.push(gc_value);
             }
@@ -904,7 +916,11 @@ fn array_set_internal(
             }
         }
         6 => GcValue::Null, // Null type
-        _ => GcValue::I32(value as i32),
+        other => {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("Unknown GC value type code: {}", other),
+            });
+        }
     };
 
     let result = runtime.array_set(object_id as ObjectId, element_index as u32, gc_value);
@@ -1323,7 +1339,11 @@ pub extern "C" fn wasmtime4j_gc_array_fill(
                 }
             }
             6 => GcValue::Null,
-            _ => GcValue::I32(value as i32),
+            other => {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("Unknown GC value type code: {}", other),
+                });
+            }
         };
 
         let result = runtime.array_fill(
@@ -1700,7 +1720,11 @@ pub extern "C" fn wasmtime4j_gc_array_new_async(
                                 GcValue::ObjectRef(element as u64)
                             }
                         }
-                        _ => GcValue::I32(element as i32),
+                        other => {
+                            return Err(WasmtimeError::InvalidParameter {
+                                message: format!("Unsupported array element type: {:?}", other),
+                            });
+                        }
                     };
                     gc_elements.push(gc_value);
                 }
