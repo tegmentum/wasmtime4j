@@ -777,6 +777,26 @@ public interface ComponentVal {
     return ComponentValFactory.INSTANCE.createErrorContext(handle);
   }
 
+  /**
+   * Creates an own resource component value.
+   *
+   * @param handle the resource handle to wrap
+   * @return a new own resource ComponentVal
+   */
+  static ComponentVal own(final ComponentResourceHandle handle) {
+    return ComponentValFactory.INSTANCE.createOwn(handle);
+  }
+
+  /**
+   * Creates a borrow resource component value.
+   *
+   * @param handle the resource handle to wrap
+   * @return a new borrow resource ComponentVal
+   */
+  static ComponentVal borrow(final ComponentResourceHandle handle) {
+    return ComponentValFactory.INSTANCE.createBorrow(handle);
+  }
+
   // ===== WAVE Serialization =====
 
   /**
@@ -867,6 +887,31 @@ public interface ComponentVal {
           final Optional<ComponentVal> errInner = resultVal.getErr();
           return errInner.map(v -> "err(" + v.toWave() + ")").orElse("err");
         }
+      case VARIANT:
+        final ComponentVariant variantVal = asVariant();
+        if (variantVal.hasPayload()) {
+          return variantVal.getCaseName() + "(" + variantVal.getPayload().get().toWave() + ")";
+        }
+        return variantVal.getCaseName();
+      case ENUM:
+        return asEnum();
+      case FLAGS:
+        final java.util.Set<String> flagsVal = asFlags();
+        final StringBuilder flagsBuilder = new StringBuilder("{");
+        boolean flagsFirst = true;
+        for (final String flag : flagsVal) {
+          if (!flagsFirst) {
+            flagsBuilder.append(", ");
+          }
+          flagsFirst = false;
+          flagsBuilder.append(flag);
+        }
+        flagsBuilder.append("}");
+        return flagsBuilder.toString();
+      case OWN:
+      case BORROW:
+        final ComponentResourceHandle resHandle = asResource();
+        return (type == ComponentType.OWN ? "own" : "borrow") + "(" + resHandle.getIndex() + ")";
       default:
         return "<" + type.name().toLowerCase() + ">";
     }

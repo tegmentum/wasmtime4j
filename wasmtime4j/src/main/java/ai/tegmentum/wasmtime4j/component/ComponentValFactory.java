@@ -127,6 +127,12 @@ public abstract class ComponentValFactory {
   /** Creates an error context handle component value. */
   public abstract ComponentVal createErrorContext(long handle);
 
+  /** Creates an own resource component value wrapping a resource handle. */
+  public abstract ComponentVal createOwn(ComponentResourceHandle handle);
+
+  /** Creates a borrow resource component value wrapping a resource handle. */
+  public abstract ComponentVal createBorrow(ComponentResourceHandle handle);
+
   /** Default implementation of ComponentValFactory using simple Java objects. */
   static final class DefaultImpl extends ComponentValFactory {
 
@@ -291,6 +297,22 @@ public abstract class ComponentValFactory {
     @Override
     public ComponentVal createErrorContext(final long handle) {
       return new SimpleVal(ComponentType.ERROR_CONTEXT, handle);
+    }
+
+    @Override
+    public ComponentVal createOwn(final ComponentResourceHandle handle) {
+      if (handle == null) {
+        throw new IllegalArgumentException("Resource handle cannot be null");
+      }
+      return new SimpleVal(ComponentType.OWN, handle);
+    }
+
+    @Override
+    public ComponentVal createBorrow(final ComponentResourceHandle handle) {
+      if (handle == null) {
+        throw new IllegalArgumentException("Resource handle cannot be null");
+      }
+      return new SimpleVal(ComponentType.BORROW, handle);
     }
   }
 
