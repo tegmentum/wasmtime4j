@@ -315,6 +315,30 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryIn
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGrowAsync
   (JNIEnv *, jclass, jlong, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
+ * Method:    nativeGetPageSize
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageSize
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
+ * Method:    nativeGetPageSizeLog2
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageSizeLog2
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniMemory
+ * Method:    nativeGetDataSize
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetDataSize
+  (JNIEnv *, jclass, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

@@ -233,38 +233,6 @@ JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCo
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
- * Method:    nativeWitParserNew
- * Signature: ()J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeWitParserNew
-  (JNIEnv *, jclass);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
- * Method:    nativeWitParserDestroy
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeWitParserDestroy
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
- * Method:    nativeWitParserParseInterface
- * Signature: (JLjava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeWitParserParseInterface
-  (JNIEnv *, jclass, jlong, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
- * Method:    nativeWitParserValidateSyntax
- * Signature: (JLjava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeWitParserValidateSyntax
-  (JNIEnv *, jclass, jlong, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
  * Method:    nativeComponentInvokeFunction
  * Signature: (JJLjava/lang/String;[I[[B)[Ljava/lang/Object;
  */
