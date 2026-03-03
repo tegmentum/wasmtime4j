@@ -735,7 +735,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureUsable();
 
     try {
-      nativeMemoryCopy(getNativeHandle(), destOffset, srcOffset, length);
+      nativeMemoryCopy(getNativeHandle(), store.getNativeHandle(), destOffset, srcOffset, length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -750,7 +750,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureUsable();
 
     try {
-      nativeMemoryFill(getNativeHandle(), offset, value, length);
+      nativeMemoryFill(getNativeHandle(), store.getNativeHandle(), offset, value, length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -793,7 +793,11 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureUsable();
 
     try {
-      nativeDataDrop(getNativeHandle(), dataSegmentIndex);
+      if (instanceHandle == 0) {
+        throw new IllegalStateException(
+            "Cannot drop data segment: memory not associated with an instance");
+      }
+      nativeDataDrop(instanceHandle, dataSegmentIndex);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -812,7 +816,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param length the number of bytes to copy
    */
   private static native void nativeMemoryCopy(
-      long memoryHandle, int destOffset, int srcOffset, int length);
+      long memoryHandle, long storeHandle, int destOffset, int srcOffset, int length);
 
   /**
    * Fills a memory region with the specified byte value.
@@ -823,7 +827,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param length the number of bytes to fill
    */
   private static native void nativeMemoryFill(
-      long memoryHandle, int offset, byte value, int length);
+      long memoryHandle, long storeHandle, int offset, byte value, int length);
 
   /**
    * Initializes memory from a data segment.
@@ -849,7 +853,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param memoryHandle the native memory handle
    * @param dataSegmentIndex the index of the data segment to drop
    */
-  private static native void nativeDataDrop(long memoryHandle, int dataSegmentIndex);
+  private static native void nativeDataDrop(long instanceHandle, int dataSegmentIndex);
 
   // Shared Memory Operations Implementation
 
@@ -1609,7 +1613,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     validateOffset64(srcOffset, length);
 
     try {
-      nativeMemoryCopy64(getNativeHandle(), destOffset, srcOffset, length);
+      nativeMemoryCopy64(getNativeHandle(), store.getNativeHandle(), destOffset, srcOffset, length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -1626,7 +1630,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     validateOffset64(offset, length);
 
     try {
-      nativeMemoryFill64(getNativeHandle(), offset, value, length);
+      nativeMemoryFill64(getNativeHandle(), store.getNativeHandle(), offset, value, length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -1824,7 +1828,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param length the number of bytes to copy (64-bit)
    */
   private static native void nativeMemoryCopy64(
-      long memoryHandle, long destOffset, long srcOffset, long length);
+      long memoryHandle, long storeHandle, long destOffset, long srcOffset, long length);
 
   /**
    * Fills a memory region with the specified byte value using 64-bit offsets.
@@ -1835,7 +1839,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param length the number of bytes to fill (64-bit)
    */
   private static native void nativeMemoryFill64(
-      long memoryHandle, long offset, byte value, long length);
+      long memoryHandle, long storeHandle, long offset, byte value, long length);
 
   /**
    * Initializes memory from a data segment using 64-bit offsets.

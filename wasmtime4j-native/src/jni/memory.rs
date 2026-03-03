@@ -1,7 +1,7 @@
 //! JNI bindings for Memory operations
 
 use jni::objects::{JByteArray, JByteBuffer, JClass, JValue};
-use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray, jobject, jstring};
+use jni::sys::{jboolean, jbyte, jbyteArray, jint, jlong, jlongArray, jobject, jstring};
 use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
@@ -1795,6 +1795,309 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicXo
         let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
         core::atomic_xor_i64(memory, store, offset as usize, value)
     })
+}
+
+// Atomic compare-and-swap operations
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicCompareAndSwapInt(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    expected: jint,
+    new_value: jint,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_compare_and_swap_i32(memory, store, offset as usize, expected, new_value)
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicCompareAndSwapLong(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    expected: jlong,
+    new_value: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_compare_and_swap_i64(memory, store, offset as usize, expected, new_value)
+    })
+}
+
+// Atomic load operations
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicLoadInt(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        core::atomic_load_i32(memory, store, offset as usize)
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicLoadLong(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        core::atomic_load_i64(memory, store, offset as usize)
+    })
+}
+
+// Atomic store operations
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicStoreInt(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jint,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_store_i32(memory, store, offset as usize, value)
+    });
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicStoreLong(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jlong,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_store_i64(memory, store, offset as usize, value)
+    });
+}
+
+// Atomic add operations
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicAddInt(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jint,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_add_i32(memory, store, offset as usize, value)
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicAddLong(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::atomic_add_i64(memory, store, offset as usize, value)
+    })
+}
+
+// Atomic fence
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicFence(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        core::atomic_fence(memory, store)
+    });
+}
+
+// Atomic notify
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicNotify(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    count: jint,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        core::atomic_notify(memory, store, offset as usize, count)
+    })
+}
+
+// Atomic wait operations
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicWait32(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    expected: jint,
+    timeout_nanos: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        core::atomic_wait32(memory, store, offset as usize, expected, timeout_nanos)
+    })
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeAtomicWait64(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    expected: jlong,
+    timeout_nanos: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        core::atomic_wait64(memory, store, offset as usize, expected, timeout_nanos)
+    })
+}
+
+// Bulk memory operations
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryCopy(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    dest_offset: jint,
+    src_offset: jint,
+    length: jint,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::memory_copy(
+            memory,
+            store,
+            dest_offset as usize,
+            src_offset as usize,
+            length as usize,
+        )
+    });
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryFill(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jint,
+    value: jbyte,
+    length: jint,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::memory_fill(memory, store, offset as usize, value as u8, length as usize)
+    });
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeDataDrop(
+    mut env: JNIEnv,
+    _class: JClass,
+    instance_ptr: jlong,
+    data_segment_index: jint,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        let instance = unsafe {
+            crate::instance::core::get_instance_ref(instance_ptr as *const std::os::raw::c_void)?
+        };
+        core::data_drop(instance, data_segment_index as u32)
+    });
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryCopy64(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    dest_offset: jlong,
+    src_offset: jlong,
+    length: jlong,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::memory_copy(
+            memory,
+            store,
+            dest_offset as usize,
+            src_offset as usize,
+            length as usize,
+        )
+    });
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeMemoryFill64(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+    offset: jlong,
+    value: jbyte,
+    length: jlong,
+) {
+    jni_utils::jni_try_code(&mut env, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_mut(store_ptr as *mut std::os::raw::c_void)? };
+        core::memory_fill(memory, store, offset as usize, value as u8, length as usize)
+    });
 }
 
 /// Check if memory supports 64-bit addressing (JNI version)
