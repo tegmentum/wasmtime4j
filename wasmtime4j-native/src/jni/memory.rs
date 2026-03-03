@@ -2112,3 +2112,51 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeSupports
         Ok(if memory.memory_type.is_64() { 1 } else { 0 })
     })
 }
+
+/// Get memory page size in bytes (JNI version)
+///
+/// Returns the page size for this memory, normally 65536 but may differ
+/// when the `wasm_custom_page_sizes` engine feature is enabled.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageSize(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        Ok(core::get_memory_page_size(memory) as jlong)
+    })
+}
+
+/// Get memory page size as log2 (JNI version)
+///
+/// Returns the log2 of the page size (normally 16 for 65536 byte pages).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetPageSizeLog2(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        Ok(core::get_memory_page_size_log2(memory) as jint)
+    })
+}
+
+/// Get memory data size in bytes (JNI version)
+///
+/// Returns the current data size of the memory (pages * page_size).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetDataSize(
+    mut env: JNIEnv,
+    _class: JClass,
+    memory_ptr: jlong,
+    store_ptr: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let memory = unsafe { core::get_memory_ref(memory_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const std::os::raw::c_void)? };
+        Ok(core::get_memory_data_size(memory, store)? as jlong)
+    })
+}

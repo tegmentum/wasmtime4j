@@ -322,6 +322,28 @@ pub fn get_memory_page_count(memory: &Memory, store: &Store) -> WasmtimeResult<u
     memory.size_pages(store)
 }
 
+/// Core function to get memory page size in bytes
+///
+/// Returns the page size for this memory, which is normally 65536 but can differ
+/// when the `wasm_custom_page_sizes` engine feature is enabled.
+pub fn get_memory_page_size(memory: &Memory) -> u64 {
+    memory.memory_type.page_size()
+}
+
+/// Core function to get memory page size as log2
+///
+/// Returns the log2 of the page size (normally 16 for 65536 byte pages).
+pub fn get_memory_page_size_log2(memory: &Memory) -> u32 {
+    memory.memory_type.page_size_log2() as u32
+}
+
+/// Core function to get memory data size in bytes
+///
+/// Returns the current data size of the memory (pages * page_size).
+pub fn get_memory_data_size(memory: &Memory, store: &Store) -> WasmtimeResult<usize> {
+    memory.data_size(store)
+}
+
 /// Core function to read bytes from memory
 pub fn read_memory_bytes(
     memory: &Memory,

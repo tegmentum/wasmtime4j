@@ -139,6 +139,33 @@ public final class PanamaMemory implements WasmMemory {
   }
 
   @Override
+  public int pageSizeLog2() {
+    ensureNotClosed();
+    try (final Arena localArena = Arena.ofConfined()) {
+      final MemorySegment pageSizeLog2Out = localArena.allocate(ValueLayout.JAVA_INT);
+      final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore panamaStore = getPanamaStore();
+      final MemorySegment storePtr = panamaStore.getNativeStore();
+      final int result =
+          NATIVE_BINDINGS.panamaMemoryGetPageSizeLog2(memPtr, storePtr, pageSizeLog2Out);
+      if (result != 0) {
+        return 16; // Default to standard 64KB page size
+      }
+      return pageSizeLog2Out.get(ValueLayout.JAVA_INT, 0);
+    }
+  }
+
+  @Override
+  public int pageSize() {
+    return 1 << pageSizeLog2();
+  }
+
+  @Override
+  public long dataSize() {
+    return getSize64() * (long) pageSize();
+  }
+
+  @Override
   public int getSize() {
     ensureNotClosed();
     if (instance != null) {

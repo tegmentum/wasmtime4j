@@ -555,6 +555,24 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   @Override
+  public int pageSize() {
+    ensureUsable();
+    return (int) nativeGetPageSize(getNativeHandle());
+  }
+
+  @Override
+  public int pageSizeLog2() {
+    ensureUsable();
+    return nativeGetPageSizeLog2(getNativeHandle());
+  }
+
+  @Override
+  public long dataSize() {
+    ensureUsable();
+    return nativeGetDataSize(getNativeHandle(), store.getNativeHandle());
+  }
+
+  @Override
   public int getSize() {
     return sizeInPages();
   }
@@ -1868,4 +1886,29 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @return the previous size in pages, or -1 if growth failed
    */
   private static native long nativeGrowAsync(long memoryHandle, long storeHandle, long pages);
+
+  /**
+   * Gets the page size of the memory in bytes.
+   *
+   * @param memoryHandle the native memory handle
+   * @return the page size in bytes (normally 65536, but may differ with custom page sizes)
+   */
+  private static native long nativeGetPageSize(long memoryHandle);
+
+  /**
+   * Gets the page size of the memory as log2.
+   *
+   * @param memoryHandle the native memory handle
+   * @return the log2 of the page size (normally 16)
+   */
+  private static native int nativeGetPageSizeLog2(long memoryHandle);
+
+  /**
+   * Gets the data size of the memory in bytes.
+   *
+   * @param memoryHandle the native memory handle
+   * @param storeHandle the native store handle
+   * @return the data size in bytes
+   */
+  private static native long nativeGetDataSize(long memoryHandle, long storeHandle);
 }
