@@ -44,7 +44,12 @@ public interface ComponentResourceHandle {
   /**
    * Gets the resource handle index.
    *
-   * @return the handle index
+   * <p>Note: Resource handles in the Component Model are unsigned 32-bit integers (u32). Since Java
+   * {@code int} is signed, handle values greater than {@code Integer.MAX_VALUE} (2,147,483,647)
+   * will appear as negative numbers. Use {@code Integer.toUnsignedLong(getIndex())} for correct
+   * unsigned interpretation.
+   *
+   * @return the handle index as a signed int (unsigned u32 representation)
    */
   int getIndex();
 
