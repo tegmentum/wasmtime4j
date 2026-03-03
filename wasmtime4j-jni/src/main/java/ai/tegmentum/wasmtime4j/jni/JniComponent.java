@@ -333,38 +333,6 @@ public final class JniComponent {
   static native String nativeComponentGetExportInterface(long componentHandle, String exportName);
 
   /**
-   * Creates a new WIT parser context.
-   *
-   * @return WIT parser handle on success, 0 on failure
-   */
-  static native long nativeWitParserNew();
-
-  /**
-   * Destroys a WIT parser context.
-   *
-   * @param parserHandle the WIT parser handle
-   */
-  static native void nativeWitParserDestroy(long parserHandle);
-
-  /**
-   * Parses a WIT interface definition.
-   *
-   * @param parserHandle the WIT parser handle
-   * @param witText the WIT text to parse
-   * @return interface handle on success, 0 on failure
-   */
-  static native long nativeWitParserParseInterface(long parserHandle, String witText);
-
-  /**
-   * Validates WIT interface syntax.
-   *
-   * @param parserHandle the WIT parser handle
-   * @param witText the WIT text to validate
-   * @return true if valid syntax, false otherwise
-   */
-  static native boolean nativeWitParserValidateSyntax(long parserHandle, String witText);
-
-  /**
    * Invokes a component function with marshalled WIT values.
    *
    * <p>This method accepts parameters as marshalled WIT values (type discriminators and binary
