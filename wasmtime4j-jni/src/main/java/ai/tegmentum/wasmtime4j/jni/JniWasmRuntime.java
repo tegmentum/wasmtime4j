@@ -924,27 +924,13 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   @Override
   public ai.tegmentum.wasmtime4j.wasi.nn.NnContext createNnContext()
       throws ai.tegmentum.wasmtime4j.wasi.nn.NnException {
-    if (!isNnAvailable()) {
-      throw new ai.tegmentum.wasmtime4j.wasi.nn.NnException(
-          "WASI-NN is not available in this build");
-    }
-    try {
-      validateRuntimeState();
-    } catch (final WasmException e) {
-      throw new ai.tegmentum.wasmtime4j.wasi.nn.NnException("Runtime is not valid", e);
-    }
-
-    final long handle = nativeCreateNnContext();
-    if (handle == 0) {
-      throw new ai.tegmentum.wasmtime4j.wasi.nn.NnException("Failed to create WASI-NN context");
-    }
-    LOGGER.fine("Created WASI-NN context with handle: 0x" + Long.toHexString(handle));
-    return new ai.tegmentum.wasmtime4j.jni.wasi.nn.JniNnContext(handle);
+    throw new ai.tegmentum.wasmtime4j.wasi.nn.NnException(
+        "WASI-NN is not available via JNI. Use the component model instead.");
   }
 
   @Override
   public boolean isNnAvailable() {
-    return nativeIsNnAvailable() != 0;
+    return false;
   }
 
   @Override
@@ -1124,22 +1110,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
    */
   private static native long nativeCreateStoreWithResourceLimits(
       long engineHandle, long fuelLimit, long memoryLimitBytes, long executionTimeoutSeconds);
-
-  // ===== WASI-NN NATIVE METHOD DECLARATIONS =====
-
-  /**
-   * Create a new WASI-NN context.
-   *
-   * @return the native context handle, or 0 on failure
-   */
-  private static native long nativeCreateNnContext();
-
-  /**
-   * Check if WASI-NN is available.
-   *
-   * @return non-zero if WASI-NN is available, 0 otherwise
-   */
-  private static native int nativeIsNnAvailable();
 
   // ===== TAG NATIVE METHOD DECLARATIONS =====
 
