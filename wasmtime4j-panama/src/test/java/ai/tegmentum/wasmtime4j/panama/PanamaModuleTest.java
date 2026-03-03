@@ -282,14 +282,34 @@ class PanamaModuleTest {
     }
 
     @Test
-    @DisplayName("Should return module name")
-    void shouldReturnModuleName() throws Exception {
+    @DisplayName("Should return null name for unnamed module")
+    void shouldReturnNullNameForUnnamedModule() throws Exception {
       final PanamaModule module = compileWat(FUNCTION_MODULE_WAT);
 
       final String name = module.getName();
-      assertNotNull(name, "Module name should not be null");
-      assertThat(name).startsWith("panama-module-");
-      LOGGER.info("Module name: " + name);
+      assertNull(name, "Unnamed module should return null name");
+      LOGGER.info("Unnamed module getName() correctly returned null");
+    }
+
+    @Test
+    @DisplayName("Should return module name for named module")
+    void shouldReturnModuleName() throws Exception {
+      final String namedModuleWat =
+          """
+          (module $test_module
+            (func (export "add") (param i32 i32) (result i32)
+              local.get 0
+              local.get 1
+              i32.add
+            )
+          )
+          """;
+      final PanamaModule module = compileWat(namedModuleWat);
+
+      final String name = module.getName();
+      assertNotNull(name, "Named module should not return null name");
+      assertThat(name).isEqualTo("test_module");
+      LOGGER.info("Named module getName() returned: " + name);
     }
   }
 
