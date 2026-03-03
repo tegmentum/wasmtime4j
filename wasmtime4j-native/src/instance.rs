@@ -10,6 +10,7 @@ use crate::interop::ReentrantLock;
 use crate::module::{ExportKind, FunctionSignature, ImportKind, Module, ModuleValueType};
 use crate::store::{Store, StoreData};
 use std::collections::HashMap;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
 use wasmtime::{
@@ -83,8 +84,26 @@ pub enum InstanceState {
     Destroying = 6,
 }
 
+impl InstanceState {
+    /// Convert from u8 representation
+    pub fn from_u8(val: u8) -> Self {
+        match val {
+            0 => InstanceState::Creating,
+            1 => InstanceState::Created,
+            2 => InstanceState::Running,
+            3 => InstanceState::Suspended,
+            4 => InstanceState::Error,
+            5 => InstanceState::Disposed,
+            6 => InstanceState::Destroying,
+            _ => InstanceState::Error,
+        }
+    }
+}
+
 /// Instance metadata and resource tracking
-#[derive(Debug, Clone)]
+///
+/// Mutable fields use atomics to prevent data races when `Instance` is
+/// shared across threads (the `unsafe impl Sync` on `Instance`).
 pub struct InstanceMetadata {
     /// Module name or identifier
     pub name: String,
@@ -94,18 +113,94 @@ pub struct InstanceMetadata {
     pub export_count: usize,
     /// Number of imported functions
     pub import_count: usize,
-    /// Memory usage in bytes
-    pub memory_bytes: usize,
-    /// Function call count for performance tracking
-    pub function_calls: u64,
-    /// Whether this instance has been disposed
-    pub disposed: bool,
-    /// Current lifecycle state
-    pub state: InstanceState,
+    /// Function call count for performance tracking (atomic for thread safety)
+    function_calls: std::sync::atomic::AtomicU64,
+    /// Whether this instance has been disposed (atomic for thread safety)
+    disposed: std::sync::atomic::AtomicBool,
+    /// Current lifecycle state stored as u8 (atomic for thread safety)
+    state: std::sync::atomic::AtomicU8,
     /// Thread ID that created this instance
     pub creator_thread_id: std::thread::ThreadId,
-    /// Whether cleanup has been performed
-    pub cleaned_up: bool,
+    /// Whether cleanup has been performed (atomic for thread safety)
+    cleaned_up: std::sync::atomic::AtomicBool,
+}
+
+impl std::fmt::Debug for InstanceMetadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("InstanceMetadata")
+            .field("name", &self.name)
+            .field("created_at", &self.created_at)
+            .field("export_count", &self.export_count)
+            .field("import_count", &self.import_count)
+            .field("function_calls", &self.function_calls.load(Ordering::Relaxed))
+            .field("disposed", &self.disposed.load(Ordering::Relaxed))
+            .field("state", &self.get_state())
+            .field("creator_thread_id", &self.creator_thread_id)
+            .field("cleaned_up", &self.cleaned_up.load(Ordering::Relaxed))
+            .finish()
+    }
+}
+
+impl Clone for InstanceMetadata {
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            created_at: self.created_at,
+            export_count: self.export_count,
+            import_count: self.import_count,
+            function_calls: std::sync::atomic::AtomicU64::new(
+                self.function_calls.load(Ordering::Relaxed),
+            ),
+            disposed: std::sync::atomic::AtomicBool::new(self.disposed.load(Ordering::Relaxed)),
+            state: std::sync::atomic::AtomicU8::new(self.state.load(Ordering::Relaxed)),
+            creator_thread_id: self.creator_thread_id,
+            cleaned_up: std::sync::atomic::AtomicBool::new(
+                self.cleaned_up.load(Ordering::Relaxed),
+            ),
+        }
+    }
+}
+
+impl InstanceMetadata {
+    /// Get the current lifecycle state
+    pub fn get_state(&self) -> InstanceState {
+        InstanceState::from_u8(self.state.load(Ordering::Acquire))
+    }
+
+    /// Set the lifecycle state
+    pub fn set_state(&self, state: InstanceState) {
+        self.state.store(state as u8, Ordering::Release);
+    }
+
+    /// Get function call count
+    pub fn get_function_calls(&self) -> u64 {
+        self.function_calls.load(Ordering::Relaxed)
+    }
+
+    /// Increment function call counter
+    pub fn increment_function_calls(&self) {
+        self.function_calls.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Check if disposed
+    pub fn is_disposed(&self) -> bool {
+        self.disposed.load(Ordering::Acquire)
+    }
+
+    /// Mark as disposed
+    pub fn set_disposed(&self, val: bool) {
+        self.disposed.store(val, Ordering::Release);
+    }
+
+    /// Check if cleaned up
+    pub fn is_cleaned_up(&self) -> bool {
+        self.cleaned_up.load(Ordering::Acquire)
+    }
+
+    /// Mark as cleaned up
+    pub fn set_cleaned_up(&self, val: bool) {
+        self.cleaned_up.store(val, Ordering::Release);
+    }
 }
 
 /// Import binding information for validation and resolution
@@ -543,12 +638,11 @@ impl Instance {
             created_at: Instant::now(),
             export_count,
             import_count,
-            memory_bytes: 0, // Will be calculated when memory is accessed
-            function_calls: 0,
-            disposed: false,
-            state: InstanceState::Created,
+            function_calls: std::sync::atomic::AtomicU64::new(0),
+            disposed: std::sync::atomic::AtomicBool::new(false),
+            state: std::sync::atomic::AtomicU8::new(InstanceState::Created as u8),
             creator_thread_id: std::thread::current().id(),
-            cleaned_up: false,
+            cleaned_up: std::sync::atomic::AtomicBool::new(false),
         };
 
         Ok((metadata, imports_map, exports_map))
@@ -687,7 +781,7 @@ impl Instance {
         params: &[WasmValue],
     ) -> WasmtimeResult<ExecutionResult> {
         // Check if instance is disposed or cleaned up
-        if self.metadata.disposed || self.metadata.cleaned_up {
+        if self.metadata.is_disposed() || self.metadata.is_cleaned_up() {
             return Err(WasmtimeError::Instance {
                 message: "Cannot call function on disposed or cleaned up instance".to_string(),
             });
@@ -697,8 +791,8 @@ impl Instance {
         self.validate_thread_access()?;
 
         // Set state to running during execution
-        let previous_state = self.metadata.state;
-        self.metadata.state = InstanceState::Running;
+        let previous_state = self.metadata.get_state();
+        self.metadata.set_state(InstanceState::Running);
 
         // Validate export exists and is a function
         let export_binding =
@@ -885,7 +979,7 @@ impl Instance {
         }
         .map_err(|e| {
             // Set error state on execution failure
-            self.metadata.state = InstanceState::Error;
+            self.metadata.set_state(InstanceState::Error);
             e
         })?;
 
@@ -936,10 +1030,10 @@ impl Instance {
         };
 
         // Increment function call count
-        self.metadata.function_calls += 1;
+        self.metadata.increment_function_calls();
 
         // Restore previous state
-        self.metadata.state = previous_state;
+        self.metadata.set_state(previous_state);
 
         Ok(ExecutionResult {
             values,
@@ -1115,8 +1209,8 @@ impl Instance {
     /// Dispose instance and clean up resources
     pub fn dispose(&mut self) -> WasmtimeResult<()> {
         // Mark as disposed to prevent further operations
-        self.metadata.disposed = true;
-        self.metadata.state = InstanceState::Disposed;
+        self.metadata.set_disposed(true);
+        self.metadata.set_state(InstanceState::Disposed);
 
         // Clear export and import maps
         self.exports_map.clear();
@@ -1128,38 +1222,38 @@ impl Instance {
 
     /// Get the current lifecycle state of this instance
     pub fn get_state(&self) -> InstanceState {
-        self.metadata.state
+        self.metadata.get_state()
     }
 
     /// Set the lifecycle state of this instance
     pub fn set_state(&mut self, state: InstanceState) {
-        self.metadata.state = state;
+        self.metadata.set_state(state);
     }
 
     /// Perform comprehensive resource cleanup
     pub fn cleanup(&mut self) -> WasmtimeResult<bool> {
-        if self.metadata.cleaned_up {
+        if self.metadata.is_cleaned_up() {
             return Ok(false); // Already cleaned up
         }
 
         // Set state to destroying during cleanup
-        self.metadata.state = InstanceState::Destroying;
+        self.metadata.set_state(InstanceState::Destroying);
 
         // Clear all maps and references
         self.exports_map.clear();
         self.imports_map.clear();
 
         // Mark as disposed and cleaned up
-        self.metadata.disposed = true;
-        self.metadata.cleaned_up = true;
-        self.metadata.state = InstanceState::Disposed;
+        self.metadata.set_disposed(true);
+        self.metadata.set_cleaned_up(true);
+        self.metadata.set_state(InstanceState::Disposed);
 
         Ok(true)
     }
 
     /// Check if instance has been cleaned up
     pub fn is_cleaned_up(&self) -> bool {
-        self.metadata.cleaned_up
+        self.metadata.is_cleaned_up()
     }
 
     /// Validate cross-thread access
@@ -1178,7 +1272,7 @@ impl Instance {
 
     /// Check if instance has been disposed
     pub fn is_disposed(&self) -> bool {
-        self.metadata.disposed
+        self.metadata.is_disposed()
     }
 
     /// Get instance metadata
@@ -1214,7 +1308,7 @@ impl Instance {
 
     /// Validate instance is still functional (defensive check)
     pub fn validate(&self) -> WasmtimeResult<()> {
-        if self.metadata.disposed {
+        if self.metadata.is_disposed() {
             return Err(WasmtimeError::Instance {
                 message: "Instance has been disposed".to_string(),
             });
@@ -1567,8 +1661,9 @@ pub mod core {
     }
 
     /// Core function to get memory usage in bytes
-    pub fn get_memory_bytes(instance: &Instance) -> usize {
-        instance.metadata().memory_bytes
+    /// Note: This always returns 0 as memory_bytes tracking is not implemented.
+    pub fn get_memory_bytes(_instance: &Instance) -> usize {
+        0
     }
 
     /// Core function to get instance name
@@ -1578,7 +1673,7 @@ pub mod core {
 
     /// Core function to get function call count
     pub fn get_function_call_count(instance: &Instance) -> u64 {
-        instance.metadata().function_calls
+        instance.metadata().get_function_calls()
     }
 
     /// Core function to get instance creation timestamp
@@ -2318,9 +2413,9 @@ mod tests {
         let metadata = instance.metadata();
         assert_eq!(metadata.export_count, 3, "Should have 3 exports");
         assert_eq!(metadata.import_count, 0, "Should have 0 imports");
-        assert!(!metadata.disposed, "Should not be disposed");
+        assert!(!metadata.is_disposed(), "Should not be disposed");
         assert_eq!(
-            metadata.state,
+            metadata.get_state(),
             InstanceState::Created,
             "State should be Created"
         );
@@ -2682,7 +2777,7 @@ mod tests {
             Instance::new_without_imports(&mut store, &module).expect("Failed to create instance");
 
         assert_eq!(
-            instance.metadata().state,
+            instance.metadata().get_state(),
             InstanceState::Created,
             "Initial state should be Created"
         );
@@ -2802,7 +2897,7 @@ mod tests {
 
         let metadata = core::get_metadata(&instance);
         assert_eq!(metadata.export_count, 1, "Should have 1 export");
-        assert!(!metadata.disposed, "Should not be disposed");
+        assert!(!metadata.is_disposed(), "Should not be disposed");
     }
 
     #[test]
