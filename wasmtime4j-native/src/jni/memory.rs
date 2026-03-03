@@ -801,24 +801,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetDataP
 /// Destroy memory (JNI version) with comprehensive validation and cleanup
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeDestroyMemory(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     memory_ptr: jlong,
 ) {
-    // Enhanced validation with detailed error logging
-    if memory_ptr == 0 {
-        log::warn!("JNI Memory.nativeDestroyMemory called with null memory pointer");
-        return;
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        // Enhanced validation with detailed error logging
+        if memory_ptr == 0 {
+            log::warn!("JNI Memory.nativeDestroyMemory called with null memory pointer");
+            return Ok(());
+        }
 
-    log::debug!("Destroying memory handle: 0x{:x}", memory_ptr);
+        log::debug!("Destroying memory handle: 0x{:x}", memory_ptr);
 
-    unsafe {
-        // Use the enhanced destroy_memory function which includes validation
-        core::destroy_memory(memory_ptr as *mut std::os::raw::c_void);
-    }
+        unsafe {
+            // Use the enhanced destroy_memory function which includes validation
+            core::destroy_memory(memory_ptr as *mut std::os::raw::c_void);
+        }
 
-    log::debug!("Memory handle destruction completed: 0x{:x}", memory_ptr);
+        log::debug!("Memory handle destruction completed: 0x{:x}", memory_ptr);
+        Ok(())
+    });
 }
 
 /// Get memory page count (JNI version) with comprehensive validation
@@ -1146,19 +1149,26 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetGloba
     mut env: JNIEnv,
     _class: JClass,
 ) -> jbyteArray {
-    match core::get_memory_handle_diagnostics() {
-        Ok((handle_count, total_accesses)) => {
-            // Pack both values into a byte array: [handle_count: 4 bytes][total_accesses: 8 bytes]
-            let mut data = Vec::with_capacity(12);
-            data.extend_from_slice(&(handle_count as u32).to_le_bytes());
-            data.extend_from_slice(&total_accesses.to_le_bytes());
-
-            match env.byte_array_from_slice(&data) {
-                Ok(jarray) => jarray.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<Vec<u8>> {
+        let (handle_count, total_accesses) = core::get_memory_handle_diagnostics()?;
+        // Pack both values into a byte array: [handle_count: 4 bytes][total_accesses: 8 bytes]
+        let mut data = Vec::with_capacity(12);
+        data.extend_from_slice(&(handle_count as u32).to_le_bytes());
+        data.extend_from_slice(&total_accesses.to_le_bytes());
+        Ok(data)
+    })) {
+        Ok(Ok(data)) => match env.byte_array_from_slice(&data) {
+            Ok(jarray) => jarray.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
         }
-        Err(_) => std::ptr::null_mut(),
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
+        }
     }
 }
 

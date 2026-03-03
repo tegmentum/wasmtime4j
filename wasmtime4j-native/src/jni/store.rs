@@ -1241,17 +1241,20 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeReapplyWa
 #[no_mangle]
 #[allow(non_snake_case)]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDestroyStore(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
 ) {
-    if store_ptr != 0 {
-        // Unregister the store handle from memory module before destroying
-        let _ = crate::memory::core::unregister_store_handle(store_ptr as *const c_void);
-    }
-    unsafe {
-        core::destroy_store(store_ptr as *mut c_void);
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if store_ptr != 0 {
+            // Unregister the store handle from memory module before destroying
+            let _ = crate::memory::core::unregister_store_handle(store_ptr as *const c_void);
+        }
+        unsafe {
+            core::destroy_store(store_ptr as *mut c_void);
+        }
+        Ok(())
+    });
 }
 
 #[no_mangle]
@@ -1261,16 +1264,21 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCaptureBa
     _class: JClass<'local>,
     store_ptr: jlong,
 ) -> JObject<'local> {
-    let result = (|| -> Result<JObject<'local>, crate::error::WasmtimeError> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<JObject<'local>, crate::error::WasmtimeError> {
         let store_ref = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
         let store = store_ref.inner.lock();
         let backtrace = wasmtime::WasmBacktrace::capture(&*store);
         create_backtrace_object(&mut env, &backtrace, false)
-    })();
-
-    match result {
-        Ok(obj) => obj,
-        Err(_) => JObject::null(),
+    })) {
+        Ok(Ok(obj)) => obj,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            JObject::null()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            JObject::null()
+        }
     }
 }
 
@@ -1283,16 +1291,21 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeForceCapt
     _class: JClass<'local>,
     store_ptr: jlong,
 ) -> JObject<'local> {
-    let result = (|| -> Result<JObject<'local>, crate::error::WasmtimeError> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<JObject<'local>, crate::error::WasmtimeError> {
         let store_ref = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
         let store = store_ref.inner.lock();
         let backtrace = wasmtime::WasmBacktrace::force_capture(&*store);
         create_backtrace_object(&mut env, &backtrace, true)
-    })();
-
-    match result {
-        Ok(obj) => obj,
-        Err(_) => JObject::null(),
+    })) {
+        Ok(Ok(obj)) => obj,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            JObject::null()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            JObject::null()
+        }
     }
 }
 
@@ -1787,11 +1800,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResour
 /// Clear resource limiter and clean up JNI resources
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearResourceLimiter(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _jni_store_obj: JObject,
     store_ptr: jlong,
 ) {
-    unregister_jni_resource_limiter(store_ptr);
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        unregister_jni_resource_limiter(store_ptr);
+        Ok(())
+    });
 }
 
 /// Set async resource limiter with JNI callback support
@@ -1902,135 +1918,111 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCall
 /// Check if single-step mode is active
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeIsSingleStep(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
 ) -> jboolean {
-    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
-        Ok(store) => {
-            if store.is_single_step() {
-                1
-            } else {
-                0
-            }
-        }
-        Err(_) => 0,
-    }
+    jni_utils::jni_try_bool(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        Ok(store.is_single_step())
+    }) as jboolean
 }
 
 /// Check if store has async support enabled
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeIsAsync(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
 ) -> jboolean {
-    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
-        Ok(store) => {
-            if store.is_async() {
-                1
-            } else {
-                0
-            }
-        }
-        Err(_) => 0,
-    }
+    jni_utils::jni_try_bool(&mut env, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        Ok(store.is_async())
+    }) as jboolean
 }
 
 /// Get the number of active breakpoints
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeBreakpointCount(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
 ) -> jint {
-    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
-        Ok(store) => match store.breakpoint_count() {
-            Ok(Some(count)) => count as jint,
-            Ok(None) => -1,
-            Err(_) => -2,
-        },
-        Err(_) => -2,
-    }
+    jni_utils::jni_try_with_default(&mut env, -2, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        match store.breakpoint_count() {
+            Ok(Some(count)) => Ok(count as jint),
+            Ok(None) => Ok(-1),
+            Err(_) => Ok(-2),
+        }
+    })
 }
 
 /// Add a breakpoint
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeAddBreakpoint(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
     module_ptr: jlong,
     pc: jint,
 ) -> jint {
-    let module = match unsafe { crate::module::core::get_module_ref(module_ptr as *const c_void) } {
-        Ok(m) => m,
-        Err(_) => return -1,
-    };
-    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
-        Ok(store) => {
-            let wasm_module = module.inner().clone();
-            match store.edit_breakpoints(|edit| {
-                let _ = edit.add_breakpoint(&wasm_module, pc as u32);
-            }) {
-                Ok(true) => 0,
-                Ok(false) => 1,
-                Err(_) => -1,
-            }
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        let module = unsafe { crate::module::core::get_module_ref(module_ptr as *const c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        let wasm_module = module.inner().clone();
+        match store.edit_breakpoints(|edit| {
+            let _ = edit.add_breakpoint(&wasm_module, pc as u32);
+        }) {
+            Ok(true) => Ok(0),
+            Ok(false) => Ok(1),
+            Err(_) => Ok(-1),
         }
-        Err(_) => -1,
-    }
+    })
 }
 
 /// Remove a breakpoint
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeRemoveBreakpoint(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
     module_ptr: jlong,
     pc: jint,
 ) -> jint {
-    let module = match unsafe { crate::module::core::get_module_ref(module_ptr as *const c_void) } {
-        Ok(m) => m,
-        Err(_) => return -1,
-    };
-    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
-        Ok(store) => {
-            let wasm_module = module.inner().clone();
-            match store.edit_breakpoints(|edit| {
-                let _ = edit.remove_breakpoint(&wasm_module, pc as u32);
-            }) {
-                Ok(true) => 0,
-                Ok(false) => 1,
-                Err(_) => -1,
-            }
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        let module = unsafe { crate::module::core::get_module_ref(module_ptr as *const c_void)? };
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        let wasm_module = module.inner().clone();
+        match store.edit_breakpoints(|edit| {
+            let _ = edit.remove_breakpoint(&wasm_module, pc as u32);
+        }) {
+            Ok(true) => Ok(0),
+            Ok(false) => Ok(1),
+            Err(_) => Ok(-1),
         }
-        Err(_) => -1,
-    }
+    })
 }
 
 /// Set single-step mode
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetSingleStep(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     store_ptr: jlong,
     enabled: jboolean,
 ) -> jint {
-    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
-        Ok(store) => {
-            let enable = enabled != 0;
-            match store.edit_breakpoints(|edit| {
-                let _ = edit.single_step(enable);
-            }) {
-                Ok(true) => 0,
-                Ok(false) => 1,
-                Err(_) => -1,
-            }
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        let enable = enabled != 0;
+        match store.edit_breakpoints(|edit| {
+            let _ = edit.single_step(enable);
+        }) {
+            Ok(true) => Ok(0),
+            Ok(false) => Ok(1),
+            Err(_) => Ok(-1),
         }
-        Err(_) => -1,
-    }
+    })
 }
 
 /// Get debug exit frames as a flat int array [func_idx, pc, num_locals, num_stacks, ...]
@@ -2042,38 +2034,51 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDebugExit
     _class: JClass,
     store_ptr: jlong,
 ) -> jintArray {
-    let null_array = std::ptr::null_mut();
-    match unsafe { core::get_store_ref(store_ptr as *const c_void) } {
-        Ok(store) => match store.debug_exit_frames() {
-            Ok(Some(frames)) => {
-                if frames.is_empty() {
-                    env.new_int_array(0)
-                        .map(|a| a.into_raw())
-                        .unwrap_or(null_array)
-                } else {
-                    let flat_len = frames.len() * 4;
-                    let mut flat_data: Vec<jint> = Vec::with_capacity(flat_len);
-                    for frame in &frames {
-                        flat_data.push(frame[0]);
-                        flat_data.push(frame[1]);
-                        flat_data.push(frame[2]);
-                        flat_data.push(frame[3]);
-                    }
-                    match env.new_int_array(flat_len as jsize) {
-                        Ok(array) => {
-                            if env.set_int_array_region(&array, 0, &flat_data).is_ok() {
-                                array.into_raw()
-                            } else {
-                                null_array
-                            }
+    let null_array: jintArray = std::ptr::null_mut();
+
+    // Separate the unsafe computation from the JNI array creation
+    let frames_result = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Option<Vec<[jint; 4]>>> {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        Ok(store.debug_exit_frames()?)
+    })) {
+        Ok(Ok(frames)) => frames,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return null_array;
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return null_array;
+        }
+    };
+
+    match frames_result {
+        Some(frames) => {
+            if frames.is_empty() {
+                env.new_int_array(0)
+                    .map(|a| a.into_raw())
+                    .unwrap_or(null_array)
+            } else {
+                let flat_len = frames.len() * 4;
+                let mut flat_data: Vec<jint> = Vec::with_capacity(flat_len);
+                for frame in &frames {
+                    flat_data.push(frame[0]);
+                    flat_data.push(frame[1]);
+                    flat_data.push(frame[2]);
+                    flat_data.push(frame[3]);
+                }
+                match env.new_int_array(flat_len as jsize) {
+                    Ok(array) => {
+                        if env.set_int_array_region(&array, 0, &flat_data).is_ok() {
+                            array.into_raw()
+                        } else {
+                            null_array
                         }
-                        Err(_) => null_array,
                     }
+                    Err(_) => null_array,
                 }
             }
-            Ok(None) => null_array,
-            Err(_) => null_array,
-        },
-        Err(_) => null_array,
+        }
+        None => null_array,
     }
 }

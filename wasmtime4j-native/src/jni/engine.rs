@@ -867,13 +867,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDetectHo
 /// Destroy a Wasmtime engine (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDestroyEngine(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
 ) {
-    unsafe {
-        core::destroy_engine(engine_ptr as *mut std::os::raw::c_void);
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        unsafe {
+            core::destroy_engine(engine_ptr as *mut std::os::raw::c_void);
+        }
+        Ok(())
+    });
 }
 
 /// Clear the global handle registries for memory and store validation (JNI version)
@@ -1193,27 +1196,29 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompi
     engine_ptr: jlong,
     wasm_bytes: JByteArray,
 ) -> jbyteArray {
-    // Get the byte array data
+    // Get the byte array data before catch_unwind (needs env)
     let bytes = match env.convert_byte_array(&wasm_bytes) {
         Ok(bytes) => bytes,
         Err(_) => return std::ptr::null_mut(),
     };
 
-    // Precompile the module
-    let engine = match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-        Ok(engine) => engine,
-        Err(_) => return std::ptr::null_mut(),
-    };
-
-    let precompiled = match core::precompile_module(engine, &bytes) {
-        Ok(data) => data,
-        Err(_) => return std::ptr::null_mut(),
-    };
-
-    // Convert result to Java byte array
-    match env.byte_array_from_slice(&precompiled) {
-        Ok(array) => array.into_raw(),
-        Err(_) => std::ptr::null_mut(),
+    // Precompile the module (panic-safe)
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Vec<u8>> {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        core::precompile_module(engine, &bytes)
+    })) {
+        Ok(Ok(precompiled)) => match env.byte_array_from_slice(&precompiled) {
+            Ok(array) => array.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
+        }
     }
 }
 
@@ -1231,19 +1236,22 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativePrecompi
         Err(_) => return std::ptr::null_mut(),
     };
 
-    let engine = match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-        Ok(engine) => engine,
-        Err(_) => return std::ptr::null_mut(),
-    };
-
-    let precompiled = match core::precompile_component(engine, &bytes) {
-        Ok(data) => data,
-        Err(_) => return std::ptr::null_mut(),
-    };
-
-    match env.byte_array_from_slice(&precompiled) {
-        Ok(array) => array.into_raw(),
-        Err(_) => std::ptr::null_mut(),
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Vec<u8>> {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        core::precompile_component(engine, &bytes)
+    })) {
+        Ok(Ok(precompiled)) => match env.byte_array_from_slice(&precompiled) {
+            Ok(array) => array.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
+        }
     }
 }
 
@@ -1256,12 +1264,22 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetPooli
     _class: JClass,
     engine_ptr: jlong,
 ) -> jlongArray {
-    let engine = match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-        Ok(engine) => engine,
-        Err(_) => return std::ptr::null_mut(),
+    let metrics_opt = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Option<[i64; 12]>> {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        Ok(core::pooling_allocator_metrics(engine))
+    })) {
+        Ok(Ok(opt)) => opt,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return std::ptr::null_mut();
+        }
     };
 
-    match core::pooling_allocator_metrics(engine) {
+    match metrics_opt {
         Some(metrics) => match env.new_long_array(12) {
             Ok(array) => {
                 if env.set_long_array_region(&array, 0, &metrics).is_err() {
@@ -1318,14 +1336,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeSetOptim
 /// Get engine reference count for debugging (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeGetReferenceCount(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
 ) -> jint {
-    match unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void) } {
-        Ok(engine) => core::get_reference_count(engine) as jint,
-        Err(_) => -1,
-    }
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        Ok(core::get_reference_count(engine) as jint)
+    })
 }
 
 /// Check if debug info is enabled
@@ -1342,20 +1360,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsDebugI
 /// Check if the engine is using Pulley interpreter (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsPulley(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
 ) -> jboolean {
-    match unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void) } {
-        Ok(engine) => {
-            if engine.inner().is_pulley() {
-                1
-            } else {
-                0
-            }
-        }
-        Err(_) => 0,
-    }
+    jni_utils::jni_try_bool(&mut env, || {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *mut std::ffi::c_void)? };
+        Ok(engine.inner().is_pulley())
+    }) as jboolean
 }
 
 /// Get the precompile compatibility hash for the engine (JNI version)
@@ -1433,13 +1445,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWeakEngine_nativeUpgr
 /// Destroy a weak engine reference (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWeakEngine_nativeDestroyWeakEngine(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     weak_ptr: jlong,
 ) {
-    unsafe {
-        core::destroy_weak_engine(weak_ptr as *mut std::os::raw::c_void);
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        unsafe {
+            core::destroy_weak_engine(weak_ptr as *mut std::os::raw::c_void);
+        }
+        Ok(())
+    });
 }
 
 /// Detect if bytes are a precompiled WebAssembly module or component
@@ -1456,26 +1471,33 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeDetectPr
     engine_ptr: jlong,
     bytes: JByteArray,
 ) -> jint {
-    let result: Result<jint, crate::error::WasmtimeError> = (|| {
-        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
-
-        let byte_vec = env.convert_byte_array(bytes).map_err(|e| {
-            crate::error::WasmtimeError::InvalidParameter {
+    // Extract byte array before catch_unwind (needs env)
+    let byte_vec = match env.convert_byte_array(bytes) {
+        Ok(v) => v,
+        Err(e) => {
+            let err = crate::error::WasmtimeError::InvalidParameter {
                 message: format!("Failed to convert byte array: {}", e),
-            }
-        })?;
+            };
+            jni_utils::throw_jni_exception(&mut env, &err);
+            return -2;
+        }
+    };
 
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jint> {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
         match engine.detect_precompiled(&byte_vec) {
             Some(value) => Ok(value),
             None => Ok(-1),
         }
-    })();
-
-    match result {
-        Ok(value) => value,
-        Err(e) => {
+    })) {
+        Ok(Ok(value)) => value,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
-            -2 // Error indicator
+            -2
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            -2
         }
     }
 }

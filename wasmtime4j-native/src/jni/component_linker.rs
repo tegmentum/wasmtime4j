@@ -1458,15 +1458,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 /// JNI binding for JniComponentLinker.nativeDestroyComponentLinker
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeDestroyComponentLinker(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _obj: JObject,
     linker_handle: jlong,
 ) {
-    if linker_handle != 0 {
-        unsafe {
-            component_linker_core::destroy_component_linker(linker_handle as *mut c_void);
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if linker_handle != 0 {
+            unsafe {
+                component_linker_core::destroy_component_linker(linker_handle as *mut c_void);
+            }
         }
-    }
+        Ok(())
+    });
 }
 
 /// Define a host function on the component linker
@@ -1614,18 +1617,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     linker_handle: jlong,
     enabled: jboolean,
 ) {
-    // Get the linker
-    let linker = match unsafe {
-        component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)
-    } {
-        Ok(linker) => linker,
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            return;
-        }
-    };
-
-    component_linker_core::set_async_support(linker, enabled != 0);
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        component_linker_core::set_async_support(linker, enabled != 0);
+        Ok(())
+    });
 }
 
 /// Define a resource type on the component linker
@@ -1694,40 +1692,38 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     // Build the interface path (e.g., "ns:pkg/iface")
     let interface_path = format!("{}:{}", namespace_str, interface_str);
 
-    // Get the linker and call define_resource
-    let linker = match unsafe {
-        component_linker_core::get_component_linker_mut(linker_handle as *mut std::ffi::c_void)
-    } {
-        Ok(l) => l,
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            return 0;
-        }
-    };
-
     // Create a destructor callback that will call back to Java via the callback registry
     let dtor_callback_id = destructor_callback_id as u64;
     let destructor = std::sync::Arc::new(JniResourceDestructorCallback {
         callback_id: dtor_callback_id,
     });
 
-    match linker.define_resource(
-        &interface_path,
-        &resource_str,
-        resource_type_id as u32,
-        destructor,
-    ) {
-        Ok(()) => {
-            log::info!(
-                "Defined component resource: {}/{} with resource_type_id={}",
-                interface_path,
-                resource_str,
-                resource_type_id
-            );
-            resource_type_id as jlong
-        }
-        Err(e) => {
+    // Get the linker and call define_resource (panic-safe)
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jlong> {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut std::ffi::c_void)?
+        };
+        linker.define_resource(
+            &interface_path,
+            &resource_str,
+            resource_type_id as u32,
+            destructor,
+        )?;
+        log::info!(
+            "Defined component resource: {}/{} with resource_type_id={}",
+            interface_path,
+            resource_str,
+            resource_type_id
+        );
+        Ok(resource_type_id as jlong)
+    })) {
+        Ok(Ok(id)) => id,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
+            0
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
             0
         }
     }
@@ -1783,38 +1779,32 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
         }
     };
 
-    let linker = match unsafe {
-        component_linker_core::get_component_linker_mut(linker_handle as *mut std::ffi::c_void)
-    } {
-        Ok(l) => l,
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            return;
-        }
-    };
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<()> {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut std::ffi::c_void)?
+        };
 
-    let module = match unsafe {
-        crate::module::core::get_module_ref(module_handle as *const std::ffi::c_void)
-    } {
-        Ok(m) => m,
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            return;
-        }
-    };
+        let module = unsafe {
+            crate::module::core::get_module_ref(module_handle as *const std::ffi::c_void)?
+        };
 
-    if let Err(e) =
-        component_linker_core::define_module(linker, &instance_path_str, &name_str, module)
-    {
-        jni_utils::throw_jni_exception(&mut env, &e);
-        return;
+        component_linker_core::define_module(linker, &instance_path_str, &name_str, module)?;
+
+        log::info!(
+            "Defined core module '{}' on instance path '{}' in component linker",
+            name_str,
+            instance_path_str
+        );
+        Ok(())
+    })) {
+        Ok(Ok(())) => {}
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+        }
     }
-
-    log::info!(
-        "Defined core module '{}' on instance path '{}' in component linker",
-        name_str,
-        instance_path_str
-    );
 }
 
 /// Instantiate a component using the linker with host functions and resources
@@ -1971,77 +1961,84 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_
 /// JNI binding for JniComponentInstancePre.nativeIsValid
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeIsValid(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _obj: JObject,
     pre_handle: jlong,
 ) -> jboolean {
-    if pre_handle == 0 {
-        return 0;
-    }
-    let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
-    if pre.is_valid() {
-        1
-    } else {
-        0
-    }
+    jni_utils::jni_try_bool(&mut env, || {
+        if pre_handle == 0 {
+            return Ok(false);
+        }
+        let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
+        Ok(pre.is_valid())
+    }) as jboolean
 }
 
 /// Get instance count from ComponentInstancePre
 /// JNI binding for JniComponentInstancePre.nativeInstanceCount
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeInstanceCount(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _obj: JObject,
     pre_handle: jlong,
 ) -> jlong {
-    if pre_handle == 0 {
-        return 0;
-    }
-    let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
-    pre.instance_count() as jlong
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if pre_handle == 0 {
+            return Ok(0);
+        }
+        let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
+        Ok(pre.instance_count() as jlong)
+    })
 }
 
 /// Get preparation time in nanoseconds
 /// JNI binding for JniComponentInstancePre.nativePreparationTimeNs
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativePreparationTimeNs(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _obj: JObject,
     pre_handle: jlong,
 ) -> jlong {
-    if pre_handle == 0 {
-        return 0;
-    }
-    let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
-    pre.preparation_time_ns() as jlong
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if pre_handle == 0 {
+            return Ok(0);
+        }
+        let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
+        Ok(pre.preparation_time_ns() as jlong)
+    })
 }
 
 /// Get average instantiation time in nanoseconds
 /// JNI binding for JniComponentInstancePre.nativeAvgInstantiationTimeNs
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeAvgInstantiationTimeNs(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _obj: JObject,
     pre_handle: jlong,
 ) -> jlong {
-    if pre_handle == 0 {
-        return 0;
-    }
-    let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
-    pre.average_instantiation_time_ns() as jlong
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if pre_handle == 0 {
+            return Ok(0);
+        }
+        let pre = unsafe { &*(pre_handle as *const crate::component::ComponentInstancePreWrapper) };
+        Ok(pre.average_instantiation_time_ns() as jlong)
+    })
 }
 
 /// Destroy a ComponentInstancePre
 /// JNI binding for JniComponentInstancePre.nativeDestroy
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeDestroy(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _obj: JObject,
     pre_handle: jlong,
 ) {
-    if pre_handle != 0 {
-        unsafe {
-            component_linker_core::destroy_component_instance_pre(pre_handle as *mut c_void);
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if pre_handle != 0 {
+            unsafe {
+                component_linker_core::destroy_component_instance_pre(pre_handle as *mut c_void);
+            }
         }
-    }
+        Ok(())
+    });
 }

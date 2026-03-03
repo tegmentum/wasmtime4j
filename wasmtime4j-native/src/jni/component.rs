@@ -77,33 +77,37 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
 /// Get the number of exported interfaces from a component
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentExportCount(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     component_ptr: jlong,
 ) -> jint {
-    if component_ptr == 0 {
-        log::error!("Component pointer is null");
-        return 0;
-    }
-
-    let component = unsafe { &*(component_ptr as *const Component) };
-    component.metadata.exports.len() as jint
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if component_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Component pointer is null".to_string(),
+            });
+        }
+        let component = unsafe { &*(component_ptr as *const Component) };
+        Ok(component.metadata.exports.len() as jint)
+    })
 }
 
 /// Get the number of imports required by a component
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentImportCount(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     component_ptr: jlong,
 ) -> jint {
-    if component_ptr == 0 {
-        log::error!("Component pointer is null");
-        return 0;
-    }
-
-    let component = unsafe { &*(component_ptr as *const Component) };
-    component.metadata.imports.len() as jint
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if component_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Component pointer is null".to_string(),
+            });
+        }
+        let component = unsafe { &*(component_ptr as *const Component) };
+        Ok(component.metadata.imports.len() as jint)
+    })
 }
 
 /// Get export interface name by index
@@ -115,29 +119,33 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
     index: jint,
 ) -> jstring {
     if component_ptr == 0 {
-        log::error!("Component pointer is null");
         return std::ptr::null_mut();
     }
 
-    let component = unsafe { &*(component_ptr as *const Component) };
-    let idx = index as usize;
-
-    if idx >= component.metadata.exports.len() {
-        log::error!(
-            "Export index {} out of bounds (len={})",
-            idx,
-            component.metadata.exports.len()
-        );
-        return std::ptr::null_mut();
-    }
-
-    let export_name = &component.metadata.exports[idx].name;
-    match env.new_string(export_name) {
-        Ok(s) => s.into_raw(),
-        Err(e) => {
-            log::error!("Failed to create Java string: {:?}", e);
-            std::ptr::null_mut()
+    let name = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<String> {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        let idx = index as usize;
+        if idx >= component.metadata.exports.len() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Export index {} out of bounds (len={})", idx, component.metadata.exports.len()),
+            });
         }
+        Ok(component.metadata.exports[idx].name.clone())
+    })) {
+        Ok(Ok(n)) => n,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return std::ptr::null_mut();
+        }
+    };
+
+    match env.new_string(&name) {
+        Ok(s) => s.into_raw(),
+        Err(_) => std::ptr::null_mut(),
     }
 }
 
@@ -150,46 +158,52 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
     index: jint,
 ) -> jstring {
     if component_ptr == 0 {
-        log::error!("Component pointer is null");
         return std::ptr::null_mut();
     }
 
-    let component = unsafe { &*(component_ptr as *const Component) };
-    let idx = index as usize;
-
-    if idx >= component.metadata.imports.len() {
-        log::error!(
-            "Import index {} out of bounds (len={})",
-            idx,
-            component.metadata.imports.len()
-        );
-        return std::ptr::null_mut();
-    }
-
-    let import_name = &component.metadata.imports[idx].name;
-    match env.new_string(import_name) {
-        Ok(s) => s.into_raw(),
-        Err(e) => {
-            log::error!("Failed to create Java string: {:?}", e);
-            std::ptr::null_mut()
+    let name = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<String> {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        let idx = index as usize;
+        if idx >= component.metadata.imports.len() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Import index {} out of bounds (len={})", idx, component.metadata.imports.len()),
+            });
         }
+        Ok(component.metadata.imports[idx].name.clone())
+    })) {
+        Ok(Ok(n)) => n,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return std::ptr::null_mut();
+        }
+    };
+
+    match env.new_string(&name) {
+        Ok(s) => s.into_raw(),
+        Err(_) => std::ptr::null_mut(),
     }
 }
 
 /// Get component size in bytes
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentSize(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     component_ptr: jlong,
 ) -> jlong {
-    if component_ptr == 0 {
-        log::error!("Component pointer is null");
-        return 0;
-    }
-
-    let component = unsafe { &*(component_ptr as *const Component) };
-    component.size_bytes() as jlong
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if component_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Component pointer is null".to_string(),
+            });
+        }
+        let component = unsafe { &*(component_ptr as *const Component) };
+        Ok(component.size_bytes() as jlong)
+    })
 }
 
 /// Check if component exports an interface
@@ -201,25 +215,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeExpor
     interface_name: jni::objects::JString,
 ) -> jboolean {
     if component_ptr == 0 {
-        log::error!("Component pointer is null");
         return 0;
     }
 
-    let component = unsafe { &*(component_ptr as *const Component) };
-
     let interface_str: String = match env.get_string(&interface_name) {
         Ok(s) => s.into(),
-        Err(e) => {
-            log::error!("Failed to convert interface name: {:?}", e);
-            return 0;
-        }
+        Err(_) => return 0,
     };
 
-    if component.exports_interface(&interface_str) {
-        1
-    } else {
-        0
-    }
+    jni_utils::jni_try_bool(&mut env, || {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        Ok(component.exports_interface(&interface_str))
+    }) as jboolean
 }
 
 /// Check if component imports an interface
@@ -231,100 +238,88 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeImpor
     interface_name: jni::objects::JString,
 ) -> jboolean {
     if component_ptr == 0 {
-        log::error!("Component pointer is null");
         return 0;
     }
 
-    let component = unsafe { &*(component_ptr as *const Component) };
-
     let interface_str: String = match env.get_string(&interface_name) {
         Ok(s) => s.into(),
-        Err(e) => {
-            log::error!("Failed to convert interface name: {:?}", e);
-            return 0;
-        }
+        Err(_) => return 0,
     };
 
-    if component.imports_interface(&interface_str) {
-        1
-    } else {
-        0
-    }
+    jni_utils::jni_try_bool(&mut env, || {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        Ok(component.imports_interface(&interface_str))
+    }) as jboolean
 }
 
 /// Get active component instances count
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetActiveInstancesCount(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
 ) -> jint {
-    if engine_ptr == 0 {
-        log::error!("Component engine pointer is null");
-        return -1;
-    }
-
-    // Use EnhancedComponentEngine since nativeCreateComponentEngine creates EnhancedComponentEngine
-    let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
-
-    match engine.get_active_instances() {
-        Ok(instances) => instances.len() as jint,
-        Err(e) => {
-            log::error!("Failed to get active instances: {:?}", e);
-            -1
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        if engine_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Component engine pointer is null".to_string(),
+            });
         }
-    }
+        let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
+        let instances = engine.get_active_instances()?;
+        Ok(instances.len() as jint)
+    })
 }
 
 /// Cleanup inactive component instances
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCleanupInstances(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
 ) -> jint {
-    if engine_ptr == 0 {
-        log::error!("Component engine pointer is null");
-        return -1;
-    }
-
-    // Use EnhancedComponentEngine since nativeCreateComponentEngine creates EnhancedComponentEngine
-    let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
-
-    match engine.cleanup_instances() {
-        Ok(cleaned_count) => cleaned_count as jint,
-        Err(e) => {
-            log::error!("Failed to cleanup instances: {:?}", e);
-            -1
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        if engine_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Component engine pointer is null".to_string(),
+            });
         }
-    }
+        let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
+        let cleaned_count = engine.cleanup_instances()?;
+        Ok(cleaned_count as jint)
+    })
 }
 
 /// Destroy a component engine
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentEngine(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
 ) {
-    unsafe {
-        // Use enhanced component engine since nativeCreateComponentEngine creates EnhancedComponentEngine
-        crate::component_core::core::destroy_enhanced_component_engine(
-            engine_ptr as *mut std::os::raw::c_void,
-        );
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        unsafe {
+            crate::component_core::core::destroy_enhanced_component_engine(
+                engine_ptr as *mut std::os::raw::c_void,
+            );
+        }
+        Ok(())
+    });
 }
 
 /// Destroy a component
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponent(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     component_ptr: jlong,
 ) {
-    unsafe {
-        crate::component::core::destroy_component(component_ptr as *mut std::os::raw::c_void);
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        unsafe {
+            crate::component::core::destroy_component(component_ptr as *mut std::os::raw::c_void);
+        }
+        Ok(())
+    });
 }
 
 /// Destroy a component instance by removing it from the engine's HashMap
@@ -333,19 +328,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestr
 /// allowing the Store and Instance to be dropped correctly.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyComponentInstance(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     engine_ptr: jlong,
     instance_id: jlong,
 ) {
-    // Validate parameters
-    if engine_ptr == 0 || instance_id == 0 {
-        return;
-    }
-
-    // Get engine reference and remove instance from HashMap
-    let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
-    let _ = engine.remove_instance(instance_id as u64);
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if engine_ptr == 0 || instance_id == 0 {
+            return Ok(());
+        }
+        let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
+        let _ = engine.remove_instance(instance_id as u64);
+        Ok(())
+    });
 }
 
 /// Invoke a component function with marshalled WIT values
@@ -545,23 +540,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeSeria
     component_ptr: jlong,
 ) -> jbyteArray {
     if component_ptr == 0 {
-        log::error!("Component pointer is null");
         return std::ptr::null_mut();
     }
 
-    let component = unsafe { &*(component_ptr as *const Component) };
-    match component.serialize() {
-        Ok(bytes) => match env.byte_array_from_slice(&bytes) {
-            Ok(arr) => arr.into_raw(),
-            Err(e) => {
-                log::error!("Failed to create Java byte array: {:?}", e);
-                std::ptr::null_mut()
-            }
-        },
-        Err(e) => {
-            log::error!("Failed to serialize component: {:?}", e);
-            std::ptr::null_mut()
+    let bytes = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Vec<u8>> {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        component.serialize()
+    })) {
+        Ok(Ok(b)) => b,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
         }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return std::ptr::null_mut();
+        }
+    };
+
+    match env.byte_array_from_slice(&bytes) {
+        Ok(arr) => arr.into_raw(),
+        Err(_) => std::ptr::null_mut(),
     }
 }
 
@@ -820,15 +819,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetEx
 /// Destroy a component export index.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeDestroyExportIndex(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     index_ptr: jlong,
 ) {
-    if index_ptr != 0 {
-        unsafe {
-            crate::component::core::destroy_export_index(index_ptr as *mut std::os::raw::c_void);
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if index_ptr != 0 {
+            unsafe {
+                crate::component::core::destroy_export_index(index_ptr as *mut std::os::raw::c_void);
+            }
         }
-    }
+        Ok(())
+    });
 }
 
 /// Check if a component instance has a function at the given export index.

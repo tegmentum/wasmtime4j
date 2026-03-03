@@ -723,29 +723,22 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeCompileF
 /// Check if two modules are the same underlying compiled module
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeModuleSame(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     module_ptr1: jlong,
     module_ptr2: jlong,
 ) -> jboolean {
-    if module_ptr1 == 0 || module_ptr2 == 0 {
-        return jni::sys::JNI_FALSE;
-    }
-    match unsafe {
-        core::modules_same(
-            module_ptr1 as *const std::os::raw::c_void,
-            module_ptr2 as *const std::os::raw::c_void,
-        )
-    } {
-        Ok(same) => {
-            if same {
-                jni::sys::JNI_TRUE
-            } else {
-                jni::sys::JNI_FALSE
-            }
+    jni_utils::jni_try_bool(&mut env, || {
+        if module_ptr1 == 0 || module_ptr2 == 0 {
+            return Ok(false);
         }
-        Err(_) => jni::sys::JNI_FALSE,
-    }
+        unsafe {
+            core::modules_same(
+                module_ptr1 as *const std::os::raw::c_void,
+                module_ptr2 as *const std::os::raw::c_void,
+            )
+        }
+    }) as jboolean
 }
 
 /// Get the index of an export by name
@@ -766,10 +759,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExpor
         Err(_) => return -1,
     };
 
-    match unsafe { core::get_export_index(module_ptr as *const std::os::raw::c_void, &name) } {
-        Ok(idx) => idx as jlong,
-        Err(_) => -1,
-    }
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        let idx = unsafe { core::get_export_index(module_ptr as *const std::os::raw::c_void, &name)? };
+        Ok(idx as jlong)
+    })
 }
 
 /// Get a ModuleExport handle for O(1) export lookups (JNI version)
@@ -791,26 +784,29 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         Err(_) => return 0,
     };
 
-    match unsafe {
-        core::get_wasmtime_module_export(module_ptr as *const std::os::raw::c_void, &name)
-    } {
-        Ok(ptr) => ptr as jlong,
-        Err(_) => 0,
-    }
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let ptr = unsafe {
+            core::get_wasmtime_module_export(module_ptr as *const std::os::raw::c_void, &name)?
+        };
+        Ok(ptr as jlong)
+    })
 }
 
 /// Destroy a ModuleExport handle (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModuleExport(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     module_export_ptr: jlong,
 ) {
-    if module_export_ptr != 0 {
-        unsafe {
-            core::destroy_module_export(module_export_ptr as *mut std::os::raw::c_void);
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if module_export_ptr != 0 {
+            unsafe {
+                core::destroy_module_export(module_export_ptr as *mut std::os::raw::c_void);
+            }
         }
-    }
+        Ok(())
+    });
 }
 
 /// Get compiled machine code text from module
@@ -824,14 +820,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         return std::ptr::null_mut();
     }
 
-    match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
-        Ok(module) => {
-            let text = core::get_module_text(module);
-            match env.byte_array_from_slice(&text) {
-                Ok(jarray) => jarray.into_raw(),
-                Err(_) => std::ptr::null_mut(),
-            }
+    let text = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Vec<u8>> {
+        let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
+        Ok(core::get_module_text(module))
+    })) {
+        Ok(Ok(t)) => t,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
         }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return std::ptr::null_mut();
+        }
+    };
+
+    match env.byte_array_from_slice(&text) {
+        Ok(jarray) => jarray.into_raw(),
         Err(_) => std::ptr::null_mut(),
     }
 }
@@ -849,26 +854,38 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         return std::ptr::null_mut();
     }
 
-    match unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void) } {
-        Ok(module) => match core::get_module_address_map(module) {
-            Some(entries) => {
-                // Pack as interleaved pairs: [code0, wasm0, code1, wasm1, ...]
-                let mut flat = Vec::with_capacity(entries.len() * 2);
-                for (code_offset, wasm_offset) in entries {
-                    flat.push(code_offset as i64);
-                    flat.push(wasm_offset.map(|o| o as i64).unwrap_or(-1));
-                }
-                match env.new_long_array(flat.len() as i32) {
-                    Ok(arr) => {
-                        let _ = env.set_long_array_region(&arr, 0, &flat);
-                        arr.into_raw()
-                    }
-                    Err(_) => std::ptr::null_mut(),
-                }
+    let entries_opt = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Option<Vec<(usize, Option<u32>)>>> {
+        let module = unsafe { core::get_module_ref(module_ptr as *const std::os::raw::c_void)? };
+        Ok(core::get_module_address_map(module))
+    })) {
+        Ok(Ok(opt)) => opt,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return std::ptr::null_mut();
+        }
+    };
+
+    match entries_opt {
+        Some(entries) => {
+            // Pack as interleaved pairs: [code0, wasm0, code1, wasm1, ...]
+            let mut flat = Vec::with_capacity(entries.len() * 2);
+            for (code_offset, wasm_offset) in entries {
+                flat.push(code_offset as i64);
+                flat.push(wasm_offset.map(|o| o as i64).unwrap_or(-1));
             }
-            None => std::ptr::null_mut(),
-        },
-        Err(_) => std::ptr::null_mut(),
+            match env.new_long_array(flat.len() as i32) {
+                Ok(arr) => {
+                    let _ = env.set_long_array_region(&arr, 0, &flat);
+                    arr.into_raw()
+                }
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        None => std::ptr::null_mut(),
     }
 }
 
@@ -1086,21 +1103,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         return std::ptr::null_mut();
     }
 
-    // Extract export data with type information
-    let exports_data: Vec<(String, crate::module::ExportKind)> = {
-        let module = match unsafe {
-            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)
-        } {
-            Ok(m) => m,
-            Err(_) => return std::ptr::null_mut(),
+    // Extract export data with type information (panic-safe)
+    let exports_data: Vec<(String, crate::module::ExportKind)> = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Vec<(String, crate::module::ExportKind)>> {
+        let module = unsafe {
+            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)?
         };
         let metadata = crate::module::core::get_metadata(module);
-        // Extract name and type info, then drop the module reference
-        metadata
+        Ok(metadata
             .exports
             .iter()
             .map(|exp| (exp.name.clone(), exp.export_type.clone()))
-            .collect()
+            .collect())
+    })) {
+        Ok(Ok(data)) => data,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return std::ptr::null_mut();
+        }
     };
 
     // Create ArrayList
@@ -1182,17 +1205,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         return std::ptr::null_mut();
     }
 
-    // Extract import data with type information
-    let imports_data: Vec<(String, String, crate::module::ImportKind)> = {
-        let module = match unsafe {
-            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)
-        } {
-            Ok(m) => m,
-            Err(_) => return std::ptr::null_mut(),
+    // Extract import data with type information (panic-safe)
+    let imports_data: Vec<(String, String, crate::module::ImportKind)> = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Vec<(String, String, crate::module::ImportKind)>> {
+        let module = unsafe {
+            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)?
         };
         let metadata = crate::module::core::get_metadata(module);
-        // Extract module name, field name, and type info
-        metadata
+        Ok(metadata
             .imports
             .iter()
             .map(|imp| {
@@ -1202,7 +1221,17 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
                     imp.import_type.clone(),
                 )
             })
-            .collect()
+            .collect())
+    })) {
+        Ok(Ok(data)) => data,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return std::ptr::null_mut();
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            return std::ptr::null_mut();
+        }
     };
 
     // Create ArrayList
@@ -1297,26 +1326,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasExpor
         return jni::sys::JNI_FALSE;
     }
 
-    match env.get_string(&export_name) {
-        Ok(name_str) => {
-            let name: String = name_str.into();
-            match unsafe {
-                crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)
-            } {
-                Ok(module) => {
-                    let metadata = crate::module::core::get_metadata(module);
-                    for export in &metadata.exports {
-                        if export.name == name {
-                            return jni::sys::JNI_TRUE;
-                        }
-                    }
-                    jni::sys::JNI_FALSE
-                }
-                Err(_) => jni::sys::JNI_FALSE,
+    let name = match env.get_string(&export_name) {
+        Ok(name_str) => name_str.to_string_lossy().into_owned(),
+        Err(_) => return jni::sys::JNI_FALSE,
+    };
+
+    jni_utils::jni_try_bool(&mut env, || {
+        let module = unsafe {
+            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)?
+        };
+        let metadata = crate::module::core::get_metadata(module);
+        for export in &metadata.exports {
+            if export.name == name {
+                return Ok(true);
             }
         }
-        Err(_) => jni::sys::JNI_FALSE,
-    }
+        Ok(false)
+    }) as jboolean
 }
 
 /// Check if module has a specific import
@@ -1332,27 +1358,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeHasImpor
         return jni::sys::JNI_FALSE;
     }
 
-    match (env.get_string(&module_name), env.get_string(&field_name)) {
-        (Ok(mod_name_str), Ok(fld_name_str)) => {
-            let mod_name: String = mod_name_str.into();
-            let fld_name: String = fld_name_str.into();
-            match unsafe {
-                crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)
-            } {
-                Ok(module) => {
-                    let metadata = crate::module::core::get_metadata(module);
-                    for import in &metadata.imports {
-                        if import.module == mod_name && import.name == fld_name {
-                            return jni::sys::JNI_TRUE;
-                        }
-                    }
-                    jni::sys::JNI_FALSE
-                }
-                Err(_) => jni::sys::JNI_FALSE,
+    let mod_name = match env.get_string(&module_name) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return jni::sys::JNI_FALSE,
+    };
+    let fld_name = match env.get_string(&field_name) {
+        Ok(s) => s.to_string_lossy().into_owned(),
+        Err(_) => return jni::sys::JNI_FALSE,
+    };
+
+    jni_utils::jni_try_bool(&mut env, || {
+        let module = unsafe {
+            crate::module::core::get_module_ref(module_ptr as *const std::os::raw::c_void)?
+        };
+        let metadata = crate::module::core::get_metadata(module);
+        for import in &metadata.imports {
+            if import.module == mod_name && import.name == fld_name {
+                return Ok(true);
             }
         }
-        _ => jni::sys::JNI_FALSE,
-    }
+        Ok(false)
+    }) as jboolean
 }
 
 /// JNI binding for Module.initializeCopyOnWriteImage()

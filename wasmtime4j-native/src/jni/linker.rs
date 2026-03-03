@@ -1255,91 +1255,82 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineUn
 /// Destroy a linker
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDestroyLinker(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     linker_handle: jlong,
 ) {
-    // DEFENSIVE: Validate handle before attempting to destroy
-    // Handles must be properly aligned pointers (at least 8-byte aligned for Box<Linker>)
-    // Small values like 1L from tests will fail this check
-    if linker_handle == 0
-        || (linker_handle as usize) < 4096
-        || (linker_handle as usize) % std::mem::align_of::<usize>() != 0
-    {
-        log::warn!(
-            "Attempted to destroy invalid linker handle: {:#x}",
-            linker_handle
-        );
-        return;
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        // DEFENSIVE: Validate handle before attempting to destroy
+        if linker_handle == 0
+            || (linker_handle as usize) < 4096
+            || (linker_handle as usize) % std::mem::align_of::<usize>() != 0
+        {
+            log::warn!(
+                "Attempted to destroy invalid linker handle: {:#x}",
+                linker_handle
+            );
+            return Ok(());
+        }
 
-    unsafe {
-        linker_core::destroy_linker(linker_handle as *mut c_void);
-    }
+        unsafe {
+            linker_core::destroy_linker(linker_handle as *mut c_void);
+        }
+        Ok(())
+    });
 }
 
 /// Set whether name shadowing is allowed in the linker
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowShadowing(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     linker_handle: jlong,
     allow: jboolean,
 ) {
-    // DEFENSIVE: Validate handle
-    if linker_handle == 0
-        || (linker_handle as usize) < 4096
-        || (linker_handle as usize) % std::mem::align_of::<usize>() != 0
-    {
-        log::warn!(
-            "Attempted to set allow_shadowing on invalid linker handle: {:#x}",
-            linker_handle
-        );
-        return;
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        // DEFENSIVE: Validate handle
+        if linker_handle == 0
+            || (linker_handle as usize) < 4096
+            || (linker_handle as usize) % std::mem::align_of::<usize>() != 0
+        {
+            log::warn!(
+                "Attempted to set allow_shadowing on invalid linker handle: {:#x}",
+                linker_handle
+            );
+            return Ok(());
+        }
 
-    match unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void) } {
-        Ok(linker) => {
-            if let Err(e) = linker.set_allow_shadowing(allow != 0) {
-                log::error!("Failed to set allow_shadowing: {:?}", e);
-            }
-        }
-        Err(e) => {
-            log::error!("Failed to get linker for allow_shadowing: {:?}", e);
-        }
-    }
+        let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+        linker.set_allow_shadowing(allow != 0)?;
+        Ok(())
+    });
 }
 
 /// Set whether unknown exports are allowed during instantiation
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeAllowUnknownExports(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     linker_handle: jlong,
     allow: jboolean,
 ) {
-    // DEFENSIVE: Validate handle
-    if linker_handle == 0
-        || (linker_handle as usize) < 4096
-        || (linker_handle as usize) % std::mem::align_of::<usize>() != 0
-    {
-        log::warn!(
-            "Attempted to set allow_unknown_exports on invalid linker handle: {:#x}",
-            linker_handle
-        );
-        return;
-    }
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        // DEFENSIVE: Validate handle
+        if linker_handle == 0
+            || (linker_handle as usize) < 4096
+            || (linker_handle as usize) % std::mem::align_of::<usize>() != 0
+        {
+            log::warn!(
+                "Attempted to set allow_unknown_exports on invalid linker handle: {:#x}",
+                linker_handle
+            );
+            return Ok(());
+        }
 
-    match unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void) } {
-        Ok(linker) => {
-            if let Err(e) = linker.set_allow_unknown_exports(allow != 0) {
-                log::error!("Failed to set allow_unknown_exports: {:?}", e);
-            }
-        }
-        Err(e) => {
-            log::error!("Failed to get linker for allow_unknown_exports: {:?}", e);
-        }
-    }
+        let linker = unsafe { linker_core::get_linker_mut(linker_handle as *mut c_void)? };
+        linker.set_allow_unknown_exports(allow != 0)?;
+        Ok(())
+    });
 }
 
 /// Get the default function for a given module name
@@ -1634,78 +1625,89 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeIns
 /// JNI binding for JniInstancePre.nativeIsValid
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeIsValid(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     instance_pre_handle: jlong,
 ) -> jni::sys::jint {
-    if instance_pre_handle == 0 {
-        return 0;
-    }
-    unsafe { crate::linker::wasmtime4j_instance_pre_is_valid(instance_pre_handle as *const c_void) }
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if instance_pre_handle == 0 {
+            return Ok(0);
+        }
+        Ok(unsafe { crate::linker::wasmtime4j_instance_pre_is_valid(instance_pre_handle as *const c_void) })
+    })
 }
 
 /// JNI binding for JniInstancePre.nativeGetInstanceCount
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGetInstanceCount(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     instance_pre_handle: jlong,
 ) -> jlong {
-    if instance_pre_handle == 0 {
-        return 0;
-    }
-    unsafe {
-        crate::linker::wasmtime4j_instance_pre_instance_count(instance_pre_handle as *const c_void)
-            as jlong
-    }
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if instance_pre_handle == 0 {
+            return Ok(0);
+        }
+        Ok(unsafe {
+            crate::linker::wasmtime4j_instance_pre_instance_count(instance_pre_handle as *const c_void)
+                as jlong
+        })
+    })
 }
 
 /// JNI binding for JniInstancePre.nativeGetPreparationTimeNs
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGetPreparationTimeNs(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     instance_pre_handle: jlong,
 ) -> jlong {
-    if instance_pre_handle == 0 {
-        return 0;
-    }
-    unsafe {
-        crate::linker::wasmtime4j_instance_pre_preparation_time_ns(
-            instance_pre_handle as *const c_void,
-        ) as jlong
-    }
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if instance_pre_handle == 0 {
+            return Ok(0);
+        }
+        Ok(unsafe {
+            crate::linker::wasmtime4j_instance_pre_preparation_time_ns(
+                instance_pre_handle as *const c_void,
+            ) as jlong
+        })
+    })
 }
 
 /// JNI binding for JniInstancePre.nativeGetAvgInstantiationTimeNs
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeGetAvgInstantiationTimeNs(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     instance_pre_handle: jlong,
 ) -> jlong {
-    if instance_pre_handle == 0 {
-        return 0;
-    }
-    unsafe {
-        crate::linker::wasmtime4j_instance_pre_avg_instantiation_time_ns(
-            instance_pre_handle as *const c_void,
-        ) as jlong
-    }
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if instance_pre_handle == 0 {
+            return Ok(0);
+        }
+        Ok(unsafe {
+            crate::linker::wasmtime4j_instance_pre_avg_instantiation_time_ns(
+                instance_pre_handle as *const c_void,
+            ) as jlong
+        })
+    })
 }
 
 /// JNI binding for JniInstancePre.nativeDestroy
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstancePre_nativeDestroy(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     instance_pre_handle: jlong,
 ) {
-    if instance_pre_handle != 0 {
-        unsafe {
-            crate::linker::wasmtime4j_instance_pre_destroy(instance_pre_handle as *mut c_void);
+    jni_utils::jni_try_with_default(&mut env, (), || {
+        if instance_pre_handle != 0 {
+            unsafe {
+                crate::linker::wasmtime4j_instance_pre_destroy(instance_pre_handle as *mut c_void);
+            }
         }
-    }
+        Ok(())
+    });
 }
 
 /// Iterate over all definitions in the linker (JNI version).
