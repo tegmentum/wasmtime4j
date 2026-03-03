@@ -26,6 +26,9 @@ pub struct Module {
     pub element_segments: Vec<Option<ElementSegment>>,
     /// Data segments for memory.init() operations (hybrid design - only passive segments cached)
     pub data_segments: Vec<Option<DataSegment>>,
+    /// Owned bytes kept alive for deserialize_raw (in-place deserialization requires the
+    /// backing memory to outlive the module). Uses Pin<Box<[u8]>> to prevent reallocation.
+    _owned_bytes: Option<std::pin::Pin<Box<[u8]>>>,
 }
 
 /// Comprehensive module metadata for introspection and validation
@@ -249,6 +252,7 @@ impl Module {
             metadata,
             element_segments,
             data_segments,
+            _owned_bytes: None,
         })
     }
 
@@ -316,6 +320,7 @@ impl Module {
             metadata,
             element_segments,
             data_segments,
+            _owned_bytes: None,
         })
     }
 
@@ -687,6 +692,7 @@ impl Module {
             metadata,
             element_segments,
             data_segments,
+            _owned_bytes: None,
         })
     }
 
@@ -708,6 +714,7 @@ impl Module {
             metadata,
             element_segments: Vec::new(),
             data_segments: Vec::new(),
+            _owned_bytes: None,
         }
     }
 
@@ -766,6 +773,7 @@ impl Module {
             metadata,
             element_segments,
             data_segments,
+            _owned_bytes: None,
         })
     }
 
@@ -804,6 +812,7 @@ impl Module {
             metadata,
             element_segments: Vec::new(),
             data_segments: Vec::new(),
+            _owned_bytes: None,
         })
     }
 
@@ -819,12 +828,17 @@ impl Module {
         }
         engine.validate()?;
 
-        let ptr = std::ptr::NonNull::new(bytes.as_ptr() as *mut u8).ok_or_else(|| {
+        // SAFETY: Wasmtime's deserialize_raw performs in-place deserialization — the backing
+        // memory must outlive the module. We copy the bytes into a pinned Box<[u8]> that is
+        // stored alongside the module to guarantee the memory remains valid.
+        let owned: std::pin::Pin<Box<[u8]>> = std::pin::Pin::new(bytes.to_vec().into_boxed_slice());
+
+        let ptr = std::ptr::NonNull::new(owned.as_ptr() as *mut u8).ok_or_else(|| {
             WasmtimeError::InvalidParameter {
                 message: "Failed to create NonNull pointer from bytes".to_string(),
             }
         })?;
-        let non_null_slice = std::ptr::NonNull::slice_from_raw_parts(ptr, bytes.len());
+        let non_null_slice = std::ptr::NonNull::slice_from_raw_parts(ptr, owned.len());
 
         let module = unsafe { WasmtimeModule::deserialize_raw(engine.inner(), non_null_slice) }
             .map_err(|e| WasmtimeError::Compilation {
@@ -839,6 +853,7 @@ impl Module {
             metadata,
             element_segments: Vec::new(),
             data_segments: Vec::new(),
+            _owned_bytes: Some(owned),
         })
     }
 
@@ -867,6 +882,7 @@ impl Module {
             metadata,
             element_segments: Vec::new(),
             data_segments: Vec::new(),
+            _owned_bytes: None,
         })
     }
 }
