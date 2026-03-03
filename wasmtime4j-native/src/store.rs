@@ -727,21 +727,24 @@ impl Store {
         let mut store = self.inner.lock();
 
         let current_fuel = store.get_fuel().unwrap_or(0);
-        if current_fuel >= fuel {
-            store
-                .set_fuel(current_fuel - fuel)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to consume fuel: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(fuel)
-        } else {
-            store.set_fuel(0).map_err(|e| WasmtimeError::Runtime {
+        if current_fuel < fuel {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Insufficient fuel: requested {} but only {} available",
+                    fuel, current_fuel
+                ),
+                backtrace: None,
+            });
+        }
+
+        let remaining = current_fuel - fuel;
+        store
+            .set_fuel(remaining)
+            .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Failed to consume fuel: {}", e),
                 backtrace: None,
             })?;
-            Ok(current_fuel)
-        }
+        Ok(remaining)
     }
 
     /// Set the fuel async yield interval
