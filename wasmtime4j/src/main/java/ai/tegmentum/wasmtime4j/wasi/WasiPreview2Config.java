@@ -842,10 +842,13 @@ public final class WasiPreview2Config {
     /**
      * Sets a deterministic seed for insecure random number generation.
      *
-     * <p>This is useful for testing and reproducibility. The seed is a 64-bit value that will be
-     * used as the low bits of the 128-bit WASI insecure random seed.
+     * <p>This is useful for testing and reproducibility. The WASI insecure random seed is
+     * internally a 128-bit value, but Java {@code long} is 64-bit. The provided seed is used as the
+     * low 64 bits of the 128-bit seed, with the upper 64 bits set to zero. This means the effective
+     * entropy is limited to 64 bits rather than the full 128 bits that Rust's {@code u128} type
+     * supports.
      *
-     * @param seed the insecure random seed
+     * @param seed the insecure random seed (lower 64 bits of the 128-bit WASI seed)
      * @return this builder
      */
     public Builder insecureRandomSeed(final long seed) {
