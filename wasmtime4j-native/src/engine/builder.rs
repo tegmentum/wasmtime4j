@@ -1138,50 +1138,40 @@ impl EngineBuilder {
     /// calling `wasm_features(FLAG, false)` can reset unrelated features due to
     /// how the feature configuration is tracked internally.
     pub fn wasm_mutable_global(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::MUTABLE_GLOBAL, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::MUTABLE_GLOBAL, enable);
         self.wasm_mutable_global = enable;
         self
     }
 
     /// Configure WebAssembly saturating float-to-int conversions (MVP default, always on)
     pub fn wasm_saturating_float_to_int(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::SATURATING_FLOAT_TO_INT, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::SATURATING_FLOAT_TO_INT, enable);
         self.wasm_saturating_float_to_int = enable;
         self
     }
 
     /// Configure WebAssembly sign extension operations (MVP default, always on)
     pub fn wasm_sign_extension(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::SIGN_EXTENSION, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::SIGN_EXTENSION, enable);
         self.wasm_sign_extension = enable;
         self
     }
 
     /// Configure WebAssembly floating point support
     pub fn wasm_floats(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::FLOATS, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::FLOATS, enable);
         self.wasm_floats = enable;
         self
     }
 
     /// Configure WebAssembly memory control support (experimental)
     pub fn wasm_memory_control(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::MEMORY_CONTROL, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::MEMORY_CONTROL, enable);
         self.wasm_memory_control = enable;
         self
     }
@@ -1195,80 +1185,64 @@ impl EngineBuilder {
 
     /// Configure WebAssembly GC structural types support
     pub fn wasm_gc_types(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::GC_TYPES, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::GC_TYPES, enable);
         self.wasm_gc_types = enable;
         self
     }
 
     /// Configure WebAssembly Component Model values support
     pub fn wasm_component_model_values(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::CM_VALUES, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::CM_VALUES, enable);
         self.wasm_component_model_values = enable;
         self
     }
 
     /// Configure WebAssembly Component Model nested names support
     pub fn wasm_component_model_nested_names(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::CM_NESTED_NAMES, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::CM_NESTED_NAMES, enable);
         self.wasm_component_model_nested_names = enable;
         self
     }
 
     /// Configure WebAssembly Component Model map type support
     pub fn wasm_component_model_map(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::CM_MAP, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::CM_MAP, enable);
         self.wasm_component_model_map = enable;
         self
     }
 
     /// Configure WebAssembly call_indirect overlong encoding support
     pub fn wasm_call_indirect_overlong(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::CALL_INDIRECT_OVERLONG, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::CALL_INDIRECT_OVERLONG, enable);
         self.wasm_call_indirect_overlong = enable;
         self
     }
 
     /// Configure WebAssembly bulk memory optimized operations support
     pub fn wasm_bulk_memory_opt(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::BULK_MEMORY_OPT, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::BULK_MEMORY_OPT, enable);
         self.wasm_bulk_memory_opt = enable;
         self
     }
 
     /// Configure WebAssembly custom descriptors support
     pub fn wasm_custom_descriptors(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::CUSTOM_DESCRIPTORS, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::CUSTOM_DESCRIPTORS, enable);
         self.wasm_custom_descriptors = enable;
         self
     }
 
     /// Configure WebAssembly Component Model compact imports support
     pub fn wasm_compact_imports(mut self, enable: bool) -> Self {
-        if enable {
-            self.config
-                .wasm_features(wasmtime::WasmFeatures::COMPACT_IMPORTS, true);
-        }
+        self.config
+            .wasm_features(wasmtime::WasmFeatures::COMPACT_IMPORTS, enable);
         self.wasm_compact_imports = enable;
         self
     }
@@ -1296,9 +1270,11 @@ impl EngineBuilder {
 
     /// Enable or disable async execution support
     ///
-    /// Note: In Wasmtime 42.0.0+, `Config::async_support()` was removed.
-    /// This method now only sets the internal tracking flag used by the
-    /// engine to decide between sync and async code paths.
+    /// Note: In Wasmtime 42.0.0+, `Config::async_support()` was removed from
+    /// the wasmtime Config API. Async support is now implicitly enabled when
+    /// using the `component-model-async` feature flag and calling async APIs.
+    /// This method only sets an internal tracking flag used by the engine to
+    /// decide between sync and async code paths in our bindings layer.
     pub fn async_support(mut self, enable: bool) -> Self {
         self.async_support = enable;
         self
