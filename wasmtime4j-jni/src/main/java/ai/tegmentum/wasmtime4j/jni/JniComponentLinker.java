@@ -841,6 +841,73 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     registeredCallbackIds.clear();
   }
 
+  /**
+   * Dispatches a destructor callback from native code.
+   *
+   * <p>Called from the Rust JNI layer when a component resource is dropped. Looks up the registered
+   * callback by ID and invokes it with the resource representation handle.
+   *
+   * @param callbackId the callback ID registered during resource definition
+   * @param rep the resource representation handle (u32 from the component model)
+   */
+  @SuppressWarnings("unused") // Called from native code via JNI
+  static void dispatchDestructorCallback(final long callbackId, final int rep) {
+    final ComponentHostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
+    if (wrapper == null) {
+      LOGGER.warning(
+          "Destructor callback not found for ID: "
+              + callbackId
+              + ", rep: "
+              + rep
+              + ". The callback may have been cleaned up.");
+      return;
+    }
+    try {
+      wrapper
+          .getImplementation()
+          .execute(
+              java.util.Collections.singletonList(
+                  ai.tegmentum.wasmtime4j.component.ComponentVal.s32(rep)));
+    } catch (final Exception e) {
+      LOGGER.warning(
+          "Destructor callback failed for ID: "
+              + callbackId
+              + ", rep: "
+              + rep
+              + ": "
+              + e.getMessage());
+    }
+  }
+
+  /**
+   * Dispatches a host function callback from native code.
+   *
+   * <p>Called from the Rust JNI layer when a component host function is invoked. Looks up the
+   * registered callback by ID and invokes it with the provided parameters.
+   *
+   * @param callbackId the callback ID registered during host function definition
+   * @param params the parameters from the component as a JSON-encoded string
+   * @return the results as a JSON-encoded string, or null on error
+   */
+  @SuppressWarnings("unused") // Called from native code via JNI
+  static String dispatchHostFunctionCallback(final long callbackId, final String params) {
+    final ComponentHostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
+    if (wrapper == null) {
+      LOGGER.severe("Host function callback not found for ID: " + callbackId);
+      return null;
+    }
+    try {
+      final java.util.List<ai.tegmentum.wasmtime4j.component.ComponentVal> paramList =
+          ai.tegmentum.wasmtime4j.component.ConcurrentCallCodec.deserializeVals(params);
+      final java.util.List<ai.tegmentum.wasmtime4j.component.ComponentVal> results =
+          wrapper.getImplementation().execute(paramList);
+      return ai.tegmentum.wasmtime4j.component.ConcurrentCallCodec.serializeVals(results);
+    } catch (final Exception e) {
+      LOGGER.severe("Host function callback failed for ID: " + callbackId + ": " + e.getMessage());
+      return null;
+    }
+  }
+
   /** Wrapper for component host function callbacks. */
   private static class ComponentHostFunctionWrapper {
     private final long id;

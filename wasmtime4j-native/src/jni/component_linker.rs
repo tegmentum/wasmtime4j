@@ -24,8 +24,18 @@ pub(crate) struct JniComponentHostFunctionCallback {
 
 impl ComponentHostCallback for JniComponentHostFunctionCallback {
     fn execute(&self, params: &[ComponentValue]) -> WasmtimeResult<Vec<ComponentValue>> {
+        use crate::component::{component_value_to_json_val, json_val_to_component_value};
+
         log::info!("JniComponentHostFunctionCallback::execute - Starting callback execution for callback_id={}",
             self.callback_id);
+
+        // Serialize params to JSON using the same codec as Panama path
+        let json_vals: Vec<crate::component_core::concurrent_call_json::JsonVal> =
+            params.iter().map(component_value_to_json_val).collect();
+        let json_str = serde_json::to_string(&json_vals).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to serialize host function params to JSON: {}", e),
+            backtrace: None,
+        })?;
 
         // Attach to current thread and get JNI environment
         let mut env = self
@@ -36,74 +46,75 @@ impl ComponentHostCallback for JniComponentHostFunctionCallback {
                 backtrace: None,
             })?;
 
-        // For now, we'll use a simpler approach - convert component values to/from objects
-        // Full implementation would need proper ComponentValue<->Java object conversion
-        log::debug!(
-            "Component callback invoked with {} parameters",
-            params.len()
-        );
+        // Create Java string from JSON
+        let java_params_json = env.new_string(&json_str).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to create Java string for params JSON: {}", e),
+            backtrace: None,
+        })?;
 
-        // Create a Java array of ComponentValue objects
-        let component_value_class = env
-            .find_class("ai/tegmentum/wasmtime4j/ComponentValue")
+        // Call JniComponentLinker.dispatchHostFunctionCallback(callbackId, paramsJson) -> resultsJson
+        let linker_class = env
+            .find_class("ai/tegmentum/wasmtime4j/jni/JniComponentLinker")
             .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to find ComponentValue class: {}", e),
+                message: format!("Failed to find JniComponentLinker class: {}", e),
                 backtrace: None,
             })?;
 
-        let java_params = env
-            .new_object_array(
-                params.len() as i32,
-                &component_value_class,
-                jni::objects::JObject::null(),
+        let result = env
+            .call_static_method(
+                &linker_class,
+                "dispatchHostFunctionCallback",
+                "(JLjava/lang/String;)Ljava/lang/String;",
+                &[
+                    jni::objects::JValue::Long(self.callback_id),
+                    jni::objects::JValue::Object(&java_params_json),
+                ],
             )
             .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to create parameter array: {}", e),
+                message: format!("Failed to invoke host function callback: {}", e),
                 backtrace: None,
             })?;
 
-        // Convert each ComponentValue to Java
-        for (i, param) in params.iter().enumerate() {
-            let java_value = component_value_to_java(&mut env, param)?;
-            env.set_object_array_element(&java_params, i as i32, java_value)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to set array element: {}", e),
-                    backtrace: None,
-                })?;
+        // Get result string
+        let result_obj = result.l().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to get return value: {}", e),
+            backtrace: None,
+        })?;
+
+        if result_obj.is_null() {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Host function callback (id={}) returned null (error occurred in Java)",
+                    self.callback_id
+                ),
+                backtrace: None,
+            });
         }
 
-        // Find the callback dispatcher class
-        let dispatcher_class = env
-            .find_class("ai/tegmentum/wasmtime4j/jni/ComponentHostFunctionDispatcher")
-            .map_err(|e| WasmtimeError::Runtime {
+        let result_jstring = jni::objects::JString::from(result_obj);
+        let result_json: String =
+            env.get_string(&result_jstring)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to get result JSON string: {}", e),
+                    backtrace: None,
+                })?
+                .into();
+
+        // Deserialize results from JSON
+        let json_results: Vec<crate::component_core::concurrent_call_json::JsonVal> =
+            serde_json::from_str(&result_json).map_err(|e| WasmtimeError::Runtime {
                 message: format!(
-                    "Failed to find ComponentHostFunctionDispatcher class: {}",
+                    "Failed to deserialize host function results from JSON: {}",
                     e
                 ),
                 backtrace: None,
             })?;
 
-        // Call the static dispatch method
-        let result = env.call_static_method(
-            &dispatcher_class,
-            "dispatch",
-            "(J[Lai/tegmentum/wasmtime4j/ComponentValue;)[Lai/tegmentum/wasmtime4j/ComponentValue;",
-            &[
-                jni::objects::JValue::Long(self.callback_id),
-                jni::objects::JValue::Object(&java_params),
-            ]
-        ).map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to invoke component host function callback: {}", e),
-            backtrace: None
-        })?;
+        let results: Vec<ComponentValue> = json_results
+            .iter()
+            .map(json_val_to_component_value)
+            .collect();
 
-        // Convert result back to Rust ComponentValues
-        let result_array = result.l().map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to get return value: {}", e),
-            backtrace: None,
-        })?;
-
-        let results = java_array_to_component_values(&mut env, &result_array)?;
         log::info!(
             "JniComponentHostFunctionCallback::execute - Completed with {} results",
             results.len()
@@ -125,6 +136,7 @@ impl ComponentHostCallback for JniComponentHostFunctionCallback {
 /// resource representation. The callback ID corresponds to the Java-side
 /// destructor registered via `ComponentResourceDefinition`.
 struct JniResourceDestructorCallback {
+    jvm: Arc<JavaVM>,
     callback_id: u64,
 }
 
@@ -135,434 +147,47 @@ impl ResourceDestructorCallback for JniResourceDestructorCallback {
             self.callback_id,
             rep
         );
-        // The destructor callback ID maps to a Java-side Consumer<Integer> registered
-        // in the ComponentHostFunctionDispatcher. The actual JNI callback to Java
-        // would use the same JVM attach pattern as JniComponentHostFunctionCallback.
-        // For now, log and return success - the full JNI callback bridge requires
-        // the JVM reference which would be stored in a global registry.
-        Ok(())
-    }
-}
 
-/// Convert a Rust ComponentValue to a Java ComponentValue object
-fn component_value_to_java<'a>(
-    env: &mut jni::JNIEnv<'a>,
-    value: &ComponentValue,
-) -> WasmtimeResult<jni::objects::JObject<'a>> {
-    let component_value_class = env
-        .find_class("ai/tegmentum/wasmtime4j/ComponentValue")
-        .map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to find ComponentValue class: {}", e),
-            backtrace: None,
-        })?;
-
-    // Create based on value type
-    match value {
-        ComponentValue::Bool(b) => env
-            .call_static_method(
-                &component_value_class,
-                "fromBool",
-                "(Z)Lai/tegmentum/wasmtime4j/ComponentValue;",
-                &[jni::objects::JValue::Bool(*b as u8)],
-            )
+        // Attach to current thread and get JNI environment
+        let mut env = self
+            .jvm
+            .attach_current_thread()
             .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to create bool ComponentValue: {}", e),
-                backtrace: None,
-            })?
-            .l()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to get object: {}", e),
-                backtrace: None,
-            }),
-        ComponentValue::S8(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromS8",
-            "(B)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Byte(*v),
-        ),
-        ComponentValue::U8(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromU8",
-            "(B)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Byte(*v as i8),
-        ),
-        ComponentValue::S16(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromS16",
-            "(S)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Short(*v),
-        ),
-        ComponentValue::U16(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromU16",
-            "(S)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Short(*v as i16),
-        ),
-        ComponentValue::S32(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromS32",
-            "(I)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Int(*v),
-        ),
-        ComponentValue::U32(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromU32",
-            "(I)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Int(*v as i32),
-        ),
-        ComponentValue::S64(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromS64",
-            "(J)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Long(*v),
-        ),
-        ComponentValue::U64(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromU64",
-            "(J)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Long(*v as i64),
-        ),
-        ComponentValue::F32(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromFloat32",
-            "(F)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Float(*v),
-        ),
-        ComponentValue::F64(v) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromFloat64",
-            "(D)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Double(*v),
-        ),
-        ComponentValue::Char(c) => create_numeric_component_value(
-            env,
-            &component_value_class,
-            "fromChar",
-            "(C)Lai/tegmentum/wasmtime4j/ComponentValue;",
-            jni::objects::JValue::Char(*c as u16),
-        ),
-        ComponentValue::String(s) => {
-            let jstr = env.new_string(s).map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to create Java string: {}", e),
+                message: format!("Failed to attach to JVM thread for destructor: {}", e),
                 backtrace: None,
             })?;
-            env.call_static_method(
-                &component_value_class,
-                "fromString",
-                "(Ljava/lang/String;)Lai/tegmentum/wasmtime4j/ComponentValue;",
-                &[jni::objects::JValue::Object(&jstr)],
-            )
+
+        // Call JniComponentLinker.dispatchDestructorCallback(callbackId, rep)
+        let linker_class = env
+            .find_class("ai/tegmentum/wasmtime4j/jni/JniComponentLinker")
             .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to create string ComponentValue: {}", e),
+                message: format!("Failed to find JniComponentLinker class: {}", e),
                 backtrace: None,
-            })?
-            .l()
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Failed to get object: {}", e),
-                backtrace: None,
-            })
-        }
-        _ => {
-            // For complex types, create a null placeholder for now
-            // Full implementation would handle List, Record, Tuple, Variant, etc.
-            Ok(jni::objects::JObject::null())
-        }
-    }
-}
+            })?;
 
-fn create_numeric_component_value<'a>(
-    env: &mut jni::JNIEnv<'a>,
-    class: &jni::objects::JClass,
-    method: &str,
-    sig: &str,
-    value: jni::objects::JValue,
-) -> WasmtimeResult<jni::objects::JObject<'a>> {
-    env.call_static_method(class, method, sig, &[value])
+        env.call_static_method(
+            &linker_class,
+            "dispatchDestructorCallback",
+            "(JI)V",
+            &[
+                jni::objects::JValue::Long(self.callback_id as i64),
+                jni::objects::JValue::Int(rep as i32),
+            ],
+        )
         .map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to create ComponentValue: {}", e),
-            backtrace: None,
-        })?
-        .l()
-        .map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to get object: {}", e),
-            backtrace: None,
-        })
-}
-
-/// Convert a Java ComponentValue array to Rust ComponentValues
-fn java_array_to_component_values(
-    env: &mut jni::JNIEnv,
-    array: &jni::objects::JObject,
-) -> WasmtimeResult<Vec<ComponentValue>> {
-    if array.is_null() {
-        return Ok(vec![]);
-    }
-
-    let jarray = jni::objects::JObjectArray::from(unsafe {
-        jni::objects::JObject::from_raw(array.as_raw())
-    });
-    let len = env
-        .get_array_length(&jarray)
-        .map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to get array length: {}", e),
+            message: format!(
+                "Failed to invoke destructor callback (id={}, rep={}): {}",
+                self.callback_id, rep, e
+            ),
             backtrace: None,
         })?;
 
-    let mut results = Vec::with_capacity(len as usize);
-    for i in 0..len {
-        let element =
-            env.get_object_array_element(&jarray, i)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get array element: {}", e),
-                    backtrace: None,
-                })?;
-        let value = java_object_to_component_value(env, &element)?;
-        results.push(value);
-    }
-    Ok(results)
-}
-
-/// Convert a Java ComponentValue object to Rust ComponentValue
-fn java_object_to_component_value(
-    env: &mut jni::JNIEnv,
-    obj: &jni::objects::JObject,
-) -> WasmtimeResult<ComponentValue> {
-    if obj.is_null() {
-        return Ok(ComponentValue::Bool(false)); // Default fallback
-    }
-
-    // Get the type ordinal
-    let type_ordinal = env
-        .call_method(obj, "getTypeOrdinal", "()I", &[])
-        .map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to get type ordinal: {}", e),
-            backtrace: None,
-        })?
-        .i()
-        .map_err(|e| WasmtimeError::Runtime {
-            message: format!("Failed to convert type ordinal: {}", e),
-            backtrace: None,
-        })?;
-
-    match type_ordinal {
-        0 => {
-            // Bool
-            let v = env
-                .call_method(obj, "asBool", "()Z", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get bool value: {}", e),
-                    backtrace: None,
-                })?
-                .z()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert bool: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::Bool(v))
-        }
-        1 => {
-            // S8
-            let v = env
-                .call_method(obj, "asS8", "()B", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get s8 value: {}", e),
-                    backtrace: None,
-                })?
-                .b()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert s8: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::S8(v))
-        }
-        2 => {
-            // U8
-            let v = env
-                .call_method(obj, "asU8", "()B", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get u8 value: {}", e),
-                    backtrace: None,
-                })?
-                .b()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert u8: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::U8(v as u8))
-        }
-        3 => {
-            // S16
-            let v = env
-                .call_method(obj, "asS16", "()S", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get s16 value: {}", e),
-                    backtrace: None,
-                })?
-                .s()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert s16: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::S16(v))
-        }
-        4 => {
-            // U16
-            let v = env
-                .call_method(obj, "asU16", "()S", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get u16 value: {}", e),
-                    backtrace: None,
-                })?
-                .s()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert u16: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::U16(v as u16))
-        }
-        5 => {
-            // S32
-            let v = env
-                .call_method(obj, "asS32", "()I", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get s32 value: {}", e),
-                    backtrace: None,
-                })?
-                .i()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert s32: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::S32(v))
-        }
-        6 => {
-            // U32
-            let v = env
-                .call_method(obj, "asU32", "()I", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get u32 value: {}", e),
-                    backtrace: None,
-                })?
-                .i()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert u32: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::U32(v as u32))
-        }
-        7 => {
-            // S64
-            let v = env
-                .call_method(obj, "asS64", "()J", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get s64 value: {}", e),
-                    backtrace: None,
-                })?
-                .j()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert s64: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::S64(v))
-        }
-        8 => {
-            // U64
-            let v = env
-                .call_method(obj, "asU64", "()J", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get u64 value: {}", e),
-                    backtrace: None,
-                })?
-                .j()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert u64: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::U64(v as u64))
-        }
-        9 => {
-            // F32
-            let v = env
-                .call_method(obj, "asFloat32", "()F", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get float32 value: {}", e),
-                    backtrace: None,
-                })?
-                .f()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert float32: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::F32(v))
-        }
-        10 => {
-            // F64
-            let v = env
-                .call_method(obj, "asFloat64", "()D", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get float64 value: {}", e),
-                    backtrace: None,
-                })?
-                .d()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert float64: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::F64(v))
-        }
-        11 => {
-            // Char
-            let v = env
-                .call_method(obj, "asChar", "()C", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get char value: {}", e),
-                    backtrace: None,
-                })?
-                .c()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert char: {}", e),
-                    backtrace: None,
-                })?;
-            Ok(ComponentValue::Char(
-                char::from_u32(v as u32).unwrap_or('\0'),
-            ))
-        }
-        12 => {
-            // String
-            let jstr = env
-                .call_method(obj, "asString", "()Ljava/lang/String;", &[])
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get string value: {}", e),
-                    backtrace: None,
-                })?
-                .l()
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to convert string: {}", e),
-                    backtrace: None,
-                })?;
-            let s: String = env
-                .get_string(&jni::objects::JString::from(jstr))
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to get Java string: {}", e),
-                    backtrace: None,
-                })?
-                .into();
-            Ok(ComponentValue::String(s))
-        }
-        _ => {
-            // For complex types, return a default value
-            Ok(ComponentValue::Bool(false))
-        }
+        log::info!(
+            "JniResourceDestructorCallback::destroy - completed callback_id={}, rep={}",
+            self.callback_id,
+            rep
+        );
+        Ok(())
     }
 }
 
@@ -1692,9 +1317,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     // Build the interface path (e.g., "ns:pkg/iface")
     let interface_path = format!("{}:{}", namespace_str, interface_str);
 
+    // Get JVM reference for destructor callback
+    let jvm = env.get_java_vm().map_err(|e| {
+        let error = WasmtimeError::Runtime {
+            message: format!("Failed to get JavaVM for destructor callback: {}", e),
+            backtrace: None,
+        };
+        jni_utils::throw_jni_exception(&mut env, &error);
+    });
+    let jvm = match jvm {
+        Ok(jvm) => Arc::new(jvm),
+        Err(_) => return 0,
+    };
+
     // Create a destructor callback that will call back to Java via the callback registry
     let dtor_callback_id = destructor_callback_id as u64;
     let destructor = std::sync::Arc::new(JniResourceDestructorCallback {
+        jvm,
         callback_id: dtor_callback_id,
     });
 

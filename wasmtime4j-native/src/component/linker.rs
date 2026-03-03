@@ -204,6 +204,11 @@ pub fn val_to_component_value(val: &Val) -> ComponentValue {
         },
         Val::Flags(flags) => ComponentValue::Flags(flags.iter().map(|f| f.to_string()).collect()),
         Val::Resource(resource) => {
+            // Note: Wasmtime's Val::Resource(ResourceAny) does not carry own/borrow
+            // distinction directly. The ownership semantics depend on the function
+            // signature context. We default to Own here; the Java side can construct
+            // Borrow explicitly when the WIT signature specifies borrow<T>.
+            // Both Own and Borrow map to the same resource registry for round-tripping.
             let handle = crate::wit_value_marshal::store_resource(resource.clone());
             ComponentValue::Own(handle)
         }
@@ -311,12 +316,11 @@ pub fn component_value_to_val(cv: &ComponentValue) -> Result<Val, WasmtimeError>
         ComponentValue::Future(handle)
         | ComponentValue::Stream(handle)
         | ComponentValue::ErrorContext(handle) => {
-            let registry = get_async_val_registry()
+            let mut registry = get_async_val_registry()
                 .lock()
                 .unwrap_or_else(|e| e.into_inner());
             registry
-                .get(*handle)
-                .cloned()
+                .remove(*handle)
                 .ok_or_else(|| WasmtimeError::Resource {
                     message: format!("Async handle {} not found in registry", handle),
                 })
@@ -3219,7 +3223,7 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_define_module(
 // =============================================================================
 
 /// Convert a `ComponentValue` to a `JsonVal` for JSON serialization across FFI.
-fn component_value_to_json_val(
+pub(crate) fn component_value_to_json_val(
     cv: &ComponentValue,
 ) -> crate::component_core::concurrent_call_json::JsonVal {
     use crate::component_core::concurrent_call_json::JsonVal;
@@ -3280,7 +3284,7 @@ fn component_value_to_json_val(
 }
 
 /// Convert a `JsonVal` back to a `ComponentValue`.
-fn json_val_to_component_value(
+pub(crate) fn json_val_to_component_value(
     jv: &crate::component_core::concurrent_call_json::JsonVal,
 ) -> ComponentValue {
     use crate::component_core::concurrent_call_json::JsonVal;
