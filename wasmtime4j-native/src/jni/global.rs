@@ -934,3 +934,53 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGloba
         }
     }
 }
+
+/// Get global type information from a global pointer (JNI version for JniGlobalType)
+/// Returns array: [valueTypeCode, isMutable(0/1)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniGlobalType_nativeGetGlobalTypeInfo<'a>(
+    mut env: JNIEnv<'a>,
+    _class: JClass<'a>,
+    global_ptr: jlong,
+) -> jlongArray {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlongArray> {
+        if global_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Global type handle cannot be null".to_string(),
+            });
+        }
+
+        let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
+        let metadata = core::get_global_metadata(global);
+
+        let type_code = crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
+
+        let is_mutable = if metadata.mutability == wasmtime::Mutability::Var {
+            1
+        } else {
+            0
+        };
+
+        let result_array = env.new_long_array(2).map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to create long array: {}", e),
+        })?;
+
+        let values = vec![type_code as i64, is_mutable as i64];
+        env.set_long_array_region(&result_array, 0, &values)
+            .map_err(|e| WasmtimeError::Memory {
+                message: format!("Failed to set long array region: {}", e),
+            })?;
+
+        Ok(result_array.as_raw())
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
+        }
+    }
+}

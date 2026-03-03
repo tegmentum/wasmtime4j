@@ -1504,7 +1504,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSet(
 }
 
 /// Get memory type information directly from the memory (JNI version)
-/// Returns array: [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1)]
+/// Returns array: [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1), pageSizeLog2]
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemoryTypeInfo<'a>(
     mut env: JNIEnv<'a>,
@@ -1536,13 +1536,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemor
         } else {
             0i64
         };
+        let page_size_log2 = memory.memory_type.page_size_log2() as i64;
 
-        // Create long array with [minimum, maximum, is64Bit, isShared]
-        let result_array = env.new_long_array(4).map_err(|e| WasmtimeError::Memory {
+        // Create long array with [minimum, maximum, is64Bit, isShared, pageSizeLog2]
+        let result_array = env.new_long_array(5).map_err(|e| WasmtimeError::Memory {
             message: format!("Failed to create long array: {}", e),
         })?;
 
-        let values = vec![minimum, maximum, is_64_bit, is_shared];
+        let values = vec![minimum, maximum, is_64_bit, is_shared, page_size_log2];
         env.set_long_array_region(&result_array, 0, &values)
             .map_err(|e| WasmtimeError::Memory {
                 message: format!("Failed to set long array region: {}", e),
@@ -1556,15 +1557,64 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemor
             std::ptr::null_mut()
         }
         Err(panic_info) => {
-            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = panic_info.downcast_ref::<String>() {
-                s.clone()
-            } else {
-                "Unknown panic occurred in native code".to_string()
-            };
-            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
-            jni_utils::throw_jni_exception(&mut env, &error);
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Get memory type information from a ValidatedMemory pointer (JNI version for JniMemoryType)
+/// Returns array: [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1), pageSizeLog2]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniMemoryType_nativeGetMemoryTypeInfo<'a>(
+    mut env: JNIEnv<'a>,
+    _class: JClass<'a>,
+    memory_type_ptr: jlong,
+) -> jlongArray {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlongArray> {
+        if memory_type_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Memory type handle cannot be null".to_string(),
+            });
+        }
+
+        // The nativeHandle for JniMemoryType points to the same ValidatedMemory
+        let validated_memory = unsafe { &*(memory_type_ptr as *const core::ValidatedMemory) };
+        let memory = validated_memory.access_memory()?;
+
+        let minimum = memory.memory_type.minimum() as i64;
+        let maximum = memory.memory_type.maximum().map(|m| m as i64).unwrap_or(-1);
+        let is_shared = if memory.memory_type.is_shared() {
+            1i64
+        } else {
+            0i64
+        };
+        let is_64_bit = if memory.memory_type.is_64() {
+            1i64
+        } else {
+            0i64
+        };
+        let page_size_log2 = memory.memory_type.page_size_log2() as i64;
+
+        let result_array = env.new_long_array(5).map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to create long array: {}", e),
+        })?;
+
+        let values = vec![minimum, maximum, is_64_bit, is_shared, page_size_log2];
+        env.set_long_array_region(&result_array, 0, &values)
+            .map_err(|e| WasmtimeError::Memory {
+                message: format!("Failed to set long array region: {}", e),
+            })?;
+
+        Ok(result_array.as_raw())
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
             std::ptr::null_mut()
         }
     }

@@ -325,6 +325,55 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableT
     }
 }
 
+/// Get table type information from a table pointer (JNI version for JniTableType)
+/// Returns array: [elementTypeCode, minimum, maximum(-1 if unlimited), is64(0 or 1)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniTableType_nativeGetTableTypeInfo<'a>(
+    mut env: JNIEnv<'a>,
+    _class: JClass<'a>,
+    table_ptr: jlong,
+) -> jlongArray {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlongArray> {
+        if table_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Table type handle cannot be null".to_string(),
+            });
+        }
+
+        let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
+        let metadata = core::get_table_metadata(table);
+
+        let type_code =
+            crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.element_type);
+
+        let minimum = metadata.initial_size as i64;
+        let maximum = metadata.maximum_size.map(|m| m as i64).unwrap_or(-1);
+        let is_64 = if metadata.is_64 { 1i64 } else { 0i64 };
+
+        let result_array = env.new_long_array(4).map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to create long array: {}", e),
+        })?;
+
+        let values = vec![type_code as i64, minimum, maximum, is_64];
+        env.set_long_array_region(&result_array, 0, &values)
+            .map_err(|e| WasmtimeError::Memory {
+                message: format!("Failed to set long array region: {}", e),
+            })?;
+
+        Ok(result_array.as_raw())
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
+        }
+    }
+}
+
 /// Grow a table by the specified number of elements (JNI version)
 ///
 /// The `init_value` parameter is a registry ID:

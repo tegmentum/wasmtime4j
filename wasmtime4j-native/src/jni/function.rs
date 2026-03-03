@@ -1,7 +1,7 @@
 //! JNI bindings for Function operations
 
 use jni::objects::{JClass, JObject, JObjectArray};
-use jni::sys::{jint, jlong, jobject, jobjectArray};
+use jni::sys::{jint, jlong, jlongArray, jobject, jobjectArray};
 use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
@@ -21,6 +21,10 @@ pub struct FunctionHandle {
     param_types: Vec<String>,
     /// Cached return type strings (Store-independent)
     return_types: Vec<String>,
+    /// Cached parameter type codes (Store-independent)
+    param_type_codes: Vec<i32>,
+    /// Cached return type codes (Store-independent)
+    return_type_codes: Vec<i32>,
 }
 
 impl FunctionHandle {
@@ -39,12 +43,22 @@ impl FunctionHandle {
             .results()
             .map(|vt| valtype_to_string(&vt))
             .collect();
+        let param_type_codes = func_type
+            .params()
+            .map(|vt| crate::ffi_common::valtype_conversion::valtype_to_int(&vt))
+            .collect();
+        let return_type_codes = func_type
+            .results()
+            .map(|vt| crate::ffi_common::valtype_conversion::valtype_to_int(&vt))
+            .collect();
 
         Self {
             func,
             name,
             param_types,
             return_types,
+            param_type_codes,
+            return_type_codes,
         }
     }
 
@@ -61,6 +75,16 @@ impl FunctionHandle {
     /// Get return types as strings (cached at creation, Store-independent)
     pub fn get_return_type_strings(&self) -> &[String] {
         &self.return_types
+    }
+
+    /// Get parameter type codes (cached at creation, Store-independent)
+    pub fn get_param_type_codes(&self) -> &[i32] {
+        &self.param_type_codes
+    }
+
+    /// Get return type codes (cached at creation, Store-independent)
+    pub fn get_return_type_codes(&self) -> &[i32] {
+        &self.return_type_codes
     }
 }
 
@@ -862,6 +886,66 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeDestro
         unsafe {
             // Free the FunctionHandle, not raw Func - FunctionHandle wraps the Func
             let _ = Box::from_raw(function_ptr as *mut FunctionHandle);
+        }
+    }
+}
+
+/// Get function type information from a FunctionHandle (JNI version for JniFuncType)
+/// Returns array: [paramCount, resultCount, param0TypeCode, ..., result0TypeCode, ...]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniFuncType_nativeGetFuncTypeInfo<'a>(
+    mut env: JNIEnv<'a>,
+    _class: JClass<'a>,
+    func_type_ptr: jlong,
+) -> jlongArray {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlongArray> {
+        if func_type_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Function type handle cannot be null".to_string(),
+            });
+        }
+
+        let func_handle =
+            memory_utils::safe_deref(func_type_ptr as *const FunctionHandle, "func_type_ptr")
+                .map_err(|e| e.to_wasmtime_error())?;
+
+        let param_codes = func_handle.get_param_type_codes();
+        let return_codes = func_handle.get_return_type_codes();
+        let param_count = param_codes.len();
+        let return_count = return_codes.len();
+        let total_len = 2 + param_count + return_count;
+
+        let result_array =
+            env.new_long_array(total_len as i32)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Failed to create long array: {}", e),
+                })?;
+
+        let mut values: Vec<i64> = Vec::with_capacity(total_len);
+        values.push(param_count as i64);
+        values.push(return_count as i64);
+        for &code in param_codes {
+            values.push(code as i64);
+        }
+        for &code in return_codes {
+            values.push(code as i64);
+        }
+
+        env.set_long_array_region(&result_array, 0, &values)
+            .map_err(|e| WasmtimeError::Function {
+                message: format!("Failed to set long array region: {}", e),
+            })?;
+
+        Ok(result_array.as_raw())
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
         }
     }
 }

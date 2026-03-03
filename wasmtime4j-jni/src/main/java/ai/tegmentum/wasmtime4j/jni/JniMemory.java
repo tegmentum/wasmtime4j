@@ -596,7 +596,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     ensureUsable();
     try {
       final long[] typeInfo = nativeGetMemoryTypeInfo(getNativeHandle());
-      if (typeInfo.length < 4) {
+      if (typeInfo.length < 5) {
         throw new IllegalStateException("Invalid memory type info from native");
       }
 
@@ -604,9 +604,10 @@ public final class JniMemory extends JniResource implements WasmMemory {
       final Long maximum = typeInfo[1] == -1 ? null : typeInfo[1];
       final boolean is64Bit = typeInfo[2] != 0;
       final boolean isShared = typeInfo[3] != 0;
+      final int pageSizeLog2 = (int) typeInfo[4];
 
       return new ai.tegmentum.wasmtime4j.jni.type.JniMemoryType(
-          minimum, maximum, is64Bit, isShared);
+          minimum, maximum, is64Bit, isShared, pageSizeLog2);
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting memory type", e);
     }
@@ -739,7 +740,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * Gets memory type information directly from the memory.
    *
    * @param memoryHandle the native memory handle
-   * @return array containing [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1)]
+   * @return array containing [minimum, maximum(-1 if unlimited), is64Bit(0/1), isShared(0/1),
+   *     pageSizeLog2]
    */
   private static native long[] nativeGetMemoryTypeInfo(long memoryHandle);
 
