@@ -93,6 +93,10 @@ pub enum ImportType {
     Global,
     /// Instance import (all exports from an instance)
     Instance,
+    /// Tag import (exception handling)
+    Tag,
+    /// Shared memory import (thread-safe)
+    SharedMemory,
 }
 
 /// Configuration for linker creation and behavior
@@ -1321,7 +1325,8 @@ fn extern_to_import_type(extern_item: &wasmtime::Extern) -> ImportType {
         wasmtime::Extern::Table(_) => ImportType::Table,
         wasmtime::Extern::Memory(_) => ImportType::Memory,
         wasmtime::Extern::Global(_) => ImportType::Global,
-        _ => ImportType::Instance,
+        wasmtime::Extern::Tag(_) => ImportType::Tag,
+        wasmtime::Extern::SharedMemory(_) => ImportType::SharedMemory,
     }
 }
 
@@ -1596,7 +1601,8 @@ pub mod core {
                 wasmtime::Extern::Table(_) => 1,
                 wasmtime::Extern::Memory(_) => 2,
                 wasmtime::Extern::Global(_) => 3,
-                _ => -1,
+                wasmtime::Extern::Tag(_) => 4,
+                wasmtime::Extern::SharedMemory(_) => 5,
             };
             result.push((module.to_string(), name.to_string(), type_code));
         }
@@ -1672,7 +1678,8 @@ pub mod core {
             wasmtime::Extern::Table(_) => 1,
             wasmtime::Extern::Memory(_) => 2,
             wasmtime::Extern::Global(_) => 3,
-            _ => -1,
+            wasmtime::Extern::Tag(_) => 4,
+            wasmtime::Extern::SharedMemory(_) => 5,
         }
     }
 }
