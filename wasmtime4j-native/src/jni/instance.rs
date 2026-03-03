@@ -5,9 +5,92 @@ use jni::sys::{jboolean, jint, jintArray, jlong, jobject, jobjectArray};
 use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
-use crate::instance::core;
+use crate::instance::{core, InstanceState};
 
 use std::os::raw::c_void;
+
+/// Get the current lifecycle state of an instance (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetState(
+    mut env: JNIEnv,
+    _obj: jobject,
+    instance_ptr: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
+        let state = core::get_instance_state(instance);
+        Ok(state as i32)
+    })
+}
+
+/// Perform comprehensive resource cleanup for an instance (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCleanupResources(
+    mut env: JNIEnv,
+    _obj: jobject,
+    instance_ptr: jlong,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_mut(instance_ptr as *mut c_void)? };
+        let cleaned_up = core::cleanup_instance_resources(instance)?;
+        Ok(if cleaned_up { 1 } else { 0 })
+    })
+}
+
+/// Check if instance has been cleaned up (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeIsCleanedUp(
+    mut env: JNIEnv,
+    _obj: jobject,
+    instance_ptr: jlong,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
+        let is_cleaned = core::is_instance_cleaned_up(instance);
+        Ok(if is_cleaned { 1 } else { 0 })
+    })
+}
+
+/// Validate cross-thread instance access (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeValidateThreadAccess(
+    mut env: JNIEnv,
+    _obj: jobject,
+    instance_ptr: jlong,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
+        match core::validate_instance_thread_access(instance) {
+            Ok(_) => Ok(1),
+            Err(_) => Ok(0),
+        }
+    })
+}
+
+/// Set the lifecycle state of an instance (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeSetState(
+    mut env: JNIEnv,
+    _obj: jobject,
+    instance_ptr: jlong,
+    state: jint,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let instance = unsafe { core::get_instance_mut(instance_ptr as *mut c_void)? };
+        let instance_state = match state {
+            0 => InstanceState::Creating,
+            1 => InstanceState::Created,
+            2 => InstanceState::Running,
+            3 => InstanceState::Suspended,
+            4 => InstanceState::Error,
+            5 => InstanceState::Disposed,
+            6 => InstanceState::Destroying,
+            _ => return Ok(0), // Invalid state
+        };
+        core::set_instance_state(instance, instance_state);
+        Ok(1)
+    })
+}
 
 /// Get all export names from an instance
 #[no_mangle]
@@ -16,13 +99,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetExp
     _class: JClass<'a>,
     instance_ptr: jlong,
 ) -> jobjectArray {
-    let result = (|| -> WasmtimeResult<jobjectArray> {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jobjectArray> {
         let instance = unsafe { core::get_instance_ref(instance_ptr as *const c_void)? };
         let exports = core::get_all_exports(instance);
 
-        // Get the keys (export names) sorted for deterministic ordering
-        let mut export_names: Vec<String> = exports.keys().cloned().collect();
-        export_names.sort();
+        // Get the keys (export names) from the HashMap
+        let export_names: Vec<String> = exports.keys().cloned().collect();
 
         // Create a Java String array
         let string_class =
@@ -51,17 +133,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetExp
         }
 
         Ok(output_array.as_raw())
-    })();
+    }));
 
     match result {
-        Ok(array) => array,
-        Err(_) => {
-            // Return empty array on error - find String class again since it was moved
-            if let Ok(string_class) = env.find_class("java/lang/String") {
-                if let Ok(empty) = env.new_object_array(0, string_class, JObject::null()) {
-                    return empty.as_raw();
-                }
-            }
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -519,7 +608,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallFu
 ) -> jobjectArray {
     use crate::instance::ExecutionResult;
 
-    let result = (|| -> WasmtimeResult<jobjectArray> {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jobjectArray> {
         // Get instance and store references
         let instance = unsafe { core::get_instance_mut(instance_ptr as *mut c_void)? };
         let store = unsafe { crate::store::core::get_store_mut(store_ptr as *mut c_void)? };
@@ -545,13 +634,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeCallFu
         let result_array = convert_wasm_results_to_java(&mut env, &exec_result.values)?;
 
         Ok(result_array.as_raw())
-    })();
+    }));
 
     match result {
-        Ok(array) => array,
-        Err(e) => {
-            let error_msg = format!("{}", e);
-            let _ = env.throw_new("java/lang/RuntimeException", error_msg);
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -1029,7 +1129,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateIns
     extern_handles: jni::sys::jlongArray,
     extern_types: jintArray,
 ) -> jlong {
-    let result = (|| -> WasmtimeResult<jlong> {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlong> {
         let handles_array = unsafe { jni::objects::JLongArray::from_raw(extern_handles) };
         let types_array = unsafe { jni::objects::JIntArray::from_raw(extern_types) };
 
@@ -1082,12 +1182,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateIns
             unsafe { core::create_instance_from_extern_handles(store, module, &ptrs, &type_buf)? };
 
         Ok(crate::ffi_common::memory_utils::box_into_raw_safe(instance) as jlong)
-    })();
+    }));
 
     match result {
-        Ok(handle) => handle,
-        Err(e) => {
+        Ok(Ok(handle)) => handle,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
+            0
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             0
         }
     }
@@ -1105,7 +1217,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMod
     module_export_handle: jlong,
     out_type: jintArray,
 ) -> jlong {
-    let result = (|| -> WasmtimeResult<jlong> {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlong> {
         let instance = unsafe { core::get_instance_ref(instance_handle as *const c_void)? };
         let store = unsafe { crate::store::core::get_store_mut(store_handle as *mut c_void)? };
 
@@ -1125,12 +1237,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetMod
             })?;
 
         Ok(handle as jlong)
-    })();
+    }));
 
     match result {
-        Ok(handle) => handle,
-        Err(e) => {
+        Ok(Ok(handle)) => handle,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
+            0
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             0
         }
     }

@@ -10,7 +10,7 @@ use jni::strings::JavaStr;
 use jni::sys::{jboolean, jbyteArray, jint, jlong, jlongArray, jobject, jobjectArray, jstring};
 use jni::JNIEnv;
 
-use crate::error::jni_utils;
+use crate::error::{jni_utils, WasmtimeError};
 use crate::module::core;
 use crate::shared_ffi::module::{ByteArrayConverter, StringConverter};
 
@@ -536,7 +536,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserial
     serialized_data: jbyteArray,
 ) -> jlong {
     // Convert byte array to Vec<u8> before moving env
-    let data = match (|| -> Result<Vec<u8>, jni::errors::Error> {
+    let data = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<Vec<u8>, jni::errors::Error> {
         let byte_array = unsafe { JByteArray::from_raw(serialized_data) };
         let array_elements =
             unsafe { env.get_array_elements(&byte_array, jni::objects::ReleaseMode::NoCopyBack)? };
@@ -544,9 +544,21 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserial
         let slice =
             unsafe { std::slice::from_raw_parts(array_elements.as_ptr() as *const u8, len) };
         Ok(slice.to_vec())
-    })() {
-        Ok(data) => data,
-        Err(_) => return 0 as jlong, // Return null on error
+    })) {
+        Ok(Ok(data)) => data,
+        Ok(Err(_)) => return 0 as jlong,
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
+            return 0 as jlong;
+        }
     };
 
     jni_utils::jni_try_ptr(&mut env, || {
@@ -612,7 +624,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserial
     engine_ptr: jlong,
     serialized_data: jbyteArray,
 ) -> jlong {
-    let data = match (|| -> Result<Vec<u8>, jni::errors::Error> {
+    let data = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<Vec<u8>, jni::errors::Error> {
         let byte_array = unsafe { JByteArray::from_raw(serialized_data) };
         let array_elements =
             unsafe { env.get_array_elements(&byte_array, jni::objects::ReleaseMode::NoCopyBack)? };
@@ -620,9 +632,21 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDeserial
         let slice =
             unsafe { std::slice::from_raw_parts(array_elements.as_ptr() as *const u8, len) };
         Ok(slice.to_vec())
-    })() {
-        Ok(data) => data,
-        Err(_) => return 0 as jlong,
+    })) {
+        Ok(Ok(data)) => data,
+        Ok(Err(_)) => return 0 as jlong,
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
+            return 0 as jlong;
+        }
     };
 
     jni_utils::jni_try_ptr(&mut env, || {
@@ -772,6 +796,20 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
     } {
         Ok(ptr) => ptr as jlong,
         Err(_) => 0,
+    }
+}
+
+/// Destroy a ModuleExport handle (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeDestroyModuleExport(
+    _env: JNIEnv,
+    _class: JClass,
+    module_export_ptr: jlong,
+) {
+    if module_export_ptr != 0 {
+        unsafe {
+            core::destroy_module_export(module_export_ptr as *mut std::os::raw::c_void);
+        }
     }
 }
 
@@ -956,14 +994,13 @@ fn create_jni_global_type<'a>(
     .ok()
 }
 
-/// Helper: Create JniMemoryType from initial, max, is_64, shared, and page_size_log2
+/// Helper: Create JniMemoryType from initial, max, is_64, and shared
 fn create_jni_memory_type<'a>(
     env: &mut JNIEnv<'a>,
     initial: u64,
     max: Option<u64>,
     is_64: bool,
     shared: bool,
-    page_size_log2: u32,
 ) -> Option<JObject<'a>> {
     let memory_type_class = env
         .find_class("ai/tegmentum/wasmtime4j/jni/type/JniMemoryType")
@@ -978,16 +1015,15 @@ fn create_jni_memory_type<'a>(
         JObject::null()
     };
 
-    // JniMemoryType(long minimum, Long maximum, boolean is64Bit, boolean isShared, int pageSizeLog2)
+    // JniMemoryType(long minimum, Long maximum, boolean is64Bit, boolean isShared)
     env.new_object(
         memory_type_class,
-        "(JLjava/lang/Long;ZZI)V",
+        "(JLjava/lang/Long;ZZ)V",
         &[
             JValue::Long(initial as i64),
             JValue::Object(&max_obj),
             JValue::Bool(is_64 as jboolean),
             JValue::Bool(shared as jboolean),
-            JValue::Int(page_size_log2 as jint),
         ],
     )
     .ok()
@@ -1093,8 +1129,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             crate::module::ExportKind::Global(val_type, mutable) => {
                 create_jni_global_type(&mut env, val_type, *mutable)
             }
-            crate::module::ExportKind::Memory(initial, max, is_64, shared, page_size_log2) => {
-                create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared, *page_size_log2)
+            crate::module::ExportKind::Memory(initial, max, is_64, shared, _page_size_log2) => {
+                create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared)
             }
             crate::module::ExportKind::Table(elem_type, initial, max) => {
                 create_jni_table_type(&mut env, elem_type, *initial, *max)
@@ -1205,8 +1241,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
                     None => continue,
                 }
             }
-            crate::module::ImportKind::Memory(initial, max, is_64, shared, page_size_log2) => {
-                match create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared, *page_size_log2) {
+            crate::module::ImportKind::Memory(initial, max, is_64, shared, _page_size_log2) => {
+                match create_jni_memory_type(&mut env, *initial, *max, *is_64, *shared) {
                     Some(obj) => obj,
                     None => continue,
                 }
@@ -1361,14 +1397,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         return std::ptr::null_mut();
     }
 
-    let data = (|| -> crate::error::WasmtimeResult<[i64; 8]> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jlongArray> {
         let (min_mem, max_mem, min_tab, max_tab, n_mem, n_tab, n_glob, n_func) = unsafe {
             crate::module::core::get_module_resources_required(
                 module_ptr as *const std::os::raw::c_void,
             )?
         };
 
-        Ok([
+        let values = [
             min_mem,
             max_mem,
             min_tab,
@@ -1377,22 +1413,32 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             n_tab as i64,
             n_glob as i64,
             n_func as i64,
-        ])
-    })();
+        ];
 
-    match data {
-        Ok(values) => {
-            let result = env.new_long_array(8);
-            match result {
-                Ok(arr) => {
-                    let _ = env.set_long_array_region(&arr, 0, &values);
-                    arr.into_raw()
-                }
-                Err(_) => std::ptr::null_mut(),
-            }
+        let arr = env.new_long_array(8).map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to create long array: {}", e),
+        })?;
+        env.set_long_array_region(&arr, 0, &values)
+            .map_err(|e| WasmtimeError::Memory {
+                message: format!("Failed to set long array region: {}", e),
+            })?;
+        Ok(arr.into_raw())
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
         }
-        Err(e) => {
-            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -1415,25 +1461,35 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         return std::ptr::null_mut();
     }
 
-    let data = (|| -> crate::error::WasmtimeResult<[i64; 2]> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jlongArray> {
         let (start, end) =
             crate::shared_ffi::module::image_range_shared(module_ptr as *mut std::os::raw::c_void)?;
-        Ok([start as i64, end as i64])
-    })();
+        let values = [start as i64, end as i64];
 
-    match data {
-        Ok(values) => {
-            let result = env.new_long_array(2);
-            match result {
-                Ok(arr) => {
-                    let _ = env.set_long_array_region(&arr, 0, &values);
-                    arr.into_raw()
-                }
-                Err(_) => std::ptr::null_mut(),
-            }
+        let arr = env.new_long_array(2).map_err(|e| WasmtimeError::Memory {
+            message: format!("Failed to create long array: {}", e),
+        })?;
+        env.set_long_array_region(&arr, 0, &values)
+            .map_err(|e| WasmtimeError::Memory {
+                message: format!("Failed to set long array region: {}", e),
+            })?;
+        Ok(arr.into_raw())
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
         }
-        Err(e) => {
-            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }

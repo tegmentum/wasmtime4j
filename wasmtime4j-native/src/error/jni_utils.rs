@@ -341,6 +341,25 @@ where
 }
 
 #[cfg(feature = "jni-bindings")]
+/// Handle a panic caught by catch_unwind by throwing a Java exception.
+/// Extracts the panic message and throws it as a WasmtimeException.
+pub fn throw_panic_as_exception(
+    env: &mut jni::JNIEnv,
+    panic_info: Box<dyn std::any::Any + Send>,
+) {
+    let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+        s.to_string()
+    } else if let Some(s) = panic_info.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "Unknown panic occurred in native code".to_string()
+    };
+    log::error!("Native panic in JNI call: {}", panic_msg);
+    let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+    throw_jni_exception(env, &error);
+}
+
+#[cfg(feature = "jni-bindings")]
 /// Execute operation with JNI exception throwing, returning boolean result
 /// Uses catch_unwind to prevent panics from crashing the JVM
 pub fn jni_try_bool<F>(env: &mut jni::JNIEnv, operation: F) -> bool

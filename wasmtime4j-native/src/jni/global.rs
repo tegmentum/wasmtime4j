@@ -96,7 +96,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGloba
     global_ptr: jlong,
     store_ptr: jlong,
 ) -> jbyteArray {
-    match (|| -> WasmtimeResult<jbyteArray> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jbyteArray> {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
@@ -106,7 +106,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGloba
         let (i32_val, i64_val, f32_val, f64_val, ref_id_opt) = core::extract_global_value(&value);
 
         // Pack the values into a byte array
-        let mut data = Vec::with_capacity(29); // 5 * 8 bytes for values + 1 byte for presence flag
+        let mut data = Vec::with_capacity(29);
         data.extend_from_slice(&i32_val.to_le_bytes());
         data.extend_from_slice(&i64_val.to_le_bytes());
         data.extend_from_slice(&f32_val.to_le_bytes());
@@ -130,9 +130,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGloba
         })?;
 
         Ok(raw_array)
-    })() {
-        Ok(result) => result,
-        Err(_) => std::ptr::null_mut() as jbyteArray, // Return null on error
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut() as jbyteArray
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut() as jbyteArray
+        }
     }
 }
 
@@ -188,11 +195,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetMetad
     _class: JClass,
     global_ptr: jlong,
 ) -> jbyteArray {
-    match (|| -> WasmtimeResult<jbyteArray> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jbyteArray> {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let metadata = core::get_global_metadata(global);
 
-        let mut data = Vec::with_capacity(9); // 2 ints + 1 byte for name presence
+        let mut data = Vec::with_capacity(9);
 
         let value_type_code =
             crate::ffi_common::valtype_conversion::valtype_to_int(&metadata.value_type);
@@ -222,9 +229,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetMetad
         })?;
 
         Ok(raw_array)
-    })() {
-        Ok(result) => result,
-        Err(_) => std::ptr::null_mut() as jbyteArray, // Return null on error
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut() as jbyteArray
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut() as jbyteArray
+        }
     }
 }
 
@@ -235,7 +249,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetName<
     _class: JClass<'a>,
     global_ptr: jlong,
 ) -> JString<'a> {
-    match (|| -> WasmtimeResult<JString<'a>> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<JString<'a>> {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let metadata = core::get_global_metadata(global);
 
@@ -248,9 +262,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetName<
         } else {
             Ok(JString::default())
         }
-    })() {
-        Ok(result) => result,
-        Err(_) => JString::default(), // Return empty string on error
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            JString::default()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            JString::default()
+        }
     }
 }
 
@@ -261,7 +282,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
     _class: JClass<'a>,
     global_ptr: jlong,
 ) -> JString<'a> {
-    match (|| -> WasmtimeResult<JString<'a>> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<JString<'a>> {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let metadata = core::get_global_metadata(global);
 
@@ -286,11 +307,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
             .map_err(|e| WasmtimeError::InvalidParameter {
                 message: format!("Failed to create JNI string: {}", e),
             })?)
-    })() {
-        Ok(result) => result,
-        Err(_) => {
-            // Return "unknown" as fallback
-            env.new_string("unknown").unwrap_or_default()
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            JString::default()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            JString::default()
         }
     }
 }
@@ -298,24 +323,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
 /// Check if a global variable is mutable (JNI version)
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeIsMutable(
-    _env: JNIEnv,
+    mut env: JNIEnv,
     _class: JClass,
     global_ptr: jlong,
 ) -> jboolean {
-    match (|| -> WasmtimeResult<bool> {
+    if jni_utils::jni_try_bool(&mut env, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let metadata = core::get_global_metadata(global);
-
         Ok(metadata.mutability == Mutability::Var)
-    })() {
-        Ok(is_mutable) => {
-            if is_mutable {
-                1
-            } else {
-                0
-            }
-        }
-        Err(_) => 0, // Return false on error (safer default)
+    }) {
+        1
+    } else {
+        0
     }
 }
 
@@ -327,7 +346,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
     global_ptr: jlong,
     store_ptr: jlong,
 ) -> jobject {
-    match (|| -> WasmtimeResult<jobject> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jobject> {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
@@ -358,13 +377,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
                 double_obj.into_raw()
             }
             crate::global::GlobalValue::V128(bytes) => {
-                // Return V128 as byte array
                 let byte_array = env.new_byte_array(16)?;
                 env.set_byte_array_region(&byte_array, 0, &bytes.map(|b| b as i8))?;
                 byte_array.into_raw()
             }
             crate::global::GlobalValue::FuncRef(opt_id) => {
-                // Return FuncRef as Long (null for None)
                 match opt_id {
                     Some(id) => {
                         let long_class = env.find_class("java/lang/Long")?;
@@ -376,7 +393,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
                 }
             }
             crate::global::GlobalValue::ExternRef(opt_id) => {
-                // Return ExternRef as Long (null for None)
                 match opt_id {
                     Some(id) => {
                         let long_class = env.find_class("java/lang/Long")?;
@@ -388,7 +404,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
                 }
             }
             crate::global::GlobalValue::AnyRef(opt_id) => {
-                // Return AnyRef as Long (null for None)
                 match opt_id {
                     Some(id) => {
                         let long_class = env.find_class("java/lang/Long")?;
@@ -400,7 +415,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
                 }
             }
             crate::global::GlobalValue::EqRef(opt_id) => {
-                // Return EqRef as Long (null for None)
                 match opt_id {
                     Some(id) => {
                         let long_class = env.find_class("java/lang/Long")?;
@@ -412,7 +426,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
                 }
             }
             crate::global::GlobalValue::I31Ref(opt_val) => {
-                // Return I31Ref as Integer (null for None)
                 match opt_val {
                     Some(val) => {
                         let integer_class = env.find_class("java/lang/Integer")?;
@@ -424,7 +437,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
                 }
             }
             crate::global::GlobalValue::StructRef(opt_id) => {
-                // Return StructRef as Long (null for None)
                 match opt_id {
                     Some(id) => {
                         let long_class = env.find_class("java/lang/Long")?;
@@ -436,7 +448,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
                 }
             }
             crate::global::GlobalValue::ArrayRef(opt_id) => {
-                // Return ArrayRef as Long (null for None)
                 match opt_id {
                     Some(id) => {
                         let long_class = env.find_class("java/lang/Long")?;
@@ -450,10 +461,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
         };
 
         Ok(java_value)
-    })() {
-        Ok(result) => result,
-        Err(e) => {
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
             std::ptr::null_mut()
         }
     }
@@ -467,7 +482,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetIntVa
     global_ptr: jlong,
     store_ptr: jlong,
 ) -> jint {
-    match (|| -> WasmtimeResult<jint> {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
@@ -488,13 +503,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetIntVa
                 message: "Global value is not I32 type".to_string(),
             }),
         }
-    })() {
-        Ok(result) => result,
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            0 // Return 0 on error
-        }
-    }
+    })
 }
 
 /// Get the long value of a global variable (JNI version)
@@ -505,7 +514,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetLongV
     global_ptr: jlong,
     store_ptr: jlong,
 ) -> jlong {
-    match (|| -> WasmtimeResult<jlong> {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
@@ -526,13 +535,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetLongV
                 message: "Global value is not I64 type".to_string(),
             }),
         }
-    })() {
-        Ok(result) => result,
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            0 // Return 0 on error
-        }
-    }
+    })
 }
 
 /// Get the float value of a global variable (JNI version)
@@ -543,7 +546,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetFloat
     global_ptr: jlong,
     store_ptr: jlong,
 ) -> f32 {
-    match (|| -> WasmtimeResult<f32> {
+    jni_utils::jni_try_with_default(&mut env, 0.0, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
@@ -564,13 +567,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetFloat
                 message: "Global value is not F32 type".to_string(),
             }),
         }
-    })() {
-        Ok(result) => result,
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            0.0 // Return 0.0 on error
-        }
-    }
+    })
 }
 
 /// Get the double value of a global variable (JNI version)
@@ -581,7 +578,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetDoubl
     global_ptr: jlong,
     store_ptr: jlong,
 ) -> f64 {
-    match (|| -> WasmtimeResult<f64> {
+    jni_utils::jni_try_with_default(&mut env, 0.0, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
@@ -602,13 +599,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetDoubl
                 message: "Global value is not F64 type".to_string(),
             }),
         }
-    })() {
-        Ok(result) => result,
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            0.0 // Return 0.0 on error
-        }
-    }
+    })
 }
 
 /// Set the value of a global variable from Object (JNI version)
@@ -620,7 +611,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetValue
     store_ptr: jlong,
     value: jobject,
 ) -> jboolean {
-    match (|| -> WasmtimeResult<()> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<()> {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
@@ -731,11 +722,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetValue
 
         core::set_global_value(global, store, global_value)?;
         Ok(())
-    })() {
-        Ok(_) => 1, // Return true on success
-        Err(e) => {
+    })) {
+        Ok(Ok(_)) => 1,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
-            0 // Return false on error
+            0
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            0
         }
     }
 }
@@ -749,14 +744,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetIntVa
     store_ptr: jlong,
     value: jint,
 ) -> jboolean {
-    match (|| -> WasmtimeResult<()> {
+    if jni_utils::jni_try_bool(&mut env, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
         };
         let metadata = core::get_global_metadata(global);
 
-        // Validate that this global is mutable and correct type
         if metadata.mutability != Mutability::Var {
             return Err(WasmtimeError::Runtime {
                 message: "Cannot set value on immutable global variable".to_string(),
@@ -772,13 +766,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetIntVa
 
         let global_value = crate::global::GlobalValue::I32(value);
         core::set_global_value(global, store, global_value)?;
-        Ok(())
-    })() {
-        Ok(_) => 1, // Return true on success
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            0 // Return false on error
-        }
+        Ok(true)
+    }) {
+        1
+    } else {
+        0
     }
 }
 
@@ -791,14 +783,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetLongV
     store_ptr: jlong,
     value: jlong,
 ) -> jboolean {
-    match (|| -> WasmtimeResult<()> {
+    if jni_utils::jni_try_bool(&mut env, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
         };
         let metadata = core::get_global_metadata(global);
 
-        // Validate that this global is mutable and correct type
         if metadata.mutability != Mutability::Var {
             return Err(WasmtimeError::Runtime {
                 message: "Cannot set value on immutable global variable".to_string(),
@@ -814,13 +805,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetLongV
 
         let global_value = crate::global::GlobalValue::I64(value);
         core::set_global_value(global, store, global_value)?;
-        Ok(())
-    })() {
-        Ok(_) => 1, // Return true on success
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            0 // Return false on error
-        }
+        Ok(true)
+    }) {
+        1
+    } else {
+        0
     }
 }
 
@@ -833,14 +822,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetFloat
     store_ptr: jlong,
     value: f32,
 ) -> jboolean {
-    match (|| -> WasmtimeResult<()> {
+    if jni_utils::jni_try_bool(&mut env, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
         };
         let metadata = core::get_global_metadata(global);
 
-        // Validate that this global is mutable and correct type
         if metadata.mutability != Mutability::Var {
             return Err(WasmtimeError::Runtime {
                 message: "Cannot set value on immutable global variable".to_string(),
@@ -856,13 +844,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetFloat
 
         let global_value = crate::global::GlobalValue::F32(value);
         core::set_global_value(global, store, global_value)?;
-        Ok(())
-    })() {
-        Ok(_) => 1, // Return true on success
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            0 // Return false on error
-        }
+        Ok(true)
+    }) {
+        1
+    } else {
+        0
     }
 }
 
@@ -875,14 +861,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetDoubl
     store_ptr: jlong,
     value: f64,
 ) -> jboolean {
-    match (|| -> WasmtimeResult<()> {
+    if jni_utils::jni_try_bool(&mut env, || {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let store = unsafe {
             ffi_utils::deref_ptr::<Store>(store_ptr as *mut std::os::raw::c_void, "store")?
         };
         let metadata = core::get_global_metadata(global);
 
-        // Validate that this global is mutable and correct type
         if metadata.mutability != Mutability::Var {
             return Err(WasmtimeError::Runtime {
                 message: "Cannot set value on immutable global variable".to_string(),
@@ -898,13 +883,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeSetDoubl
 
         let global_value = crate::global::GlobalValue::F64(value);
         core::set_global_value(global, store, global_value)?;
-        Ok(())
-    })() {
-        Ok(_) => 1, // Return true on success
-        Err(e) => {
-            jni_utils::throw_jni_exception(&mut env, &e);
-            0 // Return false on error
-        }
+        Ok(true)
+    }) {
+        1
+    } else {
+        0
     }
 }
 
@@ -916,7 +899,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGloba
     _class: JClass<'a>,
     global_ptr: jlong,
 ) -> jlongArray {
-    match (|| -> WasmtimeResult<jlongArray> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlongArray> {
         let global = unsafe { core::get_global_ref(global_ptr as *mut std::os::raw::c_void)? };
         let metadata = core::get_global_metadata(global);
 
@@ -928,7 +911,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGloba
             0
         };
 
-        // Create long array with [typeCode, isMutable]
         let result_array = env.new_long_array(2).map_err(|e| WasmtimeError::Memory {
             message: format!("Failed to create long array: {}", e),
         })?;
@@ -940,10 +922,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetGloba
             })?;
 
         Ok(result_array.as_raw())
-    })() {
-        Ok(array) => array,
-        Err(e) => {
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
             std::ptr::null_mut()
         }
     }

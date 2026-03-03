@@ -6,7 +6,7 @@ use jni::JNIEnv;
 
 use crate::error::{ffi_utils, jni_utils, WasmtimeError, WasmtimeResult};
 use crate::store::Store;
-use crate::table::{self, core, TableElement};
+use crate::table::{core, TableElement};
 use wasmtime::{RefType, ValType};
 
 /// Create a new WebAssembly table (JNI version)
@@ -162,7 +162,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMetada
     _class: JClass,
     table_ptr: jlong,
 ) -> jbyteArray {
-    match (|| -> WasmtimeResult<jbyteArray> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jbyteArray> {
         let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
         let metadata = core::get_table_metadata(table);
 
@@ -198,9 +198,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetMetada
         })?;
 
         Ok(raw_array)
-    })() {
-        Ok(result) => result,
-        Err(_) => std::ptr::null_mut() as jbyteArray, // Return null on error
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut() as jbyteArray
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
+            std::ptr::null_mut() as jbyteArray
+        }
     }
 }
 
@@ -211,7 +226,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetName<'
     _class: JClass<'a>,
     table_ptr: jlong,
 ) -> JString<'a> {
-    match (|| -> WasmtimeResult<JString<'a>> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<JString<'a>> {
         let table = unsafe { core::get_table_ref(table_ptr as *mut std::os::raw::c_void)? };
         let metadata = core::get_table_metadata(table);
 
@@ -224,9 +239,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetName<'
         } else {
             Ok(JString::default())
         }
-    })() {
-        Ok(result) => result,
-        Err(_) => JString::default(), // Return empty string on error
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            JString::default()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
+            JString::default()
+        }
     }
 }
 
@@ -251,7 +281,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableT
     table_ptr: jlong,
     _store_ptr: jlong,
 ) -> jlongArray {
-    match (|| -> WasmtimeResult<jlongArray> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlongArray> {
         let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
         let metadata = core::get_table_metadata(table);
 
@@ -274,10 +304,22 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetTableT
             })?;
 
         Ok(result_array.as_raw())
-    })() {
-        Ok(array) => array,
-        Err(e) => {
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -515,67 +557,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeTableInit
         )?;
         Ok(())
     });
-}
-
-/// Copy elements within a table (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopy(
-    mut env: JNIEnv,
-    _class: JClass,
-    table_ptr: jlong,
-    store_ptr: jlong,
-    dst: jint,
-    src: jint,
-    count: jint,
-) -> jboolean {
-    let success = jni_utils::jni_try_bool(&mut env, || {
-        let store = unsafe {
-            ffi_utils::deref_ptr::<Store>(store_ptr as *const std::os::raw::c_void, "store")?
-        };
-        let table = unsafe {
-            ffi_utils::deref_ptr::<table::Table>(
-                table_ptr as *const std::os::raw::c_void,
-                "table",
-            )?
-        };
-        table.copy_within(store, dst as u32, src as u32, count as u32)?;
-        Ok(true)
-    });
-    if success { 1 } else { 0 }
-}
-
-/// Copy elements from another table (JNI version)
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopyFromTable(
-    mut env: JNIEnv,
-    _class: JClass,
-    dst_table_ptr: jlong,
-    store_ptr: jlong,
-    dst: jint,
-    src_table_ptr: jlong,
-    src: jint,
-    count: jint,
-) -> jboolean {
-    let success = jni_utils::jni_try_bool(&mut env, || {
-        let store = unsafe {
-            ffi_utils::deref_ptr::<Store>(store_ptr as *const std::os::raw::c_void, "store")?
-        };
-        let dst_table = unsafe {
-            ffi_utils::deref_ptr::<table::Table>(
-                dst_table_ptr as *const std::os::raw::c_void,
-                "dst_table",
-            )?
-        };
-        let src_table = unsafe {
-            ffi_utils::deref_ptr::<table::Table>(
-                src_table_ptr as *const std::os::raw::c_void,
-                "src_table",
-            )?
-        };
-        dst_table.copy_from(store, dst as u32, src_table, src as u32, count as u32)?;
-        Ok(true)
-    });
-    if success { 1 } else { 0 }
 }
 
 /// Drop an element segment (JNI version)

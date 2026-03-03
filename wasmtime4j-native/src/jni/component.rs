@@ -645,8 +645,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
     _class: JClass,
     component_ptr: jlong,
 ) -> jlongArray {
-    // Get the resource data outside the JNI env closure
-    let data = (|| -> Result<[i64; 4], crate::error::WasmtimeError> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jlongArray> {
         let component = unsafe {
             crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
@@ -654,36 +653,32 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
         let (num_mem, max_mem, num_tab, max_tab) =
             crate::component::core::get_component_resources_required(component);
 
-        Ok([num_mem as i64, max_mem, num_tab as i64, max_tab])
-    })();
+        let values = [num_mem as i64, max_mem, num_tab as i64, max_tab];
 
-    match data {
-        Ok(result) => match env.new_long_array(4) {
-            Ok(arr) => {
-                if env.set_long_array_region(&arr, 0, &result).is_ok() {
-                    arr.into_raw()
-                } else {
-                    jni_utils::throw_jni_exception(
-                        &mut env,
-                        &crate::error::WasmtimeError::Internal {
-                            message: "Failed to set long array region".to_string(),
-                        },
-                    );
-                    std::ptr::null_mut()
-                }
-            }
-            Err(_) => {
-                jni_utils::throw_jni_exception(
-                    &mut env,
-                    &crate::error::WasmtimeError::Internal {
-                        message: "Failed to create long array".to_string(),
-                    },
-                );
-                std::ptr::null_mut()
-            }
-        },
-        Err(e) => {
+        let arr = env.new_long_array(4).map_err(|e| crate::error::WasmtimeError::Internal {
+            message: format!("Failed to create long array: {}", e),
+        })?;
+        env.set_long_array_region(&arr, 0, &values)
+            .map_err(|e| crate::error::WasmtimeError::Internal {
+                message: format!("Failed to set long array region: {}", e),
+            })?;
+        Ok(arr.into_raw())
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = crate::error::WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -867,83 +862,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
     })
 }
 
-/// Look up a general export by name on a component instance.
-///
-/// Returns a long[] of [kind, export_index_ptr] on success, or null if not found.
-/// Kind codes: 0=ComponentFunc, 1=CoreFunc, 2=Module, 3=Component,
-/// 4=ComponentInstance, 5=Type, 6=Resource
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceGetExport(
-    mut env: JNIEnv,
-    _class: JClass,
-    engine_ptr: jlong,
-    instance_id: jlong,
-    parent_index_ptr: jlong,
-    name: JString,
-) -> jlongArray {
-    let null_result: jlongArray = std::ptr::null_mut();
-
-    // Extract string before entering closure
-    let name_str: String = match env.get_string(&name) {
-        Ok(s) => s.into(),
-        Err(e) => {
-            log::error!("Failed to get export name string: {}", e);
-            return null_result;
-        }
-    };
-
-    let engine = match unsafe {
-        crate::component_core::core::get_enhanced_component_engine_ref(
-            engine_ptr as *const std::os::raw::c_void,
-        )
-    } {
-        Ok(e) => e,
-        Err(e) => {
-            log::error!("Failed to get engine ref: {}", e);
-            return null_result;
-        }
-    };
-
-    let parent_index = if parent_index_ptr == 0 {
-        None
-    } else {
-        Some(unsafe {
-            &*(parent_index_ptr as *const wasmtime::component::ComponentExportIndex)
-        })
-    };
-
-    match engine.get_component_instance_export(instance_id as u64, parent_index, &name_str) {
-        Ok(Some((kind, boxed_index))) => {
-            let index_ptr = Box::into_raw(boxed_index) as jlong;
-            match env.new_long_array(2) {
-                Ok(result) => {
-                    let buf = [kind as jlong, index_ptr];
-                    if let Err(e) = env.set_long_array_region(&result, 0, &buf) {
-                        log::error!("Failed to set long array: {}", e);
-                        return null_result;
-                    }
-                    result.into_raw()
-                }
-                Err(e) => {
-                    log::error!("Failed to create long array: {}", e);
-                    // Clean up the boxed index we allocated
-                    unsafe {
-                        let _ = Box::from_raw(
-                            index_ptr as *mut wasmtime::component::ComponentExportIndex,
-                        );
-                    }
-                    null_result
-                }
-            }
-        }
-        Ok(None) => null_result,
-        Err(e) => {
-            log::error!("Failed to get component instance export: {}", e);
-            null_result
-        }
-    }
-}
-
 /// Run concurrent component function calls.
 ///
 /// Takes a JSON string containing the batch of calls and returns a JSON string
@@ -956,7 +874,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeRunCo
     instance_id: jlong,
     json_input: JString,
 ) -> jstring {
-    let result: Result<String, crate::error::WasmtimeError> = (|| {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<jstring, crate::error::WasmtimeError> {
         let engine = unsafe {
             crate::component_core::core::get_enhanced_component_engine_ref(
                 engine_ptr as *const std::os::raw::c_void,
@@ -974,26 +892,29 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeRunCo
 
         let results = engine.run_concurrent_calls(instance_id as u64, calls)?;
 
-        crate::component_core::concurrent_call_json::serialize_results(&results)
-    })();
+        let json_result = crate::component_core::concurrent_call_json::serialize_results(&results)?;
 
-    match result {
-        Ok(json_result) => match env.new_string(&json_result) {
-            Ok(s) => s.into_raw(),
-            Err(e) => {
-                log::error!("Failed to create Java result string: {:?}", e);
-                let _ = env.throw_new(
-                    "ai/tegmentum/wasmtime4j/exception/WasmException",
-                    format!("Failed to create result string: {:?}", e),
-                );
-                std::ptr::null_mut()
-            }
-        },
-        Err(e) => {
-            let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/exception/WasmException",
-                format!("{}", e),
-            );
+        env.new_string(&json_result)
+            .map(|s| s.into_raw())
+            .map_err(|e| crate::error::WasmtimeError::Internal {
+                message: format!("Failed to create result string: {:?}", e),
+            })
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = crate::error::WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -1007,7 +928,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetFu
     component_ptr: jlong,
     engine_ptr: jlong,
 ) -> jstring {
-    let result: Result<String, crate::error::WasmtimeError> = (|| {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<jstring, crate::error::WasmtimeError> {
         let component = unsafe {
             crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
@@ -1016,26 +937,29 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetFu
                 engine_ptr as *const std::os::raw::c_void,
             )?
         };
-        crate::component::core::get_full_component_type_json(component, &engine.engine)
-    })();
+        let json = crate::component::core::get_full_component_type_json(component, &engine.engine)?;
 
-    match result {
-        Ok(json) => match env.new_string(&json) {
-            Ok(s) => s.into_raw(),
-            Err(e) => {
-                log::error!("Failed to create Java result string: {:?}", e);
-                let _ = env.throw_new(
-                    "ai/tegmentum/wasmtime4j/exception/WasmException",
-                    format!("Failed to create result string: {:?}", e),
-                );
-                std::ptr::null_mut()
-            }
-        },
-        Err(e) => {
-            let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/exception/WasmException",
-                format!("{}", e),
-            );
+        env.new_string(&json)
+            .map(|s| s.into_raw())
+            .map_err(|e| crate::error::WasmtimeError::Internal {
+                message: format!("Failed to create result string: {:?}", e),
+            })
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = crate::error::WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -1049,7 +973,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetSu
     linker_ptr: jlong,
     component_ptr: jlong,
 ) -> jstring {
-    let result: Result<String, crate::error::WasmtimeError> = (|| {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> Result<jstring, crate::error::WasmtimeError> {
         let linker = unsafe {
             if linker_ptr == 0 {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
@@ -1061,26 +985,29 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetSu
         let component = unsafe {
             crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
-        crate::component::core::get_substituted_component_type_json(linker, component)
-    })();
+        let json = crate::component::core::get_substituted_component_type_json(linker, component)?;
 
-    match result {
-        Ok(json) => match env.new_string(&json) {
-            Ok(s) => s.into_raw(),
-            Err(e) => {
-                log::error!("Failed to create Java result string: {:?}", e);
-                let _ = env.throw_new(
-                    "ai/tegmentum/wasmtime4j/exception/WasmException",
-                    format!("Failed to create result string: {:?}", e),
-                );
-                std::ptr::null_mut()
-            }
-        },
-        Err(e) => {
-            let _ = env.throw_new(
-                "ai/tegmentum/wasmtime4j/exception/WasmException",
-                format!("{}", e),
-            );
+        env.new_string(&json)
+            .map(|s| s.into_raw())
+            .map_err(|e| crate::error::WasmtimeError::Internal {
+                message: format!("Failed to create result string: {:?}", e),
+            })
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = crate::error::WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -1103,27 +1030,37 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetCo
         return std::ptr::null_mut();
     }
 
-    let data = (|| -> crate::error::WasmtimeResult<[i64; 2]> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jlongArray> {
         let component = unsafe {
             crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
         let (start, end) = crate::component::core::get_component_image_range(component);
-        Ok([start as i64, end as i64])
-    })();
+        let values = [start as i64, end as i64];
 
-    match data {
-        Ok(values) => {
-            let result = env.new_long_array(2);
-            match result {
-                Ok(arr) => {
-                    let _ = env.set_long_array_region(&arr, 0, &values);
-                    arr.into_raw()
-                }
-                Err(_) => std::ptr::null_mut(),
-            }
+        let arr = env.new_long_array(2).map_err(|e| crate::error::WasmtimeError::Internal {
+            message: format!("Failed to create long array: {}", e),
+        })?;
+        env.set_long_array_region(&arr, 0, &values)
+            .map_err(|e| crate::error::WasmtimeError::Internal {
+                message: format!("Failed to set long array region: {}", e),
+            })?;
+        Ok(arr.into_raw())
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
         }
-        Err(e) => {
-            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = crate::error::WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
@@ -1140,17 +1077,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeIniti
         return 0;
     }
 
-    let result = (|| -> crate::error::WasmtimeResult<()> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<()> {
         let component = unsafe {
             crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
         };
         crate::component::core::initialize_copy_on_write_image(component)
-    })();
-
-    match result {
-        Ok(()) => 1,
-        Err(e) => {
-            let _ = jni_utils::throw_jni_exception(&mut env, &e);
+    })) {
+        Ok(Ok(())) => 1,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            0
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = crate::error::WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             0
         }
     }

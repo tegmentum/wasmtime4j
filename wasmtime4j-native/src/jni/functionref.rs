@@ -129,7 +129,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
     }
 
     // Use local closure pattern (like nativeCall in function.rs) to avoid borrow conflicts
-    let result = (|| -> crate::error::WasmtimeResult<Vec<u8>> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jint> {
         // Dereference the boxed handle to get the registry ID
         let registry_id = unsafe { *(function_reference_handle as *const u64) };
 
@@ -179,37 +179,42 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
             })?;
 
         // Marshal results
-        if result_count > 0 {
-            marshal_results(&results)
+        let result_bytes = if result_count > 0 {
+            marshal_results(&results)?
         } else {
-            Ok(Vec::new())
-        }
-    })();
+            Vec::new()
+        };
 
-    match result {
-        Ok(result_bytes) => {
-            // Write results back to the Java byte buffer
-            if !result_bytes.is_empty() && !results_buffer.is_null() {
-                let results_array = unsafe { jni::objects::JByteArray::from_raw(results_buffer) };
-                if let Err(e) = env.set_byte_array_region(&results_array, 0, unsafe {
-                    std::slice::from_raw_parts(
-                        result_bytes.as_ptr() as *const i8,
-                        result_bytes.len(),
-                    )
-                }) {
-                    jni_utils::throw_jni_exception(
-                        &mut env,
-                        &WasmtimeError::Runtime {
-                            message: format!("Failed to write result data: {}", e),
-                            backtrace: None,
-                        },
-                    );
-                    return -1;
-                }
-            }
-            0
+        // Write results back to the Java byte buffer
+        if !result_bytes.is_empty() && !results_buffer.is_null() {
+            let results_array = unsafe { jni::objects::JByteArray::from_raw(results_buffer) };
+            env.set_byte_array_region(&results_array, 0, unsafe {
+                std::slice::from_raw_parts(
+                    result_bytes.as_ptr() as *const i8,
+                    result_bytes.len(),
+                )
+            })
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to write result data: {}", e),
+                backtrace: None,
+            })?;
         }
-        Err(error) => {
+        Ok(0)
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            -1
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
             jni_utils::throw_jni_exception(&mut env, &error);
             -1
         }

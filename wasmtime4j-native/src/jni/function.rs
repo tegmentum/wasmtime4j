@@ -7,7 +7,7 @@ use jni::JNIEnv;
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 use crate::ffi_common::memory_utils;
 use crate::store::Store;
-use wasmtime::{Func, HeapType, Val, ValType};
+use wasmtime::{Func, Val, ValType};
 
 /// Function handle that stores both the Wasmtime function and its type information
 /// This allows for efficient type introspection without requiring a store context
@@ -64,7 +64,7 @@ impl FunctionHandle {
     }
 }
 
-/// Convert ValType to string representation matching Java WasmValueType enum names
+/// Convert ValType to string representation
 fn valtype_to_string(vt: &ValType) -> String {
     match vt {
         ValType::I32 => "i32".to_string(),
@@ -72,27 +72,11 @@ fn valtype_to_string(vt: &ValType) -> String {
         ValType::F32 => "f32".to_string(),
         ValType::F64 => "f64".to_string(),
         ValType::V128 => "v128".to_string(),
-        ValType::Ref(ref_type) => heap_type_to_string(ref_type.heap_type()),
-    }
-}
-
-/// Convert HeapType to a string matching Java WasmValueType enum names
-fn heap_type_to_string(ht: &HeapType) -> String {
-    match ht {
-        HeapType::Func | HeapType::ConcreteFunc(_) => "funcref".to_string(),
-        HeapType::Extern => "externref".to_string(),
-        HeapType::Any => "anyref".to_string(),
-        HeapType::Eq => "eqref".to_string(),
-        HeapType::I31 => "i31ref".to_string(),
-        HeapType::Struct | HeapType::ConcreteStruct(_) => "structref".to_string(),
-        HeapType::Array | HeapType::ConcreteArray(_) => "arrayref".to_string(),
-        HeapType::None => "nullref".to_string(),
-        HeapType::NoFunc => "nullfuncref".to_string(),
-        HeapType::NoExtern => "nullexternref".to_string(),
-        HeapType::Exn | HeapType::ConcreteExn(_) => "exnref".to_string(),
-        HeapType::NoExn => "nullexnref".to_string(),
-        HeapType::Cont | HeapType::ConcreteCont(_) => "contref".to_string(),
-        HeapType::NoCont => "nullcontref".to_string(),
+        ValType::Ref(ref_type) => match ref_type {
+            _ if ref_type.heap_type().is_func() => "funcref".to_string(),
+            _ if ref_type.heap_type().is_extern() => "externref".to_string(),
+            _ => "ref".to_string(),
+        },
     }
 }
 
@@ -169,24 +153,6 @@ fn convert_java_params_to_wasmtime_vals(
     Ok(vals)
 }
 
-/// Produce the correct null Val for a given reference type's heap type
-fn null_val_for_heap_type(ht: &HeapType) -> Val {
-    match ht {
-        HeapType::Func | HeapType::NoFunc | HeapType::ConcreteFunc(_) => Val::null_func_ref(),
-        HeapType::Extern | HeapType::NoExtern => Val::null_extern_ref(),
-        HeapType::Any
-        | HeapType::Eq
-        | HeapType::I31
-        | HeapType::Struct
-        | HeapType::Array
-        | HeapType::None
-        | HeapType::ConcreteStruct(_)
-        | HeapType::ConcreteArray(_) => Val::null_any_ref(),
-        HeapType::Exn | HeapType::NoExn | HeapType::ConcreteExn(_) => Val::null_ref(ht),
-        HeapType::Cont | HeapType::NoCont | HeapType::ConcreteCont(_) => Val::null_ref(ht),
-    }
-}
-
 /// Convert a single Java Object to a Wasmtime Val based on expected type
 fn convert_java_object_to_wasmtime_val(
     env: &mut JNIEnv,
@@ -195,7 +161,7 @@ fn convert_java_object_to_wasmtime_val(
 ) -> WasmtimeResult<Val> {
     if obj.is_null() {
         return match expected_type {
-            ValType::Ref(ref_type) => Ok(null_val_for_heap_type(ref_type.heap_type())),
+            ValType::Ref(_) => Ok(Val::null_extern_ref()),
             _ => Err(WasmtimeError::Function {
                 message: format!("Null parameter for non-reference type: {:?}", expected_type),
             }),
@@ -371,13 +337,9 @@ fn convert_java_object_to_wasmtime_val(
             }
         }
 
-        ValType::Ref(ref_type) => {
-            // Non-null reference marshalling requires Store context which is not
-            // available in this conversion path. Produce the correct null type.
-            log::warn!("Non-null Java object passed for reference type {:?}; \
-                        only null references are currently supported in this path",
-                       ref_type.heap_type());
-            Ok(null_val_for_heap_type(ref_type.heap_type()))
+        ValType::Ref(_) => {
+            // For now, we'll handle references as null or set externref to null
+            Ok(Val::null_extern_ref())
         }
     }
 }
@@ -483,8 +445,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
 
     use std::os::raw::c_void;
 
-    // Helper closure for the actual work
-    let result = (|| -> WasmtimeResult<jobjectArray> {
+    // Helper closure for the actual work, wrapped with catch_unwind for panic safety
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jobjectArray> {
         // Get function from FunctionHandle
         let func_handle = unsafe { &*(function_ptr as *const FunctionHandle) };
         let func = func_handle.get_func();
@@ -529,11 +491,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
                 })
             }
         }
-    })();
+    }));
 
     match result {
-        Ok(arr) => arr,
-        Err(error) => {
+        Ok(Ok(arr)) => arr,
+        Ok(Err(error)) => {
+            jni_utils::throw_jni_exception(&mut env, &error);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
             jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
@@ -570,8 +544,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAs
 
     use std::os::raw::c_void;
 
-    // Helper closure for the actual work
-    let result = (|| -> WasmtimeResult<jobjectArray> {
+    // Helper closure for the actual work, wrapped with catch_unwind for panic safety
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jobjectArray> {
         // Get function from FunctionHandle
         let func_handle = unsafe { &*(function_ptr as *const FunctionHandle) };
         let func = func_handle.get_func();
@@ -617,36 +591,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAs
                 })
             }
         }
-    })();
+    }));
 
     match result {
-        Ok(arr) => arr,
-        Err(error) => {
+        Ok(Ok(arr)) => arr,
+        Ok(Err(error)) => {
+            jni_utils::throw_jni_exception(&mut env, &error);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
             jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
-}
-
-/// Fallback when async feature is not compiled in
-#[no_mangle]
-#[cfg(not(feature = "async"))]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAsync(
-    mut env: JNIEnv,
-    _class: JClass,
-    _function_ptr: jlong,
-    _store_handle: jlong,
-    _params: jobjectArray,
-) -> jobjectArray {
-    jni_utils::throw_jni_exception(
-        &mut env,
-        &WasmtimeError::Function {
-            message: "Async function calls are not available: \
-                      the native library was compiled without async support"
-                .to_string(),
-        },
-    );
-    std::ptr::null_mut()
 }
 
 /// Call a function with multiple return values (JNI version)
@@ -678,8 +643,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMu
 
     use std::os::raw::c_void;
 
-    // Helper closure for the actual work
-    let result = (|| -> WasmtimeResult<jobjectArray> {
+    // Helper closure for the actual work, wrapped with catch_unwind for panic safety
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jobjectArray> {
         // Get function from FunctionHandle
         let func_handle = unsafe { &*(function_ptr as *const FunctionHandle) };
         let func = func_handle.get_func();
@@ -724,11 +689,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMu
                 })
             }
         }
-    })();
+    }));
 
     match result {
-        Ok(arr) => arr,
-        Err(error) => {
+        Ok(Ok(arr)) => arr,
+        Ok(Err(error)) => {
+            jni_utils::throw_jni_exception(&mut env, &error);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
             jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
@@ -745,7 +722,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncTo
 ) -> jlong {
     use std::os::raw::c_void;
 
-    let result = (|| -> WasmtimeResult<jlong> {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         if function_ptr == 0 {
             return Err(WasmtimeError::invalid_parameter(
                 "function_ptr cannot be null",
@@ -763,15 +740,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncTo
 
         let raw_ptr = crate::hostfunc::core::func_to_raw(func, store)?;
         Ok(raw_ptr as jlong)
-    })();
-
-    match result {
-        Ok(raw) => raw,
-        Err(error) => {
-            jni_utils::throw_jni_exception(&mut env, &error);
-            0
-        }
-    }
+    })
 }
 
 /// Reconstruct a Func from a raw funcref pointer (JNI version)
@@ -786,7 +755,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncFr
 ) -> jlong {
     use std::os::raw::c_void;
 
-    let result = (|| -> WasmtimeResult<jlong> {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
         if store_handle == 0 {
             return Err(WasmtimeError::invalid_parameter(
                 "store_handle cannot be null",
@@ -803,15 +772,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncFr
             }
             None => Ok(0),
         }
-    })();
-
-    match result {
-        Ok(ptr) => ptr,
-        Err(error) => {
-            jni_utils::throw_jni_exception(&mut env, &error);
-            0
-        }
-    }
+    })
 }
 
 /// Destroy a function (JNI version)
@@ -827,7 +788,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncMa
     param_type_codes: jni::sys::jintArray,
     result_type_codes: jni::sys::jintArray,
 ) -> jint {
-    let result = (|| -> crate::WasmtimeResult<bool> {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::WasmtimeResult<bool> {
         if function_ptr == 0 {
             return Err(crate::error::WasmtimeError::from_string("Invalid function handle"));
         }
@@ -864,16 +825,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncMa
         };
 
         crate::instance::core::func_matches_ty(func, store, &param_codes, &result_codes)
-    })();
+    }));
 
     match result {
-        Ok(true) => 1,
-        Ok(false) => 0,
-        Err(e) => {
+        Ok(Ok(true)) => 1,
+        Ok(Ok(false)) => 0,
+        Ok(Err(e)) => {
             let _ = env.throw_new(
                 "ai/tegmentum/wasmtime4j/exception/RuntimeException",
                 e.to_string(),
             );
+            -1
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             -1
         }
     }

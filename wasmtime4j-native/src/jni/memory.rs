@@ -468,7 +468,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
         });
         return -1;
     }
-
     if store_ptr == 0 {
         log::error!("JNI Memory.nativeReadBytes: null store handle provided");
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
@@ -476,46 +475,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
         });
         return -1;
     }
-
     if memory_ptr < 0x1000 || memory_ptr == -1 {
-        log::error!(
-            "JNI Memory.nativeReadBytes: invalid memory handle 0x{:x}",
-            memory_ptr
-        );
+        log::error!("JNI Memory.nativeReadBytes: invalid memory handle 0x{:x}", memory_ptr);
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
-            message: format!(
-                "Invalid memory handle (0x{:x}) for bulk read operation. Handle appears corrupted or uninitialized.",
-                memory_ptr
-            ),
+            message: format!("Invalid memory handle (0x{:x}) for bulk read operation. Handle appears corrupted or uninitialized.", memory_ptr),
         });
         return -1;
     }
-
     if offset < 0 {
-        log::error!(
-            "JNI Memory.nativeReadBytes: negative offset {} for handle 0x{:x}",
-            offset,
-            memory_ptr
-        );
+        log::error!("JNI Memory.nativeReadBytes: negative offset {} for handle 0x{:x}", offset, memory_ptr);
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
-            message: format!(
-                "Memory read offset cannot be negative (received: {}). \
-                 Specify a non-negative byte offset within memory bounds.",
-                offset
-            ),
+            message: format!("Memory read offset cannot be negative (received: {}). Specify a non-negative byte offset within memory bounds.", offset),
         });
         return -1;
     }
-
     if buffer.is_null() {
-        log::error!(
-            "JNI Memory.nativeReadBytes: null buffer provided for handle 0x{:x}",
-            memory_ptr
-        );
+        log::error!("JNI Memory.nativeReadBytes: null buffer provided for handle 0x{:x}", memory_ptr);
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
-            message:
-                "Buffer cannot be null for bulk read operations. Provide a valid byte array."
-                    .to_string(),
+            message: "Buffer cannot be null for bulk read operations. Provide a valid byte array.".to_string(),
         });
         return -1;
     }
@@ -524,22 +501,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
     let buffer_length = match env.get_array_length(&buffer) {
         Ok(len) => len as usize,
         Err(e) => {
-            log::error!(
-                "Failed to get buffer length for read operation (handle 0x{:x}): {:?}",
-                memory_ptr,
-                e
-            );
+            log::error!("Failed to get buffer length for read operation (handle 0x{:x}): {:?}", memory_ptr, e);
             jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
-                message: format!(
-                    "Cannot determine buffer size for read operation: {:?}. \
-                     Ensure buffer is a valid Java byte array.",
-                    e
-                ),
+                message: format!("Cannot determine buffer size for read operation: {:?}. Ensure buffer is a valid Java byte array.", e),
             });
             return -1;
         }
     };
-
     if buffer_length == 0 {
         log::debug!("JNI Memory.nativeReadBytes: zero-length read requested for handle 0x{:x} at offset {}", memory_ptr, offset);
         return 0;
@@ -562,30 +530,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeReadByte
                 });
                 return -1;
             }
-            log::debug!(
-                "JNI Memory.nativeReadBytes: successfully read {} bytes from offset {} for handle 0x{:x}",
-                read_data.len(), offset, memory_ptr
-            );
+            log::debug!("JNI Memory.nativeReadBytes: successfully read {} bytes from offset {} for handle 0x{:x}", read_data.len(), offset, memory_ptr);
             read_data.len() as jint
         }
         Ok(Err(e)) => {
-            log::error!(
-                "JNI Memory.nativeReadBytes: read failed for handle 0x{:x} at offset {} length {}: {}",
-                memory_ptr, offset, buffer_length, e
-            );
+            log::error!("JNI Memory.nativeReadBytes: read failed for handle 0x{:x} at offset {} length {}: {}", memory_ptr, offset, buffer_length, e);
             jni_utils::throw_jni_exception(&mut env, &e);
             -1
         }
         Err(panic_info) => {
-            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = panic_info.downcast_ref::<String>() {
-                s.clone()
-            } else {
-                "Unknown panic occurred in native code".to_string()
-            };
-            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
-            jni_utils::throw_jni_exception(&mut env, &error);
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
             -1
         }
     }
@@ -609,7 +563,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
         });
         return -1;
     }
-
     if store_ptr == 0 {
         log::error!("JNI Memory.nativeWriteBytes: null store handle provided");
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
@@ -617,46 +570,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
         });
         return -1;
     }
-
     if memory_ptr < 0x1000 || memory_ptr == -1 {
-        log::error!(
-            "JNI Memory.nativeWriteBytes: invalid memory handle 0x{:x}",
-            memory_ptr
-        );
+        log::error!("JNI Memory.nativeWriteBytes: invalid memory handle 0x{:x}", memory_ptr);
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
-            message: format!(
-                "Invalid memory handle (0x{:x}) for bulk write operation. Handle appears corrupted or uninitialized.",
-                memory_ptr
-            ),
+            message: format!("Invalid memory handle (0x{:x}) for bulk write operation. Handle appears corrupted or uninitialized.", memory_ptr),
         });
         return -1;
     }
-
     if offset < 0 {
-        log::error!(
-            "JNI Memory.nativeWriteBytes: negative offset {} for handle 0x{:x}",
-            offset,
-            memory_ptr
-        );
+        log::error!("JNI Memory.nativeWriteBytes: negative offset {} for handle 0x{:x}", offset, memory_ptr);
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
-            message: format!(
-                "Memory write offset cannot be negative (received: {}). \
-                 Specify a non-negative byte offset within memory bounds.",
-                offset
-            ),
+            message: format!("Memory write offset cannot be negative (received: {}). Specify a non-negative byte offset within memory bounds.", offset),
         });
         return -1;
     }
-
     if buffer.is_null() {
-        log::error!(
-            "JNI Memory.nativeWriteBytes: null buffer provided for handle 0x{:x}",
-            memory_ptr
-        );
+        log::error!("JNI Memory.nativeWriteBytes: null buffer provided for handle 0x{:x}", memory_ptr);
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::InvalidParameter {
-            message:
-                "Buffer cannot be null for bulk write operations. Provide a valid byte array."
-                    .to_string(),
+            message: "Buffer cannot be null for bulk write operations. Provide a valid byte array.".to_string(),
         });
         return -1;
     }
@@ -665,18 +596,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
     let buffer_length = match env.get_array_length(&buffer) {
         Ok(len) => len as usize,
         Err(e) => {
-            log::error!(
-                "JNI Memory.nativeWriteBytes: failed to get buffer length for handle 0x{:x}: {}",
-                memory_ptr,
-                e
-            );
+            log::error!("JNI Memory.nativeWriteBytes: failed to get buffer length for handle 0x{:x}: {}", memory_ptr, e);
             jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
                 message: format!("Failed to get buffer length for write operation: {}", e),
             });
             return -1;
         }
     };
-
     if buffer_length == 0 {
         log::debug!("JNI Memory.nativeWriteBytes: zero-length write requested for handle 0x{:x} at offset {}", memory_ptr, offset);
         return 0;
@@ -685,17 +611,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
     // Get Java buffer data using env (before panic-safe block)
     let mut signed_buffer = vec![0i8; buffer_length];
     if let Err(e) = env.get_byte_array_region(&buffer, 0, &mut signed_buffer) {
-        log::error!(
-            "JNI Memory.nativeWriteBytes: failed to read buffer data for handle 0x{:x}: {}",
-            memory_ptr,
-            e
-        );
+        log::error!("JNI Memory.nativeWriteBytes: failed to read buffer data for handle 0x{:x}: {}", memory_ptr, e);
         jni_utils::throw_jni_exception(&mut env, &WasmtimeError::Memory {
             message: format!("Failed to read buffer data for write operation: {}", e),
         });
         return -1;
     }
-
     let write_data: Vec<u8> = signed_buffer.iter().map(|&b| b as u8).collect();
 
     // Panic-safe block for unsafe memory operations
@@ -707,30 +628,16 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeWriteByt
 
     match result {
         Ok(Ok(())) => {
-            log::debug!(
-                "JNI Memory.nativeWriteBytes: successfully wrote {} bytes at offset {} for handle 0x{:x}",
-                buffer_length, offset, memory_ptr
-            );
+            log::debug!("JNI Memory.nativeWriteBytes: successfully wrote {} bytes at offset {} for handle 0x{:x}", buffer_length, offset, memory_ptr);
             buffer_length as jint
         }
         Ok(Err(e)) => {
-            log::error!(
-                "JNI Memory.nativeWriteBytes: write failed for handle 0x{:x} at offset {} length {}: {}",
-                memory_ptr, offset, buffer_length, e
-            );
+            log::error!("JNI Memory.nativeWriteBytes: write failed for handle 0x{:x} at offset {} length {}: {}", memory_ptr, offset, buffer_length, e);
             jni_utils::throw_jni_exception(&mut env, &e);
             -1
         }
         Err(panic_info) => {
-            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
-                s.to_string()
-            } else if let Some(s) = panic_info.downcast_ref::<String>() {
-                s.clone()
-            } else {
-                "Unknown panic occurred in native code".to_string()
-            };
-            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
-            jni_utils::throw_jni_exception(&mut env, &error);
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
             -1
         }
     }
@@ -1266,8 +1173,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetElemen
     table_ptr: jlong,
     _store_ptr: jlong,
 ) -> jstring {
-    let null_string = std::ptr::null_mut();
-    match (|| -> WasmtimeResult<jstring> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jstring> {
         if table_ptr == 0 {
             log::error!("JNI Table.nativeGetElementType: null table handle provided");
             return Err(WasmtimeError::InvalidParameter {
@@ -1322,11 +1228,23 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGetElemen
             .map_err(|e| WasmtimeError::Memory {
                 message: format!("Failed to create string for table element type: {}", e),
             })
-    })() {
-        Ok(result) => result,
-        Err(error) => {
-            log::error!("Error in nativeGetElementType: {:?}", error);
-            null_string
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
+            std::ptr::null_mut()
         }
     }
 }
@@ -1340,7 +1258,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet(
     store_ptr: jlong,
     index: jint,
 ) -> jobject {
-    match (|| -> WasmtimeResult<jobject> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jobject> {
         use std::os::raw::c_void;
 
         if table_ptr == 0 {
@@ -1434,9 +1352,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeGet(
                 Ok(long_obj.into_raw())
             }
         }
-    })() {
-        Ok(result) => result,
-        Err(_) => std::ptr::null_mut(),
+    })) {
+        Ok(Ok(result)) => result,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
+            std::ptr::null_mut()
+        }
     }
 }
 
@@ -1450,7 +1383,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSet(
     index: jint,
     value: jobject,
 ) -> jboolean {
-    let result = (|| -> WasmtimeResult<jboolean> {
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jboolean> {
         if table_ptr == 0 {
             log::error!("JNI Table.nativeSet: null table handle provided");
             return Err(WasmtimeError::InvalidParameter {
@@ -1537,12 +1470,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSet(
             index
         );
         Ok(1)
-    })();
+    }));
 
     match result {
-        Ok(v) => v,
-        Err(e) => {
-            log::error!("JNI Table.nativeSet failed: {}", e);
+        Ok(Ok(v)) => v,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            0
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             0
         }
     }
@@ -1556,7 +1501,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemor
     _class: JClass<'a>,
     memory_ptr: jlong,
 ) -> jlongArray {
-    match (|| -> WasmtimeResult<jlongArray> {
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<jlongArray> {
         // Validate memory pointer
         if memory_ptr == 0 {
             return Err(WasmtimeError::InvalidParameter {
@@ -1581,24 +1526,35 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetMemor
         } else {
             0i64
         };
-        let page_size_log2 = memory.memory_type.page_size_log2() as i64;
 
-        // Create long array with [minimum, maximum, is64Bit, isShared, pageSizeLog2]
-        let result_array = env.new_long_array(5).map_err(|e| WasmtimeError::Memory {
+        // Create long array with [minimum, maximum, is64Bit, isShared]
+        let result_array = env.new_long_array(4).map_err(|e| WasmtimeError::Memory {
             message: format!("Failed to create long array: {}", e),
         })?;
 
-        let values = vec![minimum, maximum, is_64_bit, is_shared, page_size_log2];
+        let values = vec![minimum, maximum, is_64_bit, is_shared];
         env.set_long_array_region(&result_array, 0, &values)
             .map_err(|e| WasmtimeError::Memory {
                 message: format!("Failed to set long array region: {}", e),
             })?;
 
         Ok(result_array.as_raw())
-    })() {
-        Ok(array) => array,
-        Err(e) => {
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
             jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            let panic_msg = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic occurred in native code".to_string()
+            };
+            let error = WasmtimeError::from_string(format!("Native panic: {}", panic_msg));
+            jni_utils::throw_jni_exception(&mut env, &error);
             std::ptr::null_mut()
         }
     }
