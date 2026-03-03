@@ -963,14 +963,29 @@ impl Table {
                             })?;
 
                     if let Some(arc_external) = registry.get_external(id) {
-                        // Convert Extern to Ref - this might need specific handling based on Extern type
+                        // Convert Extern to Ref
                         match &*arc_external {
                             Extern::Func(func) => Ref::from(Clone::clone(func)),
-                            _ => Ref::null(&RefType::EXTERNREF.heap_type()), // For other external types, use null for now
+                            _ => {
+                                return Err(WasmtimeError::Type {
+                                    message: format!(
+                                        "ExternRef registry entry {} is not a Func and cannot be \
+                                         converted to a Ref for table operations",
+                                        id
+                                    ),
+                                });
+                            }
                         }
                     } else {
-                        // External not found, use null reference
-                        Ref::null(&RefType::EXTERNREF.heap_type())
+                        return Err(WasmtimeError::Runtime {
+                            message: format!(
+                                "ExternRef reference with id {} not found in registry \
+                                 (registry has {} externals)",
+                                id,
+                                registry.externals.len()
+                            ),
+                            backtrace: None,
+                        });
                     }
                 } else {
                     Ref::null(&RefType::EXTERNREF.heap_type())
@@ -991,7 +1006,15 @@ impl Table {
                     } else if let Some(arc_external) = registry.get_external(id) {
                         match &*arc_external {
                             Extern::Func(func) => Ref::from(Clone::clone(func)),
-                            _ => Ref::null(&RefType::EXTERNREF.heap_type()),
+                            _ => {
+                                return Err(WasmtimeError::Type {
+                                    message: format!(
+                                        "AnyRef registry entry {} is not a Func and cannot be \
+                                         converted to a Ref for table operations",
+                                        id
+                                    ),
+                                });
+                            }
                         }
                     } else {
                         // Reference not found - return error instead of silent null
@@ -1052,8 +1075,16 @@ impl Table {
                             if val.is_null() {
                                 TableElement::ExternRef(None)
                             } else {
-                                // For external references that aren't funcrefs
-                                TableElement::ExternRef(None)
+                                // Non-null ExternRef: GC-rooted references cannot be stored
+                                // in the global registry outside of a Store context.
+                                // Return an error to prevent silent data loss.
+                                return Err(WasmtimeError::Type {
+                                    message: "Non-null externref table elements cannot be \
+                                              preserved outside of a Store context. Use funcref \
+                                              tables or access externref values directly via \
+                                              the Store."
+                                        .to_string(),
+                                });
                             }
                         }
                         _ => {
@@ -1061,7 +1092,15 @@ impl Table {
                             if val.is_null() {
                                 TableElement::AnyRef(None)
                             } else {
-                                TableElement::AnyRef(None)
+                                // Non-null AnyRef: GC-rooted references cannot be stored
+                                // in the global registry outside of a Store context.
+                                return Err(WasmtimeError::Type {
+                                    message: "Non-null anyref table elements cannot be \
+                                              preserved outside of a Store context. Use funcref \
+                                              tables or access anyref values directly via \
+                                              the Store."
+                                        .to_string(),
+                                });
                             }
                         }
                     }
