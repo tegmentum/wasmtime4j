@@ -278,21 +278,25 @@ impl Memory {
         Ok((self.size_pages(store)? * 65536) as usize)
     }
 
-    /// Grow memory by the specified number of pages with validation
+    /// Grow memory by the specified number of pages with validation.
+    ///
+    /// Returns the previous number of pages on success, or `u64::MAX` (which
+    /// represents -1 as i64) on failure, consistent with the WebAssembly spec
+    /// for `memory.grow`.
     pub fn grow(&self, store: &mut Store, additional_pages: u64) -> WasmtimeResult<u64> {
         // Get current size
         let current_pages = self.size_pages(store)?;
         let requested_pages = current_pages + additional_pages;
 
-        // Validate growth against limits
+        // Validate growth against limits — return u64::MAX (-1) per WebAssembly spec
         if let Some(max_pages) = self.config.maximum_pages {
             if requested_pages > max_pages {
-                return Err(MemoryError::GrowthFailure {
-                    current_pages,
+                log::debug!(
+                    "Memory growth rejected: requested {} pages exceeds maximum {} pages",
                     requested_pages,
-                    maximum_pages: Some(max_pages),
-                }
-                .into());
+                    max_pages
+                );
+                return Ok(u64::MAX);
             }
         }
 
@@ -300,23 +304,29 @@ impl Memory {
         if !self.config.is_64 {
             const MAX_WASM_PAGES_32: u64 = 65536;
             if requested_pages > MAX_WASM_PAGES_32 {
-                return Err(MemoryError::GrowthFailure {
-                    current_pages,
+                log::debug!(
+                    "Memory growth rejected: requested {} pages exceeds 32-bit limit of {} pages",
                     requested_pages,
-                    maximum_pages: Some(MAX_WASM_PAGES_32),
-                }
-                .into());
+                    MAX_WASM_PAGES_32
+                );
+                return Ok(u64::MAX);
             }
         }
 
         // Perform the growth operation based on memory variant
         let previous_pages = match &self.inner {
-            MemoryVariant::Regular(mem) => store.with_context(|ctx| {
+            MemoryVariant::Regular(mem) => match store.with_context(|ctx| {
                 mem.grow(ctx, additional_pages)
                     .map_err(|e| WasmtimeError::Memory {
                         message: format!("Memory growth failed: {}", e),
                     })
-            })?,
+            }) {
+                Ok(pages) => pages,
+                Err(e) => {
+                    log::debug!("Memory growth failed: {}", e);
+                    return Ok(u64::MAX);
+                }
+            },
             MemoryVariant::Shared(mem) => {
                 log::debug!(
                     "Growing shared memory from {} to {} pages (adding {})",
@@ -325,20 +335,21 @@ impl Memory {
                     additional_pages
                 );
 
-                let result = mem
-                    .grow(additional_pages)
-                    .map_err(|e| WasmtimeError::Memory {
-                        message: format!("Shared memory growth failed: {}", e),
-                    })?;
-
-                // Memory barrier to ensure growth is visible to all threads
-                std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
-                log::info!(
-                    "Shared memory successfully grown to {} pages",
-                    requested_pages
-                );
-
-                result
+                match mem.grow(additional_pages) {
+                    Ok(result) => {
+                        // Memory barrier to ensure growth is visible to all threads
+                        std::sync::atomic::fence(std::sync::atomic::Ordering::SeqCst);
+                        log::info!(
+                            "Shared memory successfully grown to {} pages",
+                            requested_pages
+                        );
+                        result
+                    }
+                    Err(e) => {
+                        log::debug!("Shared memory growth failed: {}", e);
+                        return Ok(u64::MAX);
+                    }
+                }
             }
         };
 

@@ -168,7 +168,7 @@ class InvalidInputValidationTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for null WASM bytes")
-    void shouldThrowExceptionForNullWasmBytes(final RuntimeType runtime) {
+    void shouldThrowExceptionForNullWasmBytes(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -243,7 +243,7 @@ class InvalidInputValidationTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for null global value type")
-    void shouldThrowExceptionForNullGlobalValueType(final RuntimeType runtime) {
+    void shouldThrowExceptionForNullGlobalValueType(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -536,7 +536,7 @@ class InvalidInputValidationTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw exception for invalid table size")
-    void shouldThrowExceptionForInvalidTableSize(final RuntimeType runtime) {
+    void shouldThrowExceptionForInvalidTableSize(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();

@@ -455,7 +455,7 @@ public final class JniTable extends JniResource implements WasmTable {
       return (Long) value;
     }
     if (value instanceof JniFunctionReference) {
-      return ((JniFunctionReference) value).getNativeHandle();
+      return ((JniFunctionReference) value).longValue();
     }
     throw new IllegalArgumentException(
         "Table reference value must be null, Long, or JniFunctionReference, got: "

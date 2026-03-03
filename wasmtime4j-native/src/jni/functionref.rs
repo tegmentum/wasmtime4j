@@ -99,6 +99,22 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
     }) as jlong
 }
 
+/// Dereference the boxed native handle to get the Rust reference registry ID.
+///
+/// The native handle is a pointer to a heap-allocated Box<u64> containing the registry ID.
+/// This method reads the u64 value from the box without consuming it.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeGetRegistryId(
+    _env: JNIEnv,
+    _class: JClass,
+    native_handle: jlong,
+) -> jlong {
+    if native_handle == 0 {
+        return 0;
+    }
+    unsafe { *(native_handle as *const u64) as jlong }
+}
+
 /// Call a function reference through native code (JNI version)
 ///
 /// Looks up the function from the reference registry and calls it via

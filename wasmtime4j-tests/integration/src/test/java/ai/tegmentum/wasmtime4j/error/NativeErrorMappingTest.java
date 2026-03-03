@@ -209,7 +209,7 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw ValidationException for invalid WASM magic")
-    void shouldThrowValidationExceptionForInvalidMagic(final RuntimeType runtime) {
+    void shouldThrowValidationExceptionForInvalidMagic(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -227,7 +227,7 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw ValidationException for invalid WASM version")
-    void shouldThrowValidationExceptionForInvalidVersion(final RuntimeType runtime) {
+    void shouldThrowValidationExceptionForInvalidVersion(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -245,7 +245,7 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw CompilationException for truncated WASM")
-    void shouldThrowCompilationExceptionForTruncatedWasm(final RuntimeType runtime) {
+    void shouldThrowCompilationExceptionForTruncatedWasm(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -263,7 +263,7 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw appropriate exception for null WASM bytes")
-    void shouldThrowExceptionForNullWasm(final RuntimeType runtime) {
+    void shouldThrowExceptionForNullWasm(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -281,7 +281,7 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw appropriate exception for empty WASM bytes")
-    void shouldThrowExceptionForEmptyWasm(final RuntimeType runtime) {
+    void shouldThrowExceptionForEmptyWasm(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -369,7 +369,7 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should provide meaningful error messages for compilation failures")
-    void shouldProvideMeaningfulCompilationErrors(final RuntimeType runtime) {
+    void shouldProvideMeaningfulCompilationErrors(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -389,7 +389,7 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should include context in error messages when available")
-    void shouldIncludeContextInErrorMessages(final RuntimeType runtime) {
+    void shouldIncludeContextInErrorMessages(final RuntimeType runtime) throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();

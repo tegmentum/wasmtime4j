@@ -438,16 +438,16 @@ public final class JniFunctionReference extends JniResource implements FunctionR
   }
 
   /**
-   * Returns the registry ID for this function reference.
+   * Returns the Rust reference registry ID for this function reference.
    *
-   * <p>This method is used when storing function references in globals or tables. It returns the
-   * Rust registry ID from the native handle, which is used to look up the function in the Rust
-   * reference registry.
+   * <p>This method is used when storing function references in globals or tables. It dereferences
+   * the native handle (which is a pointer to a boxed u64) to return the actual Rust registry ID
+   * used to look up the function in the Rust reference registry.
    *
    * @return the Rust registry ID as a long value
    */
   public long longValue() {
-    return getNativeHandle();
+    return nativeGetRegistryId(getNativeHandle());
   }
 
   /**
@@ -551,6 +551,17 @@ public final class JniFunctionReference extends JniResource implements FunctionR
    */
   private static native long nativeCreateFunctionReferenceFromWasm(
       long storeHandle, long wasmFunctionHandle, long functionReferenceId);
+
+  /**
+   * Dereferences the boxed native handle to return the Rust reference registry ID.
+   *
+   * <p>The native handle is a pointer to a heap-allocated Box&lt;u64&gt; containing the registry
+   * ID. This method reads the u64 value from the box.
+   *
+   * @param nativeHandle the native function reference handle (pointer to boxed registry ID)
+   * @return the Rust reference registry ID
+   */
+  private static native long nativeGetRegistryId(long nativeHandle);
 
   /**
    * Calls a function reference through native code.

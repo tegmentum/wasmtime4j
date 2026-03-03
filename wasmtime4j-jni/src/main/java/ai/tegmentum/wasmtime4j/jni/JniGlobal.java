@@ -468,9 +468,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
             return null;
           }
           if (funcrefValue instanceof ai.tegmentum.wasmtime4j.func.FunctionReference) {
-            // Cast to JniFunctionReference to get native handle
+            // Get the Rust registry ID for the function reference
             if (funcrefValue instanceof JniFunctionReference) {
-              return ((JniFunctionReference) funcrefValue).getNativeHandle();
+              return ((JniFunctionReference) funcrefValue).longValue();
             }
             throw new WasmTypeException(
                 "Funcref must be a JniFunctionReference, got: " + funcrefValue.getClass());

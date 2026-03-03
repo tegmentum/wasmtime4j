@@ -165,16 +165,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
             + ", pages="
             + pages);
 
-    try {
-      final long previousSize = nativeGrow(memHandle, storeHandle, pages);
+    final long previousSize = nativeGrow(memHandle, storeHandle, pages);
+    if (previousSize >= 0) {
       // Invalidate cached buffer since memory layout changed
       cachedBuffer = null;
-      return previousSize;
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error growing memory", e);
     }
+    return previousSize;
   }
 
   @Override
@@ -1492,14 +1488,12 @@ public final class JniMemory extends JniResource implements WasmMemory {
       return -1;
     }
     ensureUsable();
-    try {
-      final long previousSize = nativeGrow(getNativeHandle(), store.getNativeHandle(), pages);
+    final long previousSize = nativeGrow(getNativeHandle(), store.getNativeHandle(), pages);
+    if (previousSize >= 0) {
       // Invalidate cached buffer since memory layout changed
       cachedBuffer = null;
-      return previousSize;
-    } catch (final Exception e) {
-      return -1;
     }
+    return previousSize;
   }
 
   @Override

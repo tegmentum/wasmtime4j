@@ -25,6 +25,14 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_na
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniFunctionReference
+ * Method:    nativeGetRegistryId
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nativeGetRegistryId
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunctionReference
  * Method:    nativeCallFunctionReference
  * Signature: (JJ[B[B)I
  */
