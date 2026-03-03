@@ -580,3 +580,56 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeElemDrop(
         Ok(())
     });
 }
+
+/// Copy elements within the same table (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopy(
+    mut env: JNIEnv,
+    _class: JClass,
+    table_ptr: jlong,
+    store_ptr: jlong,
+    dst: jint,
+    src: jint,
+    count: jint,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let table = unsafe { core::get_table_ref(table_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe {
+            ffi_utils::deref_ptr::<Store>(store_ptr as *const std::os::raw::c_void, "store")?
+        };
+        core::copy_table_within(table, store, dst as u32, src as u32, count as u32)?;
+        Ok(1u8)
+    })
+}
+
+/// Copy elements from another table (JNI version)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeCopyFromTable(
+    mut env: JNIEnv,
+    _class: JClass,
+    dst_table_ptr: jlong,
+    store_ptr: jlong,
+    dst: jint,
+    src_table_ptr: jlong,
+    src: jint,
+    count: jint,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let dst_table =
+            unsafe { core::get_table_ref(dst_table_ptr as *const std::os::raw::c_void)? };
+        let src_table =
+            unsafe { core::get_table_ref(src_table_ptr as *const std::os::raw::c_void)? };
+        let store = unsafe {
+            ffi_utils::deref_ptr::<Store>(store_ptr as *const std::os::raw::c_void, "store")?
+        };
+        core::copy_table_from(
+            dst_table,
+            store,
+            dst as u32,
+            src_table,
+            src as u32,
+            count as u32,
+        )?;
+        Ok(1u8)
+    })
+}
