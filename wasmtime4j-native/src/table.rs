@@ -1578,6 +1578,7 @@ pub mod core {
 mod tests {
     use super::*;
     use crate::engine::Engine;
+    use crate::instance::WasmValue;
     use crate::store::Store;
 
     // Use the global shared engine to reduce wasmtime GLOBAL_CODE registry accumulation
@@ -1811,5 +1812,133 @@ mod tests {
         // Test setting wrong element type
         let result = table.set(&store, 0, TableElement::ExternRef(None));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_copy_within_basic() {
+        let engine = shared_engine();
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        // Create a module with a table, two functions, and table.set/table.get exports
+        let wat = r#"(module
+            (table (export "tbl") 10 funcref)
+            (func $f0 (result i32) i32.const 100)
+            (func $f1 (result i32) i32.const 200)
+            (elem (i32.const 0) func $f0 $f1)
+            (func (export "get") (param i32) (result funcref)
+                local.get 0
+                table.get 0)
+            (func (export "copy") (param i32 i32 i32)
+                local.get 0
+                local.get 1
+                local.get 2
+                table.copy 0 0)
+        )"#;
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile WAT");
+        let mut instance = crate::instance::Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        // Copy 2 elements from index 0 to index 5
+        let result =
+            instance.call_export_function(&mut store, "copy", &[WasmValue::I32(5), WasmValue::I32(0), WasmValue::I32(2)]);
+        assert!(result.is_ok(), "table.copy should succeed: {:?}", result.err());
+
+        // Verify element at index 5 (should be $f0)
+        let result = instance
+            .call_export_function(&mut store, "get", &[WasmValue::I32(5)])
+            .expect("Failed to call get");
+        assert!(
+            !result.values.is_empty(),
+            "get should return a funcref value"
+        );
+    }
+
+    #[test]
+    fn test_copy_within_zero_length() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 10, None, None)
+            .expect("Failed to create table");
+
+        // Zero-length copy should be a no-op
+        let result = core::copy_table_within(&table, &store, 0, 0, 0);
+        assert!(result.is_ok(), "Zero-length copy should succeed");
+    }
+
+    #[test]
+    fn test_copy_within_out_of_bounds() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        let table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 5, None, None)
+            .expect("Failed to create table");
+
+        // Copy that exceeds table bounds should fail
+        let result = core::copy_table_within(&table, &store, 0, 0, 10);
+        assert!(result.is_err(), "Out of bounds copy should fail");
+
+        // Destination overflow
+        let result = core::copy_table_within(&table, &store, 4, 0, 3);
+        assert!(result.is_err(), "Destination overflow copy should fail");
+    }
+
+    #[test]
+    fn test_copy_from_another_table() {
+        let engine = shared_engine();
+        let mut store = Store::new(&engine).expect("Failed to create store");
+
+        // Module with two tables and a table.copy between them
+        let wat = r#"(module
+            (table $t0 (export "t0") 5 funcref)
+            (table $t1 (export "t1") 5 funcref)
+            (func $f0 (result i32) i32.const 42)
+            (elem (table $t0) (i32.const 0) func $f0)
+            (func (export "cross_copy") (param i32 i32 i32)
+                local.get 0
+                local.get 1
+                local.get 2
+                table.copy $t1 $t0)
+            (func (export "get_t1") (param i32) (result funcref)
+                local.get 0
+                table.get $t1)
+        )"#;
+        let module =
+            crate::module::Module::compile_wat(&engine, wat).expect("Failed to compile WAT");
+        let mut instance = crate::instance::Instance::new_without_imports(&mut store, &module)
+            .expect("Failed to create instance");
+
+        // Copy 1 element from t0[0] to t1[2]
+        let result = instance.call_export_function(
+            &mut store,
+            "cross_copy",
+            &[WasmValue::I32(2), WasmValue::I32(0), WasmValue::I32(1)],
+        );
+        assert!(result.is_ok(), "Cross-table copy should succeed: {:?}", result.err());
+
+        // Verify element at t1[2] is now a funcref (not null)
+        let result = instance
+            .call_export_function(&mut store, "get_t1", &[WasmValue::I32(2)])
+            .expect("Failed to call get_t1");
+        assert!(
+            !result.values.is_empty(),
+            "get_t1 should return a funcref value"
+        );
+    }
+
+    #[test]
+    fn test_copy_from_out_of_bounds() {
+        let engine = shared_engine();
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        let src_table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 5, None, None)
+            .expect("Failed to create src table");
+        let dst_table = Table::new(&store, ValType::Ref(RefType::FUNCREF), 5, None, None)
+            .expect("Failed to create dst table");
+
+        // Copy that exceeds source bounds should fail
+        let result = core::copy_table_from(&dst_table, &store, 0, &src_table, 0, 10);
+        assert!(result.is_err(), "Out of bounds cross-table copy should fail");
     }
 }

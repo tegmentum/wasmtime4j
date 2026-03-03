@@ -1138,40 +1138,58 @@ impl EngineBuilder {
     /// calling `wasm_features(FLAG, false)` can reset unrelated features due to
     /// how the feature configuration is tracked internally.
     pub fn wasm_mutable_global(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::MUTABLE_GLOBAL, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::MUTABLE_GLOBAL, true);
+        }
         self.wasm_mutable_global = enable;
         self
     }
 
     /// Configure WebAssembly saturating float-to-int conversions (MVP default, always on)
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_saturating_float_to_int(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::SATURATING_FLOAT_TO_INT, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::SATURATING_FLOAT_TO_INT, true);
+        }
         self.wasm_saturating_float_to_int = enable;
         self
     }
 
     /// Configure WebAssembly sign extension operations (MVP default, always on)
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_sign_extension(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::SIGN_EXTENSION, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::SIGN_EXTENSION, true);
+        }
         self.wasm_sign_extension = enable;
         self
     }
 
     /// Configure WebAssembly floating point support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_floats(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::FLOATS, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::FLOATS, true);
+        }
         self.wasm_floats = enable;
         self
     }
 
     /// Configure WebAssembly memory control support (experimental)
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_memory_control(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::MEMORY_CONTROL, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::MEMORY_CONTROL, true);
+        }
         self.wasm_memory_control = enable;
         self
     }
@@ -1184,65 +1202,97 @@ impl EngineBuilder {
     }
 
     /// Configure WebAssembly GC structural types support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_gc_types(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::GC_TYPES, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::GC_TYPES, true);
+        }
         self.wasm_gc_types = enable;
         self
     }
 
     /// Configure WebAssembly Component Model values support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_component_model_values(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::CM_VALUES, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CM_VALUES, true);
+        }
         self.wasm_component_model_values = enable;
         self
     }
 
     /// Configure WebAssembly Component Model nested names support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_component_model_nested_names(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::CM_NESTED_NAMES, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CM_NESTED_NAMES, true);
+        }
         self.wasm_component_model_nested_names = enable;
         self
     }
 
     /// Configure WebAssembly Component Model map type support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_component_model_map(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::CM_MAP, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CM_MAP, true);
+        }
         self.wasm_component_model_map = enable;
         self
     }
 
     /// Configure WebAssembly call_indirect overlong encoding support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_call_indirect_overlong(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::CALL_INDIRECT_OVERLONG, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CALL_INDIRECT_OVERLONG, true);
+        }
         self.wasm_call_indirect_overlong = enable;
         self
     }
 
     /// Configure WebAssembly bulk memory optimized operations support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_bulk_memory_opt(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::BULK_MEMORY_OPT, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::BULK_MEMORY_OPT, true);
+        }
         self.wasm_bulk_memory_opt = enable;
         self
     }
 
     /// Configure WebAssembly custom descriptors support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_custom_descriptors(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::CUSTOM_DESCRIPTORS, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::CUSTOM_DESCRIPTORS, true);
+        }
         self.wasm_custom_descriptors = enable;
         self
     }
 
     /// Configure WebAssembly Component Model compact imports support
+    ///
+    /// Note: Only enables via `wasm_features()` — see `wasm_mutable_global` doc for why.
     pub fn wasm_compact_imports(mut self, enable: bool) -> Self {
-        self.config
-            .wasm_features(wasmtime::WasmFeatures::COMPACT_IMPORTS, enable);
+        if enable {
+            self.config
+                .wasm_features(wasmtime::WasmFeatures::COMPACT_IMPORTS, true);
+        }
         self.wasm_compact_imports = enable;
         self
     }

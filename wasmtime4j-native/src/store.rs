@@ -2089,9 +2089,9 @@ mod tests {
             .expect("Failed to get fuel remaining");
         assert!(remaining.is_some());
 
-        // Test consuming fuel
-        let consumed = store.consume_fuel(100).expect("Failed to consume fuel");
-        assert_eq!(consumed, 100);
+        // Test consuming fuel - returns remaining fuel after consumption
+        let remaining_after = store.consume_fuel(100).expect("Failed to consume fuel");
+        assert_eq!(remaining_after, 1400); // 1500 - 100 = 1400 remaining
     }
 
     #[test]
@@ -2215,9 +2215,9 @@ mod tests {
         let remaining = core::get_fuel_remaining(store_ref).expect("Failed to get fuel remaining");
         assert!(remaining > 0);
 
-        // Test consuming fuel
-        let consumed = core::consume_fuel(store_ref, 100).expect("Failed to consume fuel");
-        assert_eq!(consumed, 100);
+        // Test consuming fuel - returns remaining fuel after consumption
+        let remaining_after = core::consume_fuel(store_ref, 100).expect("Failed to consume fuel");
+        assert_eq!(remaining_after, 1400); // 1500 - 100 = 1400 remaining
 
         // Test setting epoch deadline
         core::set_epoch_deadline(store_ref, 1000);
@@ -2327,17 +2327,26 @@ mod tests {
             .build(&engine)
             .expect("Failed to build store with fuel");
 
-        // Test consuming more fuel than available
-        let consumed = store
-            .consume_fuel(150)
-            .expect("Should handle over-consumption gracefully");
-        assert!(consumed <= 100); // Should consume what's available, not more
+        // Test consuming more fuel than available returns error
+        let result = store.consume_fuel(150);
+        assert!(
+            result.is_err(),
+            "Should error when consuming more fuel than available"
+        );
 
-        // Test fuel remaining after over-consumption
+        // Test fuel remaining unchanged after failed consumption
         let remaining = store
             .fuel_remaining()
             .expect("Failed to get fuel remaining");
-        assert_eq!(remaining, Some(0)); // Should be 0 after consuming all available fuel
+        assert_eq!(remaining, Some(100)); // Unchanged since consume_fuel(150) failed
+
+        // Test consuming exactly available fuel succeeds
+        let remaining_after = store.consume_fuel(100).expect("Should consume all available fuel");
+        assert_eq!(remaining_after, 0);
+
+        // Test consuming from empty store errors
+        let result = store.consume_fuel(1);
+        assert!(result.is_err(), "Should error when no fuel available");
     }
 
     #[test]
@@ -2909,7 +2918,7 @@ pub unsafe extern "C" fn wasmtime4j_store_add_fuel(store_ptr: *const c_void, fue
 /// # Safety
 ///
 /// store_ptr must be a valid pointer from wasmtime4j_store_new
-/// Returns amount of fuel actually consumed, or 0 on error
+/// Returns remaining fuel after consumption, or 0 on error
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_store_consume_fuel(store_ptr: *const c_void, fuel: u64) -> u64 {
     match core::get_store_ref(store_ptr) {

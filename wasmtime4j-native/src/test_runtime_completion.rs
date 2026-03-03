@@ -31,9 +31,9 @@ mod tests {
         assert!(initial_fuel.is_some());
         assert_eq!(initial_fuel.unwrap(), 1000);
 
-        // Test fuel consumption
-        let consumed = store.consume_fuel(100).expect("Failed to consume fuel");
-        assert_eq!(consumed, 100);
+        // Test fuel consumption - returns remaining fuel after consumption
+        let remaining_after = store.consume_fuel(100).expect("Failed to consume fuel");
+        assert_eq!(remaining_after, 900); // 1000 - 100 = 900 remaining
 
         let remaining = store
             .fuel_remaining()

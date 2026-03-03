@@ -107,19 +107,11 @@ use std::sync::Mutex as StdMutex;
 static ASYNC_VAL_REGISTRY: std::sync::OnceLock<StdMutex<AsyncValRegistry>> =
     std::sync::OnceLock::new();
 
-fn get_async_val_registry() -> &'static StdMutex<AsyncValRegistry> {
+pub(crate) fn get_async_val_registry() -> &'static StdMutex<AsyncValRegistry> {
     ASYNC_VAL_REGISTRY.get_or_init(|| StdMutex::new(AsyncValRegistry::new()))
 }
 
-/// Remove and return an async val from the registry, evicting the entry.
-pub fn take_async_val(id: u64) -> Option<Val> {
-    let mut registry = get_async_val_registry()
-        .lock()
-        .unwrap_or_else(|e| e.into_inner());
-    registry.remove(id)
-}
-
-struct AsyncValRegistry {
+pub(crate) struct AsyncValRegistry {
     next_id: u64,
     vals: HashMap<u64, Val>,
 }
@@ -132,18 +124,14 @@ impl AsyncValRegistry {
         }
     }
 
-    fn store(&mut self, val: Val) -> u64 {
+    pub(crate) fn store(&mut self, val: Val) -> u64 {
         let id = self.next_id;
         self.next_id += 1;
         self.vals.insert(id, val);
         id
     }
 
-    fn get(&self, id: u64) -> Option<&Val> {
-        self.vals.get(&id)
-    }
-
-    fn remove(&mut self, id: u64) -> Option<Val> {
+    pub(crate) fn remove(&mut self, id: u64) -> Option<Val> {
         self.vals.remove(&id)
     }
 }

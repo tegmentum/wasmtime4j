@@ -2923,6 +2923,129 @@ mod tests {
             "Should be disposed after core::dispose_instance"
         );
     }
+
+    #[test]
+    fn test_instance_metadata_atomic_state_transitions() {
+        let metadata = InstanceMetadata {
+            name: "test".to_string(),
+            created_at: Instant::now(),
+            export_count: 0,
+            import_count: 0,
+            function_calls: std::sync::atomic::AtomicU64::new(0),
+            disposed: std::sync::atomic::AtomicBool::new(false),
+            state: std::sync::atomic::AtomicU8::new(InstanceState::Created as u8),
+            creator_thread_id: std::thread::current().id(),
+            cleaned_up: std::sync::atomic::AtomicBool::new(false),
+        };
+
+        // Initial state
+        assert_eq!(metadata.get_state(), InstanceState::Created);
+        assert!(!metadata.is_disposed());
+        assert!(!metadata.is_cleaned_up());
+        assert_eq!(metadata.get_function_calls(), 0);
+
+        // Transition to Running
+        metadata.set_state(InstanceState::Running);
+        assert_eq!(metadata.get_state(), InstanceState::Running);
+
+        // Increment function calls
+        metadata.increment_function_calls();
+        metadata.increment_function_calls();
+        metadata.increment_function_calls();
+        assert_eq!(metadata.get_function_calls(), 3);
+
+        // Mark disposed
+        metadata.set_disposed(true);
+        assert!(metadata.is_disposed());
+
+        // Mark cleaned up
+        metadata.set_cleaned_up(true);
+        assert!(metadata.is_cleaned_up());
+    }
+
+    #[test]
+    fn test_instance_metadata_concurrent_increments() {
+        use std::sync::Arc;
+        use std::thread;
+
+        let metadata = Arc::new(InstanceMetadata {
+            name: "concurrent_test".to_string(),
+            created_at: Instant::now(),
+            export_count: 0,
+            import_count: 0,
+            function_calls: std::sync::atomic::AtomicU64::new(0),
+            disposed: std::sync::atomic::AtomicBool::new(false),
+            state: std::sync::atomic::AtomicU8::new(InstanceState::Created as u8),
+            creator_thread_id: std::thread::current().id(),
+            cleaned_up: std::sync::atomic::AtomicBool::new(false),
+        });
+
+        let num_threads = 8;
+        let increments_per_thread = 1000;
+        let mut handles = vec![];
+
+        for _ in 0..num_threads {
+            let m = Arc::clone(&metadata);
+            handles.push(thread::spawn(move || {
+                for _ in 0..increments_per_thread {
+                    m.increment_function_calls();
+                }
+            }));
+        }
+
+        for handle in handles {
+            handle.join().expect("Thread panicked");
+        }
+
+        assert_eq!(
+            metadata.get_function_calls(),
+            (num_threads * increments_per_thread) as u64,
+            "All concurrent increments should be counted"
+        );
+    }
+
+    #[test]
+    fn test_instance_metadata_state_from_u8() {
+        assert_eq!(InstanceState::from_u8(0), InstanceState::Creating);
+        assert_eq!(InstanceState::from_u8(1), InstanceState::Created);
+        assert_eq!(InstanceState::from_u8(2), InstanceState::Running);
+        assert_eq!(InstanceState::from_u8(3), InstanceState::Suspended);
+        assert_eq!(InstanceState::from_u8(4), InstanceState::Error);
+        assert_eq!(InstanceState::from_u8(5), InstanceState::Disposed);
+        assert_eq!(InstanceState::from_u8(6), InstanceState::Destroying);
+        // Unknown values should default to Error
+        assert_eq!(InstanceState::from_u8(255), InstanceState::Error);
+    }
+
+    #[test]
+    fn test_instance_metadata_debug_and_clone() {
+        let metadata = InstanceMetadata {
+            name: "debug_test".to_string(),
+            created_at: Instant::now(),
+            export_count: 3,
+            import_count: 2,
+            function_calls: std::sync::atomic::AtomicU64::new(0),
+            disposed: std::sync::atomic::AtomicBool::new(false),
+            state: std::sync::atomic::AtomicU8::new(InstanceState::Created as u8),
+            creator_thread_id: std::thread::current().id(),
+            cleaned_up: std::sync::atomic::AtomicBool::new(false),
+        };
+        metadata.set_state(InstanceState::Running);
+        metadata.increment_function_calls();
+
+        // Test Debug impl
+        let debug_str = format!("{:?}", metadata);
+        assert!(debug_str.contains("debug_test"));
+        assert!(debug_str.contains("Running"));
+
+        // Test Clone impl
+        let cloned = metadata.clone();
+        assert_eq!(cloned.name, metadata.name);
+        assert_eq!(cloned.get_state(), metadata.get_state());
+        assert_eq!(cloned.get_function_calls(), metadata.get_function_calls());
+        assert_eq!(cloned.export_count, metadata.export_count);
+        assert_eq!(cloned.import_count, metadata.import_count);
+    }
 }
 
 //
@@ -3364,3 +3487,4 @@ pub unsafe extern "C" fn wasmtime4j_instance_get_tag_by_name(
         _ => std::ptr::null_mut(),
     }
 }
+

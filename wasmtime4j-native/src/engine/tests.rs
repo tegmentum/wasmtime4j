@@ -1204,3 +1204,59 @@ fn test_epoch_increment_without_interruption() {
     // Should still work even if epoch interruption is disabled
     engine.increment_epoch();
 }
+
+#[test]
+fn test_wasm_features_disable_via_builder() {
+    // Test that features can be explicitly disabled via builder methods
+    // This validates the Phase 11 fix: builder methods pass enable=false
+    // to wasmtime config instead of being a no-op
+    // Use multi_memory since it's a post-MVP feature that can actually be disabled
+    let engine = Engine::builder()
+        .wasm_multi_memory(false)
+        .build()
+        .expect("Failed to build engine with multi_memory disabled");
+
+    // WAT that uses multiple memories should fail to compile
+    let wat = r#"(module
+        (memory $m0 1)
+        (memory $m1 1)
+        (func (export "load0") (result i32)
+            i32.const 0
+            i32.load (memory $m0))
+        (func (export "load1") (result i32)
+            i32.const 0
+            i32.load (memory $m1))
+    )"#;
+    let result = crate::module::Module::compile_wat(&engine, wat);
+    // With multi_memory disabled, compilation should fail
+    assert!(
+        result.is_err(),
+        "Module with multiple memories should fail when wasm_multi_memory is disabled"
+    );
+}
+
+#[test]
+fn test_wasm_features_enable_then_disable() {
+    // Verify that enabling then disabling a feature takes effect (last call wins)
+    let engine = Engine::builder()
+        .wasm_multi_memory(true)
+        .wasm_multi_memory(false)
+        .build()
+        .expect("Failed to build engine");
+
+    let wat = r#"(module
+        (memory $m0 1)
+        (memory $m1 1)
+        (func (export "load0") (result i32)
+            i32.const 0
+            i32.load (memory $m0))
+        (func (export "load1") (result i32)
+            i32.const 0
+            i32.load (memory $m1))
+    )"#;
+    let result = crate::module::Module::compile_wat(&engine, wat);
+    assert!(
+        result.is_err(),
+        "Last call to wasm_multi_memory(false) should take effect"
+    );
+}

@@ -580,3 +580,66 @@ fn test_component_linker_wasi_permissions() {
     let wasi_config = linker.wasi_p2_config();
     assert!(wasi_config.allow_network, "allow_network should be true");
 }
+
+#[test]
+fn test_async_val_registry_store_and_remove() {
+    use super::linker::get_async_val_registry;
+
+    // Store a value
+    let val = wasmtime::component::Val::S32(42);
+    let id = {
+        let mut registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        registry.store(val)
+    };
+    assert!(id > 0, "Registry should assign positive IDs");
+
+    // Remove it
+    let removed = {
+        let mut registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        registry.remove(id)
+    };
+    assert!(removed.is_some(), "Should find and remove stored value");
+
+    // Double-remove returns None
+    let double_remove = {
+        let mut registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        registry.remove(id)
+    };
+    assert!(
+        double_remove.is_none(),
+        "Double remove should return None (entry was evicted)"
+    );
+}
+
+#[test]
+fn test_async_val_registry_incrementing_ids() {
+    use super::linker::get_async_val_registry;
+
+    let id1 = {
+        let mut registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        registry.store(wasmtime::component::Val::Bool(true))
+    };
+    let id2 = {
+        let mut registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        registry.store(wasmtime::component::Val::Bool(false))
+    };
+
+    assert!(id2 > id1, "IDs should be strictly increasing");
+
+    // Cleanup
+    let mut registry = get_async_val_registry()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    registry.remove(id1);
+    registry.remove(id2);
+}
