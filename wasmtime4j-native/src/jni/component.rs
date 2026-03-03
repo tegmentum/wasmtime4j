@@ -1015,6 +1015,271 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetSu
     }
 }
 
+/// Compile a component from WAT text
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompileComponentWat(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    wat_text: JString,
+) -> jlong {
+    let wat_str = match env.get_string(&wat_text) {
+        Ok(s) => String::from(s),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_ptr(&mut env, || {
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        if wat_str.is_empty() {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "WAT text cannot be empty".to_string(),
+            });
+        }
+
+        let bytes = wat::parse_str(&wat_str).map_err(|e| crate::error::WasmtimeError::Compilation {
+            message: format!("Failed to parse WAT: {}", e),
+        })?;
+
+        crate::component_core::core::load_component_from_bytes_enhanced(engine, &bytes)
+    }) as jlong
+}
+
+/// Check if a component has a specific export by name
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentHasExport(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+    export_name: JString,
+) -> jboolean {
+    if component_ptr == 0 {
+        return 0;
+    }
+
+    let name_str: String = match env.get_string(&export_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_bool(&mut env, || {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        Ok(component.exports_interface(&name_str))
+    }) as jboolean
+}
+
+/// Check if a component requires a specific import by name
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentHasImport(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+    import_name: JString,
+) -> jboolean {
+    if component_ptr == 0 {
+        return 0;
+    }
+
+    let name_str: String = match env.get_string(&import_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_bool(&mut env, || {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        Ok(component.imports_interface(&name_str))
+    }) as jboolean
+}
+
+/// Validate a component against a WIT interface
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentValidate(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+    wit_interface: JString,
+) -> jboolean {
+    if component_ptr == 0 {
+        return 0;
+    }
+
+    let wit_str: String = match env.get_string(&wit_interface) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_bool(&mut env, || {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        component.validate_wit_interface(&wit_str)
+    }) as jboolean
+}
+
+/// Cleanup unused component instances in the engine (alternate entry point)
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentEngineCleanupInstances(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, -1, || {
+        if engine_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Component engine pointer is null".to_string(),
+            });
+        }
+        let engine = unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
+        let cleaned_count = engine.cleanup_instances()?;
+        Ok(cleaned_count as jint)
+    })
+}
+
+/// Check if a component engine supports a specific feature
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentEngineSupportsFeature(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    feature_name: JString,
+) -> jboolean {
+    if engine_ptr == 0 {
+        return 0;
+    }
+
+    let feature_str: String = match env.get_string(&feature_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    // Component Model features supported by this implementation
+    let supported_features = [
+        "component-model",
+        "wit-interfaces",
+        "component-linking",
+        "resource-management",
+        "interface-validation",
+    ];
+
+    if supported_features.contains(&feature_str.as_str()) {
+        1
+    } else {
+        0
+    }
+}
+
+/// Get interface definition for a component export as JSON
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentGetExportInterface(
+    mut env: JNIEnv,
+    _class: JClass,
+    component_ptr: jlong,
+    export_name: JString,
+) -> jstring {
+    if component_ptr == 0 {
+        return std::ptr::null_mut();
+    }
+
+    let name_str: String = match env.get_string(&export_name) {
+        Ok(s) => s.into(),
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<Option<String>> {
+        let component = unsafe { &*(component_ptr as *const Component) };
+        match component.get_export_interface(&name_str)? {
+            Some(interface_def) => {
+                let json = interface_def.to_json().map_err(|e| crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to serialize interface: {}", e),
+                })?;
+                Ok(Some(json))
+            }
+            None => Ok(None),
+        }
+    })) {
+        Ok(Ok(Some(json))) => {
+            match env.new_string(&json) {
+                Ok(s) => s.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Ok(Ok(None)) => std::ptr::null_mut(),
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Look up a general export by name on a component instance.
+///
+/// Returns a long array [kindCode, exportIndexPtr] on success, or null if not found.
+/// Kind codes: 0=ComponentFunc, 1=CoreFunc, 2=Module, 3=Component,
+/// 4=ComponentInstance, 5=Type, 6=Resource.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentInstanceGetExport(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    parent_index_ptr: jlong,
+    name: JString,
+) -> jlongArray {
+    let name_str = match env.get_string(&name) {
+        Ok(s) => String::from(s),
+        Err(_) => return std::ptr::null_mut(),
+    };
+
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jlongArray> {
+        let engine = unsafe {
+            crate::component_core::core::get_enhanced_component_engine_ref(
+                engine_ptr as *const std::os::raw::c_void,
+            )?
+        };
+
+        let parent_index = if parent_index_ptr == 0 {
+            None
+        } else {
+            Some(unsafe {
+                &*(parent_index_ptr as *const wasmtime::component::ComponentExportIndex)
+            })
+        };
+
+        match engine.get_component_instance_export(instance_id as u64, parent_index, &name_str)? {
+            Some((kind, boxed_index)) => {
+                let index_ptr = Box::into_raw(boxed_index) as i64;
+                let values = [kind as i64, index_ptr];
+
+                let arr = env.new_long_array(2).map_err(|e| crate::error::WasmtimeError::Internal {
+                    message: format!("Failed to create long array: {}", e),
+                })?;
+                env.set_long_array_region(&arr, 0, &values)
+                    .map_err(|e| crate::error::WasmtimeError::Internal {
+                        message: format!("Failed to set long array region: {}", e),
+                    })?;
+                Ok(arr.into_raw())
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    })) {
+        Ok(Ok(array)) => array,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            std::ptr::null_mut()
+        }
+    }
+}
+
 /// JNI binding for Component.imageRange() - returns long[2] = [start, end]
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentImageRange(
