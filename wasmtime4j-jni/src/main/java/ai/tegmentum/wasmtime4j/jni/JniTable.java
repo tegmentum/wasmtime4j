@@ -384,6 +384,16 @@ public final class JniTable extends JniResource implements WasmTable {
     Validation.requireNonNegative(count, "count");
     ensureUsable();
 
+    // Same-table copy delegates to self-copy to avoid mutex self-deadlock in native code
+    if (src == this) {
+      copy(dst, srcIndex, count);
+      return;
+    }
+
+    if (count == 0) {
+      return;
+    }
+
     if (!(src instanceof JniTable)) {
       throw new IllegalArgumentException(
           "Source table must be JniTable instance for cross-table copy");
