@@ -3,7 +3,7 @@
 //! This module provides JNI bindings for WebAssembly exception handling,
 //! including Tag creation, ExnRef management, and store exception operations.
 
-use jni::objects::{JClass, JIntArray};
+use jni::objects::{JByteArray, JClass, JIntArray};
 use jni::sys::{jboolean, jintArray, jlong, jobjectArray, JNI_FALSE, JNI_TRUE};
 use jni::JNIEnv;
 use wasmtime::{FuncType, Tag, TagType, ValType};
@@ -432,12 +432,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeCreate<'
     field_types: JIntArray<'local>,
     field_i64_values: jni::objects::JLongArray<'local>,
     field_f64_values: jni::objects::JDoubleArray<'local>,
+    field_v128_values: JByteArray<'local>,
 ) -> jlong {
     // Extract JNI arrays outside the closure to avoid borrow conflicts
     let type_len = env.get_array_length(&field_types).unwrap_or(0) as usize;
     let mut type_codes = vec![0i32; type_len];
     let mut i64_vals = vec![0i64; type_len];
     let mut f64_vals = vec![0.0f64; type_len];
+    let mut v128_vals = vec![0i8; type_len * 16];
 
     if type_len > 0 {
         if env
@@ -454,6 +456,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeCreate<'
         }
         if env
             .get_double_array_region(&field_f64_values, 0, &mut f64_vals)
+            .is_err()
+        {
+            return 0;
+        }
+        if env
+            .get_byte_array_region(&field_v128_values, 0, &mut v128_vals)
             .is_err()
         {
             return 0;
@@ -476,6 +484,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeCreate<'
                 1 => Val::I64(i64_vals[i]),
                 2 => Val::F32((f64_vals[i] as f32).to_bits()),
                 3 => Val::F64(f64_vals[i].to_bits()),
+                4 => {
+                    // V128: read 16 bytes from v128 parallel array at offset i*16
+                    let offset = i * 16;
+                    let mut bytes = [0u8; 16];
+                    for j in 0..16 {
+                        bytes[j] = v128_vals[offset + j] as u8;
+                    }
+                    Val::V128(u128::from_le_bytes(bytes).into())
+                }
                 _ => {
                     return Err(WasmtimeError::Internal {
                         message: format!("Unsupported field type code: {}", type_codes[i]),

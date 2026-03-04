@@ -183,6 +183,8 @@ pub enum ImportKind {
     Memory(u64, Option<u64>, bool, bool, u32), // (initial, max, is_64, shared, page_size_log2)
     /// Table import with element type, initial size, and optional max size
     Table(ModuleValueType, u32, Option<u32>), // (element_type, initial, max)
+    /// Tag import with function signature (exception type)
+    Tag(FunctionSignature),
 }
 
 /// Export kinds with type information
@@ -196,6 +198,8 @@ pub enum ExportKind {
     Memory(u64, Option<u64>, bool, bool, u32),
     /// Table export with element type, initial size, and optional max size
     Table(ModuleValueType, u32, Option<u32>),
+    /// Tag export with function signature (exception type)
+    Tag(FunctionSignature),
 }
 
 impl Module {
@@ -995,11 +999,8 @@ fn convert_import_type(ty: wasmtime::ExternType) -> WasmtimeResult<ImportKind> {
                 .maximum()
                 .map(|max| max.try_into().unwrap_or(u32::MAX)),
         )),
-        wasmtime::ExternType::Tag(_tag_type) => {
-            // Tag types are not supported in our interface
-            Err(WasmtimeError::Module {
-                message: "Tag types are not supported".to_string(),
-            })
+        wasmtime::ExternType::Tag(tag_type) => {
+            Ok(ImportKind::Tag(convert_func_type(&tag_type.ty())?))
         }
     }
 }
@@ -1027,11 +1028,8 @@ fn convert_export_type(ty: wasmtime::ExternType) -> WasmtimeResult<ExportKind> {
                 .maximum()
                 .map(|max| max.try_into().unwrap_or(u32::MAX)),
         )),
-        wasmtime::ExternType::Tag(_tag_type) => {
-            // Tag types are not supported in our interface
-            Err(WasmtimeError::Module {
-                message: "Tag types are not supported".to_string(),
-            })
+        wasmtime::ExternType::Tag(tag_type) => {
+            Ok(ExportKind::Tag(convert_func_type(&tag_type.ty())?))
         }
     }
 }

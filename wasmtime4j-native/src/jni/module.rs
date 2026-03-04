@@ -349,6 +349,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetExpor
                     crate::module::ExportKind::Global(_, _) => "global",
                     crate::module::ExportKind::Memory(_, _, _, _, _) => "memory",
                     crate::module::ExportKind::Table(_, _, _) => "table",
+                    crate::module::ExportKind::Tag(_) => "tag",
                 };
 
                 let entry = format!("{}|{}", export.name, type_str);
@@ -394,6 +395,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetImpor
                     crate::module::ImportKind::Global(_, _) => "global",
                     crate::module::ImportKind::Memory(_, _, _, _, _) => "memory",
                     crate::module::ImportKind::Table(_, _, _) => "table",
+                    crate::module::ImportKind::Tag(_) => "tag",
                 };
 
                 let entry = format!("{}|{}|{}", import.module, import.name, type_str);
@@ -1158,6 +1160,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             crate::module::ExportKind::Table(elem_type, initial, max) => {
                 create_jni_table_type(&mut env, elem_type, *initial, *max)
             }
+            crate::module::ExportKind::Tag(sig) => {
+                create_jni_func_type(&mut env, &sig.params, &sig.returns)
+            }
         };
 
         let wasm_type_obj = match wasm_type_obj {
@@ -1278,6 +1283,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
             }
             crate::module::ImportKind::Table(elem_type, initial, max) => {
                 match create_jni_table_type(&mut env, elem_type, *initial, *max) {
+                    Some(obj) => obj,
+                    None => continue,
+                }
+            }
+            crate::module::ImportKind::Tag(sig) => {
+                match create_jni_func_type(&mut env, &sig.params, &sig.returns) {
                     Some(obj) => obj,
                     None => continue,
                 }

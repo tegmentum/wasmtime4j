@@ -100,15 +100,7 @@ pub struct RealRefOperationResult {
 
 impl WasmtimeGcOperations {
     /// Create new GC operations manager with Wasmtime integration
-    pub fn new(mut store: Store<()>) -> WasmtimeResult<Self> {
-        // Enable GC features in Wasmtime store
-        let _engine = store.engine().clone();
-        let mut config = crate::engine::safe_wasmtime_config();
-        config.wasm_gc(true);
-        config.wasm_reference_types(true);
-
-        // GC is enabled via config.wasm_gc(true) above
-
+    pub fn new(store: Store<()>) -> WasmtimeResult<Self> {
         Ok(Self {
             store,
             gc_types: std::collections::HashMap::new(),

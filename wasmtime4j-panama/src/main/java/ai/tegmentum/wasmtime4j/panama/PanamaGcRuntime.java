@@ -30,6 +30,7 @@ import ai.tegmentum.wasmtime4j.gc.I31Instance;
 import ai.tegmentum.wasmtime4j.gc.StructInstance;
 import ai.tegmentum.wasmtime4j.gc.StructType;
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
@@ -404,7 +405,9 @@ public final class PanamaGcRuntime implements GcRuntime {
             (long) structNew.invokeExact(nativeHandle, typeId, valuesSegment, fieldValues.size());
 
         if (objectId == 0) {
-          throw new GcException("Failed to create struct instance");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create struct instance" + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaStructInstance instance =
@@ -436,7 +439,10 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final long objectId = (long) structNewDefault.invokeExact(nativeHandle, typeId);
         if (objectId == 0) {
-          throw new GcException("Failed to create struct instance with default values");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create struct instance with default values"
+                  + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaStructInstance instance =
@@ -473,7 +479,10 @@ public final class PanamaGcRuntime implements GcRuntime {
                 structNewAsync.invokeExact(nativeHandle, typeId, valuesSegment, fieldValues.size());
 
         if (objectId == 0) {
-          throw new GcException("Failed to create struct instance asynchronously");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create struct instance asynchronously"
+                  + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaStructInstance instance =
@@ -512,7 +521,9 @@ public final class PanamaGcRuntime implements GcRuntime {
             (long) arrayNew.invokeExact(nativeHandle, typeId, elementsSegment, elements.size());
 
         if (objectId == 0) {
-          throw new GcException("Failed to create array instance");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create array instance" + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaArrayInstance instance =
@@ -547,7 +558,10 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final long objectId = (long) arrayNewDefault.invokeExact(nativeHandle, typeId, length);
         if (objectId == 0) {
-          throw new GcException("Failed to create array instance with default values");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create array instance with default values"
+                  + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaArrayInstance instance =
@@ -583,7 +597,10 @@ public final class PanamaGcRuntime implements GcRuntime {
             (long) arrayNewAsync.invokeExact(nativeHandle, typeId, valuesSegment, elements.size());
 
         if (objectId == 0) {
-          throw new GcException("Failed to create array instance asynchronously");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create array instance asynchronously"
+                  + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaArrayInstance instance =
@@ -626,7 +643,9 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final long objectId = (long) i31New.invokeExact(nativeHandle, value);
         if (objectId == 0) {
-          throw new GcException("Failed to create I31 instance");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create I31 instance" + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaI31Instance instance = new PanamaI31Instance(this, objectId, value);
@@ -657,7 +676,10 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final long objectId = (long) i31NewUnsigned.invokeExact(nativeHandle, value);
         if (objectId == 0) {
-          throw new GcException("Failed to create I31 unsigned instance (value out of range)");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create I31 unsigned instance (value out of range)"
+                  + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaI31Instance instance = new PanamaI31Instance(this, objectId, value);
@@ -687,7 +709,10 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final long objectId = (long) i31WrappingSigned.invokeExact(nativeHandle, value);
         if (objectId == 0) {
-          throw new GcException("Failed to create wrapping I31 signed instance");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create wrapping I31 signed instance"
+                  + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaI31Instance instance = new PanamaI31Instance(this, objectId, value);
@@ -717,7 +742,10 @@ public final class PanamaGcRuntime implements GcRuntime {
       try {
         final long objectId = (long) i31WrappingUnsigned.invokeExact(nativeHandle, value);
         if (objectId == 0) {
-          throw new GcException("Failed to create wrapping I31 unsigned instance");
+          final String nativeMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new GcException(
+              "Failed to create wrapping I31 unsigned instance"
+                  + (nativeMsg != null ? ": " + nativeMsg : ""));
         }
 
         final PanamaI31Instance instance = new PanamaI31Instance(this, objectId, value);

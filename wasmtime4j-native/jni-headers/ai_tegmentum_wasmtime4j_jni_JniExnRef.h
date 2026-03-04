@@ -42,10 +42,10 @@ JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_native
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef
  * Method:    nativeCreate
- * Signature: (JJ[I[J[D)J
+ * Signature: (JJ[I[J[D[B)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeCreate
-  (JNIEnv *, jclass, jlong, jlong, jintArray, jlongArray, jdoubleArray);
+  (JNIEnv *, jclass, jlong, jlong, jintArray, jlongArray, jdoubleArray, jbyteArray);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniExnRef

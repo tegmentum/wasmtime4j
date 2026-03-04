@@ -246,6 +246,7 @@ public final class JniExnRef extends JniResource implements ExnRef {
     final int[] fieldTypes = new int[fieldCount];
     final long[] fieldI64Values = new long[fieldCount];
     final double[] fieldF64Values = new double[fieldCount];
+    final byte[] fieldV128Values = new byte[fieldCount * 16];
 
     for (int i = 0; i < fieldCount; i++) {
       final WasmValue val = fields[i];
@@ -266,6 +267,10 @@ public final class JniExnRef extends JniResource implements ExnRef {
           fieldTypes[i] = 3;
           fieldF64Values[i] = val.asDouble();
           break;
+        case V128:
+          fieldTypes[i] = 4;
+          System.arraycopy(val.asV128(), 0, fieldV128Values, i * 16, 16);
+          break;
         default:
           throw new WasmException("Unsupported field type: " + val.getType());
       }
@@ -277,7 +282,8 @@ public final class JniExnRef extends JniResource implements ExnRef {
             tag.getNativeHandle(),
             fieldTypes,
             fieldI64Values,
-            fieldF64Values);
+            fieldF64Values,
+            fieldV128Values);
     if (handle == 0) {
       throw new WasmException("Failed to create ExnRef");
     }
@@ -314,7 +320,8 @@ public final class JniExnRef extends JniResource implements ExnRef {
       long tagHandle,
       int[] fieldTypes,
       long[] fieldI64Values,
-      double[] fieldF64Values);
+      double[] fieldF64Values,
+      byte[] fieldV128Values);
 
   private static native long nativeToRaw(long exnRefHandle, long storeHandle);
 
