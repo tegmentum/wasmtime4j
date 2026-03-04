@@ -1549,6 +1549,51 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniEngine_nativeIsReplay
     }) as jboolean
 }
 
+/// Detect if bytes are a precompiled WebAssembly module or component (JniComponentEngine version)
+///
+/// Returns:
+/// - -1 if not precompiled
+/// - 0 if precompiled MODULE
+/// - 1 if precompiled COMPONENT
+/// - -2 on error
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentEngine_nativeDetectPrecompiled(
+    mut env: JNIEnv,
+    _obj: JObject,
+    engine_ptr: jlong,
+    bytes: JByteArray,
+) -> jint {
+    // Extract byte array before catch_unwind (needs env)
+    let byte_vec = match env.convert_byte_array(bytes) {
+        Ok(v) => v,
+        Err(e) => {
+            let err = crate::error::WasmtimeError::InvalidParameter {
+                message: format!("Failed to convert byte array: {}", e),
+            };
+            jni_utils::throw_jni_exception(&mut env, &err);
+            return -2;
+        }
+    };
+
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> crate::error::WasmtimeResult<jint> {
+        let engine = unsafe { core::get_engine_ref(engine_ptr as *const std::os::raw::c_void)? };
+        match engine.detect_precompiled(&byte_vec) {
+            Some(value) => Ok(value),
+            None => Ok(-1),
+        }
+    })) {
+        Ok(Ok(value)) => value,
+        Ok(Err(e)) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            -2
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(&mut env, panic_info);
+            -2
+        }
+    }
+}
+
 /// JNI export: Eagerly initialize Wasmtime's thread-local state
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeTlsEagerInitialize(

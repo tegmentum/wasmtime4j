@@ -1527,6 +1527,33 @@ impl WasmGcRuntime {
         self.type_registry.is_subtype(subtype_id, supertype_id)
     }
 
+    /// Get the runtime type category of a GC object.
+    /// Returns: 0=AnyRef, 1=EqRef, 2=I31Ref, 3=StructRef, 4=ArrayRef
+    pub fn get_runtime_type(&self, object_id: ObjectId) -> WasmtimeResult<i32> {
+        let gc_objects = self
+            .gc_objects
+            .read()
+            .map_err(|_| WasmtimeError::from_string("Failed to acquire GC objects lock"))?;
+
+        let wasmtime_ref = gc_objects
+            .get(&object_id)
+            .ok_or_else(|| {
+                WasmtimeError::from_string(&format!("Object {} not found", object_id))
+            })?;
+
+        match &wasmtime_ref.ref_type {
+            GcReferenceType::AnyRef => Ok(0),
+            GcReferenceType::EqRef => Ok(1),
+            GcReferenceType::I31Ref => Ok(2),
+            GcReferenceType::StructRef(_) => Ok(3),
+            GcReferenceType::ArrayRef(_) => Ok(4),
+            _ => Err(WasmtimeError::from_string(&format!(
+                "Unsupported reference type for object {}",
+                object_id
+            ))),
+        }
+    }
+
     // === Heap Management ===
 
     /// Get heap statistics

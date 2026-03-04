@@ -2093,3 +2093,253 @@ fn array_new_async_internal(
         ))
     }
 }
+
+// === Struct/Array-specific cast, test, and runtime type query operations ===
+
+/// Internal helper for struct-specific reference cast using a registered type ID.
+fn ref_cast_struct_internal(
+    _env: &mut JNIEnv,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type_id: jint,
+) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Look up the struct type definition from the registry
+    let struct_def = runtime.get_struct_type(target_type_id as u32)?;
+    let target_ref_type = GcReferenceType::StructRef(struct_def);
+
+    let result = runtime.ref_cast(object_id as ObjectId, target_ref_type);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
+    }
+}
+
+/// Internal helper for array-specific reference cast using a registered type ID.
+fn ref_cast_array_internal(
+    _env: &mut JNIEnv,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type_id: jint,
+) -> WasmtimeResult<ObjectId> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Look up the array type definition from the registry
+    let array_def = runtime.get_array_type(target_type_id as u32)?;
+    let target_ref_type = GcReferenceType::ArrayRef(Box::new(array_def));
+
+    let result = runtime.ref_cast(object_id as ObjectId, target_ref_type);
+
+    if result.success {
+        Ok(result.cast_result.unwrap_or(0))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
+    }
+}
+
+/// Internal helper for struct-specific reference test using a registered type ID.
+fn ref_test_struct_internal(
+    _env: &mut JNIEnv,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type_id: jint,
+) -> WasmtimeResult<bool> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Look up the struct type definition from the registry
+    let struct_def = runtime.get_struct_type(target_type_id as u32)?;
+    let target_ref_type = GcReferenceType::StructRef(struct_def);
+
+    let result = runtime.ref_test(object_id as ObjectId, target_ref_type);
+
+    if result.success {
+        Ok(result.test_result.unwrap_or(false))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
+    }
+}
+
+/// Internal helper for array-specific reference test using a registered type ID.
+fn ref_test_array_internal(
+    _env: &mut JNIEnv,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type_id: jint,
+) -> WasmtimeResult<bool> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    // Look up the array type definition from the registry
+    let array_def = runtime.get_array_type(target_type_id as u32)?;
+    let target_ref_type = GcReferenceType::ArrayRef(Box::new(array_def));
+
+    let result = runtime.ref_test(object_id as ObjectId, target_ref_type);
+
+    if result.success {
+        Ok(result.test_result.unwrap_or(false))
+    } else {
+        Err(WasmtimeError::from_string(
+            &result.error.unwrap_or_default(),
+        ))
+    }
+}
+
+/// Internal helper to get the runtime type category of a GC object.
+/// Returns: 0=AnyRef, 1=EqRef, 2=I31Ref, 3=StructRef, 4=ArrayRef, -1=error
+fn get_runtime_type_internal(
+    _env: &mut JNIEnv,
+    runtime_handle: jlong,
+    object_id: jlong,
+) -> WasmtimeResult<jint> {
+    if runtime_handle == 0 {
+        return Err(WasmtimeError::from_string("Invalid runtime handle"));
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+
+    Ok(runtime.get_runtime_type(object_id as ObjectId)? as jint)
+}
+
+/// JNI binding for struct-specific reference cast
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_refCastStructNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type_id: jint,
+) -> jlong {
+    let result = ref_cast_struct_internal(&mut env, runtime_handle, object_id, target_type_id);
+
+    match result {
+        Ok(cast_object_id) => cast_object_id as jlong,
+        Err(_) => {
+            // Return 0 to indicate cast failure - Java code will throw ClassCastException
+            0
+        }
+    }
+}
+
+/// JNI binding for array-specific reference cast
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_refCastArrayNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type_id: jint,
+) -> jlong {
+    let result = ref_cast_array_internal(&mut env, runtime_handle, object_id, target_type_id);
+
+    match result {
+        Ok(cast_object_id) => cast_object_id as jlong,
+        Err(_) => {
+            // Return 0 to indicate cast failure - Java code will throw ClassCastException
+            0
+        }
+    }
+}
+
+/// JNI binding for struct-specific reference test
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_refTestStructNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type_id: jint,
+) -> jboolean {
+    let result = ref_test_struct_internal(&mut env, runtime_handle, object_id, target_type_id);
+
+    match result {
+        Ok(test_result) => {
+            if test_result {
+                1
+            } else {
+                0
+            }
+        }
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            0
+        }
+    }
+}
+
+/// JNI binding for array-specific reference test
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_refTestArrayNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+    target_type_id: jint,
+) -> jboolean {
+    let result = ref_test_array_internal(&mut env, runtime_handle, object_id, target_type_id);
+
+    match result {
+        Ok(test_result) => {
+            if test_result {
+                1
+            } else {
+                0
+            }
+        }
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            0
+        }
+    }
+}
+
+/// JNI binding for getting the runtime type category of a GC object
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_getRuntimeTypeNative(
+    mut env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+) -> jint {
+    let result = get_runtime_type_internal(&mut env, runtime_handle, object_id);
+
+    match result {
+        Ok(type_id) => type_id,
+        Err(e) => {
+            let _ = env.throw_new(
+                "ai/tegmentum/wasmtime4j/exception/RuntimeException",
+                e.to_string(),
+            );
+            -1
+        }
+    }
+}
