@@ -1009,8 +1009,8 @@ public interface Store extends Closeable {
    * Submits a concurrent task on this store, returning a handle to join its result.
    *
    * <p>This is a Java-level concurrency utility, not wasmtime's native {@code Store::spawn()} which
-   * uses cooperative scheduling via {@code AccessorTask<T>}. The task receives the full Store
-   * reference (unlike wasmtime's scoped {@code Accessor<T>}) and runs on the ForkJoinPool.
+   * uses cooperative scheduling. The task receives the full Store reference (unlike wasmtime's
+   * scoped accessor) and runs on the ForkJoinPool.
    *
    * <p>The caller must not use this store on any other thread until the task completes or is
    * joined, since stores are not thread-safe.
