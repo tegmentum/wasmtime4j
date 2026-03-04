@@ -60,7 +60,7 @@ final class PanamaComponentImpl implements Component {
             () -> {
               if (componentHandle != null && !componentHandle.equals(MemorySegment.NULL)) {
                 try {
-                  NATIVE_BINDINGS.componentDestroy(componentHandle);
+                  NATIVE_BINDINGS.destroyComponent(componentHandle);
                 } catch (final Throwable t) {
                   throw new Exception("Error closing PanamaComponentImpl", t);
                 }
