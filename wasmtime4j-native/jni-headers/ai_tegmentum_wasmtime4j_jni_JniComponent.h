@@ -319,6 +319,14 @@ JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGe
 JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetSubstitutedComponentTypeJson
   (JNIEnv *, jclass, jlong, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeAsyncValClose
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeAsyncValClose
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

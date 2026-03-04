@@ -465,6 +465,30 @@ public final class JniComponent {
       long linkerHandle, long componentHandle);
 
   /**
+   * Closes an async val handle (Future/Stream/ErrorContext) in the native AsyncValRegistry.
+   *
+   * <p>This removes the handle from the global registry, dropping the stored Val and releasing any
+   * native resources. Safe to call with handles that have already been consumed or closed (no-op).
+   *
+   * @param handle the async val handle to close
+   */
+  static native void nativeAsyncValClose(long handle);
+
+  /**
+   * Creates a {@link Runnable} close action that invokes {@link #nativeAsyncValClose(long)} for the
+   * given handle. Suitable for use with {@link
+   * ai.tegmentum.wasmtime4j.component.StreamAny#create(long, Runnable)}, {@link
+   * ai.tegmentum.wasmtime4j.component.FutureAny#create(long, Runnable)}, and {@link
+   * ai.tegmentum.wasmtime4j.component.ErrorContext#create(long, Runnable)}.
+   *
+   * @param handle the async val handle
+   * @return a Runnable that will close the handle when invoked
+   */
+  public static Runnable createAsyncValCloseAction(final long handle) {
+    return () -> nativeAsyncValClose(handle);
+  }
+
+  /**
    * JNI wrapper for component engine operations.
    *
    * <p>Manages the lifecycle of a native component engine and provides methods for loading and

@@ -134,6 +134,23 @@ impl AsyncValRegistry {
     pub(crate) fn remove(&mut self, id: u64) -> Option<Val> {
         self.vals.remove(&id)
     }
+
+    /// Checks whether the registry contains a handle with the given ID.
+    pub(crate) fn contains(&self, id: u64) -> bool {
+        self.vals.contains_key(&id)
+    }
+}
+
+/// Closes an async val handle by removing it from the global registry.
+///
+/// This drops the stored `Val`, releasing any native resources it holds.
+/// Returns `true` if the handle was found and removed, `false` if it was
+/// not present (e.g., already consumed by a function call or already closed).
+pub fn async_val_close(handle: u64) -> bool {
+    let mut registry = get_async_val_registry()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    registry.remove(handle).is_some()
 }
 
 // =============================================================================

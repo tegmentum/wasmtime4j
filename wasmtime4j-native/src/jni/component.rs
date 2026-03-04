@@ -1369,3 +1369,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeIniti
         }
     }
 }
+
+/// Close an async val handle (Future/Stream/ErrorContext) in the AsyncValRegistry.
+///
+/// This removes the handle from the global registry, dropping the stored Val.
+/// Safe to call with handles that have already been consumed or closed (no-op).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeAsyncValClose(
+    _env: JNIEnv,
+    _class: JClass,
+    handle: jlong,
+) {
+    if handle <= 0 {
+        return;
+    }
+    crate::component::async_val_close(handle as u64);
+}

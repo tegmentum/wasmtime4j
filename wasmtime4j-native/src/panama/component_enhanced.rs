@@ -735,3 +735,20 @@ pub extern "C" fn wasmtime4j_panama_component_initialize_cow_image(
         Err(_) => -1,
     }
 }
+
+/// Close an async val handle (Future/Stream/ErrorContext) in the AsyncValRegistry.
+///
+/// This removes the handle from the global registry, dropping the stored Val.
+/// Returns 0 on success (handle was found and removed), -1 if handle was not
+/// found (already consumed or closed). Both outcomes are non-fatal.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_async_val_close(handle: i64) -> c_int {
+    if handle <= 0 {
+        return -1;
+    }
+    if crate::component::async_val_close(handle as u64) {
+        0
+    } else {
+        -1
+    }
+}

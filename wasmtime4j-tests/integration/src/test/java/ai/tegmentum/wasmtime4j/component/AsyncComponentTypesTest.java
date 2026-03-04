@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -579,6 +581,530 @@ public final class AsyncComponentTypesTest {
       assertEquals(2, results.get(0).asS32(), "Result should be the arg count (2)");
 
       LOGGER.info("AccessorTask + ConcurrentScope integration test passed");
+    }
+  }
+
+  // =====================================================================
+  // StreamResult Tests
+  // =====================================================================
+
+  @Nested
+  @DisplayName("StreamResult Tests")
+  class StreamResultTests {
+
+    @Test
+    @DisplayName("should have exactly three values")
+    void shouldHaveThreeValues(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final StreamResult[] values = StreamResult.values();
+      assertEquals(3, values.length, "StreamResult should have exactly 3 values");
+
+      LOGGER.info("Value count test passed");
+    }
+
+    @Test
+    @DisplayName("should have COMPLETED, CANCELLED, and DROPPED in order")
+    void shouldHaveCorrectValuesInOrder(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertEquals(0, StreamResult.COMPLETED.ordinal(), "COMPLETED should be ordinal 0");
+      assertEquals(1, StreamResult.CANCELLED.ordinal(), "CANCELLED should be ordinal 1");
+      assertEquals(2, StreamResult.DROPPED.ordinal(), "DROPPED should be ordinal 2");
+
+      LOGGER.info("Ordinal order test passed");
+    }
+
+    @Test
+    @DisplayName("should support valueOf for all names")
+    void shouldSupportValueOf(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertEquals(StreamResult.COMPLETED, StreamResult.valueOf("COMPLETED"));
+      assertEquals(StreamResult.CANCELLED, StreamResult.valueOf("CANCELLED"));
+      assertEquals(StreamResult.DROPPED, StreamResult.valueOf("DROPPED"));
+
+      LOGGER.info("valueOf test passed");
+    }
+
+    @Test
+    @DisplayName("should throw for invalid valueOf")
+    void shouldThrowForInvalidValueOf(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> StreamResult.valueOf("INVALID"),
+          "Should throw for invalid name");
+
+      LOGGER.info("Invalid valueOf test passed");
+    }
+
+    @Test
+    @DisplayName("should have correct toString values")
+    void shouldHaveCorrectToString(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertEquals("COMPLETED", StreamResult.COMPLETED.toString());
+      assertEquals("CANCELLED", StreamResult.CANCELLED.toString());
+      assertEquals("DROPPED", StreamResult.DROPPED.toString());
+
+      LOGGER.info("toString test passed");
+    }
+  }
+
+  // =====================================================================
+  // GuardedStreamReader Tests
+  // =====================================================================
+
+  @Nested
+  @DisplayName("GuardedStreamReader Tests")
+  class GuardedStreamReaderTests {
+
+    @Test
+    @DisplayName("should create guard with valid stream")
+    void shouldCreateWithValidStream(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final StreamAny stream = StreamAny.create(1L);
+      final GuardedStreamReader guard = new GuardedStreamReader(stream);
+
+      assertTrue(guard.isActive(), "Guard should be active after creation");
+      assertEquals(stream, guard.getStream(), "getStream should return the wrapped stream");
+
+      guard.close();
+
+      LOGGER.info("Guard creation test passed");
+    }
+
+    @Test
+    @DisplayName("should reject null stream")
+    void shouldRejectNullStream(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new GuardedStreamReader(null),
+          "Should reject null stream");
+
+      LOGGER.info("Null rejection test passed");
+    }
+
+    @Test
+    @DisplayName("should close underlying stream when guard is closed")
+    void shouldCloseStreamOnGuardClose(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final StreamAny stream = StreamAny.create(2L);
+      assertTrue(stream.isValid(), "Stream should be valid before guard close");
+
+      final GuardedStreamReader guard = new GuardedStreamReader(stream);
+      guard.close();
+
+      assertFalse(stream.isValid(), "Stream should be invalid after guard close");
+      assertFalse(guard.isActive(), "Guard should be inactive after close");
+
+      LOGGER.info("Close propagation test passed");
+    }
+
+    @Test
+    @DisplayName("should transfer ownership via intoStream")
+    void shouldTransferOwnershipViaIntoStream(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final StreamAny stream = StreamAny.create(3L);
+      final GuardedStreamReader guard = new GuardedStreamReader(stream);
+
+      final StreamAny transferred = guard.intoStream();
+      assertEquals(stream, transferred, "intoStream should return the same stream");
+      assertFalse(guard.isActive(), "Guard should be inactive after intoStream");
+
+      // Guard close should be a no-op — stream should remain valid
+      guard.close();
+      assertTrue(transferred.isValid(), "Stream should remain valid after guard close");
+
+      transferred.close();
+
+      LOGGER.info("Ownership transfer test passed");
+    }
+
+    @Test
+    @DisplayName("should throw on getStream after close")
+    void shouldThrowOnGetStreamAfterClose(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final GuardedStreamReader guard = new GuardedStreamReader(StreamAny.create(4L));
+      guard.close();
+
+      assertThrows(
+          IllegalStateException.class, guard::getStream, "getStream should throw after close");
+
+      LOGGER.info("Use-after-close test passed");
+    }
+
+    @Test
+    @DisplayName("should throw on intoStream after close")
+    void shouldThrowOnIntoStreamAfterClose(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final GuardedStreamReader guard = new GuardedStreamReader(StreamAny.create(5L));
+      guard.close();
+
+      assertThrows(
+          IllegalStateException.class, guard::intoStream, "intoStream should throw after close");
+
+      LOGGER.info("intoStream after close test passed");
+    }
+
+    @Test
+    @DisplayName("should be idempotent on double close")
+    void shouldBeIdempotentOnDoubleClose(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final StreamAny stream = StreamAny.create(6L);
+      final GuardedStreamReader guard = new GuardedStreamReader(stream);
+
+      guard.close();
+      guard.close(); // Second close should be safe
+      assertFalse(guard.isActive(), "Guard should remain inactive");
+      assertFalse(stream.isValid(), "Stream should remain invalid");
+
+      LOGGER.info("Double close idempotency test passed");
+    }
+
+    @Test
+    @DisplayName("should work with try-with-resources")
+    void shouldWorkWithTryWithResources(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final StreamAny stream = StreamAny.create(7L);
+      try (GuardedStreamReader guard = new GuardedStreamReader(stream)) {
+        assertTrue(guard.isActive(), "Guard should be active inside try");
+        assertNotNull(guard.getStream(), "getStream should return non-null inside try");
+      }
+      assertFalse(stream.isValid(), "Stream should be closed after try-with-resources");
+
+      LOGGER.info("Try-with-resources test passed");
+    }
+  }
+
+  // =====================================================================
+  // GuardedFutureReader Tests
+  // =====================================================================
+
+  @Nested
+  @DisplayName("GuardedFutureReader Tests")
+  class GuardedFutureReaderTests {
+
+    @Test
+    @DisplayName("should create guard with valid future")
+    void shouldCreateWithValidFuture(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final FutureAny future = FutureAny.create(1L);
+      final GuardedFutureReader guard = new GuardedFutureReader(future);
+
+      assertTrue(guard.isActive(), "Guard should be active after creation");
+      assertEquals(future, guard.getFuture(), "getFuture should return the wrapped future");
+
+      guard.close();
+
+      LOGGER.info("Guard creation test passed");
+    }
+
+    @Test
+    @DisplayName("should reject null future")
+    void shouldRejectNullFuture(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new GuardedFutureReader(null),
+          "Should reject null future");
+
+      LOGGER.info("Null rejection test passed");
+    }
+
+    @Test
+    @DisplayName("should close underlying future when guard is closed")
+    void shouldCloseFutureOnGuardClose(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final FutureAny future = FutureAny.create(2L);
+      assertTrue(future.isValid(), "Future should be valid before guard close");
+
+      final GuardedFutureReader guard = new GuardedFutureReader(future);
+      guard.close();
+
+      assertFalse(future.isValid(), "Future should be invalid after guard close");
+      assertFalse(guard.isActive(), "Guard should be inactive after close");
+
+      LOGGER.info("Close propagation test passed");
+    }
+
+    @Test
+    @DisplayName("should transfer ownership via intoFuture")
+    void shouldTransferOwnershipViaIntoFuture(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final FutureAny future = FutureAny.create(3L);
+      final GuardedFutureReader guard = new GuardedFutureReader(future);
+
+      final FutureAny transferred = guard.intoFuture();
+      assertEquals(future, transferred, "intoFuture should return the same future");
+      assertFalse(guard.isActive(), "Guard should be inactive after intoFuture");
+
+      // Guard close should be a no-op — future should remain valid
+      guard.close();
+      assertTrue(transferred.isValid(), "Future should remain valid after guard close");
+
+      transferred.close();
+
+      LOGGER.info("Ownership transfer test passed");
+    }
+
+    @Test
+    @DisplayName("should throw on getFuture after close")
+    void shouldThrowOnGetFutureAfterClose(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final GuardedFutureReader guard = new GuardedFutureReader(FutureAny.create(4L));
+      guard.close();
+
+      assertThrows(
+          IllegalStateException.class, guard::getFuture, "getFuture should throw after close");
+
+      LOGGER.info("Use-after-close test passed");
+    }
+
+    @Test
+    @DisplayName("should throw on intoFuture after close")
+    void shouldThrowOnIntoFutureAfterClose(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final GuardedFutureReader guard = new GuardedFutureReader(FutureAny.create(5L));
+      guard.close();
+
+      assertThrows(
+          IllegalStateException.class, guard::intoFuture, "intoFuture should throw after close");
+
+      LOGGER.info("intoFuture after close test passed");
+    }
+
+    @Test
+    @DisplayName("should be idempotent on double close")
+    void shouldBeIdempotentOnDoubleClose(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final FutureAny future = FutureAny.create(6L);
+      final GuardedFutureReader guard = new GuardedFutureReader(future);
+
+      guard.close();
+      guard.close(); // Second close should be safe
+      assertFalse(guard.isActive(), "Guard should remain inactive");
+      assertFalse(future.isValid(), "Future should remain invalid");
+
+      LOGGER.info("Double close idempotency test passed");
+    }
+
+    @Test
+    @DisplayName("should work with try-with-resources")
+    void shouldWorkWithTryWithResources(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final FutureAny future = FutureAny.create(7L);
+      try (GuardedFutureReader guard = new GuardedFutureReader(future)) {
+        assertTrue(guard.isActive(), "Guard should be active inside try");
+        assertNotNull(guard.getFuture(), "getFuture should return non-null inside try");
+      }
+      assertFalse(future.isValid(), "Future should be closed after try-with-resources");
+
+      LOGGER.info("Try-with-resources test passed");
+    }
+  }
+
+  // =====================================================================
+  // Close Callback Tests (StreamAny, FutureAny, ErrorContext)
+  // =====================================================================
+
+  @Nested
+  @DisplayName("Close Callback Tests")
+  class CloseCallbackTests {
+
+    @Test
+    @DisplayName("StreamAny close should invoke callback exactly once")
+    void streamAnyCloseShouldInvokeCallback(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final AtomicInteger callCount = new AtomicInteger(0);
+      final StreamAny stream = StreamAny.create(1L, callCount::incrementAndGet);
+
+      assertTrue(stream.isValid(), "Stream should be valid before close");
+      assertEquals(0, callCount.get(), "Callback should not be called before close");
+
+      stream.close();
+      assertFalse(stream.isValid(), "Stream should be invalid after close");
+      assertEquals(1, callCount.get(), "Callback should be called exactly once");
+
+      // Second close should be idempotent — no additional callback invocation
+      stream.close();
+      assertEquals(1, callCount.get(), "Callback should still be called exactly once");
+
+      LOGGER.info("StreamAny close callback test passed");
+    }
+
+    @Test
+    @DisplayName("FutureAny close should invoke callback exactly once")
+    void futureAnyCloseShouldInvokeCallback(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final AtomicInteger callCount = new AtomicInteger(0);
+      final FutureAny future = FutureAny.create(1L, callCount::incrementAndGet);
+
+      assertTrue(future.isValid(), "Future should be valid before close");
+      assertEquals(0, callCount.get(), "Callback should not be called before close");
+
+      future.close();
+      assertFalse(future.isValid(), "Future should be invalid after close");
+      assertEquals(1, callCount.get(), "Callback should be called exactly once");
+
+      future.close();
+      assertEquals(1, callCount.get(), "Callback should still be called exactly once");
+
+      LOGGER.info("FutureAny close callback test passed");
+    }
+
+    @Test
+    @DisplayName("ErrorContext close should invoke callback exactly once")
+    void errorContextCloseShouldInvokeCallback(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final AtomicInteger callCount = new AtomicInteger(0);
+      final ErrorContext ctx = ErrorContext.create(1L, callCount::incrementAndGet);
+
+      assertTrue(ctx.isValid(), "ErrorContext should be valid before close");
+      assertEquals(0, callCount.get(), "Callback should not be called before close");
+
+      ctx.close();
+      assertFalse(ctx.isValid(), "ErrorContext should be invalid after close");
+      assertEquals(1, callCount.get(), "Callback should be called exactly once");
+
+      ctx.close();
+      assertEquals(1, callCount.get(), "Callback should still be called exactly once");
+
+      LOGGER.info("ErrorContext close callback test passed");
+    }
+
+    @Test
+    @DisplayName("StreamAny with null callback should work like no-op close")
+    void streamAnyNullCallbackShouldBeNoOp(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final StreamAny stream = StreamAny.create(10L, null);
+      assertTrue(stream.isValid(), "Stream should be valid before close");
+
+      stream.close();
+      assertFalse(stream.isValid(), "Stream should be invalid after close");
+
+      LOGGER.info("Null callback test passed");
+    }
+
+    @Test
+    @DisplayName("Close callback should be thread-safe via AtomicBoolean")
+    void closeCallbackShouldBeThreadSafe(final TestInfo testInfo) throws InterruptedException {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final AtomicInteger callCount = new AtomicInteger(0);
+      final StreamAny stream = StreamAny.create(1L, callCount::incrementAndGet);
+
+      // Launch multiple threads that all try to close the stream simultaneously
+      final int threadCount = 10;
+      final Thread[] threads = new Thread[threadCount];
+      final AtomicBoolean startFlag = new AtomicBoolean(false);
+
+      for (int i = 0; i < threadCount; i++) {
+        threads[i] =
+            new Thread(
+                () -> {
+                  while (!startFlag.get()) {
+                    Thread.yield();
+                  }
+                  stream.close();
+                });
+        threads[i].start();
+      }
+
+      // Release all threads at once
+      startFlag.set(true);
+
+      for (final Thread thread : threads) {
+        thread.join(5000);
+      }
+
+      assertEquals(
+          1,
+          callCount.get(),
+          "Callback should be invoked exactly once even with concurrent closes");
+      assertFalse(stream.isValid(), "Stream should be invalid");
+
+      LOGGER.info("Thread safety test passed");
+    }
+
+    @Test
+    @DisplayName("GuardedStreamReader should invoke stream close callback")
+    void guardedStreamReaderShouldInvokeCallback(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
+      final StreamAny stream = StreamAny.create(1L, () -> callbackInvoked.set(true));
+
+      try (GuardedStreamReader guard = new GuardedStreamReader(stream)) {
+        assertTrue(guard.isActive(), "Guard should be active inside try");
+        assertFalse(callbackInvoked.get(), "Callback should not be invoked while guard is active");
+      }
+      assertTrue(callbackInvoked.get(), "Callback should be invoked after guard close");
+
+      LOGGER.info("GuardedStreamReader callback test passed");
+    }
+
+    @Test
+    @DisplayName("GuardedFutureReader should invoke future close callback")
+    void guardedFutureReaderShouldInvokeCallback(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
+      final FutureAny future = FutureAny.create(1L, () -> callbackInvoked.set(true));
+
+      try (GuardedFutureReader guard = new GuardedFutureReader(future)) {
+        assertTrue(guard.isActive(), "Guard should be active inside try");
+        assertFalse(callbackInvoked.get(), "Callback should not be invoked while guard is active");
+      }
+      assertTrue(callbackInvoked.get(), "Callback should be invoked after guard close");
+
+      LOGGER.info("GuardedFutureReader callback test passed");
+    }
+
+    @Test
+    @DisplayName("GuardedStreamReader intoStream should NOT invoke callback")
+    void guardedStreamReaderIntoStreamShouldNotInvokeCallback(final TestInfo testInfo) {
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      final AtomicBoolean callbackInvoked = new AtomicBoolean(false);
+      final StreamAny stream = StreamAny.create(1L, () -> callbackInvoked.set(true));
+
+      final StreamAny transferred;
+      try (GuardedStreamReader guard = new GuardedStreamReader(stream)) {
+        transferred = guard.intoStream();
+      }
+      assertFalse(
+          callbackInvoked.get(), "Callback should NOT be invoked when ownership was transferred");
+      assertTrue(transferred.isValid(), "Transferred stream should still be valid");
+
+      // Now close the transferred stream manually
+      transferred.close();
+      assertTrue(callbackInvoked.get(), "Callback should be invoked on manual close");
+
+      LOGGER.info("intoStream no-callback test passed");
     }
   }
 }

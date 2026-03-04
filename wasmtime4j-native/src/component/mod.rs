@@ -44,7 +44,7 @@ pub use linker::{
     ComponentLinker, ComponentValue, ResourceDestructorCallback, WasiP2Config,
     NEXT_COMPONENT_HOST_FUNCTION_ID,
 };
-pub(crate) use linker::{component_value_to_json_val, json_val_to_component_value};
+pub(crate) use linker::{async_val_close, component_value_to_json_val, json_val_to_component_value};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;

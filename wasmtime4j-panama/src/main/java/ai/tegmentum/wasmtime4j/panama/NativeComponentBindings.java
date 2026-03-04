@@ -724,6 +724,13 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         FunctionDescriptor.ofVoid(
             ValueLayout.ADDRESS, // ptr
             ValueLayout.JAVA_LONG)); // len
+
+    // ===== Async Val Lifecycle =====
+    addFunctionBinding(
+        "wasmtime4j_panama_async_val_close",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 0=success, -1=not found
+            ValueLayout.JAVA_LONG)); // handle
   }
 
   // ===== Component Engine (legacy API) =====
@@ -2216,5 +2223,33 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    */
   public void freeConcurrentResult(final MemorySegment ptr, final long len) {
     callNativeFunction("wasmtime4j_panama_free_concurrent_result", Void.class, ptr, len);
+  }
+
+  // ===== Async Val Lifecycle =====
+
+  /**
+   * Closes an async val handle (Future/Stream/ErrorContext) in the native AsyncValRegistry.
+   *
+   * <p>This removes the handle from the global registry, dropping the stored Val. Safe to call with
+   * handles that have already been consumed or closed (no-op).
+   *
+   * @param handle the async val handle to close
+   * @return 0 on success (handle found and removed), -1 if handle was not found
+   */
+  public int asyncValClose(final long handle) {
+    return callNativeFunction("wasmtime4j_panama_async_val_close", Integer.class, handle);
+  }
+
+  /**
+   * Creates a {@link Runnable} close action that invokes {@link #asyncValClose(long)} for the given
+   * handle. Suitable for use with {@link ai.tegmentum.wasmtime4j.component.StreamAny#create(long,
+   * Runnable)}, {@link ai.tegmentum.wasmtime4j.component.FutureAny#create(long, Runnable)}, and
+   * {@link ai.tegmentum.wasmtime4j.component.ErrorContext#create(long, Runnable)}.
+   *
+   * @param handle the async val handle
+   * @return a Runnable that will close the handle when invoked
+   */
+  public Runnable createAsyncValCloseAction(final long handle) {
+    return () -> asyncValClose(handle);
   }
 }

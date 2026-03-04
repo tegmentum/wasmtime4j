@@ -643,3 +643,103 @@ fn test_async_val_registry_incrementing_ids() {
     registry.remove(id1);
     registry.remove(id2);
 }
+
+#[test]
+fn test_async_val_registry_contains() {
+    use super::linker::get_async_val_registry;
+
+    // Store a value
+    let id = {
+        let mut registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let id = registry.store(wasmtime::component::Val::Bool(true));
+        assert!(
+            registry.contains(id),
+            "Registry should contain the stored handle"
+        );
+        assert!(
+            !registry.contains(id + 1000),
+            "Registry should not contain non-existent handle"
+        );
+        id
+    };
+
+    // Cleanup
+    let mut registry = get_async_val_registry()
+        .lock()
+        .unwrap_or_else(|e| e.into_inner());
+    registry.remove(id);
+    assert!(
+        !registry.contains(id),
+        "Registry should not contain removed handle"
+    );
+}
+
+#[test]
+fn test_async_val_close_removes_handle() {
+    use super::linker::get_async_val_registry;
+
+    // Store a value
+    let id = {
+        let mut registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        registry.store(wasmtime::component::Val::S32(99))
+    };
+    assert!(id > 0, "Registry should assign positive IDs");
+
+    // Verify it exists
+    {
+        let registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        assert!(registry.contains(id), "Handle should exist before close");
+    }
+
+    // Close via the public FFI function
+    let was_present = super::async_val_close(id);
+    assert!(was_present, "async_val_close should return true for existing handle");
+
+    // Verify it was removed
+    {
+        let registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        assert!(
+            !registry.contains(id),
+            "Handle should not exist after close"
+        );
+    }
+}
+
+#[test]
+fn test_async_val_close_nonexistent_handle_is_noop() {
+    // Closing a handle that doesn't exist should return false (no-op)
+    let was_present = super::async_val_close(999_999);
+    assert!(
+        !was_present,
+        "async_val_close should return false for non-existent handle"
+    );
+}
+
+#[test]
+fn test_async_val_close_double_close_is_safe() {
+    use super::linker::get_async_val_registry;
+
+    // Store a value
+    let id = {
+        let mut registry = get_async_val_registry()
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        registry.store(wasmtime::component::Val::Bool(false))
+    };
+
+    // First close should succeed
+    let first = super::async_val_close(id);
+    assert!(first, "First close should return true");
+
+    // Second close should be a no-op
+    let second = super::async_val_close(id);
+    assert!(!second, "Second close should return false (already removed)");
+}
