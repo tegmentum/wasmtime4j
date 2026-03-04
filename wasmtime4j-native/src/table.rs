@@ -607,6 +607,12 @@ impl Table {
         src: u32,
         len: u32,
     ) -> WasmtimeResult<()> {
+        // If src and dst are the same table, delegate to copy_within to avoid
+        // mutex self-deadlock (std::sync::Mutex is not reentrant)
+        if Arc::ptr_eq(&self.inner, &src_table.inner) {
+            return self.copy_within(store, dst, src, len);
+        }
+
         // Validate type compatibility using ValType::matches (subtyping-aware)
         if !self
             .metadata

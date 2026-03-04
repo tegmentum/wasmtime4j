@@ -63,12 +63,13 @@ public class TypeSystemTest {
       LOGGER.info("Testing WasmTypeKind enum values");
 
       WasmTypeKind[] kinds = WasmTypeKind.values();
-      assertEquals(4, kinds.length, "Should have 4 type kinds");
+      assertEquals(5, kinds.length, "Should have 5 type kinds");
 
       assertNotNull(WasmTypeKind.FUNCTION, "FUNCTION should exist");
       assertNotNull(WasmTypeKind.GLOBAL, "GLOBAL should exist");
       assertNotNull(WasmTypeKind.MEMORY, "MEMORY should exist");
       assertNotNull(WasmTypeKind.TABLE, "TABLE should exist");
+      assertNotNull(WasmTypeKind.TAG, "TAG should exist");
 
       LOGGER.info("WasmTypeKind enum values verified: " + kinds.length);
     }
@@ -82,6 +83,7 @@ public class TypeSystemTest {
       assertEquals(WasmTypeKind.GLOBAL, WasmTypeKind.valueOf("GLOBAL"));
       assertEquals(WasmTypeKind.MEMORY, WasmTypeKind.valueOf("MEMORY"));
       assertEquals(WasmTypeKind.TABLE, WasmTypeKind.valueOf("TABLE"));
+      assertEquals(WasmTypeKind.TAG, WasmTypeKind.valueOf("TAG"));
 
       LOGGER.info("WasmTypeKind valueOf verified");
     }
@@ -97,12 +99,14 @@ public class TypeSystemTest {
       LOGGER.info("Testing ExternType enum values");
 
       ExternType[] types = ExternType.values();
-      assertEquals(4, types.length, "Should have 4 extern types");
+      assertEquals(6, types.length, "Should have 6 extern types");
 
       assertNotNull(ExternType.FUNC, "FUNC should exist");
       assertNotNull(ExternType.TABLE, "TABLE should exist");
       assertNotNull(ExternType.MEMORY, "MEMORY should exist");
       assertNotNull(ExternType.GLOBAL, "GLOBAL should exist");
+      assertNotNull(ExternType.TAG, "TAG should exist");
+      assertNotNull(ExternType.SHARED_MEMORY, "SHARED_MEMORY should exist");
 
       LOGGER.info("ExternType enum values verified: " + types.length);
     }
@@ -116,6 +120,8 @@ public class TypeSystemTest {
       assertEquals(1, ExternType.TABLE.getCode(), "TABLE should have code 1");
       assertEquals(2, ExternType.MEMORY.getCode(), "MEMORY should have code 2");
       assertEquals(3, ExternType.GLOBAL.getCode(), "GLOBAL should have code 3");
+      assertEquals(4, ExternType.TAG.getCode(), "TAG should have code 4");
+      assertEquals(5, ExternType.SHARED_MEMORY.getCode(), "SHARED_MEMORY should have code 5");
 
       LOGGER.info("ExternType numeric codes verified");
     }
@@ -129,6 +135,9 @@ public class TypeSystemTest {
       assertEquals(ExternType.TABLE, ExternType.fromCode(1), "Code 1 should return TABLE");
       assertEquals(ExternType.MEMORY, ExternType.fromCode(2), "Code 2 should return MEMORY");
       assertEquals(ExternType.GLOBAL, ExternType.fromCode(3), "Code 3 should return GLOBAL");
+      assertEquals(ExternType.TAG, ExternType.fromCode(4), "Code 4 should return TAG");
+      assertEquals(
+          ExternType.SHARED_MEMORY, ExternType.fromCode(5), "Code 5 should return SHARED_MEMORY");
 
       LOGGER.info("ExternType fromCode verified");
     }
@@ -143,7 +152,7 @@ public class TypeSystemTest {
           () -> ExternType.fromCode(-1),
           "Should throw for negative code");
       assertThrows(
-          IllegalArgumentException.class, () -> ExternType.fromCode(4), "Should throw for code 4");
+          IllegalArgumentException.class, () -> ExternType.fromCode(6), "Should throw for code 6");
       assertThrows(
           IllegalArgumentException.class,
           () -> ExternType.fromCode(100),
