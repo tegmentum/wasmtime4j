@@ -75,15 +75,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCr
         let func_ref_id =
             crate::table::core::register_function_reference(wasmtime_func, store.id())?;
 
-        // Create a struct to hold both IDs - the host_function_id for callback management
-        // and func_ref_id for table operations
+        // Create a struct to hold the Func + IDs.
+        // The Func MUST be the first field (#[repr(C)]) so that
+        // create_instance_from_jni_handles can read it at offset 0,
+        // matching FunctionHandle's layout convention.
         #[repr(C)]
         struct JniHostFunctionHandle {
+            func: wasmtime::Func,
             host_function_id: u64,
             func_ref_id: u64,
         }
 
         Ok(Box::new(JniHostFunctionHandle {
+            func: wasmtime_func,
             host_function_id,
             func_ref_id,
         }))
@@ -146,11 +150,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniHostFunction_nativeCr
 
         #[repr(C)]
         struct JniHostFunctionHandle {
+            func: wasmtime::Func,
             host_function_id: u64,
             func_ref_id: u64,
         }
 
         Ok(Box::new(JniHostFunctionHandle {
+            func: wasmtime_func,
             host_function_id,
             func_ref_id,
         }))

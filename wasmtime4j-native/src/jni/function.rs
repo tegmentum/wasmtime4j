@@ -11,9 +11,15 @@ use wasmtime::{Func, Val, ValType};
 
 /// Function handle that stores both the Wasmtime function and its type information
 /// This allows for efficient type introspection without requiring a store context
+///
+/// Uses `#[repr(C)]` to guarantee that `func` is at offset 0, which allows
+/// `create_instance_from_jni_handles` to read the `Func` directly from any
+/// function handle pointer (both `FunctionHandle` and `JniHostFunctionHandle`
+/// share this layout convention).
 #[derive(Debug)]
+#[repr(C)]
 pub struct FunctionHandle {
-    /// The underlying Wasmtime function
+    /// The underlying Wasmtime function (MUST be the first field for layout compatibility)
     pub func: Func,
     /// Function name for debugging
     pub name: String,

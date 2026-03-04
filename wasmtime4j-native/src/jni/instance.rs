@@ -1176,10 +1176,93 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateIns
                 message: format!("Failed to read extern types array: {}", e),
             })?;
 
-        let ptrs: Vec<*const c_void> = handle_buf.iter().map(|&h| h as *const c_void).collect();
+        // Build Vec<Extern> by extracting wasmtime types from JNI wrapper handles.
+        // JNI handles point to wrapper structs (FunctionHandle, Global, Table, Memory),
+        // NOT raw wasmtime types, so we must use the proper accessors.
+        let mut imports = Vec::with_capacity(handles_len);
+        for (i, (&handle, &typ)) in handle_buf.iter().zip(type_buf.iter()).enumerate() {
+            let ptr = handle as *const c_void;
+            if ptr.is_null() {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("extern handle at index {} is null", i),
+                });
+            }
+            let ext = unsafe {
+                match typ {
+                    core::EXTERN_TYPE_FUNC => {
+                        // Both FunctionHandle and JniHostFunctionHandle use #[repr(C)]
+                        // with wasmtime::Func as the first field, so reading at offset 0
+                        // gives us the Func regardless of which handle type this is.
+                        wasmtime::Extern::Func(*(ptr as *const wasmtime::Func))
+                    }
+                    core::EXTERN_TYPE_GLOBAL => {
+                        let global = &*(ptr as *const crate::global::Global);
+                        let wasmtime_global_arc = global.wasmtime_global();
+                        let locked = wasmtime_global_arc.lock().map_err(|e| {
+                            WasmtimeError::Concurrency {
+                                message: format!(
+                                    "Failed to lock global at index {}: {}",
+                                    i, e
+                                ),
+                            }
+                        })?;
+                        wasmtime::Extern::Global(*locked)
+                    }
+                    core::EXTERN_TYPE_TABLE => {
+                        let table = &*(ptr as *const crate::table::Table);
+                        let wasmtime_table_arc = table.wasmtime_table();
+                        let locked =
+                            wasmtime_table_arc.lock().map_err(|e| {
+                                WasmtimeError::Concurrency {
+                                    message: format!(
+                                        "Failed to lock table at index {}: {}",
+                                        i, e
+                                    ),
+                                }
+                            })?;
+                        wasmtime::Extern::Table(*locked)
+                    }
+                    core::EXTERN_TYPE_MEMORY => {
+                        let memory =
+                            crate::memory::core::get_memory_ref(ptr)?;
+                        if let Some(wasmtime_memory) = memory.inner() {
+                            wasmtime::Extern::Memory(*wasmtime_memory)
+                        } else if let Some(wasmtime_shared) = memory.inner_shared() {
+                            wasmtime::Extern::SharedMemory(wasmtime_shared.clone())
+                        } else {
+                            return Err(WasmtimeError::InvalidParameter {
+                                message: format!(
+                                    "Memory at index {} has invalid variant",
+                                    i
+                                ),
+                            });
+                        }
+                    }
+                    core::EXTERN_TYPE_SHARED_MEMORY => {
+                        let memory =
+                            crate::memory::core::get_memory_ref(ptr)?;
+                        if let Some(wasmtime_shared) = memory.inner_shared() {
+                            wasmtime::Extern::SharedMemory(wasmtime_shared.clone())
+                        } else {
+                            return Err(WasmtimeError::InvalidParameter {
+                                message: format!(
+                                    "SharedMemory at index {} is not a shared memory variant",
+                                    i
+                                ),
+                            });
+                        }
+                    }
+                    _ => {
+                        return Err(WasmtimeError::InvalidParameter {
+                            message: format!("Unknown extern type {} at index {}", typ, i),
+                        });
+                    }
+                }
+            };
+            imports.push(ext);
+        }
 
-        let instance =
-            unsafe { core::create_instance_from_extern_handles(store, module, &ptrs, &type_buf)? };
+        let instance = core::create_instance_with_imports(store, module, &imports)?;
 
         Ok(crate::ffi_common::memory_utils::box_into_raw_safe(instance) as jlong)
     }));
