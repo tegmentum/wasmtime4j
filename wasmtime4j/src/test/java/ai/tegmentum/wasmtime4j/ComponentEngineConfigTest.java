@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests for {@link ComponentEngineConfig} class.
  *
- * <p>ComponentEngineConfig provides configuration options for WebAssembly Component Model engine
- * creation including orchestration settings, distributed support, and enterprise management.
+ * <p>ComponentEngineConfig provides a convenience wrapper around {@link EngineConfig} that
+ * pre-configures Component Model support.
  */
 @DisplayName("ComponentEngineConfig Tests")
 class ComponentEngineConfigTest {
@@ -46,62 +46,6 @@ class ComponentEngineConfigTest {
       final ComponentEngineConfig config = new ComponentEngineConfig();
       assertTrue(config.isComponentModelEnabled(), "Component model should be enabled by default");
     }
-
-    @Test
-    @DisplayName("should have witInterfaceValidation true by default")
-    void shouldHaveWitInterfaceValidationByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertTrue(
-          config.isWitInterfaceValidation(),
-          "WIT interface validation should be enabled by default");
-    }
-
-    @Test
-    @DisplayName("should have advancedOrchestration false by default")
-    void shouldHaveAdvancedOrchestrationFalseByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertFalse(
-          config.isAdvancedOrchestration(), "Advanced orchestration should be disabled by default");
-    }
-
-    @Test
-    @DisplayName("should have distributedSupport false by default")
-    void shouldHaveDistributedSupportFalseByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertFalse(
-          config.isDistributedSupport(), "Distributed support should be disabled by default");
-    }
-
-    @Test
-    @DisplayName("should have enterpriseManagement false by default")
-    void shouldHaveEnterpriseManagementFalseByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertFalse(
-          config.isEnterpriseManagement(), "Enterprise management should be disabled by default");
-    }
-
-    @Test
-    @DisplayName("should have capabilityBasedSecurity true by default")
-    void shouldHaveCapabilityBasedSecurityByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertTrue(
-          config.isCapabilityBasedSecurity(),
-          "Capability-based security should be enabled by default");
-    }
-
-    @Test
-    @DisplayName("should have resourceManagement true by default")
-    void shouldHaveResourceManagementByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertTrue(config.isResourceManagement(), "Resource management should be enabled by default");
-    }
-
-    @Test
-    @DisplayName("should have componentCaching true by default")
-    void shouldHaveComponentCachingByDefault() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      assertTrue(config.isComponentCaching(), "Component caching should be enabled by default");
-    }
   }
 
   @Nested
@@ -109,7 +53,7 @@ class ComponentEngineConfigTest {
   class ConfigurationMethodTests {
 
     @Test
-    @DisplayName("componentModelEnabled should set and return config")
+    @DisplayName("componentModelEnabled should set and return config for chaining")
     void componentModelEnabledShouldSetAndReturnConfig() {
       final ComponentEngineConfig config = new ComponentEngineConfig();
       final ComponentEngineConfig result = config.componentModelEnabled(false);
@@ -119,88 +63,16 @@ class ComponentEngineConfigTest {
     }
 
     @Test
-    @DisplayName("enableAdvancedOrchestration should set and return config")
-    void enableAdvancedOrchestrationShouldSetAndReturnConfig() {
+    @DisplayName("should handle toggling componentModelEnabled")
+    void shouldHandleTogglingComponentModelEnabled() {
       final ComponentEngineConfig config = new ComponentEngineConfig();
-      final ComponentEngineConfig result = config.enableAdvancedOrchestration(true);
-
-      assertTrue(config.isAdvancedOrchestration(), "Advanced orchestration should be enabled");
-      assertEquals(config, result, "Should return this for method chaining");
-    }
-
-    @Test
-    @DisplayName("enableDistributedSupport should set and return config")
-    void enableDistributedSupportShouldSetAndReturnConfig() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      final ComponentEngineConfig result = config.enableDistributedSupport(true);
-
-      assertTrue(config.isDistributedSupport(), "Distributed support should be enabled");
-      assertEquals(config, result, "Should return this for method chaining");
-    }
-
-    @Test
-    @DisplayName("enableEnterpriseManagement should set and return config")
-    void enableEnterpriseManagementShouldSetAndReturnConfig() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      final ComponentEngineConfig result = config.enableEnterpriseManagement(true);
-
-      assertTrue(config.isEnterpriseManagement(), "Enterprise management should be enabled");
-      assertEquals(config, result, "Should return this for method chaining");
-    }
-
-    @Test
-    @DisplayName("enableWitInterfaceEnhancement should set and return config")
-    void enableWitInterfaceEnhancementShouldSetAndReturnConfig() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      final ComponentEngineConfig result = config.enableWitInterfaceEnhancement(true);
-
-      assertTrue(config.isWitInterfaceEnhancement(), "WIT interface enhancement should be enabled");
-      assertEquals(config, result, "Should return this for method chaining");
-    }
-
-    @Test
-    @DisplayName("enableCapabilityBasedSecurity should set and return config")
-    void enableCapabilityBasedSecurityShouldSetAndReturnConfig() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      final ComponentEngineConfig result = config.enableCapabilityBasedSecurity(false);
-
+      config.componentModelEnabled(false);
       assertFalse(
-          config.isCapabilityBasedSecurity(), "Capability-based security should be disabled");
-      assertEquals(config, result, "Should return this for method chaining");
-    }
-  }
+          config.isComponentModelEnabled(), "Component model should be disabled after setting");
 
-  @Nested
-  @DisplayName("Builder Tests")
-  class BuilderTests {
-
-    @Test
-    @DisplayName("builder should create config with defaults")
-    void builderShouldCreateConfigWithDefaults() {
-      final ComponentEngineConfig config = ComponentEngineConfig.builder().build();
-
-      assertNotNull(config, "Builder should create config");
-      assertTrue(config.isComponentModelEnabled(), "Component model should be enabled by default");
-    }
-
-    @Test
-    @DisplayName("builder should chain methods correctly")
-    void builderShouldChainMethodsCorrectly() {
-      final ComponentEngineConfig config =
-          ComponentEngineConfig.builder()
-              .enableAdvancedOrchestration(true)
-              .enableDistributedSupport(true)
-              .enableEnterpriseManagement(true)
-              .enableWitInterfaceEnhancement(true)
-              .enableCapabilityBasedSecurity(false)
-              .build();
-
-      assertTrue(config.isAdvancedOrchestration(), "Advanced orchestration should be enabled");
-      assertTrue(config.isDistributedSupport(), "Distributed support should be enabled");
-      assertTrue(config.isEnterpriseManagement(), "Enterprise management should be enabled");
-      assertTrue(config.isWitInterfaceEnhancement(), "WIT interface enhancement should be enabled");
-      assertFalse(
-          config.isCapabilityBasedSecurity(), "Capability-based security should be disabled");
+      config.componentModelEnabled(true);
+      assertTrue(
+          config.isComponentModelEnabled(), "Component model should be re-enabled after toggling");
     }
   }
 
@@ -209,7 +81,7 @@ class ComponentEngineConfigTest {
   class ToEngineConfigTests {
 
     @Test
-    @DisplayName("should have toEngineConfig method")
+    @DisplayName("should have toEngineConfig method returning EngineConfig")
     void shouldHaveToEngineConfigMethod() throws NoSuchMethodException {
       final Method method = ComponentEngineConfig.class.getMethod("toEngineConfig");
       assertNotNull(method, "toEngineConfig method should exist");
@@ -224,62 +96,19 @@ class ComponentEngineConfigTest {
 
       assertNotNull(engineConfig, "Should return non-null EngineConfig");
     }
-  }
-
-  @Nested
-  @DisplayName("Edge Case Tests")
-  class EdgeCaseTests {
 
     @Test
-    @DisplayName("should handle enabling and disabling same feature")
-    void shouldHandleEnablingAndDisablingSameFeature() {
-      final ComponentEngineConfig config = new ComponentEngineConfig();
-      config.enableAdvancedOrchestration(true);
-      config.enableAdvancedOrchestration(false);
+    @DisplayName("toEngineConfig should apply componentModelEnabled setting")
+    void toEngineConfigShouldApplyComponentModelEnabled() {
+      final ComponentEngineConfig enabledConfig = new ComponentEngineConfig();
+      enabledConfig.componentModelEnabled(true);
+      final EngineConfig engineEnabled = enabledConfig.toEngineConfig();
+      assertNotNull(engineEnabled, "EngineConfig from enabled config should not be null");
 
-      assertFalse(config.isAdvancedOrchestration(), "Feature should be disabled after toggling");
-    }
-
-    @Test
-    @DisplayName("should handle all boolean configurations as false")
-    void shouldHandleAllBooleanConfigurationsAsFalse() {
-      final ComponentEngineConfig config =
-          new ComponentEngineConfig()
-              .componentModelEnabled(false)
-              .enableAdvancedOrchestration(false)
-              .enableDistributedSupport(false)
-              .enableEnterpriseManagement(false)
-              .enableWitInterfaceEnhancement(false)
-              .enableCapabilityBasedSecurity(false);
-
-      assertFalse(config.isComponentModelEnabled(), "Component model should be disabled");
-      assertFalse(config.isAdvancedOrchestration(), "Advanced orchestration should be disabled");
-      assertFalse(config.isDistributedSupport(), "Distributed support should be disabled");
-      assertFalse(config.isEnterpriseManagement(), "Enterprise management should be disabled");
-      assertFalse(
-          config.isWitInterfaceEnhancement(), "WIT interface enhancement should be disabled");
-      assertFalse(
-          config.isCapabilityBasedSecurity(), "Capability-based security should be disabled");
-    }
-
-    @Test
-    @DisplayName("should handle all boolean configurations as true")
-    void shouldHandleAllBooleanConfigurationsAsTrue() {
-      final ComponentEngineConfig config =
-          new ComponentEngineConfig()
-              .componentModelEnabled(true)
-              .enableAdvancedOrchestration(true)
-              .enableDistributedSupport(true)
-              .enableEnterpriseManagement(true)
-              .enableWitInterfaceEnhancement(true)
-              .enableCapabilityBasedSecurity(true);
-
-      assertTrue(config.isComponentModelEnabled(), "Component model should be enabled");
-      assertTrue(config.isAdvancedOrchestration(), "Advanced orchestration should be enabled");
-      assertTrue(config.isDistributedSupport(), "Distributed support should be enabled");
-      assertTrue(config.isEnterpriseManagement(), "Enterprise management should be enabled");
-      assertTrue(config.isWitInterfaceEnhancement(), "WIT interface enhancement should be enabled");
-      assertTrue(config.isCapabilityBasedSecurity(), "Capability-based security should be enabled");
+      final ComponentEngineConfig disabledConfig = new ComponentEngineConfig();
+      disabledConfig.componentModelEnabled(false);
+      final EngineConfig engineDisabled = disabledConfig.toEngineConfig();
+      assertNotNull(engineDisabled, "EngineConfig from disabled config should not be null");
     }
   }
 }

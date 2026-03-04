@@ -352,6 +352,7 @@ pub extern "C" fn wasmtime4j_panama_exnref_get_field(
     out_type: *mut i32,
     out_value_i64: *mut i64,
     out_value_f64: *mut f64,
+    out_value_v128: *mut u8,
 ) -> c_int {
     use wasmtime::{ExnRef, OwnedRooted, RootScope};
 
@@ -375,7 +376,9 @@ pub extern "C" fn wasmtime4j_panama_exnref_get_field(
             })?;
 
             // Encode the value as type code + raw bits
-            unsafe { encode_val_to_ffi(&val, out_type, out_value_i64, out_value_f64) };
+            unsafe {
+                encode_val_to_ffi(&val, out_type, out_value_i64, out_value_f64, out_value_v128)
+            };
             Ok(())
         },
     ));
@@ -432,11 +435,13 @@ pub extern "C" fn wasmtime4j_panama_exnref_field_count(
 ///
 /// # Safety
 /// All output pointers must be valid and aligned.
+/// `out_value_v128` may be null if V128 is not expected; if non-null, must point to 16 bytes.
 unsafe fn encode_val_to_ffi(
     val: &wasmtime::Val,
     out_type: *mut i32,
     out_value_i64: *mut i64,
     out_value_f64: *mut f64,
+    out_value_v128: *mut u8,
 ) {
     match val {
         wasmtime::Val::I32(v) => {
@@ -455,8 +460,15 @@ unsafe fn encode_val_to_ffi(
             *out_type = 3;
             *out_value_f64 = f64::from_bits(*v);
         }
+        wasmtime::Val::V128(v) => {
+            *out_type = 4;
+            if !out_value_v128.is_null() {
+                let bytes = v.as_u128().to_le_bytes();
+                std::ptr::copy_nonoverlapping(bytes.as_ptr(), out_value_v128, 16);
+            }
+        }
         _ => {
-            // For reference types and V128, encode as type -1 (unsupported for now)
+            // For reference types, encode as type -1 (unsupported)
             *out_type = -1;
             *out_value_i64 = 0;
         }
@@ -487,6 +499,7 @@ pub extern "C" fn wasmtime4j_panama_exnref_create(
     field_types_ptr: *const c_int,
     field_i64_values_ptr: *const i64,
     field_f64_values_ptr: *const f64,
+    field_v128_values_ptr: *const u8,
 ) -> *mut c_void {
     use wasmtime::{ExnRef, ExnRefPre, ExnType, RootScope, Tag, Val};
 
@@ -526,6 +539,21 @@ pub extern "C" fn wasmtime4j_panama_exnref_create(
                         1 => Val::I64(i64_vals.get(i).copied().unwrap_or(0)),
                         2 => Val::F32((f64_vals.get(i).copied().unwrap_or(0.0) as f32).to_bits()),
                         3 => Val::F64(f64_vals.get(i).copied().unwrap_or(0.0).to_bits()),
+                        4 => {
+                            // V128: read 16 bytes from v128 parallel array at offset i*16
+                            let mut bytes = [0u8; 16];
+                            if !field_v128_values_ptr.is_null() {
+                                unsafe {
+                                    let src = field_v128_values_ptr.add(i * 16);
+                                    std::ptr::copy_nonoverlapping(
+                                        src,
+                                        bytes.as_mut_ptr(),
+                                        16,
+                                    );
+                                }
+                            }
+                            Val::V128(u128::from_le_bytes(bytes).into())
+                        }
                         _ => {
                             return Err(crate::error::WasmtimeError::Internal {
                                 message: format!("Unsupported field type code: {}", types[i]),
@@ -587,6 +615,7 @@ pub extern "C" fn wasmtime4j_panama_exnref_create_async(
     field_types_ptr: *const c_int,
     field_i64_values_ptr: *const i64,
     field_f64_values_ptr: *const f64,
+    field_v128_values_ptr: *const u8,
 ) -> *mut c_void {
     use wasmtime::{ExnRef, ExnRefPre, ExnType, RootScope, Tag, Val};
 
@@ -626,6 +655,21 @@ pub extern "C" fn wasmtime4j_panama_exnref_create_async(
                         1 => Val::I64(i64_vals.get(i).copied().unwrap_or(0)),
                         2 => Val::F32((f64_vals.get(i).copied().unwrap_or(0.0) as f32).to_bits()),
                         3 => Val::F64(f64_vals.get(i).copied().unwrap_or(0.0).to_bits()),
+                        4 => {
+                            // V128: read 16 bytes from v128 parallel array at offset i*16
+                            let mut bytes = [0u8; 16];
+                            if !field_v128_values_ptr.is_null() {
+                                unsafe {
+                                    let src = field_v128_values_ptr.add(i * 16);
+                                    std::ptr::copy_nonoverlapping(
+                                        src,
+                                        bytes.as_mut_ptr(),
+                                        16,
+                                    );
+                                }
+                            }
+                            Val::V128(u128::from_le_bytes(bytes).into())
+                        }
                         _ => {
                             return Err(crate::error::WasmtimeError::Internal {
                                 message: format!("Unsupported field type code: {}", types[i]),

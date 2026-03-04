@@ -111,10 +111,17 @@ public final class PanamaExnRef implements ExnRef {
       final MemorySegment outType = arena.allocate(ValueLayout.JAVA_INT);
       final MemorySegment outValueI64 = arena.allocate(ValueLayout.JAVA_LONG);
       final MemorySegment outValueF64 = arena.allocate(ValueLayout.JAVA_DOUBLE);
+      final MemorySegment outValueV128 = arena.allocate(16);
 
       final int result =
           NATIVE_BINDINGS.exnRefGetField(
-              nativeHandle, panamaStore.getNativeStore(), index, outType, outValueI64, outValueF64);
+              nativeHandle,
+              panamaStore.getNativeStore(),
+              index,
+              outType,
+              outValueI64,
+              outValueF64,
+              outValueV128);
 
       if (result != 0) {
         throw new WasmException("Failed to get field " + index + " from exception reference");
@@ -123,7 +130,8 @@ public final class PanamaExnRef implements ExnRef {
       return decodeFieldValue(
           outType.get(ValueLayout.JAVA_INT, 0),
           outValueI64.get(ValueLayout.JAVA_LONG, 0),
-          outValueF64.get(ValueLayout.JAVA_DOUBLE, 0));
+          outValueF64.get(ValueLayout.JAVA_DOUBLE, 0),
+          outValueV128);
     }
   }
 
@@ -245,6 +253,8 @@ public final class PanamaExnRef implements ExnRef {
       final MemorySegment fieldTypes = arena.allocate(ValueLayout.JAVA_INT, fieldCount);
       final MemorySegment fieldI64Values = arena.allocate(ValueLayout.JAVA_LONG, fieldCount);
       final MemorySegment fieldF64Values = arena.allocate(ValueLayout.JAVA_DOUBLE, fieldCount);
+      // V128 parallel array: each field gets 16 bytes at offset i*16
+      final MemorySegment fieldV128Values = arena.allocate(16L * fieldCount);
 
       for (int i = 0; i < fieldCount; i++) {
         final WasmValue val = fields[i];
@@ -265,6 +275,12 @@ public final class PanamaExnRef implements ExnRef {
             fieldTypes.setAtIndex(ValueLayout.JAVA_INT, i, 3);
             fieldF64Values.setAtIndex(ValueLayout.JAVA_DOUBLE, i, val.asDouble());
             break;
+          case V128:
+            fieldTypes.setAtIndex(ValueLayout.JAVA_INT, i, 4);
+            final byte[] v128Bytes = val.asV128();
+            MemorySegment.copy(
+                v128Bytes, 0, fieldV128Values, ValueLayout.JAVA_BYTE, (long) i * 16, 16);
+            break;
           default:
             throw new WasmException("Unsupported field type: " + val.getType());
         }
@@ -280,7 +296,8 @@ public final class PanamaExnRef implements ExnRef {
               fieldCount,
               fieldTypes,
               fieldI64Values,
-              fieldF64Values);
+              fieldF64Values,
+              fieldV128Values);
 
       if (handle == null || handle.equals(MemorySegment.NULL)) {
         throw new WasmException("Failed to create ExnRef");
@@ -315,7 +332,11 @@ public final class PanamaExnRef implements ExnRef {
   }
 
   private static WasmValue decodeFieldValue(
-      final int typeCode, final long i64Value, final double f64Value) throws WasmException {
+      final int typeCode,
+      final long i64Value,
+      final double f64Value,
+      final MemorySegment v128Buffer)
+      throws WasmException {
     switch (typeCode) {
       case 0:
         return WasmValue.i32((int) i64Value);
@@ -325,6 +346,10 @@ public final class PanamaExnRef implements ExnRef {
         return WasmValue.f32((float) f64Value);
       case 3:
         return WasmValue.f64(f64Value);
+      case 4:
+        final byte[] v128Bytes = new byte[16];
+        MemorySegment.copy(v128Buffer, ValueLayout.JAVA_BYTE, 0, v128Bytes, 0, 16);
+        return WasmValue.v128(v128Bytes);
       default:
         throw new WasmException("Unsupported field value type code: " + typeCode);
     }

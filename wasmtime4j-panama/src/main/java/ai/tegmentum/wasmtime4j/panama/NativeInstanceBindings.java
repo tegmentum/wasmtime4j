@@ -2497,7 +2497,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
       final int index,
       final MemorySegment outType,
       final MemorySegment outValueI64,
-      final MemorySegment outValueF64) {
+      final MemorySegment outValueF64,
+      final MemorySegment outValueV128) {
     return callNativeFunction(
         "wasmtime4j_panama_exnref_get_field",
         Integer.class,
@@ -2506,7 +2507,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         index,
         outType,
         outValueI64,
-        outValueF64);
+        outValueF64,
+        outValueV128);
   }
 
   /**
@@ -2538,7 +2540,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
       final int fieldCount,
       final MemorySegment fieldTypesPtr,
       final MemorySegment fieldI64ValuesPtr,
-      final MemorySegment fieldF64ValuesPtr) {
+      final MemorySegment fieldF64ValuesPtr,
+      final MemorySegment fieldV128ValuesPtr) {
     validatePointer(storePtr, "storePtr");
     validatePointer(tagPtr, "tagPtr");
     return callNativeFunction(
@@ -2549,7 +2552,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         fieldCount,
         fieldTypesPtr,
         fieldI64ValuesPtr,
-        fieldF64ValuesPtr);
+        fieldF64ValuesPtr,
+        fieldV128ValuesPtr);
   }
 
   /**
@@ -2707,6 +2711,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
             ValueLayout.ADDRESS));
 
     addFunctionBinding(
@@ -2720,6 +2725,7 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
             ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS,
             ValueLayout.ADDRESS));

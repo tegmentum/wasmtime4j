@@ -690,12 +690,13 @@ impl Instance {
                 // Table compatibility validation could be more sophisticated
                 Ok(())
             }
-            (_, Extern::SharedMemory(_)) => Err(WasmtimeError::ImportExport {
-                message: "SharedMemory imports not supported".to_string(),
-            }),
-            (_, Extern::Tag(_)) => Err(WasmtimeError::ImportExport {
-                message: "Tag imports not supported".to_string(),
-            }),
+            (
+                ImportKind::Memory(_req_min, _req_max, _req_64, _req_shared, _),
+                Extern::SharedMemory(_shared_memory),
+            ) => {
+                // SharedMemory satisfies Memory imports — Wasmtime accepts this
+                Ok(())
+            }
             _ => Err(WasmtimeError::ImportExport {
                 message: "Import type mismatch".to_string(),
             }),
@@ -1660,12 +1661,6 @@ pub mod core {
         instance.metadata().import_count
     }
 
-    /// Core function to get memory usage in bytes
-    /// Note: This always returns 0 as memory_bytes tracking is not implemented.
-    pub fn get_memory_bytes(_instance: &Instance) -> usize {
-        0
-    }
-
     /// Core function to get instance name
     pub fn get_instance_name(instance: &Instance) -> &str {
         &instance.metadata().name
@@ -1841,6 +1836,7 @@ pub mod core {
                 EXTERN_TYPE_SHARED_MEMORY => {
                     Extern::SharedMemory((&*(ptr as *const wasmtime::SharedMemory)).clone())
                 }
+                EXTERN_TYPE_TAG => Extern::Tag(*(ptr as *const wasmtime::Tag)),
                 _ => {
                     return Err(WasmtimeError::InvalidParameter {
                         message: format!("Unknown extern type {} at index {}", typ, i),

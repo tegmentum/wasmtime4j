@@ -1252,6 +1252,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateIns
                             });
                         }
                     }
+                    core::EXTERN_TYPE_TAG => {
+                        let tag = unsafe { *(ptr as *const wasmtime::Tag) };
+                        wasmtime::Extern::Tag(tag)
+                    }
                     _ => {
                         return Err(WasmtimeError::InvalidParameter {
                             message: format!("Unknown extern type {} at index {}", typ, i),

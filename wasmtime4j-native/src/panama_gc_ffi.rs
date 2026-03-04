@@ -172,9 +172,11 @@ pub extern "C" fn wasmtime4j_gc_struct_get(
     field_index: i32,
     result_value: *mut i64,
     result_type: *mut i32,
+    v128_out: *mut u8,
 ) -> i32 {
     ffi_boundary_i32!({
-        let (value, value_type) = struct_get_internal(runtime_handle, object_id, field_index)?;
+        let (value, value_type) =
+            struct_get_internal(runtime_handle, object_id, field_index, v128_out)?;
         unsafe {
             *result_value = value;
             *result_type = value_type;
@@ -191,9 +193,17 @@ pub extern "C" fn wasmtime4j_gc_struct_set(
     field_index: i32,
     value: i64,
     value_type: i32,
+    v128_ptr: *const u8,
 ) -> i32 {
     ffi_boundary_i32!({
-        struct_set_internal(runtime_handle, object_id, field_index, value, value_type)?;
+        struct_set_internal(
+            runtime_handle,
+            object_id,
+            field_index,
+            value,
+            value_type,
+            v128_ptr,
+        )?;
         Ok(FFI_SUCCESS)
     })
 }
@@ -233,9 +243,11 @@ pub extern "C" fn wasmtime4j_gc_array_get(
     element_index: i32,
     result_value: *mut i64,
     result_type: *mut i32,
+    v128_out: *mut u8,
 ) -> i32 {
     ffi_boundary_i32!({
-        let (value, value_type) = array_get_internal(runtime_handle, object_id, element_index)?;
+        let (value, value_type) =
+            array_get_internal(runtime_handle, object_id, element_index, v128_out)?;
         unsafe {
             *result_value = value;
             *result_type = value_type;
@@ -252,9 +264,17 @@ pub extern "C" fn wasmtime4j_gc_array_set(
     element_index: i32,
     value: i64,
     value_type: i32,
+    v128_ptr: *const u8,
 ) -> i32 {
     ffi_boundary_i32!({
-        array_set_internal(runtime_handle, object_id, element_index, value, value_type)?;
+        array_set_internal(
+            runtime_handle,
+            object_id,
+            element_index,
+            value,
+            value_type,
+            v128_ptr,
+        )?;
         Ok(FFI_SUCCESS)
     })
 }
@@ -602,7 +622,17 @@ fn struct_new_internal(
                         FieldType::I64 => GcValue::I64(raw_value),
                         FieldType::F32 => GcValue::F32(f32::from_bits(raw_value as u32)),
                         FieldType::F64 => GcValue::F64(f64::from_bits(raw_value as u64)),
-                        FieldType::V128 => GcValue::I32(raw_value as i32), // Simplified - V128 needs special handling
+                        FieldType::V128 => {
+                            // raw_value is a pointer to 16 bytes of V128 data
+                            if raw_value == 0 {
+                                GcValue::V128([0u8; 16])
+                            } else {
+                                let v128_ptr = raw_value as *const u8;
+                                let mut bytes = [0u8; 16];
+                                std::ptr::copy_nonoverlapping(v128_ptr, bytes.as_mut_ptr(), 16);
+                                GcValue::V128(bytes)
+                            }
+                        }
                         FieldType::PackedI8 => GcValue::I32(raw_value as i32),
                         FieldType::PackedI16 => GcValue::I32(raw_value as i32),
                         // Pass reference object IDs as ObjectRef for gc_operations lookup
@@ -629,7 +659,7 @@ fn struct_new_internal(
                 FieldType::I64 => GcValue::I64(0),
                 FieldType::F32 => GcValue::F32(0.0),
                 FieldType::F64 => GcValue::F64(0.0),
-                FieldType::V128 => GcValue::I32(0),
+                FieldType::V128 => GcValue::V128([0u8; 16]),
                 FieldType::PackedI8 => GcValue::I32(0),
                 FieldType::PackedI16 => GcValue::I32(0),
                 FieldType::Reference(_) => GcValue::Null, // Null reference for default
@@ -674,6 +704,7 @@ fn struct_get_internal(
     runtime_handle: i64,
     object_id: i64,
     field_index: i32,
+    v128_out: *mut u8,
 ) -> WasmtimeResult<(i64, i32)> {
     if runtime_handle == 0 {
         return Err(WasmtimeError::InvalidParameter {
@@ -698,9 +729,18 @@ fn struct_get_internal(
                 GcValue::I64(i) => Ok((i, 1)),                     // Type 1 = I64
                 GcValue::F32(f) => Ok((f.to_bits() as i64, 2)),    // Type 2 = F32
                 GcValue::F64(f) => Ok((f.to_bits() as i64, 3)),    // Type 3 = F64
+                GcValue::V128(bytes) => {
+                    // Write V128 bytes to the output buffer
+                    if !v128_out.is_null() {
+                        unsafe {
+                            std::ptr::copy_nonoverlapping(bytes.as_ptr(), v128_out, 16);
+                        }
+                    }
+                    Ok((0, 4)) // Type 4 = V128
+                }
                 GcValue::ObjectRef(id) => Ok((id as i64, 5)),      // Type 5 = Reference
+                GcValue::Reference => Ok((0, 5)),                   // Bare reference
                 GcValue::Null => Ok((0, 6)),                       // Type 6 = Null
-                _ => Ok((0, 0)),
             }
         } else {
             Err(WasmtimeError::InvalidParameter {
@@ -720,6 +760,7 @@ fn struct_set_internal(
     field_index: i32,
     value: i64,
     value_type: i32,
+    v128_ptr: *const u8,
 ) -> WasmtimeResult<()> {
     if runtime_handle == 0 {
         return Err(WasmtimeError::InvalidParameter {
@@ -734,6 +775,18 @@ fn struct_set_internal(
         1 => GcValue::I64(value),
         2 => GcValue::F32(f32::from_bits(value as u32)),
         3 => GcValue::F64(f64::from_bits(value as u64)),
+        4 => {
+            // V128 type - read 16 bytes from v128_ptr
+            if v128_ptr.is_null() {
+                GcValue::V128([0u8; 16])
+            } else {
+                let mut bytes = [0u8; 16];
+                unsafe {
+                    std::ptr::copy_nonoverlapping(v128_ptr, bytes.as_mut_ptr(), 16);
+                }
+                GcValue::V128(bytes)
+            }
+        }
         5 => {
             // Reference type
             if value == 0 {
@@ -792,17 +845,26 @@ fn array_new_internal(
                     FieldType::I64 => GcValue::I64(element),
                     FieldType::F32 => GcValue::F32(f32::from_bits(element as u32)),
                     FieldType::F64 => GcValue::F64(f64::from_bits(element as u64)),
+                    FieldType::V128 => {
+                        // element is a pointer to 16 bytes of V128 data
+                        if element == 0 {
+                            GcValue::V128([0u8; 16])
+                        } else {
+                            let v128_ptr = element as *const u8;
+                            let mut bytes = [0u8; 16];
+                            std::ptr::copy_nonoverlapping(v128_ptr, bytes.as_mut_ptr(), 16);
+                            GcValue::V128(bytes)
+                        }
+                    }
+                    FieldType::PackedI8 | FieldType::PackedI16 => {
+                        GcValue::I32(element as i32)
+                    }
                     FieldType::Reference(_) => {
                         if element == 0 {
                             GcValue::Null
                         } else {
                             GcValue::ObjectRef(element as u64)
                         }
-                    }
-                    other => {
-                        return Err(WasmtimeError::InvalidParameter {
-                            message: format!("Unsupported array element type: {:?}", other),
-                        });
                     }
                 };
                 gc_elements.push(gc_value);
@@ -853,6 +915,7 @@ fn array_get_internal(
     runtime_handle: i64,
     object_id: i64,
     element_index: i32,
+    v128_out: *mut u8,
 ) -> WasmtimeResult<(i64, i32)> {
     if runtime_handle == 0 {
         return Err(WasmtimeError::InvalidParameter {
@@ -871,9 +934,17 @@ fn array_get_internal(
                 GcValue::I64(i) => Ok((i, 1)),
                 GcValue::F32(f) => Ok((f.to_bits() as i64, 2)),
                 GcValue::F64(f) => Ok((f.to_bits() as i64, 3)),
+                GcValue::V128(bytes) => {
+                    if !v128_out.is_null() {
+                        unsafe {
+                            std::ptr::copy_nonoverlapping(bytes.as_ptr(), v128_out, 16);
+                        }
+                    }
+                    Ok((0, 4)) // Type 4 = V128
+                }
                 GcValue::ObjectRef(id) => Ok((id as i64, 5)),
+                GcValue::Reference => Ok((0, 5)),
                 GcValue::Null => Ok((0, 6)),
-                _ => Ok((0, 0)),
             }
         } else {
             Err(WasmtimeError::InvalidParameter {
@@ -893,6 +964,7 @@ fn array_set_internal(
     element_index: i32,
     value: i64,
     value_type: i32,
+    v128_ptr: *const u8,
 ) -> WasmtimeResult<()> {
     if runtime_handle == 0 {
         return Err(WasmtimeError::InvalidParameter {
@@ -907,6 +979,18 @@ fn array_set_internal(
         1 => GcValue::I64(value),
         2 => GcValue::F32(f32::from_bits(value as u32)),
         3 => GcValue::F64(f64::from_bits(value as u64)),
+        4 => {
+            // V128 type - read 16 bytes from v128_ptr
+            if v128_ptr.is_null() {
+                GcValue::V128([0u8; 16])
+            } else {
+                let mut bytes = [0u8; 16];
+                unsafe {
+                    std::ptr::copy_nonoverlapping(v128_ptr, bytes.as_mut_ptr(), 16);
+                }
+                GcValue::V128(bytes)
+            }
+        }
         5 => {
             // Reference type
             if value == 0 {
@@ -1638,7 +1722,21 @@ pub extern "C" fn wasmtime4j_gc_struct_new_async(
                             FieldType::I64 => GcValue::I64(raw_value),
                             FieldType::F32 => GcValue::F32(f32::from_bits(raw_value as u32)),
                             FieldType::F64 => GcValue::F64(f64::from_bits(raw_value as u64)),
-                            FieldType::V128 => GcValue::I32(raw_value as i32),
+                            FieldType::V128 => {
+                                // raw_value is a pointer to 16 bytes of V128 data
+                                if raw_value == 0 {
+                                    GcValue::V128([0u8; 16])
+                                } else {
+                                    let v128_ptr = raw_value as *const u8;
+                                    let mut bytes = [0u8; 16];
+                                    std::ptr::copy_nonoverlapping(
+                                        v128_ptr,
+                                        bytes.as_mut_ptr(),
+                                        16,
+                                    );
+                                    GcValue::V128(bytes)
+                                }
+                            }
                             FieldType::PackedI8 | FieldType::PackedI16 => {
                                 GcValue::I32(raw_value as i32)
                             }
@@ -1663,7 +1761,7 @@ pub extern "C" fn wasmtime4j_gc_struct_new_async(
                     FieldType::I64 => GcValue::I64(0),
                     FieldType::F32 => GcValue::F32(0.0),
                     FieldType::F64 => GcValue::F64(0.0),
-                    FieldType::V128 => GcValue::I32(0),
+                    FieldType::V128 => GcValue::V128([0u8; 16]),
                     FieldType::PackedI8 | FieldType::PackedI16 => GcValue::I32(0),
                     FieldType::Reference(_) => GcValue::Null,
                 };
@@ -1713,17 +1811,30 @@ pub extern "C" fn wasmtime4j_gc_array_new_async(
                         FieldType::I64 => GcValue::I64(element),
                         FieldType::F32 => GcValue::F32(f32::from_bits(element as u32)),
                         FieldType::F64 => GcValue::F64(f64::from_bits(element as u64)),
+                        FieldType::V128 => {
+                            // element is a pointer to 16 bytes of V128 data
+                            if element == 0 {
+                                GcValue::V128([0u8; 16])
+                            } else {
+                                let v128_ptr = element as *const u8;
+                                let mut bytes = [0u8; 16];
+                                std::ptr::copy_nonoverlapping(
+                                    v128_ptr,
+                                    bytes.as_mut_ptr(),
+                                    16,
+                                );
+                                GcValue::V128(bytes)
+                            }
+                        }
+                        FieldType::PackedI8 | FieldType::PackedI16 => {
+                            GcValue::I32(element as i32)
+                        }
                         FieldType::Reference(_) => {
                             if element == 0 {
                                 GcValue::Null
                             } else {
                                 GcValue::ObjectRef(element as u64)
                             }
-                        }
-                        other => {
-                            return Err(WasmtimeError::InvalidParameter {
-                                message: format!("Unsupported array element type: {:?}", other),
-                            });
                         }
                     };
                     gc_elements.push(gc_value);

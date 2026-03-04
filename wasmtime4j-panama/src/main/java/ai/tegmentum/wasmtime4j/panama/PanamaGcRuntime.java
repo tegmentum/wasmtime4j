@@ -190,12 +190,14 @@ public final class PanamaGcRuntime implements GcRuntime {
       structGet =
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_struct_get").orElseThrow(),
-              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, ADDRESS));
+              FunctionDescriptor.of(
+                  JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, ADDRESS, ADDRESS));
 
       structSet =
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_struct_set").orElseThrow(),
-              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_LONG, JAVA_INT));
+              FunctionDescriptor.of(
+                  JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_LONG, JAVA_INT, ADDRESS));
 
       arrayNew =
           linker.downcallHandle(
@@ -210,12 +212,14 @@ public final class PanamaGcRuntime implements GcRuntime {
       arrayGet =
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_array_get").orElseThrow(),
-              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, ADDRESS));
+              FunctionDescriptor.of(
+                  JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, ADDRESS, ADDRESS, ADDRESS));
 
       arraySet =
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_array_set").orElseThrow(),
-              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_LONG, JAVA_INT));
+              FunctionDescriptor.of(
+                  JAVA_INT, JAVA_LONG, JAVA_LONG, JAVA_INT, JAVA_LONG, JAVA_INT, ADDRESS));
 
       arrayLen =
           linker.downcallHandle(
@@ -753,12 +757,18 @@ public final class PanamaGcRuntime implements GcRuntime {
 
       final MemorySegment resultValue = arena.allocate(JAVA_LONG);
       final MemorySegment resultType = arena.allocate(JAVA_INT);
+      final MemorySegment v128Buffer = arena.allocate(16);
 
       try {
         final int result =
             (int)
                 structGet.invokeExact(
-                    nativeHandle, panamaStruct.getObjectId(), fieldIndex, resultValue, resultType);
+                    nativeHandle,
+                    panamaStruct.getObjectId(),
+                    fieldIndex,
+                    resultValue,
+                    resultType,
+                    v128Buffer);
 
         if (result != 0) {
           throw new GcException("Failed to get struct field");
@@ -767,7 +777,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         final long value = resultValue.get(JAVA_LONG, 0);
         final int type = resultType.get(JAVA_INT, 0);
 
-        return convertNativeToGcValue(value, type);
+        return convertNativeToGcValue(value, type, v128Buffer);
       } catch (final Throwable e) {
         throw new GcException("Failed to get struct field", e);
       }
@@ -798,6 +808,7 @@ public final class PanamaGcRuntime implements GcRuntime {
 
       final PanamaStructInstance panamaStruct = (PanamaStructInstance) struct;
       final NativeValue nativeValue = convertGcValueToNative(value);
+      final MemorySegment v128Segment = convertV128ToSegment(value);
 
       try {
         final int result =
@@ -807,7 +818,8 @@ public final class PanamaGcRuntime implements GcRuntime {
                     panamaStruct.getObjectId(),
                     fieldIndex,
                     nativeValue.value,
-                    nativeValue.type);
+                    nativeValue.type,
+                    v128Segment);
 
         if (result != 0) {
           throw new GcException("Failed to set struct field");
@@ -848,12 +860,18 @@ public final class PanamaGcRuntime implements GcRuntime {
 
       final MemorySegment resultValue = arena.allocate(JAVA_LONG);
       final MemorySegment resultType = arena.allocate(JAVA_INT);
+      final MemorySegment v128Buffer = arena.allocate(16);
 
       try {
         final int result =
             (int)
                 arrayGet.invokeExact(
-                    nativeHandle, panamaArray.getObjectId(), elementIndex, resultValue, resultType);
+                    nativeHandle,
+                    panamaArray.getObjectId(),
+                    elementIndex,
+                    resultValue,
+                    resultType,
+                    v128Buffer);
 
         if (result != 0) {
           throw new GcException("Failed to get array element");
@@ -862,7 +880,7 @@ public final class PanamaGcRuntime implements GcRuntime {
         final long value = resultValue.get(JAVA_LONG, 0);
         final int type = resultType.get(JAVA_INT, 0);
 
-        return convertNativeToGcValue(value, type);
+        return convertNativeToGcValue(value, type, v128Buffer);
       } catch (final Throwable e) {
         throw new GcException("Failed to get array element", e);
       }
@@ -898,6 +916,7 @@ public final class PanamaGcRuntime implements GcRuntime {
       }
 
       final NativeValue nativeValue = convertGcValueToNative(value);
+      final MemorySegment v128Segment = convertV128ToSegment(value);
 
       try {
         final int result =
@@ -907,7 +926,8 @@ public final class PanamaGcRuntime implements GcRuntime {
                     panamaArray.getObjectId(),
                     elementIndex,
                     nativeValue.value,
-                    nativeValue.type);
+                    nativeValue.type,
+                    v128Segment);
 
         if (result != 0) {
           throw new GcException("Failed to set array element");
@@ -1314,8 +1334,17 @@ public final class PanamaGcRuntime implements GcRuntime {
     final MemorySegment segment = arena.allocate(JAVA_LONG, values.size());
 
     for (int i = 0; i < values.size(); i++) {
-      final NativeValue nativeValue = convertGcValueToNative(values.get(i));
-      segment.setAtIndex(JAVA_LONG, i, nativeValue.value);
+      final GcValue gcValue = values.get(i);
+      if (gcValue.getType() == GcValue.Type.V128) {
+        // For V128, store a pointer to a 16-byte segment containing the V128 data
+        final byte[] v128Bytes = gcValue.asV128();
+        final MemorySegment v128Segment = arena.allocate(16);
+        MemorySegment.copy(v128Bytes, 0, v128Segment, JAVA_BYTE, 0, 16);
+        segment.setAtIndex(JAVA_LONG, i, v128Segment.address());
+      } else {
+        final NativeValue nativeValue = convertGcValueToNative(gcValue);
+        segment.setAtIndex(JAVA_LONG, i, nativeValue.value);
+      }
     }
 
     return segment;
@@ -1342,7 +1371,7 @@ public final class PanamaGcRuntime implements GcRuntime {
       case F64:
         return new NativeValue(Double.doubleToLongBits(value.asF64()), 3);
       case V128:
-        // V128 values need special handling - for now, return as zero
+        // V128 value handled via separate v128 pointer parameter; value field unused
         return new NativeValue(0, 4);
       case REFERENCE:
         // Get object ID from reference
@@ -1360,7 +1389,8 @@ public final class PanamaGcRuntime implements GcRuntime {
     }
   }
 
-  private GcValue convertNativeToGcValue(final long value, final int type) {
+  private GcValue convertNativeToGcValue(
+      final long value, final int type, final MemorySegment v128Buffer) {
     switch (type) {
       case 0: // I32
         return GcValue.i32((int) value);
@@ -1371,8 +1401,9 @@ public final class PanamaGcRuntime implements GcRuntime {
       case 3: // F64
         return GcValue.f64(Double.longBitsToDouble(value));
       case 4: // V128
-        // V128 values need special handling - for now, return zero bytes
-        return GcValue.v128(new byte[16]);
+        final byte[] v128Bytes = new byte[16];
+        MemorySegment.copy(v128Buffer, JAVA_BYTE, 0, v128Bytes, 0, 16);
+        return GcValue.v128(v128Bytes);
       case 5: // Reference - value contains the object_id
         final PanamaGcObject referencedObject = objectRegistry.get(value);
         if (referencedObject != null) {
@@ -1387,6 +1418,17 @@ public final class PanamaGcRuntime implements GcRuntime {
       default:
         return GcValue.nullValue();
     }
+  }
+
+  private MemorySegment convertV128ToSegment(final GcValue value) {
+    if (value.getType() == GcValue.Type.V128) {
+      final byte[] bytes = value.asV128();
+      final MemorySegment segment = arena.allocate(16);
+      MemorySegment.copy(bytes, 0, segment, JAVA_BYTE, 0, 16);
+      return segment;
+    }
+    // For non-V128 types, return a null pointer segment
+    return MemorySegment.NULL;
   }
 
   private int convertFieldTypeToNative(final FieldType fieldType) {
