@@ -227,7 +227,8 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw ValidationException for invalid WASM version")
-    void shouldThrowValidationExceptionForInvalidVersion(final RuntimeType runtime) throws Exception {
+    void shouldThrowValidationExceptionForInvalidVersion(final RuntimeType runtime)
+        throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();
@@ -245,7 +246,8 @@ class NativeErrorMappingTest extends DualRuntimeTest {
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
     @DisplayName("should throw CompilationException for truncated WASM")
-    void shouldThrowCompilationExceptionForTruncatedWasm(final RuntimeType runtime) throws Exception {
+    void shouldThrowCompilationExceptionForTruncatedWasm(final RuntimeType runtime)
+        throws Exception {
       setRuntime(runtime);
       engine = Engine.create();
       store = engine.createStore();

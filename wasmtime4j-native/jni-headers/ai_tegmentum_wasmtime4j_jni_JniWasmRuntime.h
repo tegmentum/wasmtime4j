@@ -161,22 +161,6 @@ JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCr
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
- * Method:    nativeCreateNnContext
- * Signature: ()J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCreateNnContext
-  (JNIEnv *, jclass);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
- * Method:    nativeIsNnAvailable
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeIsNnAvailable
-  (JNIEnv *, jclass);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniWasmRuntime
  * Method:    nativeCreateTag
  * Signature: (J[I[I)J
  */
