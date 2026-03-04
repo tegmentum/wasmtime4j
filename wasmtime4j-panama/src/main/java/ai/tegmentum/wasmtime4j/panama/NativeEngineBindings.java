@@ -44,14 +44,8 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   // Hot-path volatile MethodHandle fields for invokeExact optimization
-  // Signature: () -> ADDRESS
-  private volatile MethodHandle mhEngineCreate;
-
   // Signature: (ADDRESS, ADDRESS, JAVA_LONG) -> ADDRESS
   private volatile MethodHandle mhModuleCreate;
-
-  // Signature: (ADDRESS, ADDRESS, JAVA_LONG) -> JAVA_INT
-  private volatile MethodHandle mhModuleValidate;
 
   private NativeEngineBindings() {
     super();
@@ -73,19 +67,9 @@ public final class NativeEngineBindings extends NativeBindingsBase {
 
   /** Eagerly initializes hot-path MethodHandles after all bindings are registered. */
   private void initializeHotPathHandles() {
-    FunctionBinding engineCreateBinding = getFunctionBinding("wasmtime4j_engine_create");
-    if (engineCreateBinding != null) {
-      this.mhEngineCreate = engineCreateBinding.getMethodHandle().orElse(null);
-    }
-
     FunctionBinding moduleCreateBinding = getFunctionBinding("wasmtime4j_module_create");
     if (moduleCreateBinding != null) {
       this.mhModuleCreate = moduleCreateBinding.getMethodHandle().orElse(null);
-    }
-
-    FunctionBinding moduleValidateBinding = getFunctionBinding("wasmtime4j_engine_validate");
-    if (moduleValidateBinding != null) {
-      this.mhModuleValidate = moduleValidateBinding.getMethodHandle().orElse(null);
     }
   }
 
@@ -94,25 +78,12 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   private void initializeBindings() {
     // ==================== Engine Functions ====================
 
-    addFunctionBinding("wasmtime4j_engine_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
-
     addFunctionBinding(
         "wasmtime4j_panama_engine_create_from_json_config",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return engine_ptr
             ValueLayout.ADDRESS, // json_ptr
             ValueLayout.JAVA_LONG)); // json_len
-
-    addFunctionBinding(
-        "wasmtime4j_panama_engine_create_with_cache_store",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return engine_ptr
-            ValueLayout.ADDRESS, // json_ptr
-            ValueLayout.JAVA_LONG, // json_len
-            ValueLayout.JAVA_LONG, // callback_id
-            ValueLayout.ADDRESS, // get_fn pointer
-            ValueLayout.ADDRESS, // insert_fn pointer
-            ValueLayout.ADDRESS)); // free_fn pointer
 
     addFunctionBinding(
         "wasmtime4j_panama_engine_create_with_extensions",
@@ -147,44 +118,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // ccm_unpublish_fn
 
     addFunctionBinding("wasmtime4j_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_engine_configure",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS, // option_name
-            ValueLayout.ADDRESS)); // option_value
-
-    addFunctionBinding(
-        "wasmtime4j_engine_set_optimization_level",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.JAVA_INT)); // level
-
-    addFunctionBinding(
-        "wasmtime4j_engine_get_optimization_level",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_engine_set_debug_info",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.JAVA_BOOLEAN)); // enabled
-
-    addFunctionBinding(
-        "wasmtime4j_engine_is_debug_info",
-        FunctionDescriptor.of(ValueLayout.JAVA_BOOLEAN, ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_engine_validate",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN,
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS, // wasm_bytes
-            ValueLayout.JAVA_LONG)); // wasm_size
 
     addFunctionBinding(
         "wasmtime4j_panama_engine_is_fuel_enabled",
@@ -222,10 +155,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_engine_tls_eager_initialize",
         FunctionDescriptor.ofVoid()); // no params, void return
-
-    addFunctionBinding(
-        "wasmtime4j_engine_reference_count",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // engine_ptr
 
     addFunctionBinding(
         "wasmtime4j_panama_engine_increment_epoch",
@@ -369,15 +298,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
 
     // ==================== Module Functions ====================
 
-    addFunctionBinding(
-        "wasmtime4j_module_compile",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS, // wasm_bytes
-            ValueLayout.JAVA_LONG, // wasm_size
-            ValueLayout.ADDRESS)); // module_ptr
-
     addFunctionBinding("wasmtime4j_module_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     addFunctionBinding(
@@ -415,13 +335,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.JAVA_INT, // return 0=success, non-zero=error
             ValueLayout.ADDRESS, // wasm_bytes
             ValueLayout.JAVA_LONG)); // wasm_size
-
-    addFunctionBinding(
-        "wasmtime4j_module_create_wat",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return module*
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS)); // wat_text (null-terminated string)
 
     addFunctionBinding(
         "wasmtime4j_panama_module_compile_wat",
@@ -471,24 +384,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // string_ptr
 
     addFunctionBinding(
-        "wasmtime4j_module_export_nth",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return found
-            ValueLayout.ADDRESS, // module_ptr
-            ValueLayout.JAVA_LONG, // index
-            ValueLayout.ADDRESS, // name_out_ptr
-            ValueLayout.ADDRESS)); // type_out_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_module_import_nth",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return found
-            ValueLayout.ADDRESS, // module_ptr
-            ValueLayout.JAVA_LONG, // index
-            ValueLayout.ADDRESS, // name_out_ptr
-            ValueLayout.ADDRESS)); // type_out_ptr
-
-    addFunctionBinding(
         "wasmtime4j_panama_module_get_name",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return name string pointer
@@ -512,86 +407,10 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // module_ptr_ptr (output)
 
     addFunctionBinding(
-        "wasmtime4j_panama_module_free_serialized_data",
-        FunctionDescriptor.ofVoid(
-            ValueLayout.ADDRESS, // data_ptr
-            ValueLayout.JAVA_LONG)); // len
-
-    addFunctionBinding(
         "wasmtime4j_serializer_free_buffer",
         FunctionDescriptor.ofVoid(
             ValueLayout.ADDRESS, // buffer
             ValueLayout.JAVA_LONG)); // size
-
-    addFunctionBinding(
-        "wasmtime4j_module_compile_async",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return code
-            ValueLayout.ADDRESS, // module_bytes
-            ValueLayout.JAVA_INT, // module_len
-            ValueLayout.JAVA_LONG, // timeout_ms
-            ValueLayout.ADDRESS, // callback
-            ValueLayout.ADDRESS, // progress_callback
-            ValueLayout.ADDRESS)); // user_data
-
-    // Module cache functions
-    addFunctionBinding(
-        "wasmtime4j_module_cache_create_with_config",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return cache_ptr
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS, // cache_dir_ptr
-            ValueLayout.JAVA_LONG, // max_cache_size
-            ValueLayout.JAVA_LONG, // max_entries
-            ValueLayout.JAVA_INT, // compression_enabled
-            ValueLayout.JAVA_INT)); // compression_level
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_get_or_compile",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return code
-            ValueLayout.ADDRESS, // cache_ptr
-            ValueLayout.ADDRESS, // bytecode_ptr
-            ValueLayout.JAVA_LONG, // bytecode_len
-            ValueLayout.ADDRESS)); // module_out_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_precompile",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return hash length or negative on error
-            ValueLayout.ADDRESS, // cache_ptr
-            ValueLayout.ADDRESS, // bytecode_ptr
-            ValueLayout.JAVA_LONG, // bytecode_len
-            ValueLayout.ADDRESS, // hash_out_ptr
-            ValueLayout.JAVA_LONG)); // hash_out_len
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_clear",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // cache_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_perform_maintenance",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // cache_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_entry_count",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // cache_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_hit_count",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // cache_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_miss_count",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // cache_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_storage_bytes",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)); // cache_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_module_cache_destroy",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // cache_ptr
 
     // Module from_file, same, get_export_index
     addFunctionBinding(
@@ -670,37 +489,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   // ===========================================================================================
   // Engine Operations
   // ===========================================================================================
-
-  /**
-   * Creates a new Wasmtime engine.
-   *
-   * @return memory segment pointer to the engine, or null on failure
-   */
-  public MemorySegment engineCreate() {
-    try {
-      if (!isInitialized()) {
-        LOGGER.severe("NativeEngineBindings not initialized, cannot create engine");
-        return null;
-      }
-
-      final MethodHandle mh = mhEngineCreate;
-      MemorySegment result;
-      if (mh != null) {
-        result = (MemorySegment) mh.invokeExact();
-      } else {
-        result = callNativeFunction("wasmtime4j_engine_create", MemorySegment.class);
-      }
-      if (result == null || result.equals(MemorySegment.NULL)) {
-        LOGGER.warning("Engine creation returned null - this may indicate symbol lookup failure");
-      } else {
-        LOGGER.fine("Engine created successfully: " + result);
-      }
-      return result;
-    } catch (Throwable e) {
-      LOGGER.severe("Exception during engine creation: " + e.getMessage());
-      return null;
-    }
-  }
 
   /**
    * Creates a new Wasmtime engine with extended configuration.
@@ -825,142 +613,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   /** Free stub - no-op since Arena manages memory. */
   private static void cacheStoreFreeStub(final MemorySegment ptr, final long len) {
     // Memory allocated by CACHE_STORE_ARENA is managed by GC, no manual free needed
-  }
-
-  /**
-   * Creates a new engine with JSON configuration and a CacheStore for incremental compilation.
-   *
-   * @param config the engine configuration (must have an incremental cache store set)
-   * @return memory segment pointer to the engine, or null on failure
-   */
-  public MemorySegment engineCreateWithConfigAndCacheStore(
-      final ai.tegmentum.wasmtime4j.config.EngineConfig config) {
-    try {
-      if (!isInitialized()) {
-        LOGGER.severe("NativeEngineBindings not initialized, cannot create engine");
-        return null;
-      }
-
-      final ai.tegmentum.wasmtime4j.config.CacheStore cacheStore =
-          config.getIncrementalCacheStore();
-      if (cacheStore == null) {
-        LOGGER.severe("No cache store in config, falling back to non-cached creation");
-        return engineCreateWithConfig(config);
-      }
-
-      // Register cache store
-      final long callbackId = CACHE_STORE_ID_COUNTER.getAndIncrement();
-      CACHE_STORES.put(callbackId, cacheStore);
-
-      // Create upcall stubs
-      final MemorySegment getStub;
-      final MemorySegment insertStub;
-      final MemorySegment freeStub;
-
-      try {
-        final java.lang.invoke.MethodHandle getHandle =
-            java.lang.invoke.MethodHandles.lookup()
-                .findStatic(
-                    NativeEngineBindings.class,
-                    "cacheStoreGetStub",
-                    java.lang.invoke.MethodType.methodType(
-                        int.class,
-                        long.class,
-                        MemorySegment.class,
-                        long.class,
-                        MemorySegment.class,
-                        MemorySegment.class));
-
-        final java.lang.invoke.MethodHandle insertHandle =
-            java.lang.invoke.MethodHandles.lookup()
-                .findStatic(
-                    NativeEngineBindings.class,
-                    "cacheStoreInsertStub",
-                    java.lang.invoke.MethodType.methodType(
-                        int.class,
-                        long.class,
-                        MemorySegment.class,
-                        long.class,
-                        MemorySegment.class,
-                        long.class));
-
-        final java.lang.invoke.MethodHandle freeHandle =
-            java.lang.invoke.MethodHandles.lookup()
-                .findStatic(
-                    NativeEngineBindings.class,
-                    "cacheStoreFreeStub",
-                    java.lang.invoke.MethodType.methodType(
-                        void.class, MemorySegment.class, long.class));
-
-        getStub =
-            java.lang.foreign.Linker.nativeLinker()
-                .upcallStub(
-                    getHandle,
-                    FunctionDescriptor.of(
-                        ValueLayout.JAVA_INT, // return
-                        ValueLayout.JAVA_LONG, // callback_id
-                        ValueLayout.ADDRESS, // key_ptr
-                        ValueLayout.JAVA_LONG, // key_len
-                        ValueLayout.ADDRESS, // out_data_ptr
-                        ValueLayout.ADDRESS), // out_data_len
-                    CACHE_STORE_ARENA);
-
-        insertStub =
-            java.lang.foreign.Linker.nativeLinker()
-                .upcallStub(
-                    insertHandle,
-                    FunctionDescriptor.of(
-                        ValueLayout.JAVA_INT, // return
-                        ValueLayout.JAVA_LONG, // callback_id
-                        ValueLayout.ADDRESS, // key_ptr
-                        ValueLayout.JAVA_LONG, // key_len
-                        ValueLayout.ADDRESS, // value_ptr
-                        ValueLayout.JAVA_LONG), // value_len
-                    CACHE_STORE_ARENA);
-
-        freeStub =
-            java.lang.foreign.Linker.nativeLinker()
-                .upcallStub(
-                    freeHandle,
-                    FunctionDescriptor.ofVoid(
-                        ValueLayout.ADDRESS, // ptr
-                        ValueLayout.JAVA_LONG), // len
-                    CACHE_STORE_ARENA);
-      } catch (Exception e) {
-        LOGGER.severe("Failed to create upcall stubs for CacheStore: " + e.getMessage());
-        CACHE_STORES.remove(callbackId);
-        return null;
-      }
-
-      final byte[] jsonBytes = config.toJson();
-
-      try (Arena arena = Arena.ofConfined()) {
-        final MemorySegment jsonSeg = arena.allocate(jsonBytes.length);
-        jsonSeg.copyFrom(MemorySegment.ofArray(jsonBytes));
-
-        final MemorySegment result =
-            callNativeFunction(
-                "wasmtime4j_panama_engine_create_with_cache_store",
-                MemorySegment.class,
-                jsonSeg,
-                (long) jsonBytes.length,
-                callbackId,
-                getStub,
-                insertStub,
-                freeStub);
-
-        if (result == null || result.equals(MemorySegment.NULL)) {
-          LOGGER.warning("Engine creation with cache store returned null");
-          CACHE_STORES.remove(callbackId);
-        } else {
-          LOGGER.fine("Engine created with cache store successfully: " + result);
-        }
-        return result;
-      }
-    } catch (Exception e) {
-      LOGGER.severe("Exception during engine creation with cache store: " + e.getMessage());
-      return null;
-    }
   }
 
   // ============================================================================
@@ -1574,87 +1226,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
-   * Configures an engine with options.
-   *
-   * @param enginePtr pointer to the engine
-   * @param optionName name of the configuration option
-   * @param optionValue value of the configuration option
-   * @return 0 on success, negative error code on failure
-   */
-  public int engineConfigure(
-      final MemorySegment enginePtr,
-      final MemorySegment optionName,
-      final MemorySegment optionValue) {
-    validatePointer(enginePtr, "enginePtr");
-    validatePointer(optionName, "optionName");
-
-    return callNativeFunction(
-        "wasmtime4j_engine_configure", Integer.class, enginePtr, optionName, optionValue);
-  }
-
-  /**
-   * Sets the optimization level for an engine.
-   *
-   * @param enginePtr pointer to the engine
-   * @param level the optimization level (0-2)
-   * @return 0 on success, negative error code on failure
-   */
-  public int engineSetOptimizationLevel(final MemorySegment enginePtr, final int level) {
-    validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction(
-        "wasmtime4j_engine_set_optimization_level", Integer.class, enginePtr, level);
-  }
-
-  /**
-   * Gets the optimization level for an engine.
-   *
-   * @param enginePtr pointer to the engine
-   * @return the optimization level (0-2)
-   */
-  public int engineGetOptimizationLevel(final MemorySegment enginePtr) {
-    validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction("wasmtime4j_engine_get_optimization_level", Integer.class, enginePtr);
-  }
-
-  /**
-   * Sets debug information generation for an engine.
-   *
-   * @param enginePtr pointer to the engine
-   * @param enabled true to enable debug information
-   * @return 0 on success, negative error code on failure
-   */
-  public int engineSetDebugInfo(final MemorySegment enginePtr, final boolean enabled) {
-    validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction(
-        "wasmtime4j_engine_set_debug_info", Integer.class, enginePtr, enabled);
-  }
-
-  /**
-   * Checks if debug information generation is enabled.
-   *
-   * @param enginePtr pointer to the engine
-   * @return true if debug information is enabled
-   */
-  public boolean engineIsDebugInfo(final MemorySegment enginePtr) {
-    validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction("wasmtime4j_engine_is_debug_info", Boolean.class, enginePtr);
-  }
-
-  /**
-   * Validates WebAssembly bytecode.
-   *
-   * @param enginePtr pointer to the engine
-   * @param wasmBytes pointer to the WASM bytecode
-   * @param wasmSize size of the WASM bytecode
-   * @return true if the module is valid
-   */
-  public boolean engineValidate(
-      final MemorySegment enginePtr, final MemorySegment wasmBytes, final long wasmSize) {
-    return callNativeFunction(
-        "wasmtime4j_engine_validate", Boolean.class, enginePtr, wasmBytes, wasmSize);
-  }
-
-  /**
    * Checks if engine supports a feature by name.
    *
    * @param enginePtr pointer to the engine
@@ -1769,16 +1340,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     final int result =
         callNativeFunction("wasmtime4j_panama_engine_is_replaying", Integer.class, enginePtr);
     return result == 1;
-  }
-
-  /**
-   * Gets the reference count.
-   *
-   * @param enginePtr pointer to the engine
-   * @return reference count
-   */
-  public long engineReferenceCount(final MemorySegment enginePtr) {
-    return callNativeFunction("wasmtime4j_engine_reference_count", Long.class, enginePtr);
   }
 
   /**
@@ -2114,29 +1675,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   // ===========================================================================================
 
   /**
-   * Compiles a WebAssembly module.
-   *
-   * @param enginePtr pointer to the engine
-   * @param wasmBytes pointer to the WASM bytecode
-   * @param wasmSize size of the WASM bytecode
-   * @param modulePtr pointer to store the compiled module
-   * @return 0 on success, negative error code on failure
-   */
-  public int moduleCompile(
-      final MemorySegment enginePtr,
-      final MemorySegment wasmBytes,
-      final long wasmSize,
-      final MemorySegment modulePtr) {
-    validatePointer(enginePtr, "enginePtr");
-    validatePointer(wasmBytes, "wasmBytes");
-    validatePointer(modulePtr, "modulePtr");
-    validateSize(wasmSize, "wasmSize");
-
-    return callNativeFunction(
-        "wasmtime4j_module_compile", Integer.class, enginePtr, wasmBytes, wasmSize, modulePtr);
-  }
-
-  /**
    * Compiles a WebAssembly module with DWARF debug package.
    *
    * @param enginePtr pointer to the engine
@@ -2233,18 +1771,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         dataPtr,
         len,
         modulePtrPtr);
-  }
-
-  /**
-   * Frees serialized module data.
-   *
-   * @param dataPtr pointer to the serialized data
-   * @param len length of the data
-   */
-  public void moduleFreeSerializedData(final MemorySegment dataPtr, final long len) {
-    if (dataPtr != null && !dataPtr.equals(MemorySegment.NULL)) {
-      callNativeFunction("wasmtime4j_panama_module_free_serialized_data", Void.class, dataPtr, len);
-    }
   }
 
   /**
@@ -2409,20 +1935,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
-   * Creates a WebAssembly module from WAT text.
-   *
-   * @param enginePtr pointer to the engine
-   * @param watText pointer to the WAT text (null-terminated)
-   * @return memory segment pointer to the module, or null on failure
-   */
-  public MemorySegment moduleCreateWat(final MemorySegment enginePtr, final MemorySegment watText) {
-    validatePointer(enginePtr, "enginePtr");
-    validatePointer(watText, "watText");
-    return callNativeFunction(
-        "wasmtime4j_module_create_wat", MemorySegment.class, enginePtr, watText);
-  }
-
-  /**
    * Validates WebAssembly bytecode using full Wasmtime structural and semantic validation.
    *
    * @param wasmBytes pointer to the WASM bytecode
@@ -2449,27 +1961,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   }
 
   /**
-   * Gets the nth import from a module.
-   *
-   * @param modulePtr pointer to the module
-   * @param index the index of the import to retrieve
-   * @param nameOutPtr pointer to receive the import name
-   * @param typeOutPtr pointer to receive the import type
-   * @return true if the import exists, false otherwise
-   */
-  public boolean moduleImportNth(
-      final MemorySegment modulePtr,
-      final long index,
-      final MemorySegment nameOutPtr,
-      final MemorySegment typeOutPtr) {
-    validatePointer(modulePtr, "modulePtr");
-    validatePointer(nameOutPtr, "nameOutPtr");
-    validatePointer(typeOutPtr, "typeOutPtr");
-    return callNativeFunction(
-        "wasmtime4j_module_import_nth", Boolean.class, modulePtr, index, nameOutPtr, typeOutPtr);
-  }
-
-  /**
    * Gets the number of exports in a module.
    *
    * @param modulePtr pointer to the module
@@ -2480,27 +1971,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     final int count =
         callNativeFunction("wasmtime4j_panama_module_get_export_count", Integer.class, modulePtr);
     return count;
-  }
-
-  /**
-   * Gets the nth export from a module.
-   *
-   * @param modulePtr pointer to the module
-   * @param index the index of the export to retrieve
-   * @param nameOutPtr pointer to receive the export name
-   * @param typeOutPtr pointer to receive the export type
-   * @return true if the export exists, false otherwise
-   */
-  public boolean moduleExportNth(
-      final MemorySegment modulePtr,
-      final long index,
-      final MemorySegment nameOutPtr,
-      final MemorySegment typeOutPtr) {
-    validatePointer(modulePtr, "modulePtr");
-    validatePointer(nameOutPtr, "nameOutPtr");
-    validatePointer(typeOutPtr, "typeOutPtr");
-    return callNativeFunction(
-        "wasmtime4j_module_export_nth", Boolean.class, modulePtr, index, nameOutPtr, typeOutPtr);
   }
 
   /**
@@ -2734,204 +2204,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     validatePointer(modulePtr, "modulePtr");
     validatePointer(name, "name");
     return callNativeFunction("wasmtime4j_module_get_export_kind", Integer.class, modulePtr, name);
-  }
-
-  /**
-   * Compiles a WebAssembly module asynchronously.
-   *
-   * @param moduleBytes pointer to the module bytes
-   * @param moduleLen length of the module bytes
-   * @param timeoutMs timeout in milliseconds
-   * @param callback completion callback
-   * @param progressCallback progress callback
-   * @param userData user data pointer
-   * @return 0 on success, non-zero on error
-   */
-  public int moduleCompileAsync(
-      final MemorySegment moduleBytes,
-      final int moduleLen,
-      final long timeoutMs,
-      final MemorySegment callback,
-      final MemorySegment progressCallback,
-      final MemorySegment userData) {
-    return callNativeFunction(
-        "wasmtime4j_module_compile_async",
-        Integer.class,
-        moduleBytes,
-        moduleLen,
-        timeoutMs,
-        callback,
-        progressCallback,
-        userData);
-  }
-
-  // ===== Module Cache Operations =====
-
-  /**
-   * Creates a module cache with configuration.
-   *
-   * @param enginePtr pointer to the engine
-   * @param cacheDirPtr pointer to cache directory path
-   * @param maxCacheSize maximum cache size
-   * @param maxEntries maximum number of entries
-   * @param compressionEnabled whether compression is enabled
-   * @param compressionLevel compression level
-   * @return pointer to the module cache, or null on failure
-   */
-  public MemorySegment moduleCacheCreateWithConfig(
-      final MemorySegment enginePtr,
-      final MemorySegment cacheDirPtr,
-      final long maxCacheSize,
-      final int maxEntries,
-      final boolean compressionEnabled,
-      final int compressionLevel) {
-    validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction(
-        "wasmtime4j_module_cache_create_with_config",
-        MemorySegment.class,
-        enginePtr,
-        cacheDirPtr,
-        maxCacheSize,
-        (long) maxEntries,
-        compressionEnabled ? 1 : 0,
-        compressionLevel);
-  }
-
-  /**
-   * Gets or compiles a module from the cache.
-   *
-   * @param cachePtr pointer to the module cache
-   * @param bytecodePtr pointer to the bytecode
-   * @param bytecodeLen length of the bytecode
-   * @param moduleOutPtr pointer to store the module pointer
-   * @return true on success, false on failure
-   */
-  public boolean moduleCacheGetOrCompile(
-      final MemorySegment cachePtr,
-      final MemorySegment bytecodePtr,
-      final long bytecodeLen,
-      final MemorySegment moduleOutPtr) {
-    validatePointer(cachePtr, "cachePtr");
-    validatePointer(bytecodePtr, "bytecodePtr");
-    validatePointer(moduleOutPtr, "moduleOutPtr");
-    final int result =
-        callNativeFunction(
-            "wasmtime4j_module_cache_get_or_compile",
-            Integer.class,
-            cachePtr,
-            bytecodePtr,
-            bytecodeLen,
-            moduleOutPtr);
-    return result != 0;
-  }
-
-  /**
-   * Pre-compiles and caches a module.
-   *
-   * @param cachePtr pointer to the module cache
-   * @param bytecodePtr pointer to the bytecode
-   * @param bytecodeLen length of the bytecode
-   * @param hashOutPtr pointer to store the hash output
-   * @param hashOutLen length of the hash output buffer
-   * @return length of hash written, or negative on error
-   */
-  public int moduleCachePrecompile(
-      final MemorySegment cachePtr,
-      final MemorySegment bytecodePtr,
-      final long bytecodeLen,
-      final MemorySegment hashOutPtr,
-      final int hashOutLen) {
-    validatePointer(cachePtr, "cachePtr");
-    validatePointer(bytecodePtr, "bytecodePtr");
-    validatePointer(hashOutPtr, "hashOutPtr");
-    return callNativeFunction(
-        "wasmtime4j_module_cache_precompile",
-        Integer.class,
-        cachePtr,
-        bytecodePtr,
-        bytecodeLen,
-        hashOutPtr,
-        (long) hashOutLen);
-  }
-
-  /**
-   * Clears all entries from the module cache.
-   *
-   * @param cachePtr pointer to the module cache
-   * @return true on success, false on failure
-   */
-  public boolean moduleCacheClear(final MemorySegment cachePtr) {
-    validatePointer(cachePtr, "cachePtr");
-    final int result = callNativeFunction("wasmtime4j_module_cache_clear", Integer.class, cachePtr);
-    return result != 0;
-  }
-
-  /**
-   * Performs cache maintenance.
-   *
-   * @param cachePtr pointer to the module cache
-   * @return true on success, false on failure
-   */
-  public boolean moduleCachePerformMaintenance(final MemorySegment cachePtr) {
-    validatePointer(cachePtr, "cachePtr");
-    final int result =
-        callNativeFunction("wasmtime4j_module_cache_perform_maintenance", Integer.class, cachePtr);
-    return result != 0;
-  }
-
-  /**
-   * Gets the number of entries in the cache.
-   *
-   * @param cachePtr pointer to the module cache
-   * @return entry count, or negative on error
-   */
-  public long moduleCacheEntryCount(final MemorySegment cachePtr) {
-    validatePointer(cachePtr, "cachePtr");
-    return callNativeFunction("wasmtime4j_module_cache_entry_count", Long.class, cachePtr);
-  }
-
-  /**
-   * Gets the cache hit count.
-   *
-   * @param cachePtr pointer to the module cache
-   * @return hit count, or negative on error
-   */
-  public long moduleCacheHitCount(final MemorySegment cachePtr) {
-    validatePointer(cachePtr, "cachePtr");
-    return callNativeFunction("wasmtime4j_module_cache_hit_count", Long.class, cachePtr);
-  }
-
-  /**
-   * Gets the cache miss count.
-   *
-   * @param cachePtr pointer to the module cache
-   * @return miss count, or negative on error
-   */
-  public long moduleCacheMissCount(final MemorySegment cachePtr) {
-    validatePointer(cachePtr, "cachePtr");
-    return callNativeFunction("wasmtime4j_module_cache_miss_count", Long.class, cachePtr);
-  }
-
-  /**
-   * Gets the storage bytes used by the cache.
-   *
-   * @param cachePtr pointer to the module cache
-   * @return storage bytes used, or negative on error
-   */
-  public long moduleCacheStorageBytes(final MemorySegment cachePtr) {
-    validatePointer(cachePtr, "cachePtr");
-    return callNativeFunction("wasmtime4j_module_cache_storage_bytes", Long.class, cachePtr);
-  }
-
-  /**
-   * Destroys a module cache.
-   *
-   * @param cachePtr pointer to the module cache
-   */
-  public void moduleCacheDestroy(final MemorySegment cachePtr) {
-    if (cachePtr != null && !cachePtr.equals(MemorySegment.NULL)) {
-      callNativeFunction("wasmtime4j_module_cache_destroy", Void.class, cachePtr);
-    }
   }
 
   // ===========================================================================================

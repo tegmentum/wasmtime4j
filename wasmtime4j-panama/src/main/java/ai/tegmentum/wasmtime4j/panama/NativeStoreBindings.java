@@ -566,20 +566,6 @@ public final class NativeStoreBindings extends NativeBindingsBase {
   }
 
   /**
-   * Performs asynchronous garbage collection on a WebAssembly store.
-   *
-   * <p>This is the async version of {@link #storeGc(MemorySegment)} that cooperatively yields
-   * during GC if the store is configured with epoch-based interruption.
-   *
-   * @param storePtr pointer to the store
-   * @return 0 on success, negative error code on failure
-   */
-  public int storeGcAsync(final MemorySegment storePtr) {
-    validatePointer(storePtr, "storePtr");
-    return callNativeFunction("wasmtime4j_panama_store_gc_async", Integer.class, storePtr);
-  }
-
-  /**
    * Configures the epoch deadline to async yield and update.
    *
    * <p>When the epoch deadline is reached, execution will yield back to the async executor and then
@@ -923,15 +909,6 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    */
   public MethodHandle getPanamaStoreSetEpochDeadline() {
     return mhStoreSetEpochDeadline;
-  }
-
-  /**
-   * Gets the method handle for getting execution statistics from a store.
-   *
-   * @return the method handle, or null if not available
-   */
-  public MethodHandle getPanamaStoreGetExecutionStats() {
-    return resolveHandle("wasmtime4j_panama_store_get_execution_stats");
   }
 
   // ===== Debugging API =====

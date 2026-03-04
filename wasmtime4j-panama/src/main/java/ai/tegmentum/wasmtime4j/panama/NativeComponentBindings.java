@@ -70,26 +70,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   private void initializeBindings() {
     // ===== Component Engine (legacy API) =====
     addFunctionBinding(
-        "wasmtime4j_component_engine_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_component_engine_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_component_load_from_bytes",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return component_ptr
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS)); // wasm_bytes
-
-    addFunctionBinding(
-        "wasmtime4j_component_instantiate",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return instance_ptr
-            ValueLayout.ADDRESS, // engine_ptr
-            ValueLayout.ADDRESS)); // component_ptr
-
-    addFunctionBinding(
         "wasmtime4j_component_engine_active_instances",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return count
@@ -125,37 +105,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         "wasmtime4j_component_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // component_ptr
 
-    addFunctionBinding(
-        "wasmtime4j_component_instance_destroy",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // instance_ptr
-
     // ===== Component Model (structured API with error codes) =====
-    addFunctionBinding(
-        "wasmtime4j_component_engine_create",
-        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS)); // config
-
-    addFunctionBinding(
-        "wasmtime4j_component_load_from_bytes",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // return component handle
-            ValueLayout.ADDRESS, // engineHandle
-            ValueLayout.ADDRESS, // bytes
-            ValueLayout.JAVA_LONG)); // length
-
-    addFunctionBinding(
-        "wasmtime4j_component_instantiate",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code (0 = success)
-            ValueLayout.ADDRESS, // engineHandle
-            ValueLayout.ADDRESS, // componentHandle
-            ValueLayout.ADDRESS)); // instanceOut (pointer to pointer)
-
-    addFunctionBinding(
-        "wasmtime4j_component_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_component_instance_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
     addFunctionBinding(
         "wasmtime4j_component_get_size",
         FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
@@ -175,18 +125,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_component_import_count",
         FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_component_has_export",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_component_has_import",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_component_validate",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_component_get_export_name",
@@ -219,25 +157,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // json_out
 
     // ===== Panama Component Functions =====
-    addFunctionBinding(
-        "wasmtime4j_panama_component_get_exported_functions",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // instance handle
-            ValueLayout.ADDRESS, // functions out (pointer to pointer array)
-            ValueLayout.ADDRESS)); // count out
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_invoke",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // instance handle
-            ValueLayout.ADDRESS, // function name
-            ValueLayout.ADDRESS, // params pointer
-            ValueLayout.JAVA_INT, // params count
-            ValueLayout.ADDRESS, // results out
-            ValueLayout.ADDRESS)); // results count out
-
     addFunctionBinding(
         "wasmtime4j_panama_component_free_string_array",
         FunctionDescriptor.ofVoid(
@@ -347,13 +266,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // count out
 
     addFunctionBinding(
-        "wasmtime4j_panama_enhanced_component_engine_same",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return: 1=same, 0=different, -1=error
-            ValueLayout.ADDRESS, // engine_ptr1
-            ValueLayout.ADDRESS)); // engine_ptr2
-
-    addFunctionBinding(
         "wasmtime4j_panama_enhanced_component_engine_is_async",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // engine_ptr
 
@@ -395,43 +307,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // engine handle
             ValueLayout.JAVA_LONG, // instance id
             ValueLayout.ADDRESS)); // resource name (C string)
-
-    // ===== Component Metrics =====
-    addFunctionBinding(
-        "wasmtime4j_panama_enhanced_component_get_metrics",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_metrics_get_components_loaded",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_metrics_get_instances_created",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_metrics_get_instances_destroyed",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_metrics_get_avg_instantiation_time_nanos",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_metrics_get_peak_memory_usage",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_metrics_get_function_calls",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_metrics_get_error_count",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_metrics_destroy",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
     // ===== WIT Value Marshalling =====
     addFunctionBinding(
@@ -477,12 +352,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
 
     // ===== Component Linker =====
     addFunctionBinding(
-        "wasmtime4j_component_linker_new",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, // returns linker pointer
-            ValueLayout.ADDRESS)); // engine pointer
-
-    addFunctionBinding(
         "wasmtime4j_component_linker_new_with_engine",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // returns linker pointer
@@ -496,47 +365,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         "wasmtime4j_component_linker_is_valid",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns 1 if valid, 0 if invalid
-            ValueLayout.ADDRESS)); // linker pointer
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_dispose",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns result code
-            ValueLayout.ADDRESS)); // linker pointer
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_has_interface",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns 1 if present, 0 if not, -1 on error
-            ValueLayout.ADDRESS, // linker pointer
-            ValueLayout.ADDRESS, // namespace string
-            ValueLayout.ADDRESS)); // interface name string
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_has_function",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns 1 if present, 0 if not, -1 on error
-            ValueLayout.ADDRESS, // linker pointer
-            ValueLayout.ADDRESS, // namespace string
-            ValueLayout.ADDRESS, // interface name string
-            ValueLayout.ADDRESS)); // function name string
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_host_function_count",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG, // returns count
-            ValueLayout.ADDRESS)); // linker pointer
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_interface_count",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG, // returns count
-            ValueLayout.ADDRESS)); // linker pointer
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_wasi_p2_enabled",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns 1 if enabled, 0 if not
             ValueLayout.ADDRESS)); // linker pointer
 
     addFunctionBinding(
@@ -697,40 +525,12 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG)); // callback_id
 
     addFunctionBinding(
-        "wasmtime4j_component_linker_enable_wasi_http",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns result code
-            ValueLayout.ADDRESS)); // linker pointer
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_wasi_http_enabled",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns 1 if enabled, 0 if not, negative on error
-            ValueLayout.ADDRESS)); // linker pointer
-
-    addFunctionBinding(
         "wasmtime4j_component_linker_instantiate",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns result code
             ValueLayout.ADDRESS, // linker pointer
             ValueLayout.ADDRESS, // component pointer
             ValueLayout.ADDRESS)); // instance out pointer
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_get_interfaces",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns result code
-            ValueLayout.ADDRESS, // linker pointer
-            ValueLayout.ADDRESS)); // json out pointer
-
-    addFunctionBinding(
-        "wasmtime4j_component_linker_get_functions",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // returns result code
-            ValueLayout.ADDRESS, // linker pointer
-            ValueLayout.ADDRESS, // namespace string
-            ValueLayout.ADDRESS, // interface name string
-            ValueLayout.ADDRESS)); // json out pointer
 
     // ===== Resource Definition =====
     addFunctionBinding(
@@ -780,22 +580,9 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG)); // callback_id
 
     addFunctionBinding(
-        "wasmtime4j_component_linker_set_async_support",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return error code
-            ValueLayout.ADDRESS, // linker_ptr
-            ValueLayout.JAVA_INT)); // enabled flag
-
-    addFunctionBinding(
         "wasmtime4j_component_host_callback_alloc_result",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // allocated pointer
-            ValueLayout.JAVA_LONG)); // length
-
-    addFunctionBinding(
-        "wasmtime4j_component_host_callback_free_result",
-        FunctionDescriptor.ofVoid(
-            ValueLayout.ADDRESS, // pointer
             ValueLayout.JAVA_LONG)); // length
 
     // ===== allow_shadowing / define_unknown_imports_as_traps =====
@@ -942,45 +729,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   // ===== Component Engine (legacy API) =====
 
   /**
-   * Creates a component engine.
-   *
-   * @return memory segment pointer to the component engine, or null on failure
-   */
-  public MemorySegment createComponentEngine() {
-    return callNativeFunction("wasmtime4j_component_engine_create", MemorySegment.class);
-  }
-
-  /**
-   * Loads a component from bytes.
-   *
-   * @param enginePtr pointer to the component engine
-   * @param wasmBytes pointer to the WASM component bytes
-   * @return memory segment pointer to the component, or null on failure
-   */
-  public MemorySegment loadComponentFromBytes(
-      final MemorySegment enginePtr, final MemorySegment wasmBytes) {
-    validatePointer(enginePtr, "enginePtr");
-    validatePointer(wasmBytes, "wasmBytes");
-    return callNativeFunction(
-        "wasmtime4j_component_load_from_bytes", MemorySegment.class, enginePtr, wasmBytes);
-  }
-
-  /**
-   * Instantiates a component.
-   *
-   * @param enginePtr pointer to the component engine
-   * @param componentPtr pointer to the component
-   * @return memory segment pointer to the component instance, or null on failure
-   */
-  public MemorySegment instantiateComponent(
-      final MemorySegment enginePtr, final MemorySegment componentPtr) {
-    validatePointer(enginePtr, "enginePtr");
-    validatePointer(componentPtr, "componentPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_instantiate", MemorySegment.class, enginePtr, componentPtr);
-  }
-
-  /**
    * Gets the active instances count for a component engine.
    *
    * @param enginePtr pointer to the component engine
@@ -1001,16 +749,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   public int cleanupInstances(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
     return callNativeFunction("wasmtime4j_component_engine_cleanup", Integer.class, enginePtr);
-  }
-
-  /**
-   * Destroys a component engine.
-   *
-   * @param enginePtr pointer to the component engine to destroy
-   */
-  public void destroyComponentEngine(final MemorySegment enginePtr) {
-    validatePointer(enginePtr, "enginePtr");
-    callNativeFunction("wasmtime4j_component_engine_destroy", Void.class, enginePtr);
   }
 
   /**
@@ -1060,101 +798,7 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     callNativeFunction("wasmtime4j_component_destroy", Void.class, componentPtr);
   }
 
-  /**
-   * Destroys a component instance.
-   *
-   * @param instancePtr pointer to the component instance to destroy
-   */
-  public void destroyComponentInstance(final MemorySegment instancePtr) {
-    validatePointer(instancePtr, "instancePtr");
-    callNativeFunction("wasmtime4j_component_instance_destroy", Void.class, instancePtr);
-  }
-
   // ===== Component Model (structured API) =====
-
-  /**
-   * Creates a new component engine with configuration.
-   *
-   * @param config the engine configuration
-   * @return memory segment pointer to the component engine, or null on failure
-   */
-  public MemorySegment componentEngineCreate(final MemorySegment config) {
-    return callNativeFunction("wasmtime4j_component_engine_create", MemorySegment.class, config);
-  }
-
-  /**
-   * Destroys a component engine.
-   *
-   * @param engineHandle pointer to the component engine to destroy
-   */
-  public void componentEngineDestroy(final MemorySegment engineHandle) {
-    validatePointer(engineHandle, "engineHandle");
-    callNativeFunction("wasmtime4j_component_engine_destroy", Void.class, engineHandle);
-  }
-
-  /**
-   * Loads a component from bytecode.
-   *
-   * @param engineHandle the component engine handle
-   * @param bytes the component bytecode
-   * @param length the bytecode length
-   * @param componentOut pointer to receive the component handle
-   * @return 0 on success, non-zero on error
-   */
-  public int componentLoadFromBytes(
-      final MemorySegment engineHandle,
-      final MemorySegment bytes,
-      final long length,
-      final MemorySegment componentOut) {
-    validatePointer(engineHandle, "engineHandle");
-    validatePointer(bytes, "bytes");
-    validatePointer(componentOut, "componentOut");
-    return callNativeFunction(
-        "wasmtime4j_component_compile", Integer.class, engineHandle, bytes, length, componentOut);
-  }
-
-  /**
-   * Instantiates a component.
-   *
-   * @param engineHandle the engine handle
-   * @param componentHandle the component handle
-   * @param instanceOut pointer to where the instance handle will be written
-   * @return error code (0 = success, non-zero = error)
-   */
-  public int componentInstantiate(
-      final MemorySegment engineHandle,
-      final MemorySegment componentHandle,
-      final MemorySegment instanceOut) {
-    validatePointer(engineHandle, "engineHandle");
-    validatePointer(componentHandle, "componentHandle");
-    validatePointer(instanceOut, "instanceOut");
-    return callNativeFunction(
-        "wasmtime4j_component_instantiate",
-        Integer.class,
-        engineHandle,
-        componentHandle,
-        instanceOut);
-  }
-
-  /**
-   * Destroys a component.
-   *
-   * @param componentHandle pointer to the component to destroy
-   */
-  public void componentDestroy(final MemorySegment componentHandle) {
-    validatePointer(componentHandle, "componentHandle");
-    callNativeFunction("wasmtime4j_component_destroy", Void.class, componentHandle);
-  }
-
-  /**
-   * Destroys a component instance.
-   *
-   * @param instanceHandle pointer to the component instance to destroy
-   */
-  public void componentInstanceDestroy(final MemorySegment instanceHandle) {
-    validatePointer(instanceHandle, "instanceHandle");
-    callNativeFunction("wasmtime4j_component_instance_destroy", Void.class, instanceHandle);
-  }
 
   /**
    * Gets the size of a component.
@@ -1217,47 +861,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   public long componentImportCount(final MemorySegment componentHandle) {
     validatePointer(componentHandle, "componentHandle");
     return callNativeFunction("wasmtime4j_component_import_count", Long.class, componentHandle);
-  }
-
-  /**
-   * Checks if a component has a specific export.
-   *
-   * @param componentHandle the component handle
-   * @param exportName the export name (C string)
-   * @return 1 if has the export, 0 otherwise
-   */
-  public int componentHasExport(
-      final MemorySegment componentHandle, final MemorySegment exportName) {
-    validatePointer(componentHandle, "componentHandle");
-    validatePointer(exportName, "exportName");
-    return callNativeFunction(
-        "wasmtime4j_component_has_export", Integer.class, componentHandle, exportName);
-  }
-
-  /**
-   * Checks if a component has a specific import.
-   *
-   * @param componentHandle the component handle
-   * @param importName the import name (C string)
-   * @return 1 if has the import, 0 otherwise
-   */
-  public int componentHasImport(
-      final MemorySegment componentHandle, final MemorySegment importName) {
-    validatePointer(componentHandle, "componentHandle");
-    validatePointer(importName, "importName");
-    return callNativeFunction(
-        "wasmtime4j_component_has_import", Integer.class, componentHandle, importName);
-  }
-
-  /**
-   * Validates a component.
-   *
-   * @param componentHandle the component handle
-   * @return 1 if valid, 0 otherwise
-   */
-  public int componentValidate(final MemorySegment componentHandle) {
-    validatePointer(componentHandle, "componentHandle");
-    return callNativeFunction("wasmtime4j_component_validate", Integer.class, componentHandle);
   }
 
   /**
@@ -1347,62 +950,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         linkerHandle,
         componentHandle,
         jsonOut);
-  }
-
-  /**
-   * Gets the list of exported function names from a component instance.
-   *
-   * @param instanceHandle the component instance handle
-   * @param functionsOut output parameter for array of function name pointers
-   * @param countOut output parameter for count of functions
-   * @return 0 on success, non-zero error code on failure
-   */
-  public int componentGetExportedFunctions(
-      final MemorySegment instanceHandle,
-      final MemorySegment functionsOut,
-      final MemorySegment countOut) {
-    validatePointer(instanceHandle, "instanceHandle");
-    validatePointer(functionsOut, "functionsOut");
-    validatePointer(countOut, "countOut");
-    return callNativeFunction(
-        "wasmtime4j_panama_component_get_exported_functions",
-        Integer.class,
-        instanceHandle,
-        functionsOut,
-        countOut);
-  }
-
-  /**
-   * Invokes a component function with parameters.
-   *
-   * @param instanceHandle the component instance handle
-   * @param functionName the function name to invoke
-   * @param paramsPtr pointer to the parameters array
-   * @param paramsCount number of parameters
-   * @param resultsOut output parameter for results array
-   * @param resultsCountOut output parameter for results count
-   * @return 0 on success, non-zero error code on failure
-   */
-  public int componentInvoke(
-      final MemorySegment instanceHandle,
-      final MemorySegment functionName,
-      final MemorySegment paramsPtr,
-      final int paramsCount,
-      final MemorySegment resultsOut,
-      final MemorySegment resultsCountOut) {
-    validatePointer(instanceHandle, "instanceHandle");
-    validatePointer(functionName, "functionName");
-    validatePointer(resultsOut, "resultsOut");
-    validatePointer(resultsCountOut, "resultsCountOut");
-    return callNativeFunction(
-        "wasmtime4j_panama_component_invoke",
-        Integer.class,
-        instanceHandle,
-        functionName,
-        paramsPtr,
-        paramsCount,
-        resultsOut,
-        resultsCountOut);
   }
 
   /**
@@ -1542,24 +1089,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   }
 
   /**
-   * Checks if two enhanced component engines share the same underlying Wasmtime engine.
-   *
-   * @param enginePtr1 pointer to the first enhanced component engine
-   * @param enginePtr2 pointer to the second enhanced component engine
-   * @return true if both engines share the same underlying engine
-   */
-  public boolean enhancedComponentEngineSame(
-      final MemorySegment enginePtr1, final MemorySegment enginePtr2) {
-    final int result =
-        callNativeFunction(
-            "wasmtime4j_panama_enhanced_component_engine_same",
-            Integer.class,
-            enginePtr1,
-            enginePtr2);
-    return result == 1;
-  }
-
-  /**
    * Checks if async support is enabled for an enhanced component engine.
    *
    * @param enginePtr pointer to the enhanced component engine
@@ -1640,137 +1169,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     if (engineHandle != null && !engineHandle.equals(MemorySegment.NULL)) {
       callNativeFunction(
           "wasmtime4j_panama_enhanced_component_engine_destroy", Void.class, engineHandle);
-    }
-  }
-
-  // ===== Component Metrics =====
-
-  /**
-   * Gets component metrics from an enhanced component engine.
-   *
-   * @param engineHandle the enhanced component engine handle
-   * @param metricsOut output pointer for the metrics handle
-   * @return 0 on success, non-zero on error
-   */
-  public int enhancedComponentGetMetrics(
-      final MemorySegment engineHandle, final MemorySegment metricsOut) {
-    validatePointer(engineHandle, "engineHandle");
-    validatePointer(metricsOut, "metricsOut");
-    return callNativeFunction(
-        "wasmtime4j_panama_enhanced_component_get_metrics",
-        Integer.class,
-        engineHandle,
-        metricsOut);
-  }
-
-  /**
-   * Gets the components loaded count from component metrics.
-   *
-   * @param metricsHandle the component metrics handle
-   * @return the count of components loaded
-   */
-  public long componentMetricsGetComponentsLoaded(final MemorySegment metricsHandle) {
-    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
-      return 0L;
-    }
-    return callNativeFunction(
-        "wasmtime4j_panama_component_metrics_get_components_loaded", Long.class, metricsHandle);
-  }
-
-  /**
-   * Gets the instances created count from component metrics.
-   *
-   * @param metricsHandle the component metrics handle
-   * @return the count of instances created
-   */
-  public long componentMetricsGetInstancesCreated(final MemorySegment metricsHandle) {
-    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
-      return 0L;
-    }
-    return callNativeFunction(
-        "wasmtime4j_panama_component_metrics_get_instances_created", Long.class, metricsHandle);
-  }
-
-  /**
-   * Gets the instances destroyed count from component metrics.
-   *
-   * @param metricsHandle the component metrics handle
-   * @return the count of instances destroyed
-   */
-  public long componentMetricsGetInstancesDestroyed(final MemorySegment metricsHandle) {
-    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
-      return 0L;
-    }
-    return callNativeFunction(
-        "wasmtime4j_panama_component_metrics_get_instances_destroyed", Long.class, metricsHandle);
-  }
-
-  /**
-   * Gets the average instantiation time in nanoseconds from component metrics.
-   *
-   * @param metricsHandle the component metrics handle
-   * @return the average instantiation time in nanoseconds
-   */
-  public long componentMetricsGetAvgInstantiationTimeNanos(final MemorySegment metricsHandle) {
-    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
-      return 0L;
-    }
-    return callNativeFunction(
-        "wasmtime4j_panama_component_metrics_get_avg_instantiation_time_nanos",
-        Long.class,
-        metricsHandle);
-  }
-
-  /**
-   * Gets the peak memory usage from component metrics.
-   *
-   * @param metricsHandle the component metrics handle
-   * @return the peak memory usage in bytes
-   */
-  public long componentMetricsGetPeakMemoryUsage(final MemorySegment metricsHandle) {
-    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
-      return 0L;
-    }
-    return callNativeFunction(
-        "wasmtime4j_panama_component_metrics_get_peak_memory_usage", Long.class, metricsHandle);
-  }
-
-  /**
-   * Gets the function calls count from component metrics.
-   *
-   * @param metricsHandle the component metrics handle
-   * @return the count of function calls
-   */
-  public long componentMetricsGetFunctionCalls(final MemorySegment metricsHandle) {
-    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
-      return 0L;
-    }
-    return callNativeFunction(
-        "wasmtime4j_panama_component_metrics_get_function_calls", Long.class, metricsHandle);
-  }
-
-  /**
-   * Gets the error count from component metrics.
-   *
-   * @param metricsHandle the component metrics handle
-   * @return the error count
-   */
-  public long componentMetricsGetErrorCount(final MemorySegment metricsHandle) {
-    if (metricsHandle == null || metricsHandle.equals(MemorySegment.NULL)) {
-      return 0L;
-    }
-    return callNativeFunction(
-        "wasmtime4j_panama_component_metrics_get_error_count", Long.class, metricsHandle);
-  }
-
-  /**
-   * Destroys component metrics and frees associated resources.
-   *
-   * @param metricsHandle the component metrics handle to destroy
-   */
-  public void componentMetricsDestroy(final MemorySegment metricsHandle) {
-    if (metricsHandle != null && !metricsHandle.equals(MemorySegment.NULL)) {
-      callNativeFunction("wasmtime4j_panama_component_metrics_destroy", Void.class, metricsHandle);
     }
   }
 
@@ -1862,17 +1260,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   // ===== Component Linker =====
 
   /**
-   * Creates a new component linker from a component engine.
-   *
-   * @param enginePtr pointer to the component engine
-   * @return pointer to the new component linker, or null on failure
-   */
-  public MemorySegment componentLinkerCreate(final MemorySegment enginePtr) {
-    validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction("wasmtime4j_component_linker_new", MemorySegment.class, enginePtr);
-  }
-
-  /**
    * Creates a new component linker from a Wasmtime engine.
    *
    * @param enginePtr pointer to the Wasmtime engine
@@ -1903,102 +1290,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   public int componentLinkerIsValid(final MemorySegment linkerPtr) {
     validatePointer(linkerPtr, "linkerPtr");
     return callNativeFunction("wasmtime4j_component_linker_is_valid", Integer.class, linkerPtr);
-  }
-
-  /**
-   * Disposes a component linker's resources.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @return 0 on success, non-zero on error
-   */
-  public int componentLinkerDispose(final MemorySegment linkerPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction("wasmtime4j_component_linker_dispose", Integer.class, linkerPtr);
-  }
-
-  /**
-   * Checks if an interface is defined in the component linker.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @param namespacePtr pointer to namespace string
-   * @param interfaceNamePtr pointer to interface name string
-   * @return 1 if present, 0 if not, -1 on error
-   */
-  public int componentLinkerHasInterface(
-      final MemorySegment linkerPtr,
-      final MemorySegment namespacePtr,
-      final MemorySegment interfaceNamePtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    validatePointer(namespacePtr, "namespacePtr");
-    validatePointer(interfaceNamePtr, "interfaceNamePtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_has_interface",
-        Integer.class,
-        linkerPtr,
-        namespacePtr,
-        interfaceNamePtr);
-  }
-
-  /**
-   * Checks if a function is defined in the component linker.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @param namespacePtr pointer to namespace string
-   * @param interfaceNamePtr pointer to interface name string
-   * @param functionNamePtr pointer to function name string
-   * @return 1 if present, 0 if not, -1 on error
-   */
-  public int componentLinkerHasFunction(
-      final MemorySegment linkerPtr,
-      final MemorySegment namespacePtr,
-      final MemorySegment interfaceNamePtr,
-      final MemorySegment functionNamePtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    validatePointer(namespacePtr, "namespacePtr");
-    validatePointer(interfaceNamePtr, "interfaceNamePtr");
-    validatePointer(functionNamePtr, "functionNamePtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_has_function",
-        Integer.class,
-        linkerPtr,
-        namespacePtr,
-        interfaceNamePtr,
-        functionNamePtr);
-  }
-
-  /**
-   * Gets the number of host functions defined in the component linker.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @return the number of host functions
-   */
-  public long componentLinkerHostFunctionCount(final MemorySegment linkerPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_host_function_count", Long.class, linkerPtr);
-  }
-
-  /**
-   * Gets the number of interfaces defined in the component linker.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @return the number of interfaces
-   */
-  public long componentLinkerInterfaceCount(final MemorySegment linkerPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction("wasmtime4j_component_linker_interface_count", Long.class, linkerPtr);
-  }
-
-  /**
-   * Checks if WASI Preview 2 is enabled in the component linker.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @return 1 if enabled, 0 if not
-   */
-  public int componentLinkerWasiP2Enabled(final MemorySegment linkerPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_wasi_p2_enabled", Integer.class, linkerPtr);
   }
 
   /**
@@ -2367,33 +1658,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   }
 
   /**
-   * Enables WASI HTTP support in the component linker.
-   *
-   * <p>This enables HTTP request/response functionality in WebAssembly components. WASI Preview 2
-   * must be enabled first for this to work.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @return 0 on success, non-zero on error
-   */
-  public int componentLinkerEnableWasiHttp(final MemorySegment linkerPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_enable_wasi_http", Integer.class, linkerPtr);
-  }
-
-  /**
-   * Checks if WASI HTTP is enabled in the component linker.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @return 1 if WASI HTTP is enabled, 0 if not, negative on error
-   */
-  public int componentLinkerWasiHttpEnabled(final MemorySegment linkerPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_wasi_http_enabled", Integer.class, linkerPtr);
-  }
-
-  /**
    * Instantiates a component using the component linker.
    *
    * @param linkerPtr pointer to the component linker
@@ -2414,48 +1678,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         linkerPtr,
         componentPtr,
         instanceOutPtr);
-  }
-
-  /**
-   * Gets all defined interface names from the component linker.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @param jsonOutPtr pointer to store the JSON string pointer
-   * @return 0 on success, non-zero on error
-   */
-  public int componentLinkerGetInterfaces(
-      final MemorySegment linkerPtr, final MemorySegment jsonOutPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    validatePointer(jsonOutPtr, "jsonOutPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_get_interfaces", Integer.class, linkerPtr, jsonOutPtr);
-  }
-
-  /**
-   * Gets all functions defined for a specific interface.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @param namespacePtr pointer to namespace string
-   * @param interfaceNamePtr pointer to interface name string
-   * @param jsonOutPtr pointer to store the JSON string pointer
-   * @return 0 on success, non-zero on error
-   */
-  public int componentLinkerGetFunctions(
-      final MemorySegment linkerPtr,
-      final MemorySegment namespacePtr,
-      final MemorySegment interfaceNamePtr,
-      final MemorySegment jsonOutPtr) {
-    validatePointer(linkerPtr, "linkerPtr");
-    validatePointer(namespacePtr, "namespacePtr");
-    validatePointer(interfaceNamePtr, "interfaceNamePtr");
-    validatePointer(jsonOutPtr, "jsonOutPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_get_functions",
-        Integer.class,
-        linkerPtr,
-        namespacePtr,
-        interfaceNamePtr,
-        jsonOutPtr);
   }
 
   // ===== Component Serialize/Deserialize =====
@@ -2783,19 +2005,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   }
 
   /**
-   * Sets async support on a component linker.
-   *
-   * @param linkerPtr pointer to the component linker
-   * @param enabled 1 to enable, 0 to disable
-   * @return 0 on success, non-zero on error
-   */
-  public int componentLinkerSetAsyncSupport(final MemorySegment linkerPtr, final int enabled) {
-    validatePointer(linkerPtr, "linkerPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_linker_set_async_support", Integer.class, linkerPtr, enabled);
-  }
-
-  /**
    * Allocates a result buffer for host function callback results.
    *
    * @param len length of the buffer to allocate
@@ -2804,16 +2013,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   public MemorySegment componentHostCallbackAllocResult(final long len) {
     return callNativeFunction(
         "wasmtime4j_component_host_callback_alloc_result", MemorySegment.class, len);
-  }
-
-  /**
-   * Frees a result buffer allocated by host function callback.
-   *
-   * @param ptr pointer to the buffer
-   * @param len length of the buffer
-   */
-  public void componentHostCallbackFreeResult(final MemorySegment ptr, final long len) {
-    callNativeFunction("wasmtime4j_component_host_callback_free_result", Void.class, ptr, len);
   }
 
   /**
