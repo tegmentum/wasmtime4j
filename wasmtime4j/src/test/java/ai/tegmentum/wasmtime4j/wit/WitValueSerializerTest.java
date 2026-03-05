@@ -17,6 +17,7 @@ package ai.tegmentum.wasmtime4j.wit;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -793,23 +794,51 @@ final class WitValueSerializerTest {
   }
 
   @Test
-  @DisplayName("Serialize own resource handle to binary format")
+  @DisplayName("Serialize own resource handle with i64 binary layout")
   void testSerializeOwn() throws ValidationException {
     final WitOwn value = WitOwn.of("FileHandle", 42);
     final byte[] result = WitValueSerializer.serialize(value);
 
     assertNotNull(result, "Serialized result should not be null");
-    assertTrue(result.length > 4, "Own should have type name + index");
+    // Format: [type_name_length: i32 LE][type_name: UTF-8][handle: i64 LE]
+    final byte[] typeNameBytes = "FileHandle".getBytes(StandardCharsets.UTF_8);
+    assertEquals(
+        4 + typeNameBytes.length + 8,
+        result.length,
+        "Own should be 4 (name length) + name bytes + 8 (i64 handle)");
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals(typeNameBytes.length, buffer.getInt(), "Type name length should match");
+    final byte[] readName = new byte[typeNameBytes.length];
+    buffer.get(readName);
+    assertEquals(
+        "FileHandle", new String(readName, StandardCharsets.UTF_8), "Type name should match");
+    assertEquals(42L, buffer.getLong(), "Handle should be serialized as i64");
+    assertFalse(buffer.hasRemaining(), "No trailing bytes should remain");
   }
 
   @Test
-  @DisplayName("Serialize borrow resource handle to binary format")
+  @DisplayName("Serialize borrow resource handle with i64 binary layout")
   void testSerializeBorrow() throws ValidationException {
     final WitBorrow value = WitBorrow.of("FileHandle", 42);
     final byte[] result = WitValueSerializer.serialize(value);
 
     assertNotNull(result, "Serialized result should not be null");
-    assertTrue(result.length > 4, "Borrow should have type name + index");
+    // Format: [type_name_length: i32 LE][type_name: UTF-8][handle: i64 LE]
+    final byte[] typeNameBytes = "FileHandle".getBytes(StandardCharsets.UTF_8);
+    assertEquals(
+        4 + typeNameBytes.length + 8,
+        result.length,
+        "Borrow should be 4 (name length) + name bytes + 8 (i64 handle)");
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals(typeNameBytes.length, buffer.getInt(), "Type name length should match");
+    final byte[] readName = new byte[typeNameBytes.length];
+    buffer.get(readName);
+    assertEquals(
+        "FileHandle", new String(readName, StandardCharsets.UTF_8), "Type name should match");
+    assertEquals(42L, buffer.getLong(), "Handle should be serialized as i64");
+    assertFalse(buffer.hasRemaining(), "No trailing bytes should remain");
   }
 
   @Test

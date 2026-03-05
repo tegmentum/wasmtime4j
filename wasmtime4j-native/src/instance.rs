@@ -2756,6 +2756,88 @@ mod tests {
     }
 
     #[test]
+    fn test_ffi_wasm_value_anyref_roundtrip() {
+        // AnyRef with Some value -> tag=7, value=42
+        let anyref_val = WasmValue::AnyRef(Some(42));
+        let ffi_val = FfiWasmValue::from_wasm_value(&anyref_val);
+        assert_eq!(ffi_val.tag, 7, "AnyRef should have tag 7");
+
+        let value_i64 = i64::from_ne_bytes(
+            ffi_val.value[..8]
+                .try_into()
+                .expect("slice to 8 always valid"),
+        );
+        assert_eq!(value_i64, 42, "AnyRef value should be 42");
+
+        let back = ffi_val.to_wasm_value().unwrap();
+        assert_eq!(anyref_val, back, "AnyRef roundtrip should preserve value");
+    }
+
+    #[test]
+    fn test_ffi_wasm_value_exnref_null_roundtrip() {
+        // ExnRef with None -> tag=8, value=0
+        let exnref_val = WasmValue::ExnRef(None);
+        let ffi_val = FfiWasmValue::from_wasm_value(&exnref_val);
+        assert_eq!(ffi_val.tag, 8, "ExnRef should have tag 8");
+
+        let value_i64 = i64::from_ne_bytes(
+            ffi_val.value[..8]
+                .try_into()
+                .expect("slice to 8 always valid"),
+        );
+        assert_eq!(value_i64, 0, "Null ExnRef value should be 0");
+
+        let back = ffi_val.to_wasm_value().unwrap();
+        match back {
+            WasmValue::ExnRef(None) => { /* OK */ }
+            _ => panic!("Null ExnRef should roundtrip correctly, got: {:?}", back),
+        }
+    }
+
+    #[test]
+    fn test_ffi_wasm_value_exnref_some_roundtrip() {
+        let exnref_val = WasmValue::ExnRef(Some(777));
+        let ffi_val = FfiWasmValue::from_wasm_value(&exnref_val);
+        assert_eq!(ffi_val.tag, 8, "ExnRef should have tag 8");
+
+        let back = ffi_val.to_wasm_value().unwrap();
+        assert_eq!(exnref_val, back, "ExnRef(Some) roundtrip should preserve value");
+    }
+
+    #[test]
+    fn test_ffi_wasm_value_anyref_null_roundtrip() {
+        let anyref_val = WasmValue::AnyRef(None);
+        let ffi_val = FfiWasmValue::from_wasm_value(&anyref_val);
+        assert_eq!(ffi_val.tag, 7, "AnyRef should have tag 7");
+
+        let back = ffi_val.to_wasm_value().unwrap();
+        match back {
+            WasmValue::AnyRef(None) => { /* OK */ }
+            _ => panic!("Null AnyRef should roundtrip correctly, got: {:?}", back),
+        }
+    }
+
+    #[test]
+    fn test_ffi_wasm_value_contref_roundtrip() {
+        let contref_val = WasmValue::ContRef;
+        let ffi_val = FfiWasmValue::from_wasm_value(&contref_val);
+        assert_eq!(ffi_val.tag, 9, "ContRef should have tag 9");
+
+        let back = ffi_val.to_wasm_value().unwrap();
+        assert_eq!(contref_val, back, "ContRef roundtrip should preserve value");
+    }
+
+    #[test]
+    fn test_ffi_wasm_value_invalid_tag() {
+        let invalid = FfiWasmValue {
+            tag: 99,
+            value: [0u8; 16],
+        };
+        let result = invalid.to_wasm_value();
+        assert!(result.is_err(), "Invalid tag should return error");
+    }
+
+    #[test]
     fn test_extract_value_type_errors() {
         let i32_val = WasmValue::I32(42);
         let i64_val = WasmValue::I64(100);

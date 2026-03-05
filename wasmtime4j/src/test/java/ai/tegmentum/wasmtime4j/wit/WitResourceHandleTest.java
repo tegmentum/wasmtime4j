@@ -284,42 +284,43 @@ final class WitResourceHandleTest {
   class SerializationTests {
 
     @Test
-    @DisplayName("Serialize WitOwn to binary format")
+    @DisplayName("Serialize WitOwn to binary format with i64 handle")
     void testSerializeOwn() throws ValidationException {
       final WitOwn own = WitOwn.of("file-handle", 42);
       final byte[] result = WitValueSerializer.serialize(own);
 
       assertNotNull(result, "Serialized result should not be null");
 
-      // Format: [type_name_length: u32][type_name: UTF-8][index: i32]
+      // Format: [type_name_length: u32 LE][type_name: UTF-8][handle: i64 LE]
       final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
       final int typeNameLength = buffer.getInt();
-      assertEquals("file-handle".length(), typeNameLength);
+      assertEquals("file-handle".length(), typeNameLength, "Type name length should match");
 
       final byte[] typeNameBytes = new byte[typeNameLength];
       buffer.get(typeNameBytes);
       assertEquals("file-handle", new String(typeNameBytes, StandardCharsets.UTF_8));
 
-      assertEquals(42, buffer.getInt());
+      assertEquals(42L, buffer.getLong(), "Handle should be serialized as i64");
     }
 
     @Test
-    @DisplayName("Serialize WitBorrow to binary format")
+    @DisplayName("Serialize WitBorrow to binary format with i64 handle")
     void testSerializeBorrow() throws ValidationException {
       final WitBorrow borrow = WitBorrow.of("socket", 100);
       final byte[] result = WitValueSerializer.serialize(borrow);
 
       assertNotNull(result, "Serialized result should not be null");
 
+      // Format: [type_name_length: u32 LE][type_name: UTF-8][handle: i64 LE]
       final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
       final int typeNameLength = buffer.getInt();
-      assertEquals("socket".length(), typeNameLength);
+      assertEquals("socket".length(), typeNameLength, "Type name length should match");
 
       final byte[] typeNameBytes = new byte[typeNameLength];
       buffer.get(typeNameBytes);
       assertEquals("socket", new String(typeNameBytes, StandardCharsets.UTF_8));
 
-      assertEquals(100, buffer.getInt());
+      assertEquals(100L, buffer.getLong(), "Handle should be serialized as i64");
     }
 
     @Test
@@ -342,42 +343,43 @@ final class WitResourceHandleTest {
   class DeserializationTests {
 
     @Test
-    @DisplayName("Deserialize WitOwn from binary format")
+    @DisplayName("Deserialize WitOwn from binary format with i64 handle")
     void testDeserializeOwn() throws ValidationException {
-      // Create serialized data: [type_name_length: u32][type_name: UTF-8][index: i32]
+      // Create serialized data: [type_name_length: u32 LE][type_name: UTF-8][handle: i64 LE]
       final String resourceType = "file-handle";
       final byte[] typeBytes = resourceType.getBytes(StandardCharsets.UTF_8);
       final ByteBuffer buffer =
-          ByteBuffer.allocate(4 + typeBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+          ByteBuffer.allocate(4 + typeBytes.length + 8).order(ByteOrder.LITTLE_ENDIAN);
       buffer.putInt(typeBytes.length);
       buffer.put(typeBytes);
-      buffer.putInt(42);
+      buffer.putLong(42L);
 
       final WitValue result = WitValueDeserializer.deserialize(22, buffer.array());
 
       assertTrue(result instanceof WitOwn, "Should deserialize to WitOwn");
       final WitOwn own = (WitOwn) result;
-      assertEquals("file-handle", own.getResourceType());
-      assertEquals(42, own.getIndex());
+      assertEquals("file-handle", own.getResourceType(), "Resource type should match");
+      assertEquals(42L, own.getHandle().getNativeHandle(), "Native handle should match");
     }
 
     @Test
-    @DisplayName("Deserialize WitBorrow from binary format")
+    @DisplayName("Deserialize WitBorrow from binary format with i64 handle")
     void testDeserializeBorrow() throws ValidationException {
+      // Create serialized data: [type_name_length: u32 LE][type_name: UTF-8][handle: i64 LE]
       final String resourceType = "socket";
       final byte[] typeBytes = resourceType.getBytes(StandardCharsets.UTF_8);
       final ByteBuffer buffer =
-          ByteBuffer.allocate(4 + typeBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+          ByteBuffer.allocate(4 + typeBytes.length + 8).order(ByteOrder.LITTLE_ENDIAN);
       buffer.putInt(typeBytes.length);
       buffer.put(typeBytes);
-      buffer.putInt(100);
+      buffer.putLong(100L);
 
       final WitValue result = WitValueDeserializer.deserialize(23, buffer.array());
 
       assertTrue(result instanceof WitBorrow, "Should deserialize to WitBorrow");
       final WitBorrow borrow = (WitBorrow) result;
-      assertEquals("socket", borrow.getResourceType());
-      assertEquals(100, borrow.getIndex());
+      assertEquals("socket", borrow.getResourceType(), "Resource type should match");
+      assertEquals(100L, borrow.getHandle().getNativeHandle(), "Native handle should match");
     }
 
     @Test
@@ -447,7 +449,160 @@ final class WitResourceHandleTest {
       assertTrue(deserialized instanceof WitOwn);
       final WitOwn result = (WitOwn) deserialized;
       assertEquals("文件句柄", result.getResourceType());
-      assertEquals(42, result.getIndex());
+      assertEquals(42L, result.getHandle().getNativeHandle(), "Native handle should match");
+    }
+
+    @Test
+    @DisplayName("Round-trip WitOwn with handle value exceeding Integer.MAX_VALUE")
+    void testOwnRoundTripWithLargeHandle() throws ValidationException {
+      final long largeHandle = (long) Integer.MAX_VALUE + 100L;
+      final WitOwn original = WitOwn.of("large-resource", largeHandle);
+
+      assertEquals(
+          largeHandle,
+          original.getHandle().getNativeHandle(),
+          "Native handle should preserve large value");
+
+      final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
+      final byte[] serialized = WitValueSerializer.serialize(original);
+      final WitValue deserialized = WitValueDeserializer.deserialize(discriminator, serialized);
+
+      assertTrue(deserialized instanceof WitOwn, "Should deserialize to WitOwn");
+      final WitOwn result = (WitOwn) deserialized;
+      assertEquals("large-resource", result.getResourceType(), "Resource type should match");
+      assertEquals(
+          largeHandle,
+          result.getHandle().getNativeHandle(),
+          "Large handle should survive round-trip");
+    }
+
+    @Test
+    @DisplayName("Round-trip WitBorrow with handle value exceeding Integer.MAX_VALUE")
+    void testBorrowRoundTripWithLargeHandle() throws ValidationException {
+      final long largeHandle = (long) Integer.MAX_VALUE + 500L;
+      final WitBorrow original = WitBorrow.of("large-borrow", largeHandle);
+
+      assertEquals(
+          largeHandle,
+          original.getHandle().getNativeHandle(),
+          "Native handle should preserve large value");
+
+      final int discriminator = WitValueSerializer.getTypeDiscriminator(original);
+      final byte[] serialized = WitValueSerializer.serialize(original);
+      final WitValue deserialized = WitValueDeserializer.deserialize(discriminator, serialized);
+
+      assertTrue(deserialized instanceof WitBorrow, "Should deserialize to WitBorrow");
+      final WitBorrow result = (WitBorrow) deserialized;
+      assertEquals("large-borrow", result.getResourceType(), "Resource type should match");
+      assertEquals(
+          largeHandle,
+          result.getHandle().getNativeHandle(),
+          "Large handle should survive round-trip");
+    }
+  }
+
+  @Nested
+  @DisplayName("Long Handle Factory Tests")
+  class LongHandleFactoryTests {
+
+    @Test
+    @DisplayName("WitOwn.of(String, long) creates handle with nativeHandle preserved")
+    void testOwnOfLongHandle() {
+      final long handle = 5_000_000_000L;
+      final WitOwn own = WitOwn.of("native-resource", handle);
+
+      assertNotNull(own, "WitOwn should not be null");
+      assertEquals("native-resource", own.getResourceType(), "Resource type should match");
+      assertEquals(
+          handle,
+          own.getHandle().getNativeHandle(),
+          "Native handle should preserve the long value");
+      assertTrue(own.getHandle().isOwned(), "Handle should be owned");
+    }
+
+    @Test
+    @DisplayName("WitBorrow.of(String, long) creates handle with nativeHandle preserved")
+    void testBorrowOfLongHandle() {
+      final long handle = 5_000_000_000L;
+      final WitBorrow borrow = WitBorrow.of("native-resource", handle);
+
+      assertNotNull(borrow, "WitBorrow should not be null");
+      assertEquals("native-resource", borrow.getResourceType(), "Resource type should match");
+      assertEquals(
+          handle,
+          borrow.getHandle().getNativeHandle(),
+          "Native handle should preserve the long value");
+      assertFalse(borrow.getHandle().isOwned(), "Handle should be borrowed");
+    }
+
+    @Test
+    @DisplayName("WitOwn.of(String, long) with value fitting in int should still use nativeHandle")
+    void testOwnOfLongHandleSmallValue() {
+      final WitOwn own = WitOwn.of("small-resource", 42L);
+
+      assertEquals(42L, own.getHandle().getNativeHandle(), "Native handle should be 42");
+    }
+
+    @Test
+    @DisplayName(
+        "WitBorrow.of(String, long) with value fitting in int should still use nativeHandle")
+    void testBorrowOfLongHandleSmallValue() {
+      final WitBorrow borrow = WitBorrow.of("small-resource", 42L);
+
+      assertEquals(42L, borrow.getHandle().getNativeHandle(), "Native handle should be 42");
+    }
+  }
+
+  @Nested
+  @DisplayName("ComponentResourceHandle NativeHandle Tests")
+  class NativeHandleTests {
+
+    @Test
+    @DisplayName("ownWithNativeHandle preserves nativeHandle value")
+    void testOwnWithNativeHandle() {
+      final long nativeHandle = 9_876_543_210L;
+      final ComponentResourceHandle handle =
+          ComponentResourceHandle.ownWithNativeHandle("resource", 0, nativeHandle);
+
+      assertEquals(
+          nativeHandle,
+          handle.getNativeHandle(),
+          "getNativeHandle should return the nativeHandle value");
+      assertTrue(handle.isOwned(), "Handle should be owned");
+      assertEquals("resource", handle.getResourceType(), "Resource type should match");
+    }
+
+    @Test
+    @DisplayName("borrowWithNativeHandle preserves nativeHandle value")
+    void testBorrowWithNativeHandle() {
+      final long nativeHandle = 9_876_543_210L;
+      final ComponentResourceHandle handle =
+          ComponentResourceHandle.borrowWithNativeHandle("resource", 0, nativeHandle);
+
+      assertEquals(
+          nativeHandle,
+          handle.getNativeHandle(),
+          "getNativeHandle should return the nativeHandle value");
+      assertFalse(handle.isOwned(), "Handle should be borrowed");
+      assertEquals("resource", handle.getResourceType(), "Resource type should match");
+    }
+
+    @Test
+    @DisplayName("own(type, index) returns -1 for nativeHandle")
+    void testOwnDefaultNativeHandle() {
+      final ComponentResourceHandle handle = ComponentResourceHandle.own("resource", 5);
+
+      assertEquals(
+          -1L, handle.getNativeHandle(), "Default own handle should return -1 for nativeHandle");
+    }
+
+    @Test
+    @DisplayName("borrow(type, index) returns -1 for nativeHandle")
+    void testBorrowDefaultNativeHandle() {
+      final ComponentResourceHandle handle = ComponentResourceHandle.borrow("resource", 5);
+
+      assertEquals(
+          -1L, handle.getNativeHandle(), "Default borrow handle should return -1 for nativeHandle");
     }
   }
 }

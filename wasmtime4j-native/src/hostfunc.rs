@@ -1384,4 +1384,180 @@ mod tests {
         core::remove_host_function(host_func_id1).unwrap();
         core::remove_host_function(host_func_id2).unwrap();
     }
+
+    // --- GC Ref Registry Tests ---
+
+    #[test]
+    fn test_store_gc_ref_and_take_roundtrip_anyref() {
+        let entry = GcRefEntry::AnyRef(None);
+        let id = store_gc_ref(entry);
+        assert!(id > 0, "GC ref ID should be positive");
+
+        let taken = take_gc_ref(id);
+        assert!(taken.is_some(), "Should retrieve stored AnyRef entry");
+        match taken.unwrap() {
+            GcRefEntry::AnyRef(val) => assert!(val.is_none(), "AnyRef value should be None"),
+            _ => panic!("Expected AnyRef variant"),
+        }
+    }
+
+    #[test]
+    fn test_store_gc_ref_and_take_roundtrip_exnref() {
+        let entry = GcRefEntry::ExnRef(None);
+        let id = store_gc_ref(entry);
+        assert!(id > 0, "GC ref ID should be positive");
+
+        let taken = take_gc_ref(id);
+        assert!(taken.is_some(), "Should retrieve stored ExnRef entry");
+        match taken.unwrap() {
+            GcRefEntry::ExnRef(val) => assert!(val.is_none(), "ExnRef value should be None"),
+            _ => panic!("Expected ExnRef variant"),
+        }
+    }
+
+    #[test]
+    fn test_take_gc_ref_returns_none_for_unknown_id() {
+        let result = take_gc_ref(u64::MAX);
+        assert!(
+            result.is_none(),
+            "take_gc_ref should return None for unknown ID"
+        );
+    }
+
+    #[test]
+    fn test_take_gc_ref_consumes_entry() {
+        let entry = GcRefEntry::AnyRef(None);
+        let id = store_gc_ref(entry);
+
+        let first_take = take_gc_ref(id);
+        assert!(first_take.is_some(), "First take should succeed");
+
+        let second_take = take_gc_ref(id);
+        assert!(
+            second_take.is_none(),
+            "Second take should return None since entry was consumed"
+        );
+    }
+
+    #[test]
+    fn test_cleanup_gc_ref_ids_removes_all_specified() {
+        let id1 = store_gc_ref(GcRefEntry::AnyRef(None));
+        let id2 = store_gc_ref(GcRefEntry::ExnRef(None));
+        let id3 = store_gc_ref(GcRefEntry::AnyRef(None));
+
+        cleanup_gc_ref_ids(&[id1, id2, id3]);
+
+        assert!(
+            take_gc_ref(id1).is_none(),
+            "id1 should be cleaned up"
+        );
+        assert!(
+            take_gc_ref(id2).is_none(),
+            "id2 should be cleaned up"
+        );
+        assert!(
+            take_gc_ref(id3).is_none(),
+            "id3 should be cleaned up"
+        );
+    }
+
+    #[test]
+    fn test_store_gc_ref_generates_unique_incrementing_ids() {
+        let id1 = store_gc_ref(GcRefEntry::AnyRef(None));
+        let id2 = store_gc_ref(GcRefEntry::ExnRef(None));
+        let id3 = store_gc_ref(GcRefEntry::AnyRef(None));
+
+        assert!(id2 > id1, "IDs should be incrementing: {} > {}", id2, id1);
+        assert!(id3 > id2, "IDs should be incrementing: {} > {}", id3, id2);
+
+        // Clean up
+        cleanup_gc_ref_ids(&[id1, id2, id3]);
+    }
+
+    // --- AnyRef/ExnRef Validation Tests ---
+
+    #[test]
+    fn test_validate_parameter_types_anyref() {
+        let params = vec![WasmValue::AnyRef(Some(42))];
+        let expected_types = vec![ValType::Ref(RefType::new(true, HeapType::Any))];
+
+        let result = validate_parameter_types(&params, &expected_types);
+        assert!(
+            result.is_ok(),
+            "AnyRef param should validate against RefType(nullable, Any): {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_validate_parameter_types_exnref() {
+        let params = vec![WasmValue::ExnRef(None)];
+        let expected_types = vec![ValType::Ref(RefType::new(true, HeapType::Exn))];
+
+        let result = validate_parameter_types(&params, &expected_types);
+        assert!(
+            result.is_ok(),
+            "ExnRef param should validate against RefType(nullable, Exn): {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_validate_parameter_types_anyref_mismatch() {
+        let params = vec![WasmValue::AnyRef(Some(42))];
+        let expected_types = vec![ValType::I32];
+
+        let result = validate_parameter_types(&params, &expected_types);
+        assert!(
+            result.is_err(),
+            "AnyRef param should not validate against I32"
+        );
+    }
+
+    #[test]
+    fn test_validate_return_types_anyref() {
+        let results = vec![WasmValue::AnyRef(Some(99))];
+        let expected_types = vec![ValType::Ref(RefType::new(true, HeapType::Any))];
+
+        let result = validate_return_types(&results, &expected_types);
+        assert!(
+            result.is_ok(),
+            "AnyRef return should validate against RefType(nullable, Any): {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_validate_return_types_exnref() {
+        let results = vec![WasmValue::ExnRef(Some(7))];
+        let expected_types = vec![ValType::Ref(RefType::new(true, HeapType::Exn))];
+
+        let result = validate_return_types(&results, &expected_types);
+        assert!(
+            result.is_ok(),
+            "ExnRef return should validate against RefType(nullable, Exn): {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_validate_return_types_type_mismatch() {
+        let results = vec![WasmValue::I32(42)];
+        let expected_types = vec![ValType::I64];
+
+        let result = validate_return_types(&results, &expected_types);
+        assert!(result.is_err(), "I32 return should not validate against I64");
+    }
+
+    #[test]
+    fn test_validate_return_types_count_mismatch() {
+        let results = vec![WasmValue::I32(42), WasmValue::I32(43)];
+        let expected_types = vec![ValType::I32];
+
+        let result = validate_return_types(&results, &expected_types);
+        assert!(
+            result.is_err(),
+            "Return count mismatch should fail validation"
+        );
+    }
 }

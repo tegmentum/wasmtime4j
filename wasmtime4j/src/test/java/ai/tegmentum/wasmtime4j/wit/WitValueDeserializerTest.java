@@ -1233,25 +1233,26 @@ final class WitValueDeserializerTest {
   // ==================== Own Deserialization Boundary Tests ====================
 
   @Test
-  @DisplayName("Deserialize own with exactly 8 bytes (minimum) should work with empty type name")
+  @DisplayName("Deserialize own with exactly 12 bytes (minimum) should work with empty type name")
   void testDeserializeOwnExactlyMinimumBytes() throws ValidationException {
-    // type_length=0, index=42
-    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    // type_length=0, handle=42 (i64)
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0); // type name length = 0
-    buffer.putInt(42); // index = 42
+    buffer.putLong(42L); // handle = 42
     final byte[] data = buffer.array();
 
     final WitValue result = WitValueDeserializer.deserialize(22, data);
 
     assertNotNull(result, "Result should not be null");
     assertInstanceOf(WitOwn.class, result, "Result should be WitOwn");
-    assertEquals(42, ((WitOwn) result).getIndex(), "Index should be 42");
+    assertEquals(
+        42L, ((WitOwn) result).getHandle().getNativeHandle(), "Native handle should be 42");
   }
 
   @Test
-  @DisplayName("Deserialize own with 7 bytes (less than minimum) should fail")
+  @DisplayName("Deserialize own with 11 bytes (less than minimum 12) should fail")
   void testDeserializeOwnLessThanMinimumBytes() {
-    final byte[] data = new byte[7]; // Less than 8 bytes needed
+    final byte[] data = new byte[11]; // Less than 12 bytes needed for i64 handle
 
     final ValidationException exception =
         assertThrows(
@@ -1267,9 +1268,9 @@ final class WitValueDeserializerTest {
   @Test
   @DisplayName("Deserialize own with negative type name length should fail")
   void testDeserializeOwnNegativeTypeNameLength() {
-    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(-1); // negative type name length
-    buffer.putInt(42); // index
+    buffer.putLong(42L); // handle
     final byte[] data = buffer.array();
 
     final ValidationException exception =
@@ -1286,11 +1287,11 @@ final class WitValueDeserializerTest {
   @Test
   @DisplayName("Deserialize own with truncated type name should fail")
   void testDeserializeOwnTruncatedTypeName() {
-    // type_length=10, but only 3 bytes of type name + index available
-    final ByteBuffer buffer = ByteBuffer.allocate(11).order(ByteOrder.LITTLE_ENDIAN);
+    // type_length=10, but only 3 bytes of type name + handle available
+    final ByteBuffer buffer = ByteBuffer.allocate(15).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(10); // type name length = 10
     buffer.put("abc".getBytes(StandardCharsets.UTF_8)); // only 3 bytes
-    buffer.putInt(42); // index (would overwrite if we had enough space)
+    buffer.putLong(42L); // handle
     final byte[] data = buffer.array();
 
     final ValidationException exception =
@@ -1305,15 +1306,15 @@ final class WitValueDeserializerTest {
   }
 
   @Test
-  @DisplayName("Deserialize own with valid type name and index")
+  @DisplayName("Deserialize own with valid type name and i64 handle")
   void testDeserializeOwnWithTypeName() throws ValidationException {
     final String typeName = "myresource";
     final byte[] typeNameBytes = typeName.getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
-        ByteBuffer.allocate(4 + typeNameBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer.allocate(4 + typeNameBytes.length + 8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(typeNameBytes.length);
     buffer.put(typeNameBytes);
-    buffer.putInt(123);
+    buffer.putLong(123L);
     final byte[] data = buffer.array();
 
     final WitValue result = WitValueDeserializer.deserialize(22, data);
@@ -1321,31 +1322,34 @@ final class WitValueDeserializerTest {
     assertNotNull(result, "Result should not be null");
     assertInstanceOf(WitOwn.class, result, "Result should be WitOwn");
     assertEquals(typeName, ((WitOwn) result).getResourceType(), "Type name should match");
-    assertEquals(123, ((WitOwn) result).getIndex(), "Index should be 123");
+    assertEquals(
+        123L, ((WitOwn) result).getHandle().getNativeHandle(), "Native handle should be 123");
   }
 
   // ==================== Borrow Deserialization Boundary Tests ====================
 
   @Test
-  @DisplayName("Deserialize borrow with exactly 8 bytes (minimum) should work with empty type name")
+  @DisplayName(
+      "Deserialize borrow with exactly 12 bytes (minimum) should work with empty type name")
   void testDeserializeBorrowExactlyMinimumBytes() throws ValidationException {
-    // type_length=0, index=99
-    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    // type_length=0, handle=99 (i64)
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(0); // type name length = 0
-    buffer.putInt(99); // index = 99
+    buffer.putLong(99L); // handle = 99
     final byte[] data = buffer.array();
 
     final WitValue result = WitValueDeserializer.deserialize(23, data);
 
     assertNotNull(result, "Result should not be null");
     assertInstanceOf(WitBorrow.class, result, "Result should be WitBorrow");
-    assertEquals(99, ((WitBorrow) result).getIndex(), "Index should be 99");
+    assertEquals(
+        99L, ((WitBorrow) result).getHandle().getNativeHandle(), "Native handle should be 99");
   }
 
   @Test
-  @DisplayName("Deserialize borrow with 7 bytes (less than minimum) should fail")
+  @DisplayName("Deserialize borrow with 11 bytes (less than minimum 12) should fail")
   void testDeserializeBorrowLessThanMinimumBytes() {
-    final byte[] data = new byte[7]; // Less than 8 bytes needed
+    final byte[] data = new byte[11]; // Less than 12 bytes needed for i64 handle
 
     final ValidationException exception =
         assertThrows(
@@ -1361,9 +1365,9 @@ final class WitValueDeserializerTest {
   @Test
   @DisplayName("Deserialize borrow with negative type name length should fail")
   void testDeserializeBorrowNegativeTypeNameLength() {
-    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(-1); // negative type name length
-    buffer.putInt(42); // index
+    buffer.putLong(42L); // handle
     final byte[] data = buffer.array();
 
     final ValidationException exception =
@@ -1380,11 +1384,11 @@ final class WitValueDeserializerTest {
   @Test
   @DisplayName("Deserialize borrow with truncated type name should fail")
   void testDeserializeBorrowTruncatedTypeName() {
-    // type_length=10, but only 3 bytes of type name + index available
-    final ByteBuffer buffer = ByteBuffer.allocate(11).order(ByteOrder.LITTLE_ENDIAN);
+    // type_length=10, but only 3 bytes of type name + handle available
+    final ByteBuffer buffer = ByteBuffer.allocate(15).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(10); // type name length = 10
     buffer.put("abc".getBytes(StandardCharsets.UTF_8)); // only 3 bytes
-    buffer.putInt(42); // index
+    buffer.putLong(42L); // handle
     final byte[] data = buffer.array();
 
     final ValidationException exception =
@@ -1399,15 +1403,15 @@ final class WitValueDeserializerTest {
   }
 
   @Test
-  @DisplayName("Deserialize borrow with valid type name and index")
+  @DisplayName("Deserialize borrow with valid type name and i64 handle")
   void testDeserializeBorrowWithTypeName() throws ValidationException {
     final String typeName = "borrowed_res";
     final byte[] typeNameBytes = typeName.getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
-        ByteBuffer.allocate(4 + typeNameBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer.allocate(4 + typeNameBytes.length + 8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(typeNameBytes.length);
     buffer.put(typeNameBytes);
-    buffer.putInt(456);
+    buffer.putLong(456L);
     final byte[] data = buffer.array();
 
     final WitValue result = WitValueDeserializer.deserialize(23, data);
@@ -1415,7 +1419,54 @@ final class WitValueDeserializerTest {
     assertNotNull(result, "Result should not be null");
     assertInstanceOf(WitBorrow.class, result, "Result should be WitBorrow");
     assertEquals(typeName, ((WitBorrow) result).getResourceType(), "Type name should match");
-    assertEquals(456, ((WitBorrow) result).getIndex(), "Index should be 456");
+    assertEquals(
+        456L, ((WitBorrow) result).getHandle().getNativeHandle(), "Native handle should be 456");
+  }
+
+  @Test
+  @DisplayName("Deserialize own with large handle value exceeding Integer.MAX_VALUE")
+  void testDeserializeOwnWithLargeHandle() throws ValidationException {
+    final long largeHandle = (long) Integer.MAX_VALUE + 200L;
+    final String typeName = "large";
+    final byte[] typeNameBytes = typeName.getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + typeNameBytes.length + 8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(typeNameBytes.length);
+    buffer.put(typeNameBytes);
+    buffer.putLong(largeHandle);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(22, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitOwn.class, result, "Result should be WitOwn");
+    assertEquals(
+        largeHandle,
+        ((WitOwn) result).getHandle().getNativeHandle(),
+        "Large handle value should be preserved through deserialization");
+  }
+
+  @Test
+  @DisplayName("Deserialize borrow with large handle value exceeding Integer.MAX_VALUE")
+  void testDeserializeBorrowWithLargeHandle() throws ValidationException {
+    final long largeHandle = (long) Integer.MAX_VALUE + 300L;
+    final String typeName = "large-borrow";
+    final byte[] typeNameBytes = typeName.getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer =
+        ByteBuffer.allocate(4 + typeNameBytes.length + 8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(typeNameBytes.length);
+    buffer.put(typeNameBytes);
+    buffer.putLong(largeHandle);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(23, data);
+
+    assertNotNull(result, "Result should not be null");
+    assertInstanceOf(WitBorrow.class, result, "Result should be WitBorrow");
+    assertEquals(
+        largeHandle,
+        ((WitBorrow) result).getHandle().getNativeHandle(),
+        "Large handle value should be preserved through deserialization");
   }
 
   // ==================== String Deserialization Boundary Tests ====================

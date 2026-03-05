@@ -192,6 +192,90 @@ class ResourceAnyTest {
   }
 
   @Nested
+  @DisplayName("Lifecycle Callback Tests")
+  class LifecycleCallbackTests {
+
+    @Test
+    @DisplayName("resourceDrop should invoke lifecycle callback with nativeHandle")
+    void resourceDropShouldInvokeCallback() throws WasmException {
+      final long nativeHandle = 12345L;
+      final long[] capturedHandle = new long[] {-1L};
+
+      final ResourceAny resource =
+          ResourceAny.fromNative(
+              1, true, 100, nativeHandle, (handle) -> capturedHandle[0] = handle);
+
+      resource.resourceDrop(STUB_STORE);
+
+      assertEquals(
+          nativeHandle,
+          capturedHandle[0],
+          "Lifecycle callback should receive the nativeHandle value");
+    }
+
+    @Test
+    @DisplayName("Double drop with callback should still throw WasmException")
+    void doubleDropWithCallbackShouldThrow() throws WasmException {
+      final ResourceAny resource = ResourceAny.fromNative(1, true, 100, 42L, (handle) -> {});
+
+      resource.resourceDrop(STUB_STORE);
+
+      final WasmException exception =
+          assertThrows(
+              WasmException.class,
+              () -> resource.resourceDrop(STUB_STORE),
+              "Should throw WasmException on double-drop even with callback");
+      assertTrue(
+          exception.getMessage().contains("already been dropped"),
+          "Exception message should indicate resource was already dropped, got: "
+              + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("resourceDrop with null lifecycle callback should not throw")
+    void resourceDropWithNullCallbackShouldNotThrow() throws WasmException {
+      final ResourceAny resource = ResourceAny.fromNative(1, true, 100, 42L, null);
+
+      // Should not throw even without a callback
+      resource.resourceDrop(STUB_STORE);
+    }
+
+    @Test
+    @DisplayName("resourceDrop with zero nativeHandle should not invoke callback")
+    void resourceDropWithZeroHandleShouldNotInvokeCallback() throws WasmException {
+      final boolean[] callbackInvoked = new boolean[] {false};
+
+      final ResourceAny resource =
+          ResourceAny.fromNative(1, true, 100, 0L, (handle) -> callbackInvoked[0] = true);
+
+      resource.resourceDrop(STUB_STORE);
+
+      assertFalse(callbackInvoked[0], "Callback should not be invoked when nativeHandle is 0");
+    }
+
+    @Test
+    @DisplayName("fromNative should preserve nativeHandle in getNativeHandle")
+    void fromNativeShouldPreserveNativeHandle() {
+      final long nativeHandle = 9_999_999L;
+      final ResourceAny resource = ResourceAny.fromNative(5, true, 200, nativeHandle, null);
+
+      assertEquals(
+          nativeHandle,
+          resource.getNativeHandle(),
+          "getNativeHandle should return the nativeHandle from fromNative");
+    }
+
+    @Test
+    @DisplayName("fromNative with borrowed ownership should not be owned")
+    void fromNativeBorrowedShouldNotBeOwned() {
+      final ResourceAny resource = ResourceAny.fromNative(1, false, 100, 42L, null);
+
+      assertFalse(resource.isOwned(), "Resource from fromNative(owned=false) should not be owned");
+      assertTrue(resource.isBorrowed(), "Resource from fromNative(owned=false) should be borrowed");
+    }
+  }
+
+  @Nested
   @DisplayName("ToString Tests")
   class ToStringTests {
 
