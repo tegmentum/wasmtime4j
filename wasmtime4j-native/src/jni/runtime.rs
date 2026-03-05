@@ -587,3 +587,77 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
         Ok(Box::new(linker))
     }) as jlong
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn wasmtime_runtime_new_sets_version() {
+        let runtime = WasmtimeRuntime::new();
+        assert_eq!(
+            runtime.version,
+            crate::WASMTIME_VERSION,
+            "WasmtimeRuntime.version should match crate::WASMTIME_VERSION"
+        );
+    }
+
+    #[test]
+    fn wasmtime_runtime_new_sets_created_at() {
+        let before = Instant::now();
+        let runtime = WasmtimeRuntime::new();
+        let after = Instant::now();
+
+        assert!(
+            runtime.created_at >= before,
+            "created_at should be >= the instant before construction"
+        );
+        assert!(
+            runtime.created_at <= after,
+            "created_at should be <= the instant after construction"
+        );
+    }
+
+    #[test]
+    fn wasmtime_runtime_elapsed_increases() {
+        let runtime = WasmtimeRuntime::new();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        let elapsed = runtime.created_at.elapsed();
+        assert!(
+            elapsed >= std::time::Duration::from_millis(10),
+            "Elapsed time should be at least 10ms, was {:?}",
+            elapsed
+        );
+    }
+
+    #[test]
+    fn wasmtime_runtime_version_is_not_empty() {
+        let runtime = WasmtimeRuntime::new();
+        assert!(
+            !runtime.version.is_empty(),
+            "Version string should not be empty"
+        );
+        assert!(
+            runtime.version.contains('.'),
+            "Version string '{}' should contain a dot (semver format)",
+            runtime.version
+        );
+    }
+
+    #[test]
+    fn wasmtime_runtime_box_round_trip() {
+        // Verify the Box allocation/deallocation pattern used by JNI
+        let runtime = WasmtimeRuntime::new();
+        let version = runtime.version;
+        let boxed = Box::new(runtime);
+        let raw = Box::into_raw(boxed);
+
+        // Simulate what the JNI destroy function does
+        let recovered = unsafe { Box::from_raw(raw) };
+        assert_eq!(
+            recovered.version, version,
+            "Version should survive Box round-trip"
+        );
+        // recovered drops here, freeing memory
+    }
+}
