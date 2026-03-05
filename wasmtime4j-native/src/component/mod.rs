@@ -1503,10 +1503,12 @@ pub mod core {
                 type_to_json(json, &type_def);
                 json.push('}');
             }
-            ComponentItem::Resource(_resource_ty) => {
-                json.push_str("{\"kind\":\"resource\"");
-                // Resource types don't have a name directly accessible from ComponentItem::Resource
-                // but they have a unique identity through ResourceType
+            ComponentItem::Resource(resource_ty) => {
+                // ResourceType is opaque in Wasmtime 42.0.1 — no public name/index getters.
+                // The resource name is the JSON key assigned by the caller (imports/exports map).
+                // We include the Debug representation for diagnostic correlation.
+                json.push_str("{\"kind\":\"resource\",\"resourceTypeDebug\":");
+                append_json_string(json, &format!("{:?}", resource_ty));
                 json.push('}');
             }
         }
@@ -1622,8 +1624,17 @@ pub mod core {
                 }
                 json.push_str("]}");
             }
-            Type::Own(_) => json.push_str("{\"type\":\"own\"}"),
-            Type::Borrow(_) => json.push_str("{\"type\":\"borrow\"}"),
+            Type::Own(resource_ty) => {
+                // ResourceType is opaque — include Debug identity for diagnostic correlation
+                json.push_str("{\"type\":\"own\",\"resourceTypeDebug\":");
+                append_json_string(json, &format!("{:?}", resource_ty));
+                json.push('}');
+            }
+            Type::Borrow(resource_ty) => {
+                json.push_str("{\"type\":\"borrow\",\"resourceTypeDebug\":");
+                append_json_string(json, &format!("{:?}", resource_ty));
+                json.push('}');
+            }
             Type::Future(future_ty) => {
                 json.push_str("{\"type\":\"future\"");
                 if let Some(inner) = future_ty.ty() {

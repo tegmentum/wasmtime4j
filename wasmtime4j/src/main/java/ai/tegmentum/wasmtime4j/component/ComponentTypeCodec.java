@@ -103,7 +103,13 @@ public final class ComponentTypeCodec {
       case "type":
         return parseTypeItem(obj);
       case "resource":
-        return new ComponentItemInfo.ResourceInfo(null, 0);
+        {
+          // ResourceType is opaque in Wasmtime — no public name/index getters.
+          // The resource name is the map key in the imports/exports structure.
+          // resourceTypeDebug carries the Debug representation for diagnostic correlation.
+          final String debugStr = (String) obj.get("resourceTypeDebug");
+          return new ComponentItemInfo.ResourceInfo(debugStr, 0);
+        }
       case "truncated":
         return new ComponentItemInfo.ModuleInfo(null);
       default:
@@ -327,10 +333,16 @@ public final class ComponentTypeCodec {
         }
 
       case "own":
-        return ComponentTypeDescriptor.own("resource", 0);
+        {
+          final String debugStr = (String) obj.get("resourceTypeDebug");
+          return ComponentTypeDescriptor.own(debugStr != null ? debugStr : "resource", 0);
+        }
 
       case "borrow":
-        return ComponentTypeDescriptor.borrow("resource", 0);
+        {
+          final String debugStr = (String) obj.get("resourceTypeDebug");
+          return ComponentTypeDescriptor.borrow(debugStr != null ? debugStr : "resource", 0);
+        }
 
       case "future":
         {

@@ -6,6 +6,30 @@ use jni::JNIEnv;
 
 use crate::error::jni_utils;
 use std::ptr;
+use std::time::Instant;
+
+/// Lightweight runtime handle that tracks Wasmtime version and creation time.
+///
+/// In wasmtime4j, the "runtime" is an organizational wrapper — actual work is
+/// delegated to Engine, Store, Module, etc. This struct exists to provide a
+/// valid, non-null handle for the `JniResource` base class and to carry
+/// runtime-level metadata (version, uptime).
+pub struct WasmtimeRuntime {
+    /// The Wasmtime version this runtime was built against.
+    pub version: &'static str,
+    /// When this runtime handle was created.
+    pub created_at: Instant,
+}
+
+impl WasmtimeRuntime {
+    /// Create a new runtime handle.
+    pub fn new() -> Self {
+        WasmtimeRuntime {
+            version: crate::WASMTIME_VERSION,
+            created_at: Instant::now(),
+        }
+    }
+}
 
 /// Create a new WebAssembly runtime (JNI version)
 #[no_mangle]
@@ -14,14 +38,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
     _class: JClass,
 ) -> jlong {
     jni_utils::jni_try_ptr(&mut env, || {
-        log::debug!("Creating new JNI WebAssembly runtime");
-
-        // For now, return a placeholder handle since we don't need a specific runtime object
-        // The actual work is done by the engines and modules
-        let runtime_placeholder = Box::new(0u64);
-
+        log::debug!("Creating new JNI WebAssembly runtime (Wasmtime {})", crate::WASMTIME_VERSION);
+        let runtime = Box::new(WasmtimeRuntime::new());
         log::debug!("Created JNI WebAssembly runtime");
-        Ok(runtime_placeholder)
+        Ok(runtime)
     }) as jlong
 }
 
@@ -164,16 +184,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeDes
 
     log::debug!("Destroying runtime handle: 0x{:x}", runtime_handle);
 
-    // Clean up the runtime handle
     unsafe {
-        let _runtime = Box::from_raw(runtime_handle as *mut u64);
-        // The runtime object is automatically dropped here
+        let runtime = Box::from_raw(runtime_handle as *mut WasmtimeRuntime);
+        log::debug!(
+            "Destroyed runtime (version={}, uptime={:?})",
+            runtime.version,
+            runtime.created_at.elapsed()
+        );
     }
-
-    log::debug!(
-        "Successfully destroyed runtime handle: 0x{:x}",
-        runtime_handle
-    );
 }
 
 /// Create a new WASI context for the runtime (JNI version)
