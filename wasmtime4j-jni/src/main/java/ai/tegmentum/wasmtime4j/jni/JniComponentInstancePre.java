@@ -19,6 +19,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
+import ai.tegmentum.wasmtime4j.component.ComponentStoreConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import java.util.logging.Logger;
 
@@ -57,13 +58,38 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
   public ComponentInstance instantiate() throws WasmException {
     ensureNotClosed();
 
-    final long instanceHandle = nativeInstantiate(nativeHandle);
-    if (instanceHandle == 0) {
+    final long engineHandle = component.getEngine().getNativeHandle();
+    final long instanceId = nativeInstantiate(nativeHandle, engineHandle);
+    if (instanceId == 0) {
       throw new WasmException("Failed to instantiate from ComponentInstancePre");
     }
 
     final JniComponent.JniComponentInstanceHandle instanceWrapper =
-        new JniComponent.JniComponentInstanceHandle(instanceHandle);
+        new JniComponent.JniComponentInstanceHandle(engineHandle, instanceId);
+    return new JniComponentInstanceImpl(instanceWrapper, component, new ComponentInstanceConfig());
+  }
+
+  @Override
+  public ComponentInstance instantiate(final ComponentStoreConfig config) throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("config must not be null");
+    }
+    ensureNotClosed();
+
+    final long engineHandle = component.getEngine().getNativeHandle();
+    final long instanceId =
+        nativeInstantiateWithConfig(
+            nativeHandle,
+            engineHandle,
+            config.getFuelLimit(),
+            config.getEpochDeadline(),
+            config.getMaxMemoryBytes());
+    if (instanceId == 0) {
+      throw new WasmException("Failed to instantiate from ComponentInstancePre with config");
+    }
+
+    final JniComponent.JniComponentInstanceHandle instanceWrapper =
+        new JniComponent.JniComponentInstanceHandle(engineHandle, instanceId);
     return new JniComponentInstanceImpl(instanceWrapper, component, new ComponentInstanceConfig());
   }
 
@@ -134,7 +160,10 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
 
   // Native method declarations
 
-  private static native long nativeInstantiate(long preHandle);
+  private static native long nativeInstantiate(long preHandle, long engineHandle);
+
+  private static native long nativeInstantiateWithConfig(
+      long preHandle, long engineHandle, long fuelLimit, long epochDeadline, long maxMemoryBytes);
 
   private static native byte nativeIsValid(long preHandle);
 

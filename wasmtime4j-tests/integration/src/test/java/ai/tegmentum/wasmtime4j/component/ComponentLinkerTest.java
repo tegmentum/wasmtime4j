@@ -478,6 +478,80 @@ public final class ComponentLinkerTest {
   }
 
   @Nested
+  @DisplayName("WASI HTTP Tests")
+  class WasiHttpTests {
+
+    @Test
+    @DisplayName("should enable WASI HTTP after WASI Preview 2")
+    void shouldEnableWasiHttp(final TestInfo testInfo) throws Exception {
+      assumeComponentLinkerAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      engine = Engine.create();
+      resources.add(engine);
+      linker = ComponentLinker.create(engine);
+
+      // WASI Preview 2 must be enabled before WASI HTTP
+      linker.enableWasiPreview2();
+      LOGGER.info("WASI Preview 2 enabled");
+
+      assertDoesNotThrow(() -> linker.enableWasiHttp(), "Enable WASI HTTP should not throw");
+
+      LOGGER.info("WASI HTTP enabled successfully");
+    }
+
+    @Test
+    @DisplayName("should allow defining custom imports after WASI HTTP enabled")
+    void shouldAllowDefiningImportsAfterWasiHttpEnabled(final TestInfo testInfo) throws Exception {
+      assumeComponentLinkerAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      engine = Engine.create();
+      resources.add(engine);
+      linker = ComponentLinker.create(engine);
+
+      // WASI Preview 2 must be enabled before WASI HTTP
+      linker.enableWasiPreview2();
+      linker.enableWasiHttp();
+
+      // Define additional custom imports after WASI HTTP
+      assertDoesNotThrow(
+          () ->
+              linker.defineFunction(
+                  "custom:app",
+                  "service",
+                  "get-data",
+                  ComponentHostFunction.singleValue(params -> ComponentVal.string("test-data"))),
+          "Should be able to define imports after WASI HTTP enabled");
+
+      assertTrue(
+          linker.hasFunction("custom:app", "service", "get-data"),
+          "Custom function should exist after WASI HTTP enabled");
+
+      LOGGER.info("Custom imports defined after WASI HTTP");
+    }
+
+    @Test
+    @DisplayName("should enable WASI HTTP on closed linker throws")
+    void shouldThrowWhenEnablingWasiHttpOnClosedLinker(final TestInfo testInfo) throws Exception {
+      assumeComponentLinkerAvailable();
+      LOGGER.info("Testing: " + testInfo.getDisplayName());
+
+      engine = Engine.create();
+      resources.add(engine);
+      final ComponentLinker<Object> localLinker = ComponentLinker.create(engine);
+      localLinker.close();
+
+      assertThrows(
+          IllegalStateException.class,
+          () -> localLinker.enableWasiHttp(),
+          "Should throw when enabling WASI HTTP on closed linker");
+
+      LOGGER.info("Correctly threw when enabling WASI HTTP on closed linker");
+    }
+  }
+
+  @Nested
   @DisplayName("Lookup Tests")
   class LookupTests {
 

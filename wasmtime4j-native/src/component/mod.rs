@@ -91,8 +91,20 @@ pub struct ComponentStoreData {
     /// WASI HTTP context for HTTP request/response support
     #[cfg(feature = "wasi-http")]
     pub wasi_http_ctx: Option<wasmtime_wasi_http::WasiHttpCtx>,
+    /// Optional store limits for resource governance
+    pub store_limits: Option<wasmtime::StoreLimits>,
     /// Start time for performance tracking
     pub start_time: Instant,
+}
+
+impl std::fmt::Debug for ComponentStoreData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ComponentStoreData")
+            .field("instance_id", &self.instance_id)
+            .field("resource_table", &"<ResourceTable>")
+            .field("start_time", &self.start_time)
+            .finish()
+    }
 }
 
 impl Default for ComponentStoreData {
@@ -105,6 +117,7 @@ impl Default for ComponentStoreData {
             wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
             #[cfg(feature = "wasi-http")]
             wasi_http_ctx: None,
+            store_limits: None,
             start_time: Instant::now(),
         }
     }

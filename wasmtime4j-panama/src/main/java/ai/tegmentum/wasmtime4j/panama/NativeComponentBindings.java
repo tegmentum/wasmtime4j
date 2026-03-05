@@ -68,47 +68,11 @@ public final class NativeComponentBindings extends NativeBindingsBase {
   }
 
   private void initializeBindings() {
-    // ===== Component Engine (legacy API) =====
-    addFunctionBinding(
-        "wasmtime4j_component_engine_active_instances",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return count
-            ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_component_engine_cleanup",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, // return count
-            ValueLayout.ADDRESS)); // engine_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_component_size",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_LONG, // return size
-            ValueLayout.ADDRESS)); // component_ptr
-
-    addFunctionBinding(
-        "wasmtime4j_component_exports_interface",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return success
-            ValueLayout.ADDRESS, // component_ptr
-            ValueLayout.ADDRESS)); // interface_name
-
-    addFunctionBinding(
-        "wasmtime4j_component_imports_interface",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_BOOLEAN, // return success
-            ValueLayout.ADDRESS, // component_ptr
-            ValueLayout.ADDRESS)); // interface_name
-
     addFunctionBinding(
         "wasmtime4j_component_destroy",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // component_ptr
 
     // ===== Component Model (structured API with error codes) =====
-    addFunctionBinding(
-        "wasmtime4j_component_get_size",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_component_exports_interface",
@@ -163,74 +127,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // strings pointer
             ValueLayout.JAVA_INT)); // count
 
-    // ===== Panama Component Engine =====
-    addFunctionBinding(
-        "wasmtime4j_panama_component_engine_create", FunctionDescriptor.of(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_load_from_bytes",
-        FunctionDescriptor.of(
-            ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_instantiate",
-        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_get_size",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_exports_interface",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_imports_interface",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_get_active_instances_count",
-        FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_cleanup_instances",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_free_wit_values",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_engine_destroy",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_destroy", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_instance_destroy",
-        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
-
-    // ===== Panama Component Orchestrator and Resource Manager =====
-    addFunctionBinding(
-        "wasmtime4j_panama_component_orchestrator_create",
-        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_resource_manager_create",
-        FunctionDescriptor.of(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_component_resource_manager_create_resource",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_distributed_component_manager_create",
-        FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
     // ===== Enhanced Component Engine (using instance IDs) =====
     addFunctionBinding(
         "wasmtime4j_panama_enhanced_component_engine_create",
@@ -281,6 +177,22 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // wasm bytes
             ValueLayout.JAVA_LONG, // wasm size
             ValueLayout.ADDRESS)); // component out (pointer to pointer)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_compile_wat",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // engine handle
+            ValueLayout.ADDRESS, // WAT text bytes
+            ValueLayout.JAVA_LONG, // WAT text length
+            ValueLayout.ADDRESS)); // component out (pointer to pointer)
+
+    addFunctionBinding(
+        "wasmtime4j_panama_component_validate",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // 1=valid, 0=invalid, -1=error
+            ValueLayout.ADDRESS, // component pointer
+            ValueLayout.ADDRESS)); // WIT interface C string
 
     // ===== Enhanced Component Instance Methods =====
     addFunctionBinding(
@@ -341,15 +253,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // out_value
             ValueLayout.ADDRESS)); // out_len
 
-    // ===== WIT Interface Manager =====
-    addFunctionBinding(
-        "wasmtime4j_panama_wit_interface_manager_create",
-        FunctionDescriptor.of(ValueLayout.ADDRESS));
-
-    addFunctionBinding(
-        "wasmtime4j_panama_wit_interface_manager_register",
-        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-
     // ===== Component Linker =====
     addFunctionBinding(
         "wasmtime4j_component_linker_new_with_engine",
@@ -372,6 +275,19 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns result code
             ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_enable_wasi_http",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS)); // linker pointer
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_enable_wasi_http_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // linker pointer
+            ValueLayout.JAVA_LONG)); // field_size_limit
 
     addFunctionBinding(
         "wasmtime4j_component_linker_set_wasi_args",
@@ -615,6 +531,16 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // instance out pointer
 
     addFunctionBinding(
+        "wasmtime4j_component_instance_pre_instantiate_with_config",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns result code
+            ValueLayout.ADDRESS, // pre handle
+            ValueLayout.JAVA_LONG, // fuel limit
+            ValueLayout.JAVA_LONG, // epoch deadline
+            ValueLayout.JAVA_LONG, // max memory bytes
+            ValueLayout.ADDRESS)); // instance out pointer
+
+    addFunctionBinding(
         "wasmtime4j_component_instance_pre_is_valid",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // returns 1 if valid, 0 if not
@@ -740,68 +666,6 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // engine_ptr
             ValueLayout.JAVA_LONG, // instance_id
             ValueLayout.JAVA_LONG)); // resource_handle
-  }
-
-  // ===== Component Engine (legacy API) =====
-
-  /**
-   * Gets the active instances count for a component engine.
-   *
-   * @param enginePtr pointer to the component engine
-   * @return number of active instances
-   */
-  public int getActiveInstancesCount(final MemorySegment enginePtr) {
-    validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction(
-        "wasmtime4j_component_engine_active_instances", Integer.class, enginePtr);
-  }
-
-  /**
-   * Cleans up inactive instances.
-   *
-   * @param enginePtr pointer to the component engine
-   * @return number of instances cleaned up
-   */
-  public int cleanupInstances(final MemorySegment enginePtr) {
-    validatePointer(enginePtr, "enginePtr");
-    return callNativeFunction("wasmtime4j_component_engine_cleanup", Integer.class, enginePtr);
-  }
-
-  /**
-   * Gets the size of a component.
-   *
-   * @param componentPtr pointer to the component
-   * @return component size in bytes
-   */
-  public long getComponentSize(final MemorySegment componentPtr) {
-    validatePointer(componentPtr, "componentPtr");
-    return callNativeFunction("wasmtime4j_component_size", Long.class, componentPtr);
-  }
-
-  /**
-   * Checks if a component exports a specific interface.
-   *
-   * @param componentPtr pointer to the component
-   * @param interfaceName name of the interface to check
-   * @return true if the interface is exported
-   */
-  public boolean exportsInterface(final MemorySegment componentPtr, final String interfaceName) {
-    validatePointer(componentPtr, "componentPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_exports_interface", Boolean.class, componentPtr, interfaceName);
-  }
-
-  /**
-   * Checks if a component imports a specific interface.
-   *
-   * @param componentPtr pointer to the component
-   * @param interfaceName name of the interface to check
-   * @return true if the interface is imported
-   */
-  public boolean importsInterface(final MemorySegment componentPtr, final String interfaceName) {
-    validatePointer(componentPtr, "componentPtr");
-    return callNativeFunction(
-        "wasmtime4j_component_imports_interface", Boolean.class, componentPtr, interfaceName);
   }
 
   /**
@@ -1017,6 +881,46 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         wasmBytes,
         wasmSize,
         componentOut);
+  }
+
+  /**
+   * Compiles a component from WAT text.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param watBytes pointer to WAT text bytes
+   * @param watLen length of WAT text bytes
+   * @param componentOut output parameter for the component pointer
+   * @return 0 on success, non-zero error code on failure
+   */
+  public int componentCompileWat(
+      final MemorySegment engineHandle,
+      final MemorySegment watBytes,
+      final long watLen,
+      final MemorySegment componentOut) {
+    validatePointer(engineHandle, "engineHandle");
+    validatePointer(watBytes, "watBytes");
+    validatePointer(componentOut, "componentOut");
+    return callNativeFunction(
+        "wasmtime4j_panama_component_compile_wat",
+        Integer.class,
+        engineHandle,
+        watBytes,
+        watLen,
+        componentOut);
+  }
+
+  /**
+   * Validates a component against a WIT interface.
+   *
+   * @param componentPtr pointer to the component
+   * @param witInterface C string pointer to the WIT interface text
+   * @return 1 if valid, 0 if invalid, negative on error
+   */
+  public int componentValidate(final MemorySegment componentPtr, final MemorySegment witInterface) {
+    validatePointer(componentPtr, "componentPtr");
+    validatePointer(witInterface, "witInterface");
+    return callNativeFunction(
+        "wasmtime4j_panama_component_validate", Integer.class, componentPtr, witInterface);
   }
 
   /**
@@ -1318,6 +1222,35 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     validatePointer(linkerPtr, "linkerPtr");
     return callNativeFunction(
         "wasmtime4j_component_linker_enable_wasi_p2", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Enables WASI HTTP in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerEnableWasiHttp(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_enable_wasi_http", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Enables WASI HTTP with configuration in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param fieldSizeLimit maximum HTTP header field size (0 for default)
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerEnableWasiHttpWithConfig(
+      final MemorySegment linkerPtr, final long fieldSizeLimit) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_enable_wasi_http_with_config",
+        Integer.class,
+        linkerPtr,
+        fieldSizeLimit);
   }
 
   /**
@@ -2044,6 +1977,34 @@ public final class NativeComponentBindings extends NativeBindingsBase {
     validatePointer(instanceOutPtr, "instanceOutPtr");
     return callNativeFunction(
         "wasmtime4j_component_instance_pre_instantiate", Integer.class, prePtr, instanceOutPtr);
+  }
+
+  /**
+   * Instantiates from a pre-instantiated component with store configuration.
+   *
+   * @param prePtr pointer to the pre-instantiated handle
+   * @param fuelLimit fuel limit for the store (0 for no limit)
+   * @param epochDeadline epoch deadline for the store (0 for no deadline)
+   * @param maxMemoryBytes maximum memory in bytes (0 for unlimited)
+   * @param instanceOutPtr pointer to store the instance pointer
+   * @return 0 on success, non-zero on error
+   */
+  public int componentInstancePreInstantiateWithConfig(
+      final MemorySegment prePtr,
+      final long fuelLimit,
+      final long epochDeadline,
+      final long maxMemoryBytes,
+      final MemorySegment instanceOutPtr) {
+    validatePointer(prePtr, "prePtr");
+    validatePointer(instanceOutPtr, "instanceOutPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_instance_pre_instantiate_with_config",
+        Integer.class,
+        prePtr,
+        fuelLimit,
+        epochDeadline,
+        maxMemoryBytes,
+        instanceOutPtr);
   }
 
   /**

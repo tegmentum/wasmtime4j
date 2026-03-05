@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
+import ai.tegmentum.wasmtime4j.component.ComponentStoreConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
@@ -106,6 +107,42 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
       }
 
       LOGGER.fine("Successfully instantiated component from ComponentInstancePre");
+
+      return new PanamaComponentInstance(instancePtr, component, null);
+    }
+  }
+
+  @Override
+  public ComponentInstance instantiate(final ComponentStoreConfig config) throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("config must not be null");
+    }
+    ensureNotClosed();
+
+    try (Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
+
+      final int errorCode =
+          NATIVE_BINDINGS.componentInstancePreInstantiateWithConfig(
+              nativePreHandle,
+              config.getFuelLimit(),
+              config.getEpochDeadline(),
+              config.getMaxMemoryBytes(),
+              instanceOutPtr);
+
+      if (errorCode != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            errorCode, "Failed to instantiate from ComponentInstancePre with config");
+      }
+
+      final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+
+      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException(
+            "Failed to instantiate from ComponentInstancePre with config: null instance returned");
+      }
+
+      LOGGER.fine("Successfully instantiated component from ComponentInstancePre with config");
 
       return new PanamaComponentInstance(instancePtr, component, null);
     }

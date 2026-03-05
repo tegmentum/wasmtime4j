@@ -31,6 +31,7 @@ import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.util.StreamUtils;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
+import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -518,6 +519,37 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     enableWasiPreview2();
   }
 
+  @Override
+  public void enableWasiHttp() throws WasmException {
+    ensureNotClosed();
+    try {
+      nativeEnableWasiHttp(nativeHandle);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to enable WASI HTTP", e);
+    }
+  }
+
+  @Override
+  public void enableWasiHttp(final WasiHttpConfig config) throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("Config cannot be null");
+    }
+    ensureNotClosed();
+    try {
+      // Pass 0 for field size limit to use default; WasiHttpConfig does not expose
+      // the low-level wasmtime field_size_limit setting directly
+      nativeEnableWasiHttpWithConfig(nativeHandle, 0L);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to enable WASI HTTP with config", e);
+    }
+  }
+
   private void applyWasiConfig(final WasiPreview2Config config) {
     // Apply stdio configuration (WasiStdioConfig takes precedence over boolean flags)
     if (config.isInheritStdio()) {
@@ -930,6 +962,10 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   // Native method declarations
 
   private native void nativeEnableWasiP2(long linkerHandle);
+
+  private native void nativeEnableWasiHttp(long linkerHandle);
+
+  private native void nativeEnableWasiHttpWithConfig(long linkerHandle, long fieldSizeLimit);
 
   private native void nativeDestroyComponentLinker(long linkerHandle);
 

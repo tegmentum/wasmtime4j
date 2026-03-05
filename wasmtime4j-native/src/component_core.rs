@@ -28,8 +28,9 @@ use wasmtime::{
 use wasmtime_wasi;
 
 use crate::component::{
-    CaseType, Component, ComponentMetadata, ComponentTypeKind, ComponentValueType, FieldType,
-    FunctionDefinition, InstanceInfo, InterfaceDefinition, Parameter, TypeDefinition,
+    CaseType, Component, ComponentMetadata, ComponentStoreData, ComponentTypeKind,
+    ComponentValueType, FieldType, FunctionDefinition, InstanceInfo, InterfaceDefinition, Parameter,
+    TypeDefinition,
 };
 use crate::error::{WasmtimeError, WasmtimeResult};
 
@@ -43,29 +44,6 @@ pub struct EnhancedComponentEngine {
     next_instance_id: Arc<Mutex<u64>>,
     /// Performance metrics
     metrics: Arc<RwLock<ComponentMetrics>>,
-}
-
-/// Extended store data for component instances
-pub struct ComponentStoreData {
-    /// Instance identifier
-    pub instance_id: u64,
-    /// Resource table for this store
-    pub resource_table: ResourceTable,
-    /// WASI context for Preview 2 support
-    #[cfg(feature = "wasi")]
-    pub wasi_ctx: wasmtime_wasi::WasiCtx,
-    /// Start time for performance tracking
-    pub start_time: Instant,
-}
-
-impl std::fmt::Debug for ComponentStoreData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ComponentStoreData")
-            .field("instance_id", &self.instance_id)
-            .field("resource_table", &"<ResourceTable>")
-            .field("start_time", &self.start_time)
-            .finish()
-    }
 }
 
 /// Handle for an active component instance with owned Store
@@ -206,9 +184,13 @@ impl EnhancedComponentEngine {
 
         let store_data = ComponentStoreData {
             instance_id,
+            user_data: None,
             resource_table: ResourceTable::new(),
             #[cfg(feature = "wasi")]
             wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
+            #[cfg(feature = "wasi-http")]
+            wasi_http_ctx: None,
+            store_limits: None,
             start_time,
         };
 
@@ -246,6 +228,44 @@ impl EnhancedComponentEngine {
 
         // Store the instance in the engine's HashMap to maintain Engine/Store/Instance ownership
         // This prevents the ownership violation that causes SIGSEGV
+        {
+            let mut instances = self
+                .instances
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire instances write lock".to_string(),
+                })?;
+            instances.insert(instance_id, handle);
+        }
+
+        // Update metrics
+        if let Ok(mut metrics) = self.metrics.write() {
+            metrics.instances_created += 1;
+        }
+
+        Ok(instance_id)
+    }
+
+    /// Register an externally-created component instance in this engine's registry.
+    ///
+    /// This is used when instances are created via `ComponentInstancePre` (which creates
+    /// its own store and instance), but need to be callable through the engine's
+    /// `call_component_function` and related methods.
+    ///
+    /// # Arguments
+    ///
+    /// * `handle` - The component instance handle to register
+    ///
+    /// # Returns
+    ///
+    /// Returns the instance ID assigned to the handle.
+    pub(crate) fn register_instance(
+        &self,
+        mut handle: ComponentInstanceHandle,
+    ) -> WasmtimeResult<u64> {
+        let instance_id = self.get_next_instance_id()?;
+        handle.store.data_mut().instance_id = instance_id;
+
         {
             let mut instances = self
                 .instances
@@ -1025,9 +1045,13 @@ impl EnhancedComponentEngine {
             // Create store for concurrent execution
             let store_data = ComponentStoreData {
                 instance_id: 0,
+                user_data: None,
                 resource_table: ResourceTable::new(),
                 #[cfg(feature = "wasi")]
                 wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
+                #[cfg(feature = "wasi-http")]
+                wasi_http_ctx: None,
+                store_limits: None,
                 start_time: Instant::now(),
             };
 
@@ -1112,29 +1136,6 @@ impl EnhancedComponentEngine {
 
             Ok(final_results)
         })
-    }
-}
-
-// Implement WasiView for ComponentStoreData to enable WASI Preview 2 component model
-#[cfg(feature = "wasi")]
-impl wasmtime_wasi::WasiView for ComponentStoreData {
-    fn ctx(&mut self) -> wasmtime_wasi::WasiCtxView<'_> {
-        wasmtime_wasi::WasiCtxView {
-            ctx: &mut self.wasi_ctx,
-            table: &mut self.resource_table,
-        }
-    }
-}
-
-impl Default for ComponentStoreData {
-    fn default() -> Self {
-        ComponentStoreData {
-            instance_id: 0,
-            resource_table: ResourceTable::new(),
-            #[cfg(feature = "wasi")]
-            wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
-            start_time: Instant::now(),
-        }
     }
 }
 

@@ -165,6 +165,7 @@ public class ExceptionHandlingEndToEndTest extends DualRuntimeTest {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("throwException with null is handled gracefully")

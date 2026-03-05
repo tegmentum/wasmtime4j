@@ -225,6 +225,45 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     });
 }
 
+/// Enable WASI HTTP on the component linker
+/// JNI binding for JniComponentLinker.nativeEnableWasiHttp
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiHttp(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        linker.enable_wasi_http()?;
+        Ok(())
+    });
+}
+
+/// Enable WASI HTTP with config on the component linker
+/// JNI binding for JniComponentLinker.nativeEnableWasiHttpWithConfig
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiHttpWithConfig(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    field_size_limit: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        if field_size_limit > 0 {
+            linker.enable_wasi_http_with_field_size_limit(field_size_limit as usize)?;
+        } else {
+            linker.enable_wasi_http()?;
+        }
+        Ok(())
+    });
+}
+
 // ============================================================================
 // WASI Config JNI Native Methods
 // ============================================================================
@@ -1584,15 +1623,55 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_
     mut env: JNIEnv,
     _obj: JObject,
     pre_handle: jlong,
+    engine_handle: jlong,
 ) -> jlong {
     jni_utils::jni_try_with_default(&mut env, 0, || {
         let pre = unsafe {
             component_linker_core::get_component_instance_pre_ref(pre_handle as *const c_void)?
         };
 
-        let instance = pre.instantiate()?;
+        let handle = pre.instantiate()?;
 
-        Ok(Box::into_raw(Box::new(instance)) as jlong)
+        // Register the instance in the engine's HashMap so it can be looked up by ID
+        let engine = unsafe {
+            &*(engine_handle as *const crate::component_core::EnhancedComponentEngine)
+        };
+        let instance_id = engine.register_instance(handle)?;
+
+        Ok(instance_id as jlong)
+    })
+}
+
+/// Instantiate from a ComponentInstancePre with store configuration
+/// JNI binding for JniComponentInstancePre.nativeInstantiateWithConfig
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeInstantiateWithConfig(
+    mut env: JNIEnv,
+    _obj: JObject,
+    pre_handle: jlong,
+    engine_handle: jlong,
+    fuel_limit: jlong,
+    epoch_deadline: jlong,
+    max_memory_bytes: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let pre = unsafe {
+            component_linker_core::get_component_instance_pre_ref(pre_handle as *const c_void)?
+        };
+
+        let handle = pre.instantiate_with_config(
+            fuel_limit as u64,
+            epoch_deadline as u64,
+            max_memory_bytes as u64,
+        )?;
+
+        // Register the instance in the engine's HashMap so it can be looked up by ID
+        let engine = unsafe {
+            &*(engine_handle as *const crate::component_core::EnhancedComponentEngine)
+        };
+        let instance_id = engine.register_instance(handle)?;
+
+        Ok(instance_id as jlong)
     })
 }
 

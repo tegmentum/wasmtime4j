@@ -17,6 +17,22 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeEnableWasiHttp
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiHttp
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeEnableWasiHttpWithConfig
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiHttpWithConfig
+  (JNIEnv *, jobject, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
  * Method:    nativeDestroyComponentLinker
  * Signature: (J)V
  */

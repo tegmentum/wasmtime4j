@@ -60,6 +60,20 @@ public interface ComponentInstancePre extends Closeable {
   ComponentInstance instantiate() throws WasmException;
 
   /**
+   * Creates a new component instance with custom store configuration.
+   *
+   * <p>The provided configuration controls resource limits such as fuel, epoch deadlines, and
+   * memory bounds for the store created during instantiation.
+   *
+   * @param config the store configuration to apply
+   * @return a new ComponentInstance
+   * @throws WasmException if instantiation fails
+   * @throws IllegalArgumentException if config is null
+   * @since 1.1.0
+   */
+  ComponentInstance instantiate(ComponentStoreConfig config) throws WasmException;
+
+  /**
    * Gets the engine associated with this pre-instantiated component.
    *
    * @return the Engine used for pre-instantiation

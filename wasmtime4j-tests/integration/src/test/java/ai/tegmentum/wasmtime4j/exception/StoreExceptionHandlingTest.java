@@ -216,6 +216,7 @@ public class StoreExceptionHandlingTest extends DualRuntimeTest {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @ParameterizedTest
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("throwException sets pending and takePendingException clears it")

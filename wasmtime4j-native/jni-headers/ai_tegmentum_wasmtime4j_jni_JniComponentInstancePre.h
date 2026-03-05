@@ -10,10 +10,18 @@ extern "C" {
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre
  * Method:    nativeInstantiate
- * Signature: (J)J
+ * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeInstantiate
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre
+ * Method:    nativeInstantiateWithConfig
+ * Signature: (JJJJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_nativeInstantiateWithConfig
+  (JNIEnv *, jclass, jlong, jlong, jlong, jlong, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre

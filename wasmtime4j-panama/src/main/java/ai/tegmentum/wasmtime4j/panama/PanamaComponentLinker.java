@@ -35,6 +35,7 @@ import ai.tegmentum.wasmtime4j.wasi.WasiStdioConfig;
 import ai.tegmentum.wasmtime4j.wasi.clocks.DateTime;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiMonotonicClock;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiWallClock;
+import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import ai.tegmentum.wasmtime4j.wasi.random.WasiRandomSource;
 import ai.tegmentum.wasmtime4j.wasi.sockets.SocketAddrCheck;
 import ai.tegmentum.wasmtime4j.wasi.sockets.SocketAddrUse;
@@ -520,6 +521,31 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     enableWasiPreview2();
 
     LOGGER.fine("Enabled WASI Preview 2 with custom configuration");
+  }
+
+  @Override
+  public void enableWasiHttp() throws WasmException {
+    ensureNotClosed();
+    final int result = NATIVE_BINDINGS.componentLinkerEnableWasiHttp(nativeLinker);
+    if (result != 0) {
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI HTTP");
+    }
+    LOGGER.fine("Enabled WASI HTTP in component linker");
+  }
+
+  @Override
+  public void enableWasiHttp(final WasiHttpConfig config) throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("Config cannot be null");
+    }
+    ensureNotClosed();
+    // Pass 0 for field size limit to use default; WasiHttpConfig does not expose
+    // the low-level wasmtime field_size_limit setting directly
+    final int result = NATIVE_BINDINGS.componentLinkerEnableWasiHttpWithConfig(nativeLinker, 0L);
+    if (result != 0) {
+      throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI HTTP with config");
+    }
+    LOGGER.fine("Enabled WASI HTTP with custom configuration");
   }
 
   /**

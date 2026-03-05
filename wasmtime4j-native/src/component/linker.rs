@@ -3,7 +3,8 @@
 //! This module provides the ComponentLinker for binding host functions to WIT interfaces
 //! and instantiating WebAssembly components.
 
-use super::{Component, ComponentStoreData};
+use super::{Component, ComponentMetadata, ComponentStoreData};
+use crate::component_core::ComponentInstanceHandle;
 use crate::error::{WasmtimeError, WasmtimeResult};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -17,7 +18,7 @@ use wasmtime::{
 };
 
 /// Component Model value representation for host function communication
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ComponentValue {
     /// Boolean value
     Bool(bool),
@@ -209,13 +210,12 @@ pub fn val_to_component_value(val: &Val) -> ComponentValue {
         },
         Val::Flags(flags) => ComponentValue::Flags(flags.iter().map(|f| f.to_string()).collect()),
         Val::Resource(resource) => {
-            // Note: Wasmtime's Val::Resource(ResourceAny) does not carry own/borrow
-            // distinction directly. The ownership semantics depend on the function
-            // signature context. We default to Own here; the Java side can construct
-            // Borrow explicitly when the WIT signature specifies borrow<T>.
-            // Both Own and Borrow map to the same resource registry for round-tripping.
             let handle = crate::wit_value_marshal::store_resource(resource.clone());
-            ComponentValue::Own(handle)
+            if resource.owned() {
+                ComponentValue::Own(handle)
+            } else {
+                ComponentValue::Borrow(handle)
+            }
         }
         Val::Future(_) => {
             let mut registry = get_async_val_registry()
@@ -1549,6 +1549,7 @@ impl ComponentLinker {
                 } else {
                     None
                 },
+                store_limits: None,
                 start_time: Instant::now(),
             }
         } else {
@@ -1568,9 +1569,15 @@ impl ComponentLinker {
 
         let mut store = Store::new(&self.engine, store_data);
 
+        // Re-compile if the component was compiled with a different engine
+        let recompiled = self.ensure_engine_compatible(component)?;
+        let comp_ref = recompiled
+            .as_ref()
+            .unwrap_or_else(|| component.wasmtime_component());
+
         let instance = self
             .linker
-            .instantiate(&mut store, component.wasmtime_component())
+            .instantiate(&mut store, comp_ref)
             .map_err(|e| WasmtimeError::Instance {
                 message: format!("Failed to instantiate component: {}", e),
             })?;
@@ -1595,9 +1602,15 @@ impl ComponentLinker {
 
         let start = Instant::now();
 
+        // Re-compile if the component was compiled with a different engine
+        let recompiled = self.ensure_engine_compatible(component)?;
+        let comp_ref = recompiled
+            .as_ref()
+            .unwrap_or_else(|| component.wasmtime_component());
+
         let instance_pre = self
             .linker
-            .instantiate_pre(component.wasmtime_component())
+            .instantiate_pre(comp_ref)
             .map_err(|e| WasmtimeError::Linker {
                 message: format!("Failed to pre-instantiate component: {}", e),
             })?;
@@ -1612,10 +1625,37 @@ impl ComponentLinker {
             #[cfg(feature = "wasi-http")]
             wasi_http_field_size_limit: self.wasi_http_field_size_limit,
             wasi_p2_config: self.wasi_p2_config.clone(),
+            metadata: component.metadata().clone(),
+            original_bytes: Arc::clone(component.original_bytes()),
             preparation_time_ns,
             instance_count: AtomicU64::new(0),
             total_instantiation_time_ns: AtomicU64::new(0),
         })
+    }
+
+    /// Ensures the component is compatible with the linker's engine.
+    ///
+    /// If the component was compiled with a different Wasmtime engine, it is re-compiled
+    /// from its original bytes using the linker's engine. Returns `None` if the component
+    /// is already compatible, or `Some(recompiled)` if re-compilation was needed.
+    fn ensure_engine_compatible(
+        &self,
+        component: &Component,
+    ) -> WasmtimeResult<Option<wasmtime::component::Component>> {
+        let same = WasmtimeEngine::same(component.wasmtime_component().engine(), &self.engine);
+        if same {
+            return Ok(None);
+        }
+        let recompiled =
+            wasmtime::component::Component::new(&self.engine, &*component.original_bytes).map_err(
+                |e| WasmtimeError::Compilation {
+                    message: format!(
+                        "Failed to re-compile component for engine compatibility: {}",
+                        e
+                    ),
+                },
+            )?;
+        Ok(Some(recompiled))
     }
 
     /// Check if WASI Preview 2 is enabled
@@ -1705,10 +1745,14 @@ pub struct ComponentInstancePreWrapper {
     wasi_http_field_size_limit: Option<usize>,
     /// WASI P2 configuration (cloned from linker at creation time)
     wasi_p2_config: WasiP2Config,
+    /// Component metadata for creating ComponentInstanceHandle
+    metadata: ComponentMetadata,
+    /// Original component bytes for creating ComponentInstanceHandle
+    original_bytes: Arc<Vec<u8>>,
     /// Preparation time in nanoseconds
     preparation_time_ns: u64,
     /// Number of instances created from this InstancePre
-    instance_count: AtomicU64,
+    pub instance_count: AtomicU64,
     /// Total instantiation time in nanoseconds
     total_instantiation_time_ns: AtomicU64,
 }
@@ -1725,7 +1769,10 @@ impl ComponentInstancePreWrapper {
     }
 
     /// Instantiate the component, creating a fresh store with the configured WASI context.
-    pub fn instantiate(&self) -> WasmtimeResult<Arc<ComponentInstance>> {
+    ///
+    /// Returns a `ComponentInstanceHandle` containing the store and instance, ready for
+    /// registration in an `EnhancedComponentEngine`.
+    pub fn instantiate(&self) -> WasmtimeResult<ComponentInstanceHandle> {
         let start = Instant::now();
 
         // Build store data with configured WASI context if WASI P2 is enabled
@@ -1742,6 +1789,7 @@ impl ComponentInstancePreWrapper {
                 } else {
                     None
                 },
+                store_limits: None,
                 start_time: Instant::now(),
             }
         } else {
@@ -1773,7 +1821,120 @@ impl ComponentInstancePreWrapper {
         self.total_instantiation_time_ns
             .fetch_add(duration, Ordering::Relaxed);
 
-        Ok(Arc::new(instance))
+        Ok(ComponentInstanceHandle {
+            store,
+            instance,
+            metadata: self.metadata.clone(),
+            created_at: start,
+            last_accessed: start,
+            ref_count: 1,
+            component_bytes: Arc::clone(&self.original_bytes),
+        })
+    }
+
+    /// Instantiate the component with store configuration.
+    ///
+    /// Applies fuel, epoch, and memory limits to the store before instantiation.
+    /// Returns a `ComponentInstanceHandle` ready for registration in an `EnhancedComponentEngine`.
+    pub fn instantiate_with_config(
+        &self,
+        fuel_limit: u64,
+        epoch_deadline: u64,
+        max_memory_bytes: u64,
+    ) -> WasmtimeResult<ComponentInstanceHandle> {
+        let start = Instant::now();
+
+        // Build store limits if memory limit is set
+        let store_limits = if max_memory_bytes > 0 {
+            Some(
+                wasmtime::StoreLimitsBuilder::new()
+                    .memory_size(max_memory_bytes as usize)
+                    .build(),
+            )
+        } else {
+            None
+        };
+
+        #[cfg(feature = "wasi")]
+        let store_data = if self.wasi_p2_enabled {
+            ComponentStoreData {
+                instance_id: 0,
+                user_data: None,
+                resource_table: ResourceTable::new(),
+                wasi_ctx: self.wasi_p2_config.build_wasi_ctx(),
+                #[cfg(feature = "wasi-http")]
+                wasi_http_ctx: if self.wasi_http_enabled {
+                    Some(self.create_wasi_http_ctx())
+                } else {
+                    None
+                },
+                store_limits,
+                start_time: Instant::now(),
+            }
+        } else {
+            ComponentStoreData {
+                instance_id: 0,
+                user_data: None,
+                store_limits,
+                ..Default::default()
+            }
+        };
+
+        #[cfg(not(feature = "wasi"))]
+        let store_data = ComponentStoreData {
+            instance_id: 0,
+            user_data: None,
+            store_limits,
+            ..Default::default()
+        };
+
+        let mut store = Store::new(&self.engine, store_data);
+
+        // Apply fuel limit
+        if fuel_limit > 0 {
+            store
+                .set_fuel(fuel_limit)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to set fuel: {}", e),
+                    backtrace: None,
+                })?;
+        }
+
+        // Apply epoch deadline
+        if epoch_deadline > 0 {
+            store.set_epoch_deadline(epoch_deadline);
+        }
+
+        // Apply memory limiter if configured
+        if max_memory_bytes > 0 {
+            store.limiter(|data| {
+                data.store_limits
+                    .as_mut()
+                    .expect("store_limits was configured but is missing")
+            });
+        }
+
+        let instance = self
+            .inner
+            .instantiate(&mut store)
+            .map_err(|e| WasmtimeError::Instance {
+                message: format!("Failed to instantiate from ComponentInstancePre: {}", e),
+            })?;
+
+        let duration = start.elapsed().as_nanos() as u64;
+        self.instance_count.fetch_add(1, Ordering::Relaxed);
+        self.total_instantiation_time_ns
+            .fetch_add(duration, Ordering::Relaxed);
+
+        Ok(ComponentInstanceHandle {
+            store,
+            instance,
+            metadata: self.metadata.clone(),
+            created_at: start,
+            last_accessed: start,
+            ref_count: 1,
+            component_bytes: Arc::clone(&self.original_bytes),
+        })
     }
 
     /// Check if valid
@@ -2983,6 +3144,40 @@ pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate(
     }
 }
 
+/// Instantiate from a ComponentInstancePre with store configuration
+///
+/// # Safety
+///
+/// pre_ptr and instance_out must be valid pointers
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate_with_config(
+    pre_ptr: *const c_void,
+    fuel_limit: u64,
+    epoch_deadline: u64,
+    max_memory_bytes: u64,
+    instance_out: *mut *mut c_void,
+) -> c_int {
+    if pre_ptr.is_null() || instance_out.is_null() {
+        return FFI_ERROR;
+    }
+
+    let wrapper = &*(pre_ptr as *const ComponentInstancePreWrapper);
+
+    match wrapper.instantiate_with_config(fuel_limit, epoch_deadline, max_memory_bytes) {
+        Ok(instance) => {
+            *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
+            FFI_SUCCESS
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to instantiate from ComponentInstancePre with config: {}",
+                e
+            );
+            FFI_ERROR
+        }
+    }
+}
+
 /// Check if ComponentInstancePre is valid
 ///
 /// # Safety
@@ -3625,4 +3820,277 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_set_async_support(
 
         Ok(())
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasmtime::component::Val;
+
+    #[test]
+    fn test_val_to_component_value_bool() {
+        let val_true = Val::Bool(true);
+        let val_false = Val::Bool(false);
+        assert_eq!(val_to_component_value(&val_true), ComponentValue::Bool(true));
+        assert_eq!(
+            val_to_component_value(&val_false),
+            ComponentValue::Bool(false)
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_integers() {
+        assert_eq!(
+            val_to_component_value(&Val::S8(-42)),
+            ComponentValue::S8(-42)
+        );
+        assert_eq!(val_to_component_value(&Val::U8(200)), ComponentValue::U8(200));
+        assert_eq!(
+            val_to_component_value(&Val::S16(-1000)),
+            ComponentValue::S16(-1000)
+        );
+        assert_eq!(
+            val_to_component_value(&Val::U16(50000)),
+            ComponentValue::U16(50000)
+        );
+        assert_eq!(
+            val_to_component_value(&Val::S32(-100000)),
+            ComponentValue::S32(-100000)
+        );
+        assert_eq!(
+            val_to_component_value(&Val::U32(3_000_000_000)),
+            ComponentValue::U32(3_000_000_000)
+        );
+        assert_eq!(
+            val_to_component_value(&Val::S64(i64::MIN)),
+            ComponentValue::S64(i64::MIN)
+        );
+        assert_eq!(
+            val_to_component_value(&Val::U64(u64::MAX)),
+            ComponentValue::U64(u64::MAX)
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_floats() {
+        assert_eq!(
+            val_to_component_value(&Val::Float32(3.14)),
+            ComponentValue::F32(3.14)
+        );
+        assert_eq!(
+            val_to_component_value(&Val::Float64(2.71828)),
+            ComponentValue::F64(2.71828)
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_char() {
+        assert_eq!(
+            val_to_component_value(&Val::Char('A')),
+            ComponentValue::Char('A')
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_string() {
+        let val = Val::String("hello".into());
+        assert_eq!(
+            val_to_component_value(&val),
+            ComponentValue::String("hello".to_string())
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_list() {
+        let val = Val::List(vec![Val::S32(1), Val::S32(2), Val::S32(3)]);
+        let result = val_to_component_value(&val);
+        assert_eq!(
+            result,
+            ComponentValue::List(vec![
+                ComponentValue::S32(1),
+                ComponentValue::S32(2),
+                ComponentValue::S32(3),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_record() {
+        let val = Val::Record(vec![
+            ("name".to_string(), Val::String("Alice".to_string())),
+            ("age".to_string(), Val::U32(30)),
+        ]);
+        let result = val_to_component_value(&val);
+        assert_eq!(
+            result,
+            ComponentValue::Record(vec![
+                (
+                    "name".to_string(),
+                    ComponentValue::String("Alice".to_string())
+                ),
+                ("age".to_string(), ComponentValue::U32(30)),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_tuple() {
+        let val = Val::Tuple(vec![Val::Bool(true), Val::S32(42)]);
+        let result = val_to_component_value(&val);
+        assert_eq!(
+            result,
+            ComponentValue::Tuple(vec![ComponentValue::Bool(true), ComponentValue::S32(42)])
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_variant() {
+        let val = Val::Variant("some-case".to_string(), Some(Box::new(Val::U8(10))));
+        let result = val_to_component_value(&val);
+        assert_eq!(
+            result,
+            ComponentValue::Variant {
+                case_name: "some-case".to_string(),
+                payload: Some(Box::new(ComponentValue::U8(10))),
+            }
+        );
+
+        let val_none = Val::Variant("none-case".to_string(), None);
+        let result_none = val_to_component_value(&val_none);
+        assert_eq!(
+            result_none,
+            ComponentValue::Variant {
+                case_name: "none-case".to_string(),
+                payload: None,
+            }
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_enum() {
+        let val = Val::Enum("my-variant".to_string());
+        assert_eq!(
+            val_to_component_value(&val),
+            ComponentValue::Enum("my-variant".to_string())
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_option() {
+        let val_some = Val::Option(Some(Box::new(Val::S32(99))));
+        let result_some = val_to_component_value(&val_some);
+        assert_eq!(
+            result_some,
+            ComponentValue::Option(Some(Box::new(ComponentValue::S32(99))))
+        );
+
+        let val_none: Val = Val::Option(None);
+        let result_none = val_to_component_value(&val_none);
+        assert_eq!(result_none, ComponentValue::Option(None));
+    }
+
+    #[test]
+    fn test_val_to_component_value_result() {
+        let val_ok = Val::Result(Ok(Some(Box::new(Val::String("success".into())))));
+        let result_ok = val_to_component_value(&val_ok);
+        assert_eq!(
+            result_ok,
+            ComponentValue::Result {
+                ok: Some(Box::new(ComponentValue::String("success".to_string()))),
+                err: None,
+                is_ok: true,
+            }
+        );
+
+        let val_err = Val::Result(Err(Some(Box::new(Val::String("failure".into())))));
+        let result_err = val_to_component_value(&val_err);
+        assert_eq!(
+            result_err,
+            ComponentValue::Result {
+                ok: None,
+                err: Some(Box::new(ComponentValue::String("failure".to_string()))),
+                is_ok: false,
+            }
+        );
+    }
+
+    #[test]
+    fn test_val_to_component_value_flags() {
+        let val = Val::Flags(vec!["read".to_string(), "write".to_string()]);
+        assert_eq!(
+            val_to_component_value(&val),
+            ComponentValue::Flags(vec!["read".to_string(), "write".to_string()])
+        );
+    }
+
+    // Note: Resource (Own/Borrow) dispatch is tested indirectly via integration tests
+    // because creating a Val::Resource requires a live component model store.
+    // The dispatch logic is:
+    //   Val::Resource(resource) =>
+    //     if resource.owned() { ComponentValue::Own(handle) }
+    //     else { ComponentValue::Borrow(handle) }
+
+    #[test]
+    fn test_cross_engine_instantiate_pre() {
+        // Minimal component WAT: (component (core module) (export "add" ...))
+        // Using a simple component that requires no imports
+        let wat = r#"(component
+            (core module $m
+                (func (export "add") (param i32 i32) (result i32)
+                    local.get 0
+                    local.get 1
+                    i32.add))
+            (core instance $i (instantiate $m))
+            (func (export "add") (param "a" s32) (param "b" s32) (result s32)
+                (canon lift (core func $i "add")))
+        )"#;
+
+        // Create two separate engines
+        let engine_a = WasmtimeEngine::default();
+        let engine_b = WasmtimeEngine::default();
+
+        // Verify they are NOT the same
+        assert!(
+            !WasmtimeEngine::same(&engine_a, &engine_b),
+            "Two default engines should not be the same"
+        );
+
+        // Compile component with engine_a
+        let wasmtime_component =
+            wasmtime::component::Component::new(&engine_a, wat).expect("Failed to compile WAT");
+        let component = Component::new(
+            wasmtime_component,
+            crate::component::ComponentMetadata {
+                imports: vec![],
+                exports: vec![],
+                size_bytes: wat.len(),
+            },
+            wat.as_bytes().to_vec(),
+        );
+
+        // Create linker with engine_b
+        let mut linker = ComponentLinker::new(&engine_b).expect("Failed to create linker");
+
+        // ensure_engine_compatible should detect mismatch and re-compile
+        let recompiled = linker
+            .ensure_engine_compatible(&component)
+            .expect("ensure_engine_compatible should succeed");
+        assert!(
+            recompiled.is_some(),
+            "Should have re-compiled for cross-engine"
+        );
+
+        // instantiate_pre should succeed with cross-engine re-compilation
+        let pre = linker
+            .instantiate_pre(&component)
+            .expect("instantiate_pre should succeed after re-compilation");
+
+        // instantiate should succeed and return a ComponentInstanceHandle
+        let _handle = pre
+            .instantiate()
+            .expect("instantiate should succeed after cross-engine fix");
+
+        // Verify the instance count
+        assert_eq!(pre.instance_count.load(Ordering::Relaxed), 1);
+    }
 }

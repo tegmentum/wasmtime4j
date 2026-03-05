@@ -507,6 +507,12 @@ class ComponentLinkerInstanceTest {
     public void enableWasiPreview2(final ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config config) {}
 
     @Override
+    public void enableWasiHttp() {}
+
+    @Override
+    public void enableWasiHttp(final ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig config) {}
+
+    @Override
     public Engine getEngine() {
       return null;
     }

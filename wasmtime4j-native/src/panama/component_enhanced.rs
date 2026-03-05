@@ -61,6 +61,67 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_load_from_bytes(
     })
 }
 
+/// Compile component from WAT text (Panama FFI)
+///
+/// Returns 0 on success, component_out is set to the compiled component pointer.
+/// Returns non-zero on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_component_compile_wat(
+    engine_ptr: *mut c_void,
+    wat_ptr: *const u8,
+    wat_len: usize,
+    component_out: *mut *mut c_void,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let engine =
+            unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
+        let wat_bytes = unsafe {
+            if wat_ptr.is_null() || wat_len == 0 {
+                return Err(crate::error::WasmtimeError::InvalidParameter {
+                    message: "Invalid WAT text pointer or length".to_string(),
+                });
+            }
+            std::slice::from_raw_parts(wat_ptr, wat_len)
+        };
+
+        // EnhancedComponentEngine::load_component_from_bytes delegates to
+        // Component::new() which handles WAT transparently via the `wat` feature
+        let component = engine.load_component_from_bytes(wat_bytes)?;
+
+        unsafe {
+            *component_out = Box::into_raw(Box::new(component)) as *mut c_void;
+        }
+
+        Ok(())
+    })
+}
+
+/// Validate a component against WIT interface requirements (Panama FFI)
+///
+/// Returns 1 if valid, 0 if invalid, negative on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_component_validate(
+    component_ptr: *const c_void,
+    wit_ptr: *const c_char,
+) -> c_int {
+    if component_ptr.is_null() || wit_ptr.is_null() {
+        return -1;
+    }
+
+    let component =
+        unsafe { &*(component_ptr as *const crate::component::Component) };
+    let wit_str = match unsafe { std::ffi::CStr::from_ptr(wit_ptr) }.to_str() {
+        Ok(s) => s,
+        Err(_) => return -1,
+    };
+
+    match component.validate_wit_interface(wit_str) {
+        Ok(true) => 1,
+        Ok(false) => 0,
+        Err(_) => -1,
+    }
+}
+
 /// Instantiate a component and return instance ID
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_instantiate(
@@ -688,6 +749,29 @@ pub extern "C" fn wasmtime4j_panama_free_concurrent_result(ptr: *mut u8, len: c_
         unsafe {
             let _ = Box::from_raw(std::slice::from_raw_parts_mut(ptr, len as usize));
         }
+    }
+}
+
+/// Free an array of C strings returned by component functions (e.g., get_exports)
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_component_free_string_array(
+    strings_ptr: *mut *mut c_char,
+    count: c_int,
+) {
+    if strings_ptr.is_null() || count <= 0 {
+        return;
+    }
+    unsafe {
+        let slice = std::slice::from_raw_parts(strings_ptr, count as usize);
+        for &s in slice {
+            if !s.is_null() {
+                let _ = std::ffi::CString::from_raw(s);
+            }
+        }
+        let _ = Box::from_raw(std::slice::from_raw_parts_mut(
+            strings_ptr,
+            count as usize,
+        ));
     }
 }
 

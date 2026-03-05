@@ -19,6 +19,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
+import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
 import java.io.Closeable;
 import java.util.Map;
 import java.util.Set;
@@ -322,6 +323,28 @@ public interface ComponentLinker<T> extends Closeable {
    * @throws IllegalArgumentException if config is null
    */
   void enableWasiPreview2(WasiPreview2Config config) throws WasmException;
+
+  /**
+   * Enables WASI HTTP support in this component linker.
+   *
+   * <p>WASI Preview 2 must be enabled first via {@link #enableWasiPreview2()} before enabling HTTP
+   * support. This adds the wasi:http/types and wasi:http/outgoing-handler interfaces.
+   *
+   * @throws WasmException if WASI HTTP cannot be enabled (e.g., WASI Preview 2 not enabled first)
+   */
+  void enableWasiHttp() throws WasmException;
+
+  /**
+   * Enables WASI HTTP support with custom configuration.
+   *
+   * <p>WASI Preview 2 must be enabled first via {@link #enableWasiPreview2()} before enabling HTTP
+   * support.
+   *
+   * @param config the WASI HTTP configuration
+   * @throws WasmException if WASI HTTP cannot be enabled
+   * @throws IllegalArgumentException if config is null
+   */
+  void enableWasiHttp(WasiHttpConfig config) throws WasmException;
 
   /**
    * Gets the engine associated with this linker.
