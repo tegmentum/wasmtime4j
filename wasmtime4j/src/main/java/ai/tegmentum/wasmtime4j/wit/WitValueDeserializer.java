@@ -769,16 +769,16 @@ public final class WitValueDeserializer {
   /**
    * Deserializes an owned resource handle value.
    *
-   * <p>Format: [type_name_length: i32][type_name: UTF-8][index: i32] (little-endian)
+   * <p>Format: [type_name_length: i32][type_name: UTF-8][handle: i64] (little-endian)
    *
    * @param data the serialized bytes
    * @return the owned resource handle value
    * @throws ValidationException if data is invalid
    */
   private static WitOwn deserializeOwn(final byte[] data) throws ValidationException {
-    if (data.length < 8) {
+    if (data.length < 12) {
       throw new ValidationException(
-          "Own data too short: need at least 8 bytes, got " + data.length);
+          "Own data too short: need at least 12 bytes, got " + data.length);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -788,7 +788,7 @@ public final class WitValueDeserializer {
       throw new ValidationException("Invalid resource type name length: " + typeNameLength);
     }
 
-    if (buffer.remaining() < typeNameLength + 4) {
+    if (buffer.remaining() < typeNameLength + 8) {
       throw new ValidationException("Own resource type name truncated");
     }
 
@@ -796,24 +796,24 @@ public final class WitValueDeserializer {
     buffer.get(typeNameBytes);
     final String resourceType = new String(typeNameBytes, StandardCharsets.UTF_8);
 
-    final int index = buffer.getInt();
+    final long handle = buffer.getLong();
     final String effectiveType = resourceType.isEmpty() ? "resource" : resourceType;
-    return WitOwn.of(effectiveType, index);
+    return WitOwn.of(effectiveType, handle);
   }
 
   /**
    * Deserializes a borrowed resource handle value.
    *
-   * <p>Format: [type_name_length: i32][type_name: UTF-8][index: i32] (little-endian)
+   * <p>Format: [type_name_length: i32][type_name: UTF-8][handle: i64] (little-endian)
    *
    * @param data the serialized bytes
    * @return the borrowed resource handle value
    * @throws ValidationException if data is invalid
    */
   private static WitBorrow deserializeBorrow(final byte[] data) throws ValidationException {
-    if (data.length < 8) {
+    if (data.length < 12) {
       throw new ValidationException(
-          "Borrow data too short: need at least 8 bytes, got " + data.length);
+          "Borrow data too short: need at least 12 bytes, got " + data.length);
     }
 
     final ByteBuffer buffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
@@ -823,7 +823,7 @@ public final class WitValueDeserializer {
       throw new ValidationException("Invalid resource type name length: " + typeNameLength);
     }
 
-    if (buffer.remaining() < typeNameLength + 4) {
+    if (buffer.remaining() < typeNameLength + 8) {
       throw new ValidationException("Borrow resource type name truncated");
     }
 
@@ -831,8 +831,8 @@ public final class WitValueDeserializer {
     buffer.get(typeNameBytes);
     final String resourceType = new String(typeNameBytes, StandardCharsets.UTF_8);
 
-    final int index = buffer.getInt();
+    final long handle = buffer.getLong();
     final String effectiveType = resourceType.isEmpty() ? "resource" : resourceType;
-    return WitBorrow.of(effectiveType, index);
+    return WitBorrow.of(effectiveType, handle);
   }
 }

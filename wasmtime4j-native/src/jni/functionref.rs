@@ -372,11 +372,17 @@ fn marshal_results(results: &[wasmtime::Val]) -> crate::error::WasmtimeResult<Ve
             wasmtime::Val::FuncRef(_) => {
                 data[offset..offset + 4].copy_from_slice(&5u32.to_le_bytes());
             }
-            wasmtime::Val::ExternRef(_) | wasmtime::Val::AnyRef(_) => {
+            wasmtime::Val::ExternRef(_) => {
                 data[offset..offset + 4].copy_from_slice(&6u32.to_le_bytes());
             }
-            _ => {
-                data[offset..offset + 4].copy_from_slice(&6u32.to_le_bytes());
+            wasmtime::Val::AnyRef(_) => {
+                data[offset..offset + 4].copy_from_slice(&7u32.to_le_bytes());
+            }
+            wasmtime::Val::ExnRef(_) => {
+                data[offset..offset + 4].copy_from_slice(&8u32.to_le_bytes());
+            }
+            wasmtime::Val::ContRef(_) => {
+                data[offset..offset + 4].copy_from_slice(&9u32.to_le_bytes());
             }
         }
     }

@@ -100,7 +100,7 @@ public interface ComponentResourceHandle {
    * @return a new owned handle
    */
   static ComponentResourceHandle own(final String resourceType, final int index) {
-    return new Impl(resourceType, index, true, null);
+    return new Impl(resourceType, index, true, null, -1);
   }
 
   /**
@@ -111,7 +111,7 @@ public interface ComponentResourceHandle {
    * @return a new borrowed handle
    */
   static ComponentResourceHandle borrow(final String resourceType, final int index) {
-    return new Impl(resourceType, index, false, null);
+    return new Impl(resourceType, index, false, null, -1);
   }
 
   /**
@@ -124,7 +124,7 @@ public interface ComponentResourceHandle {
    */
   static ComponentResourceHandle ownWithHost(
       final String resourceType, final int index, final Object hostObject) {
-    return new Impl(resourceType, index, true, hostObject);
+    return new Impl(resourceType, index, true, hostObject, -1);
   }
 
   /**
@@ -137,7 +137,39 @@ public interface ComponentResourceHandle {
    */
   static ComponentResourceHandle borrowWithHost(
       final String resourceType, final int index, final Object hostObject) {
-    return new Impl(resourceType, index, false, hostObject);
+    return new Impl(resourceType, index, false, hostObject, -1);
+  }
+
+  /**
+   * Creates an owned resource handle with a native registry handle.
+   *
+   * <p>Used when a resource originates from a native component function call. The native handle is
+   * the key in the native resource registry and is needed to perform lifecycle operations
+   * (resource_drop, resource_rep) through the FFI layer.
+   *
+   * @param resourceType the resource type name
+   * @param index the handle index (u32 component model table index)
+   * @param nativeHandle the native resource registry handle ID
+   * @return a new owned handle with native backing
+   * @since 1.1.0
+   */
+  static ComponentResourceHandle ownWithNativeHandle(
+      final String resourceType, final int index, final long nativeHandle) {
+    return new Impl(resourceType, index, true, null, nativeHandle);
+  }
+
+  /**
+   * Creates a borrowed resource handle with a native registry handle.
+   *
+   * @param resourceType the resource type name
+   * @param index the handle index (u32 component model table index)
+   * @param nativeHandle the native resource registry handle ID
+   * @return a new borrowed handle with native backing
+   * @since 1.1.0
+   */
+  static ComponentResourceHandle borrowWithNativeHandle(
+      final String resourceType, final int index, final long nativeHandle) {
+    return new Impl(resourceType, index, false, null, nativeHandle);
   }
 
   /** Default implementation of ComponentResourceHandle. */
@@ -146,8 +178,14 @@ public interface ComponentResourceHandle {
     private final int index;
     private final boolean owned;
     private final Object hostObject;
+    private final long nativeHandle;
 
-    Impl(final String resourceType, final int index, final boolean owned, final Object hostObject) {
+    Impl(
+        final String resourceType,
+        final int index,
+        final boolean owned,
+        final Object hostObject,
+        final long nativeHandle) {
       if (resourceType == null) {
         throw new IllegalArgumentException("Resource type cannot be null");
       }
@@ -155,6 +193,7 @@ public interface ComponentResourceHandle {
       this.index = index;
       this.owned = owned;
       this.hostObject = hostObject;
+      this.nativeHandle = nativeHandle;
     }
 
     @Override
@@ -175,6 +214,11 @@ public interface ComponentResourceHandle {
     @Override
     public boolean isBorrowed() {
       return !owned;
+    }
+
+    @Override
+    public long getNativeHandle() {
+      return nativeHandle;
     }
 
     @Override

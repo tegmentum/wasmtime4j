@@ -687,19 +687,23 @@ public interface Store extends Closeable {
   /**
    * Throws an exception reference within the WebAssembly context.
    *
-   * <p>This method sets the exception as pending and propagates it through host calls. The method
-   * never returns normally - it always throws a WasmException wrapping the thrown exception.
-   *
-   * <p><b>Note:</b> Exception handling must be enabled in the engine configuration for this method
-   * to work.
+   * <p><b>Note:</b> Wasmtime does not support host-initiated exception throwing. Exceptions can
+   * only originate from WebAssembly {@code throw} or {@code throw_ref} instructions during
+   * execution. Use {@link #takePendingException()} to retrieve exceptions thrown during WASM
+   * execution.
    *
    * @param <R> the declared return type (never actually returned)
    * @param exceptionRef the exception reference to throw
    * @return never returns - always throws
-   * @throws WasmException with the thrown exception information
+   * @throws UnsupportedOperationException always, as host-initiated exception throwing is not
+   *     supported by Wasmtime
    * @throws IllegalArgumentException if exceptionRef is null
    * @since 1.0.0
+   * @deprecated Wasmtime does not support host-side exception throwing. Exceptions propagate only
+   *     from WASM {@code throw}/{@code throw_ref} instructions. Use {@link #takePendingException()}
+   *     instead.
    */
+  @Deprecated
   <R> R throwException(ExnRef exceptionRef) throws WasmException;
 
   /**

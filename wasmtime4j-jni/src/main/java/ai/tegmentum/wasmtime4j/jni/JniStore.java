@@ -1454,21 +1454,17 @@ public final class JniStore extends JniResource implements Store {
     nativeGc(nativeHandle);
   }
 
+  @Deprecated
   @Override
   public <R> R throwException(final ai.tegmentum.wasmtime4j.ExnRef exceptionRef)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
     if (exceptionRef == null) {
       throw new IllegalArgumentException("exceptionRef cannot be null");
     }
-    if (!(exceptionRef instanceof JniExnRef)) {
-      throw new IllegalArgumentException("ExnRef must be a JniExnRef instance");
-    }
-
-    final JniExnRef jniExnRef = (JniExnRef) exceptionRef;
-    nativeThrowException(nativeHandle, jniExnRef.getNativeHandle());
-    // This should never be reached - the native call always throws
-    throw new ai.tegmentum.wasmtime4j.exception.WasmException("Exception was thrown");
+    throw new UnsupportedOperationException(
+        "Wasmtime does not support host-initiated exception throwing. "
+            + "Exceptions propagate only from WASM throw/throw_ref instructions. "
+            + "Use takePendingException() instead.");
   }
 
   @Override
@@ -1620,8 +1616,6 @@ public final class JniStore extends JniResource implements Store {
   }
 
   private native void nativeGc(long storeHandle);
-
-  private native void nativeThrowException(long storeHandle, long exnRefHandle);
 
   private native long nativeTakePendingException(long storeHandle);
 

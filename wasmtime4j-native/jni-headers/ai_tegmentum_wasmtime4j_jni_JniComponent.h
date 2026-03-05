@@ -327,6 +327,14 @@ JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGe
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeAsyncValClose
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponent
+ * Method:    nativeResourceAnyDrop
+ * Signature: (JJJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeResourceAnyDrop
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

@@ -149,7 +149,50 @@ public interface ResourceAny {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    return new DefaultResourceAny(typeId, true, rep);
+    return new DefaultResourceAny(typeId, true, rep, 0, null);
+  }
+
+  /**
+   * Creates a new resource handle with the given native registry handle ID and lifecycle callback.
+   *
+   * <p>This factory is used by runtime implementations (JNI/Panama) when a component function
+   * returns a resource value. The native handle ID corresponds to an entry in the native resource
+   * registry, and the lifecycle callback enables native resource_drop and resource_rep calls.
+   *
+   * @param typeId the resource type identifier
+   * @param owned whether this is an owned handle
+   * @param rep the u32 representation value
+   * @param nativeHandle the native registry handle ID
+   * @param lifecycle the lifecycle callback for native operations, or null for host-only resources
+   * @return a new ResourceAny handle
+   * @since 1.1.0
+   */
+  static ResourceAny fromNative(
+      final int typeId,
+      final boolean owned,
+      final int rep,
+      final long nativeHandle,
+      final ResourceLifecycleCallback lifecycle) {
+    return new DefaultResourceAny(typeId, owned, rep, nativeHandle, lifecycle);
+  }
+
+  /**
+   * Callback interface for native resource lifecycle operations.
+   *
+   * <p>Runtime implementations (JNI/Panama) provide this to enable native resource_drop and
+   * resource_rep calls through the underlying Wasmtime store.
+   *
+   * @since 1.1.0
+   */
+  interface ResourceLifecycleCallback {
+
+    /**
+     * Drops the resource in the native store.
+     *
+     * @param nativeHandle the native registry handle ID
+     * @throws WasmException if the drop fails
+     */
+    void drop(long nativeHandle) throws WasmException;
   }
 
   /** Default implementation of ResourceAny for host-side resource management. */
@@ -158,12 +201,21 @@ public interface ResourceAny {
     private final int typeId;
     private final boolean owned;
     private final int rep;
-    private boolean dropped;
+    private final long nativeHandle;
+    private final ResourceLifecycleCallback lifecycle;
+    private volatile boolean dropped;
 
-    DefaultResourceAny(final int typeId, final boolean owned, final int rep) {
+    DefaultResourceAny(
+        final int typeId,
+        final boolean owned,
+        final int rep,
+        final long nativeHandle,
+        final ResourceLifecycleCallback lifecycle) {
       this.typeId = typeId;
       this.owned = owned;
       this.rep = rep;
+      this.nativeHandle = nativeHandle;
+      this.lifecycle = lifecycle;
       this.dropped = false;
     }
 
@@ -188,6 +240,9 @@ public interface ResourceAny {
         throw new WasmException("Resource has already been dropped");
       }
       dropped = true;
+      if (lifecycle != null && nativeHandle != 0) {
+        lifecycle.drop(nativeHandle);
+      }
     }
 
     @Override
@@ -200,12 +255,20 @@ public interface ResourceAny {
 
     @Override
     public long getNativeHandle() {
-      return rep;
+      return nativeHandle != 0 ? nativeHandle : rep;
     }
 
     @Override
     public String toString() {
-      return "ResourceAny{typeId=" + typeId + ", owned=" + owned + ", rep=" + rep + "}";
+      return "ResourceAny{typeId="
+          + typeId
+          + ", owned="
+          + owned
+          + ", rep="
+          + rep
+          + ", nativeHandle="
+          + nativeHandle
+          + "}";
     }
   }
 }

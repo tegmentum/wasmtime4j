@@ -731,6 +731,15 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return: 0=success, -1=not found
             ValueLayout.JAVA_LONG)); // handle
+
+    // ===== ResourceAny Lifecycle =====
+    addFunctionBinding(
+        "wasmtime4j_panama_resource_any_drop",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return: 0=success, non-zero=error
+            ValueLayout.ADDRESS, // engine_ptr
+            ValueLayout.JAVA_LONG, // instance_id
+            ValueLayout.JAVA_LONG)); // resource_handle
   }
 
   // ===== Component Engine (legacy API) =====
@@ -2251,5 +2260,29 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    */
   public Runnable createAsyncValCloseAction(final long handle) {
     return () -> asyncValClose(handle);
+  }
+
+  // ===== ResourceAny Lifecycle =====
+
+  /**
+   * Drops a ResourceAny held in the global resource registry.
+   *
+   * <p>Takes the resource from the registry and calls resource_drop on it using the store
+   * associated with the given component instance.
+   *
+   * @param enginePtr the enhanced component engine pointer
+   * @param instanceId the component instance ID that owns the store
+   * @param resourceHandle the resource handle ID from the global registry
+   * @return 0 on success, non-zero on error
+   */
+  public int resourceAnyDrop(
+      final MemorySegment enginePtr, final long instanceId, final long resourceHandle) {
+    validatePointer(enginePtr, "enginePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_resource_any_drop",
+        Integer.class,
+        enginePtr,
+        instanceId,
+        resourceHandle);
   }
 }

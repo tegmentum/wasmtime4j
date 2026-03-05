@@ -13,8 +13,54 @@ use crate::table::core::{
 };
 use std::collections::HashMap;
 use std::mem::MaybeUninit;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
-use wasmtime::{Func, FuncType, HeapType, RefType, Val, ValRaw, ValType};
+use wasmtime::{Caller, ExternRef, Func, FuncType, HeapType, RefType, Val, ValRaw, ValType};
+
+// --- Scoped GC Reference Registry ---
+// Stores AnyRef/ExnRef values during host function callbacks so they can be
+// round-tripped through the Java FFI layer. References are stored when params
+// are marshalled in and cleaned up after the callback returns.
+
+/// Counter for generating unique GC ref handles.
+static GC_REF_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+/// Registry for GC references (AnyRef, ExnRef) during host function callbacks.
+static GC_REF_REGISTRY: std::sync::OnceLock<Mutex<HashMap<u64, GcRefEntry>>> =
+    std::sync::OnceLock::new();
+
+fn get_gc_ref_registry() -> &'static Mutex<HashMap<u64, GcRefEntry>> {
+    GC_REF_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// A GC reference held in the scoped registry.
+enum GcRefEntry {
+    AnyRef(Option<wasmtime::Rooted<wasmtime::AnyRef>>),
+    ExnRef(Option<wasmtime::Rooted<wasmtime::ExnRef>>),
+}
+
+/// Store a GC reference and return a handle ID.
+fn store_gc_ref(entry: GcRefEntry) -> u64 {
+    let id = GC_REF_COUNTER.fetch_add(1, Ordering::Relaxed);
+    if let Ok(mut reg) = get_gc_ref_registry().lock() {
+        reg.insert(id, entry);
+    }
+    id
+}
+
+/// Take a GC reference from the registry (consuming it).
+fn take_gc_ref(id: u64) -> Option<GcRefEntry> {
+    get_gc_ref_registry().lock().ok()?.remove(&id)
+}
+
+/// Clean up GC refs from the registry.
+fn cleanup_gc_ref_ids(ids: &[u64]) {
+    if let Ok(mut reg) = get_gc_ref_registry().lock() {
+        for &id in ids {
+            reg.remove(&id);
+        }
+    }
+}
 
 /// Compare ValType values since they don't implement PartialEq
 fn valtype_eq(a: &ValType, b: &ValType) -> bool {
@@ -280,53 +326,41 @@ impl HostFunction {
                 host_function.name
             );
 
-            // Optimize execution based on caller context requirements
-            if !requires_caller {
-                // Zero-overhead path: no caller context needed
-                log::debug!(
-                    "[HOSTFUNC] Zero-overhead path, marshaling {} params",
-                    params.len()
-                );
-                let (wasm_params, temp_ids) = marshal_params_from_wasmtime(params, store_id)?;
-                let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                    log::error!("[HOSTFUNC] Callback execution failed: {}", e);
-                    wasmtime::Error::msg(format!("Host function execution failed: {}", e))
-                })?;
-                // Clean up temporary funcref registrations from param marshalling
-                cleanup_temp_funcref_ids(&temp_ids);
-                log::debug!(
-                    "[HOSTFUNC] Callback returned {} results",
-                    wasm_results.len()
-                );
-                marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
-            } else {
-                // Full caller context path
-                log::debug!(
-                    "[HOSTFUNC] Full caller context path, marshaling {} params",
-                    params.len()
-                );
-                let (wasm_params, temp_ids) = marshal_params_from_wasmtime(params, store_id)?;
+            // Marshal params (immutable borrow of caller for ExternRef/AnyRef/ExnRef extraction)
+            log::debug!(
+                "[HOSTFUNC] Marshaling {} params (requires_caller={})",
+                params.len(),
+                requires_caller
+            );
+            let (wasm_params, temp_funcref_ids, temp_gc_ref_ids) =
+                marshal_params_from_wasmtime(params, store_id, &caller)?;
 
-                // Create minimal caller context based on usage pattern
+            // Create minimal caller context based on usage pattern (if needed)
+            if requires_caller {
                 let _context =
                     create_optimized_caller_context(&mut caller, usage).map_err(|e| {
                         log::error!("[HOSTFUNC] Failed to create caller context: {}", e);
                         wasmtime::Error::msg(format!("Failed to create caller context: {}", e))
                     })?;
-
-                let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                    log::error!("[HOSTFUNC] Callback execution failed: {}", e);
-                    wasmtime::Error::msg(format!("Host function execution failed: {}", e))
-                })?;
-                // Clean up temporary funcref registrations from param marshalling
-                cleanup_temp_funcref_ids(&temp_ids);
-                log::debug!(
-                    "[HOSTFUNC] Callback returned {} results",
-                    wasm_results.len()
-                );
-
-                marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
             }
+
+            let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
+                log::error!("[HOSTFUNC] Callback execution failed: {}", e);
+                wasmtime::Error::msg(format!("Host function execution failed: {}", e))
+            })?;
+
+            // Clean up temporary registrations from param marshalling
+            cleanup_temp_funcref_ids(&temp_funcref_ids);
+            log::debug!(
+                "[HOSTFUNC] Callback returned {} results",
+                wasm_results.len()
+            );
+
+            // Marshal results (mutable borrow of caller for ExternRef creation)
+            marshal_results_to_wasmtime(&wasm_results, results, store_id, &mut caller)?;
+
+            // Clean up any remaining GC refs not consumed by result marshalling
+            cleanup_gc_ref_ids(&temp_gc_ref_ids);
 
             log::debug!("[HOSTFUNC] Host function callback completed successfully");
             Ok(())
@@ -438,39 +472,30 @@ impl HostFunction {
                         })?
                     };
 
-                    // Optimize execution based on caller context requirements
-                    if !requires_caller {
-                        // Zero-overhead path: no caller context needed
-                        let (wasm_params, temp_ids) =
-                            marshal_params_from_wasmtime(params, store_id)?;
-                        let wasm_results =
-                            host_function.callback.execute(&wasm_params).map_err(|e| {
-                                wasmtime::Error::msg(format!(
-                                    "Host function execution failed: {}",
-                                    e
-                                ))
-                            })?;
-                        cleanup_temp_funcref_ids(&temp_ids);
-                        marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
-                    } else {
-                        // Full caller context path
-                        let (wasm_params, temp_ids) =
-                            marshal_params_from_wasmtime(params, store_id)?;
+                    // Marshal params (immutable borrow of caller)
+                    let (wasm_params, temp_funcref_ids, temp_gc_ref_ids) =
+                        marshal_params_from_wasmtime(params, store_id, &caller)?;
 
-                        // Create minimal caller context based on usage pattern
+                    if requires_caller {
                         let _context = create_optimized_caller_context(&mut caller, usage)?;
-
-                        let wasm_results =
-                            host_function.callback.execute(&wasm_params).map_err(|e| {
-                                wasmtime::Error::msg(format!(
-                                    "Host function execution failed: {}",
-                                    e
-                                ))
-                            })?;
-                        cleanup_temp_funcref_ids(&temp_ids);
-
-                        marshal_results_to_wasmtime(&wasm_results, results, store_id)?;
                     }
+
+                    let wasm_results =
+                        host_function.callback.execute(&wasm_params).map_err(|e| {
+                            wasmtime::Error::msg(format!(
+                                "Host function execution failed: {}",
+                                e
+                            ))
+                        })?;
+                    cleanup_temp_funcref_ids(&temp_funcref_ids);
+
+                    marshal_results_to_wasmtime(
+                        &wasm_results,
+                        results,
+                        store_id,
+                        &mut caller,
+                    )?;
+                    cleanup_gc_ref_ids(&temp_gc_ref_ids);
 
                     Ok(())
                 }) as Box<dyn Future<Output = Result<(), wasmtime::Error>> + Send>
@@ -590,14 +615,17 @@ impl HostFunctionBuilder {
 
 /// Marshal parameters from Wasmtime Val to WasmValue
 ///
-/// Returns the marshalled parameters and a list of temporary funcref registry IDs
-/// that should be cleaned up after the callback completes.
+/// Returns the marshalled parameters, a list of temporary funcref registry IDs,
+/// and a list of temporary GC ref registry IDs that should be cleaned up after
+/// the callback completes.
 fn marshal_params_from_wasmtime(
     params: &[Val],
     store_id: u64,
-) -> Result<(Vec<WasmValue>, Vec<u64>), wasmtime::Error> {
+    caller: &Caller<'_, StoreData>,
+) -> Result<(Vec<WasmValue>, Vec<u64>, Vec<u64>), wasmtime::Error> {
     let mut wasm_params = Vec::with_capacity(params.len());
     let mut temp_funcref_ids = Vec::new();
+    let mut temp_gc_ref_ids = Vec::new();
 
     for param in params {
         let wasm_value = match param {
@@ -622,19 +650,57 @@ fn marshal_params_from_wasmtime(
                     WasmValue::FuncRef(None)
                 }
             }
-            Val::ExternRef(_ext_ref) => {
-                // ExternRef data extraction requires Store context
-                // For now, just preserve None
-                WasmValue::ExternRef(None)
+            Val::ExternRef(ext_ref) => {
+                if let Some(ext) = ext_ref {
+                    // Extract the i64 data stored in the ExternRef using the caller context
+                    match ext.data(&*caller) {
+                        Ok(Some(data)) => {
+                            if let Some(id) = data.downcast_ref::<i64>() {
+                                WasmValue::ExternRef(Some(*id))
+                            } else {
+                                log::warn!("[HOSTFUNC] ExternRef contains non-i64 data");
+                                WasmValue::ExternRef(None)
+                            }
+                        }
+                        Ok(None) => {
+                            // i31 or anyref-converted externref
+                            WasmValue::ExternRef(None)
+                        }
+                        Err(e) => {
+                            log::warn!("[HOSTFUNC] Failed to extract ExternRef data: {}", e);
+                            WasmValue::ExternRef(None)
+                        }
+                    }
+                } else {
+                    WasmValue::ExternRef(None)
+                }
             }
-            Val::AnyRef(_) => WasmValue::ExternRef(None),
-            Val::ExnRef(_) => WasmValue::ExternRef(None),
+            Val::AnyRef(any_ref) => {
+                // Store the Rooted<AnyRef> in the scoped registry for round-tripping
+                let id = store_gc_ref(GcRefEntry::AnyRef(*any_ref));
+                temp_gc_ref_ids.push(id);
+                if any_ref.is_some() {
+                    WasmValue::AnyRef(Some(id as i64))
+                } else {
+                    WasmValue::AnyRef(None)
+                }
+            }
+            Val::ExnRef(exn_ref) => {
+                // Store the Rooted<ExnRef> in the scoped registry for round-tripping
+                let id = store_gc_ref(GcRefEntry::ExnRef(*exn_ref));
+                temp_gc_ref_ids.push(id);
+                if exn_ref.is_some() {
+                    WasmValue::ExnRef(Some(id as i64))
+                } else {
+                    WasmValue::ExnRef(None)
+                }
+            }
             Val::ContRef(_) => WasmValue::ContRef,
         };
         wasm_params.push(wasm_value);
     }
 
-    Ok((wasm_params, temp_funcref_ids))
+    Ok((wasm_params, temp_funcref_ids, temp_gc_ref_ids))
 }
 
 /// Clean up temporary funcref IDs registered during parameter marshalling
@@ -645,10 +711,14 @@ fn cleanup_temp_funcref_ids(ids: &[u64]) {
 }
 
 /// Marshal results from WasmValue to Wasmtime Val
+///
+/// Requires mutable caller context for creating ExternRef values and
+/// looking up AnyRef/ExnRef values from the scoped GC ref registry.
 fn marshal_results_to_wasmtime(
     wasm_results: &[WasmValue],
     results: &mut [Val],
     store_id: u64,
+    caller: &mut Caller<'_, StoreData>,
 ) -> Result<(), wasmtime::Error> {
     if wasm_results.len() != results.len() {
         return Err(wasmtime::Error::msg(format!(
@@ -689,10 +759,54 @@ fn marshal_results_to_wasmtime(
                     Val::FuncRef(None)
                 }
             }
-            WasmValue::ExternRef(_ref_id) => {
-                // ExternRef creation requires Store context
-                // Always return NULL for now
-                Val::ExternRef(None)
+            WasmValue::ExternRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Create a new ExternRef wrapping the i64 value
+                    // Reborrow caller to avoid consuming the mutable reference
+                    match ExternRef::new(&mut *caller, *id) {
+                        Ok(ext) => Val::ExternRef(Some(ext)),
+                        Err(e) => {
+                            log::warn!("[HOSTFUNC] Failed to create ExternRef: {}", e);
+                            Val::ExternRef(None)
+                        }
+                    }
+                } else {
+                    Val::ExternRef(None)
+                }
+            }
+            WasmValue::AnyRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Look up the Rooted<AnyRef> from the scoped registry
+                    match take_gc_ref(*id as u64) {
+                        Some(GcRefEntry::AnyRef(rooted)) => Val::AnyRef(rooted),
+                        _ => {
+                            log::warn!(
+                                "[HOSTFUNC] AnyRef handle {} not found in registry",
+                                id
+                            );
+                            Val::AnyRef(None)
+                        }
+                    }
+                } else {
+                    Val::AnyRef(None)
+                }
+            }
+            WasmValue::ExnRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Look up the Rooted<ExnRef> from the scoped registry
+                    match take_gc_ref(*id as u64) {
+                        Some(GcRefEntry::ExnRef(rooted)) => Val::ExnRef(rooted),
+                        _ => {
+                            log::warn!(
+                                "[HOSTFUNC] ExnRef handle {} not found in registry",
+                                id
+                            );
+                            Val::ExnRef(None)
+                        }
+                    }
+                } else {
+                    Val::ExnRef(None)
+                }
             }
             WasmValue::ContRef => {
                 // ContRef values are opaque with no public API
@@ -780,12 +894,14 @@ fn marshal_results_to_valraw(
                     *raw = MaybeUninit::new(ValRaw::funcref(std::ptr::null_mut()));
                 }
             }
-            WasmValue::ExternRef(_) => {
-                *raw = MaybeUninit::new(ValRaw::externref(0));
+            WasmValue::ExternRef(_) | WasmValue::AnyRef(_) | WasmValue::ExnRef(_) => {
+                // GC ref types: use null anyref in unchecked path
+                // (proper marshalling requires Store context, unavailable here)
+                *raw = MaybeUninit::new(ValRaw::anyref(0));
             }
             WasmValue::ContRef => {
-                // ContRef is opaque - use null externref as raw representation
-                *raw = MaybeUninit::new(ValRaw::externref(0));
+                // ContRef is opaque - use null anyref as raw representation
+                *raw = MaybeUninit::new(ValRaw::anyref(0));
             }
         }
     }
@@ -811,16 +927,7 @@ pub fn validate_parameter_types(
     }
 
     for (i, (param, expected_type)) in params.iter().zip(expected_types.iter()).enumerate() {
-        let param_type = match param {
-            WasmValue::I32(_) => ValType::I32,
-            WasmValue::I64(_) => ValType::I64,
-            WasmValue::F32(_) => ValType::F32,
-            WasmValue::F64(_) => ValType::F64,
-            WasmValue::V128(_) => ValType::V128,
-            WasmValue::FuncRef(_) => ValType::Ref(RefType::FUNCREF),
-            WasmValue::ExternRef(_) => ValType::Ref(RefType::EXTERNREF),
-            WasmValue::ContRef => ValType::Ref(RefType::new(true, HeapType::Cont)),
-        };
+        let param_type = wasm_value_to_valtype(param);
 
         if !valtype_eq(&param_type, expected_type) {
             return Err(WasmtimeError::Validation {
@@ -836,6 +943,22 @@ pub fn validate_parameter_types(
         params: params.to_vec(),
         warnings,
     })
+}
+
+/// Map a WasmValue to its corresponding ValType for validation
+fn wasm_value_to_valtype(val: &WasmValue) -> ValType {
+    match val {
+        WasmValue::I32(_) => ValType::I32,
+        WasmValue::I64(_) => ValType::I64,
+        WasmValue::F32(_) => ValType::F32,
+        WasmValue::F64(_) => ValType::F64,
+        WasmValue::V128(_) => ValType::V128,
+        WasmValue::FuncRef(_) => ValType::Ref(RefType::FUNCREF),
+        WasmValue::ExternRef(_) => ValType::Ref(RefType::EXTERNREF),
+        WasmValue::AnyRef(_) => ValType::Ref(RefType::new(true, HeapType::Any)),
+        WasmValue::ExnRef(_) => ValType::Ref(RefType::new(true, HeapType::Exn)),
+        WasmValue::ContRef => ValType::Ref(RefType::new(true, HeapType::Cont)),
+    }
 }
 
 /// Validate return types match function signature
@@ -854,16 +977,7 @@ pub fn validate_return_types(
     }
 
     for (i, (result, expected_type)) in results.iter().zip(expected_types.iter()).enumerate() {
-        let result_type = match result {
-            WasmValue::I32(_) => ValType::I32,
-            WasmValue::I64(_) => ValType::I64,
-            WasmValue::F32(_) => ValType::F32,
-            WasmValue::F64(_) => ValType::F64,
-            WasmValue::V128(_) => ValType::V128,
-            WasmValue::FuncRef(_) => ValType::Ref(RefType::FUNCREF),
-            WasmValue::ExternRef(_) => ValType::Ref(RefType::EXTERNREF),
-            WasmValue::ContRef => ValType::Ref(RefType::new(true, HeapType::Cont)),
-        };
+        let result_type = wasm_value_to_valtype(result);
 
         if !valtype_eq(&result_type, expected_type) {
             return Err(WasmtimeError::Validation {

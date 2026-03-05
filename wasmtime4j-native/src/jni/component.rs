@@ -1385,3 +1385,28 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeAsync
     }
     crate::component::async_val_close(handle as u64);
 }
+
+/// Drop a ResourceAny held in the global resource registry.
+///
+/// Takes the resource from the registry and calls resource_drop on it
+/// using the store associated with the given component instance.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeResourceAnyDrop(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    resource_handle: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        if engine_ptr == 0 {
+            return Err(crate::error::WasmtimeError::InvalidParameter {
+                message: "Engine pointer is null".to_string(),
+            });
+        }
+        let engine = unsafe {
+            &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
+        };
+        engine.resource_any_drop(instance_id as u64, resource_handle as u64)
+    });
+}

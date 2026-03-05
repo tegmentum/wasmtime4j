@@ -752,3 +752,23 @@ pub extern "C" fn wasmtime4j_panama_async_val_close(handle: i64) -> c_int {
         -1
     }
 }
+
+/// Drop a ResourceAny held in the global resource registry.
+///
+/// Takes the resource from the registry and calls resource_drop on it
+/// using the store associated with the given component instance.
+///
+/// Returns 0 on success, non-zero on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_resource_any_drop(
+    engine_ptr: *mut c_void,
+    instance_id: c_ulong,
+    resource_handle: c_ulong,
+) -> c_int {
+    ffi_utils::ffi_try_code(|| {
+        let engine =
+            unsafe { ffi_utils::deref_ptr::<EnhancedComponentEngine>(engine_ptr, "engine")? };
+        engine.resource_any_drop(instance_id, resource_handle)
+    })
+}
+

@@ -656,21 +656,6 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniExnRef_nativeMatchesT
     })
 }
 
-/// JNI binding for JniStore.nativeThrowException
-/// Throws an exception in the store context
-#[no_mangle]
-pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeThrowException(
-    _env: JNIEnv,
-    _class: JClass,
-    _store_handle: jlong,
-    _exnref_handle: jlong,
-) {
-    // Exception throwing requires careful integration with wasmtime's
-    // trap handling. The Store doesn't directly expose throw_exception -
-    // exceptions are thrown during WebAssembly execution via throw/throw_ref
-    // instructions.
-}
-
 /// JNI binding for JniStore.nativeTakePendingException
 /// Takes a pending exception from the store, returning a handle to the ExnRef
 #[no_mangle]

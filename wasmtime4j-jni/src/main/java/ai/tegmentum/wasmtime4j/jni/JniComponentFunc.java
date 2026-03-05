@@ -25,9 +25,11 @@ import ai.tegmentum.wasmtime4j.exception.ValidationException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
+import ai.tegmentum.wasmtime4j.wit.WitBorrow;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
 import ai.tegmentum.wasmtime4j.wit.WitFloat32;
 import ai.tegmentum.wasmtime4j.wit.WitFloat64;
+import ai.tegmentum.wasmtime4j.wit.WitOwn;
 import ai.tegmentum.wasmtime4j.wit.WitS16;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
 import ai.tegmentum.wasmtime4j.wit.WitS64;
@@ -241,6 +243,10 @@ public final class JniComponentFunc
           return WitChar.of(val.asChar());
         case STRING:
           return WitString.of(val.asString());
+        case OWN:
+          return WitOwn.fromHandle(val.asResource());
+        case BORROW:
+          return WitBorrow.fromHandle(val.asResource());
         default:
           throw new IllegalArgumentException("Unsupported ComponentVal type: " + val.getType());
       }
@@ -291,6 +297,10 @@ public final class JniComponentFunc
       return ComponentVal.char_(((WitChar) val).toJava());
     } else if (val instanceof WitString) {
       return ComponentVal.string((String) ((WitString) val).toJava());
+    } else if (val instanceof WitOwn) {
+      return ComponentVal.own(((WitOwn) val).getHandle());
+    } else if (val instanceof WitBorrow) {
+      return ComponentVal.borrow(((WitBorrow) val).getHandle());
     } else {
       throw new IllegalArgumentException(
           "Unsupported WitValue type: " + val.getClass().getSimpleName());

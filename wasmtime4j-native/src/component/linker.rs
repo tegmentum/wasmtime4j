@@ -312,7 +312,7 @@ pub fn component_value_to_val(cv: &ComponentValue) -> Result<Val, WasmtimeError>
             Ok(Val::Flags(flags.iter().map(|f| f.clone().into()).collect()))
         }
         ComponentValue::Own(handle) | ComponentValue::Borrow(handle) => {
-            crate::wit_value_marshal::get_resource(*handle)
+            crate::wit_value_marshal::take_resource(*handle)
                 .map(Val::Resource)
                 .ok_or_else(|| WasmtimeError::Resource {
                     message: format!("Resource handle {} not found in registry", handle),

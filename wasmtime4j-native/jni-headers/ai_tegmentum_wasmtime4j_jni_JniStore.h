@@ -193,14 +193,6 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGc
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
- * Method:    nativeThrowException
- * Signature: (JJ)V
- */
-JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeThrowException
-  (JNIEnv *, jobject, jlong, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
  * Method:    nativeTakePendingException
  * Signature: (J)J
  */

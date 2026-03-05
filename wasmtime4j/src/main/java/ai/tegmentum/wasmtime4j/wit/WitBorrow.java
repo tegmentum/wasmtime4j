@@ -87,6 +87,23 @@ public final class WitBorrow extends WitValue {
   }
 
   /**
+   * Creates a WIT borrowed resource handle value with a long handle ID.
+   *
+   * <p>This overload is used when the handle comes from the native resource registry which uses u64
+   * handle IDs.
+   *
+   * @param resourceType the resource type name
+   * @param handle the handle ID (native resource registry ID)
+   * @return a new WitBorrow value
+   */
+  public static WitBorrow of(final String resourceType, final long handle) {
+    final ComponentResourceHandle resourceHandle =
+        ComponentResourceHandle.borrowWithNativeHandle(resourceType, (int) handle, handle);
+    final WitType witType = WitType.resource(resourceType, resourceType);
+    return new WitBorrow(witType, resourceHandle);
+  }
+
+  /**
    * Creates a WIT borrowed resource handle value wrapping a host object.
    *
    * @param resourceType the resource type name
@@ -167,8 +184,10 @@ public final class WitBorrow extends WitValue {
 
   @Override
   protected void validate() {
-    // The handle index must be non-negative
-    if (handle.getIndex() < 0) {
+    // The handle index must be non-negative unless backed by a native handle.
+    // Native-backed handles store a u64 registry key, and the int index is just the lower 32 bits
+    // which may be negative in Java's signed int representation.
+    if (handle.getNativeHandle() < 0 && handle.getIndex() < 0) {
       throw new IllegalArgumentException(
           "Resource handle index cannot be negative: " + handle.getIndex());
     }

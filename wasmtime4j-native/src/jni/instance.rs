@@ -206,7 +206,9 @@ fn convert_java_object_to_wasm_value(
                 message: format!("Failed to get value from WasmValue: {}", e),
             })?;
 
-        // Convert based on type ordinal (0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF)
+        // Convert based on WasmValueType ordinal:
+        // 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FUNCREF, 6=EXTERNREF,
+        // 7=ANYREF, 15=EXNREF, 17=CONTREF
         match type_ordinal {
             0 => {
                 // I32
@@ -274,6 +276,46 @@ fn convert_java_object_to_wasm_value(
                     None
                 };
                 Ok(WasmValue::ExternRef(ref_value))
+            }
+            4 => {
+                // V128 — value_obj is a byte[]
+                let byte_array = jni::objects::JByteArray::from(value_obj);
+                let mut buf = [0u8; 16];
+                let mut i8_buf = [0i8; 16];
+                env.get_byte_array_region(&byte_array, 0, &mut i8_buf)
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to read V128 bytes: {}", e),
+                    })?;
+                for (i, b) in i8_buf.iter().enumerate() {
+                    buf[i] = *b as u8;
+                }
+                Ok(WasmValue::V128(buf))
+            }
+            7 => {
+                // ANYREF
+                let ref_value = if !value_obj.is_null() {
+                    env.call_method(&value_obj, "longValue", "()J", &[])
+                        .and_then(|v| v.j())
+                        .ok()
+                } else {
+                    None
+                };
+                Ok(WasmValue::AnyRef(ref_value))
+            }
+            15 => {
+                // EXNREF
+                let ref_value = if !value_obj.is_null() {
+                    env.call_method(&value_obj, "longValue", "()J", &[])
+                        .and_then(|v| v.j())
+                        .ok()
+                } else {
+                    None
+                };
+                Ok(WasmValue::ExnRef(ref_value))
+            }
+            17 => {
+                // CONTREF
+                Ok(WasmValue::ContRef)
             }
             _ => Err(WasmtimeError::InvalidParameter {
                 message: format!("Unsupported WasmValue type ordinal: {}", type_ordinal),
@@ -539,8 +581,91 @@ fn convert_wasm_value_to_java<'a>(
                 })
             }
         },
+        WasmValue::AnyRef(ref_value) => match ref_value {
+            Some(id) => {
+                let long_class = env.find_class("java/lang/Long").map_err(|e| {
+                    WasmtimeError::InvalidParameter {
+                        message: format!("Failed to find Long class: {}", e),
+                    }
+                })?;
+                let long_obj = env
+                    .new_object(long_class, "(J)V", &[JValue::Long(*id)])
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to create Long for anyref: {}", e),
+                    })?;
+                env.call_static_method(
+                    wasm_value_class,
+                    "anyref",
+                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[JValue::from(&long_obj)],
+                )
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create WasmValue.anyref: {}", e),
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get WasmValue.anyref result: {}", e),
+                })
+            }
+            None => {
+                env.call_static_method(
+                    wasm_value_class,
+                    "nullAnyRef",
+                    "()Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[],
+                )
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create WasmValue.nullAnyRef: {}", e),
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get WasmValue.nullAnyRef result: {}", e),
+                })
+            }
+        },
+        WasmValue::ExnRef(ref_value) => match ref_value {
+            Some(id) => {
+                let long_class = env.find_class("java/lang/Long").map_err(|e| {
+                    WasmtimeError::InvalidParameter {
+                        message: format!("Failed to find Long class: {}", e),
+                    }
+                })?;
+                let long_obj = env
+                    .new_object(long_class, "(J)V", &[JValue::Long(*id)])
+                    .map_err(|e| WasmtimeError::InvalidParameter {
+                        message: format!("Failed to create Long for exnref: {}", e),
+                    })?;
+                env.call_static_method(
+                    wasm_value_class,
+                    "exnref",
+                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[JValue::from(&long_obj)],
+                )
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create WasmValue.exnref: {}", e),
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get WasmValue.exnref result: {}", e),
+                })
+            }
+            None => {
+                env.call_static_method(
+                    wasm_value_class,
+                    "nullExnRef",
+                    "()Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[],
+                )
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create WasmValue.nullExnRef: {}", e),
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get WasmValue.nullExnRef result: {}", e),
+                })
+            }
+        },
         WasmValue::ContRef => {
-            // ContRef is always null/opaque - call WasmValue.nullContRef()
             env.call_static_method(
                 wasm_value_class,
                 "nullContRef",
@@ -555,7 +680,31 @@ fn convert_wasm_value_to_java<'a>(
                 message: format!("Failed to get WasmValue.nullContRef result: {}", e),
             })
         }
-        _ => Ok(JObject::null()), // Skip unsupported types
+        WasmValue::V128(bytes) => {
+            let byte_array = env.new_byte_array(16).map_err(|e| {
+                WasmtimeError::InvalidParameter {
+                    message: format!("Failed to create byte array for V128: {}", e),
+                }
+            })?;
+            let signed_bytes: Vec<i8> = bytes.iter().map(|b| *b as i8).collect();
+            env.set_byte_array_region(&byte_array, 0, &signed_bytes)
+                .map_err(|e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to set V128 bytes: {}", e),
+                })?;
+            env.call_static_method(
+                wasm_value_class,
+                "v128",
+                "([B)Lai/tegmentum/wasmtime4j/WasmValue;",
+                &[JValue::from(&byte_array)],
+            )
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to create WasmValue.v128: {}", e),
+            })?
+            .l()
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get WasmValue.v128 result: {}", e),
+            })
+        }
     }
 }
 

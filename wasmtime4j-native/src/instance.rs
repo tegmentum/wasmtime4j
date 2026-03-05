@@ -244,13 +244,17 @@ pub enum WasmValue {
     ExternRef(Option<i64>),
     /// Function reference - stores function reference ID
     FuncRef(Option<i64>),
+    /// GC any reference - stores scoped registry handle ID
+    AnyRef(Option<i64>),
+    /// Exception reference - stores scoped registry handle ID
+    ExnRef(Option<i64>),
     /// Continuation reference (stack switching proposal) - always null/opaque
     ContRef,
 }
 
 /// FFI-safe representation of WasmValue for cross-language interop.
 /// Layout: 4-byte tag + 16-byte value (total 20 bytes).
-/// Tags: 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FuncRef, 6=ExternRef, 7=ContRef
+/// Tags: 0=I32, 1=I64, 2=F32, 3=F64, 4=V128, 5=FuncRef, 6=ExternRef, 7=AnyRef, 8=ExnRef, 9=ContRef
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct FfiWasmValue {
@@ -297,8 +301,20 @@ impl FfiWasmValue {
                 }
                 6 // ExternRef uses tag 6
             }
+            WasmValue::AnyRef(opt) => {
+                if let Some(id) = opt {
+                    value[..8].copy_from_slice(&id.to_ne_bytes());
+                }
+                7 // AnyRef uses tag 7
+            }
+            WasmValue::ExnRef(opt) => {
+                if let Some(id) = opt {
+                    value[..8].copy_from_slice(&id.to_ne_bytes());
+                }
+                8 // ExnRef uses tag 8
+            }
             WasmValue::ContRef => {
-                7 // ContRef uses tag 7
+                9 // ContRef uses tag 9
             }
         };
         FfiWasmValue { tag, value }
@@ -380,6 +396,32 @@ impl FfiWasmValue {
                 }
             }
             7 => {
+                // AnyRef
+                let id = i64::from_ne_bytes(
+                    self.value[..8]
+                        .try_into()
+                        .expect("value is [u8; 16], slice to 8 always valid"),
+                );
+                if id == 0 {
+                    Ok(WasmValue::AnyRef(None))
+                } else {
+                    Ok(WasmValue::AnyRef(Some(id)))
+                }
+            }
+            8 => {
+                // ExnRef
+                let id = i64::from_ne_bytes(
+                    self.value[..8]
+                        .try_into()
+                        .expect("value is [u8; 16], slice to 8 always valid"),
+                );
+                if id == 0 {
+                    Ok(WasmValue::ExnRef(None))
+                } else {
+                    Ok(WasmValue::ExnRef(Some(id)))
+                }
+            }
+            9 => {
                 // ContRef (always null/opaque)
                 Ok(WasmValue::ContRef)
             }
@@ -901,6 +943,14 @@ impl Instance {
                             // For now, pass null funcref
                             wasm_params.push(Val::FuncRef(None));
                         }
+                        WasmValue::AnyRef(_) => {
+                            // AnyRef creation requires GC context; pass null
+                            wasm_params.push(Val::AnyRef(None));
+                        }
+                        WasmValue::ExnRef(_) => {
+                            // ExnRef creation requires GC context; pass null
+                            wasm_params.push(Val::ExnRef(None));
+                        }
                         WasmValue::ContRef => {
                             wasm_params.push(Val::ContRef(None));
                         }
@@ -1387,6 +1437,9 @@ impl Instance {
             (WasmValue::V128(_), ModuleValueType::V128) => true,
             (WasmValue::ExternRef(_), ModuleValueType::ExternRef) => true,
             (WasmValue::FuncRef(_), ModuleValueType::FuncRef) => true,
+            (WasmValue::AnyRef(_), ModuleValueType::AnyRef) => true,
+            // ExnRef maps to AnyRef in ModuleValueType (no separate ExnRef variant)
+            (WasmValue::ExnRef(_), ModuleValueType::AnyRef) => true,
             _ => false,
         }
     }
@@ -1421,6 +1474,14 @@ impl Instance {
                     Ok(Val::FuncRef(None))
                 }
             }
+            WasmValue::AnyRef(_) => {
+                // AnyRef creation requires GC context; pass null
+                Ok(Val::AnyRef(None))
+            }
+            WasmValue::ExnRef(_) => {
+                // ExnRef creation requires GC context; pass null
+                Ok(Val::ExnRef(None))
+            }
             WasmValue::ContRef => Ok(Val::ContRef(None)),
         }
     }
@@ -1450,8 +1511,8 @@ impl Instance {
                     Ok(WasmValue::FuncRef(None))
                 }
             }
-            Val::AnyRef(_) => Ok(WasmValue::ExternRef(None)),
-            Val::ExnRef(_) => Ok(WasmValue::ExternRef(None)),
+            Val::AnyRef(_) => Ok(WasmValue::AnyRef(None)),
+            Val::ExnRef(_) => Ok(WasmValue::ExnRef(None)),
             Val::ContRef(_) => Ok(WasmValue::ContRef),
         }
     }
@@ -2094,6 +2155,8 @@ pub mod core {
                 wasmtime::Val::null_extern_ref()
             }
             WasmValue::FuncRef(_) => wasmtime::Val::null_func_ref(),
+            WasmValue::AnyRef(_) => wasmtime::Val::AnyRef(None),
+            WasmValue::ExnRef(_) => wasmtime::Val::ExnRef(None),
             WasmValue::ContRef => wasmtime::Val::ContRef(None),
         })
     }
@@ -2112,16 +2175,8 @@ pub mod core {
                 // For now, just preserve None
                 WasmValue::ExternRef(None)
             }
-            wasmtime::Val::AnyRef(_) => {
-                // AnyRef is a GC type distinct from ExternRef; WasmValue lacks
-                // a dedicated variant, so we use ExternRef(None) as a placeholder.
-                log::warn!("AnyRef mapped to ExternRef(None) — WasmValue lacks AnyRef variant");
-                WasmValue::ExternRef(None)
-            }
-            wasmtime::Val::ExnRef(_) => {
-                log::warn!("ExnRef mapped to ExternRef(None) — WasmValue lacks ExnRef variant");
-                WasmValue::ExternRef(None)
-            }
+            wasmtime::Val::AnyRef(_) => WasmValue::AnyRef(None),
+            wasmtime::Val::ExnRef(_) => WasmValue::ExnRef(None),
             wasmtime::Val::ContRef(_) => WasmValue::ContRef,
         })
     }
@@ -3178,6 +3233,20 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
                             let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
                             WasmValue::ExternRef(if val == 0 { None } else { Some(val) })
                         }
+                        7 => {
+                            // ANYREF
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
+                            WasmValue::AnyRef(if val == 0 { None } else { Some(val) })
+                        }
+                        8 => {
+                            // EXNREF
+                            let val = std::ptr::read(base_ptr.add(offset + 4) as *const i64);
+                            WasmValue::ExnRef(if val == 0 { None } else { Some(val) })
+                        }
+                        9 => {
+                            // CONTREF
+                            WasmValue::ContRef
+                        }
                         _ => {
                             // Invalid tag - return error
                             return -1;
@@ -3261,14 +3330,24 @@ pub unsafe extern "C" fn wasmtime4j_instance_call_function(
                                 WasmValue::ExternRef(opt_id) => {
                                     // tag = 6
                                     std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 6);
-                                    // value at offset +4 (i64 reference ID or 0 for null)
+                                    let id = opt_id.unwrap_or(0);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, id);
+                                }
+                                WasmValue::AnyRef(opt_id) => {
+                                    // tag = 7
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 7);
+                                    let id = opt_id.unwrap_or(0);
+                                    std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, id);
+                                }
+                                WasmValue::ExnRef(opt_id) => {
+                                    // tag = 8
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 8);
                                     let id = opt_id.unwrap_or(0);
                                     std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, id);
                                 }
                                 WasmValue::ContRef => {
-                                    // tag = 7
-                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 7);
-                                    // value at offset +4 (always null/0 — opaque type)
+                                    // tag = 9
+                                    std::ptr::write(dest_ptr.add(base_offset) as *mut i32, 9);
                                     std::ptr::write(dest_ptr.add(base_offset + 4) as *mut i64, 0);
                                 }
                             }

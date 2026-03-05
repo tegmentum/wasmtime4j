@@ -407,17 +407,40 @@ fn deserialize_float32(data: &[u8]) -> Result<Val, WasmtimeError> {
 ///
 /// The handle ID is used to look up the actual ResourceAny in the registry.
 fn deserialize_resource(data: &[u8]) -> Result<Val, WasmtimeError> {
-    if data.len() != 8 {
+    // Format: [type_name_length: i32][type_name: UTF-8][handle_id: i64] (little-endian)
+    if data.len() < 12 {
         return Err(WasmtimeError::InvalidParameter {
             message: format!(
-                "Invalid resource data length: expected 8, got {}",
+                "Invalid resource data length: expected at least 12, got {}",
                 data.len()
             ),
         });
     }
-    let handle_id = u64::from_le_bytes([
-        data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7],
-    ]);
+
+    let type_name_len =
+        i32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let handle_offset = 4 + type_name_len;
+
+    if data.len() < handle_offset + 8 {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "Resource data truncated: need {} bytes, got {}",
+                handle_offset + 8,
+                data.len()
+            ),
+        });
+    }
+
+    let handle_id = i64::from_le_bytes([
+        data[handle_offset],
+        data[handle_offset + 1],
+        data[handle_offset + 2],
+        data[handle_offset + 3],
+        data[handle_offset + 4],
+        data[handle_offset + 5],
+        data[handle_offset + 6],
+        data[handle_offset + 7],
+    ]) as u64;
 
     // Retrieve the resource from the registry
     let resource = take_resource(handle_id).ok_or_else(|| WasmtimeError::InvalidParameter {
@@ -493,22 +516,15 @@ fn serialize_float32(value: f32) -> Vec<u8> {
 /// - 8 bytes: handle ID (u64, little-endian)
 ///
 /// The ResourceAny is stored in the registry and the handle ID is returned.
-fn serialize_resource(_resource: &ResourceAny) -> Result<Vec<u8>, WasmtimeError> {
-    // ResourceAny doesn't implement Clone, so we need to handle ownership carefully.
-    // For serialization, we cannot consume the resource since we only have a reference.
-    // Instead, we need a different approach - store the resource's representation.
-    //
-    // However, ResourceAny is opaque and doesn't provide a way to extract its internal state.
-    // The only safe approach is to use the handle-based pattern where we clone if possible.
-    //
-    // Since wasmtime's ResourceAny doesn't implement Clone in a straightforward way,
-    // we'll need to work with the resource handle system differently.
-    //
-    // For now, return an error indicating that resources must be passed by handle ID directly.
-    Err(WasmtimeError::Runtime {
-        message: "Cannot serialize ResourceAny directly - use store_resource() to get a handle ID and pass that instead".to_string(),
-        backtrace: None,
-    })
+fn serialize_resource(resource: &ResourceAny) -> Result<Vec<u8>, WasmtimeError> {
+    // ResourceAny implements Copy, so we can clone it and store in the registry.
+    // Format: [type_name_length: i32 = 0][handle_id: i64] (little-endian)
+    // This matches the Java deserializer format for Own/Borrow with an empty type name.
+    let handle_id = store_resource(*resource);
+    let mut data = Vec::with_capacity(12);
+    data.extend_from_slice(&0i32.to_le_bytes()); // empty type name
+    data.extend_from_slice(&(handle_id as i64).to_le_bytes()); // handle as i64
+    Ok(data)
 }
 
 // C-ABI exports for Java FFI

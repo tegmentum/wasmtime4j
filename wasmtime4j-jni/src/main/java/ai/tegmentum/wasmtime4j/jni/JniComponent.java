@@ -475,6 +475,18 @@ public final class JniComponent {
   static native void nativeAsyncValClose(long handle);
 
   /**
+   * Drops a ResourceAny held in the global resource registry.
+   *
+   * <p>Takes the resource from the registry and calls resource_drop on it using the store
+   * associated with the given component instance.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param instanceId the component instance ID that owns the store
+   * @param resourceHandle the resource handle ID from the global registry
+   */
+  static native void nativeResourceAnyDrop(long engineHandle, long instanceId, long resourceHandle);
+
+  /**
    * Creates a {@link Runnable} close action that invokes {@link #nativeAsyncValClose(long)} for the
    * given handle. Suitable for use with {@link
    * ai.tegmentum.wasmtime4j.component.StreamAny#create(long, Runnable)}, {@link

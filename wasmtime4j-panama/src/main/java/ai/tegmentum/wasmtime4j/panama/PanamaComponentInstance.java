@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.component.ConcurrentCall;
 import ai.tegmentum.wasmtime4j.component.ConcurrentCallCodec;
@@ -30,8 +31,10 @@ import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.panama.wit.PanamaWitValueMarshaller;
 import ai.tegmentum.wasmtime4j.wit.WitBool;
+import ai.tegmentum.wasmtime4j.wit.WitBorrow;
 import ai.tegmentum.wasmtime4j.wit.WitChar;
 import ai.tegmentum.wasmtime4j.wit.WitFloat64;
+import ai.tegmentum.wasmtime4j.wit.WitOwn;
 import ai.tegmentum.wasmtime4j.wit.WitRecord;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
 import ai.tegmentum.wasmtime4j.wit.WitS64;
@@ -290,6 +293,15 @@ final class PanamaComponentInstance implements ComponentInstance {
 
     if (obj instanceof String) {
       return WitString.of((String) obj);
+    }
+
+    if (obj instanceof ComponentResourceHandle) {
+      final ComponentResourceHandle handle = (ComponentResourceHandle) obj;
+      if (handle.isOwned()) {
+        return WitOwn.fromHandle(handle);
+      } else {
+        return WitBorrow.fromHandle(handle);
+      }
     }
 
     if (obj instanceof java.util.Map) {

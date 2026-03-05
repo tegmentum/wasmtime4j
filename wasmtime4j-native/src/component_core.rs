@@ -603,6 +603,55 @@ impl EnhancedComponentEngine {
     ///
     /// # Arguments
     ///
+    /// Drops a resource held in the global resource registry, releasing it in the
+    /// Wasmtime store associated with the given component instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance whose store owns
+    ///   the resource
+    /// * `resource_handle` - The handle ID from the global resource registry
+    ///
+    /// # Returns
+    ///
+    /// Returns Ok(()) on success, or an error if the resource or instance was not found.
+    pub fn resource_any_drop(
+        &self,
+        instance_id: u64,
+        resource_handle: u64,
+    ) -> WasmtimeResult<()> {
+        let resource = crate::wit_value_marshal::take_resource(resource_handle).ok_or_else(|| {
+            WasmtimeError::Resource {
+                message: format!(
+                    "Resource handle {} not found in registry (already dropped?)",
+                    resource_handle
+                ),
+            }
+        })?;
+
+        let mut instances = self
+            .instances
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
+            })?;
+
+        let handle =
+            instances
+                .get_mut(&instance_id)
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Instance {} not found", instance_id),
+                })?;
+
+        handle.last_accessed = Instant::now();
+        resource
+            .resource_drop(&mut handle.store)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to drop resource: {}", e),
+                backtrace: None,
+            })
+    }
+
     /// * `instance_id` - The unique identifier for the component instance to remove
     ///
     /// # Returns

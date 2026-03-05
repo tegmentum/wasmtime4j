@@ -2117,21 +2117,17 @@ public final class PanamaStore implements Store {
     }
   }
 
+  @Deprecated
   @Override
   public <R> R throwException(final ai.tegmentum.wasmtime4j.ExnRef exceptionRef)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
     if (exceptionRef == null) {
       throw new IllegalArgumentException("exceptionRef cannot be null");
     }
-    if (!(exceptionRef instanceof PanamaExnRef)) {
-      throw new IllegalArgumentException("ExnRef must be a PanamaExnRef instance");
-    }
-
-    final PanamaExnRef panamaExnRef = (PanamaExnRef) exceptionRef;
-    NATIVE_BINDINGS.storeThrowException(nativeStore, panamaExnRef.getNativeSegment());
-    // This should never be reached - the native call always throws
-    throw new ai.tegmentum.wasmtime4j.exception.WasmException("Exception was thrown");
+    throw new UnsupportedOperationException(
+        "Wasmtime does not support host-initiated exception throwing. "
+            + "Exceptions propagate only from WASM throw/throw_ref instructions. "
+            + "Use takePendingException() instead.");
   }
 
   @Override

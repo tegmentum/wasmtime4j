@@ -331,13 +331,6 @@ public final class NativeStoreBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // buffer_len_out_ptr
 
     addFunctionBinding(
-        "wasmtime4j_panama_store_throw_exception",
-        FunctionDescriptor.of(
-            ValueLayout.JAVA_INT,
-            ValueLayout.ADDRESS, // store_ptr
-            ValueLayout.ADDRESS)); // exn_ref_ptr
-
-    addFunctionBinding(
         "wasmtime4j_panama_store_take_pending_exception",
         FunctionDescriptor.of(
             ValueLayout.ADDRESS, // return exn_ref_ptr or NULL
@@ -741,20 +734,6 @@ public final class NativeStoreBindings extends NativeBindingsBase {
   }
 
   // ===== Store Exception Methods =====
-
-  /**
-   * Throws an exception in the store.
-   *
-   * @param storePtr the store pointer
-   * @param exnRefPtr the exception reference pointer
-   * @return 0 on success, -1 on error
-   */
-  public int storeThrowException(final MemorySegment storePtr, final MemorySegment exnRefPtr) {
-    validatePointer(storePtr, "storePtr");
-    validatePointer(exnRefPtr, "exnRefPtr");
-    return callNativeFunction(
-        "wasmtime4j_panama_store_throw_exception", Integer.class, storePtr, exnRefPtr);
-  }
 
   /**
    * Takes and removes the pending exception from the store.

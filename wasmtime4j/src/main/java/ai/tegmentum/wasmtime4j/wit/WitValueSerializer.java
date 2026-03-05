@@ -615,7 +615,7 @@ public final class WitValueSerializer {
   /**
    * Serializes an owned resource handle value.
    *
-   * <p>Format: [type_name_length: i32][type_name: UTF-8][index: i32] (little-endian)
+   * <p>Format: [type_name_length: i32][type_name: UTF-8][handle: i64] (little-endian)
    *
    * @param own the owned resource handle value
    * @return serialized bytes
@@ -623,17 +623,18 @@ public final class WitValueSerializer {
   private static byte[] serializeOwn(final WitOwn own) {
     final byte[] typeNameBytes = own.getResourceType().getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
-        ByteBuffer.allocate(4 + typeNameBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer.allocate(4 + typeNameBytes.length + 8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(typeNameBytes.length);
     buffer.put(typeNameBytes);
-    buffer.putInt(own.getIndex());
+    final long nativeHandle = own.getHandle().getNativeHandle();
+    buffer.putLong(nativeHandle >= 0 ? nativeHandle : Integer.toUnsignedLong(own.getIndex()));
     return buffer.array();
   }
 
   /**
    * Serializes a borrowed resource handle value.
    *
-   * <p>Format: [type_name_length: i32][type_name: UTF-8][index: i32] (little-endian)
+   * <p>Format: [type_name_length: i32][type_name: UTF-8][handle: i64] (little-endian)
    *
    * @param borrow the borrowed resource handle value
    * @return serialized bytes
@@ -641,10 +642,11 @@ public final class WitValueSerializer {
   private static byte[] serializeBorrow(final WitBorrow borrow) {
     final byte[] typeNameBytes = borrow.getResourceType().getBytes(StandardCharsets.UTF_8);
     final ByteBuffer buffer =
-        ByteBuffer.allocate(4 + typeNameBytes.length + 4).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer.allocate(4 + typeNameBytes.length + 8).order(ByteOrder.LITTLE_ENDIAN);
     buffer.putInt(typeNameBytes.length);
     buffer.put(typeNameBytes);
-    buffer.putInt(borrow.getIndex());
+    final long nativeHandle = borrow.getHandle().getNativeHandle();
+    buffer.putLong(nativeHandle >= 0 ? nativeHandle : Integer.toUnsignedLong(borrow.getIndex()));
     return buffer.array();
   }
 
