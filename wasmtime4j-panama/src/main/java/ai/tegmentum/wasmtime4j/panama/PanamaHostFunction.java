@@ -357,8 +357,9 @@ public final class PanamaHostFunction implements WasmFunction {
       final Linker linker = Linker.nativeLinker();
       this.upcallStub = linker.upcallStub(callbackHandle, descriptor, arenaManager.getArena());
 
-      // TODO: Create native function handle using native bindings
-      // For now, we'll use the upcall stub directly
+      // The upcall stub IS the function handle — Panama's Linker.upcallStub() produces the
+      // native function pointer directly. Native registration occurs via
+      // registerInNativeRegistry().
       this.functionHandle = upcallStub;
 
       if (logger.isLoggable(Level.FINE)) {

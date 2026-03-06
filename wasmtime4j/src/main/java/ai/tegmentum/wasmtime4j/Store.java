@@ -924,6 +924,11 @@ public interface Store extends Closeable {
    *
    * <p>Requires the engine to be configured with {@code guestDebug(true)}.
    *
+   * <p><b>Note:</b> Wasmtime only exposes a breakpoint count, not individual breakpoint details.
+   * Implementations return the count via {@link
+   * ai.tegmentum.wasmtime4j.debug.BreakpointEditor#apply()}, but this method returns empty because
+   * individual breakpoint introspection is not available in the wasmtime C API.
+   *
    * @return a list of active breakpoints, or empty if guest debugging is not enabled
    * @since 1.1.0
    */
@@ -954,8 +959,13 @@ public interface Store extends Closeable {
    * <p>Requires the engine to be configured with both {@code guestDebug(true)} and {@code
    * asyncSupport(true)}.
    *
+   * <p><b>Not yet implemented.</b> This method requires async debug handler callback infrastructure
+   * (wasmtime's {@code DebugHandlerHook} trait with async support). The other debug APIs ({@link
+   * #debugExitFrames()}, {@link #editBreakpoints()}, {@link #isSingleStep()}) are fully functional
+   * and can be used without a debug handler.
+   *
    * @param handler the debug handler to set
-   * @throws UnsupportedOperationException if guest debugging or async support is not enabled
+   * @throws UnsupportedOperationException always, until async debug handler plumbing is implemented
    * @throws NullPointerException if handler is null
    * @since 1.1.0
    */
