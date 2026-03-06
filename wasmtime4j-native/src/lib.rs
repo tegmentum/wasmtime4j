@@ -118,6 +118,9 @@ pub mod wasi;
 #[cfg(feature = "wasi-http")]
 pub mod wasi_http;
 
+// WASI-NN host-side inference support
+pub mod wasi_nn;
+
 // Async runtime for async WebAssembly operations
 pub mod async_runtime;
 

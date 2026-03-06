@@ -24,3 +24,4 @@ pub mod trap;
 pub mod utility;
 pub mod wasi_context;
 pub mod wasi_http;
+pub mod wasi_nn;

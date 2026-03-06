@@ -9,90 +9,42 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeLoadGraph
- * Signature: (J[BII)J
+ * Method:    nativeCreate
+ * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeLoadGraph
-  (JNIEnv *, jclass, jlong, jbyteArray, jint, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeLoadGraphMultiPart
- * Signature: (J[[BII)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeLoadGraphMultiPart
-  (JNIEnv *, jclass, jlong, jobjectArray, jint, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeLoadGraphByName
- * Signature: (JLjava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeLoadGraphByName
-  (JNIEnv *, jclass, jlong, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeGetSupportedEncodings
- * Signature: (J)[I
- */
-JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeGetSupportedEncodings
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeGetSupportedTargets
- * Signature: (J)[I
- */
-JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeGetSupportedTargets
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeIsEncodingSupported
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeIsEncodingSupported
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeIsTargetSupported
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeIsTargetSupported
-  (JNIEnv *, jclass, jlong, jint);
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeCreate
+  (JNIEnv *, jclass);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
  * Method:    nativeIsAvailable
- * Signature: (J)I
+ * Signature: (J)Z
  */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeIsAvailable
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeIsAvailable
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeGetVersion
+ * Method:    nativeSupportedEncodings
+ * Signature: (J)[I
+ */
+JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeSupportedEncodings
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
+ * Method:    nativeLoadGraph
+ * Signature: (J[[BII)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeLoadGraph
+  (JNIEnv *, jclass, jlong, jobjectArray, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
+ * Method:    nativeGetBackendInfo
  * Signature: (J)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeGetVersion
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeGetBackends
- * Signature: (J)[Ljava/lang/String;
- */
-JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeGetBackends
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext
- * Method:    nativeGetDefaultBackend
- * Signature: (J)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeGetDefaultBackend
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContext_nativeGetBackendInfo
   (JNIEnv *, jclass, jlong);
 
 /*

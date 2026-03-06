@@ -20,6 +20,7 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 /**
  * Represents a tensor for WASI-NN inference operations.
@@ -44,6 +45,8 @@ import java.util.Objects;
  * @since 1.0.0
  */
 public final class NnTensor {
+
+  private static final Logger LOGGER = Logger.getLogger(NnTensor.class.getName());
 
   private final String name;
   private final int[] dimensions;
@@ -385,6 +388,56 @@ public final class NnTensor {
     final long[] result = new long[data.length / 8];
     buffer.asLongBuffer().get(result);
     return result;
+  }
+
+  /**
+   * Deserializes a tensor from the native FFI serialization format.
+   *
+   * <p>Format: {@code [num_dims:i32LE][dim0:i32LE]...[dimN:i32LE][tensor_type:i32LE][data bytes]}
+   *
+   * <p>This is the format used by {@code wasmtime4j-native} for transferring tensor data across the
+   * JNI and Panama FFI boundaries.
+   *
+   * @param name optional tensor name (may be null)
+   * @param serialized the serialized tensor bytes
+   * @return the deserialized tensor
+   * @throws NnException if the serialized data is malformed
+   */
+  public static NnTensor deserializeFromNative(final String name, final byte[] serialized)
+      throws NnException {
+    if (serialized == null || serialized.length < 8) {
+      throw new NnException("Serialized tensor data is too short");
+    }
+
+    final ByteBuffer buf = ByteBuffer.wrap(serialized).order(ByteOrder.LITTLE_ENDIAN);
+
+    final int numDims = buf.getInt();
+    if (numDims < 0 || numDims > 16) {
+      throw new NnException("Invalid number of dimensions: " + numDims);
+    }
+
+    final int headerSize = 4 + (numDims * 4) + 4;
+    if (serialized.length < headerSize) {
+      throw new NnException("Serialized tensor data too short for " + numDims + " dimensions");
+    }
+
+    final int[] dimensions = new int[numDims];
+    for (int i = 0; i < numDims; i++) {
+      dimensions[i] = buf.getInt();
+    }
+
+    final int typeCode = buf.getInt();
+    final NnTensorType tensorType;
+    try {
+      tensorType = NnTensorType.fromNativeCode(typeCode);
+    } catch (IllegalArgumentException e) {
+      throw new NnException("Invalid tensor type code: " + typeCode, e);
+    }
+
+    final byte[] data = new byte[serialized.length - headerSize];
+    buf.get(data);
+
+    return NnTensor.fromBytes(name, dimensions, tensorType, data);
   }
 
   /**

@@ -1,0 +1,77 @@
+/*
+ * Copyright 2025 Tegmentum AI
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package ai.tegmentum.wasmtime4j.panama.wasi.nn;
+
+import ai.tegmentum.wasmtime4j.wasi.nn.NnContext;
+import ai.tegmentum.wasmtime4j.wasi.nn.NnContextFactory;
+import ai.tegmentum.wasmtime4j.wasi.nn.NnException;
+import ai.tegmentum.wasmtime4j.wasi.nn.NnExecutionTarget;
+import java.lang.foreign.MemorySegment;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Panama implementation of the NnContextFactory interface.
+ *
+ * <p>This factory creates Panama-based WASI-NN contexts for neural network inference operations.
+ *
+ * @since 1.0.0
+ */
+public final class PanamaNnContextFactory implements NnContextFactory {
+
+  private static final Logger LOGGER = Logger.getLogger(PanamaNnContextFactory.class.getName());
+
+  /** Creates a new Panama WASI-NN context factory. */
+  public PanamaNnContextFactory() {
+    // Default constructor
+  }
+
+  @Override
+  public NnContext createNnContext() throws NnException {
+    if (!isNnAvailable()) {
+      throw new NnException("WASI-NN is not available in this build");
+    }
+
+    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
+    final MemorySegment ctxPtr = bindings.nnContextCreate();
+    if (ctxPtr == null || ctxPtr.equals(MemorySegment.NULL)) {
+      throw new NnException("Failed to create WASI-NN context");
+    }
+    LOGGER.log(Level.FINE, "Created WASI-NN context");
+    return new PanamaNnContext(ctxPtr);
+  }
+
+  @Override
+  public boolean isNnAvailable() {
+    try {
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
+      final MemorySegment testCtx = bindings.nnContextCreate();
+      if (testCtx == null || testCtx.equals(MemorySegment.NULL)) {
+        return false;
+      }
+      final int available = bindings.nnContextIsAvailable(testCtx);
+      bindings.nnContextClose(testCtx);
+      return available != 0;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  @Override
+  public NnExecutionTarget getDefaultExecutionTarget() {
+    return NnExecutionTarget.CPU;
+  }
+}

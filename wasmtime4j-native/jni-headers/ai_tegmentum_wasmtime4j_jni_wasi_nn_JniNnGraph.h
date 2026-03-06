@@ -9,18 +9,26 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph
- * Method:    nativeCreateExecutionContext
- * Signature: (J)J
+ * Method:    nativeGetEncoding
+ * Signature: (J)I
  */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph_nativeCreateExecutionContext
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph_nativeGetEncoding
   (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph
- * Method:    nativeGetModelName
- * Signature: (J)Ljava/lang/String;
+ * Method:    nativeGetTarget
+ * Signature: (J)I
  */
-JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph_nativeGetModelName
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph_nativeGetTarget
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph
+ * Method:    nativeCreateExecCtx
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph_nativeCreateExecCtx
   (JNIEnv *, jclass, jlong);
 
 /*

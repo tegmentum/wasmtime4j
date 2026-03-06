@@ -769,13 +769,12 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public ai.tegmentum.wasmtime4j.wasi.nn.NnContext createNnContext()
       throws ai.tegmentum.wasmtime4j.wasi.nn.NnException {
-    throw new ai.tegmentum.wasmtime4j.wasi.nn.NnException(
-        "WASI-NN is not available via Panama. Use the component model instead.");
+    return new ai.tegmentum.wasmtime4j.panama.wasi.nn.PanamaNnContextFactory().createNnContext();
   }
 
   @Override
   public boolean isNnAvailable() {
-    return false;
+    return new ai.tegmentum.wasmtime4j.panama.wasi.nn.PanamaNnContextFactory().isNnAvailable();
   }
 
   @Override

@@ -51,6 +51,8 @@ pub mod store;
 pub mod table;
 #[cfg(feature = "jni-bindings")]
 pub mod wasi;
+#[cfg(feature = "jni-bindings")]
+pub mod wasi_nn;
 
 // Private modules
 #[cfg(feature = "jni-bindings")]

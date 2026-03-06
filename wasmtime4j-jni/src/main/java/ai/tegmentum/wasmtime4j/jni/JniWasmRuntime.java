@@ -924,13 +924,12 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   @Override
   public ai.tegmentum.wasmtime4j.wasi.nn.NnContext createNnContext()
       throws ai.tegmentum.wasmtime4j.wasi.nn.NnException {
-    throw new ai.tegmentum.wasmtime4j.wasi.nn.NnException(
-        "WASI-NN is not available via JNI. Use the component model instead.");
+    return new ai.tegmentum.wasmtime4j.jni.wasi.nn.JniNnContextFactory().createNnContext();
   }
 
   @Override
   public boolean isNnAvailable() {
-    return false;
+    return new ai.tegmentum.wasmtime4j.jni.wasi.nn.JniNnContextFactory().isNnAvailable();
   }
 
   @Override

@@ -181,6 +181,73 @@ public interface NnContext extends AutoCloseable {
     private final String defaultBackend;
 
     /**
+     * Parses NnImplementationInfo from a JSON string returned by native code.
+     *
+     * <p>Expected format: {@code {"version":"...","backends":["..."],"default":"..."}}
+     *
+     * @param json the JSON string from native
+     * @return the parsed implementation info
+     */
+    public static NnImplementationInfo parseFromJson(final String json) {
+      if (json == null || json.isEmpty()) {
+        return new NnImplementationInfo("unknown", new java.util.ArrayList<>(), null);
+      }
+
+      String version = extractJsonString(json, "version");
+      String defaultBackend = extractJsonString(json, "default");
+      List<String> backendsList = extractJsonArray(json, "backends");
+
+      if (version == null) {
+        version = "unknown";
+      }
+      if (defaultBackend != null && defaultBackend.isEmpty()) {
+        defaultBackend = null;
+      }
+
+      return new NnImplementationInfo(version, backendsList, defaultBackend);
+    }
+
+    private static String extractJsonString(final String json, final String key) {
+      final String pattern = "\"" + key + "\":\"";
+      final int start = json.indexOf(pattern);
+      if (start < 0) {
+        return null;
+      }
+      final int valueStart = start + pattern.length();
+      final int valueEnd = json.indexOf('"', valueStart);
+      if (valueEnd < 0) {
+        return null;
+      }
+      return json.substring(valueStart, valueEnd);
+    }
+
+    private static List<String> extractJsonArray(final String json, final String key) {
+      final List<String> result = new java.util.ArrayList<>();
+      final String pattern = "\"" + key + "\":[";
+      final int start = json.indexOf(pattern);
+      if (start < 0) {
+        return result;
+      }
+      final int arrayStart = start + pattern.length();
+      final int arrayEnd = json.indexOf(']', arrayStart);
+      if (arrayEnd < 0) {
+        return result;
+      }
+      final String arrayContent = json.substring(arrayStart, arrayEnd);
+      if (arrayContent.isEmpty()) {
+        return result;
+      }
+      final String[] items = arrayContent.split(",");
+      for (final String item : items) {
+        final String trimmed = item.trim();
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+          result.add(trimmed.substring(1, trimmed.length() - 1));
+        }
+      }
+      return result;
+    }
+
+    /**
      * Creates a new NnImplementationInfo.
      *
      * @param version the implementation version

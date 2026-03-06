@@ -9,26 +9,10 @@ extern "C" {
 #endif
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContextFactory
- * Method:    nativeCreateContext
- * Signature: ()J
+ * Method:    nativeIsFeatureEnabled
+ * Signature: ()Z
  */
-JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContextFactory_nativeCreateContext
-  (JNIEnv *, jclass);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContextFactory
- * Method:    nativeIsNnAvailable
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContextFactory_nativeIsNnAvailable
-  (JNIEnv *, jclass);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContextFactory
- * Method:    nativeGetDefaultExecutionTarget
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContextFactory_nativeGetDefaultExecutionTarget
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnContextFactory_nativeIsFeatureEnabled
   (JNIEnv *, jclass);
 
 #ifdef __cplusplus

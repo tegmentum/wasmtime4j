@@ -10,25 +10,25 @@ extern "C" {
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
  * Method:    nativeSetInputByIndex
- * Signature: (JI[II[B)I
+ * Signature: (JI[II[B)V
  */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeSetInputByIndex
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeSetInputByIndex
   (JNIEnv *, jclass, jlong, jint, jintArray, jint, jbyteArray);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
  * Method:    nativeSetInputByName
- * Signature: (JLjava/lang/String;[II[B)I
+ * Signature: (JLjava/lang/String;[II[B)V
  */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeSetInputByName
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeSetInputByName
   (JNIEnv *, jclass, jlong, jstring, jintArray, jint, jbyteArray);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
  * Method:    nativeCompute
- * Signature: (J)I
+ * Signature: (J)V
  */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeCompute
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeCompute
   (JNIEnv *, jclass, jlong);
 
 /*
@@ -46,86 +46,6 @@ JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraph
  */
 JNIEXPORT jbyteArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetOutputByName
   (JNIEnv *, jclass, jlong, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetOutputDimensions
- * Signature: (JI)[I
- */
-JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetOutputDimensions
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetOutputDimensionsByName
- * Signature: (JLjava/lang/String;)[I
- */
-JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetOutputDimensionsByName
-  (JNIEnv *, jclass, jlong, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetOutputType
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetOutputType
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetOutputTypeByName
- * Signature: (JLjava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetOutputTypeByName
-  (JNIEnv *, jclass, jlong, jstring);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetInputCount
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetInputCount
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetOutputCount
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetOutputCount
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetInputNames
- * Signature: (J)[Ljava/lang/String;
- */
-JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetInputNames
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetOutputNames
- * Signature: (J)[Ljava/lang/String;
- */
-JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetOutputNames
-  (JNIEnv *, jclass, jlong);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetInputDimensionsByIndex
- * Signature: (JI)[I
- */
-JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetInputDimensionsByIndex
-  (JNIEnv *, jclass, jlong, jint);
-
-/*
- * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
- * Method:    nativeGetInputTypeByIndex
- * Signature: (JI)I
- */
-JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext_nativeGetInputTypeByIndex
-  (JNIEnv *, jclass, jlong, jint);
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_wasi_nn_JniNnGraphExecutionContext
