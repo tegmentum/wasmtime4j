@@ -45,6 +45,12 @@ public final class JniWitInterfaceDefinition implements WitInterfaceDefinition {
   /**
    * Creates a new JNI WIT interface definition.
    *
+   * <p>Function and type names are derived synthetically from export metadata by appending {@code
+   * -func} and {@code -type} suffixes respectively. These are approximations, not actual WIT
+   * introspection data, because wasmtime's C/Rust API does not expose WIT-level metadata directly.
+   * The synthetic names are suitable for informational display but should not be used for dispatch
+   * or name-based matching.
+   *
    * @param name the interface name
    * @param version the interface version
    * @param packageName the package name

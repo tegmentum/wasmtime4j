@@ -76,7 +76,17 @@ public final class JniGcRuntime implements GcRuntime {
     LOGGER.fine("Created JNI GC runtime with handle: " + this.nativeHandle);
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Creates a new struct instance with the specified field values via JNI.
+   *
+   * <p>The struct type is registered with the native runtime if not already registered. Field
+   * values are converted to native format before being passed to the Wasmtime GC heap.
+   *
+   * @param structType the struct type defining the field layout
+   * @param fieldValues the initial field values, must match the struct type's field definitions
+   * @return the new struct instance allocated on the GC heap
+   * @throws GcException if struct creation fails in the native runtime
+   */
   public StructInstance createStruct(final StructType structType, final List<GcValue> fieldValues)
       throws GcException {
     validateNotDisposed();
@@ -107,7 +117,16 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Creates a new struct instance with default field values via JNI.
+   *
+   * <p>Each field is initialized to the default value for its type (zero for numeric types, null
+   * for reference types).
+   *
+   * @param structType the struct type defining the field layout
+   * @return the new struct instance with default field values
+   * @throws GcException if struct creation fails in the native runtime
+   */
   public StructInstance createStruct(final StructType structType) throws GcException {
     validateNotDisposed();
     validateNotNull(structType, "structType");
@@ -133,7 +152,17 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Creates a new array instance with the specified elements via JNI.
+   *
+   * <p>The array type is registered with the native runtime if not already registered. Elements are
+   * converted to native format before being passed to the Wasmtime GC heap.
+   *
+   * @param arrayType the array type defining the element type
+   * @param elements the initial array elements
+   * @return the new array instance allocated on the GC heap
+   * @throws GcException if array creation fails in the native runtime
+   */
   public ArrayInstance createArray(final ArrayType arrayType, final List<GcValue> elements)
       throws GcException {
     validateNotDisposed();
@@ -164,7 +193,16 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Creates a new array instance with default element values via JNI.
+   *
+   * <p>Each element is initialized to the default value for the array's element type.
+   *
+   * @param arrayType the array type defining the element type
+   * @param length the number of elements in the array, must be non-negative
+   * @return the new array instance with default element values
+   * @throws GcException if array creation fails in the native runtime
+   */
   public ArrayInstance createArray(final ArrayType arrayType, final int length) throws GcException {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
@@ -247,7 +285,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Creates a new I31 value via JNI.
+   *
+   * <p>The value must fit within 31 signed bits (range: -1073741824 to 1073741823).
+   *
+   * @param value the integer value, must fit in 31 signed bits
+   * @return the I31 instance
+   * @throws GcException if creation fails in the native runtime
+   */
   public I31Instance createI31(final int value) throws GcException {
     validateNotDisposed();
 
@@ -350,7 +396,16 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Gets a struct field value by index via JNI.
+   *
+   * <p>The struct must be a {@link JniStructInstance} created by this runtime.
+   *
+   * @param struct the struct instance to read from
+   * @param fieldIndex the zero-based field index
+   * @return the field value converted from native representation
+   * @throws GcException if field access fails in the native runtime
+   */
   public GcValue getStructField(final StructInstance struct, final int fieldIndex)
       throws GcException {
     validateNotDisposed();
@@ -378,7 +433,17 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Sets a struct field value by index via JNI.
+   *
+   * <p>The struct must be a {@link JniStructInstance} created by this runtime. The field must be
+   * mutable.
+   *
+   * @param struct the struct instance to modify
+   * @param fieldIndex the zero-based field index
+   * @param value the new value to set
+   * @throws GcException if field assignment fails in the native runtime
+   */
   public void setStructField(final StructInstance struct, final int fieldIndex, final GcValue value)
       throws GcException {
     validateNotDisposed();
@@ -411,7 +476,16 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Gets an array element value by index via JNI.
+   *
+   * <p>The array must be a {@link JniArrayInstance} created by this runtime.
+   *
+   * @param array the array instance to read from
+   * @param elementIndex the zero-based element index
+   * @return the element value converted from native representation
+   * @throws GcException if element access fails in the native runtime
+   */
   public GcValue getArrayElement(final ArrayInstance array, final int elementIndex)
       throws GcException {
     validateNotDisposed();
@@ -443,7 +517,17 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Sets an array element value by index via JNI.
+   *
+   * <p>The array must be a {@link JniArrayInstance} created by this runtime. The element type must
+   * be mutable.
+   *
+   * @param array the array instance to modify
+   * @param elementIndex the zero-based element index
+   * @param value the new value to set
+   * @throws GcException if element assignment fails in the native runtime
+   */
   public void setArrayElement(
       final ArrayInstance array, final int elementIndex, final GcValue value) throws GcException {
     validateNotDisposed();
@@ -480,7 +564,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Gets the length of an array via JNI.
+   *
+   * <p>The array must be a {@link JniArrayInstance} created by this runtime.
+   *
+   * @param array the array instance
+   * @return the number of elements in the array
+   */
   public int getArrayLength(final ArrayInstance array) {
     validateNotDisposed();
     validateNotNull(array, "array");
@@ -507,7 +598,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Performs a reference type cast with runtime type checking via JNI.
+   *
+   * @param object the GC object to cast
+   * @param targetType the target reference type
+   * @return the cast object
+   * @throws ClassCastException if the cast is invalid
+   */
   public GcObject refCast(final GcObject object, final GcReferenceType targetType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -533,7 +631,13 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Tests if an object is of a specific reference type via JNI.
+   *
+   * @param object the GC object to test
+   * @param targetType the target reference type to check against
+   * @return true if the object is of the target type
+   */
   public boolean refTest(final GcObject object, final GcReferenceType targetType) {
     validateNotDisposed();
     validateNotNull(object, "object");
@@ -554,7 +658,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Compares two GC objects for reference equality via JNI.
+   *
+   * <p>Two null references are considered equal. A null and non-null reference are not equal.
+   *
+   * @param obj1 the first GC object (may be null)
+   * @param obj2 the second GC object (may be null)
+   * @return true if the objects are the same reference on the GC heap
+   */
   public boolean refEquals(final GcObject obj1, final GcObject obj2) {
     validateNotDisposed();
 
@@ -580,7 +692,14 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Checks if a GC object represents a null reference via JNI.
+   *
+   * <p>A Java null is always considered a null reference.
+   *
+   * @param object the GC object to check (may be null)
+   * @return true if the object is null or represents a null GC reference
+   */
   public boolean isNull(final GcObject object) {
     if (object == null) {
       return true;
@@ -601,7 +720,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Registers a struct type with the native GC runtime via JNI.
+   *
+   * <p>If the struct type has already been registered, the existing type ID is returned.
+   *
+   * @param structType the struct type to register
+   * @return the assigned type ID for native operations
+   * @throws GcException if registration fails in the native runtime
+   */
   public int registerStructType(final StructType structType) {
     validateNotDisposed();
     validateNotNull(structType, "structType");
@@ -618,7 +745,15 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Registers an array type with the native GC runtime via JNI.
+   *
+   * <p>If the array type has already been registered, the existing type ID is returned.
+   *
+   * @param arrayType the array type to register
+   * @return the assigned type ID for native operations
+   * @throws GcException if registration fails in the native runtime
+   */
   public int registerArrayType(final ArrayType arrayType) {
     validateNotDisposed();
     validateNotNull(arrayType, "arrayType");
@@ -635,7 +770,11 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Triggers garbage collection on the native GC heap via JNI.
+   *
+   * @return collection statistics including objects collected and time spent
+   */
   public GcStats collectGarbage() {
     validateNotDisposed();
 
@@ -652,7 +791,11 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
-  /** Javadoc placeholder. */
+  /**
+   * Gets current garbage collection statistics from the native runtime via JNI.
+   *
+   * @return current GC statistics without triggering a collection
+   */
   public GcStats getGcStats() {
     validateNotDisposed();
 
@@ -1586,7 +1729,8 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public int getSizeBytes() {
-      return 0; // Size would need to be queried from native side
+      // Minimum size for a GC object reference header
+      return 8;
     }
 
     @Override
@@ -1648,8 +1792,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public int getSizeBytes() {
-      // Return approximate size based on struct fields
-      return 16 + (structType.getFieldCount() * 8);
+      return 16 + structType.getSizeBytes();
     }
 
     @Override
@@ -1724,8 +1867,7 @@ public final class JniGcRuntime implements GcRuntime {
 
     @Override
     public int getSizeBytes() {
-      // Return approximate size based on array length and element size
-      return 16 + (length * 8);
+      return 16 + (length * arrayType.getElementSizeBytes());
     }
 
     @Override

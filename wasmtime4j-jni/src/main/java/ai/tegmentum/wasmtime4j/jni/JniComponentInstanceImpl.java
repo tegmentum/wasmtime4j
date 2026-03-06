@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.component.ConcurrentCall;
 import ai.tegmentum.wasmtime4j.component.ConcurrentCallCodec;
@@ -51,6 +52,7 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   private final JniComponentImpl component;
   private final ComponentInstanceConfig config;
   private final String instanceId;
+  private final ComponentInstancePre sourceInstancePre;
 
   /**
    * Creates a new JNI component instance implementation.
@@ -63,12 +65,29 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
       final JniComponent.JniComponentInstanceHandle nativeInstance,
       final JniComponentImpl component,
       final ComponentInstanceConfig config) {
+    this(nativeInstance, component, config, null);
+  }
+
+  /**
+   * Creates a new JNI component instance implementation with a source instancePre reference.
+   *
+   * @param nativeInstance the native component instance handle
+   * @param component the component that created this instance
+   * @param config the instance configuration
+   * @param sourceInstancePre the ComponentInstancePre that created this instance, or null
+   */
+  public JniComponentInstanceImpl(
+      final JniComponent.JniComponentInstanceHandle nativeInstance,
+      final JniComponentImpl component,
+      final ComponentInstanceConfig config,
+      final ComponentInstancePre sourceInstancePre) {
     Validation.requireNonNull(nativeInstance, "nativeInstance");
     Validation.requireNonNull(component, "component");
     this.nativeInstance = nativeInstance;
     this.component = component;
     this.config = config != null ? config : new ComponentInstanceConfig();
     this.instanceId = "jni-instance-" + System.nanoTime();
+    this.sourceInstancePre = sourceInstancePre;
   }
 
   @Override
@@ -79,6 +98,11 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   @Override
   public Component getComponent() {
     return component;
+  }
+
+  @Override
+  public Optional<ComponentInstancePre> instancePre() {
+    return Optional.ofNullable(sourceInstancePre);
   }
 
   @Override
@@ -179,9 +203,10 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
       if (found == 0) {
         return Optional.empty();
       }
-      // The export index confirms a function exists - wrap it in a ComponentFunc
-      // Since we don't have the name from the index, use a placeholder
-      // that will use the index path for invocation
+      // The wasmtime component API does not provide a way to retrieve the export name
+      // from an index-based lookup. The placeholder name "__indexed_export__" is used for
+      // identification only and must not be used for name-based resolution or dispatch.
+      // Invocation goes through the index path, not the name.
       return Optional.of(new JniComponentFunc("__indexed_export__", this, component));
     } catch (final Exception e) {
       throw new WasmException("Failed to get function by export index", e);

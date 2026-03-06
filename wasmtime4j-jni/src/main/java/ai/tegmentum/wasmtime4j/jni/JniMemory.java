@@ -1689,6 +1689,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     try {
       return nativeSupports64BitAddressing(getNativeHandle());
     } catch (final Exception e) {
+      LOGGER.warning("Failed to query 64-bit addressing support: " + e.getMessage());
       return false; // Default to 32-bit if query fails
     }
   }
