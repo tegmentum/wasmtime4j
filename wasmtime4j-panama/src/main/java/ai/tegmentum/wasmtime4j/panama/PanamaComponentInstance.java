@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentExportIndex;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.component.ConcurrentCall;
@@ -69,6 +70,7 @@ final class PanamaComponentInstance implements ComponentInstance {
   private final PanamaComponentImpl component;
   private final PanamaStore store;
   private final NativeResourceHandle resourceHandle;
+  private final ComponentInstancePre sourceInstancePre;
 
   /**
    * Creates a new Panama component instance using enhanced component engine.
@@ -83,10 +85,30 @@ final class PanamaComponentInstance implements ComponentInstance {
       final long instanceId,
       final PanamaComponentImpl component,
       final PanamaStore store) {
+    this(enhancedEngineHandle, instanceId, component, store, null);
+  }
+
+  /**
+   * Creates a new Panama component instance using enhanced component engine with a source
+   * instancePre reference.
+   *
+   * @param enhancedEngineHandle the enhanced component engine handle
+   * @param instanceId the instance ID returned from enhanced instantiation
+   * @param component the parent component
+   * @param store the store
+   * @param sourceInstancePre the ComponentInstancePre that created this instance, or null
+   */
+  PanamaComponentInstance(
+      final MemorySegment enhancedEngineHandle,
+      final long instanceId,
+      final PanamaComponentImpl component,
+      final PanamaStore store,
+      final ComponentInstancePre sourceInstancePre) {
     this.enhancedEngineHandle = enhancedEngineHandle;
     this.instanceId = instanceId;
     this.component = component;
     this.store = store;
+    this.sourceInstancePre = sourceInstancePre;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaComponentInstance",
@@ -98,24 +120,27 @@ final class PanamaComponentInstance implements ComponentInstance {
   }
 
   /**
-   * Creates a new Panama component instance from a linker-based instantiation.
+   * Creates a new Panama component instance from a linker-based or pre-instantiation.
    *
-   * <p>This constructor is used when instantiating through a ComponentLinker, which creates its own
-   * internal store. The instance ID is derived from the native instance pointer address.
+   * <p>This constructor is used when instantiating through a ComponentLinker or
+   * ComponentInstancePre. The instance ID is derived from the native instance pointer address.
    *
-   * @param nativeInstancePtr the native instance pointer returned from linker instantiation
+   * @param nativeInstancePtr the native instance pointer returned from instantiation
    * @param component the parent component
    * @param store the store (may be null for linker-based instantiation)
+   * @param sourceInstancePre the ComponentInstancePre that created this instance, or null
    */
   PanamaComponentInstance(
       final MemorySegment nativeInstancePtr,
       final PanamaComponentImpl component,
-      final PanamaStore store) {
+      final PanamaStore store,
+      final ComponentInstancePre sourceInstancePre) {
     // Use the native instance pointer address as the instance ID
     this.enhancedEngineHandle = nativeInstancePtr;
     this.instanceId = nativeInstancePtr.address();
     this.component = component;
     this.store = store;
+    this.sourceInstancePre = sourceInstancePre;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaComponentInstance",
@@ -134,6 +159,11 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public Component getComponent() {
     return component;
+  }
+
+  @Override
+  public Optional<ComponentInstancePre> instancePre() {
+    return Optional.ofNullable(sourceInstancePre);
   }
 
   @Override

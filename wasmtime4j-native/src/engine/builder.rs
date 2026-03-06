@@ -2023,6 +2023,7 @@ impl EngineBuilder {
             })?;
 
         Ok(Engine {
+            id: super::NEXT_ENGINE_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
             inner: Arc::new(engine),
             config_summary: summary,
             concurrent_ops_lock: Arc::new(RwLock::new(())),

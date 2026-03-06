@@ -1410,3 +1410,95 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeResou
         engine.resource_any_drop(instance_id as u64, resource_handle as u64)
     });
 }
+
+/// Parse a WAVE-encoded string into a component value.
+///
+/// Returns an Object[] with 2 elements: [Integer typeDiscriminator, byte[] data]
+#[cfg(feature = "wave")]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeComponentValFromWave(
+    mut env: JNIEnv,
+    _class: JClass,
+    type_name: jstring,
+    wave_str: jstring,
+) -> jobjectArray {
+    jni_utils::jni_try_object(&mut env, |env| {
+        use crate::error::WasmtimeError;
+
+        let type_name_jstr: JString = unsafe { JString::from_raw(type_name) };
+        let type_name_str: String = env
+            .get_string(&type_name_jstr)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to convert type name: {}", e),
+            })?
+            .into();
+
+        let wave_jstr: JString = unsafe { JString::from_raw(wave_str) };
+        let wave_string: String = env
+            .get_string(&wave_jstr)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to convert WAVE string: {}", e),
+            })?
+            .into();
+
+        let (type_disc, data) =
+            crate::component::component_val_from_wave(&type_name_str, &wave_string)?;
+
+        // Create result array: [Integer, byte[]]
+        let object_class = env.find_class("java/lang/Object").map_err(|e| {
+            WasmtimeError::Runtime {
+                message: format!("Failed to find Object class: {}", e),
+                backtrace: None,
+            }
+        })?;
+
+        let result = env
+            .new_object_array(2, &object_class, JObject::null())
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create result array: {}", e),
+                backtrace: None,
+            })?;
+
+        // Set type discriminator
+        let disc_obj = env
+            .new_object(
+                "java/lang/Integer",
+                "(I)V",
+                &[jni::objects::JValue::Int(type_disc)],
+            )
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create Integer: {}", e),
+                backtrace: None,
+            })?;
+
+        env.set_object_array_element(&result, 0, &disc_obj)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to set discriminator: {}", e),
+                backtrace: None,
+            })?;
+
+        // Set data bytes
+        let byte_array = env
+            .new_byte_array(data.len() as i32)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create byte array: {}", e),
+                backtrace: None,
+            })?;
+
+        env.set_byte_array_region(&byte_array, 0, unsafe {
+            std::slice::from_raw_parts(data.as_ptr() as *const i8, data.len())
+        })
+        .map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to set byte array data: {}", e),
+            backtrace: None,
+        })?;
+
+        env.set_object_array_element(&result, 1, &byte_array)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to set data: {}", e),
+                backtrace: None,
+            })?;
+
+        Ok(result.into_raw())
+    })
+}

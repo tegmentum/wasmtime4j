@@ -391,6 +391,38 @@ JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetSingle
 JNIEXPORT jintArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDebugExitFrames
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeGcAsyncBridge
+ * Signature: (JLjava/util/concurrent/CompletableFuture;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGcAsyncBridge
+  (JNIEnv *, jclass, jlong, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeCreateInstanceAsyncBridge
+ * Signature: (JJLjava/util/concurrent/CompletableFuture;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateInstanceAsyncBridge
+  (JNIEnv *, jclass, jlong, jlong, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeCreateMemoryAsyncBridge
+ * Signature: (JJJIILjava/util/concurrent/CompletableFuture;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMemoryAsyncBridge
+  (JNIEnv *, jclass, jlong, jlong, jlong, jint, jint, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniStore
+ * Method:    nativeCreateTableAsyncBridge
+ * Signature: (JIIILjava/util/concurrent/CompletableFuture;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTableAsyncBridge
+  (JNIEnv *, jclass, jlong, jint, jint, jint, jobject);
+
 #ifdef __cplusplus
 }
 #endif

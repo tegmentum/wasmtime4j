@@ -760,10 +760,11 @@ impl Store {
         self.check_not_closed()?;
         let mut store = self.inner.lock();
         let interval_opt = if interval == 0 { None } else { Some(interval) };
-        // Silently ignore errors (e.g., async support not enabled) since the
-        // interval is tracked Java-side for configuration purposes.
-        let _ = store.fuel_async_yield_interval(interval_opt);
-        Ok(())
+        store
+            .fuel_async_yield_interval(interval_opt)
+            .map_err(|e| WasmtimeError::Store {
+                message: format!("Failed to set fuel async yield interval: {}", e),
+            })
     }
 
     /// Get the hostcall fuel limit.
@@ -2679,6 +2680,69 @@ mod tests {
         let remaining = store.fuel_remaining().expect("Failed to get fuel");
         // 100 + 100 - 50 + 50 = 200
         assert!(remaining.is_some());
+    }
+
+    #[test]
+    fn test_fuel_async_yield_interval_with_fuel() {
+        // Wasmtime allows setting fuel_async_yield_interval even without async support
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::builder()
+            .fuel_limit(1000)
+            .build(&engine)
+            .expect("Failed to build store");
+
+        let result = store.set_fuel_async_yield_interval(100);
+        assert!(
+            result.is_ok(),
+            "Setting fuel async yield interval should succeed with fuel enabled: {:?}",
+            result.err()
+        );
+
+        // Disabling with 0 should also work
+        let result = store.set_fuel_async_yield_interval(0);
+        assert!(
+            result.is_ok(),
+            "Disabling fuel async yield interval should succeed: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_fuel_async_yield_interval_without_fuel() {
+        // Without fuel enabled, the call should still not panic — errors are
+        // propagated rather than silently ignored
+        let engine = Engine::builder()
+            .build()
+            .expect("Failed to create engine");
+        let store = Store::new(&engine).expect("Failed to create store");
+
+        // This may succeed or error depending on Wasmtime's internal validation,
+        // but must not panic or silently swallow errors
+        let _result = store.set_fuel_async_yield_interval(100);
+    }
+
+    #[cfg(feature = "async")]
+    #[test]
+    fn test_fuel_async_yield_interval_success_with_async() {
+        let engine = Engine::builder()
+            .fuel_enabled(true)
+            .async_support(true)
+            .build()
+            .expect("Failed to create async engine");
+        let store = Store::builder()
+            .fuel_limit(1000)
+            .build(&engine)
+            .expect("Failed to build store");
+
+        let result = store.set_fuel_async_yield_interval(100);
+        assert!(
+            result.is_ok(),
+            "Setting fuel async yield interval should succeed with async support: {:?}",
+            result.err()
+        );
     }
 
     // =========================================================================

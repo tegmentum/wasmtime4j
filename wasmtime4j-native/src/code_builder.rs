@@ -151,11 +151,13 @@ impl CodeBuilderState {
         let module = unsafe { wasmtime::Module::deserialize(self.engine.inner(), &serialized) }
             .map_err(|e| WasmtimeError::from_compilation_error(e))?;
 
-        // For deserialized modules, metadata extraction from the module itself is limited.
-        // We use empty metadata since full extraction requires the original wasm bytes
-        // to be parsed by the module (which we have), but the deserialized module
-        // may not support all introspection.
-        let metadata = match ModuleMetadata::extract(&module, wasm_bytes.len(), wasm_bytes) {
+        // Convert WAT text to binary wasm if needed, since wasmparser requires binary format
+        let binary_wasm = wat::parse_bytes(wasm_bytes)
+            .map_err(|e| WasmtimeError::Compilation {
+                message: format!("Failed to parse WAT/WASM bytes: {}", e),
+            })?;
+
+        let metadata = match ModuleMetadata::extract(&module, wasm_bytes.len(), binary_wasm.as_ref()) {
             Ok(m) => m,
             Err(_) => ModuleMetadata::empty(),
         };

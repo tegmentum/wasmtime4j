@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.component;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -49,6 +50,18 @@ public interface FutureAny extends AutoCloseable {
    * @return the opaque handle ID
    */
   long getHandle();
+
+  /**
+   * Gets the payload type of this future, if known.
+   *
+   * <p>Returns the type descriptor for the value this future will produce, or empty if the future
+   * was created without type information.
+   *
+   * @return the payload type descriptor, or empty
+   */
+  default Optional<ComponentTypeDescriptor> getPayloadType() {
+    return Optional.empty();
+  }
 
   /**
    * Checks whether this future handle is still valid.
@@ -107,6 +120,29 @@ public interface FutureAny extends AutoCloseable {
     return new DefaultFutureAny(handle, closeAction);
   }
 
+  /**
+   * Creates a new typed future handle wrapping the given handle ID with type information.
+   *
+   * <p>The payload type allows downstream code to know what type of value this future will produce
+   * without needing to inspect the component model type system.
+   *
+   * @param handle the opaque handle ID from the native {@code AsyncValRegistry}
+   * @param payloadType the type descriptor for the future's payload value
+   * @param closeAction action to invoke on close to release native resources, or null for no-op
+   * @return a new typed FutureAny
+   * @throws IllegalArgumentException if handle is not positive or payloadType is null
+   */
+  static FutureAny createTyped(
+      final long handle, final ComponentTypeDescriptor payloadType, final Runnable closeAction) {
+    if (handle <= 0) {
+      throw new IllegalArgumentException("handle must be positive, got: " + handle);
+    }
+    if (payloadType == null) {
+      throw new IllegalArgumentException("payloadType cannot be null");
+    }
+    return new TypedFutureAny(handle, payloadType, closeAction);
+  }
+
   /** Default implementation of FutureAny. */
   final class DefaultFutureAny implements FutureAny {
 
@@ -152,6 +188,74 @@ public interface FutureAny extends AutoCloseable {
         return false;
       }
       final DefaultFutureAny other = (DefaultFutureAny) obj;
+      return handle == other.handle;
+    }
+
+    @Override
+    public int hashCode() {
+      return Long.hashCode(handle);
+    }
+  }
+
+  /** Typed implementation of FutureAny that carries payload type information. */
+  final class TypedFutureAny implements FutureAny {
+
+    private final long handle;
+    private final ComponentTypeDescriptor payloadType;
+    private final Runnable closeAction;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
+    TypedFutureAny(
+        final long handle, final ComponentTypeDescriptor payloadType, final Runnable closeAction) {
+      this.handle = handle;
+      this.payloadType = payloadType;
+      this.closeAction = closeAction;
+    }
+
+    @Override
+    public long getHandle() {
+      return handle;
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getPayloadType() {
+      return Optional.of(payloadType);
+    }
+
+    @Override
+    public boolean isValid() {
+      return !closed.get();
+    }
+
+    @Override
+    public void close() {
+      if (closed.compareAndSet(false, true)) {
+        if (closeAction != null) {
+          closeAction.run();
+        }
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "FutureAny{handle="
+          + handle
+          + ", type="
+          + payloadType.getType()
+          + ", valid="
+          + !closed.get()
+          + "}";
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof TypedFutureAny)) {
+        return false;
+      }
+      final TypedFutureAny other = (TypedFutureAny) obj;
       return handle == other.handle;
     }
 

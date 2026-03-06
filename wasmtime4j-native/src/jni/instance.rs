@@ -1239,14 +1239,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeIsDisp
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniInstance_nativeGetCreatedAtMicros(
     _env: JNIEnv,
     _class: JClass,
-    _instance_handle: jlong,
+    instance_handle: jlong,
 ) -> jlong {
-    // Return current time in microseconds as a placeholder
-    use std::time::{SystemTime, UNIX_EPOCH};
-    match SystemTime::now().duration_since(UNIX_EPOCH) {
-        Ok(duration) => duration.as_micros() as jlong,
-        Err(_) => 0,
+    if instance_handle == 0 {
+        return 0;
     }
+    let instance = unsafe { &*(instance_handle as *const crate::instance::Instance) };
+    instance.metadata().created_at_epoch_micros as jlong
 }
 
 /// Get metadata export count

@@ -109,6 +109,8 @@ pub struct InstanceMetadata {
     pub name: String,
     /// Timestamp when this instance was created
     pub created_at: Instant,
+    /// Wall-clock creation time as microseconds since UNIX epoch
+    pub created_at_epoch_micros: u64,
     /// Number of exported functions
     pub export_count: usize,
     /// Number of imported functions
@@ -130,6 +132,7 @@ impl std::fmt::Debug for InstanceMetadata {
         f.debug_struct("InstanceMetadata")
             .field("name", &self.name)
             .field("created_at", &self.created_at)
+            .field("created_at_epoch_micros", &self.created_at_epoch_micros)
             .field("export_count", &self.export_count)
             .field("import_count", &self.import_count)
             .field("function_calls", &self.function_calls.load(Ordering::Relaxed))
@@ -146,6 +149,7 @@ impl Clone for InstanceMetadata {
         Self {
             name: self.name.clone(),
             created_at: self.created_at,
+            created_at_epoch_micros: self.created_at_epoch_micros,
             export_count: self.export_count,
             import_count: self.import_count,
             function_calls: std::sync::atomic::AtomicU64::new(
@@ -678,6 +682,10 @@ impl Instance {
                 .clone()
                 .unwrap_or_else(|| "unnamed".to_string()),
             created_at: Instant::now(),
+            created_at_epoch_micros: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_micros() as u64,
             export_count,
             import_count,
             function_calls: std::sync::atomic::AtomicU64::new(0),
@@ -3062,6 +3070,7 @@ mod tests {
         let metadata = InstanceMetadata {
             name: "test".to_string(),
             created_at: Instant::now(),
+            created_at_epoch_micros: 0,
             export_count: 0,
             import_count: 0,
             function_calls: std::sync::atomic::AtomicU64::new(0),
@@ -3104,6 +3113,7 @@ mod tests {
         let metadata = Arc::new(InstanceMetadata {
             name: "concurrent_test".to_string(),
             created_at: Instant::now(),
+            created_at_epoch_micros: 0,
             export_count: 0,
             import_count: 0,
             function_calls: std::sync::atomic::AtomicU64::new(0),
@@ -3155,6 +3165,7 @@ mod tests {
         let metadata = InstanceMetadata {
             name: "debug_test".to_string(),
             created_at: Instant::now(),
+            created_at_epoch_micros: 0,
             export_count: 3,
             import_count: 2,
             function_calls: std::sync::atomic::AtomicU64::new(0),

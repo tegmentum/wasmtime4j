@@ -8,6 +8,7 @@ use crate::error::{ffi_utils, jni_utils};
 use crate::store::core;
 
 use std::os::raw::c_void;
+use std::sync::Arc;
 
 /// Create a new store with default configuration
 #[no_mangle]
@@ -2081,4 +2082,286 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDebugExit
         }
         None => null_array,
     }
+}
+
+// ================================================================================================
+// Native Async Bridge Methods
+// ================================================================================================
+//
+// These methods accept a Java CompletableFuture<Long> and spawn the operation on the Tokio
+// runtime, completing the future from a Tokio worker thread. This frees the calling Java
+// thread immediately instead of blocking it on the ForkJoinPool.
+
+/// Helper: get cached JVM Arc or throw and return false.
+fn get_jvm_or_throw(env: &mut JNIEnv) -> Option<Arc<jni::JavaVM>> {
+    match crate::async_runtime::get_cached_jvm() {
+        Some(jvm) => Some(jvm.clone()),
+        None => {
+            let _ = env.throw_new(
+                "java/lang/IllegalStateException",
+                "JVM not cached for async operations — native library may not be loaded via JNI",
+            );
+            None
+        }
+    }
+}
+
+/// Perform garbage collection asynchronously via Tokio bridge.
+///
+/// Spawns gc on the Tokio runtime and completes the passed CompletableFuture<Long> when done.
+/// The Long result is 0 on success (Java maps to Void via thenApply).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGcAsyncBridge(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    future: JObject,
+) {
+    // Validate store pointer
+    let store = match unsafe { core::get_store_ref(store_handle as *const c_void) } {
+        Ok(s) => s,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            return;
+        }
+    };
+    if let Err(e) = if store.is_closed() { Err(crate::error::WasmtimeError::Store { message: "Store has been closed".to_string() }) } else { Ok(()) } {
+        jni_utils::throw_jni_exception(&mut env, &e);
+        return;
+    }
+
+    let jvm = match get_jvm_or_throw(&mut env) {
+        Some(j) => j,
+        None => return,
+    };
+    let future_ref = match env.new_global_ref(future) {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create GlobalRef: {}", e),
+            );
+            return;
+        }
+    };
+
+    let store_addr = store_handle as usize;
+
+    crate::async_runtime::spawn_jni_completable_future(jvm, future_ref, async move {
+        tokio::task::spawn_blocking(move || {
+            // SAFETY: Java caller must keep Store alive while this future is pending.
+            let store = unsafe { &*(store_addr as *const crate::store::Store) };
+            store.gc().map_err(|e| e.to_string())?;
+            Ok(0i64)
+        })
+        .await
+        .map_err(|e| format!("Async gc task panicked: {}", e))?
+    });
+}
+
+/// Create a WebAssembly instance asynchronously via Tokio bridge.
+///
+/// Spawns instantiation on the Tokio runtime and completes the CompletableFuture<Long>
+/// with the native instance pointer on success.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateInstanceAsyncBridge(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    module_handle: jlong,
+    future: JObject,
+) {
+    // Validate store pointer
+    if let Err(e) = unsafe { core::get_store_ref(store_handle as *const c_void) }
+        .and_then(|s| if s.is_closed() { Err(crate::error::WasmtimeError::Store { message: "Store has been closed".to_string() }) } else { Ok(()) })
+    {
+        jni_utils::throw_jni_exception(&mut env, &e);
+        return;
+    }
+    // Validate module pointer
+    if let Err(e) =
+        unsafe { crate::module::core::get_module_ref(module_handle as *const c_void) }
+    {
+        jni_utils::throw_jni_exception(&mut env, &e);
+        return;
+    }
+
+    let jvm = match get_jvm_or_throw(&mut env) {
+        Some(j) => j,
+        None => return,
+    };
+    let future_ref = match env.new_global_ref(future) {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create GlobalRef: {}", e),
+            );
+            return;
+        }
+    };
+
+    let store_addr = store_handle as usize;
+    let module_addr = module_handle as usize;
+
+    crate::async_runtime::spawn_jni_completable_future(jvm, future_ref, async move {
+        tokio::task::spawn_blocking(move || {
+            // SAFETY: Java caller must keep Store and Module alive while this future is pending.
+            let store = unsafe { &mut *(store_addr as *mut crate::store::Store) };
+            let module = unsafe { &*(module_addr as *const crate::module::Module) };
+            let instance = crate::instance::core::create_instance(store, module)
+                .map_err(|e| e.to_string())?;
+            Ok(Box::into_raw(instance) as i64)
+        })
+        .await
+        .map_err(|e| format!("Async createInstance task panicked: {}", e))?
+    });
+}
+
+/// Create a WebAssembly memory asynchronously via Tokio bridge.
+///
+/// Spawns memory creation on the Tokio runtime and completes the CompletableFuture<Long>
+/// with the native memory pointer on success.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateMemoryAsyncBridge(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    initial_pages: jlong,
+    max_pages: jlong,
+    is_shared: jint,
+    is_64: jint,
+    future: JObject,
+) {
+    // Validate store pointer
+    if let Err(e) = unsafe { core::get_store_ref(store_handle as *const c_void) }
+        .and_then(|s| if s.is_closed() { Err(crate::error::WasmtimeError::Store { message: "Store has been closed".to_string() }) } else { Ok(()) })
+    {
+        jni_utils::throw_jni_exception(&mut env, &e);
+        return;
+    }
+
+    let jvm = match get_jvm_or_throw(&mut env) {
+        Some(j) => j,
+        None => return,
+    };
+    let future_ref = match env.new_global_ref(future) {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create GlobalRef: {}", e),
+            );
+            return;
+        }
+    };
+
+    let store_addr = store_handle as usize;
+    let initial = initial_pages;
+    let max = max_pages;
+    let shared = is_shared != 0;
+    let is_64_bit = is_64 != 0;
+
+    crate::async_runtime::spawn_jni_completable_future(jvm, future_ref, async move {
+        tokio::task::spawn_blocking(move || {
+            // SAFETY: Java caller must keep Store alive while this future is pending.
+            let store = unsafe { &mut *(store_addr as *mut crate::store::Store) };
+            let max_pages_opt = if max == -1 { None } else { Some(max as u64) };
+            let config = crate::memory::MemoryConfig {
+                initial_pages: initial as u64,
+                maximum_pages: max_pages_opt,
+                is_shared: shared,
+                is_64: is_64_bit,
+                memory_index: 0,
+                name: None,
+            };
+            let memory = crate::memory::Memory::new_with_config(store, config)
+                .map_err(|e| e.to_string())?;
+            let ptr = crate::memory::core::create_validated_memory(memory)
+                .map_err(|e| e.to_string())?;
+            Ok(ptr as i64)
+        })
+        .await
+        .map_err(|e| format!("Async createMemory task panicked: {}", e))?
+    });
+}
+
+/// Create a WebAssembly table asynchronously via Tokio bridge.
+///
+/// Spawns table creation on the Tokio runtime and completes the CompletableFuture<Long>
+/// with the native table pointer on success.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateTableAsyncBridge(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_handle: jlong,
+    element_type: jint,
+    initial_size: jint,
+    max_size: jint,
+    future: JObject,
+) {
+    // Validate store pointer
+    if let Err(e) = unsafe { core::get_store_ref(store_handle as *const c_void) }
+        .and_then(|s| if s.is_closed() { Err(crate::error::WasmtimeError::Store { message: "Store has been closed".to_string() }) } else { Ok(()) })
+    {
+        jni_utils::throw_jni_exception(&mut env, &e);
+        return;
+    }
+
+    let jvm = match get_jvm_or_throw(&mut env) {
+        Some(j) => j,
+        None => return,
+    };
+    let future_ref = match env.new_global_ref(future) {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create GlobalRef: {}", e),
+            );
+            return;
+        }
+    };
+
+    let store_addr = store_handle as usize;
+    let elem_type = element_type;
+    let initial = initial_size;
+    let max = max_size;
+
+    crate::async_runtime::spawn_jni_completable_future(jvm, future_ref, async move {
+        tokio::task::spawn_blocking(move || {
+            // SAFETY: Java caller must keep Store alive while this future is pending.
+            let store = unsafe { &*(store_addr as *const crate::store::Store) };
+
+            let val_type = match elem_type {
+                0x70 | 5 => wasmtime::ValType::Ref(wasmtime::RefType::FUNCREF),
+                0x6F | 6 => wasmtime::ValType::Ref(wasmtime::RefType::EXTERNREF),
+                _ => {
+                    return Err(format!(
+                        "Invalid element type code: {} (expected 0x70/5 for FUNCREF or 0x6F/6 for EXTERNREF)",
+                        elem_type
+                    ));
+                }
+            };
+
+            let max_opt = if max == -1 {
+                None
+            } else {
+                Some(max as u32)
+            };
+
+            let table = crate::table::core::create_table(
+                store,
+                val_type,
+                initial as u32,
+                max_opt,
+                None,
+            )
+            .map_err(|e| e.to_string())?;
+
+            Ok(Box::into_raw(table) as i64)
+        })
+        .await
+        .map_err(|e| format!("Async createTable task panicked: {}", e))?
+    });
 }

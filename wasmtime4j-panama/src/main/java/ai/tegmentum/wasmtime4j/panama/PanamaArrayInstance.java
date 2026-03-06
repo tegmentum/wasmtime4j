@@ -70,8 +70,7 @@ class PanamaArrayInstance extends PanamaGcObject implements ArrayInstance {
 
   @Override
   public int getSizeBytes() {
-    // Return approximate size based on array length and element size
-    return 16 + (length * 8);
+    return 16 + (length * arrayType.getElementSizeBytes());
   }
 
   @Override

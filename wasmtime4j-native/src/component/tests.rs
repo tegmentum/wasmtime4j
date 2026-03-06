@@ -364,10 +364,11 @@ fn test_case_type_struct() {
 fn test_host_interface_struct() {
     let host_interface = HostInterface {
         name: "my-host-interface".to_string(),
-        implementation: Box::new(42i32), // Placeholder implementation
+        registered_functions: vec!["func1".to_string(), "func2".to_string()],
     };
 
     assert_eq!(host_interface.name, "my-host-interface");
+    assert_eq!(host_interface.registered_functions.len(), 2);
 }
 
 #[test]

@@ -370,6 +370,19 @@ public interface ComponentTypeDescriptor {
     return new PrimitiveImpl(ComponentType.ERROR_CONTEXT, null);
   }
 
+  /**
+   * Creates a type descriptor from a {@link ComponentType} enum value.
+   *
+   * <p>This is a convenience method for primitive types. For compound types, use the specific
+   * factory methods (e.g., {@link #list(ComponentTypeDescriptor)}).
+   *
+   * @param type the component type
+   * @return a new type descriptor for the given type
+   */
+  static ComponentTypeDescriptor fromComponentType(final ComponentType type) {
+    return new PrimitiveImpl(type, null);
+  }
+
   /** Primitive type descriptor implementation. */
   final class PrimitiveImpl implements ComponentTypeDescriptor {
     private final ComponentType type;

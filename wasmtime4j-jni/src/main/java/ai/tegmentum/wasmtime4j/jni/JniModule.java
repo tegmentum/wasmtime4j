@@ -612,6 +612,14 @@ public class JniModule extends JniResource implements Module {
   private static native boolean nativeValidateModule(byte[] bytecode);
 
   /**
+   * Native method to get all functions (imports, exports, and internal) as JSON.
+   *
+   * @param moduleHandle the native module handle
+   * @return JSON string containing function info array, or null on error
+   */
+  private static native String nativeGetAllFunctions(long moduleHandle);
+
+  /**
    * Validates WebAssembly bytecode using full Wasmtime validation.
    *
    * @param bytecode the WebAssembly bytecode to validate
@@ -619,5 +627,134 @@ public class JniModule extends JniResource implements Module {
    */
   static boolean validateModuleBytes(final byte[] bytecode) {
     return nativeValidateModule(bytecode);
+  }
+
+  @Override
+  public Iterable<ai.tegmentum.wasmtime4j.func.FunctionInfo> functions() {
+    ensureNotClosed();
+    final String json = nativeGetAllFunctions(nativeHandle);
+    if (json == null || json.isEmpty() || json.equals("[]")) {
+      return java.util.Collections.emptyList();
+    }
+    return parseFunctionsJson(json);
+  }
+
+  private static java.util.List<ai.tegmentum.wasmtime4j.func.FunctionInfo> parseFunctionsJson(
+      final String json) {
+    final java.util.List<ai.tegmentum.wasmtime4j.func.FunctionInfo> result =
+        new java.util.ArrayList<>();
+
+    // Minimal JSON parsing for [{...},{...},...] array of function objects
+    int pos = 1; // skip opening [
+    while (pos < json.length()) {
+      final int objStart = json.indexOf('{', pos);
+      if (objStart < 0) {
+        break;
+      }
+      final int objEnd = json.indexOf('}', objStart);
+      if (objEnd < 0) {
+        break;
+      }
+      final String obj = json.substring(objStart + 1, objEnd);
+      result.add(parseSingleFunction(obj));
+      pos = objEnd + 1;
+    }
+    return result;
+  }
+
+  @SuppressFBWarnings(value = "IMPROPER_UNICODE", justification = "JSON keys are ASCII-only")
+  private static ai.tegmentum.wasmtime4j.func.FunctionInfo parseSingleFunction(final String obj) {
+    int index = 0;
+    String name = null;
+    boolean isImport = false;
+    boolean isExported = false;
+    final java.util.List<ai.tegmentum.wasmtime4j.type.ValType> params = new java.util.ArrayList<>();
+    final java.util.List<ai.tegmentum.wasmtime4j.type.ValType> returns =
+        new java.util.ArrayList<>();
+
+    // Parse key-value pairs
+    final String[] pairs = obj.split(",(?=\\s*\")");
+    for (final String pair : pairs) {
+      final int colonPos = pair.indexOf(':');
+      if (colonPos < 0) {
+        continue;
+      }
+      final String key = pair.substring(0, colonPos).trim().replace("\"", "");
+      final String value = pair.substring(colonPos + 1).trim();
+
+      switch (key) {
+        case "index":
+          index = Integer.parseInt(value);
+          break;
+        case "name":
+          if (!"null".equals(value)) {
+            name = value.substring(1, value.length() - 1); // strip quotes
+          }
+          break;
+        case "isImport":
+          isImport = Boolean.parseBoolean(value);
+          break;
+        case "isExported":
+          isExported = Boolean.parseBoolean(value);
+          break;
+        case "params":
+          parseValTypes(value, params);
+          break;
+        case "returns":
+          parseValTypes(value, returns);
+          break;
+        default:
+          break;
+      }
+    }
+
+    final ai.tegmentum.wasmtime4j.type.FuncType funcType =
+        ai.tegmentum.wasmtime4j.type.FuncType.of(
+            params.toArray(new ai.tegmentum.wasmtime4j.type.ValType[0]),
+            returns.toArray(new ai.tegmentum.wasmtime4j.type.ValType[0]));
+    return new ai.tegmentum.wasmtime4j.func.FunctionInfo(
+        index, name, funcType, isImport, isExported);
+  }
+
+  private static void parseValTypes(
+      final String arrayStr, final java.util.List<ai.tegmentum.wasmtime4j.type.ValType> types) {
+    // Parse ["i32","i64",...] or []
+    final String trimmed = arrayStr.trim();
+    if (trimmed.equals("[]")) {
+      return;
+    }
+    // Strip brackets
+    final String inner = trimmed.substring(1, trimmed.length() - 1);
+    if (inner.isEmpty()) {
+      return;
+    }
+    final String[] typeStrs = inner.split(",");
+    for (final String typeStr : typeStrs) {
+      final String cleaned = typeStr.trim().replace("\"", "");
+      types.add(stringToValType(cleaned));
+    }
+  }
+
+  private static ai.tegmentum.wasmtime4j.type.ValType stringToValType(final String typeStr) {
+    switch (typeStr) {
+      case "i32":
+        return ai.tegmentum.wasmtime4j.type.ValType.i32();
+      case "i64":
+        return ai.tegmentum.wasmtime4j.type.ValType.i64();
+      case "f32":
+        return ai.tegmentum.wasmtime4j.type.ValType.f32();
+      case "f64":
+        return ai.tegmentum.wasmtime4j.type.ValType.f64();
+      case "v128":
+        return ai.tegmentum.wasmtime4j.type.ValType.v128();
+      case "externref":
+        return ai.tegmentum.wasmtime4j.type.ValType.externref();
+      case "funcref":
+        return ai.tegmentum.wasmtime4j.type.ValType.funcref();
+      case "anyref":
+        return ai.tegmentum.wasmtime4j.type.ValType.anyref();
+      default:
+        return ai.tegmentum.wasmtime4j.type.ValType.i32(); // fallback
+    }
   }
 }

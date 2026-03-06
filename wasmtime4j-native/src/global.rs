@@ -229,15 +229,36 @@ impl Global {
                 Val::ExternRef(None)
             }
             GlobalValue::AnyRef(ref_id) => {
-                if ref_id.is_some() {
-                    log::warn!("Non-null AnyRef in global discarded; Store context required");
+                if let Some(id) = ref_id {
+                    use crate::hostfunc::take_gc_ref;
+                    if let Some(crate::hostfunc::GcRefEntry::AnyRef(Some(rooted))) =
+                        take_gc_ref(id)
+                    {
+                        Val::AnyRef(Some(rooted))
+                    } else {
+                        log::warn!("AnyRef GC ref {} not found in registry", id);
+                        Val::AnyRef(None)
+                    }
+                } else {
+                    Val::AnyRef(None)
                 }
-                Val::AnyRef(None)
             }
-            GlobalValue::EqRef(_ref_id) => {
-                // EqRef supports null values directly
-                // Non-null EqRef would require Store context for GC-managed objects
-                Val::AnyRef(None) // EqRef is a subtype of AnyRef
+            GlobalValue::EqRef(ref_id) => {
+                if let Some(id) = ref_id {
+                    // Look up the GC ref from the registry - it should have been stored
+                    // as an AnyRef since EqRef is a subtype
+                    use crate::hostfunc::take_gc_ref;
+                    if let Some(crate::hostfunc::GcRefEntry::AnyRef(Some(rooted))) =
+                        take_gc_ref(id)
+                    {
+                        Val::AnyRef(Some(rooted))
+                    } else {
+                        log::warn!("EqRef GC ref {} not found in registry", id);
+                        Val::AnyRef(None)
+                    }
+                } else {
+                    Val::AnyRef(None)
+                }
             }
             GlobalValue::I31Ref(maybe_value) => {
                 // i31ref can hold actual 31-bit integer values
@@ -293,10 +314,13 @@ impl Global {
                 GlobalValue::ExternRef(None)
             }
             Val::AnyRef(any_ref) => {
-                if any_ref.is_some() {
-                    log::warn!("Non-null AnyRef value discarded; Store context required");
+                if let Some(rooted_ref) = any_ref {
+                    use crate::hostfunc::{store_gc_ref, GcRefEntry};
+                    let id = store_gc_ref(GcRefEntry::AnyRef(Some(rooted_ref)));
+                    GlobalValue::AnyRef(Some(id))
+                } else {
+                    GlobalValue::AnyRef(None)
                 }
-                GlobalValue::AnyRef(None)
             }
             Val::ExnRef(_) => {
                 // ExnRef is not supported in GlobalValue, return error

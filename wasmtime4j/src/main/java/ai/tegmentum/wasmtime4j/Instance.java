@@ -460,21 +460,17 @@ public interface Instance extends Closeable {
    */
   static java.util.concurrent.CompletableFuture<Instance> createAsync(
       final Store store, final Module module) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return store.createInstance(module);
-          } catch (final WasmException e) {
-            throw new java.util.concurrent.CompletionException(e);
-          }
-        });
+    // Delegate to Store.createInstanceAsync which uses the Tokio-based native async bridge
+    // when available (JNI/Panama), falling back to ForkJoinPool wrapping otherwise.
+    return store.createInstanceAsync(module);
   }
 
   /**
    * Asynchronously creates an instance of a WebAssembly module with explicit imports.
    *
    * <p>This is the async variant of {@link #create(Store, Module, Extern[])}. The default
-   * implementation delegates to the synchronous method on the ForkJoinPool.
+   * implementation delegates to the synchronous method on the ForkJoinPool since there is no
+   * dedicated native async bridge for imports-based instantiation.
    *
    * @param store the store to create the instance in
    * @param module the compiled module to instantiate

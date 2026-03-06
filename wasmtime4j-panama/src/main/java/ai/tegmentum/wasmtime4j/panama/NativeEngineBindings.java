@@ -442,6 +442,14 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding(
+        "wasmtime4j_panama_module_image_range",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // start_ptr (u64 output)
+            ValueLayout.ADDRESS)); // end_ptr (u64 output)
+
+    addFunctionBinding(
         "wasmtime4j_module_resources_required",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return 0 on success, -1 on error
@@ -484,6 +492,100 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // code_offsets_ptr
             ValueLayout.ADDRESS, // wasm_offsets_ptr
             ValueLayout.JAVA_LONG)); // count
+
+    // CodeBuilder bindings
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_create",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return builder_ptr
+            ValueLayout.ADDRESS)); // engine_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_wasm_binary",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS, // bytes_ptr
+            ValueLayout.JAVA_INT)); // bytes_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_wasm_binary_or_text",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS, // bytes_ptr
+            ValueLayout.JAVA_INT)); // bytes_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_dwarf_package",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS, // bytes_ptr
+            ValueLayout.JAVA_INT)); // bytes_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_hint",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.JAVA_INT)); // hint_ordinal
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_compile_module",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return module_ptr
+            ValueLayout.ADDRESS)); // builder_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_compile_module_serialized",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS, // out_data
+            ValueLayout.ADDRESS)); // out_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_compile_component",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return component_ptr
+            ValueLayout.ADDRESS)); // builder_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_compile_component_serialized",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return 0 on success, -1 on error
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS, // out_data
+            ValueLayout.ADDRESS)); // out_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_compile_time_builtins_binary",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS, // name_ptr
+            ValueLayout.JAVA_INT, // name_len
+            ValueLayout.ADDRESS, // wasm_ptr
+            ValueLayout.JAVA_INT)); // wasm_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_compile_time_builtins_binary_or_text",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS, // name_ptr
+            ValueLayout.JAVA_INT, // name_len
+            ValueLayout.ADDRESS, // wasm_ptr
+            ValueLayout.JAVA_INT)); // wasm_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_expose_unsafe_intrinsics",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // builder_ptr
+            ValueLayout.ADDRESS, // name_ptr
+            ValueLayout.JAVA_INT)); // name_len
+
+    addFunctionBinding(
+        "wasmtime4j_panama_code_builder_destroy",
+        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // builder_ptr
   }
 
   // ===========================================================================================
@@ -1995,6 +2097,18 @@ public final class NativeEngineBindings extends NativeBindingsBase {
     validatePointer(modulePtr, "modulePtr");
     return callNativeFunction(
         "wasmtime4j_panama_module_get_imports_json", MemorySegment.class, modulePtr);
+  }
+
+  /**
+   * Gets all module functions (imports, exports, and internal) as JSON string.
+   *
+   * @param modulePtr pointer to the module
+   * @return MemorySegment pointing to JSON string, or NULL on error
+   */
+  public MemorySegment moduleGetAllFunctions(final MemorySegment modulePtr) {
+    validatePointer(modulePtr, "modulePtr");
+    return callNativeFunction(
+        "wasmtime4j_panama_module_get_all_functions", MemorySegment.class, modulePtr);
   }
 
   /**

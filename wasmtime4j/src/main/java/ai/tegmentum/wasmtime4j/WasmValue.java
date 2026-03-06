@@ -534,6 +534,18 @@ public final class WasmValue {
   }
 
   /**
+   * Creates a structref value.
+   *
+   * <p>This is used in WebAssembly GC for struct references.
+   *
+   * @param value the value to wrap (may be null)
+   * @return a new WasmValue representing structref
+   */
+  public static WasmValue structref(final Object value) {
+    return new WasmValue(WasmValueType.STRUCTREF, value);
+  }
+
+  /**
    * Creates a null structref value.
    *
    * <p>This is used in WebAssembly GC for null struct references.
@@ -542,6 +554,18 @@ public final class WasmValue {
    */
   public static WasmValue nullStructRef() {
     return new WasmValue(WasmValueType.STRUCTREF, null);
+  }
+
+  /**
+   * Creates an arrayref value.
+   *
+   * <p>This is used in WebAssembly GC for array references.
+   *
+   * @param value the value to wrap (may be null)
+   * @return a new WasmValue representing arrayref
+   */
+  public static WasmValue arrayref(final Object value) {
+    return new WasmValue(WasmValueType.ARRAYREF, value);
   }
 
   /**

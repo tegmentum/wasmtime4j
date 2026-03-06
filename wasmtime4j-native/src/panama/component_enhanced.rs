@@ -856,3 +856,52 @@ pub extern "C" fn wasmtime4j_panama_resource_any_drop(
     })
 }
 
+/// Parse a WAVE-encoded string into a component value.
+///
+/// Returns the type discriminator via type_disc_out and data via data_out/data_len_out.
+/// Caller must free data_out with wasmtime4j_panama_free_bytes.
+#[cfg(feature = "wave")]
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_component_val_from_wave(
+    type_name: *const c_char,
+    wave_str: *const c_char,
+    type_disc_out: *mut c_int,
+    data_out: *mut *mut u8,
+    data_len_out: *mut c_ulong,
+) -> c_int {
+    use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
+
+    if type_name.is_null() || wave_str.is_null() || type_disc_out.is_null()
+        || data_out.is_null() || data_len_out.is_null()
+    {
+        return FFI_ERROR;
+    }
+
+    let type_name_str = match unsafe { std::ffi::CStr::from_ptr(type_name) }.to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    let wave_string = match unsafe { std::ffi::CStr::from_ptr(wave_str) }.to_str() {
+        Ok(s) => s,
+        Err(_) => return FFI_ERROR,
+    };
+
+    match crate::component::component_val_from_wave(type_name_str, wave_string) {
+        Ok((disc, data)) => {
+            unsafe {
+                *type_disc_out = disc;
+                let mut boxed = data.into_boxed_slice();
+                *data_len_out = boxed.len() as c_ulong;
+                *data_out = boxed.as_mut_ptr();
+                std::mem::forget(boxed);
+            }
+            FFI_SUCCESS
+        }
+        Err(e) => {
+            log::error!("Failed to parse WAVE: {}", e);
+            FFI_ERROR
+        }
+    }
+}
+

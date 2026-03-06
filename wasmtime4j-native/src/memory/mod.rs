@@ -66,12 +66,6 @@ impl Memory {
     /// Create a new memory with specific configuration
     pub fn new_with_config(store: &mut Store, config: MemoryConfig) -> WasmtimeResult<Self> {
         // Validate configuration parameters
-        if config.initial_pages == 0 {
-            return Err(WasmtimeError::InvalidParameter {
-                message: "Initial pages cannot be zero".to_string(),
-            });
-        }
-
         if let Some(max_pages) = config.maximum_pages {
             if config.initial_pages > max_pages {
                 return Err(WasmtimeError::InvalidParameter {
@@ -161,12 +155,6 @@ impl Memory {
         config: MemoryConfig,
     ) -> WasmtimeResult<Self> {
         // Validate configuration parameters (same as sync version)
-        if config.initial_pages == 0 {
-            return Err(WasmtimeError::InvalidParameter {
-                message: "Initial pages cannot be zero".to_string(),
-            });
-        }
-
         if let Some(max_pages) = config.maximum_pages {
             if config.initial_pages > max_pages {
                 return Err(WasmtimeError::InvalidParameter {

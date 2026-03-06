@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.component;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -82,6 +83,17 @@ public final class GuardedStreamReader implements AutoCloseable {
       throw new IllegalStateException("GuardedStreamReader has been closed");
     }
     return stream;
+  }
+
+  /**
+   * Gets the element type of the guarded stream, if known.
+   *
+   * <p>Delegates to {@link StreamAny#getElementType()}.
+   *
+   * @return the element type descriptor, or empty
+   */
+  public Optional<ComponentTypeDescriptor> getElementType() {
+    return stream.getElementType();
   }
 
   /**

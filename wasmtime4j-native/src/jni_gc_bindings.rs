@@ -1092,24 +1092,27 @@ fn ref_cast_internal(
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
-    // Convert target_type to GcReferenceType
+    // Convert target_type to GcReferenceType.
+    // For type codes 3 (STRUCT_REF) and 4 (ARRAY_REF), these perform abstract type checks
+    // ("is this any struct?" / "is this any array?"). For concrete type checks against a
+    // specific struct/array type, use refCastStructNative/refTestStructNative instead.
     let target_ref_type = match target_type {
         0 => GcReferenceType::AnyRef,
         1 => GcReferenceType::EqRef,
         2 => GcReferenceType::I31Ref,
         3 => {
-            // STRUCT_REF
+            // Abstract STRUCT_REF check — definition is not inspected by validate_reference_cast
             GcReferenceType::StructRef(StructTypeDefinition {
-                type_id: 0,
+                type_id: u32::MAX,
                 fields: vec![],
                 name: None,
                 supertype: None,
             })
         }
         4 => {
-            // ARRAY_REF
+            // Abstract ARRAY_REF check — definition is not inspected by validate_reference_cast
             GcReferenceType::ArrayRef(Box::new(ArrayTypeDefinition {
-                type_id: 0,
+                type_id: u32::MAX,
                 name: None,
                 element_type: FieldType::I32,
                 mutable: true,
@@ -1146,26 +1149,25 @@ fn ref_test_internal(
 
     let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
 
-    // Convert target_type to GcReferenceType
+    // Convert target_type to GcReferenceType.
+    // See ref_cast_internal for documentation on abstract vs concrete type checks.
     let target_ref_type = match target_type {
         0 => GcReferenceType::AnyRef,
         1 => GcReferenceType::EqRef,
         2 => GcReferenceType::I31Ref,
         3 => {
-            // STRUCT_REF - need to create a placeholder struct definition
-            // For type testing, we don't need the exact struct type
+            // Abstract STRUCT_REF check — definition is not inspected by validate_reference_cast
             GcReferenceType::StructRef(StructTypeDefinition {
-                type_id: 0,
+                type_id: u32::MAX,
                 fields: vec![],
                 name: None,
                 supertype: None,
             })
         }
         4 => {
-            // ARRAY_REF - need to create a placeholder array definition
-            // For type testing, we don't need the exact array type
+            // Abstract ARRAY_REF check — definition is not inspected by validate_reference_cast
             GcReferenceType::ArrayRef(Box::new(ArrayTypeDefinition {
-                type_id: 0,
+                type_id: u32::MAX,
                 name: None,
                 element_type: FieldType::I32,
                 mutable: true,
@@ -1511,7 +1513,7 @@ fn parse_field_type(type_str: &str) -> WasmtimeResult<FieldType> {
         "i31ref" | "i31ref?" => Ok(FieldType::Reference(GcReferenceType::I31Ref)),
         "structref" | "structref?" => Ok(FieldType::Reference(GcReferenceType::StructRef(
             StructTypeDefinition {
-                type_id: 0,
+                type_id: u32::MAX,
                 fields: vec![],
                 name: None,
                 supertype: None,
@@ -1519,7 +1521,7 @@ fn parse_field_type(type_str: &str) -> WasmtimeResult<FieldType> {
         ))),
         "arrayref" | "arrayref?" => Ok(FieldType::Reference(GcReferenceType::ArrayRef(Box::new(
             ArrayTypeDefinition {
-                type_id: 0,
+                type_id: u32::MAX,
                 name: None,
                 element_type: FieldType::I32,
                 mutable: true,
@@ -1640,7 +1642,7 @@ fn convert_gc_value_to_jobject(env: &mut JNIEnv, gc_value: &GcValue) -> jobject 
                 Err(_) => std::ptr::null_mut(),
             }
         }
-        GcValue::Reference | GcValue::Null => std::ptr::null_mut(),
+        GcValue::Null => std::ptr::null_mut(),
     }
 }
 

@@ -491,7 +491,7 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
       LOGGER.fine("Successfully instantiated component through linker");
 
       // Create and return the component instance
-      return new PanamaComponentInstance(instancePtr, panamaComponent, panamaStore);
+      return new PanamaComponentInstance(instancePtr, panamaComponent, panamaStore, null);
     }
   }
 

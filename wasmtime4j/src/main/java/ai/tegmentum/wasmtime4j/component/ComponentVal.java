@@ -920,24 +920,46 @@ public interface ComponentVal {
   /**
    * Deserializes a component value from the WAVE (WebAssembly Value Encoding) text format.
    *
-   * <p>This is the inverse of {@link #toWave()}. The default implementation throws {@link
-   * UnsupportedOperationException} because correct parsing requires type information that is only
-   * available through the native Wasmtime {@code Val::from_wave()} implementation.
-   *
-   * <p>Implementations should override to use native Wasmtime's WAVE parser.
+   * <p>This is the inverse of {@link #toWave()}. Requires type context for correct parsing.
+   * Supports all primitive types (bool, s8-s64, u8-u64, f32, f64, char, string). Compound types
+   * (list, record, tuple, variant, etc.) require component-level type context.
    *
    * @param wave the WAVE text representation to parse
+   * @param expectedType the expected component type descriptor
    * @return the parsed ComponentVal
-   * @throws UnsupportedOperationException if native WAVE parsing is not available
-   * @throws IllegalArgumentException if wave is null
+   * @throws UnsupportedOperationException if the type is not supported for standalone parsing
+   * @throws IllegalArgumentException if wave or expectedType is null
    * @since 1.1.0
    */
-  static ComponentVal fromWave(final String wave) {
+  static ComponentVal fromWave(final String wave, final ComponentTypeDescriptor expectedType) {
     if (wave == null) {
       throw new IllegalArgumentException("WAVE string cannot be null");
     }
-    throw new UnsupportedOperationException(
-        "WAVE parsing requires native Wasmtime support with type context; "
-            + "use the native runtime's WAVE parser instead");
+    if (expectedType == null) {
+      throw new IllegalArgumentException("expectedType cannot be null");
+    }
+    return WaveParser.parse(wave, expectedType);
+  }
+
+  /**
+   * Deserializes a component value from the WAVE (WebAssembly Value Encoding) text format.
+   *
+   * <p>This overload uses the provided {@link ComponentType} for simple type context.
+   *
+   * @param wave the WAVE text representation to parse
+   * @param expectedType the expected component type
+   * @return the parsed ComponentVal
+   * @throws UnsupportedOperationException if the type is not supported for standalone parsing
+   * @throws IllegalArgumentException if wave or expectedType is null
+   * @since 1.1.0
+   */
+  static ComponentVal fromWave(final String wave, final ComponentType expectedType) {
+    if (wave == null) {
+      throw new IllegalArgumentException("WAVE string cannot be null");
+    }
+    if (expectedType == null) {
+      throw new IllegalArgumentException("expectedType cannot be null");
+    }
+    return fromWave(wave, ComponentTypeDescriptor.fromComponentType(expectedType));
   }
 }

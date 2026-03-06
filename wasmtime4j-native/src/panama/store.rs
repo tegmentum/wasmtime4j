@@ -1172,3 +1172,200 @@ pub extern "C" fn wasmtime4j_panama_store_set_call_hook_async(store_ptr: *mut c_
 pub extern "C" fn wasmtime4j_panama_store_clear_call_hook_async(store_ptr: *mut c_void) -> c_int {
     wasmtime4j_panama_store_clear_call_hook(store_ptr)
 }
+
+// ================================================================================================
+// Native Async Bridge Functions (Panama)
+// ================================================================================================
+//
+// These functions accept a Panama completion callback and spawn the operation on the Tokio
+// runtime, invoking the callback from a Tokio worker thread when complete. This frees the
+// calling Java thread immediately.
+
+/// Perform garbage collection asynchronously via Tokio bridge (Panama version).
+///
+/// Spawns gc on the Tokio runtime and invokes the callback when done.
+/// Result value is 0 on success.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_gc_async_bridge(
+    store_ptr: *mut c_void,
+    callback: crate::async_runtime::PanamaAsyncCompletionCallback,
+    callback_data: i64,
+) {
+    // Validate store pointer synchronously
+    let store = match unsafe { core::get_store_ref(store_ptr) } {
+        Ok(s) => s,
+        Err(e) => {
+            let msg = std::ffi::CString::new(e.to_string()).unwrap_or_default();
+            callback(callback_data, 0, 0, msg.as_ptr());
+            return;
+        }
+    };
+    if store.is_closed() {
+        let msg = std::ffi::CString::new("Store has been closed").unwrap_or_default();
+        callback(callback_data, 0, 0, msg.as_ptr());
+        return;
+    }
+
+    let store_addr = store_ptr as usize;
+
+    crate::async_runtime::spawn_panama_completable_future(callback, callback_data, async move {
+        tokio::task::spawn_blocking(move || {
+            let store = unsafe { &*(store_addr as *const crate::store::Store) };
+            store.gc().map_err(|e| e.to_string())?;
+            Ok(0i64)
+        })
+        .await
+        .map_err(|e| format!("Async gc task panicked: {}", e))?
+    });
+}
+
+/// Create a WebAssembly instance asynchronously via Tokio bridge (Panama version).
+///
+/// Spawns instantiation on the Tokio runtime and invokes the callback with
+/// the native instance pointer on success.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_create_instance_async_bridge(
+    store_ptr: *mut c_void,
+    module_ptr: *mut c_void,
+    callback: crate::async_runtime::PanamaAsyncCompletionCallback,
+    callback_data: i64,
+) {
+    // Validate pointers synchronously
+    if let Err(e) = unsafe { core::get_store_ref(store_ptr) }
+        .and_then(|s| if s.is_closed() { Err(crate::error::WasmtimeError::Store { message: "Store has been closed".to_string() }) } else { Ok(()) })
+    {
+        let msg = std::ffi::CString::new(e.to_string()).unwrap_or_default();
+        callback(callback_data, 0, 0, msg.as_ptr());
+        return;
+    }
+    if let Err(e) = unsafe { crate::module::core::get_module_ref(module_ptr as *const c_void) } {
+        let msg = std::ffi::CString::new(e.to_string()).unwrap_or_default();
+        callback(callback_data, 0, 0, msg.as_ptr());
+        return;
+    }
+
+    let store_addr = store_ptr as usize;
+    let module_addr = module_ptr as usize;
+
+    crate::async_runtime::spawn_panama_completable_future(callback, callback_data, async move {
+        tokio::task::spawn_blocking(move || {
+            let store = unsafe { &mut *(store_addr as *mut crate::store::Store) };
+            let module = unsafe { &*(module_addr as *const crate::module::Module) };
+            let instance = crate::instance::core::create_instance(store, module)
+                .map_err(|e| e.to_string())?;
+            Ok(Box::into_raw(instance) as i64)
+        })
+        .await
+        .map_err(|e| format!("Async createInstance task panicked: {}", e))?
+    });
+}
+
+/// Create a WebAssembly memory asynchronously via Tokio bridge (Panama version).
+///
+/// Spawns memory creation on the Tokio runtime and invokes the callback with
+/// the native memory pointer on success.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_create_memory_async_bridge(
+    store_ptr: *mut c_void,
+    initial_pages: i64,
+    max_pages: i64,
+    is_shared: c_int,
+    is_64: c_int,
+    callback: crate::async_runtime::PanamaAsyncCompletionCallback,
+    callback_data: i64,
+) {
+    if let Err(e) = unsafe { core::get_store_ref(store_ptr) }
+        .and_then(|s| if s.is_closed() { Err(crate::error::WasmtimeError::Store { message: "Store has been closed".to_string() }) } else { Ok(()) })
+    {
+        let msg = std::ffi::CString::new(e.to_string()).unwrap_or_default();
+        callback(callback_data, 0, 0, msg.as_ptr());
+        return;
+    }
+
+    let store_addr = store_ptr as usize;
+    let initial = initial_pages;
+    let max = max_pages;
+    let shared = is_shared != 0;
+    let is_64_bit = is_64 != 0;
+
+    crate::async_runtime::spawn_panama_completable_future(callback, callback_data, async move {
+        tokio::task::spawn_blocking(move || {
+            let store = unsafe { &mut *(store_addr as *mut crate::store::Store) };
+            let max_opt = if max == -1 { None } else { Some(max as u64) };
+            let config = crate::memory::MemoryConfig {
+                initial_pages: initial as u64,
+                maximum_pages: max_opt,
+                is_shared: shared,
+                is_64: is_64_bit,
+                memory_index: 0,
+                name: None,
+            };
+            let memory = crate::memory::Memory::new_with_config(store, config)
+                .map_err(|e| e.to_string())?;
+            let ptr = crate::memory::core::create_validated_memory(memory)
+                .map_err(|e| e.to_string())?;
+            Ok(ptr as i64)
+        })
+        .await
+        .map_err(|e| format!("Async createMemory task panicked: {}", e))?
+    });
+}
+
+/// Create a WebAssembly table asynchronously via Tokio bridge (Panama version).
+///
+/// Spawns table creation on the Tokio runtime and invokes the callback with
+/// the native table pointer on success.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_store_create_table_async_bridge(
+    store_ptr: *mut c_void,
+    element_type: c_int,
+    initial_size: c_int,
+    max_size: c_int,
+    callback: crate::async_runtime::PanamaAsyncCompletionCallback,
+    callback_data: i64,
+) {
+    if let Err(e) = unsafe { core::get_store_ref(store_ptr) }
+        .and_then(|s| if s.is_closed() { Err(crate::error::WasmtimeError::Store { message: "Store has been closed".to_string() }) } else { Ok(()) })
+    {
+        let msg = std::ffi::CString::new(e.to_string()).unwrap_or_default();
+        callback(callback_data, 0, 0, msg.as_ptr());
+        return;
+    }
+
+    let store_addr = store_ptr as usize;
+    let elem_type = element_type;
+    let initial = initial_size;
+    let max = max_size;
+
+    crate::async_runtime::spawn_panama_completable_future(callback, callback_data, async move {
+        tokio::task::spawn_blocking(move || {
+            let store = unsafe { &*(store_addr as *const crate::store::Store) };
+
+            let val_type = match elem_type {
+                0x70 | 5 => wasmtime::ValType::Ref(wasmtime::RefType::FUNCREF),
+                0x6F | 6 => wasmtime::ValType::Ref(wasmtime::RefType::EXTERNREF),
+                _ => {
+                    return Err(format!(
+                        "Invalid element type: {} (expected 0x70/5 for FUNCREF or 0x6F/6 for EXTERNREF)",
+                        elem_type
+                    ));
+                }
+            };
+
+            let max_opt = if max == -1 { None } else { Some(max as u32) };
+
+            let table = crate::table::core::create_table(
+                store,
+                val_type,
+                initial as u32,
+                max_opt,
+                None,
+            )
+            .map_err(|e| e.to_string())?;
+
+            Ok(Box::into_raw(table) as i64)
+        })
+        .await
+        .map_err(|e| format!("Async createTable task panicked: {}", e))?
+    });
+}

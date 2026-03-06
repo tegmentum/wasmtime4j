@@ -175,6 +175,14 @@ JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetMo
 JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeValidateModule
   (JNIEnv *, jclass, jbyteArray);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniModule
+ * Method:    nativeGetAllFunctions
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetAllFunctions
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

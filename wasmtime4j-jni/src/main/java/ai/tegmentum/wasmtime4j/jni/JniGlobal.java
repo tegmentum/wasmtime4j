@@ -446,6 +446,40 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
           return WasmValue.externref(value);
         }
         throw new WasmTypeException("Expected Long or null for externref, got " + value.getClass());
+      case "anyref":
+        if (value == null) {
+          return WasmValue.nullAnyRef();
+        }
+        return WasmValue.anyref(value);
+      case "eqref":
+        if (value == null) {
+          return WasmValue.nullEqRef();
+        }
+        return WasmValue.eqref(value);
+      case "i31ref":
+        if (value == null) {
+          return WasmValue.nullI31Ref();
+        }
+        if (value instanceof Number) {
+          return WasmValue.i31ref(((Number) value).intValue());
+        }
+        throw new WasmTypeException("Expected Number or null for i31ref, got " + value.getClass());
+      case "structref":
+        if (value == null) {
+          return WasmValue.nullStructRef();
+        }
+        return WasmValue.structref(value);
+      case "arrayref":
+        if (value == null) {
+          return WasmValue.nullArrayRef();
+        }
+        return WasmValue.arrayref(value);
+      case "nullref":
+        return WasmValue.nullRef();
+      case "nullfuncref":
+        return WasmValue.nullNullFuncRef();
+      case "nullexternref":
+        return WasmValue.nullNullExternRef();
       default:
         throw new WasmTypeException("Unknown type: " + typeString);
     }

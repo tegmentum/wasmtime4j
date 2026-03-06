@@ -34,13 +34,13 @@ fn get_gc_ref_registry() -> &'static Mutex<HashMap<u64, GcRefEntry>> {
 }
 
 /// A GC reference held in the scoped registry.
-enum GcRefEntry {
+pub(crate) enum GcRefEntry {
     AnyRef(Option<wasmtime::Rooted<wasmtime::AnyRef>>),
     ExnRef(Option<wasmtime::Rooted<wasmtime::ExnRef>>),
 }
 
 /// Store a GC reference and return a handle ID.
-fn store_gc_ref(entry: GcRefEntry) -> u64 {
+pub(crate) fn store_gc_ref(entry: GcRefEntry) -> u64 {
     let id = GC_REF_COUNTER.fetch_add(1, Ordering::Relaxed);
     if let Ok(mut reg) = get_gc_ref_registry().lock() {
         reg.insert(id, entry);
@@ -49,7 +49,7 @@ fn store_gc_ref(entry: GcRefEntry) -> u64 {
 }
 
 /// Take a GC reference from the registry (consuming it).
-fn take_gc_ref(id: u64) -> Option<GcRefEntry> {
+pub(crate) fn take_gc_ref(id: u64) -> Option<GcRefEntry> {
     get_gc_ref_registry().lock().ok()?.remove(&id)
 }
 

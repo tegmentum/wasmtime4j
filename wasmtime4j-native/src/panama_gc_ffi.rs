@@ -739,7 +739,6 @@ fn struct_get_internal(
                     Ok((0, 4)) // Type 4 = V128
                 }
                 GcValue::ObjectRef(id) => Ok((id as i64, 5)),      // Type 5 = Reference
-                GcValue::Reference => Ok((0, 5)),                   // Bare reference
                 GcValue::Null => Ok((0, 6)),                       // Type 6 = Null
             }
         } else {
@@ -943,7 +942,6 @@ fn array_get_internal(
                     Ok((0, 4)) // Type 4 = V128
                 }
                 GcValue::ObjectRef(id) => Ok((id as i64, 5)),
-                GcValue::Reference => Ok((0, 5)),
                 GcValue::Null => Ok((0, 6)),
             }
         } else {

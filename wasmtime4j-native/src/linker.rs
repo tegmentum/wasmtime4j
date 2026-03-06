@@ -305,7 +305,7 @@ impl Linker {
         let linker = WasmtimeLinker::new(&engine_inner);
 
         let metadata = LinkerMetadata {
-            engine_id: "engine_placeholder".to_string(), // Simplified - remove engine.id() call
+            engine_id: engine.id().to_string(),
             created_at: Instant::now(),
             host_function_count: 0,
             import_count: 0,
@@ -1316,12 +1316,15 @@ use std::os::raw::{c_int, c_void};
 
 /// Convert a wasmtime::Extern to the internal ImportType.
 ///
-/// Note: For Func type, we store a placeholder function type since
-/// we don't have access to the engine here and the import registry
-/// is only used for tracking, not for type checking.
-fn extern_to_import_type(extern_item: &wasmtime::Extern) -> ImportType {
+/// Requires a store context to extract the function type for Func externs.
+fn extern_to_import_type(
+    extern_item: &wasmtime::Extern,
+    store: &wasmtime::Store<StoreData>,
+) -> ImportType {
     match extern_item {
-        wasmtime::Extern::Func(_) => ImportType::Instance, // Use Instance as placeholder for funcs without type info
+        wasmtime::Extern::Func(f) => ImportType::Function {
+            function_type: f.ty(store),
+        },
         wasmtime::Extern::Table(_) => ImportType::Table,
         wasmtime::Extern::Memory(_) => ImportType::Memory,
         wasmtime::Extern::Global(_) => ImportType::Global,
@@ -1517,10 +1520,10 @@ pub mod core {
         name: &str,
         extern_item: wasmtime::Extern,
     ) -> WasmtimeResult<()> {
-        // Capture type before extern_item is moved
-        let import_type = super::extern_to_import_type(&extern_item);
         let mut linker_guard = linker.inner()?;
         let store_guard = store.try_lock_store()?;
+        // Capture type with store context before extern_item is moved
+        let import_type = super::extern_to_import_type(&extern_item, &*store_guard);
         linker_guard
             .define(&*store_guard, module_name, name, extern_item)
             .map_err(|e| crate::error::WasmtimeError::Linker {
@@ -1555,10 +1558,10 @@ pub mod core {
         name: &str,
         extern_item: wasmtime::Extern,
     ) -> WasmtimeResult<()> {
-        // Capture type before extern_item is moved
-        let import_type = super::extern_to_import_type(&extern_item);
         let mut linker_guard = linker.inner()?;
         let store_guard = store.try_lock_store()?;
+        // Capture type with store context before extern_item is moved
+        let import_type = super::extern_to_import_type(&extern_item, &*store_guard);
         linker_guard
             .define_name(&*store_guard, name, extern_item)
             .map_err(|e| crate::error::WasmtimeError::Linker {

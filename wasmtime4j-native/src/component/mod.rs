@@ -2201,3 +2201,57 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_substituted_type_json(
         }
     }
 }
+
+/// Parse a WAVE-encoded string into a serialized component value.
+///
+/// Supports primitive types (bool, s8-s64, u8-u64, f32, f64, char, string).
+/// Compound types (list, record, tuple, variant, etc.) require component-level
+/// type context which cannot be constructed standalone.
+///
+/// # Arguments
+/// * `type_name` - The component type name (e.g., "bool", "u32", "string")
+/// * `wave_str` - The WAVE-encoded value string
+///
+/// # Returns
+/// Tuple of (type_discriminator, serialized_data), or error
+#[cfg(feature = "wave")]
+pub fn component_val_from_wave(
+    type_name: &str,
+    wave_str: &str,
+) -> crate::error::WasmtimeResult<(i32, Vec<u8>)> {
+    use wasmtime::component::types::Type;
+    use wasmtime::component::Val;
+
+    let ty = match type_name {
+        "bool" => Type::Bool,
+        "s8" => Type::S8,
+        "u8" => Type::U8,
+        "s16" => Type::S16,
+        "u16" => Type::U16,
+        "s32" => Type::S32,
+        "u32" => Type::U32,
+        "s64" => Type::S64,
+        "u64" => Type::U64,
+        "f32" | "float32" => Type::Float32,
+        "f64" | "float64" => Type::Float64,
+        "char" => Type::Char,
+        "string" => Type::String,
+        _ => {
+            return Err(crate::error::WasmtimeError::Type {
+                message: format!(
+                    "WAVE parsing for compound type '{}' requires component-level type context. \
+                     Only primitive types (bool, s8-s64, u8-u64, f32, f64, char, string) are \
+                     supported for standalone parsing.",
+                    type_name
+                ),
+            });
+        }
+    };
+
+    let val = Val::from_wave(&ty, wave_str).map_err(|e| crate::error::WasmtimeError::Type {
+        message: format!("Failed to parse WAVE string '{}' as {}: {}", wave_str, type_name, e),
+    })?;
+
+    // Serialize the Val using the existing wit_value_marshal infrastructure
+    crate::wit_value_marshal::serialize_from_val(&val)
+}

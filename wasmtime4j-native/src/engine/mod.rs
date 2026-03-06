@@ -3,10 +3,13 @@
 //! This module provides defensive, thread-safe wrapper around Wasmtime engines
 //! with proper resource management and JVM crash prevention.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
 use wasmtime::{Config, Engine as WasmtimeEngine};
+
+/// Global counter for generating unique engine IDs
+static NEXT_ENGINE_ID: AtomicU64 = AtomicU64::new(1);
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 
@@ -54,6 +57,8 @@ pub(crate) fn safe_wasmtime_config() -> Config {
 /// and concurrent WebAssembly execution.
 #[derive(Clone)]
 pub struct Engine {
+    /// Unique identifier for this engine
+    id: u64,
     inner: Arc<WasmtimeEngine>,
     config_summary: EngineConfigSummary,
     /// Lock for serializing concurrent operations to prevent JVM crashes.
@@ -71,6 +76,7 @@ pub struct Engine {
 impl std::fmt::Debug for Engine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Engine")
+            .field("id", &self.id)
             .field("inner", &self.inner)
             .field("config_summary", &self.config_summary)
             .field("concurrent_ops_lock", &"<RwLock>")
@@ -103,11 +109,17 @@ impl Engine {
         })?;
 
         Ok(Engine {
+            id: NEXT_ENGINE_ID.fetch_add(1, Ordering::SeqCst),
             inner: Arc::new(engine),
             config_summary: summary,
             concurrent_ops_lock: Arc::new(RwLock::new(())),
             is_closed: Arc::new(AtomicBool::new(false)),
         })
+    }
+
+    /// Get the unique ID of this engine
+    pub fn id(&self) -> u64 {
+        self.id
     }
 
     /// Acquire a write lock for concurrent operations that need serialization.
@@ -353,6 +365,7 @@ impl Engine {
     /// strong reference.
     pub fn weak(&self) -> WeakEngine {
         WeakEngine {
+            id: self.id,
             inner: Arc::downgrade(&self.inner),
             config_summary: self.config_summary.clone(),
             concurrent_ops_lock: Arc::clone(&self.concurrent_ops_lock),
@@ -501,6 +514,7 @@ impl Default for Engine {
             let wasmtime_engine = WasmtimeEngine::new(&config)
                 .expect("Critical: Cannot create engine - system unusable");
             Engine {
+                id: NEXT_ENGINE_ID.fetch_add(1, Ordering::SeqCst),
                 inner: Arc::new(wasmtime_engine),
                 config_summary: EngineConfigSummary::default(),
                 concurrent_ops_lock: Arc::new(RwLock::new(())),
@@ -516,6 +530,7 @@ impl Default for Engine {
 /// Use `upgrade()` to attempt to obtain a strong `Engine` reference.
 /// Returns `None` if all strong references have been dropped.
 pub struct WeakEngine {
+    id: u64,
     inner: std::sync::Weak<WasmtimeEngine>,
     config_summary: EngineConfigSummary,
     concurrent_ops_lock: Arc<RwLock<()>>,
@@ -530,6 +545,7 @@ impl WeakEngine {
     pub fn upgrade(&self) -> Option<Engine> {
         let inner = self.inner.upgrade()?;
         Some(Engine {
+            id: self.id,
             inner,
             config_summary: self.config_summary.clone(),
             concurrent_ops_lock: Arc::clone(&self.concurrent_ops_lock),

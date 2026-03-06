@@ -31,6 +31,7 @@ public final class FunctionInfo {
   private final String name;
   private final FuncType funcType;
   private final boolean isImport;
+  private final boolean isExported;
 
   /**
    * Creates a new FunctionInfo instance.
@@ -42,10 +43,29 @@ public final class FunctionInfo {
    */
   public FunctionInfo(
       final int index, final String name, final FuncType funcType, final boolean isImport) {
+    this(index, name, funcType, isImport, !isImport);
+  }
+
+  /**
+   * Creates a new FunctionInfo instance with explicit export flag.
+   *
+   * @param index the function index within the module's function index space
+   * @param name the function name, may be null for unnamed functions
+   * @param funcType the function's type signature
+   * @param isImport true if the function is imported
+   * @param isExported true if the function is exported
+   */
+  public FunctionInfo(
+      final int index,
+      final String name,
+      final FuncType funcType,
+      final boolean isImport,
+      final boolean isExported) {
     this.index = index;
     this.name = name;
     this.funcType = funcType;
     this.isImport = isImport;
+    this.isExported = isExported;
   }
 
   /**
@@ -93,6 +113,24 @@ public final class FunctionInfo {
     return !isImport;
   }
 
+  /**
+   * Checks if this function is exported from the module.
+   *
+   * @return true if exported, false otherwise
+   */
+  public boolean isExported() {
+    return isExported;
+  }
+
+  /**
+   * Checks if this function is internal (locally defined but not exported).
+   *
+   * @return true if the function is neither imported nor exported
+   */
+  public boolean isInternal() {
+    return !isImport && !isExported;
+  }
+
   @Override
   public String toString() {
     return "FunctionInfo{"
@@ -105,6 +143,8 @@ public final class FunctionInfo {
         + funcType
         + ", isImport="
         + isImport
+        + ", isExported="
+        + isExported
         + '}';
   }
 }

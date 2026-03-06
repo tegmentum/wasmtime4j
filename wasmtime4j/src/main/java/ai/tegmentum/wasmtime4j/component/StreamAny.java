@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.component;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -49,6 +50,18 @@ public interface StreamAny extends AutoCloseable {
    * @return the opaque handle ID
    */
   long getHandle();
+
+  /**
+   * Gets the element type of this stream, if known.
+   *
+   * <p>Returns the type descriptor for the values this stream produces, or empty if the stream was
+   * created without type information.
+   *
+   * @return the element type descriptor, or empty
+   */
+  default Optional<ComponentTypeDescriptor> getElementType() {
+    return Optional.empty();
+  }
 
   /**
    * Checks whether this stream handle is still valid.
@@ -107,6 +120,29 @@ public interface StreamAny extends AutoCloseable {
     return new DefaultStreamAny(handle, closeAction);
   }
 
+  /**
+   * Creates a new typed stream handle wrapping the given handle ID with type information.
+   *
+   * <p>The element type allows downstream code to know what type of values this stream produces
+   * without needing to inspect the component model type system.
+   *
+   * @param handle the opaque handle ID from the native {@code AsyncValRegistry}
+   * @param elementType the type descriptor for the stream's element values
+   * @param closeAction action to invoke on close to release native resources, or null for no-op
+   * @return a new typed StreamAny
+   * @throws IllegalArgumentException if handle is not positive or elementType is null
+   */
+  static StreamAny createTyped(
+      final long handle, final ComponentTypeDescriptor elementType, final Runnable closeAction) {
+    if (handle <= 0) {
+      throw new IllegalArgumentException("handle must be positive, got: " + handle);
+    }
+    if (elementType == null) {
+      throw new IllegalArgumentException("elementType cannot be null");
+    }
+    return new TypedStreamAny(handle, elementType, closeAction);
+  }
+
   /** Default implementation of StreamAny. */
   final class DefaultStreamAny implements StreamAny {
 
@@ -152,6 +188,74 @@ public interface StreamAny extends AutoCloseable {
         return false;
       }
       final DefaultStreamAny other = (DefaultStreamAny) obj;
+      return handle == other.handle;
+    }
+
+    @Override
+    public int hashCode() {
+      return Long.hashCode(handle);
+    }
+  }
+
+  /** Typed implementation of StreamAny that carries element type information. */
+  final class TypedStreamAny implements StreamAny {
+
+    private final long handle;
+    private final ComponentTypeDescriptor elementType;
+    private final Runnable closeAction;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
+    TypedStreamAny(
+        final long handle, final ComponentTypeDescriptor elementType, final Runnable closeAction) {
+      this.handle = handle;
+      this.elementType = elementType;
+      this.closeAction = closeAction;
+    }
+
+    @Override
+    public long getHandle() {
+      return handle;
+    }
+
+    @Override
+    public Optional<ComponentTypeDescriptor> getElementType() {
+      return Optional.of(elementType);
+    }
+
+    @Override
+    public boolean isValid() {
+      return !closed.get();
+    }
+
+    @Override
+    public void close() {
+      if (closed.compareAndSet(false, true)) {
+        if (closeAction != null) {
+          closeAction.run();
+        }
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "StreamAny{handle="
+          + handle
+          + ", type="
+          + elementType.getType()
+          + ", valid="
+          + !closed.get()
+          + "}";
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof TypedStreamAny)) {
+        return false;
+      }
+      final TypedStreamAny other = (TypedStreamAny) obj;
       return handle == other.handle;
     }
 

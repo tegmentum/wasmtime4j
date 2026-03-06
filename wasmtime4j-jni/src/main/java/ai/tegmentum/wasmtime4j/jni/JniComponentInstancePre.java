@@ -66,7 +66,8 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
 
     final JniComponent.JniComponentInstanceHandle instanceWrapper =
         new JniComponent.JniComponentInstanceHandle(engineHandle, instanceId);
-    return new JniComponentInstanceImpl(instanceWrapper, component, new ComponentInstanceConfig());
+    return new JniComponentInstanceImpl(
+        instanceWrapper, component, new ComponentInstanceConfig(), this);
   }
 
   @Override
@@ -90,7 +91,8 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
 
     final JniComponent.JniComponentInstanceHandle instanceWrapper =
         new JniComponent.JniComponentInstanceHandle(engineHandle, instanceId);
-    return new JniComponentInstanceImpl(instanceWrapper, component, new ComponentInstanceConfig());
+    return new JniComponentInstanceImpl(
+        instanceWrapper, component, new ComponentInstanceConfig(), this);
   }
 
   @Override

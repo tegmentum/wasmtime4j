@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.component;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -82,6 +83,17 @@ public final class GuardedFutureReader implements AutoCloseable {
       throw new IllegalStateException("GuardedFutureReader has been closed");
     }
     return future;
+  }
+
+  /**
+   * Gets the payload type of the guarded future, if known.
+   *
+   * <p>Delegates to {@link FutureAny#getPayloadType()}.
+   *
+   * @return the payload type descriptor, or empty
+   */
+  public Optional<ComponentTypeDescriptor> getPayloadType() {
+    return future.getPayloadType();
   }
 
   /**

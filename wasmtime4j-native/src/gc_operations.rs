@@ -43,6 +43,8 @@ pub struct WasmtimeGcOperations {
     gc_types: std::collections::HashMap<u32, wasmtime::HeapType>,
     /// Real GC object references managed by Wasmtime with type preservation
     gc_objects: std::collections::HashMap<ObjectId, GcObjectRef>,
+    /// Counter for generating unique internal object IDs
+    next_internal_object_id: std::sync::atomic::AtomicU64,
 }
 
 /// Result of struct operations with actual Wasmtime GC integration
@@ -105,7 +107,15 @@ impl WasmtimeGcOperations {
             store,
             gc_types: std::collections::HashMap::new(),
             gc_objects: std::collections::HashMap::new(),
+            // Start at a high offset to avoid collisions with Java-assigned IDs
+            next_internal_object_id: std::sync::atomic::AtomicU64::new(1_000_000),
         })
+    }
+
+    /// Generate a unique internal object ID for GC references
+    fn next_object_id(&self) -> ObjectId {
+        self.next_internal_object_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
     }
 
     /// Register a struct type with Wasmtime's GC type system
@@ -474,13 +484,9 @@ impl WasmtimeGcOperations {
                         }
                         wasmtime::Val::AnyRef(any_ref) => {
                             if let Some(any) = any_ref {
-                                // Generate a unique object ID (use current size + random offset to avoid collisions)
-                                let new_object_id = (self.gc_objects.len() as u64 + 1) * 1000
-                                    + (std::time::SystemTime::now()
-                                        .duration_since(std::time::UNIX_EPOCH)
-                                        .unwrap_or_default()
-                                        .as_nanos()
-                                        % 1000) as u64;
+                                let new_object_id = self
+                                    .next_internal_object_id
+                                    .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 
                                 // Try to convert to specific reference types and store
                                 if let Ok(Some(struct_ref)) = any.as_struct(&mut scope) {
@@ -1933,10 +1939,6 @@ impl WasmtimeGcOperations {
                 let value = u128::from_le_bytes(*bytes);
                 Ok(Val::V128(value.into()))
             }
-            GcValue::Reference => {
-                // Reference types are handled through gc_operations, return null as placeholder
-                Ok(Val::null_any_ref())
-            }
             GcValue::Null => Ok(Val::null_any_ref()),
         }
     }
@@ -1983,16 +1985,12 @@ impl WasmtimeGcOperations {
                 let value = u128::from_le_bytes(*bytes);
                 Ok(Val::V128(value.into()))
             }
-            GcValue::Reference => {
-                // Reference types are handled through gc_operations, return null as placeholder
-                Ok(Val::null_any_ref())
-            }
             GcValue::Null => Ok(Val::null_any_ref()),
         }
     }
 
-    /// Convert Wasmtime Val to GC value
-    fn convert_wasmtime_to_gc_value(&self, val: &Val) -> WasmtimeResult<GcValue> {
+    /// Convert Wasmtime Val to GC value, registering any GC references in the object store
+    fn convert_wasmtime_to_gc_value(&mut self, val: &Val) -> WasmtimeResult<GcValue> {
         match val {
             Val::I32(i) => Ok(GcValue::I32(*i)),
             Val::I64(i) => Ok(GcValue::I64(*i)),
@@ -2003,18 +2001,59 @@ impl WasmtimeGcOperations {
                 Ok(GcValue::V128(bytes))
             }
             Val::AnyRef(any_ref) => {
-                if let Some(_ref_val) = any_ref {
-                    // Convert Wasmtime reference to our GC object
-                    // In a real implementation, this would create proper object mapping
-                    Ok(GcValue::Reference)
+                if let Some(ref_val) = any_ref {
+                    let new_id = self.next_object_id();
+                    let mut scope = wasmtime::RootScope::new(&mut self.store);
+                    // Try to store as the most specific type
+                    if let Ok(Some(struct_ref)) = ref_val.as_struct(&mut scope) {
+                        let owned = struct_ref.to_owned_rooted(&mut scope).map_err(|e| {
+                            crate::error::WasmtimeError::Runtime {
+                                message: format!("Failed to root struct reference: {}", e),
+                                backtrace: None,
+                            }
+                        })?;
+                        self.gc_objects.insert(new_id, GcObjectRef::Struct(owned));
+                    } else if let Ok(Some(array_ref)) = ref_val.as_array(&mut scope) {
+                        let owned = array_ref.to_owned_rooted(&mut scope).map_err(|e| {
+                            crate::error::WasmtimeError::Runtime {
+                                message: format!("Failed to root array reference: {}", e),
+                                backtrace: None,
+                            }
+                        })?;
+                        self.gc_objects.insert(new_id, GcObjectRef::Array(owned));
+                    } else {
+                        // Generic AnyRef — root via the scope
+                        let owned = ref_val.to_owned_rooted(&mut scope).map_err(|e| {
+                            crate::error::WasmtimeError::Runtime {
+                                message: format!("Failed to root anyref: {}", e),
+                                backtrace: None,
+                            }
+                        })?;
+                        self.gc_objects.insert(new_id, GcObjectRef::Any(owned));
+                    }
+                    Ok(GcValue::ObjectRef(new_id))
+                } else {
+                    Ok(GcValue::Null)
+                }
+            }
+            Val::ExnRef(exn_ref) => {
+                if let Some(ref_val) = exn_ref {
+                    let new_id = self.next_object_id();
+                    let owned = ref_val.to_owned_rooted(&mut self.store).map_err(|e| {
+                        crate::error::WasmtimeError::Runtime {
+                            message: format!("Failed to root exnref: {}", e),
+                            backtrace: None,
+                        }
+                    })?;
+                    self.gc_objects.insert(new_id, GcObjectRef::ExnRef(owned));
+                    Ok(GcValue::ObjectRef(new_id))
                 } else {
                     Ok(GcValue::Null)
                 }
             }
             Val::FuncRef(_) => Ok(GcValue::Null),
-            Val::ExternRef(_) => Ok(GcValue::Null), // Extern reference - map to null for now
-            Val::ExnRef(_) => Ok(GcValue::Null),    // Exception reference - map to null for now
-            Val::ContRef(_) => Ok(GcValue::Null),   // Continuation reference - map to null for now
+            Val::ExternRef(_) => Ok(GcValue::Null),
+            Val::ContRef(_) => Ok(GcValue::Null),
         }
     }
 

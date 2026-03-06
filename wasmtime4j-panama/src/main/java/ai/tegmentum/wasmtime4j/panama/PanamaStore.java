@@ -406,6 +406,73 @@ public final class PanamaStore implements Store {
     }
   }
 
+  // ===== Async Bridge Callback Infrastructure =====
+  //
+  // Used by gcAsync, createInstanceAsync, createMemoryAsync, createTableAsync to
+  // receive completion notifications from the Tokio runtime via Panama upcall stubs.
+
+  private static final AtomicLong ASYNC_CALLBACK_ID_COUNTER = new AtomicLong(1);
+  private static final ConcurrentHashMap<Long, java.util.concurrent.CompletableFuture<Long>>
+      ASYNC_FUTURES = new ConcurrentHashMap<>();
+  private static final MemorySegment ASYNC_COMPLETION_STUB;
+  private static final FunctionDescriptor ASYNC_COMPLETION_DESCRIPTOR =
+      FunctionDescriptor.ofVoid(
+          ValueLayout.JAVA_LONG, // callback_data (future ID)
+          ValueLayout.JAVA_INT, // success (1=ok, 0=error)
+          ValueLayout.JAVA_LONG, // result (on success: value; on error: 0)
+          ValueLayout.ADDRESS); // error_msg (on error: C string ptr; on success: NULL)
+
+  static {
+    MemorySegment asyncStub = null;
+    try {
+      final MethodHandle asyncCallbackHandle =
+          MethodHandles.lookup()
+              .findStatic(
+                  PanamaStore.class,
+                  "asyncCompletionCallbackStub",
+                  MethodType.methodType(
+                      void.class, long.class, int.class, long.class, MemorySegment.class));
+      asyncStub =
+          Linker.nativeLinker()
+              .upcallStub(asyncCallbackHandle, ASYNC_COMPLETION_DESCRIPTOR, Arena.global());
+    } catch (final NoSuchMethodException | IllegalAccessException e) {
+      LOGGER.severe("Failed to create async completion callback stub: " + e.getMessage());
+    }
+    ASYNC_COMPLETION_STUB = asyncStub;
+  }
+
+  /**
+   * Static callback invoked from Tokio worker thread when an async operation completes.
+   *
+   * @param callbackData the future ID from ASYNC_FUTURES map
+   * @param success 1 if operation succeeded, 0 if it failed
+   * @param result on success: the result value (pointer, status, etc.); on error: 0
+   * @param errorMsg on error: pointer to null-terminated error string; on success: NULL
+   */
+  @SuppressWarnings("unused") // Called from native via upcall stub
+  private static void asyncCompletionCallbackStub(
+      final long callbackData, final int success, final long result, final MemorySegment errorMsg) {
+    final java.util.concurrent.CompletableFuture<Long> future = ASYNC_FUTURES.remove(callbackData);
+    if (future == null) {
+      LOGGER.warning("Async completion callback for unknown ID: " + callbackData);
+      return;
+    }
+
+    if (success != 0) {
+      future.complete(result);
+    } else {
+      String error = "Unknown async operation error";
+      if (errorMsg != null && !errorMsg.equals(MemorySegment.NULL)) {
+        try {
+          error = errorMsg.reinterpret(Long.MAX_VALUE).getString(0);
+        } catch (final Exception e) {
+          LOGGER.warning("Failed to read async error message: " + e.getMessage());
+        }
+      }
+      future.completeExceptionally(new WasmException(error));
+    }
+  }
+
   private final PanamaEngine engine;
   private final Arena arena;
   private final MemorySegment nativeStore;
@@ -1548,81 +1615,7 @@ public final class PanamaStore implements Store {
     }
   }
 
-  @Override
-  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
-      createMemoryAsync(final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return createMemoryAsyncInternal(memoryType);
-          } catch (final WasmException e) {
-            throw new java.util.concurrent.CompletionException(e);
-          }
-        });
-  }
-
-  private ai.tegmentum.wasmtime4j.WasmMemory createMemoryAsyncInternal(
-      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
-    if (memoryType == null) {
-      throw new IllegalArgumentException("Memory type cannot be null");
-    }
-    final long minPages = memoryType.getMinimum();
-    final long maxPages = memoryType.getMaximum().orElse(-1L);
-    if (minPages < 0) {
-      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
-    }
-    if (maxPages != -1 && maxPages < minPages) {
-      throw new IllegalArgumentException(
-          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
-    }
-    if (memoryType.isShared()) {
-      throw new IllegalArgumentException("Async creation not supported for shared memory");
-    }
-    ensureNotClosed();
-
-    try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateAsync();
-      if (createHandle == null) {
-        // Fallback to sync path if async not available
-        return createMemory(memoryType);
-      }
-
-      final long maximumPages = (maxPages == -1) ? 0L : maxPages;
-      final int isShared = 0; // Shared not supported for async
-      final int is64 = memoryType.is64Bit() ? 1 : 0;
-      final int memoryIndex = 0;
-
-      final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  minPages,
-                  maximumPages,
-                  isShared,
-                  is64,
-                  memoryIndex,
-                  MemorySegment.NULL, // name = null
-                  memoryPtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create memory asynchronously");
-      }
-
-      final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Async created memory pointer is null");
-      }
-
-      return new PanamaMemory(nativeMemoryPtr, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating memory asynchronously: " + e.getMessage(), e);
-    }
-  }
+  // createMemoryAsync is overridden at the end of the class with Tokio-based native async bridge
 
   @Override
   public ai.tegmentum.wasmtime4j.WasmTable createTable(
@@ -1792,18 +1785,7 @@ public final class PanamaStore implements Store {
     }
   }
 
-  @Override
-  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
-      final ai.tegmentum.wasmtime4j.type.TableType tableType) {
-    return java.util.concurrent.CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            return createTableAsyncInternal(tableType);
-          } catch (final WasmException e) {
-            throw new java.util.concurrent.CompletionException(e);
-          }
-        });
-  }
+  // createTableAsync is overridden at the end of the class with Tokio-based native async bridge
 
   private long wasmValueToRefId(final ai.tegmentum.wasmtime4j.WasmValue initValue) {
     if (initValue.getValue() == null) {
@@ -1815,72 +1797,6 @@ public final class PanamaStore implements Store {
     }
     // Null ref for unsupported value types
     return -1L;
-  }
-
-  private ai.tegmentum.wasmtime4j.WasmTable createTableAsyncInternal(
-      final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
-    if (tableType == null) {
-      throw new IllegalArgumentException("Table type cannot be null");
-    }
-    final ai.tegmentum.wasmtime4j.WasmValueType elementType = tableType.getElementType();
-    final long minSize = tableType.getMinimum();
-    final long maxSize = tableType.getMaximum().orElse(-1L);
-
-    if (elementType != ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF
-        && elementType != ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
-      throw new IllegalArgumentException(
-          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
-    }
-    if (minSize < 0) {
-      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
-    }
-    if (maxSize != -1 && maxSize < minSize) {
-      throw new IllegalArgumentException(
-          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
-    }
-    ensureNotClosed();
-
-    try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreateAsync();
-      if (createHandle == null) {
-        // Fallback to sync path if async not available
-        return createTable(tableType);
-      }
-
-      final int elementTypeCode =
-          (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) ? 5 : 6;
-
-      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
-      final int hasMaximum = (maxSize == -1) ? 0 : 1;
-      final int maximumSize = (maxSize == -1) ? 0 : (int) maxSize;
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  elementTypeCode,
-                  (int) minSize,
-                  hasMaximum,
-                  maximumSize,
-                  MemorySegment.NULL, // name = null
-                  tablePtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create table asynchronously");
-      }
-
-      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeTablePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Async created table pointer is null");
-      }
-
-      return new PanamaTable(nativeTablePtr, elementType, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating table asynchronously: " + e.getMessage(), e);
-    }
   }
 
   @Override
@@ -2715,6 +2631,149 @@ public final class PanamaStore implements Store {
           public void apply() {
             // Breakpoint edits are applied immediately via native calls
           }
+        });
+  }
+
+  // ===== Native Async Bridge Methods =====
+  //
+  // These override the default CompletableFuture.supplyAsync() wrappers in Store with
+  // real Tokio-based async execution via Panama callbacks.
+
+  @Override
+  public java.util.concurrent.CompletableFuture<Void> gcAsync() {
+    ensureNotClosed();
+    if (ASYNC_COMPLETION_STUB == null) {
+      return Store.super.gcAsync(); // fallback to default if stub unavailable
+    }
+    final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
+    final java.util.concurrent.CompletableFuture<Long> rawFuture =
+        new java.util.concurrent.CompletableFuture<>();
+    ASYNC_FUTURES.put(callbackId, rawFuture);
+    try {
+      NATIVE_BINDINGS.storeGcAsyncBridge(nativeStore, ASYNC_COMPLETION_STUB, callbackId);
+    } catch (final Exception e) {
+      ASYNC_FUTURES.remove(callbackId);
+      rawFuture.completeExceptionally(new WasmException("Failed to start async gc: " + e, e));
+    }
+    return rawFuture.thenApply(v -> null);
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.Instance>
+      createInstanceAsync(final ai.tegmentum.wasmtime4j.Module module) {
+    java.util.Objects.requireNonNull(module, "Module cannot be null");
+    ensureNotClosed();
+    if (!(module instanceof PanamaModule)) {
+      throw new IllegalArgumentException("Module must be a PanamaModule");
+    }
+    if (ASYNC_COMPLETION_STUB == null) {
+      return Store.super.createInstanceAsync(module);
+    }
+    final PanamaModule panamaModule = (PanamaModule) module;
+    final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
+    final java.util.concurrent.CompletableFuture<Long> rawFuture =
+        new java.util.concurrent.CompletableFuture<>();
+    ASYNC_FUTURES.put(callbackId, rawFuture);
+    try {
+      NATIVE_BINDINGS.storeCreateInstanceAsyncBridge(
+          nativeStore, panamaModule.getNativeModule(), ASYNC_COMPLETION_STUB, callbackId);
+    } catch (final Exception e) {
+      ASYNC_FUTURES.remove(callbackId);
+      rawFuture.completeExceptionally(
+          new WasmException("Failed to start async createInstance: " + e, e));
+    }
+    return rawFuture.thenApply(
+        ptr -> {
+          final MemorySegment instancePtr =
+              MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
+          return new PanamaInstance(instancePtr, panamaModule, this);
+        });
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
+      createMemoryAsync(final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) {
+    Validation.requireNonNull(memoryType, "memoryType");
+    ensureNotClosed();
+    if (ASYNC_COMPLETION_STUB == null) {
+      return Store.super.createMemoryAsync(memoryType);
+    }
+
+    final long minPages = memoryType.getMinimum();
+    final long maxPages = memoryType.getMaximum().orElse(-1L);
+    final int isShared = memoryType.isShared() ? 1 : 0;
+    final int is64 = memoryType.is64Bit() ? 1 : 0;
+
+    if (minPages < 0) {
+      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+    }
+    if (maxPages != -1 && maxPages < minPages) {
+      throw new IllegalArgumentException(
+          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
+    }
+
+    final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
+    final java.util.concurrent.CompletableFuture<Long> rawFuture =
+        new java.util.concurrent.CompletableFuture<>();
+    ASYNC_FUTURES.put(callbackId, rawFuture);
+    try {
+      NATIVE_BINDINGS.storeCreateMemoryAsyncBridge(
+          nativeStore, minPages, maxPages, isShared, is64, ASYNC_COMPLETION_STUB, callbackId);
+    } catch (final Exception e) {
+      ASYNC_FUTURES.remove(callbackId);
+      rawFuture.completeExceptionally(
+          new WasmException("Failed to start async createMemory: " + e, e));
+    }
+    return rawFuture.thenApply(
+        ptr -> {
+          final MemorySegment memPtr = MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
+          return new PanamaMemory(memPtr, this);
+        });
+  }
+
+  @Override
+  public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
+      final ai.tegmentum.wasmtime4j.type.TableType tableType) {
+    Validation.requireNonNull(tableType, "tableType");
+    ensureNotClosed();
+    if (ASYNC_COMPLETION_STUB == null) {
+      return Store.super.createTableAsync(tableType);
+    }
+
+    final ai.tegmentum.wasmtime4j.WasmValueType elementType = tableType.getElementType();
+    final long minSize = tableType.getMinimum();
+    final long maxSize = tableType.getMaximum().orElse(-1L);
+
+    if (elementType != ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF
+        && elementType != ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+      throw new IllegalArgumentException(
+          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+    }
+
+    final int elemTypeCode =
+        (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) ? 0x70 : 0x6F;
+
+    final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
+    final java.util.concurrent.CompletableFuture<Long> rawFuture =
+        new java.util.concurrent.CompletableFuture<>();
+    ASYNC_FUTURES.put(callbackId, rawFuture);
+    try {
+      NATIVE_BINDINGS.storeCreateTableAsyncBridge(
+          nativeStore,
+          elemTypeCode,
+          (int) minSize,
+          (int) maxSize,
+          ASYNC_COMPLETION_STUB,
+          callbackId);
+    } catch (final Exception e) {
+      ASYNC_FUTURES.remove(callbackId);
+      rawFuture.completeExceptionally(
+          new WasmException("Failed to start async createTable: " + e, e));
+    }
+    return rawFuture.thenApply(
+        ptr -> {
+          final MemorySegment tablePtr = MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
+          return new PanamaTable(tablePtr, this);
         });
   }
 }

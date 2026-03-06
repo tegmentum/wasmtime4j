@@ -266,14 +266,29 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
           }
           return WasmValue.externref(null);
         case ANYREF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.anyref(refId.get(ValueLayout.JAVA_LONG, 0));
+          }
           return WasmValue.nullAnyRef();
         case EQREF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.eqref(refId.get(ValueLayout.JAVA_LONG, 0));
+          }
           return WasmValue.nullEqRef();
         case I31REF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.i31ref((int) refId.get(ValueLayout.JAVA_LONG, 0));
+          }
           return WasmValue.nullI31Ref();
         case STRUCTREF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.structref(refId.get(ValueLayout.JAVA_LONG, 0));
+          }
           return WasmValue.nullStructRef();
         case ARRAYREF:
+          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+            return WasmValue.arrayref(refId.get(ValueLayout.JAVA_LONG, 0));
+          }
           return WasmValue.nullArrayRef();
         case NULLREF:
           return WasmValue.nullRef();

@@ -723,3 +723,59 @@ pub extern "C" fn wasmtime4j_panama_module_image_range(
 pub extern "C" fn wasmtime4j_panama_module_destroy(module_ptr: *mut c_void) {
     crate::shared_ffi::module::destroy_module_shared(module_ptr);
 }
+
+/// Get all functions as a JSON string (Panama FFI version).
+///
+/// Returns a pointer to a null-terminated UTF-8 string containing a JSON array.
+/// The caller must free the returned string using `wasmtime4j_panama_free_string`.
+/// Returns null on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_panama_module_get_all_functions(
+    module_ptr: *const c_void,
+) -> *mut std::os::raw::c_char {
+    if module_ptr.is_null() {
+        return std::ptr::null_mut();
+    }
+
+    let result: crate::error::WasmtimeResult<String> = (|| {
+        let module = unsafe {
+            crate::module::core::get_module_ref(module_ptr)?
+        };
+        let metadata = crate::module::core::get_metadata(module);
+
+        let mut json_parts: Vec<String> = Vec::with_capacity(metadata.functions.len());
+        for func in &metadata.functions {
+            let name_json = match &func.name {
+                Some(n) => format!("\"{}\"", n.replace('\\', "\\\\").replace('"', "\\\"")),
+                None => "null".to_string(),
+            };
+            let params: Vec<&str> = func.signature.params.iter()
+                .map(|p| crate::jni::module::module_value_type_str(p))
+                .collect();
+            let returns: Vec<&str> = func.signature.returns.iter()
+                .map(|r| crate::jni::module::module_value_type_str(r))
+                .collect();
+            json_parts.push(format!(
+                "{{\"index\":{},\"name\":{},\"params\":[{}],\"returns\":[{}],\"isImport\":{},\"isExported\":{}}}",
+                func.index,
+                name_json,
+                params.iter().map(|p| format!("\"{}\"", p)).collect::<Vec<_>>().join(","),
+                returns.iter().map(|r| format!("\"{}\"", r)).collect::<Vec<_>>().join(","),
+                func.is_import,
+                func.is_exported,
+            ));
+        }
+
+        Ok(format!("[{}]", json_parts.join(",")))
+    })();
+
+    match result {
+        Ok(json) => {
+            match std::ffi::CString::new(json) {
+                Ok(cstr) => cstr.into_raw(),
+                Err(_) => std::ptr::null_mut(),
+            }
+        }
+        Err(_) => std::ptr::null_mut(),
+    }
+}

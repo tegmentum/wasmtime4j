@@ -277,9 +277,7 @@ public interface ComponentInstance extends AutoCloseable {
    * @since 1.1.0
    */
   default Optional<ComponentInstancePre> instancePre() {
-    throw new UnsupportedOperationException(
-        "instancePre() requires Rust generic type parameter T that cannot cross FFI boundary. "
-            + "Use the ComponentInstancePre reference you used to create this instance instead.");
+    return Optional.empty();
   }
 
   /**

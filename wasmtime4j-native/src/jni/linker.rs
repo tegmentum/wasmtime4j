@@ -341,8 +341,39 @@ fn wasm_value_to_java<'local>(
                 message: format!("Failed to get object: {}", e),
                 backtrace: None,
             }),
+        WasmValue::V128(bytes) => {
+            // Create a Java byte array from the 16-byte V128 value
+            let byte_array = env
+                .new_byte_array(16)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to create byte array for V128: {}", e),
+                    backtrace: None,
+                })?;
+            // Convert [u8; 16] to [i8; 16] for JNI
+            let jbytes: [i8; 16] = unsafe { std::mem::transmute(*bytes) };
+            env.set_byte_array_region(&byte_array, 0, &jbytes)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to set byte array region for V128: {}", e),
+                    backtrace: None,
+                })?;
+            env.call_static_method(
+                wasm_value_class,
+                "v128",
+                "([B)Lai/tegmentum/wasmtime4j/WasmValue;",
+                &[jni::objects::JValue::Object(&byte_array.into())],
+            )
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to call v128 method: {}", e),
+                backtrace: None,
+            })?
+            .l()
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to get object: {}", e),
+                backtrace: None,
+            })
+        }
         _ => Err(WasmtimeError::Runtime {
-            message: "Unsupported value type".to_string(),
+            message: format!("Unsupported value type: {:?}", value),
             backtrace: None,
         }),
     }
@@ -491,6 +522,31 @@ fn java_to_wasm_value(
         "CONTREF" => {
             // ContRef is always null/opaque
             Ok(WasmValue::ContRef)
+        }
+        "V128" => {
+            // V128 value is a byte[] in Java
+            let byte_array: jni::objects::JByteArray =
+                unsafe { jni::objects::JByteArray::from_raw(value.as_raw()) };
+            let len = env
+                .get_array_length(&byte_array)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to get V128 byte array length: {}", e),
+                    backtrace: None,
+                })?;
+            if len != 16 {
+                return Err(WasmtimeError::Runtime {
+                    message: format!("V128 byte array must be 16 bytes, got {}", len),
+                    backtrace: None,
+                });
+            }
+            let mut jbytes = [0i8; 16];
+            env.get_byte_array_region(&byte_array, 0, &mut jbytes)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to read V128 bytes: {}", e),
+                    backtrace: None,
+                })?;
+            let bytes: [u8; 16] = unsafe { std::mem::transmute(jbytes) };
+            Ok(WasmValue::V128(bytes))
         }
         _ => Err(WasmtimeError::Runtime {
             message: format!("Unsupported type: {}", type_name),

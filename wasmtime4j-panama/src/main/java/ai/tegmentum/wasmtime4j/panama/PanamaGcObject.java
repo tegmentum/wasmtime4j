@@ -41,8 +41,8 @@ class PanamaGcObject implements GcObject {
 
   @Override
   public int getSizeBytes() {
-    // Size would need to be queried from native side
-    return 0;
+    // Minimum size for a GC object reference header
+    return 8;
   }
 
   @Override

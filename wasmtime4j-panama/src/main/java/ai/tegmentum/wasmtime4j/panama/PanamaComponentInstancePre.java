@@ -108,7 +108,7 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
 
       LOGGER.fine("Successfully instantiated component from ComponentInstancePre");
 
-      return new PanamaComponentInstance(instancePtr, component, null);
+      return new PanamaComponentInstance(instancePtr, component, null, this);
     }
   }
 
@@ -144,7 +144,7 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
 
       LOGGER.fine("Successfully instantiated component from ComponentInstancePre with config");
 
-      return new PanamaComponentInstance(instancePtr, component, null);
+      return new PanamaComponentInstance(instancePtr, component, null, this);
     }
   }
 

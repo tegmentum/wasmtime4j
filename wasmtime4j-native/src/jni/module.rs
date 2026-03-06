@@ -1531,3 +1531,79 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetModul
         }
     }
 }
+
+/// Get all functions (imports, exports, and internal) as a JSON string.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniModule_nativeGetAllFunctions(
+    mut env: JNIEnv,
+    _class: JClass,
+    module_ptr: jlong,
+) -> jstring {
+    if module_ptr == 0 {
+        return std::ptr::null_mut();
+    }
+
+    let result: crate::error::WasmtimeResult<String> = (|| {
+        let module = unsafe {
+            core::get_module_ref(module_ptr as *const std::os::raw::c_void)?
+        };
+        let metadata = core::get_metadata(module);
+
+        let mut json_parts: Vec<String> = Vec::with_capacity(metadata.functions.len());
+        for func in &metadata.functions {
+            let name_json = match &func.name {
+                Some(n) => format!("\"{}\"", n.replace('\\', "\\\\").replace('"', "\\\"")),
+                None => "null".to_string(),
+            };
+            let params: Vec<&str> = func.signature.params.iter()
+                .map(|p| module_value_type_str(p))
+                .collect();
+            let returns: Vec<&str> = func.signature.returns.iter()
+                .map(|r| module_value_type_str(r))
+                .collect();
+            json_parts.push(format!(
+                "{{\"index\":{},\"name\":{},\"params\":[{}],\"returns\":[{}],\"isImport\":{},\"isExported\":{}}}",
+                func.index,
+                name_json,
+                params.iter().map(|p| format!("\"{}\"", p)).collect::<Vec<_>>().join(","),
+                returns.iter().map(|r| format!("\"{}\"", r)).collect::<Vec<_>>().join(","),
+                func.is_import,
+                func.is_exported,
+            ));
+        }
+
+        Ok(format!("[{}]", json_parts.join(",")))
+    })();
+
+    match result {
+        Ok(json) => match env.new_string(&json) {
+            Ok(s) => s.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+pub(crate) fn module_value_type_str(vt: &crate::module::ModuleValueType) -> &'static str {
+    use crate::module::ModuleValueType;
+    match vt {
+        ModuleValueType::I32 => "i32",
+        ModuleValueType::I64 => "i64",
+        ModuleValueType::F32 => "f32",
+        ModuleValueType::F64 => "f64",
+        ModuleValueType::V128 => "v128",
+        ModuleValueType::ExternRef => "externref",
+        ModuleValueType::FuncRef => "funcref",
+        ModuleValueType::AnyRef => "anyref",
+        ModuleValueType::EqRef => "eqref",
+        ModuleValueType::I31Ref => "i31ref",
+        ModuleValueType::StructRef => "structref",
+        ModuleValueType::ArrayRef => "arrayref",
+        ModuleValueType::NullRef => "nullref",
+        ModuleValueType::NullFuncRef => "nullfuncref",
+        ModuleValueType::NullExternRef => "nullexternref",
+    }
+}

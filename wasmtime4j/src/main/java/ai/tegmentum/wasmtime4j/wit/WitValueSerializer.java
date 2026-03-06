@@ -90,6 +90,11 @@ public final class WitValueSerializer {
       return serializeTuple((WitTuple) value);
     } else if (value instanceof WitFlags) {
       return serializeFlags((WitFlags) value);
+    } else if (value instanceof WitResource) {
+      final WitResource resource = (WitResource) value;
+      return resource.isOwned()
+          ? serializeOwn(resource.toOwn())
+          : serializeBorrow(resource.toBorrow());
     } else if (value instanceof WitOwn) {
       return serializeOwn((WitOwn) value);
     } else if (value instanceof WitBorrow) {
@@ -732,6 +737,8 @@ public final class WitValueSerializer {
       return 20;
     } else if (value instanceof WitFloat32) {
       return 21;
+    } else if (value instanceof WitResource) {
+      return ((WitResource) value).isOwned() ? 22 : 23;
     } else if (value instanceof WitOwn) {
       return 22;
     } else if (value instanceof WitBorrow) {

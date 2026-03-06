@@ -859,6 +859,7 @@ fn test_memory_config_validation_zero_initial() {
     let engine = shared_engine();
     let mut store = Store::new(&engine).expect("Failed to create store");
 
+    // WebAssembly spec and Wasmtime upstream allow 0-page memories
     let config = MemoryConfig {
         initial_pages: 0,
         maximum_pages: None,
@@ -867,9 +868,56 @@ fn test_memory_config_validation_zero_initial() {
         memory_index: 0,
         name: None,
     };
-    let result = Memory::new_with_config(&mut store, config);
+    let memory = Memory::new_with_config(&mut store, config)
+        .expect("Zero initial pages should succeed per WebAssembly spec");
 
-    assert!(result.is_err(), "Zero initial pages should fail");
+    // Verify the memory has 0 pages initially
+    let size = memory.size_pages(&store).expect("Failed to get size");
+    assert_eq!(size, 0, "Memory should have 0 pages initially");
+
+    // Verify it can be grown
+    let old_size = memory
+        .grow(&mut store, 1)
+        .expect("Growing from 0 pages should succeed");
+    assert_eq!(old_size, 0, "Previous size should be 0");
+    assert_eq!(
+        memory.size_pages(&store).expect("Failed to get size"),
+        1,
+        "Memory should now have 1 page"
+    );
+}
+
+#[test]
+fn test_memory_zero_initial_pages_with_max() {
+    let engine = shared_engine();
+    let mut store = Store::new(&engine).expect("Failed to create store");
+
+    let config = MemoryConfig {
+        initial_pages: 0,
+        maximum_pages: Some(10),
+        is_shared: false,
+        is_64: false,
+        memory_index: 0,
+        name: None,
+    };
+    let memory = Memory::new_with_config(&mut store, config)
+        .expect("Zero initial pages with max should succeed");
+
+    assert_eq!(
+        memory.size_pages(&store).expect("Failed to get size"),
+        0,
+        "Memory should have 0 pages initially"
+    );
+
+    let old_size = memory
+        .grow(&mut store, 5)
+        .expect("Growing within max should succeed");
+    assert_eq!(old_size, 0, "Previous size should be 0");
+    assert_eq!(
+        memory.size_pages(&store).expect("Failed to get size"),
+        5,
+        "Memory should now have 5 pages"
+    );
 }
 
 // === Alignment error tests ===

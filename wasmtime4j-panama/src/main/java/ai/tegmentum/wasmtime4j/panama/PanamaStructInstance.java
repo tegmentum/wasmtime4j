@@ -67,8 +67,7 @@ class PanamaStructInstance extends PanamaGcObject implements StructInstance {
 
   @Override
   public int getSizeBytes() {
-    // Return approximate size based on struct fields
-    return 16 + (structType.getFields().size() * 8);
+    return 16 + structType.getSizeBytes();
   }
 
   @Override

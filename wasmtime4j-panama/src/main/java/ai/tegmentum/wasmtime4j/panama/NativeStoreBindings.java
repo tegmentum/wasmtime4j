@@ -355,6 +355,43 @@ public final class NativeStoreBindings extends NativeBindingsBase {
     addFunctionBinding(
         "wasmtime4j_panama_store_clear_call_hook_async",
         FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    // Async bridge functions (Tokio-based, void return, callback-driven completion)
+    addFunctionBinding(
+        "wasmtime4j_panama_store_gc_async_bridge",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // callback fn ptr
+            ValueLayout.JAVA_LONG)); // callback_data
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_create_instance_async_bridge",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.ADDRESS, // module_ptr
+            ValueLayout.ADDRESS, // callback fn ptr
+            ValueLayout.JAVA_LONG)); // callback_data
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_create_memory_async_bridge",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_LONG, // initial_pages
+            ValueLayout.JAVA_LONG, // max_pages
+            ValueLayout.JAVA_INT, // is_shared
+            ValueLayout.JAVA_INT, // is_64
+            ValueLayout.ADDRESS, // callback fn ptr
+            ValueLayout.JAVA_LONG)); // callback_data
+
+    addFunctionBinding(
+        "wasmtime4j_panama_store_create_table_async_bridge",
+        FunctionDescriptor.ofVoid(
+            ValueLayout.ADDRESS, // store_ptr
+            ValueLayout.JAVA_INT, // element_type
+            ValueLayout.JAVA_INT, // initial_size
+            ValueLayout.JAVA_INT, // max_size
+            ValueLayout.ADDRESS, // callback fn ptr
+            ValueLayout.JAVA_LONG)); // callback_data
   }
 
   // ===========================================================================================
@@ -953,5 +990,112 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    */
   public MethodHandle getStoreDebugExitFrames() {
     return resolveHandle("wasmtime4j_store_debug_exit_frames");
+  }
+
+  // ===========================================================================================
+  // Async Bridge Operations
+  // ===========================================================================================
+
+  /**
+   * Spawns async gc on Tokio runtime. Callback invoked when complete.
+   *
+   * @param storePtr pointer to the store
+   * @param callbackStub upcall stub for completion callback
+   * @param callbackData opaque ID passed back to callback
+   */
+  public void storeGcAsyncBridge(
+      final MemorySegment storePtr, final MemorySegment callbackStub, final long callbackData) {
+    validatePointer(storePtr, "storePtr");
+    callNativeFunction(
+        "wasmtime4j_panama_store_gc_async_bridge",
+        Void.class,
+        storePtr,
+        callbackStub,
+        callbackData);
+  }
+
+  /**
+   * Spawns async instance creation on Tokio runtime. Callback invoked with instance pointer.
+   *
+   * @param storePtr pointer to the store
+   * @param modulePtr pointer to the module
+   * @param callbackStub upcall stub for completion callback
+   * @param callbackData opaque ID passed back to callback
+   */
+  public void storeCreateInstanceAsyncBridge(
+      final MemorySegment storePtr,
+      final MemorySegment modulePtr,
+      final MemorySegment callbackStub,
+      final long callbackData) {
+    validatePointer(storePtr, "storePtr");
+    validatePointer(modulePtr, "modulePtr");
+    callNativeFunction(
+        "wasmtime4j_panama_store_create_instance_async_bridge",
+        Void.class,
+        storePtr,
+        modulePtr,
+        callbackStub,
+        callbackData);
+  }
+
+  /**
+   * Spawns async memory creation on Tokio runtime. Callback invoked with memory pointer.
+   *
+   * @param storePtr pointer to the store
+   * @param initialPages initial size in pages
+   * @param maxPages maximum size in pages (-1 for unlimited)
+   * @param isShared 1 if shared memory, 0 otherwise
+   * @param is64 1 if Memory64, 0 otherwise
+   * @param callbackStub upcall stub for completion callback
+   * @param callbackData opaque ID passed back to callback
+   */
+  public void storeCreateMemoryAsyncBridge(
+      final MemorySegment storePtr,
+      final long initialPages,
+      final long maxPages,
+      final int isShared,
+      final int is64,
+      final MemorySegment callbackStub,
+      final long callbackData) {
+    validatePointer(storePtr, "storePtr");
+    callNativeFunction(
+        "wasmtime4j_panama_store_create_memory_async_bridge",
+        Void.class,
+        storePtr,
+        initialPages,
+        maxPages,
+        isShared,
+        is64,
+        callbackStub,
+        callbackData);
+  }
+
+  /**
+   * Spawns async table creation on Tokio runtime. Callback invoked with table pointer.
+   *
+   * @param storePtr pointer to the store
+   * @param elementType element type code (0x70=FUNCREF, 0x6F=EXTERNREF)
+   * @param initialSize initial table size
+   * @param maxSize maximum table size (-1 for unlimited)
+   * @param callbackStub upcall stub for completion callback
+   * @param callbackData opaque ID passed back to callback
+   */
+  public void storeCreateTableAsyncBridge(
+      final MemorySegment storePtr,
+      final int elementType,
+      final int initialSize,
+      final int maxSize,
+      final MemorySegment callbackStub,
+      final long callbackData) {
+    validatePointer(storePtr, "storePtr");
+    callNativeFunction(
+        "wasmtime4j_panama_store_create_table_async_bridge",
+        Void.class,
+        storePtr,
+        elementType,
+        initialSize,
+        maxSize,
+        callbackStub,
+        callbackData);
   }
 }

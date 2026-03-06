@@ -109,15 +109,16 @@ impl Default for ResourceManager {
     }
 }
 
-/// Host interface implementation placeholder
+/// Host interface metadata for tracking registered component model interfaces.
 ///
-/// This struct will be expanded to support actual host interface implementations
-/// as the Wasmtime component model API develops.
+/// Actual function dispatch is handled by `wasmtime::component::Linker`.
+/// This struct tracks which functions have been registered for a given interface.
+#[derive(Debug, Clone)]
 pub struct HostInterface {
     /// Interface name
     pub name: String,
-    /// Interface implementation (placeholder)
-    pub implementation: Box<dyn std::any::Any + Send + Sync>,
+    /// Names of functions registered for this interface
+    pub registered_functions: Vec<String>,
 }
 
 /// Information about an active component instance

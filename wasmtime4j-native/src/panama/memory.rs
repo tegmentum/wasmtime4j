@@ -995,14 +995,13 @@ pub extern "C" fn wasmtime4j_instance_set_global_value(
             })?;
 
         let value = match value_type_code {
-            0 => wasmtime::Val::I32(i32_value),
-            1 => wasmtime::Val::I64(i64_value),
-            2 => wasmtime::Val::F32((f32_value as f32).to_bits()),
-            3 => wasmtime::Val::F64(f64_value.to_bits()),
+            0 => Some(wasmtime::Val::I32(i32_value)),
+            1 => Some(wasmtime::Val::I64(i64_value)),
+            2 => Some(wasmtime::Val::F32((f32_value as f32).to_bits())),
+            3 => Some(wasmtime::Val::F64(f64_value.to_bits())),
             5 => {
                 // FuncRef
                 if ref_id_present != 0 {
-                    // Look up the function from the registry using the ref_id
                     let func = crate::table::core::get_function_reference(ref_id as u64)?
                         .ok_or_else(|| crate::error::WasmtimeError::InvalidParameter {
                             message: format!(
@@ -1010,19 +1009,18 @@ pub extern "C" fn wasmtime4j_instance_set_global_value(
                                 ref_id
                             ),
                         })?;
-                    wasmtime::Val::FuncRef(Some(func))
+                    Some(wasmtime::Val::FuncRef(Some(func)))
                 } else {
-                    wasmtime::Val::FuncRef(None)
+                    Some(wasmtime::Val::FuncRef(None))
                 }
             }
             6 => {
-                // ExternRef
-                if ref_id_present != 0 {
-                    return Err(crate::error::WasmtimeError::Type {
-                        message: "Setting externref values not yet supported".to_string(),
-                    });
+                // ExternRef — non-null externrefs need store context, created below
+                if ref_id_present == 0 {
+                    Some(wasmtime::Val::ExternRef(None))
+                } else {
+                    None // Will be created inside with_context
                 }
-                wasmtime::Val::ExternRef(None)
             }
             _ => {
                 return Err(crate::error::WasmtimeError::Type {
@@ -1032,8 +1030,20 @@ pub extern "C" fn wasmtime4j_instance_set_global_value(
         };
 
         store.with_context(|mut ctx| {
+            let final_value = match value {
+                Some(v) => v,
+                None => {
+                    // Create ExternRef with store context
+                    let externref = wasmtime::ExternRef::new(&mut ctx, ref_id as u64)
+                        .map_err(|e| crate::error::WasmtimeError::Runtime {
+                            message: format!("Failed to create externref: {}", e),
+                            backtrace: None,
+                        })?;
+                    wasmtime::Val::ExternRef(Some(externref))
+                }
+            };
             global
-                .set(&mut ctx, value)
+                .set(&mut ctx, final_value)
                 .map_err(|e| crate::error::WasmtimeError::Runtime {
                     message: format!("Failed to set global value: {}", e),
                     backtrace: None,

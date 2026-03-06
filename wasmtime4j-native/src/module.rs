@@ -75,12 +75,16 @@ pub struct ExportInfo {
 /// Function signature information
 #[derive(Debug, Clone)]
 pub struct FunctionInfo {
-    /// Zero-based index of this function in the module
+    /// Zero-based index of this function in the module's function index space
     pub index: usize,
     /// Optional function name from debug info or custom sections
     pub name: Option<String>,
     /// Function signature with parameter and return types
     pub signature: FunctionSignature,
+    /// Whether this function is an import
+    pub is_import: bool,
+    /// Whether this function is exported
+    pub is_exported: bool,
 }
 
 /// Function signature with parameter and return types
@@ -235,17 +239,27 @@ impl Module {
         let module = WasmtimeModule::new(engine.inner(), wasm_bytes)
             .map_err(|e| WasmtimeError::from_compilation_error(e))?;
 
-        // Extract comprehensive metadata
-        let metadata = ModuleMetadata::extract(&module, wasm_bytes.len(), wasm_bytes)?;
+        // Ensure we have binary wasm for wasmparser-based metadata extraction.
+        // If input is WAT text, convert to binary first.
+        let binary_wasm = wat::parse_bytes(wasm_bytes)
+            .map_err(|e| WasmtimeError::Compilation {
+                message: format!("Failed to parse WAT/WASM bytes: {}", e),
+            })?;
+
+        // Extract comprehensive metadata using binary wasm
+        let metadata =
+            ModuleMetadata::extract(&module, wasm_bytes.len(), binary_wasm.as_ref())?;
 
         // Parse element segments for table.init() support (hybrid design)
-        let element_segments = parse_element_segments(wasm_bytes).unwrap_or_else(|e| {
+        let element_segments =
+            parse_element_segments(binary_wasm.as_ref()).unwrap_or_else(|e| {
             log::warn!("Failed to parse element segments: {:?}", e);
             Vec::new()
         });
 
         // Parse data segments for memory.init() support (hybrid design)
-        let data_segments = parse_data_segments(wasm_bytes).unwrap_or_else(|e| {
+        let data_segments =
+            parse_data_segments(binary_wasm.as_ref()).unwrap_or_else(|e| {
             log::warn!("Failed to parse data segments: {:?}", e);
             Vec::new()
         });
@@ -895,11 +909,10 @@ impl ModuleMetadata {
     pub(crate) fn extract(
         module: &WasmtimeModule,
         size_bytes: usize,
-        _wasm_bytes: &[u8],
+        wasm_bytes: &[u8],
     ) -> WasmtimeResult<Self> {
         let mut imports = Vec::new();
         let mut exports = Vec::new();
-        let mut functions = Vec::new();
         let globals = Vec::new();
         let memories = Vec::new();
         let tables = Vec::new();
@@ -923,30 +936,8 @@ impl ModuleMetadata {
             });
         }
 
-        // Extract function information from imports and exports
-        let mut func_index = 0;
-        for import in module.imports() {
-            if let wasmtime::ExternType::Func(func_type) = import.ty() {
-                functions.push(FunctionInfo {
-                    index: func_index,
-                    name: Some(format!("{}:{}", import.module(), import.name())),
-                    signature: convert_func_type(&func_type)?,
-                });
-                func_index += 1;
-            }
-        }
-
-        // Also include exported functions (module-defined)
-        for export in module.exports() {
-            if let wasmtime::ExternType::Func(func_type) = export.ty() {
-                functions.push(FunctionInfo {
-                    index: func_index,
-                    name: Some(export.name().to_string()),
-                    signature: convert_func_type(&func_type)?,
-                });
-                func_index += 1;
-            }
-        }
+        // Extract ALL functions using wasmparser for complete function index space
+        let functions = Self::extract_all_functions(module, wasm_bytes)?;
 
         Ok(ModuleMetadata {
             name: module.name().map(|s| s.to_string()),
@@ -958,6 +949,173 @@ impl ModuleMetadata {
             memories,
             tables,
         })
+    }
+
+    /// Extract all functions from WASM bytes using wasmparser.
+    ///
+    /// This enumerates the complete function index space: imported functions first,
+    /// then locally-defined functions. It uses Wasmtime's Module API for type info
+    /// (which covers imports and exports) and wasmparser for discovering internal
+    /// functions and reading the name section.
+    fn extract_all_functions(
+        module: &WasmtimeModule,
+        wasm_bytes: &[u8],
+    ) -> WasmtimeResult<Vec<FunctionInfo>> {
+        use std::collections::{HashMap, HashSet};
+        use wasmparser::{Parser, Payload};
+
+        // Collect type signatures, function type indices, import count, exports, and names
+        // from wasmparser
+        let mut type_signatures: Vec<FunctionSignature> = Vec::new();
+        let mut func_type_indices: Vec<u32> = Vec::new(); // local functions only
+        let mut num_imported_funcs: u32 = 0;
+        let mut exported_func_indices: HashMap<u32, String> = HashMap::new();
+        let mut func_names: HashMap<u32, String> = HashMap::new();
+        let mut import_func_names: Vec<(String, String, u32)> = Vec::new(); // (module, name, type_idx)
+
+        for payload in Parser::new(0).parse_all(wasm_bytes) {
+            let payload = payload.map_err(|e| WasmtimeError::Compilation {
+                message: format!("Failed to parse WASM for function extraction: {}", e),
+            })?;
+
+            match payload {
+                Payload::TypeSection(reader) => {
+                    for rec_group in reader {
+                        let rec_group = rec_group.map_err(|e| WasmtimeError::Compilation {
+                            message: format!("Failed to parse type section: {}", e),
+                        })?;
+                        for sub_type in rec_group.into_types() {
+                            let sig = match &sub_type.composite_type.inner {
+                                wasmparser::CompositeInnerType::Func(func_type) => {
+                                    let params = func_type
+                                        .params()
+                                        .iter()
+                                        .filter_map(|vt| wasmparser_val_type_to_module_type(vt))
+                                        .collect();
+                                    let returns = func_type
+                                        .results()
+                                        .iter()
+                                        .filter_map(|vt| wasmparser_val_type_to_module_type(vt))
+                                        .collect();
+                                    FunctionSignature { params, returns }
+                                }
+                                _ => FunctionSignature {
+                                    params: Vec::new(),
+                                    returns: Vec::new(),
+                                },
+                            };
+                            type_signatures.push(sig);
+                        }
+                    }
+                }
+                Payload::ImportSection(reader) => {
+                    for import in reader.into_imports() {
+                        let import = import.map_err(|e| WasmtimeError::Compilation {
+                            message: format!("Failed to parse import section: {}", e),
+                        })?;
+                        if let wasmparser::TypeRef::Func(type_idx) = import.ty {
+                            import_func_names.push((
+                                import.module.to_string(),
+                                import.name.to_string(),
+                                type_idx,
+                            ));
+                            num_imported_funcs += 1;
+                        }
+                    }
+                }
+                Payload::FunctionSection(reader) => {
+                    for type_idx in reader {
+                        let type_idx = type_idx.map_err(|e| WasmtimeError::Compilation {
+                            message: format!("Failed to parse function section: {}", e),
+                        })?;
+                        func_type_indices.push(type_idx);
+                    }
+                }
+                Payload::ExportSection(reader) => {
+                    for export in reader {
+                        let export = export.map_err(|e| WasmtimeError::Compilation {
+                            message: format!("Failed to parse export section: {}", e),
+                        })?;
+                        if let wasmparser::ExternalKind::Func = export.kind {
+                            exported_func_indices
+                                .insert(export.index, export.name.to_string());
+                        }
+                    }
+                }
+                Payload::CustomSection(reader) if reader.name() == "name" => {
+                    // Parse name section for function names
+                    let binary_reader = wasmparser::BinaryReader::new(
+                        reader.data(),
+                        reader.data_offset(),
+                    );
+                    let name_reader = wasmparser::NameSectionReader::new(binary_reader);
+                    for name in name_reader {
+                        if let Ok(wasmparser::Name::Function(map)) = name {
+                            for naming in map {
+                                if let Ok(naming) = naming {
+                                    func_names.insert(naming.index, naming.name.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Build the complete function list
+        let total_funcs = num_imported_funcs as usize + func_type_indices.len();
+        let mut functions = Vec::with_capacity(total_funcs);
+
+        // 1. Imported functions (indices 0..num_imported_funcs)
+        for (i, (mod_name, func_name, type_idx)) in import_func_names.iter().enumerate() {
+            let idx = i as u32;
+            let signature = type_signatures
+                .get(*type_idx as usize)
+                .cloned()
+                .unwrap_or_else(|| FunctionSignature {
+                    params: Vec::new(),
+                    returns: Vec::new(),
+                });
+            let name = func_names
+                .get(&idx)
+                .cloned()
+                .unwrap_or_else(|| format!("{}:{}", mod_name, func_name));
+            let is_exported = exported_func_indices.contains_key(&idx);
+            functions.push(FunctionInfo {
+                index: i,
+                name: Some(name),
+                signature,
+                is_import: true,
+                is_exported,
+            });
+        }
+
+        // 2. Locally-defined functions (indices num_imported_funcs..)
+        for (i, type_idx) in func_type_indices.iter().enumerate() {
+            let func_idx = num_imported_funcs + i as u32;
+            let signature = type_signatures
+                .get(*type_idx as usize)
+                .cloned()
+                .unwrap_or_else(|| FunctionSignature {
+                    params: Vec::new(),
+                    returns: Vec::new(),
+                });
+            let is_exported = exported_func_indices.contains_key(&func_idx);
+            let name = func_names
+                .get(&func_idx)
+                .cloned()
+                .or_else(|| exported_func_indices.get(&func_idx).cloned());
+            functions.push(FunctionInfo {
+                index: func_idx as usize,
+                name,
+                signature,
+                is_import: false,
+                is_exported,
+            });
+        }
+
+        Ok(functions)
     }
 
     /// Create empty metadata for deserialized modules
@@ -1087,6 +1245,39 @@ fn convert_ref_type(ref_type: wasmtime::RefType) -> WasmtimeResult<ModuleValueTy
                 ref_type.heap_type()
             ),
         }),
+    }
+}
+
+/// Convert a wasmparser ValType to our ModuleValueType.
+/// Returns None for types that don't have a direct mapping.
+fn wasmparser_val_type_to_module_type(vt: &wasmparser::ValType) -> Option<ModuleValueType> {
+    match vt {
+        wasmparser::ValType::I32 => Some(ModuleValueType::I32),
+        wasmparser::ValType::I64 => Some(ModuleValueType::I64),
+        wasmparser::ValType::F32 => Some(ModuleValueType::F32),
+        wasmparser::ValType::F64 => Some(ModuleValueType::F64),
+        wasmparser::ValType::V128 => Some(ModuleValueType::V128),
+        wasmparser::ValType::Ref(rt) => {
+            match rt.heap_type() {
+                wasmparser::HeapType::Abstract { shared: _, ty } => match ty {
+                    wasmparser::AbstractHeapType::Func => Some(ModuleValueType::FuncRef),
+                    wasmparser::AbstractHeapType::Extern => Some(ModuleValueType::ExternRef),
+                    wasmparser::AbstractHeapType::Any | wasmparser::AbstractHeapType::Exn => {
+                        Some(ModuleValueType::AnyRef)
+                    }
+                    wasmparser::AbstractHeapType::Eq => Some(ModuleValueType::EqRef),
+                    wasmparser::AbstractHeapType::I31 => Some(ModuleValueType::I31Ref),
+                    wasmparser::AbstractHeapType::Struct => Some(ModuleValueType::StructRef),
+                    wasmparser::AbstractHeapType::Array => Some(ModuleValueType::ArrayRef),
+                    wasmparser::AbstractHeapType::None => Some(ModuleValueType::NullRef),
+                    wasmparser::AbstractHeapType::NoFunc => Some(ModuleValueType::NullFuncRef),
+                    wasmparser::AbstractHeapType::NoExtern => Some(ModuleValueType::NullExternRef),
+                    _ => Some(ModuleValueType::AnyRef),
+                },
+                wasmparser::HeapType::Concrete(_)
+                | wasmparser::HeapType::Exact(_) => Some(ModuleValueType::FuncRef),
+            }
+        }
     }
 }
 
