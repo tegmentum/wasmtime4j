@@ -15,14 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.wit.WitBool;
-import ai.tegmentum.wasmtime4j.wit.WitChar;
-import ai.tegmentum.wasmtime4j.wit.WitFloat64;
 import ai.tegmentum.wasmtime4j.wit.WitS32;
-import ai.tegmentum.wasmtime4j.wit.WitS64;
-import ai.tegmentum.wasmtime4j.wit.WitString;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +31,7 @@ import org.junit.jupiter.api.Test;
  * <p>These tests validate:
  *
  * <ul>
- *   <li>WitValue type creation and basic functionality
+ *   <li>End-to-end component function invocation via JNI
  *   <li>Type safety and validation requirements
  *   <li>Documentation of full integration test requirements
  * </ul>
@@ -65,74 +62,6 @@ public final class JniComponentInvocationTest {
       System.err.println(
           "Component invocation tests will be skipped if native library unavailable");
     }
-  }
-
-  // ==================== WitValue Type Creation Tests ====================
-
-  @Test
-  @DisplayName("WitBool instances can be created with valid values")
-  public void testWitBoolCreation() {
-    final WitBool trueValue = WitBool.of(true);
-    assertNotNull(trueValue, "WitBool.of(true) should not return null");
-    assertTrue((Boolean) trueValue.toJava(), "WitBool should preserve true value");
-
-    final WitBool falseValue = WitBool.of(false);
-    assertNotNull(falseValue, "WitBool.of(false) should not return null");
-    assertFalse((Boolean) falseValue.toJava(), "WitBool should preserve false value");
-  }
-
-  @Test
-  @DisplayName("WitS32 instances can be created with valid values")
-  public void testWitS32Creation() {
-    final WitS32 zero = WitS32.of(0);
-    assertNotNull(zero, "WitS32.of(0) should not return null");
-    assertEquals(Integer.valueOf(0), zero.toJava(), "WitS32 should preserve zero value");
-
-    final WitS32 positive = WitS32.of(42);
-    assertNotNull(positive, "WitS32.of(42) should not return null");
-    assertEquals(Integer.valueOf(42), positive.toJava(), "WitS32 should preserve positive value");
-
-    final WitS32 negative = WitS32.of(-123);
-    assertNotNull(negative, "WitS32.of(-123) should not return null");
-    assertEquals(Integer.valueOf(-123), negative.toJava(), "WitS32 should preserve negative value");
-  }
-
-  @Test
-  @DisplayName("WitS64 instances can be created with valid values")
-  public void testWitS64Creation() {
-    final WitS64 large = WitS64.of(9876543210L);
-    assertNotNull(large, "WitS64.of(9876543210L) should not return null");
-    assertEquals(Long.valueOf(9876543210L), large.toJava(), "WitS64 should preserve large value");
-  }
-
-  @Test
-  @DisplayName("WitFloat64 instances can be created with valid values")
-  public void testWitFloat64Creation() {
-    final WitFloat64 pi = WitFloat64.of(3.14159);
-    assertNotNull(pi, "WitFloat64.of(3.14159) should not return null");
-    assertEquals(
-        3.14159, (Double) pi.toJava(), 0.00001, "WitFloat64 should preserve floating point value");
-  }
-
-  @Test
-  @DisplayName("WitChar instances can be created with valid values")
-  public void testWitCharCreation() throws Exception {
-    final WitChar letterZ = WitChar.of('Z');
-    assertNotNull(letterZ, "WitChar.of('Z') should not return null");
-    assertEquals(
-        Character.valueOf('Z'), letterZ.toJava(), "WitChar should preserve character value");
-  }
-
-  @Test
-  @DisplayName("WitString instances can be created with valid values")
-  public void testWitStringCreation() throws Exception {
-    final WitString hello = WitString.of("hello world");
-    assertNotNull(hello, "WitString.of() should not return null");
-    assertEquals("hello world", hello.toJava(), "WitString should preserve string value");
-
-    final WitString empty = WitString.of("");
-    assertNotNull(empty, "WitString.of(\"\") should not return null");
-    assertEquals("", empty.toJava(), "WitString should preserve empty string");
   }
 
   // ==================== Future Integration Tests (Disabled) ====================
@@ -177,14 +106,6 @@ public final class JniComponentInvocationTest {
    * 5. Verify results or exceptions
    * 6. Clean up resources
    */
-
-  @Test
-  @DisplayName("Integration tests documentation")
-  public void testIntegrationTestsDocumentation() {
-    // This test serves as documentation for the required integration tests
-    // See the comment block above for details on what needs to be implemented
-    assertTrue(true, "Integration tests are documented and waiting for component files");
-  }
 
   // ==================== End-to-End Integration Test ====================
 

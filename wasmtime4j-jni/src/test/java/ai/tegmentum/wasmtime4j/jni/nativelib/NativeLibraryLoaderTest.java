@@ -74,14 +74,6 @@ class NativeLibraryLoaderTest {
   }
 
   @Test
-  void testIsLibraryLoadedInitialState() {
-    // Before any load attempt, should be false
-    // Note: This test may be unreliable if other tests have already loaded the library
-    // but we include it for completeness
-    assertThat(NativeLibraryLoader.isLibraryLoaded()).isIn(true, false);
-  }
-
-  @Test
   void testLoadLibraryIdempotent() {
     // Should not throw exception even if called multiple times
     // Note: This will likely fail because the actual native library doesn't exist yet,

@@ -129,9 +129,7 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().maxUnusedWarmSlots(100).build();
 
-      // Note: The current implementation doesn't pass this to the config constructor,
-      // but we verify the builder method exists and can be called
-      assertNotNull(config, "Config should be built");
+      assertEquals(100, config.getMaxUnusedWarmSlots(), "maxUnusedWarmSlots should be set");
     }
 
     @Test
@@ -140,7 +138,7 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().decommitBatchSize(10).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(10, config.getDecommitBatchSize(), "decommitBatchSize should be set");
     }
 
     @Test
@@ -149,7 +147,8 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().linearMemoryKeepResident(4096).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(
+          4096L, config.getLinearMemoryKeepResident(), "linearMemoryKeepResident should be set");
     }
 
     @Test
@@ -158,7 +157,7 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().tableKeepResident(4096).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(4096L, config.getTableKeepResident(), "tableKeepResident should be set");
     }
 
     @Test
@@ -167,7 +166,8 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().asyncStackKeepResident(4096).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(
+          4096L, config.getAsyncStackKeepResident(), "asyncStackKeepResident should be set");
     }
 
     @Test
@@ -176,7 +176,7 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().totalMemories(500).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(500, config.getTotalMemories(), "totalMemories should be set");
     }
 
     @Test
@@ -185,7 +185,8 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().maxCoreInstanceSize(2L * 1024 * 1024).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(
+          2L * 1024 * 1024, config.getMaxCoreInstanceSize(), "maxCoreInstanceSize should be set");
     }
 
     @Test
@@ -194,7 +195,10 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().maxComponentInstanceSize(2L * 1024 * 1024).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(
+          2L * 1024 * 1024,
+          config.getMaxComponentInstanceSize(),
+          "maxComponentInstanceSize should be set");
     }
 
     @Test
@@ -203,7 +207,7 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().maxMemoriesPerModule(10).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(10, config.getMaxMemoriesPerModule(), "maxMemoriesPerModule should be set");
     }
 
     @Test
@@ -212,7 +216,8 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().maxMemoriesPerComponent(10).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(
+          10, config.getMaxMemoriesPerComponent(), "maxMemoriesPerComponent should be set");
     }
 
     @Test
@@ -221,7 +226,7 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().tableElements(20000).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(20000, config.getTableElements(), "tableElements should be set");
     }
 
     @Test
@@ -230,7 +235,10 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().memoryProtectionKeysEnabled(true).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(
+          ai.tegmentum.wasmtime4j.config.Enabled.YES,
+          config.getMemoryProtectionKeys(),
+          "memoryProtectionKeys should be YES when enabled");
     }
 
     @Test
@@ -239,7 +247,8 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().maxMemoryProtectionKeys(16).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(
+          16, config.getMaxMemoryProtectionKeys(), "maxMemoryProtectionKeys should be set");
     }
 
     @Test
@@ -248,7 +257,10 @@ class JniPoolingAllocatorConfigBuilderTest {
       final PoolingAllocatorConfig config =
           new JniPoolingAllocatorConfigBuilder().pagemapScanEnabled(true).build();
 
-      assertNotNull(config, "Config should be built");
+      assertEquals(
+          ai.tegmentum.wasmtime4j.config.Enabled.YES,
+          config.getPagemapScan(),
+          "pagemapScan should be YES when enabled");
     }
   }
 

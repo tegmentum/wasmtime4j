@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.jni;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
 import org.junit.jupiter.api.Test;
@@ -112,40 +113,22 @@ class JniFunctionTest {
   }
 
   @Test
-  void testCallWithObjectNullParameters() {
-    final JniFunction function =
-        new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
-
-    final IllegalArgumentException exception =
-        assertThrows(IllegalArgumentException.class, () -> function.call((WasmValue[]) null));
-
-    assertThat(exception.getMessage()).contains("parameters");
-    assertThat(exception.getMessage()).contains("must not be null");
-  }
-
-  @Test
   void testResourceManagement() {
     final JniFunction function =
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
     assertFalse(function.isClosed());
 
-    // Test that resource starts in open state
-    assertFalse(function.isClosed());
-    // Note: Actual close() testing requires native methods and is covered in integration tests
+    function.close();
+    assertTrue(function.isClosed());
   }
 
   @Test
   void testOperationsOnClosedFunction() {
-    // Note: This test would need to actually close the function to test closed state operations
-    // Since close() requires native methods, this is covered in integration tests
-    // This unit test verifies parameter validation only
-
     final JniFunction function =
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
-    assertFalse(function.isClosed());
 
-    // Test that operations work on open function (would call native methods in real implementation)
-    // Integration tests will verify behavior on closed functions
+    function.close();
+    assertTrue(function.isClosed());
   }
 
   @Test

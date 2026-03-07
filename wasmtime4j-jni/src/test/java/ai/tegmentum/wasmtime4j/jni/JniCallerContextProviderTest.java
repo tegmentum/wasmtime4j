@@ -51,11 +51,4 @@ class JniCallerContextProviderTest {
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("Caller context not available");
   }
-
-  @Test
-  @DisplayName("Constructor should create valid instance")
-  void constructorShouldCreateValidInstance() {
-    final JniCallerContextProvider provider = new JniCallerContextProvider();
-    assertThat(provider).isNotNull();
-  }
 }

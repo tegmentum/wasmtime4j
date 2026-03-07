@@ -15,7 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wast.WastDirectiveResult;
 import ai.tegmentum.wasmtime4j.wast.WastExecutionResult;
@@ -26,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -65,11 +69,7 @@ public final class WasmtimeWastSuiteIntegrationTest {
     // Find ALL WAST test files - complete Wasmtime test suite
     final List<Path> allTests = findAllWastFiles();
 
-    if (allTests.isEmpty()) {
-      // Skip test if no WAST files are available
-      System.err.println("Warning: No WAST test files found, skipping test");
-      return;
-    }
+    Assumptions.assumeTrue(!allTests.isEmpty(), "No .wast files found in resource directory");
 
     int passedTests = 0;
     int failedTests = 0;
@@ -146,11 +146,7 @@ public final class WasmtimeWastSuiteIntegrationTest {
     // Find a few simple WAST test files
     final List<Path> simpleTests = findSimpleWastFiles();
 
-    if (simpleTests.isEmpty()) {
-      // Skip test if no WAST files are available
-      System.err.println("Warning: No WAST test files found, skipping test");
-      return;
-    }
+    Assumptions.assumeTrue(!simpleTests.isEmpty(), "No .wast files found in resource directory");
 
     int passedTests = 0;
     int failedTests = 0;
@@ -317,10 +313,9 @@ public final class WasmtimeWastSuiteIntegrationTest {
    * @return list of all WAST test file paths
    */
   private List<Path> findAllWastFiles() throws IOException {
-    if (!Files.exists(WASMTIME_TESTS_DIR)) {
-      System.err.println("Warning: Wasmtime tests directory not found: " + WASMTIME_TESTS_DIR);
-      return new ArrayList<>();
-    }
+    Assumptions.assumeTrue(
+        Files.exists(WASMTIME_TESTS_DIR),
+        "WAST resource directory not found: " + WASMTIME_TESTS_DIR);
 
     final List<Path> allTests = new ArrayList<>();
 
@@ -341,10 +336,9 @@ public final class WasmtimeWastSuiteIntegrationTest {
    * @return list of simple WAST test file paths
    */
   private List<Path> findSimpleWastFiles() throws IOException {
-    if (!Files.exists(WASMTIME_TESTS_DIR)) {
-      System.err.println("Warning: Wasmtime tests directory not found: " + WASMTIME_TESTS_DIR);
-      return new ArrayList<>();
-    }
+    Assumptions.assumeTrue(
+        Files.exists(WASMTIME_TESTS_DIR),
+        "WAST resource directory not found: " + WASMTIME_TESTS_DIR);
 
     final List<Path> simpleTests = new ArrayList<>();
 
