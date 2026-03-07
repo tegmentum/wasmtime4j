@@ -15,7 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.wasmtime.generated.epoch;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.panama.NativeLibraryLoader;
 import java.lang.foreign.SymbolLookup;

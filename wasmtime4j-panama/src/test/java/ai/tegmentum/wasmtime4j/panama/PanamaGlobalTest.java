@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
  * <p>Generic global get/set and type tests have been migrated to {@code GlobalApiDualRuntimeTest}
  * in the integration test module.
  */
-public class PanamaGlobalTest {
+class PanamaGlobalTest {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaGlobalTest.class.getName());
 
