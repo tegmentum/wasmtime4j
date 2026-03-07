@@ -97,37 +97,40 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
-
-    final String witPath =
-        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
-    final long callbackId = registerHostFunctionCallback(implementation);
-    hostFunctions.put(witPath, callbackId);
-
-    // Wire to native component linker
+    beginOperation();
     try {
-      nativeDefineHostFunction(nativeHandle, witPath, callbackId);
-    } catch (final Exception e) {
-      // Remove from local tracking if native call fails
-      hostFunctions.remove(witPath);
-      HOST_FUNCTION_CALLBACKS.remove(callbackId);
-      registeredCallbackIds.remove(callbackId);
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
+      // Build WIT path: "namespace/interface#function"
+      final String witPath = interfaceNamespace + "/" + interfaceName + "#" + functionName;
+      final long callbackId = registerHostFunctionCallback(implementation);
+      hostFunctions.put(witPath, callbackId);
+
+      // Wire to native component linker
+      try {
+        nativeDefineHostFunction(nativeHandle, witPath, callbackId);
+      } catch (final Exception e) {
+        // Remove from local tracking if native call fails
+        hostFunctions.remove(witPath);
+        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        registeredCallbackIds.remove(callbackId);
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Failed to define host function: " + e.getMessage(), e);
       }
-      throw new WasmException("Failed to define host function: " + e.getMessage(), e);
-    }
 
-    // Track in defined interfaces
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
-    Set<String> functions = definedInterfaces.get(interfaceKey);
-    if (functions == null) {
-      functions = Collections.synchronizedSet(new HashSet<String>());
-      definedInterfaces.put(interfaceKey, functions);
-    }
-    functions.add(functionName);
+      // Track in defined interfaces using known parameters
+      final String interfaceKey = interfaceNamespace + ":" + interfaceName;
+      Set<String> functions = definedInterfaces.get(interfaceKey);
+      if (functions == null) {
+        functions = Collections.synchronizedSet(new HashSet<String>());
+        definedInterfaces.put(interfaceKey, functions);
+      }
+      functions.add(functionName);
 
-    LOGGER.fine("Defined component function: " + witPath);
+      LOGGER.fine("Defined component function: " + witPath);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -139,26 +142,29 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
-
-    final long callbackId = registerHostFunctionCallback(implementation);
-    hostFunctions.put(witPath, callbackId);
-
-    // Wire to native component linker
+    beginOperation();
     try {
-      nativeDefineHostFunction(nativeHandle, witPath, callbackId);
-    } catch (final Exception e) {
-      // Remove from local tracking if native call fails
-      hostFunctions.remove(witPath);
-      HOST_FUNCTION_CALLBACKS.remove(callbackId);
-      registeredCallbackIds.remove(callbackId);
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Failed to define host function: " + e.getMessage(), e);
-    }
+      final long callbackId = registerHostFunctionCallback(implementation);
+      hostFunctions.put(witPath, callbackId);
 
-    LOGGER.fine("Defined component function: " + witPath);
+      // Wire to native component linker
+      try {
+        nativeDefineHostFunction(nativeHandle, witPath, callbackId);
+      } catch (final Exception e) {
+        // Remove from local tracking if native call fails
+        hostFunctions.remove(witPath);
+        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        registeredCallbackIds.remove(callbackId);
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Failed to define host function: " + e.getMessage(), e);
+      }
+
+      LOGGER.fine("Defined component function: " + witPath);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -180,11 +186,23 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      // Build WIT path: "namespace/interface#function"
+      final String witPath = interfaceNamespace + "/" + interfaceName + "#" + functionName;
+      defineFunctionAsync(witPath, implementation);
 
-    final String witPath =
-        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
-    defineFunctionAsync(witPath, implementation);
+      // Track in defined interfaces using known parameters
+      final String interfaceKey = interfaceNamespace + ":" + interfaceName;
+      Set<String> functions = definedInterfaces.get(interfaceKey);
+      if (functions == null) {
+        functions = Collections.synchronizedSet(new HashSet<String>());
+        definedInterfaces.put(interfaceKey, functions);
+      }
+      functions.add(functionName);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -196,26 +214,29 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
-
-    final long callbackId = registerHostFunctionCallback(implementation);
-    hostFunctions.put(witPath, callbackId);
-
-    // Wire to native component linker
+    beginOperation();
     try {
-      nativeDefineHostFunctionAsync(nativeHandle, witPath, callbackId);
-    } catch (final Exception e) {
-      // Remove from local tracking if native call fails
-      hostFunctions.remove(witPath);
-      HOST_FUNCTION_CALLBACKS.remove(callbackId);
-      registeredCallbackIds.remove(callbackId);
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Failed to define async host function: " + e.getMessage(), e);
-    }
+      final long callbackId = registerHostFunctionCallback(implementation);
+      hostFunctions.put(witPath, callbackId);
 
-    LOGGER.fine("Defined async component function: " + witPath);
+      // Wire to native component linker
+      try {
+        nativeDefineHostFunctionAsync(nativeHandle, witPath, callbackId);
+      } catch (final Exception e) {
+        // Remove from local tracking if native call fails
+        hostFunctions.remove(witPath);
+        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        registeredCallbackIds.remove(callbackId);
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Failed to define async host function: " + e.getMessage(), e);
+      }
+
+      LOGGER.fine("Defined async component function: " + witPath);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -233,10 +254,13 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (functions == null) {
       throw new IllegalArgumentException("Functions cannot be null");
     }
-    ensureNotClosed();
-
-    for (final Map.Entry<String, ComponentHostFunction> entry : functions.entrySet()) {
-      defineFunction(interfaceNamespace, interfaceName, entry.getKey(), entry.getValue());
+    beginOperation();
+    try {
+      for (final Map.Entry<String, ComponentHostFunction> entry : functions.entrySet()) {
+        defineFunction(interfaceNamespace, interfaceName, entry.getKey(), entry.getValue());
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -259,87 +283,90 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (resourceDefinition == null) {
       throw new IllegalArgumentException("Resource definition cannot be null");
     }
-    ensureNotClosed();
-
-    // Register constructor callback if present
-    long constructorCallbackId = 0;
-    if (resourceDefinition.getConstructor().isPresent()) {
-      @SuppressWarnings("unchecked")
-      final ComponentResourceDefinition<Object> typedDef =
-          (ComponentResourceDefinition<Object>) resourceDefinition;
-      final ComponentResourceDefinition.ResourceConstructor<Object> ctor =
-          typedDef.getConstructor().get();
-      constructorCallbackId =
-          registerHostFunctionCallback(
-              params -> {
-                final Object resource = ctor.construct(params);
-                final int handle = resourceTable.push(resource);
-                return java.util.Collections.singletonList(
-                    ai.tegmentum.wasmtime4j.component.ComponentVal.s32(handle));
-              });
-    }
-
-    // Register destructor callback if present
-    long destructorCallbackId = 0;
-    if (resourceDefinition.getDestructor().isPresent()) {
-      @SuppressWarnings("unchecked")
-      final ComponentResourceDefinition<Object> typedDef =
-          (ComponentResourceDefinition<Object>) resourceDefinition;
-      final java.util.function.Consumer<Object> dtor = typedDef.getDestructor().get();
-      destructorCallbackId =
-          registerHostFunctionCallback(
-              params -> {
-                if (!params.isEmpty()) {
-                  final int handle = params.get(0).asS32();
-                  final java.util.Optional<Object> entry =
-                      resourceTable.delete(handle, Object.class);
-                  entry.ifPresent(dtor);
-                }
-                return java.util.Collections.emptyList();
-              });
-    }
-
-    // Wire to native component linker
+    beginOperation();
     try {
-      nativeDefineResource(
-          nativeHandle,
-          interfaceNamespace,
-          interfaceName,
-          resourceName,
-          constructorCallbackId,
-          destructorCallbackId);
-    } catch (final Exception e) {
-      // Remove from local tracking if native call fails
-      if (constructorCallbackId > 0) {
-        HOST_FUNCTION_CALLBACKS.remove(constructorCallbackId);
-        registeredCallbackIds.remove(constructorCallbackId);
+      // Register constructor callback if present
+      long constructorCallbackId = 0;
+      if (resourceDefinition.getConstructor().isPresent()) {
+        @SuppressWarnings("unchecked")
+        final ComponentResourceDefinition<Object> typedDef =
+            (ComponentResourceDefinition<Object>) resourceDefinition;
+        final ComponentResourceDefinition.ResourceConstructor<Object> ctor =
+            typedDef.getConstructor().get();
+        constructorCallbackId =
+            registerHostFunctionCallback(
+                params -> {
+                  final Object resource = ctor.construct(params);
+                  final int handle = resourceTable.push(resource);
+                  return java.util.Collections.singletonList(
+                      ai.tegmentum.wasmtime4j.component.ComponentVal.s32(handle));
+                });
       }
-      if (destructorCallbackId > 0) {
-        HOST_FUNCTION_CALLBACKS.remove(destructorCallbackId);
-        registeredCallbackIds.remove(destructorCallbackId);
-      }
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Failed to define resource: " + e.getMessage(), e);
-    }
 
-    // Track resource in defined interfaces
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
-    Set<String> functions = definedInterfaces.get(interfaceKey);
-    if (functions == null) {
-      functions = Collections.synchronizedSet(new HashSet<String>());
-      definedInterfaces.put(interfaceKey, functions);
-    }
-    functions.add("[resource]" + resourceName);
+      // Register destructor callback if present
+      long destructorCallbackId = 0;
+      if (resourceDefinition.getDestructor().isPresent()) {
+        @SuppressWarnings("unchecked")
+        final ComponentResourceDefinition<Object> typedDef =
+            (ComponentResourceDefinition<Object>) resourceDefinition;
+        final java.util.function.Consumer<Object> dtor = typedDef.getDestructor().get();
+        destructorCallbackId =
+            registerHostFunctionCallback(
+                params -> {
+                  if (!params.isEmpty()) {
+                    final int handle = params.get(0).asS32();
+                    final java.util.Optional<Object> entry =
+                        resourceTable.delete(handle, Object.class);
+                    entry.ifPresent(dtor);
+                  }
+                  return java.util.Collections.emptyList();
+                });
+      }
 
-    LOGGER.fine(
-        "Defined component resource: "
-            + interfaceNamespace
-            + ":"
-            + interfaceName
-            + "/"
-            + resourceName);
+      // Wire to native component linker
+      try {
+        nativeDefineResource(
+            nativeHandle,
+            interfaceNamespace,
+            interfaceName,
+            resourceName,
+            constructorCallbackId,
+            destructorCallbackId);
+      } catch (final Exception e) {
+        // Remove from local tracking if native call fails
+        if (constructorCallbackId > 0) {
+          HOST_FUNCTION_CALLBACKS.remove(constructorCallbackId);
+          registeredCallbackIds.remove(constructorCallbackId);
+        }
+        if (destructorCallbackId > 0) {
+          HOST_FUNCTION_CALLBACKS.remove(destructorCallbackId);
+          registeredCallbackIds.remove(destructorCallbackId);
+        }
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Failed to define resource: " + e.getMessage(), e);
+      }
+
+      // Track resource in defined interfaces
+      final String interfaceKey = interfaceNamespace + ":" + interfaceName;
+      Set<String> functions = definedInterfaces.get(interfaceKey);
+      if (functions == null) {
+        functions = Collections.synchronizedSet(new HashSet<String>());
+        definedInterfaces.put(interfaceKey, functions);
+      }
+      functions.add("[resource]" + resourceName);
+
+      LOGGER.fine(
+          "Defined component resource: "
+              + interfaceNamespace
+              + ":"
+              + interfaceName
+              + "/"
+              + resourceName);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -355,24 +382,27 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException(
-          "Module must be a JniModule, got: " + module.getClass().getName());
-    }
-    final long moduleHandle = ((JniModule) module).getNativeHandle();
-
+    beginOperation();
     try {
-      nativeDefineModule(nativeHandle, instancePath, name, moduleHandle);
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException(
+            "Module must be a JniModule, got: " + module.getClass().getName());
       }
-      throw new WasmException("Failed to define module: " + e.getMessage(), e);
-    }
+      final long moduleHandle = ((JniModule) module).getNativeHandle();
 
-    LOGGER.fine("Defined core module '" + name + "' on instance path '" + instancePath + "'");
+      try {
+        nativeDefineModule(nativeHandle, instancePath, name, moduleHandle);
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Failed to define module: " + e.getMessage(), e);
+      }
+
+      LOGGER.fine("Defined core module '" + name + "' on instance path '" + instancePath + "'");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -380,30 +410,33 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (instance == null) {
       throw new IllegalArgumentException("Instance cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      // Get exported functions from the instance and track them
+      // This allows the linker to satisfy imports from another component using this instance's
+      // exports
+      final Set<String> exportedFunctions = instance.getExportedFunctions();
 
-    // Get exported functions from the instance and track them
-    // This allows the linker to satisfy imports from another component using this instance's
-    // exports
-    final Set<String> exportedFunctions = instance.getExportedFunctions();
-
-    for (final String exportName : exportedFunctions) {
-      // Track the exported function as available for linking
-      // The native linker will resolve these at instantiation time
-      final String interfaceKey = "linked:" + instance.getId();
-      Set<String> functions = definedInterfaces.get(interfaceKey);
-      if (functions == null) {
-        functions = Collections.synchronizedSet(new HashSet<String>());
-        definedInterfaces.put(interfaceKey, functions);
+      for (final String exportName : exportedFunctions) {
+        // Track the exported function as available for linking
+        // The native linker will resolve these at instantiation time
+        final String interfaceKey = "linked:" + instance.getId();
+        Set<String> functions = definedInterfaces.get(interfaceKey);
+        if (functions == null) {
+          functions = Collections.synchronizedSet(new HashSet<String>());
+          definedInterfaces.put(interfaceKey, functions);
+        }
+        functions.add(exportName);
       }
-      functions.add(exportName);
-    }
 
-    LOGGER.fine(
-        "Linked component instance exports: "
-            + exportedFunctions.size()
-            + " functions from instance "
-            + instance.getId());
+      LOGGER.fine(
+          "Linked component instance exports: "
+              + exportedFunctions.size()
+              + " functions from instance "
+              + instance.getId());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -415,12 +448,15 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
-
-    // First instantiate, then link exports
-    final ComponentInstance instance = instantiate(store, component);
-    linkInstance(instance);
-    return instance;
+    beginOperation();
+    try {
+      // First instantiate, then link exports
+      final ComponentInstance instance = instantiate(store, component);
+      linkInstance(instance);
+      return instance;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -428,22 +464,25 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(component instanceof JniComponentImpl)) {
+        throw new WasmException(
+            "Component must be a JniComponentImpl for JNI ComponentLinker pre-instantiation");
+      }
 
-    if (!(component instanceof JniComponentImpl)) {
-      throw new WasmException(
-          "Component must be a JniComponentImpl for JNI ComponentLinker pre-instantiation");
+      final JniComponentImpl jniComponent = (JniComponentImpl) component;
+      final long componentHandle = jniComponent.getNativeHandle();
+
+      final long preHandle = nativeInstantiatePre(nativeHandle, componentHandle);
+      if (preHandle == 0) {
+        throw new WasmException("Failed to pre-instantiate component");
+      }
+
+      return new JniComponentInstancePre(preHandle, engine, jniComponent);
+    } finally {
+      endOperation();
     }
-
-    final JniComponentImpl jniComponent = (JniComponentImpl) component;
-    final long componentHandle = jniComponent.getNativeHandle();
-
-    final long preHandle = nativeInstantiatePre(nativeHandle, componentHandle);
-    if (preHandle == 0) {
-      throw new WasmException("Failed to pre-instantiate component");
-    }
-
-    return new JniComponentInstancePre(preHandle, engine, jniComponent);
   }
 
   @Override
@@ -455,27 +494,30 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(component instanceof JniComponentImpl)) {
+        throw new WasmException(
+            "Component must be a JniComponentImpl for JNI ComponentLinker instantiation");
+      }
 
-    if (!(component instanceof JniComponentImpl)) {
-      throw new WasmException(
-          "Component must be a JniComponentImpl for JNI ComponentLinker instantiation");
+      final JniComponentImpl jniComponent = (JniComponentImpl) component;
+      final long storeHandle = getStoreHandle(store);
+      final long componentHandle = jniComponent.getNativeHandle();
+
+      final long instanceHandle =
+          nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
+      if (instanceHandle == 0) {
+        throw new WasmException("Failed to instantiate component with linker");
+      }
+
+      final JniComponent.JniComponentInstanceHandle instanceWrapper =
+          new JniComponent.JniComponentInstanceHandle(instanceHandle);
+      return new JniComponentInstanceImpl(
+          instanceWrapper, jniComponent, new ComponentInstanceConfig());
+    } finally {
+      endOperation();
     }
-
-    final JniComponentImpl jniComponent = (JniComponentImpl) component;
-    final long storeHandle = getStoreHandle(store);
-    final long componentHandle = jniComponent.getNativeHandle();
-
-    final long instanceHandle =
-        nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
-    if (instanceHandle == 0) {
-      throw new WasmException("Failed to instantiate component with linker");
-    }
-
-    final JniComponent.JniComponentInstanceHandle instanceWrapper =
-        new JniComponent.JniComponentInstanceHandle(instanceHandle);
-    return new JniComponentInstanceImpl(
-        instanceWrapper, jniComponent, new ComponentInstanceConfig());
   }
 
   /**
@@ -493,8 +535,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
 
   @Override
   public void enableWasiPreview2() throws WasmException {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       nativeEnableWasiP2(nativeHandle);
     } catch (final Exception e) {
@@ -502,6 +543,8 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         throw (WasmException) e;
       }
       throw new WasmException("Failed to enable WASI Preview 2", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -510,18 +553,21 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      // Apply config settings before enabling WASI
+      applyWasiConfig(config);
 
-    // Apply config settings before enabling WASI
-    applyWasiConfig(config);
-
-    // Enable WASI Preview 2
-    enableWasiPreview2();
+      // Enable WASI Preview 2
+      enableWasiPreview2();
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void enableWasiHttp() throws WasmException {
-    ensureNotClosed();
+    beginOperation();
     try {
       nativeEnableWasiHttp(nativeHandle);
     } catch (final Exception e) {
@@ -529,6 +575,8 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         throw (WasmException) e;
       }
       throw new WasmException("Failed to enable WASI HTTP", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -537,7 +585,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
     try {
       // Pass 0 for field size limit to use default; WasiHttpConfig does not expose
       // the low-level wasmtime field_size_limit setting directly
@@ -547,6 +595,47 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         throw (WasmException) e;
       }
       throw new WasmException("Failed to enable WASI HTTP with config", e);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public void enableWasiConfig() throws WasmException {
+    beginOperation();
+    try {
+      nativeEnableWasiConfig(nativeHandle);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to enable WASI Config", e);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public void setConfigVariables(final java.util.Map<String, String> variables)
+      throws WasmException {
+    if (variables == null) {
+      throw new IllegalArgumentException("Variables cannot be null");
+    }
+    beginOperation();
+    try {
+      final String[] keys = variables.keySet().toArray(new String[0]);
+      final String[] values = new String[keys.length];
+      for (int i = 0; i < keys.length; i++) {
+        values[i] = variables.get(keys[i]);
+      }
+      nativeSetConfigVariables(nativeHandle, keys, values);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to set WASI Config variables", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -739,7 +828,16 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
 
   @Override
   public Set<String> getDefinedInterfaces() {
-    return Collections.unmodifiableSet(new HashSet<>(definedInterfaces.keySet()));
+    // Start with Java-side tracked interfaces
+    final Set<String> result = new HashSet<>(definedInterfaces.keySet());
+
+    // Merge with native-side tracked interfaces (e.g. WASI)
+    final String json = nativeGetInterfaces(nativeHandle);
+    if (json != null) {
+      result.addAll(parseJsonStringArray(json));
+    }
+
+    return Collections.unmodifiableSet(result);
   }
 
   @Override
@@ -751,11 +849,90 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (interfaceName == null) {
       throw new IllegalArgumentException("Interface name cannot be null");
     }
+
     final String key = interfaceNamespace + ":" + interfaceName;
-    final Set<String> functions = definedInterfaces.get(key);
-    return functions != null
-        ? Collections.unmodifiableSet(new HashSet<>(functions))
-        : Collections.<String>emptySet();
+
+    // Start with Java-side tracked functions
+    final Set<String> javaFunctions = definedInterfaces.get(key);
+    final Set<String> result =
+        javaFunctions != null ? new HashSet<>(javaFunctions) : new HashSet<>();
+
+    // Merge with native-side tracked functions
+    final String json = nativeGetFunctions(nativeHandle, interfaceNamespace, interfaceName);
+    if (json != null) {
+      result.addAll(parseJsonStringArray(json));
+    }
+
+    return Collections.unmodifiableSet(result);
+  }
+
+  @Override
+  public boolean isWasiP2Enabled() {
+    return nativeIsWasiP2Enabled(nativeHandle);
+  }
+
+  @Override
+  public boolean isWasiHttpEnabled() {
+    return nativeIsWasiHttpEnabled(nativeHandle);
+  }
+
+  @Override
+  public int getHostFunctionCount() {
+    return nativeGetHostFunctionCount(nativeHandle);
+  }
+
+  @Override
+  public int getInterfaceCount() {
+    return nativeGetInterfaceCount(nativeHandle);
+  }
+
+  @Override
+  public void setAsyncSupport(final boolean enabled) throws WasmException {
+    nativeSetAsyncSupport(nativeHandle, enabled);
+  }
+
+  @Override
+  public void setWasiMaxRandomSize(final long maxSize) throws WasmException {
+    if (maxSize < 0) {
+      throw new IllegalArgumentException("maxSize cannot be negative");
+    }
+    nativeSetWasiMaxRandomSize(nativeHandle, maxSize);
+  }
+
+  /**
+   * Parses a JSON array of strings like {@code ["foo","bar"]} into a Set.
+   *
+   * @param json the JSON array string
+   * @return set of parsed strings
+   */
+  private static Set<String> parseJsonStringArray(final String json) {
+    final Set<String> result = new HashSet<>();
+    if (json == null || json.length() < 2) {
+      return result;
+    }
+    final String inner = json.substring(1, json.length() - 1).trim();
+    if (inner.isEmpty()) {
+      return result;
+    }
+    int i = 0;
+    while (i < inner.length()) {
+      final int start = inner.indexOf('"', i);
+      if (start == -1) {
+        break;
+      }
+      int end = start + 1;
+      while (end < inner.length()) {
+        if (inner.charAt(end) == '"' && inner.charAt(end - 1) != '\\') {
+          break;
+        }
+        end++;
+      }
+      if (end < inner.length()) {
+        result.add(inner.substring(start + 1, end).replace("\\\"", "\""));
+      }
+      i = end + 1;
+    }
+    return result;
   }
 
   @Override
@@ -777,25 +954,48 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (toInterface == null) {
       throw new IllegalArgumentException("To interface cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final String fromKey = fromNamespace + ":" + fromInterface;
+      final String toKey = toNamespace + ":" + toInterface;
 
-    final String fromKey = fromNamespace + ":" + fromInterface;
-    final String toKey = toNamespace + ":" + toInterface;
+      final Set<String> functions = definedInterfaces.get(fromKey);
+      if (functions != null) {
+        // Re-register each function under the target interface path via native linker
+        for (final String function : functions) {
+          final String fromPath = fromNamespace + "/" + fromInterface + "#" + function;
+          final Long callbackId = hostFunctions.get(fromPath);
+          if (callbackId != null) {
+            final String toPath = toNamespace + "/" + toInterface + "#" + function;
+            try {
+              nativeDefineHostFunction(nativeHandle, toPath, callbackId);
+            } catch (final Exception e) {
+              LOGGER.warning("Failed to alias function " + function + ": " + e.getMessage());
+            }
+            hostFunctions.put(toPath, callbackId);
+          }
+        }
 
-    final Set<String> functions = definedInterfaces.get(fromKey);
-    if (functions != null) {
-      final Set<String> aliasFunctions = Collections.synchronizedSet(new HashSet<String>());
-      aliasFunctions.addAll(functions);
-      definedInterfaces.put(toKey, aliasFunctions);
+        // Track in Java-side map
+        final Set<String> aliasFunctions = Collections.synchronizedSet(new HashSet<String>());
+        aliasFunctions.addAll(functions);
+        definedInterfaces.put(toKey, aliasFunctions);
+      }
+
+      LOGGER.fine("Created interface alias: " + fromKey + " -> " + toKey);
+    } finally {
+      endOperation();
     }
-
-    LOGGER.fine("Created interface alias: " + fromKey + " -> " + toKey);
   }
 
   @Override
   public void allowShadowing(final boolean allow) {
-    ensureNotClosed();
-    nativeAllowShadowing(nativeHandle, allow);
+    beginOperation();
+    try {
+      nativeAllowShadowing(nativeHandle, allow);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -803,18 +1003,21 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(component instanceof JniComponentImpl)) {
+        throw new WasmException("Component must be a JniComponentImpl for JNI ComponentLinker");
+      }
 
-    if (!(component instanceof JniComponentImpl)) {
-      throw new WasmException("Component must be a JniComponentImpl for JNI ComponentLinker");
-    }
+      final JniComponentImpl jniComponent = (JniComponentImpl) component;
+      final long componentHandle = jniComponent.getNativeHandle();
 
-    final JniComponentImpl jniComponent = (JniComponentImpl) component;
-    final long componentHandle = jniComponent.getNativeHandle();
-
-    final int result = nativeDefineUnknownImportsAsTraps(nativeHandle, componentHandle);
-    if (result != 0) {
-      throw new WasmException("Failed to define unknown imports as traps");
+      final int result = nativeDefineUnknownImportsAsTraps(nativeHandle, componentHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to define unknown imports as traps");
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -824,25 +1027,28 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(component instanceof JniComponentImpl)) {
-      return component.componentType();
-    }
-
-    final JniComponentImpl jniComponent = (JniComponentImpl) component;
+    beginOperation();
     try {
-      final String json =
-          JniComponent.nativeGetSubstitutedComponentTypeJson(
-              nativeHandle, jniComponent.getNativeHandle());
-      if (json == null) {
+      if (!(component instanceof JniComponentImpl)) {
         return component.componentType();
       }
-      return ComponentTypeCodec.deserialize(json);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      return component.componentType();
+
+      final JniComponentImpl jniComponent = (JniComponentImpl) component;
+      try {
+        final String json =
+            JniComponent.nativeGetSubstitutedComponentTypeJson(
+                nativeHandle, jniComponent.getNativeHandle());
+        if (json == null) {
+          return component.componentType();
+        }
+        return ComponentTypeCodec.deserialize(json);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        return component.componentType();
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -967,6 +1173,10 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
 
   private native void nativeEnableWasiHttpWithConfig(long linkerHandle, long fieldSizeLimit);
 
+  private native void nativeEnableWasiConfig(long linkerHandle);
+
+  private native void nativeSetConfigVariables(long linkerHandle, String[] keys, String[] values);
+
   private native void nativeDestroyComponentLinker(long linkerHandle);
 
   private native void nativeDefineHostFunction(long linkerHandle, String witPath, long callbackId);
@@ -1039,4 +1249,21 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private static native void nativeSetWasiInsecureRandom(long linkerHandle, Object randomSource);
 
   private static native void nativeSetWasiSocketAddrCheck(long linkerHandle, Object addrCheck);
+
+  private static native String nativeGetInterfaces(long linkerHandle);
+
+  private static native String nativeGetFunctions(
+      long linkerHandle, String namespace, String interfaceName);
+
+  private static native boolean nativeIsWasiP2Enabled(long linkerHandle);
+
+  private static native boolean nativeIsWasiHttpEnabled(long linkerHandle);
+
+  private static native int nativeGetHostFunctionCount(long linkerHandle);
+
+  private static native int nativeGetInterfaceCount(long linkerHandle);
+
+  private static native void nativeSetAsyncSupport(long linkerHandle, boolean enabled);
+
+  private static native void nativeSetWasiMaxRandomSize(long linkerHandle, long maxSize);
 }

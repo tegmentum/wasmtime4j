@@ -515,6 +515,61 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS, // linker pointer
             ValueLayout.ADDRESS)); // component pointer
 
+    // ===== Linker Query/Config Functions =====
+    addFunctionBinding(
+        "wasmtime4j_component_linker_get_interfaces",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS)); // json_out
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_get_functions",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.ADDRESS, // namespace
+            ValueLayout.ADDRESS, // interface_name
+            ValueLayout.ADDRESS)); // json_out
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_host_function_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // returns usize
+            ValueLayout.ADDRESS)); // linker_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_interface_count",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_LONG, // returns usize
+            ValueLayout.ADDRESS)); // linker_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_wasi_p2_enabled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns 0/1/FFI_ERROR
+            ValueLayout.ADDRESS)); // linker_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_wasi_http_enabled",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // returns 0/1/FFI_ERROR
+            ValueLayout.ADDRESS)); // linker_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_async_support",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.JAVA_INT)); // enabled flag
+
+    addFunctionBinding(
+        "wasmtime4j_component_linker_set_wasi_max_random_size",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, // return error code
+            ValueLayout.ADDRESS, // linker_ptr
+            ValueLayout.JAVA_LONG)); // max_size
+
     // ===== ComponentInstancePre =====
     addFunctionBinding(
         "wasmtime4j_component_linker_instantiate_pre",
@@ -1251,6 +1306,178 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         Integer.class,
         linkerPtr,
         fieldSizeLimit);
+  }
+
+  /**
+   * Enables WASI Config in the component linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerEnableWasiConfig(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_enable_wasi_config", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Sets configuration variables for WASI Config.
+   *
+   * <p>Allocates native memory for the key-value string arrays, calls the native function, and
+   * releases memory when done.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param variables the configuration variables as key-value pairs
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetConfigVariables(
+      final MemorySegment linkerPtr, final java.util.Map<String, String> variables) {
+    validatePointer(linkerPtr, "linkerPtr");
+
+    if (variables.isEmpty()) {
+      return 0;
+    }
+
+    try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
+      final int count = variables.size();
+
+      // Allocate arrays of pointers for keys and values
+      final MemorySegment keysArray = arena.allocate(ValueLayout.ADDRESS, count);
+      final MemorySegment valuesArray = arena.allocate(ValueLayout.ADDRESS, count);
+
+      int i = 0;
+      for (final java.util.Map.Entry<String, String> entry : variables.entrySet()) {
+        final MemorySegment keyStr = arena.allocateFrom(entry.getKey());
+        final MemorySegment valStr = arena.allocateFrom(entry.getValue());
+        keysArray.setAtIndex(ValueLayout.ADDRESS, i, keyStr);
+        valuesArray.setAtIndex(ValueLayout.ADDRESS, i, valStr);
+        i++;
+      }
+
+      return callNativeFunction(
+          "wasmtime4j_component_linker_set_config_variables",
+          Integer.class,
+          linkerPtr,
+          keysArray,
+          valuesArray,
+          count);
+    }
+  }
+
+  /**
+   * Gets all defined interfaces from the native linker as a JSON array string.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param jsonOut pointer to receive the JSON string (must be freed with componentFreeString)
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerGetInterfaces(
+      final MemorySegment linkerPtr, final MemorySegment jsonOut) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(jsonOut, "jsonOut");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_get_interfaces", Integer.class, linkerPtr, jsonOut);
+  }
+
+  /**
+   * Gets all defined functions for a specific interface as a JSON array string.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param namespace pointer to the interface namespace C string
+   * @param interfaceName pointer to the interface name C string
+   * @param jsonOut pointer to receive the JSON string (must be freed with componentFreeString)
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerGetFunctions(
+      final MemorySegment linkerPtr,
+      final MemorySegment namespace,
+      final MemorySegment interfaceName,
+      final MemorySegment jsonOut) {
+    validatePointer(linkerPtr, "linkerPtr");
+    validatePointer(namespace, "namespace");
+    validatePointer(interfaceName, "interfaceName");
+    validatePointer(jsonOut, "jsonOut");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_get_functions",
+        Integer.class,
+        linkerPtr,
+        namespace,
+        interfaceName,
+        jsonOut);
+  }
+
+  /**
+   * Gets the number of host functions defined in the linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return the host function count
+   */
+  public long componentLinkerHostFunctionCount(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_host_function_count", Long.class, linkerPtr);
+  }
+
+  /**
+   * Gets the number of interfaces defined in the linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return the interface count
+   */
+  public long componentLinkerInterfaceCount(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction("wasmtime4j_component_linker_interface_count", Long.class, linkerPtr);
+  }
+
+  /**
+   * Checks if WASI Preview 2 is enabled in the linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 1 if enabled, 0 if not, FFI_ERROR on error
+   */
+  public int componentLinkerWasiP2Enabled(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_wasi_p2_enabled", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Checks if WASI HTTP is enabled in the linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @return 1 if enabled, 0 if not, FFI_ERROR on error
+   */
+  public int componentLinkerWasiHttpEnabled(final MemorySegment linkerPtr) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_wasi_http_enabled", Integer.class, linkerPtr);
+  }
+
+  /**
+   * Sets async support on the linker.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param enabled 1 to enable, 0 to disable
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetAsyncSupport(final MemorySegment linkerPtr, final int enabled) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_async_support", Integer.class, linkerPtr, enabled);
+  }
+
+  /**
+   * Sets the maximum random buffer size for WASI random operations.
+   *
+   * @param linkerPtr pointer to the component linker
+   * @param maxSize the maximum size in bytes
+   * @return 0 on success, non-zero on error
+   */
+  public int componentLinkerSetWasiMaxRandomSize(
+      final MemorySegment linkerPtr, final long maxSize) {
+    validatePointer(linkerPtr, "linkerPtr");
+    return callNativeFunction(
+        "wasmtime4j_component_linker_set_wasi_max_random_size", Integer.class, linkerPtr, maxSize);
   }
 
   /**

@@ -677,6 +677,12 @@ pub struct ComponentLinker {
     /// WASI HTTP field size limit (if configured)
     #[cfg(feature = "wasi-http")]
     wasi_http_field_size_limit: Option<usize>,
+    /// Whether WASI Config is enabled
+    #[cfg(feature = "wasi-config")]
+    wasi_config_enabled: bool,
+    /// WASI Config variables to inject into store data during instantiation
+    #[cfg(feature = "wasi-config")]
+    wasi_config_vars: Vec<(String, String)>,
     /// WASI Preview 2 configuration
     wasi_p2_config: WasiP2Config,
     /// Whether this linker has been disposed
@@ -710,6 +716,10 @@ impl ComponentLinker {
             wasi_http_enabled: false,
             #[cfg(feature = "wasi-http")]
             wasi_http_field_size_limit: None,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_enabled: false,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: Vec::new(),
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -739,6 +749,10 @@ impl ComponentLinker {
             wasi_http_enabled: false,
             #[cfg(feature = "wasi-http")]
             wasi_http_field_size_limit: None,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_enabled: false,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: Vec::new(),
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -1503,6 +1517,60 @@ impl ComponentLinker {
         Ok(())
     }
 
+    /// Enable WASI Config support in the component linker.
+    ///
+    /// Adds `wasi:config/store` interfaces to the linker, allowing components
+    /// to read configuration variables at runtime.
+    #[cfg(feature = "wasi-config")]
+    pub fn enable_wasi_config(&mut self) -> WasmtimeResult<()> {
+        if self.wasi_config_enabled {
+            return Ok(());
+        }
+
+        wasmtime_wasi_config::add_to_linker(&mut self.linker, |data: &mut ComponentStoreData| {
+            wasmtime_wasi_config::WasiConfig::from(&data.wasi_config_vars)
+        })
+        .map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to enable WASI Config: {}", e),
+        })?;
+
+        self.wasi_config_enabled = true;
+        log::debug!("WASI Config enabled in component linker");
+
+        Ok(())
+    }
+
+    /// Set configuration variables for WASI Config.
+    ///
+    /// These variables will be injected into the `ComponentStoreData` during instantiation.
+    #[cfg(feature = "wasi-config")]
+    pub fn set_config_variables(&mut self, vars: Vec<(String, String)>) {
+        self.wasi_config_vars = vars;
+        log::debug!(
+            "Set {} WASI Config variables in component linker",
+            self.wasi_config_vars.len()
+        );
+    }
+
+    /// Build a `WasiConfigVariables` from the stored config vars.
+    #[cfg(feature = "wasi-config")]
+    fn build_wasi_config_vars(&self) -> wasmtime_wasi_config::WasiConfigVariables {
+        let mut config = wasmtime_wasi_config::WasiConfigVariables::new();
+        for (key, value) in &self.wasi_config_vars {
+            config.insert(key, value);
+        }
+        config
+    }
+
+    /// Stub when wasi-config feature is not compiled in.
+    #[cfg(not(feature = "wasi-config"))]
+    pub fn enable_wasi_config(&mut self) -> WasmtimeResult<()> {
+        Err(WasmtimeError::Runtime {
+            message: "WASI Config support not compiled in".to_string(),
+            backtrace: None,
+        })
+    }
+
     /// Create a configured WasiHttpCtx, applying any stored configuration
     #[cfg(feature = "wasi-http")]
     fn create_wasi_http_ctx(&self) -> wasmtime_wasi_http::WasiHttpCtx {
@@ -1549,6 +1617,8 @@ impl ComponentLinker {
                 } else {
                     None
                 },
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits: None,
                 start_time: Instant::now(),
             }
@@ -1556,6 +1626,8 @@ impl ComponentLinker {
             ComponentStoreData {
                 instance_id: 0,
                 user_data: None,
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: self.build_wasi_config_vars(),
                 ..Default::default()
             }
         };
@@ -1564,6 +1636,8 @@ impl ComponentLinker {
         let store_data = ComponentStoreData {
             instance_id: 0,
             user_data: None,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: self.build_wasi_config_vars(),
             ..Default::default()
         };
 
@@ -1624,6 +1698,8 @@ impl ComponentLinker {
             wasi_http_enabled: self.wasi_http_enabled,
             #[cfg(feature = "wasi-http")]
             wasi_http_field_size_limit: self.wasi_http_field_size_limit,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: self.wasi_config_vars.clone(),
             wasi_p2_config: self.wasi_p2_config.clone(),
             metadata: component.metadata().clone(),
             original_bytes: Arc::clone(component.original_bytes()),
@@ -1743,6 +1819,9 @@ pub struct ComponentInstancePreWrapper {
     /// WASI HTTP field size limit (if configured)
     #[cfg(feature = "wasi-http")]
     wasi_http_field_size_limit: Option<usize>,
+    /// WASI Config variables (cloned from linker at creation time)
+    #[cfg(feature = "wasi-config")]
+    wasi_config_vars: Vec<(String, String)>,
     /// WASI P2 configuration (cloned from linker at creation time)
     wasi_p2_config: WasiP2Config,
     /// Component metadata for creating ComponentInstanceHandle
@@ -1768,6 +1847,16 @@ impl ComponentInstancePreWrapper {
         ctx
     }
 
+    /// Build a `WasiConfigVariables` from the stored config vars.
+    #[cfg(feature = "wasi-config")]
+    fn build_wasi_config_vars(&self) -> wasmtime_wasi_config::WasiConfigVariables {
+        let mut config = wasmtime_wasi_config::WasiConfigVariables::new();
+        for (key, value) in &self.wasi_config_vars {
+            config.insert(key, value);
+        }
+        config
+    }
+
     /// Instantiate the component, creating a fresh store with the configured WASI context.
     ///
     /// Returns a `ComponentInstanceHandle` containing the store and instance, ready for
@@ -1789,6 +1878,8 @@ impl ComponentInstancePreWrapper {
                 } else {
                     None
                 },
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits: None,
                 start_time: Instant::now(),
             }
@@ -1796,6 +1887,8 @@ impl ComponentInstancePreWrapper {
             ComponentStoreData {
                 instance_id: 0,
                 user_data: None,
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: self.build_wasi_config_vars(),
                 ..Default::default()
             }
         };
@@ -1804,6 +1897,8 @@ impl ComponentInstancePreWrapper {
         let store_data = ComponentStoreData {
             instance_id: 0,
             user_data: None,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: self.build_wasi_config_vars(),
             ..Default::default()
         };
 
@@ -1868,6 +1963,8 @@ impl ComponentInstancePreWrapper {
                 } else {
                     None
                 },
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits,
                 start_time: Instant::now(),
             }
@@ -1876,6 +1973,8 @@ impl ComponentInstancePreWrapper {
                 instance_id: 0,
                 user_data: None,
                 store_limits,
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: self.build_wasi_config_vars(),
                 ..Default::default()
             }
         };
@@ -1885,6 +1984,8 @@ impl ComponentInstancePreWrapper {
             instance_id: 0,
             user_data: None,
             store_limits,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: self.build_wasi_config_vars(),
             ..Default::default()
         };
 
@@ -2261,6 +2362,10 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(
             wasi_http_enabled: false,
             #[cfg(feature = "wasi-http")]
             wasi_http_field_size_limit: None,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_enabled: false,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: Vec::new(),
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -2938,6 +3043,76 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_wasi_http_enabled(
     } else {
         0
     }
+}
+
+/// Enable WASI Config support in the component linker
+#[cfg(feature = "wasi-config")]
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_config(
+    linker_ptr: *mut c_void,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+    match linker.enable_wasi_config() {
+        Ok(()) => FFI_SUCCESS,
+        Err(e) => {
+            log::error!("Failed to enable WASI Config: {}", e);
+            FFI_ERROR
+        }
+    }
+}
+
+/// Set configuration variables for WASI Config.
+///
+/// Variables are passed as key-value pairs in alternating array entries:
+/// [key0, val0, key1, val1, ...]. The count is the number of pairs (not entries).
+#[cfg(feature = "wasi-config")]
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_set_config_variables(
+    linker_ptr: *mut c_void,
+    keys_ptr: *const *const c_char,
+    values_ptr: *const *const c_char,
+    count: c_int,
+) -> c_int {
+    if linker_ptr.is_null() || keys_ptr.is_null() || values_ptr.is_null() || count < 0 {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+
+    // Ensure wasi-config is enabled
+    if let Err(e) = linker.enable_wasi_config() {
+        log::error!("Failed to enable WASI Config: {}", e);
+        return FFI_ERROR;
+    }
+
+    // Parse key-value pairs
+    let mut vars = Vec::with_capacity(count as usize);
+    for i in 0..count as isize {
+        let key_ptr = *keys_ptr.offset(i);
+        let val_ptr = *values_ptr.offset(i);
+        if key_ptr.is_null() || val_ptr.is_null() {
+            return FFI_ERROR;
+        }
+
+        let key = match std::ffi::CStr::from_ptr(key_ptr).to_str() {
+            Ok(s) => s.to_string(),
+            Err(_) => return FFI_ERROR,
+        };
+        let val = match std::ffi::CStr::from_ptr(val_ptr).to_str() {
+            Ok(s) => s.to_string(),
+            Err(_) => return FFI_ERROR,
+        };
+        vars.push((key, val));
+    }
+
+    linker.set_config_variables(vars);
+
+    FFI_SUCCESS
 }
 
 /// Instantiate a component using the linker

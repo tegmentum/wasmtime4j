@@ -265,7 +265,95 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 }
 
 // ============================================================================
-// WASI Config JNI Native Methods
+// WASI Config Enable/Set JNI Native Methods
+// ============================================================================
+
+/// Enable WASI Config on the component linker
+/// JNI binding for JniComponentLinker.nativeEnableWasiConfig
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiConfig(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        linker.enable_wasi_config()?;
+        Ok(())
+    });
+}
+
+/// Set WASI Config variables on the component linker
+/// JNI binding for JniComponentLinker.nativeSetConfigVariables
+///
+/// Takes two parallel String arrays: keys and values.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetConfigVariables(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    keys: JObjectArray,
+    values: JObjectArray,
+) {
+    let result: Result<(), crate::WasmtimeError> = (|| {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+
+        // Ensure wasi-config is enabled first
+        linker.enable_wasi_config()?;
+
+        let len = env.get_array_length(&keys).map_err(|e| {
+            crate::WasmtimeError::Runtime {
+                message: format!("Failed to get keys array length: {}", e),
+                backtrace: None,
+            }
+        })? as usize;
+
+        let mut vars = Vec::with_capacity(len);
+        for i in 0..len {
+            let key_obj: JObject = env.get_object_array_element(&keys, i as i32).map_err(|e| {
+                crate::WasmtimeError::Runtime {
+                    message: format!("Failed to get key at index {}: {}", i, e),
+                    backtrace: None,
+                }
+            })?;
+            let val_obj: JObject = env.get_object_array_element(&values, i as i32).map_err(|e| {
+                crate::WasmtimeError::Runtime {
+                    message: format!("Failed to get value at index {}: {}", i, e),
+                    backtrace: None,
+                }
+            })?;
+
+            let key: String = env.get_string(&JString::from(key_obj)).map_err(|e| {
+                crate::WasmtimeError::Runtime {
+                    message: format!("Failed to convert key at index {}: {}", i, e),
+                    backtrace: None,
+                }
+            })?.into();
+            let val: String = env.get_string(&JString::from(val_obj)).map_err(|e| {
+                crate::WasmtimeError::Runtime {
+                    message: format!("Failed to convert value at index {}: {}", i, e),
+                    backtrace: None,
+                }
+            })?.into();
+
+            vars.push((key, val));
+        }
+
+        linker.set_config_variables(vars);
+        Ok(())
+    })();
+
+    if let Err(e) = result {
+        jni_utils::throw_jni_exception(&mut env, &e);
+    }
+}
+
+// ============================================================================
+// WASI P2 Config JNI Native Methods
 // ============================================================================
 
 macro_rules! jni_wasi_bool_setter {
@@ -1757,6 +1845,193 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_
                 component_linker_core::destroy_component_instance_pre(pre_handle as *mut c_void);
             }
         }
+        Ok(())
+    });
+}
+
+/// Get defined interfaces as a JSON array string
+/// JNI binding for JniComponentLinker.nativeGetInterfaces
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeGetInterfaces(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) -> jni::sys::jobject {
+    let result: Result<jni::sys::jobject, WasmtimeError> = (|| {
+        if linker_handle == 0 {
+            return Ok(std::ptr::null_mut());
+        }
+        let linker = unsafe {
+            component_linker_core::get_component_linker_ref(linker_handle as *const c_void)?
+        };
+        let interfaces = linker.get_defined_interfaces();
+        let json = format!(
+            "[{}]",
+            interfaces
+                .iter()
+                .map(|s| format!("\"{}\"", s.replace('"', "\\\"")))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        let jstr = env.new_string(&json).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to create Java string: {}", e),
+            backtrace: None,
+        })?;
+        Ok(jstr.into_raw())
+    })();
+    match result {
+        Ok(obj) => obj,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Get defined functions for an interface as a JSON array string
+/// JNI binding for JniComponentLinker.nativeGetFunctions
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeGetFunctions(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    namespace: JString,
+    interface_name: JString,
+) -> jni::sys::jobject {
+    let result: Result<jni::sys::jobject, WasmtimeError> = (|| {
+        if linker_handle == 0 {
+            return Ok(std::ptr::null_mut());
+        }
+        let linker = unsafe {
+            component_linker_core::get_component_linker_ref(linker_handle as *const c_void)?
+        };
+        let ns: String = env.get_string(&namespace).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to get namespace string: {}", e),
+            backtrace: None,
+        })?.into();
+        let iface: String = env.get_string(&interface_name).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to get interface name string: {}", e),
+            backtrace: None,
+        })?.into();
+        let functions = linker.get_defined_functions(&ns, &iface);
+        let json = format!(
+            "[{}]",
+            functions
+                .iter()
+                .map(|s| format!("\"{}\"", s.replace('"', "\\\"")))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        let jstr = env.new_string(&json).map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to create Java string: {}", e),
+            backtrace: None,
+        })?;
+        Ok(jstr.into_raw())
+    })();
+    match result {
+        Ok(obj) => obj,
+        Err(e) => {
+            jni_utils::throw_jni_exception(&mut env, &e);
+            std::ptr::null_mut()
+        }
+    }
+}
+
+/// Check if WASI P2 is enabled
+/// JNI binding for JniComponentLinker.nativeIsWasiP2Enabled
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeIsWasiP2Enabled(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if linker_handle == 0 {
+            return Ok(0);
+        }
+        let linker = unsafe {
+            component_linker_core::get_component_linker_ref(linker_handle as *const c_void)?
+        };
+        Ok(if linker.is_wasi_p2_enabled() { 1 } else { 0 })
+    })
+}
+
+/// Check if WASI HTTP is enabled
+/// JNI binding for JniComponentLinker.nativeIsWasiHttpEnabled
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeIsWasiHttpEnabled(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) -> jboolean {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if linker_handle == 0 {
+            return Ok(0);
+        }
+        let linker = unsafe {
+            component_linker_core::get_component_linker_ref(linker_handle as *const c_void)?
+        };
+        Ok(if linker.is_wasi_http_enabled() { 1 } else { 0 })
+    })
+}
+
+/// Get host function count
+/// JNI binding for JniComponentLinker.nativeGetHostFunctionCount
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeGetHostFunctionCount(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if linker_handle == 0 {
+            return Ok(0);
+        }
+        let linker = unsafe {
+            component_linker_core::get_component_linker_ref(linker_handle as *const c_void)?
+        };
+        Ok(linker.host_function_count() as jint)
+    })
+}
+
+/// Get interface count
+/// JNI binding for JniComponentLinker.nativeGetInterfaceCount
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeGetInterfaceCount(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        if linker_handle == 0 {
+            return Ok(0);
+        }
+        let linker = unsafe {
+            component_linker_core::get_component_linker_ref(linker_handle as *const c_void)?
+        };
+        Ok(linker.defined_interfaces.len() as jint)
+    })
+}
+
+/// Set WASI max random size
+/// JNI binding for JniComponentLinker.nativeSetWasiMaxRandomSize
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiMaxRandomSize(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    max_size: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        if linker_handle == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Linker handle is null".to_string(),
+            });
+        }
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        linker.set_wasi_max_random_size(max_size as u64);
         Ok(())
     });
 }

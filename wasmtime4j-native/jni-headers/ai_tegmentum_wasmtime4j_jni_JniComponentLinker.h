@@ -33,6 +33,22 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeEnableWasiConfig
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiConfig
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetConfigVariables
+ * Signature: (J[Ljava/lang/String;[Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetConfigVariables
+  (JNIEnv *, jobject, jlong, jobjectArray, jobjectArray);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
  * Method:    nativeDestroyComponentLinker
  * Signature: (J)V
  */
@@ -270,6 +286,70 @@ JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
  */
 JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiSocketAddrCheck
   (JNIEnv *, jclass, jlong, jobject);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeGetInterfaces
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeGetInterfaces
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeGetFunctions
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeGetFunctions
+  (JNIEnv *, jclass, jlong, jstring, jstring);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeIsWasiP2Enabled
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeIsWasiP2Enabled
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeIsWasiHttpEnabled
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeIsWasiHttpEnabled
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeGetHostFunctionCount
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeGetHostFunctionCount
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeGetInterfaceCount
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeGetInterfaceCount
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetAsyncSupport
+ * Signature: (JZ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetAsyncSupport
+  (JNIEnv *, jclass, jlong, jboolean);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniComponentLinker
+ * Method:    nativeSetWasiMaxRandomSize
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeSetWasiMaxRandomSize
+  (JNIEnv *, jclass, jlong, jlong);
 
 #ifdef __cplusplus
 }

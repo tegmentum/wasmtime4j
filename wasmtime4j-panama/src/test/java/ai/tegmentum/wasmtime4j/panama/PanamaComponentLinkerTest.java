@@ -316,6 +316,87 @@ class PanamaComponentLinkerTest {
   }
 
   @Nested
+  @DisplayName("Query and Config Method Tests")
+  class QueryAndConfigMethodTests {
+
+    @Test
+    @DisplayName("Should report WASI P2 not enabled by default")
+    void testWasiP2NotEnabledByDefault() {
+      assertFalse(
+          linker.isWasiP2Enabled(), "WASI P2 should not be enabled before enableWasiPreview2()");
+    }
+
+    @Test
+    @DisplayName("Should report WASI HTTP not enabled by default")
+    void testWasiHttpNotEnabledByDefault() {
+      assertFalse(
+          linker.isWasiHttpEnabled(), "WASI HTTP should not be enabled before enableWasiHttp()");
+    }
+
+    @Test
+    @DisplayName("Should return zero host function count initially")
+    void testHostFunctionCountInitially() {
+      assertEquals(
+          0, linker.getHostFunctionCount(), "Host function count should be 0 before any defines");
+    }
+
+    @Test
+    @DisplayName("Should return zero interface count initially")
+    void testInterfaceCountInitially() {
+      assertEquals(0, linker.getInterfaceCount(), "Interface count should be 0 before any defines");
+    }
+
+    @Test
+    @DisplayName("Should increment host function count after define")
+    void testHostFunctionCountAfterDefine() throws WasmException {
+      linker.defineFunction("ns", "iface", "func1", params -> List.of());
+      assertTrue(
+          linker.getHostFunctionCount() >= 1,
+          "Host function count should be at least 1 after defining a function, got: "
+              + linker.getHostFunctionCount());
+    }
+
+    @Test
+    @DisplayName("Should increment interface count after define")
+    void testInterfaceCountAfterDefine() throws WasmException {
+      linker.defineFunction("ns", "iface", "func1", params -> List.of());
+      assertTrue(
+          linker.getInterfaceCount() >= 1,
+          "Interface count should be at least 1 after defining a function, got: "
+              + linker.getInterfaceCount());
+    }
+
+    @Test
+    @DisplayName("Should set async support without throwing")
+    void testSetAsyncSupport() throws WasmException {
+      linker.setAsyncSupport(true);
+      linker.setAsyncSupport(false);
+      // No exception means success - async state is internal to native linker
+    }
+
+    @Test
+    @DisplayName("Should set WASI max random size without throwing")
+    void testSetWasiMaxRandomSize() throws WasmException {
+      linker.setWasiMaxRandomSize(4096);
+      // No exception means success - value is internal to native linker
+    }
+
+    @Test
+    @DisplayName("Should accept zero for WASI max random size")
+    void testSetWasiMaxRandomSizeZero() throws WasmException {
+      linker.setWasiMaxRandomSize(0);
+      // No exception means success
+    }
+
+    @Test
+    @DisplayName("Should accept large value for WASI max random size")
+    void testSetWasiMaxRandomSizeLarge() throws WasmException {
+      linker.setWasiMaxRandomSize(Long.MAX_VALUE);
+      // No exception means success
+    }
+  }
+
+  @Nested
   @DisplayName("Lifecycle Tests")
   class LifecycleTests {
 

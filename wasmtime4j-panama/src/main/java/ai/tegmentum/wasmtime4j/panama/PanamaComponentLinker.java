@@ -172,12 +172,19 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Build WIT path: "namespace:package/interface#function"
-    final String witPath =
-        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
-    defineHostFunctionNative(witPath, implementation, false);
+      // Build WIT path: "namespace/interface#function"
+      final String witPath = interfaceNamespace + "/" + interfaceName + "#" + functionName;
+      defineHostFunctionNative(witPath, implementation, false);
+
+      // Track with known parameters (more reliable than WIT path parsing)
+      final String interfaceKey = interfaceNamespace + ":" + interfaceName;
+      definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -189,9 +196,13 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    defineHostFunctionNative(witPath, implementation, false);
+      defineHostFunctionNative(witPath, implementation, false);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -213,12 +224,19 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Build WIT path: "namespace:package/interface#function"
-    final String witPath =
-        interfaceNamespace + ":" + interfaceName + "/" + interfaceName + "#" + functionName;
-    defineHostFunctionNative(witPath, implementation, true);
+      // Build WIT path: "namespace/interface#function"
+      final String witPath = interfaceNamespace + "/" + interfaceName + "#" + functionName;
+      defineHostFunctionNative(witPath, implementation, true);
+
+      // Track with known parameters (more reliable than WIT path parsing)
+      final String interfaceKey = interfaceNamespace + ":" + interfaceName;
+      definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(functionName);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -230,9 +248,13 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    defineHostFunctionNative(witPath, implementation, true);
+      defineHostFunctionNative(witPath, implementation, true);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -250,10 +272,14 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (functions == null) {
       throw new IllegalArgumentException("Functions cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    for (final Map.Entry<String, ComponentHostFunction> entry : functions.entrySet()) {
-      defineFunction(interfaceNamespace, interfaceName, entry.getKey(), entry.getValue());
+      for (final Map.Entry<String, ComponentHostFunction> entry : functions.entrySet()) {
+        defineFunction(interfaceNamespace, interfaceName, entry.getKey(), entry.getValue());
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -276,62 +302,66 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (resourceDefinition == null) {
       throw new IllegalArgumentException("Resource definition cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Build the interface path in WIT format: "ns:pkg/iface"
-    final String interfacePath = interfaceNamespace + ":" + interfaceName;
+      // Build the interface path in WIT format: "ns:pkg/iface"
+      final String interfacePath = interfaceNamespace + ":" + interfaceName;
 
-    // Assign a unique resource ID
-    final int resourceId = RESOURCE_ID_COUNTER.incrementAndGet();
+      // Assign a unique resource ID
+      final int resourceId = RESOURCE_ID_COUNTER.incrementAndGet();
 
-    // Set up destructor if provided
-    MemorySegment destructorStub = MemorySegment.NULL;
-    long destructorCallbackId = 0L;
-    if (resourceDefinition.getDestructor().isPresent()) {
-      destructorCallbackId = NEXT_CALLBACK_ID.getAndIncrement();
-      WASI_CALLBACKS.put(destructorCallbackId, resourceDefinition.getDestructor().get());
-      destructorStub = getOrCreateResourceDestructorUpcallStub();
-    }
-
-    // Call native define_resource
-    try (Arena tempArena = Arena.ofConfined()) {
-      final byte[] pathBytes = interfacePath.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
-
-      final byte[] nameBytes = resourceName.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
-
-      final int errorCode =
-          NATIVE_BINDINGS.componentLinkerDefineResource(
-              nativeLinker,
-              pathSegment,
-              pathBytes.length,
-              nameSegment,
-              nameBytes.length,
-              resourceId,
-              destructorStub,
-              destructorCallbackId);
-
-      if (errorCode != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            errorCode, "Failed to define resource: " + resourceName);
+      // Set up destructor if provided
+      MemorySegment destructorStub = MemorySegment.NULL;
+      long destructorCallbackId = 0L;
+      if (resourceDefinition.getDestructor().isPresent()) {
+        destructorCallbackId = NEXT_CALLBACK_ID.getAndIncrement();
+        WASI_CALLBACKS.put(destructorCallbackId, resourceDefinition.getDestructor().get());
+        destructorStub = getOrCreateResourceDestructorUpcallStub();
       }
+
+      // Call native define_resource
+      try (Arena tempArena = Arena.ofConfined()) {
+        final byte[] pathBytes = interfacePath.getBytes(StandardCharsets.UTF_8);
+        final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+
+        final byte[] nameBytes = resourceName.getBytes(StandardCharsets.UTF_8);
+        final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+
+        final int errorCode =
+            NATIVE_BINDINGS.componentLinkerDefineResource(
+                nativeLinker,
+                pathSegment,
+                pathBytes.length,
+                nameSegment,
+                nameBytes.length,
+                resourceId,
+                destructorStub,
+                destructorCallbackId);
+
+        if (errorCode != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              errorCode, "Failed to define resource: " + resourceName);
+        }
+      }
+
+      // Track resource in defined interfaces (use same key format as defineFunction)
+      final String interfaceKey = interfaceNamespace + ":" + interfaceName;
+      definedInterfaces
+          .computeIfAbsent(interfaceKey, k -> ConcurrentHashMap.newKeySet())
+          .add("[resource]" + resourceName);
+
+      LOGGER.fine(
+          "Defined component resource: "
+              + interfacePath
+              + "/"
+              + resourceName
+              + " (id="
+              + resourceId
+              + ")");
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Track resource in defined interfaces (use same key format as defineFunction)
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
-    definedInterfaces
-        .computeIfAbsent(interfaceKey, k -> ConcurrentHashMap.newKeySet())
-        .add("[resource]" + resourceName);
-
-    LOGGER.fine(
-        "Defined component resource: "
-            + interfacePath
-            + "/"
-            + resourceName
-            + " (id="
-            + resourceId
-            + ")");
   }
 
   @Override
@@ -347,36 +377,40 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException(
-          "Module must be a PanamaModule, got: " + module.getClass().getName());
-    }
-    final MemorySegment moduleHandle = ((PanamaModule) module).getNativeModule();
-
-    try (Arena tempArena = Arena.ofConfined()) {
-      final byte[] pathBytes = instancePath.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
-
-      final byte[] nameBytes = name.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
-
-      final int errorCode =
-          NATIVE_BINDINGS.componentLinkerDefineModule(
-              nativeLinker,
-              pathSegment,
-              pathBytes.length,
-              nameSegment,
-              nameBytes.length,
-              moduleHandle);
-
-      if (errorCode != 0) {
-        throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to define module: " + name);
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException(
+            "Module must be a PanamaModule, got: " + module.getClass().getName());
       }
-    }
+      final MemorySegment moduleHandle = ((PanamaModule) module).getNativeModule();
 
-    LOGGER.fine("Defined core module '" + name + "' on instance path '" + instancePath + "'");
+      try (Arena tempArena = Arena.ofConfined()) {
+        final byte[] pathBytes = instancePath.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+
+        final byte[] nameBytes = name.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        final MemorySegment nameSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+
+        final int errorCode =
+            NATIVE_BINDINGS.componentLinkerDefineModule(
+                nativeLinker,
+                pathSegment,
+                pathBytes.length,
+                nameSegment,
+                nameBytes.length,
+                moduleHandle);
+
+        if (errorCode != 0) {
+          throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to define module: " + name);
+        }
+      }
+
+      LOGGER.fine("Defined core module '" + name + "' on instance path '" + instancePath + "'");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -384,25 +418,29 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (instance == null) {
       throw new IllegalArgumentException("Instance cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Get exported functions from the instance and track them
-    // This allows the linker to satisfy imports from another component using this instance's
-    // exports
-    final Set<String> exportedFunctions = instance.getExportedFunctions();
+      // Get exported functions from the instance and track them
+      // This allows the linker to satisfy imports from another component using this instance's
+      // exports
+      final Set<String> exportedFunctions = instance.getExportedFunctions();
 
-    for (final String exportName : exportedFunctions) {
-      // Track the exported function as available for linking
-      // The native linker will resolve these at instantiation time
-      final String interfaceKey = "linked:" + instance.getId();
-      definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(exportName);
+      for (final String exportName : exportedFunctions) {
+        // Track the exported function as available for linking
+        // The native linker will resolve these at instantiation time
+        final String interfaceKey = "linked:" + instance.getId();
+        definedInterfaces.computeIfAbsent(interfaceKey, k -> new HashSet<>()).add(exportName);
+      }
+
+      LOGGER.fine(
+          "Linked component instance exports: "
+              + exportedFunctions.size()
+              + " functions from instance "
+              + instance.getId());
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    LOGGER.fine(
-        "Linked component instance exports: "
-            + exportedFunctions.size()
-            + " functions from instance "
-            + instance.getId());
   }
 
   @Override
@@ -414,12 +452,16 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Instantiate the component and link its exports
-    final ComponentInstance instance = instantiate(store, component);
-    linkInstance(instance);
-    return instance;
+      // Instantiate the component and link its exports
+      final ComponentInstance instance = instantiate(store, component);
+      linkInstance(instance);
+      return instance;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -427,25 +469,29 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(component instanceof PanamaComponentImpl)) {
-      throw new IllegalArgumentException("Component must be a Panama implementation");
+      if (!(component instanceof PanamaComponentImpl)) {
+        throw new IllegalArgumentException("Component must be a Panama implementation");
+      }
+
+      final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
+
+      final MemorySegment preHandle =
+          NATIVE_BINDINGS.componentLinkerInstantiatePre(
+              nativeLinker, panamaComponent.getNativeHandle());
+
+      if (preHandle == null || preHandle.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to pre-instantiate component through linker");
+      }
+
+      LOGGER.fine("Successfully pre-instantiated component through linker");
+
+      return new PanamaComponentInstancePre(preHandle, engine, panamaComponent);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
-
-    final MemorySegment preHandle =
-        NATIVE_BINDINGS.componentLinkerInstantiatePre(
-            nativeLinker, panamaComponent.getNativeHandle());
-
-    if (preHandle == null || preHandle.equals(MemorySegment.NULL)) {
-      throw new WasmException("Failed to pre-instantiate component through linker");
-    }
-
-    LOGGER.fine("Successfully pre-instantiated component through linker");
-
-    return new PanamaComponentInstancePre(preHandle, engine, panamaComponent);
   }
 
   @Override
@@ -457,54 +503,62 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(component instanceof PanamaComponentImpl)) {
-      throw new IllegalArgumentException("Component must be a Panama implementation");
-    }
-
-    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
-    final PanamaStore panamaStore = (store instanceof PanamaStore) ? (PanamaStore) store : null;
-
-    try (Arena tempArena = Arena.ofConfined()) {
-      // Allocate output pointer for the instance
-      final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
-
-      // Call native linker instantiate
-      final int errorCode =
-          NATIVE_BINDINGS.componentLinkerInstantiate(
-              nativeLinker, panamaComponent.getNativeHandle(), instanceOutPtr);
-
-      if (errorCode != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            errorCode, "Failed to instantiate component through linker");
+      if (!(component instanceof PanamaComponentImpl)) {
+        throw new IllegalArgumentException("Component must be a Panama implementation");
       }
 
-      // Get the instance pointer from the output
-      final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+      final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
+      final PanamaStore panamaStore = (store instanceof PanamaStore) ? (PanamaStore) store : null;
 
-      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException(
-            "Failed to instantiate component through linker: null instance returned");
+      try (Arena tempArena = Arena.ofConfined()) {
+        // Allocate output pointer for the instance
+        final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
+
+        // Call native linker instantiate
+        final int errorCode =
+            NATIVE_BINDINGS.componentLinkerInstantiate(
+                nativeLinker, panamaComponent.getNativeHandle(), instanceOutPtr);
+
+        if (errorCode != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              errorCode, "Failed to instantiate component through linker");
+        }
+
+        // Get the instance pointer from the output
+        final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException(
+              "Failed to instantiate component through linker: null instance returned");
+        }
+
+        LOGGER.fine("Successfully instantiated component through linker");
+
+        // Create and return the component instance
+        return new PanamaComponentInstance(instancePtr, panamaComponent, panamaStore, null);
       }
-
-      LOGGER.fine("Successfully instantiated component through linker");
-
-      // Create and return the component instance
-      return new PanamaComponentInstance(instancePtr, panamaComponent, panamaStore, null);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void enableWasiPreview2() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final int result = NATIVE_BINDINGS.componentLinkerEnableWasiP2(nativeLinker);
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI Preview 2");
+      final int result = NATIVE_BINDINGS.componentLinkerEnableWasiP2(nativeLinker);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI Preview 2");
+      }
+
+      LOGGER.fine("Enabled WASI Preview 2 in component linker");
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    LOGGER.fine("Enabled WASI Preview 2 in component linker");
   }
 
   @Override
@@ -512,25 +566,33 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Apply config settings before enabling WASI Preview 2
-    applyWasiConfig(config);
+      // Apply config settings before enabling WASI Preview 2
+      applyWasiConfig(config);
 
-    // Enable WASI Preview 2
-    enableWasiPreview2();
+      // Enable WASI Preview 2
+      enableWasiPreview2();
 
-    LOGGER.fine("Enabled WASI Preview 2 with custom configuration");
+      LOGGER.fine("Enabled WASI Preview 2 with custom configuration");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void enableWasiHttp() throws WasmException {
-    ensureNotClosed();
-    final int result = NATIVE_BINDINGS.componentLinkerEnableWasiHttp(nativeLinker);
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI HTTP");
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_BINDINGS.componentLinkerEnableWasiHttp(nativeLinker);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI HTTP");
+      }
+      LOGGER.fine("Enabled WASI HTTP in component linker");
+    } finally {
+      resourceHandle.endOperation();
     }
-    LOGGER.fine("Enabled WASI HTTP in component linker");
   }
 
   @Override
@@ -538,14 +600,50 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
-    ensureNotClosed();
-    // Pass 0 for field size limit to use default; WasiHttpConfig does not expose
-    // the low-level wasmtime field_size_limit setting directly
-    final int result = NATIVE_BINDINGS.componentLinkerEnableWasiHttpWithConfig(nativeLinker, 0L);
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI HTTP with config");
+    resourceHandle.beginOperation();
+    try {
+      // Pass 0 for field size limit to use default; WasiHttpConfig does not expose
+      // the low-level wasmtime field_size_limit setting directly
+      final int result = NATIVE_BINDINGS.componentLinkerEnableWasiHttpWithConfig(nativeLinker, 0L);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI HTTP with config");
+      }
+      LOGGER.fine("Enabled WASI HTTP with custom configuration");
+    } finally {
+      resourceHandle.endOperation();
     }
-    LOGGER.fine("Enabled WASI HTTP with custom configuration");
+  }
+
+  @Override
+  public void enableWasiConfig() throws WasmException {
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_BINDINGS.componentLinkerEnableWasiConfig(nativeLinker);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI Config");
+      }
+      LOGGER.fine("Enabled WASI Config in component linker");
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public void setConfigVariables(final java.util.Map<String, String> variables)
+      throws WasmException {
+    if (variables == null) {
+      throw new IllegalArgumentException("Variables cannot be null");
+    }
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_BINDINGS.componentLinkerSetConfigVariables(nativeLinker, variables);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to set WASI Config variables");
+      }
+      LOGGER.fine("Set " + variables.size() + " WASI Config variables");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -1106,10 +1204,14 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
 
   @Override
   public boolean isValid() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.componentLinkerIsValid(nativeLinker) == 1;
+    try {
+      return NATIVE_BINDINGS.componentLinkerIsValid(nativeLinker) == 1;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -1120,11 +1222,8 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (interfaceName == null) {
       throw new IllegalArgumentException("Interface name cannot be null");
     }
-    ensureNotClosed();
-
-    // Use Java-side tracking since defineFunction tracks here, not in native
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
-    return definedInterfaces.containsKey(interfaceKey);
+    final String key = interfaceNamespace + ":" + interfaceName;
+    return getDefinedInterfaces().contains(key);
   }
 
   @Override
@@ -1139,18 +1238,39 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
-
-    // Use Java-side tracking since defineFunction tracks here, not in native
-    final String interfaceKey = interfaceNamespace + ":" + interfaceName;
-    final Set<String> functions = definedInterfaces.get(interfaceKey);
-    return functions != null && functions.contains(functionName);
+    return getDefinedFunctions(interfaceNamespace, interfaceName).contains(functionName);
   }
 
   @Override
   public Set<String> getDefinedInterfaces() {
-    ensureNotClosed();
-    return new HashSet<>(definedInterfaces.keySet());
+    resourceHandle.beginOperation();
+    try {
+      // Start with Java-side tracked interfaces
+      final Set<String> result = new HashSet<>(definedInterfaces.keySet());
+
+      // Merge with native-side tracked interfaces (e.g. WASI)
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment jsonOut = tempArena.allocate(ValueLayout.ADDRESS);
+        final int errorCode = NATIVE_BINDINGS.componentLinkerGetInterfaces(nativeLinker, jsonOut);
+
+        if (errorCode == 0) {
+          final MemorySegment jsonPtr = jsonOut.get(ValueLayout.ADDRESS, 0);
+          if (jsonPtr != null && !jsonPtr.equals(MemorySegment.NULL)) {
+            try {
+              final MemorySegment unbounded = jsonPtr.reinterpret(Long.MAX_VALUE);
+              final String json = unbounded.getString(0);
+              result.addAll(parseJsonStringArray(json));
+            } finally {
+              NATIVE_BINDINGS.componentFreeString(jsonPtr);
+            }
+          }
+        }
+      }
+
+      return result;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -1162,11 +1282,115 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (interfaceName == null) {
       throw new IllegalArgumentException("Interface name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
+      final String key = interfaceNamespace + ":" + interfaceName;
 
-    final String key = interfaceNamespace + ":" + interfaceName;
-    final Set<String> functions = definedInterfaces.get(key);
-    return functions != null ? new HashSet<>(functions) : Set.of();
+      // Start with Java-side tracked functions
+      final Set<String> javaFunctions = definedInterfaces.get(key);
+      final Set<String> result =
+          javaFunctions != null ? new HashSet<>(javaFunctions) : new HashSet<>();
+
+      // Merge with native-side tracked functions
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nsPtr = tempArena.allocateFrom(interfaceNamespace);
+        final MemorySegment namePtr = tempArena.allocateFrom(interfaceName);
+        final MemorySegment jsonOut = tempArena.allocate(ValueLayout.ADDRESS);
+
+        final int errorCode =
+            NATIVE_BINDINGS.componentLinkerGetFunctions(nativeLinker, nsPtr, namePtr, jsonOut);
+
+        if (errorCode == 0) {
+          final MemorySegment jsonPtr = jsonOut.get(ValueLayout.ADDRESS, 0);
+          if (jsonPtr != null && !jsonPtr.equals(MemorySegment.NULL)) {
+            try {
+              final MemorySegment unbounded = jsonPtr.reinterpret(Long.MAX_VALUE);
+              final String json = unbounded.getString(0);
+              result.addAll(parseJsonStringArray(json));
+            } finally {
+              NATIVE_BINDINGS.componentFreeString(jsonPtr);
+            }
+          }
+        }
+      }
+
+      return result;
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public boolean isWasiP2Enabled() {
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_BINDINGS.componentLinkerWasiP2Enabled(nativeLinker);
+      return result == 1;
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public boolean isWasiHttpEnabled() {
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_BINDINGS.componentLinkerWasiHttpEnabled(nativeLinker);
+      return result == 1;
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public int getHostFunctionCount() {
+    resourceHandle.beginOperation();
+    try {
+      return (int) NATIVE_BINDINGS.componentLinkerHostFunctionCount(nativeLinker);
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public int getInterfaceCount() {
+    resourceHandle.beginOperation();
+    try {
+      return (int) NATIVE_BINDINGS.componentLinkerInterfaceCount(nativeLinker);
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public void setAsyncSupport(final boolean enabled) throws WasmException {
+    resourceHandle.beginOperation();
+    try {
+      final int errorCode =
+          NATIVE_BINDINGS.componentLinkerSetAsyncSupport(nativeLinker, enabled ? 1 : 0);
+      if (errorCode != 0) {
+        throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to set async support");
+      }
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public void setWasiMaxRandomSize(final long maxSize) throws WasmException {
+    if (maxSize < 0) {
+      throw new IllegalArgumentException("maxSize cannot be negative");
+    }
+    resourceHandle.beginOperation();
+    try {
+      final int errorCode =
+          NATIVE_BINDINGS.componentLinkerSetWasiMaxRandomSize(nativeLinker, maxSize);
+      if (errorCode != 0) {
+        throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to set WASI max random size");
+      }
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -1188,34 +1412,58 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (toInterface == null) {
       throw new IllegalArgumentException("To interface cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Copy all functions from source interface to target interface
-    final String fromKey = fromNamespace + ":" + fromInterface;
-    final String toKey = toNamespace + ":" + toInterface;
+      final String fromKey = fromNamespace + ":" + fromInterface;
+      final String toKey = toNamespace + ":" + toInterface;
 
-    final Set<String> sourceFunctions = definedInterfaces.get(fromKey);
-    if (sourceFunctions != null) {
-      definedInterfaces.computeIfAbsent(toKey, k -> new HashSet<>()).addAll(sourceFunctions);
+      final Set<String> sourceFunctions = definedInterfaces.get(fromKey);
+      if (sourceFunctions != null) {
+        final MemorySegment stub = getOrCreateHostFunctionUpcallStub();
 
-      // Also copy the host function registrations (witPath format: ns/iface#func)
-      for (final String function : sourceFunctions) {
-        final String fromPath = fromNamespace + "/" + fromInterface + "#" + function;
-        final String toPath = toNamespace + "/" + toInterface + "#" + function;
-        final Long callbackId = hostFunctions.get(fromPath);
-        if (callbackId != null) {
-          hostFunctions.put(toPath, callbackId);
+        // Re-register each function under the target interface path via native linker
+        for (final String function : sourceFunctions) {
+          final String fromPath = fromNamespace + "/" + fromInterface + "#" + function;
+          final Long callbackId = hostFunctions.get(fromPath);
+          if (callbackId != null) {
+            final String toPath = toNamespace + "/" + toInterface + "#" + function;
+
+            // Register with native linker using existing callback ID
+            try (Arena tempArena = Arena.ofConfined()) {
+              final byte[] pathBytes = toPath.getBytes(StandardCharsets.UTF_8);
+              final MemorySegment pathSegment =
+                  tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+              final int errorCode =
+                  NATIVE_BINDINGS.componentLinkerDefineHostFunction(
+                      nativeLinker, pathSegment, pathBytes.length, stub, callbackId);
+              if (errorCode != 0) {
+                LOGGER.warning("Failed to alias function " + function + " to " + toPath);
+              }
+            }
+
+            hostFunctions.put(toPath, callbackId);
+          }
         }
-      }
-    }
 
-    LOGGER.fine("Created interface alias from " + fromKey + " to " + toKey);
+        // Track in Java-side map
+        definedInterfaces.computeIfAbsent(toKey, k -> new HashSet<>()).addAll(sourceFunctions);
+      }
+
+      LOGGER.fine("Created interface alias from " + fromKey + " to " + toKey);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void allowShadowing(final boolean allow) {
-    ensureNotClosed();
-    NATIVE_BINDINGS.componentLinkerAllowShadowing(nativeLinker, allow ? 1 : 0);
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.componentLinkerAllowShadowing(nativeLinker, allow ? 1 : 0);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -1223,19 +1471,23 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(component instanceof PanamaComponentImpl)) {
-      throw new IllegalArgumentException("Component must be a Panama implementation");
-    }
+      if (!(component instanceof PanamaComponentImpl)) {
+        throw new IllegalArgumentException("Component must be a Panama implementation");
+      }
 
-    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
+      final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
 
-    final int result =
-        NATIVE_BINDINGS.componentLinkerDefineUnknownImportsAsTraps(
-            nativeLinker, panamaComponent.getNativeHandle());
-    if (result != 0) {
-      throw new WasmException("Failed to define unknown imports as traps");
+      final int result =
+          NATIVE_BINDINGS.componentLinkerDefineUnknownImportsAsTraps(
+              nativeLinker, panamaComponent.getNativeHandle());
+      if (result != 0) {
+        throw new WasmException("Failed to define unknown imports as traps");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1245,37 +1497,81 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
     if (component == null) {
       throw new IllegalArgumentException("Component cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(component instanceof PanamaComponentImpl)) {
-      return component.componentType();
-    }
-
-    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
-
-    try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment jsonOut = tempArena.allocate(ValueLayout.ADDRESS);
-      final int errorCode =
-          NATIVE_BINDINGS.componentLinkerSubstitutedTypeJson(
-              nativeLinker, panamaComponent.getNativeHandle(), jsonOut);
-
-      if (errorCode != 0) {
+      if (!(component instanceof PanamaComponentImpl)) {
         return component.componentType();
       }
 
-      final MemorySegment jsonPtr = jsonOut.get(ValueLayout.ADDRESS, 0);
-      if (jsonPtr == null || jsonPtr.equals(MemorySegment.NULL)) {
-        return component.componentType();
-      }
+      final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
 
-      try {
-        final MemorySegment unbounded = jsonPtr.reinterpret(Long.MAX_VALUE);
-        final String json = unbounded.getString(0);
-        return ComponentTypeCodec.deserialize(json);
-      } finally {
-        NATIVE_BINDINGS.componentFreeString(jsonPtr);
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment jsonOut = tempArena.allocate(ValueLayout.ADDRESS);
+        final int errorCode =
+            NATIVE_BINDINGS.componentLinkerSubstitutedTypeJson(
+                nativeLinker, panamaComponent.getNativeHandle(), jsonOut);
+
+        if (errorCode != 0) {
+          return component.componentType();
+        }
+
+        final MemorySegment jsonPtr = jsonOut.get(ValueLayout.ADDRESS, 0);
+        if (jsonPtr == null || jsonPtr.equals(MemorySegment.NULL)) {
+          return component.componentType();
+        }
+
+        try {
+          final MemorySegment unbounded = jsonPtr.reinterpret(Long.MAX_VALUE);
+          final String json = unbounded.getString(0);
+          return ComponentTypeCodec.deserialize(json);
+        } finally {
+          NATIVE_BINDINGS.componentFreeString(jsonPtr);
+        }
       }
+    } finally {
+      resourceHandle.endOperation();
     }
+  }
+
+  /**
+   * Parses a JSON array of strings like {@code ["foo","bar"]} into a Set.
+   *
+   * @param json the JSON array string
+   * @return set of parsed strings
+   */
+  private static Set<String> parseJsonStringArray(final String json) {
+    final Set<String> result = new HashSet<>();
+    if (json == null || json.length() < 2) {
+      return result;
+    }
+    // Strip outer brackets
+    final String inner = json.substring(1, json.length() - 1).trim();
+    if (inner.isEmpty()) {
+      return result;
+    }
+    // Simple parser for JSON string arrays - handles escaped quotes
+    int i = 0;
+    while (i < inner.length()) {
+      // Find opening quote
+      final int start = inner.indexOf('"', i);
+      if (start == -1) {
+        break;
+      }
+      // Find closing quote (skip escaped quotes)
+      int end = start + 1;
+      while (end < inner.length()) {
+        if (inner.charAt(end) == '"' && inner.charAt(end - 1) != '\\') {
+          break;
+        }
+        end++;
+      }
+      if (end < inner.length()) {
+        result.add(inner.substring(start + 1, end).replace("\\\"", "\""));
+      }
+      i = end + 1;
+    }
+    return result;
   }
 
   @Override
@@ -1297,10 +1593,6 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
    *
    * @throws IllegalStateException if closed
    */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-  }
-
   /**
    * Defines a host function via native FFI, registering it with the Wasmtime linker.
    *

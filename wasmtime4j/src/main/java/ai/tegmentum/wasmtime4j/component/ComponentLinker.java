@@ -347,6 +347,28 @@ public interface ComponentLinker<T> extends Closeable {
   void enableWasiHttp(WasiHttpConfig config) throws WasmException;
 
   /**
+   * Enables WASI Config support in this component linker.
+   *
+   * <p>Adds the {@code wasi:config/store} interfaces, allowing components to read configuration
+   * variables at runtime via {@code wasi:config/store.get} and {@code wasi:config/store.get-all}.
+   *
+   * @throws WasmException if WASI Config cannot be enabled
+   */
+  void enableWasiConfig() throws WasmException;
+
+  /**
+   * Sets configuration variables for WASI Config.
+   *
+   * <p>These key-value pairs will be available to components via the {@code wasi:config/store}
+   * interface. This method also enables WASI Config if not already enabled.
+   *
+   * @param variables the configuration variables as key-value pairs
+   * @throws WasmException if the configuration variables cannot be set
+   * @throws IllegalArgumentException if variables is null
+   */
+  void setConfigVariables(java.util.Map<String, String> variables) throws WasmException;
+
+  /**
    * Gets the engine associated with this linker.
    *
    * @return the Engine that created this linker
@@ -384,12 +406,18 @@ public interface ComponentLinker<T> extends Closeable {
   /**
    * Gets all interfaces currently defined in this linker.
    *
-   * @return set of interface identifiers in "namespace:package/interface" format
+   * <p>This queries the native linker state directly, so it includes interfaces registered by
+   * {@link #enableWasiPreview2(WasiPreview2Config)} and {@link #enableWasiHttp(WasiHttpConfig)}.
+   *
+   * @return set of interface identifiers in "namespace/interface" format
    */
   Set<String> getDefinedInterfaces();
 
   /**
    * Gets all functions defined for a specific interface.
+   *
+   * <p>This queries the native linker state directly, so it includes functions registered by WASI
+   * enablement calls.
    *
    * @param interfaceNamespace the WIT interface namespace
    * @param interfaceName the WIT interface name
@@ -397,6 +425,54 @@ public interface ComponentLinker<T> extends Closeable {
    * @throws IllegalArgumentException if any parameter is null
    */
   Set<String> getDefinedFunctions(String interfaceNamespace, String interfaceName);
+
+  /**
+   * Checks if WASI Preview 2 support is enabled in this linker.
+   *
+   * @return true if WASI Preview 2 is enabled
+   */
+  boolean isWasiP2Enabled();
+
+  /**
+   * Checks if WASI HTTP support is enabled in this linker.
+   *
+   * @return true if WASI HTTP is enabled
+   */
+  boolean isWasiHttpEnabled();
+
+  /**
+   * Gets the number of host functions defined in this linker.
+   *
+   * @return the count of defined host functions
+   */
+  int getHostFunctionCount();
+
+  /**
+   * Gets the number of interfaces defined in this linker.
+   *
+   * @return the count of defined interfaces
+   */
+  int getInterfaceCount();
+
+  /**
+   * Enables or disables async support for this linker.
+   *
+   * <p>When enabled, the linker can define async host functions and the instantiation will support
+   * concurrent calls.
+   *
+   * @param enabled true to enable async support, false to disable
+   * @throws WasmException if the operation fails
+   */
+  void setAsyncSupport(boolean enabled) throws WasmException;
+
+  /**
+   * Sets the maximum random buffer size for WASI random operations.
+   *
+   * @param maxSize the maximum size in bytes
+   * @throws WasmException if the operation fails
+   * @throws IllegalArgumentException if maxSize is negative
+   */
+  void setWasiMaxRandomSize(long maxSize) throws WasmException;
 
   /**
    * Gets the root linker instance for builder-style import definitions.

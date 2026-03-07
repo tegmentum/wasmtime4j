@@ -513,6 +513,38 @@ class ComponentLinkerInstanceTest {
     public void enableWasiHttp(final ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig config) {}
 
     @Override
+    public void enableWasiConfig() {}
+
+    @Override
+    public void setConfigVariables(final java.util.Map<String, String> variables) {}
+
+    @Override
+    public boolean isWasiP2Enabled() {
+      return false;
+    }
+
+    @Override
+    public boolean isWasiHttpEnabled() {
+      return false;
+    }
+
+    @Override
+    public int getHostFunctionCount() {
+      return 0;
+    }
+
+    @Override
+    public int getInterfaceCount() {
+      return 0;
+    }
+
+    @Override
+    public void setAsyncSupport(final boolean enabled) {}
+
+    @Override
+    public void setWasiMaxRandomSize(final long maxSize) {}
+
+    @Override
     public Engine getEngine() {
       return null;
     }
