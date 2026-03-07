@@ -41,6 +41,10 @@
         <exclude name="AbstractClassWithoutAbstractMethod"/><!-- Base classes without abstract methods are acceptable -->
         <exclude name="AvoidReassigningLoopVariables"/><!-- Loop variable reassignment may be intentional -->
         <exclude name="AvoidBranchingStatementAsLastInLoop"/><!-- Break/continue as last statement may be clearer -->
+        <exclude name="UnnecessaryWarningSuppression"/><!-- Flags SpotBugs suppressions that PMD doesn't understand -->
+        <exclude name="ImplicitFunctionalInterface"/><!-- Not all single-method interfaces need @FunctionalInterface -->
+        <exclude name="ExhaustiveSwitchHasDefault"/><!-- Project convention requires default case in all switches -->
+        <exclude name="EnumComparison"/><!-- .equals() for enums is acceptable -->
     </rule>
 
     <!-- Code Style Rules -->
@@ -88,6 +92,10 @@
         <exclude name="UseExplicitTypes"/><!-- Explicit types may be preferred -->
         <exclude name="LocalVariableNamingConventions"/><!-- Variable names may follow native conventions -->
         <exclude name="ForLoopCanBeForeach"/><!-- Traditional for loops may be preferred -->
+        <exclude name="ControlStatementBraces"/><!-- Braces enforced by Checkstyle, not PMD -->
+        <exclude name="VariableCanBeInlined"/><!-- Explicit local variables can improve readability -->
+        <exclude name="UnnecessaryInterfaceDeclaration"/><!-- Explicit interface declarations can be clearer -->
+        <exclude name="UnnecessaryImport"/><!-- Import checking handled by Checkstyle; PMD false positives on inner classes -->
     </rule>
 
     <!-- Design Rules -->
@@ -130,6 +138,7 @@
         <exclude name="SimplifyConditional"/><!-- Explicit conditionals can be clearer -->
         <exclude name="AvoidUncheckedExceptionsInSignatures"/><!-- Native wrappers may throw unchecked exceptions -->
         <exclude name="TooFewBranchesForASwitchStatement"/><!-- Small switches may be clearer -->
+        <exclude name="PublicMemberInNonPublicType"/><!-- Package-private types may expose public members intentionally -->
     </rule>
 
     <!-- Error Prone Rules -->
@@ -165,6 +174,7 @@
         <exclude name="AvoidCatchingThrowable"/><!-- Throwable may be caught for native error handling -->
         <exclude name="AvoidBranchingStatementAsLastInLoop"/><!-- Break/continue as last statement may be clearer -->
         <exclude name="ConfusingArgumentToVarargsMethod"/><!-- Single-element varargs calls to standard APIs are clear -->
+        <exclude name="UseProperClassLoader"/><!-- J2EE-specific advice not relevant for standalone apps -->
     </rule>
 
     <!-- Multithreading Rules -->
@@ -194,6 +204,7 @@
         <exclude name="AddEmptyString"/><!-- Explicit empty string can be clearer -->
         <exclude name="AvoidFileStream"/><!-- FileStream may be needed for native interop -->
         <exclude name="TooFewBranchesForASwitchStatement"/><!-- Small switches may be clearer -->
+        <exclude name="TooFewBranchesForSwitch"/><!-- Renamed in PMD 7.22.0; small switches may be clearer -->
         <exclude name="UseIndexOfChar"/><!-- String indexOf can be clearer -->
     </rule>
 
