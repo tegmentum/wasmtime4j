@@ -15,8 +15,6 @@
  */
 package ai.tegmentum.wasmtime4j.smoke;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Linker;
@@ -66,21 +64,18 @@ public final class WasiSmokeTest extends DualRuntimeTest {
   void wasiModuleShouldInstantiateSuccessfully(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    LOGGER.info("Testing WASI support with runtime: " + runtime);
     try (final Engine engine = Engine.create();
         final Store store = engine.createStore();
         final Module module = engine.compileWat(WASI_MODULE_WAT)) {
 
       final WasiContext wasiCtx = WasiContext.create();
-      LOGGER.info("WasiContext created successfully");
 
       try (final Linker<WasiContext> linker = Linker.create(engine)) {
         WasiLinkerUtils.addToLinker(linker, wasiCtx);
-        LOGGER.info("WASI functions added to linker");
 
         try (final Instance instance = linker.instantiate(store, module)) {
-          assertNotNull(instance, "WASI instance should not be null");
-          LOGGER.info("WASI module instantiated successfully");
+          LOGGER.info(
+              "WASI module instantiated for " + runtime + ": " + instance.getClass().getName());
         }
       }
     }

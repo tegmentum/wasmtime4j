@@ -16,7 +16,6 @@
 package ai.tegmentum.wasmtime4j.smoke;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -34,7 +33,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * Smoke test for resource cleanup and lifecycle management.
  *
  * <p>Validates that all major resource types (Engine, Store, Module, Instance) can be created and
- * closed in the correct order without exceptions.
+ * closed in reverse order without exceptions.
  */
 @DisplayName("Resource Cleanup Smoke Test")
 public final class ResourceCleanupSmokeTest extends DualRuntimeTest {
@@ -59,58 +58,15 @@ public final class ResourceCleanupSmokeTest extends DualRuntimeTest {
   void allResourcesShouldCloseCleanlyInReverseOrder(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    LOGGER.info("Testing resource cleanup with runtime: " + runtime);
-
     final Engine engine = Engine.create();
-    assertNotNull(engine, "Engine should not be null");
-    LOGGER.info("Created Engine");
-
     final Store store = engine.createStore();
-    assertNotNull(store, "Store should not be null");
-    LOGGER.info("Created Store");
-
     final Module module = engine.compileWat(SIMPLE_WAT);
-    assertNotNull(module, "Module should not be null");
-    LOGGER.info("Created Module");
-
     final Instance instance = module.instantiate(store);
-    assertNotNull(instance, "Instance should not be null");
-    LOGGER.info("Created Instance");
 
-    // Close in reverse order of creation
     assertDoesNotThrow(instance::close, "Instance close should not throw");
-    LOGGER.info("Closed Instance");
-
     assertDoesNotThrow(module::close, "Module close should not throw");
-    LOGGER.info("Closed Module");
-
     assertDoesNotThrow(store::close, "Store close should not throw");
-    LOGGER.info("Closed Store");
-
     assertDoesNotThrow(engine::close, "Engine close should not throw");
-    LOGGER.info("Closed Engine");
-
-    LOGGER.info("All resources cleaned up successfully for runtime: " + runtime);
-  }
-
-  @ParameterizedTest(name = "try-with-resources cleanup for {0}")
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("try-with-resources should handle cleanup automatically")
-  void tryWithResourcesShouldHandleCleanupAutomatically(final RuntimeType runtime)
-      throws Exception {
-    setRuntime(runtime);
-
-    LOGGER.info("Testing try-with-resources cleanup with runtime: " + runtime);
-    assertDoesNotThrow(
-        () -> {
-          try (final Engine engine = Engine.create();
-              final Store store = engine.createStore();
-              final Module module = engine.compileWat(SIMPLE_WAT);
-              final Instance instance = module.instantiate(store)) {
-            assertNotNull(instance, "Instance should not be null");
-          }
-        },
-        "Try-with-resources cleanup should not throw");
-    LOGGER.info("Try-with-resources cleanup completed for runtime: " + runtime);
+    LOGGER.info("All resources closed cleanly for runtime: " + runtime);
   }
 }

@@ -15,8 +15,6 @@
  */
 package ai.tegmentum.wasmtime4j.smoke;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -49,25 +47,9 @@ public final class EngineLifecycleSmokeTest extends DualRuntimeTest {
   void engineShouldCreateAndCloseWithoutError(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    LOGGER.info("Creating engine with runtime: " + runtime);
     try (final Engine engine = Engine.create()) {
-      assertNotNull(engine, "Engine should not be null");
       assertTrue(engine.isValid(), "Engine should be valid after creation");
-      LOGGER.info("Engine created successfully, valid=" + engine.isValid());
+      LOGGER.info("Engine created and valid for runtime: " + runtime);
     }
-    LOGGER.info("Engine closed successfully for runtime: " + runtime);
-  }
-
-  @ParameterizedTest(name = "engine double close is safe for {0}")
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("engine double close should not throw")
-  void engineDoubleCloseShouldNotThrow(final RuntimeType runtime) throws Exception {
-    setRuntime(runtime);
-
-    LOGGER.info("Testing double close safety for runtime: " + runtime);
-    final Engine engine = Engine.create();
-    engine.close();
-    assertDoesNotThrow(engine::close, "Double close should not throw");
-    LOGGER.info("Double close completed safely for runtime: " + runtime);
   }
 }

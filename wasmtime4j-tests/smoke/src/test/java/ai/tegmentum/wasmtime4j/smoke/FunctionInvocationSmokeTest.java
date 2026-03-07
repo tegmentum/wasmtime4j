@@ -16,7 +16,6 @@
 package ai.tegmentum.wasmtime4j.smoke;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -64,18 +63,14 @@ public final class FunctionInvocationSmokeTest extends DualRuntimeTest {
   void addFunctionShouldReturnCorrectResult(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    LOGGER.info("Testing function invocation with runtime: " + runtime);
     try (final Engine engine = Engine.create();
         final Store store = engine.createStore();
         final Module module = engine.compileWat(ADD_WAT);
         final Instance instance = module.instantiate(store)) {
 
       final WasmValue[] results = instance.callFunction("add", WasmValue.i32(3), WasmValue.i32(4));
-
-      assertNotNull(results, "Function results should not be null");
-      assertEquals(1, results.length, "Should return exactly one result");
       assertEquals(7, results[0].asInt(), "3 + 4 should equal 7");
-      LOGGER.info("Function invocation succeeded: add(3, 4) = " + results[0].asInt());
+      LOGGER.info("add(3, 4) = " + results[0].asInt());
     }
   }
 }

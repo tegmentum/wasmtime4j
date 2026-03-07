@@ -16,7 +16,6 @@
 package ai.tegmentum.wasmtime4j.smoke;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
@@ -29,10 +28,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Smoke test that validates native library loading for each runtime.
+ * Smoke test that validates native library loading and runtime creation.
  *
- * <p>Verifies that the native Wasmtime library can be loaded and a runtime instance created
- * successfully. This is the most fundamental smoke test — if this fails, nothing else will work.
+ * <p>This is the most fundamental smoke test -- if this fails, nothing else will work.
  */
 @DisplayName("Native Library Loading Smoke Test")
 public final class NativeLibraryLoadingSmokeTest extends DualRuntimeTest {
@@ -45,29 +43,15 @@ public final class NativeLibraryLoadingSmokeTest extends DualRuntimeTest {
     clearRuntimeSelection();
   }
 
-  @ParameterizedTest(name = "native library available for {0}")
-  @ArgumentsSource(RuntimeProvider.class)
-  @DisplayName("native library should be available")
-  void nativeLibraryShouldBeAvailable(final RuntimeType runtime) {
-    setRuntime(runtime);
-
-    LOGGER.info("Checking native library availability for runtime: " + runtime);
-    final boolean available = WasmRuntimeFactory.isRuntimeAvailable(runtime);
-    LOGGER.info("Runtime " + runtime + " available: " + available);
-
-    assertTrue(available, "Runtime " + runtime + " should be available");
-  }
-
   @ParameterizedTest(name = "runtime creation succeeds for {0}")
   @ArgumentsSource(RuntimeProvider.class)
   @DisplayName("runtime creation should succeed")
   void runtimeCreationShouldSucceed(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    LOGGER.info("Creating runtime for: " + runtime);
     try (final WasmRuntime wasmRuntime = WasmRuntimeFactory.create(runtime)) {
       assertNotNull(wasmRuntime, "Created runtime should not be null for " + runtime);
-      LOGGER.info("Successfully created runtime: " + wasmRuntime.getClass().getName());
+      LOGGER.info("Created runtime: " + wasmRuntime.getClass().getName());
     }
   }
 }

@@ -25,7 +25,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Test framework from integration module -->
+        <!-- Test framework from integration module (DualRuntimeTest, RuntimeProvider) -->
         <dependency>
             <groupId>ai.tegmentum</groupId>
             <artifactId>wasmtime4j-tests-integration</artifactId>
@@ -51,21 +51,6 @@
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.platform</groupId>
@@ -122,12 +107,6 @@
                     <skip>true</skip>
                 </configuration>
             </plugin>
-
-            <!-- JaCoCo code coverage -->
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-            </plugin>
         </plugins>
     </build>
 
@@ -147,7 +126,6 @@
                                 <include>**/*SmokeTest.java</include>
                             </includes>
                             <systemPropertyVariables>
-                                <java.util.logging.config.file>src/test/resources/logging/test-logging.properties</java.util.logging.config.file>
                                 <wasmtime4j.native.mode>auto</wasmtime4j.native.mode>
                                 <wasmtime4j.native.strategy1>false</wasmtime4j.native.strategy1>
                                 <wasmtime4j.native.tmpdir>${project.build.directory}/wasmtime4j-native</wasmtime4j.native.tmpdir>

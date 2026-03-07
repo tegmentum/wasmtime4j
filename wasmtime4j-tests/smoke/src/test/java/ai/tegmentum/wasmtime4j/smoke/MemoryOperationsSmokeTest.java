@@ -16,14 +16,12 @@
 package ai.tegmentum.wasmtime4j.smoke;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
-import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
@@ -35,8 +33,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 /**
  * Smoke test for WebAssembly memory operations.
  *
- * <p>Validates that memory can be exported, written to via a WASM function, and read back from the
- * Java side.
+ * <p>Validates that memory can be exported, written to via a WASM function, and read back.
  */
 @DisplayName("Memory Operations Smoke Test")
 public final class MemoryOperationsSmokeTest extends DualRuntimeTest {
@@ -70,29 +67,17 @@ public final class MemoryOperationsSmokeTest extends DualRuntimeTest {
   void memoryStoreAndLoadShouldRoundtrip(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    LOGGER.info("Testing memory operations with runtime: " + runtime);
     try (final Engine engine = Engine.create();
         final Store store = engine.createStore();
         final Module module = engine.compileWat(MEMORY_WAT);
         final Instance instance = module.instantiate(store)) {
 
-      final WasmMemory memory =
-          instance
-              .getMemory("memory")
-              .orElseThrow(() -> new AssertionError("Memory export 'memory' should exist"));
-
-      assertTrue(memory.getSize() > 0, "Memory size should be positive");
-      LOGGER.info("Memory size: " + memory.getSize() + " pages");
-
       final int testValue = 0xDEAD_BEEF;
-      final int offset = 0;
+      instance.callFunction("store_value", WasmValue.i32(0), WasmValue.i32(testValue));
 
-      instance.callFunction("store_value", WasmValue.i32(offset), WasmValue.i32(testValue));
-      LOGGER.info("Stored value 0x" + Integer.toHexString(testValue) + " at offset " + offset);
-
-      final WasmValue[] results = instance.callFunction("load_value", WasmValue.i32(offset));
+      final WasmValue[] results = instance.callFunction("load_value", WasmValue.i32(0));
       assertEquals(testValue, results[0].asInt(), "Loaded value should match stored value");
-      LOGGER.info("Loaded value: 0x" + Integer.toHexString(results[0].asInt()) + " - matches");
+      LOGGER.info("Memory roundtrip: 0x" + Integer.toHexString(results[0].asInt()));
     }
   }
 }

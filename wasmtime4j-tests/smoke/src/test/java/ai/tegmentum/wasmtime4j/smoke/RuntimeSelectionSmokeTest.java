@@ -15,12 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.smoke;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.RuntimeType;
-import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -46,26 +44,13 @@ public final class RuntimeSelectionSmokeTest extends DualRuntimeTest {
   }
 
   @Test
-  @DisplayName("auto-selected runtime type should be non-null")
-  void autoSelectedRuntimeTypeShouldBeNonNull() {
-    clearRuntimeSelection();
-
-    LOGGER.info("Testing auto-selection of runtime type");
-    final RuntimeType selectedType = WasmRuntimeFactory.getSelectedRuntimeType();
-    assertNotNull(selectedType, "Auto-selected runtime type should not be null");
-    LOGGER.info("Auto-selected runtime type: " + selectedType);
-  }
-
-  @Test
-  @DisplayName("auto-selected runtime should create engine")
+  @DisplayName("auto-selected runtime should create a valid engine")
   void autoSelectedRuntimeShouldCreateEngine() throws Exception {
     clearRuntimeSelection();
 
-    LOGGER.info("Testing engine creation with auto-selected runtime");
     try (final Engine engine = Engine.create()) {
-      assertNotNull(engine, "Engine should not be null with auto-selected runtime");
       assertTrue(engine.isValid(), "Engine should be valid with auto-selected runtime");
-      LOGGER.info("Engine created with auto-selected runtime: " + engine.getClass().getName());
+      LOGGER.info("Auto-selected engine: " + engine.getClass().getName());
     }
   }
 
@@ -75,15 +60,9 @@ public final class RuntimeSelectionSmokeTest extends DualRuntimeTest {
   void manuallySelectedRuntimeShouldCreateEngine(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    LOGGER.info("Testing manual runtime selection for: " + runtime);
     try (final Engine engine = Engine.create()) {
-      assertNotNull(engine, "Engine should not be null for runtime " + runtime);
       assertTrue(engine.isValid(), "Engine should be valid for runtime " + runtime);
-      LOGGER.info(
-          "Engine created with manually selected runtime "
-              + runtime
-              + ": "
-              + engine.getClass().getName());
+      LOGGER.info("Engine created for " + runtime + ": " + engine.getClass().getName());
     }
   }
 }

@@ -15,8 +15,6 @@
  */
 package ai.tegmentum.wasmtime4j.smoke;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -52,17 +50,11 @@ public final class ModuleCompilationSmokeTest extends DualRuntimeTest {
   void watModuleShouldCompileSuccessfully(final RuntimeType runtime) throws Exception {
     setRuntime(runtime);
 
-    LOGGER.info("Compiling WAT module with runtime: " + runtime);
     try (final Engine engine = Engine.create();
         final Module module = engine.compileWat(SIMPLE_MODULE_WAT)) {
-      assertNotNull(module, "Compiled module should not be null");
       assertTrue(module.isValid(), "Compiled module should be valid");
-      assertFalse(module.getExports().isEmpty(), "Module should have at least one export");
-      LOGGER.info(
-          "Module compiled successfully, exports="
-              + module.getExports().size()
-              + ", hasExport('f')="
-              + module.hasExport("f"));
+      assertTrue(module.hasExport("f"), "Module should export function 'f'");
+      LOGGER.info("Module compiled, exports=" + module.getExports().size());
     }
   }
 }
