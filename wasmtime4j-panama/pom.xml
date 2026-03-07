@@ -23,6 +23,9 @@
 
         <!-- Panama FFI requires preview features in Java 23+ -->
         <panama.preview.enabled>true</panama.preview.enabled>
+
+        <!-- PMD 7.6.0 hits StackOverflowError on Panama FFI types; skip until PMD supports Java 26 -->
+        <pmd.skip>true</pmd.skip>
     </properties>
 
     <dependencies>

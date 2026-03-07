@@ -263,8 +263,8 @@ public abstract class AbstractWasiConfigBuilder implements WasiConfigBuilder {
   }
 
   @Override
+  @SuppressWarnings("PMD.EmptyMethodInAbstractClassShouldBeAbstract")
   public void validate() {
-    // Basic validation - ensure no null values in collections
-    // More complex validation can be added later
+    // No-op default: subclasses may override for specific validation
   }
 }

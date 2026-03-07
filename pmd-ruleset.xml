@@ -164,6 +164,7 @@
         <exclude name="SingletonClassReturningNewInstance"/><!-- Factory pattern may be intentional -->
         <exclude name="AvoidCatchingThrowable"/><!-- Throwable may be caught for native error handling -->
         <exclude name="AvoidBranchingStatementAsLastInLoop"/><!-- Break/continue as last statement may be clearer -->
+        <exclude name="ConfusingArgumentToVarargsMethod"/><!-- Single-element varargs calls to standard APIs are clear -->
     </rule>
 
     <!-- Multithreading Rules -->

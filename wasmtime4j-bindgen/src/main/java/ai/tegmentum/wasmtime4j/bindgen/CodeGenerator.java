@@ -69,7 +69,7 @@ public final class CodeGenerator {
   private static final Logger LOGGER = Logger.getLogger(CodeGenerator.class.getName());
 
   private final BindgenConfig config;
-  private final JavaCodeGenerator codeGenerator;
+  private final JavaCodeGenerator javaCodeGenerator;
 
   /**
    * Creates a new CodeGenerator with the specified configuration.
@@ -83,9 +83,9 @@ public final class CodeGenerator {
 
     // Select appropriate code generator based on style
     if (config.getCodeStyle() == CodeStyle.MODERN) {
-      this.codeGenerator = new ModernCodeGenerator(config);
+      this.javaCodeGenerator = new ModernCodeGenerator(config);
     } else {
-      this.codeGenerator = new LegacyCodeGenerator(config);
+      this.javaCodeGenerator = new LegacyCodeGenerator(config);
     }
   }
 
@@ -103,7 +103,7 @@ public final class CodeGenerator {
       LOGGER.info("Processing WIT sources...");
       for (Path witPath : config.getWitSources()) {
         BindgenModel model = parseWitSource(witPath);
-        List<GeneratedSource> sources = codeGenerator.generate(model);
+        List<GeneratedSource> sources = javaCodeGenerator.generate(model);
         allSources.addAll(sources);
         LOGGER.fine("Generated " + sources.size() + " sources from " + witPath);
       }

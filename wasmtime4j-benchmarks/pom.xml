@@ -34,6 +34,7 @@
         <checkstyle.skip>true</checkstyle.skip>
         <spotless.check.skip>true</spotless.check.skip>
         <spotbugs.skip>true</spotbugs.skip>
+        <pmd.skip>true</pmd.skip>
     </properties>
 
     <dependencies>
