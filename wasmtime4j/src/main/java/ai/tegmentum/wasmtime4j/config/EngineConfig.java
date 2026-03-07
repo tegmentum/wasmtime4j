@@ -19,6 +19,7 @@ import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.InstanceAllocationStrategy;
 import ai.tegmentum.wasmtime4j.WasmFeature;
 import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
+import java.util.Locale;
 
 /**
  * Configuration options for WebAssembly engine creation.
@@ -3435,7 +3436,9 @@ public final class EngineConfig {
     first = appendJsonBool(sb, first, "macosUseMachPorts", macosUseMachPorts);
     first = appendJsonBool(sb, first, "wasmBacktrace", wasmBacktrace);
     if (backtraceDetails != null) {
-      first = appendJsonField(sb, first, "backtraceDetails", backtraceDetails.name().toLowerCase());
+      first =
+          appendJsonField(
+              sb, first, "backtraceDetails", backtraceDetails.name().toLowerCase(Locale.ROOT));
     }
     first = appendJsonBool(sb, first, "generateAddressMap", generateAddressMap);
     first = appendJsonField(sb, first, "sharedMemory", sharedMemory.toJsonValue());
@@ -3544,7 +3547,7 @@ public final class EngineConfig {
     }
 
     // Component model
-    first = appendJsonBool(sb, first, "wasmComponentModel", wasmComponentModel);
+    appendJsonBool(sb, first, "wasmComponentModel", wasmComponentModel);
 
     sb.append('}');
     return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);

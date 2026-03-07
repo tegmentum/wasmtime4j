@@ -81,17 +81,14 @@ public enum Enabled {
     if (value == null) {
       throw new IllegalArgumentException("Enabled value cannot be null");
     }
-    switch (value.toLowerCase(java.util.Locale.ROOT)) {
-      case "auto":
-        return AUTO;
-      case "yes":
-      case "true":
-        return YES;
-      case "no":
-      case "false":
-        return NO;
-      default:
-        throw new IllegalArgumentException("Unknown Enabled value: " + value);
+    if ("auto".equalsIgnoreCase(value)) {
+      return AUTO;
+    } else if ("yes".equalsIgnoreCase(value) || "true".equalsIgnoreCase(value)) {
+      return YES;
+    } else if ("no".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)) {
+      return NO;
+    } else {
+      throw new IllegalArgumentException("Unknown Enabled value: " + value);
     }
   }
 }

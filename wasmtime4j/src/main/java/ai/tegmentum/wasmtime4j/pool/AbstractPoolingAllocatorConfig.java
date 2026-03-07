@@ -440,10 +440,12 @@ public abstract class AbstractPoolingAllocatorConfig implements PoolingAllocator
     sb.append(",\"asyncStackKeepResident\":").append(asyncStackKeepResident);
     sb.append(",\"maxUnusedWarmSlots\":").append(maxUnusedWarmSlots);
     sb.append(",\"memoryProtectionKeys\":\"")
-        .append(memoryProtectionKeysEnabled.name().toLowerCase())
+        .append(memoryProtectionKeysEnabled.name().toLowerCase(java.util.Locale.ROOT))
         .append('"');
     sb.append(",\"maxMemoryProtectionKeys\":").append(maxMemoryProtectionKeys);
-    sb.append(",\"pagemapScan\":\"").append(pagemapScanEnabled.name().toLowerCase()).append('"');
+    sb.append(",\"pagemapScan\":\"")
+        .append(pagemapScanEnabled.name().toLowerCase(java.util.Locale.ROOT))
+        .append('"');
     sb.append('}');
     return sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
   }

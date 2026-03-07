@@ -153,7 +153,7 @@ class ContTypeTest {
     void notEqualToNonContType() {
       final ContType ct =
           ContType.create(funcTypeOf(new WasmValueType[] {}, new WasmValueType[] {}));
-      assertFalse(ct.equals("not a cont type"), "ContType should not equal a String");
+      assertNotEquals(ct, "not a cont type", "ContType should not equal a String");
     }
   }
 

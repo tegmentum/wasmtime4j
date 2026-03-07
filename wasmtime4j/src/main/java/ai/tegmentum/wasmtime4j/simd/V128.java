@@ -15,7 +15,6 @@
  */
 package ai.tegmentum.wasmtime4j.simd;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -56,7 +55,6 @@ public final class V128 {
    * @param data the vector data (must be exactly 16 bytes)
    * @throws IllegalArgumentException if data is null or not 16 bytes
    */
-  @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Defensive copy is made")
   public V128(final byte[] data) {
     if (data == null) {
       throw new IllegalArgumentException("Data cannot be null");

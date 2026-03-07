@@ -190,7 +190,9 @@ class I32ExitExceptionTest {
     } catch (WasiException e) {
       caught = true;
       assertInstanceOf(I32ExitException.class, e, "Should be I32ExitException");
-      assertEquals(42, ((I32ExitException) e).getExitCode(), "Should have exit code 42");
+      if (e instanceof I32ExitException) {
+        assertEquals(42, ((I32ExitException) e).getExitCode(), "Should have exit code 42");
+      }
     }
     assertTrue(caught, "Should have been caught as WasiException");
   }

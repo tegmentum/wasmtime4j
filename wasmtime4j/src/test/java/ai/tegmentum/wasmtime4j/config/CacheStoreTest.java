@@ -68,7 +68,7 @@ class CacheStoreTest {
     void getReturnsNullForUnknownKey() {
       final CacheStore store = createInMemoryStore();
       final byte[] result = store.get(new byte[] {1, 2, 3});
-      LOGGER.info("get() for unknown key returned: " + result);
+      LOGGER.info("get() for unknown key returned: " + java.util.Arrays.toString(result));
       assertNull(result, "get() should return null for unknown key");
     }
 

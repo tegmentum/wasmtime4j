@@ -95,6 +95,7 @@ public final class ComponentTypeCodec {
       case "core_func":
         return parseCoreFunc(obj);
       case "module":
+      case "truncated":
         return new ComponentItemInfo.ModuleInfo(null);
       case "component":
         return parseComponent(obj);
@@ -110,8 +111,6 @@ public final class ComponentTypeCodec {
           final String debugStr = (String) obj.get("resourceTypeDebug");
           return new ComponentItemInfo.ResourceInfo(debugStr, 0);
         }
-      case "truncated":
-        return new ComponentItemInfo.ModuleInfo(null);
       default:
         throw new IllegalArgumentException("Unknown component item kind: " + kind);
     }

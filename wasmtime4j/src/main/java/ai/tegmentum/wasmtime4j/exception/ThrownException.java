@@ -105,9 +105,6 @@ public final class ThrownException {
    *
    * @return an unmodifiable list of payload values
    */
-  @SuppressFBWarnings(
-      value = "EI_EXPOSE_REP",
-      justification = "Payload is already unmodifiable via Collections.unmodifiableList")
   public List<WasmValue> getPayload() {
     return payload;
   }

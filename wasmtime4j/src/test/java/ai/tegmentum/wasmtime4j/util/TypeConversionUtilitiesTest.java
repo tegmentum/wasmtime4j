@@ -323,8 +323,7 @@ class TypeConversionUtilitiesTest {
     void writeIntShouldThrowForNullBuffer() {
       IllegalArgumentException exception =
           assertThrows(
-              IllegalArgumentException.class,
-              () -> TypeConversionUtilities.writeInt(null, 0, 1));
+              IllegalArgumentException.class, () -> TypeConversionUtilities.writeInt(null, 0, 1));
       assertTrue(exception.getMessage().contains("buffer"));
     }
 
@@ -417,8 +416,7 @@ class TypeConversionUtilitiesTest {
     void writeLongShouldWriteLittleEndian() {
       final byte[] buffer = new byte[8];
       TypeConversionUtilities.writeLong(buffer, 0, 0x0807060504030201L);
-      assertArrayEquals(
-          new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}, buffer);
+      assertArrayEquals(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}, buffer);
     }
 
     @Test
@@ -434,8 +432,7 @@ class TypeConversionUtilitiesTest {
     void writeLongShouldThrowForNullBuffer() {
       IllegalArgumentException exception =
           assertThrows(
-              IllegalArgumentException.class,
-              () -> TypeConversionUtilities.writeLong(null, 0, 1L));
+              IllegalArgumentException.class, () -> TypeConversionUtilities.writeLong(null, 0, 1L));
       assertTrue(exception.getMessage().contains("buffer"));
     }
 

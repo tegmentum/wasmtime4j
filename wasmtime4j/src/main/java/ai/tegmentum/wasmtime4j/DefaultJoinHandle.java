@@ -46,8 +46,11 @@ final class DefaultJoinHandle<T> implements JoinHandle<T> {
       if (cause instanceof WasmException) {
         throw (WasmException) cause;
       }
-      if (cause instanceof CompletionException && cause.getCause() instanceof WasmException) {
-        throw (WasmException) cause.getCause();
+      if (cause instanceof CompletionException) {
+        final Throwable innerCause = cause.getCause();
+        if (innerCause instanceof WasmException) {
+          throw (WasmException) innerCause;
+        }
       }
       throw new WasmException("Concurrent task failed: " + cause.getMessage(), cause);
     } catch (final CancellationException e) {

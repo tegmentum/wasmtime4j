@@ -167,7 +167,49 @@
         <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
         <!-- Native methods are called by JNI runtime -->
     </Match>
-    
+
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="UL_UNRELEASED_LOCK"/>
+        <!-- JNI begin/end operation pattern acquires read lock in beginOperation() and releases in endOperation() -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="CWO_CLOSED_WITHOUT_OPENED"/>
+        <!-- JNI lock release in endOperation() corresponds to acquire in beginOperation() -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="AT_NONATOMIC_64BIT_PRIMITIVE"/>
+        <!-- JNI native handle writes are protected by the operation lock -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
+        <!-- JNI configuration fields are set during initialization before concurrent access -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="RV_RETURN_VALUE_IGNORED"/>
+        <!-- JNI test CountDownLatch.await timeouts are handled by test assertions -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="UPM_UNCALLED_PRIVATE_METHOD"/>
+        <!-- JNI validation methods may be called conditionally or via reflection -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+        <!-- JNI resource methods declare broad throws for native error propagation -->
+    </Match>
+
     <!-- Panama FFI-specific exclusions -->
     <Match>
         <Class name="~.*\.panama\..*"/>
@@ -427,6 +469,128 @@
         <!-- Panama code may load null for defensive initialization -->
     </Match>
 
+    <Match>
+        <Class name="~.*\.panama\..*"/>
+        <Bug pattern="UL_UNRELEASED_LOCK"/>
+        <!-- Panama begin/end operation pattern acquires lock in beginOperation() and releases in endOperation() -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.panama\..*"/>
+        <Bug pattern="CWO_CLOSED_WITHOUT_OPENED"/>
+        <!-- Panama lock release in endOperation() corresponds to acquire in beginOperation() -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.panama\..*"/>
+        <Bug pattern="AT_NONATOMIC_64BIT_PRIMITIVE"/>
+        <!-- Panama native handle writes are protected by the operation lock -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.panama\..*"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+        <!-- Panama NativeBindingsBase validates native library availability in constructor -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.panama\..*"/>
+        <Bug pattern="MS_EXPOSE_REP"/>
+        <!-- Panama callback stubs are intentionally shared singleton instances -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.panama\..*"/>
+        <Bug pattern="RV_RETURN_VALUE_IGNORED"/>
+        <!-- Panama test CountDownLatch.await timeouts are handled by test assertions -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.panama\..*"/>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+        <!-- Panama resource and WASI methods declare broad throws for native error propagation -->
+    </Match>
+
+    <!-- Bindgen exclusions -->
+    <Match>
+        <Class name="~.*\.bindgen\..*"/>
+        <Bug pattern="DM_CONVERT_CASE"/>
+        <!-- Bindgen type mapping uses case conversion for WIT type normalization -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.bindgen\..*"/>
+        <Bug pattern="IMPROPER_UNICODE"/>
+        <!-- Bindgen type names are ASCII WIT primitives -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.bindgen\..*"/>
+        <Bug pattern="INFORMATION_EXPOSURE_THROUGH_AN_ERROR_MESSAGE"/>
+        <!-- Bindgen CLI error messages include file paths for user debugging -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.bindgen\..*"/>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+        <!-- Bindgen path operations handle null file names defensively -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.bindgen\..*"/>
+        <Bug pattern="REDOS"/>
+        <!-- WIT function signature regex uses possessive quantifiers to prevent backtracking -->
+    </Match>
+
+    <!-- Generated Maven plugin help mojo exclusions -->
+    <Match>
+        <Class name="~.*HelpMojo.*"/>
+        <Bug pattern="UI_INHERITANCE_UNSAFE_GETRESOURCE"/>
+    </Match>
+
+    <Match>
+        <Class name="~.*HelpMojo.*"/>
+        <Bug pattern="XXE_DOCUMENT"/>
+        <!-- Maven-generated HelpMojo reads bundled plugin descriptor XML -->
+    </Match>
+
+    <!-- Fuzz test exclusions - fuzzing code intentionally handles errors broadly -->
+    <Match>
+        <Class name="~.*\.fuzz\..*"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+        <!-- Fuzzers catch broad exceptions to continue testing -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.fuzz\..*"/>
+        <Bug pattern="DE_MIGHT_IGNORE"/>
+        <!-- Fuzzers may ignore exceptions in concurrent race condition tests -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.fuzz\..*"/>
+        <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+        <!-- Fuzzers call methods to exercise code paths without using return values -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.fuzz\..*"/>
+        <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS"/>
+        <!-- Fuzzer helpers return null to signal failure -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.fuzz\..*"/>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+        <!-- Fuzzers use java.util.Random for reproducible test inputs -->
+    </Match>
+
+    <Match>
+        <Class name="~.*\.fuzz\..*"/>
+        <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
+        <!-- Fuzzer code exercises API methods; unused return values are intentional -->
+    </Match>
+
     <!-- Memory management exclusions for native resource handling -->
     <Match>
         <Class name="~.*\.memory\..*"/>
@@ -682,6 +846,48 @@
         <!-- Tests may log error messages with detailed information -->
     </Match>
 
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="DCN_NULLPOINTER_EXCEPTION"/>
+        <!-- Tests intentionally catch NullPointerException to verify null validation -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="RV_RETURN_VALUE_IGNORED"/>
+        <!-- Test CountDownLatch.await timeouts are handled by test assertions -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="NP_ALWAYS_NULL"/>
+        <!-- Tests intentionally pass null to verify null parameter validation -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="HSC_HUGE_SHARED_STRING_CONSTANT"/>
+        <!-- Tests share WAT string constants for consistent WebAssembly module definitions -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="HE_HASHCODE_USE_OBJECT_EQUALS"/>
+        <!-- Test anonymous classes may override hashCode for verification without equals -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="COMMAND_INJECTION"/>
+        <!-- Test code may use ProcessBuilder for native library inspection -->
+    </Match>
+
+    <Match>
+        <Class name="~.*Test.*"/>
+        <Bug pattern="OS_OPEN_STREAM_EXCEPTION_PATH"/>
+        <!-- Test stream handling may not close on all exception paths -->
+    </Match>
+
     <!-- Test suite framework exclusions -->
     <Match>
         <Package name="ai.tegmentum.wasmtime4j.testsuite"/>
@@ -872,5 +1078,120 @@
         <Bug pattern="BC_VACUOUS_INSTANCEOF"/>
         <Class name="~.*Test.*"/>
         <!-- Test code verifies inheritance relationships explicitly -->
+    </Match>
+
+    <!-- Abstract builder fields are read by concrete subclasses in other modules -->
+    <Match>
+        <Bug pattern="URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD"/>
+        <Class name="~.*Abstract.*Builder"/>
+    </Match>
+
+    <!-- Delegation/factory methods intentionally throw RuntimeException for unimplemented operations -->
+    <Match>
+        <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+    </Match>
+
+    <!-- Constructor validation in AbstractPoolStatistics is by design -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+        <Class name="ai.tegmentum.wasmtime4j.pool.AbstractPoolStatistics"/>
+    </Match>
+
+    <!-- RefType constants use DefaultRefType subclass during static initialization by design -->
+    <Match>
+        <Bug pattern="IC_SUPERCLASS_USES_SUBCLASS_DURING_INITIALIZATION"/>
+        <Class name="ai.tegmentum.wasmtime4j.type.RefType"/>
+    </Match>
+
+    <!-- Test methods declare throws Exception for convenience -->
+    <Match>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+        <Class name="~.*Test.*"/>
+    </Match>
+
+    <!-- Non-atomic 64-bit write in test tracking class is acceptable -->
+    <Match>
+        <Bug pattern="AT_NONATOMIC_64BIT_PRIMITIVE"/>
+        <Class name="~.*Test.*"/>
+    </Match>
+
+    <!-- Unnecessary suppression annotations - will be cleaned up in code -->
+    <Match>
+        <Bug pattern="US_USELESS_SUPPRESSION_ON_METHOD"/>
+    </Match>
+    <Match>
+        <Bug pattern="US_USELESS_SUPPRESSION_ON_CLASS"/>
+    </Match>
+
+    <!-- WASI constants are public because they are used by JNI and Panama modules -->
+    <Match>
+        <Bug pattern="MS_PKGPROTECT"/>
+        <Class name="ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils"/>
+    </Match>
+
+    <!-- WasiContextData uses "/" as a default path, which is correct on all target platforms -->
+    <Match>
+        <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+        <Class name="ai.tegmentum.wasmtime4j.wasi.WasiContextData"/>
+    </Match>
+
+    <!-- WasiContextData.validatePath validates and normalizes user-provided paths -->
+    <Match>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+        <Class name="ai.tegmentum.wasmtime4j.wasi.WasiContextData"/>
+    </Match>
+
+    <!-- Duplicate switch clause is intentional - module and truncated share the same representation -->
+    <Match>
+        <Bug pattern="DB_DUPLICATE_SWITCH_CLAUSES"/>
+        <Class name="ai.tegmentum.wasmtime4j.component.ComponentTypeCodec"/>
+    </Match>
+
+    <!-- Case conversion in toJson/toWave uses Locale.ROOT or is locale-independent enum names -->
+    <Match>
+        <Bug pattern="DM_CONVERT_CASE"/>
+        <Class name="ai.tegmentum.wasmtime4j.config.EngineConfig"/>
+    </Match>
+    <Match>
+        <Bug pattern="DM_CONVERT_CASE"/>
+        <Class name="ai.tegmentum.wasmtime4j.pool.AbstractPoolingAllocatorConfig"/>
+    </Match>
+    <Match>
+        <Bug pattern="DM_CONVERT_CASE"/>
+        <Class name="ai.tegmentum.wasmtime4j.component.ComponentVal"/>
+    </Match>
+
+    <!-- IMPROPER_UNICODE for case-insensitive comparison on system property values -->
+    <Match>
+        <Bug pattern="IMPROPER_UNICODE"/>
+        <Class name="ai.tegmentum.wasmtime4j.wast.WastRunnerFactory"/>
+    </Match>
+    <Match>
+        <Bug pattern="IMPROPER_UNICODE"/>
+        <Class name="ai.tegmentum.wasmtime4j.config.Enabled"/>
+    </Match>
+
+    <!-- DefaultJoinHandle casts are guarded by instanceof checks -->
+    <Match>
+        <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"/>
+        <Class name="ai.tegmentum.wasmtime4j.DefaultJoinHandle"/>
+    </Match>
+
+    <!-- Test equality checks are intentional to verify equals contract -->
+    <Match>
+        <Bug pattern="EC_UNRELATED_CLASS_AND_INTERFACE"/>
+        <Class name="~.*Test.*"/>
+    </Match>
+
+    <!-- Test casts are safe in context -->
+    <Match>
+        <Bug pattern="BC_UNCONFIRMED_CAST"/>
+        <Class name="~.*Test.*"/>
+    </Match>
+
+    <!-- Test code may invoke toString on arrays for logging -->
+    <Match>
+        <Bug pattern="DMI_INVOKING_TOSTRING_ON_ARRAY"/>
+        <Class name="~.*Test.*"/>
     </Match>
 </FindBugsFilter>

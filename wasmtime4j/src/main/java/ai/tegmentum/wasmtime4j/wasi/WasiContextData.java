@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.wasi;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -56,6 +57,9 @@ public final class WasiContextData {
    * @param preopenedDirectories the pre-opened directory map (defensively copied)
    * @param workingDirectory the working directory path
    */
+  @SuppressFBWarnings(
+      value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
+      justification = "Root path '/' is the WASI virtual filesystem root, not a real OS path")
   public WasiContextData(
       final Map<String, String> environment,
       final List<String> arguments,
@@ -132,6 +136,11 @@ public final class WasiContextData {
    * @return the resolved and validated path
    * @throws IllegalArgumentException if path is null or empty
    */
+  @SuppressFBWarnings(
+      value = "PATH_TRAVERSAL_IN",
+      justification =
+          "Path is normalized and resolved against working directory;"
+              + " filesystem sandboxing is enforced by Wasmtime's native runtime")
   public Path validatePath(final String path) {
     if (path == null || path.isEmpty()) {
       throw new IllegalArgumentException("Path cannot be null or empty");

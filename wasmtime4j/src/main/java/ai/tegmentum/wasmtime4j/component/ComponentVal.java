@@ -913,7 +913,7 @@ public interface ComponentVal {
         final ComponentResourceHandle resHandle = asResource();
         return (type == ComponentType.OWN ? "own" : "borrow") + "(" + resHandle.getIndex() + ")";
       default:
-        return "<" + type.name().toLowerCase() + ">";
+        return "<" + type.name().toLowerCase(java.util.Locale.ROOT) + ">";
     }
   }
 

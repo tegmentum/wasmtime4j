@@ -49,7 +49,7 @@ class ExtensionTraitsTest {
   /** Simple LinearMemory implementation backed by tracking fields. */
   private static class TrackingLinearMemory implements LinearMemory {
 
-    private long currentSize;
+    private volatile long currentSize;
     private final long capacity;
     private final long basePtr;
     private final AtomicBoolean closed = new AtomicBoolean(false);
