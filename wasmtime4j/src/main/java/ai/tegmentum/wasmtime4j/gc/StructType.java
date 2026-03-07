@@ -291,12 +291,24 @@ public final class StructType {
     }
 
     final StructType that = (StructType) obj;
-    return typeId == that.typeId;
+
+    // When both have runtime-assigned type IDs (non-zero), use them as tiebreaker
+    if (typeId != 0 && that.typeId != 0) {
+      return typeId == that.typeId;
+    }
+
+    // Structural comparison for builder-created types (typeId=0)
+    return Objects.equals(name, that.name)
+        && Objects.equals(fields, that.fields)
+        && finality == that.finality;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(typeId);
+    if (typeId != 0) {
+      return Objects.hash(typeId);
+    }
+    return Objects.hash(name, fields, finality);
   }
 
   @Override

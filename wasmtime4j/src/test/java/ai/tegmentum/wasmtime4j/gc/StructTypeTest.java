@@ -266,20 +266,15 @@ class StructTypeTest {
     }
 
     @Test
-    @DisplayName(
-        "isSubtypeOf() returns true due to typeId-based equality for different field types")
-    void isSubtypeOfReturnsTrueForDifferentFieldTypes() {
-      // Note: Current implementation uses typeId-based equality (all types have typeId=0)
-      // so equals() returns true for all StructTypes before field compatibility is checked
+    @DisplayName("isSubtypeOf() should return false for incompatible field types")
+    void isSubtypeOfShouldReturnFalseForIncompatibleFieldTypes() {
       StructType type1 = StructType.builder("Type1").addField("a", FieldType.i32(), true).build();
 
       StructType type2 = StructType.builder("Type2").addField("b", FieldType.f64(), true).build();
 
-      // All StructTypes have typeId=0, so equals() returns true
-      // This makes isSubtypeOf return true before structural subtyping is checked
-      assertTrue(
+      assertFalse(
           type1.isSubtypeOf(type2),
-          "All StructTypes are considered equal (typeId=0), so isSubtypeOf returns true");
+          "Types with incompatible fields should not be subtypes of each other");
     }
 
     @Test
@@ -300,19 +295,29 @@ class StructTypeTest {
     }
 
     @Test
-    @DisplayName("isSubtypeOf() returns true due to typeId-based equality (all have typeId=0)")
-    void isSubtypeOfReturnsTrueDueToTypeIdEquality() {
-      // Note: Current implementation uses typeId-based equality (all types have typeId=0)
-      // so equals() returns true for all StructTypes before field compatibility is checked
+    @DisplayName("isSubtypeOf() should return false for same field name but incompatible types")
+    void isSubtypeOfShouldReturnFalseForSameNameIncompatibleTypes() {
       StructType type1 = StructType.builder("Type1").addField("x", FieldType.i32(), true).build();
 
       StructType type2 = StructType.builder("Type2").addField("x", FieldType.f64(), true).build();
 
-      // All StructTypes have typeId=0, so equals() returns true
-      // This makes isSubtypeOf return true before structural subtyping is checked
-      assertTrue(
+      assertFalse(
           type1.isSubtypeOf(type2),
-          "All StructTypes are considered equal (typeId=0), so isSubtypeOf returns true");
+          "Types with same field name but incompatible types should not be subtypes");
+    }
+
+    @Test
+    @DisplayName("equals() should use structural comparison for builder-created types")
+    void equalsShouldUseStructuralComparisonForBuilderTypes() {
+      StructType type1 = StructType.builder("Same").addField("x", FieldType.i32(), true).build();
+
+      StructType type2 = StructType.builder("Same").addField("x", FieldType.i32(), true).build();
+
+      StructType type3 =
+          StructType.builder("Different").addField("y", FieldType.f64(), true).build();
+
+      assertEquals(type1, type2, "Structurally identical types should be equal");
+      assertNotEquals(type1, type3, "Structurally different types should not be equal");
     }
   }
 
