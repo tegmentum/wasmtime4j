@@ -13,24 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package ai.tegmentum.wasmtime4j.jni;
+package ai.tegmentum.wasmtime4j.debug;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import ai.tegmentum.wasmtime4j.debug.FrameInfo;
-import ai.tegmentum.wasmtime4j.debug.FrameSymbol;
-import ai.tegmentum.wasmtime4j.debug.WasmBacktrace;
 import java.util.Collections;
-import org.junit.jupiter.api.*;
+import java.util.List;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 /**
  * Unit tests for WebAssembly backtrace functionality.
  *
  * <p>Tests verify the backtrace API classes (WasmBacktrace, FrameInfo, FrameSymbol) and their
- * behavior.
+ * behavior. These classes are part of the common wasmtime4j API and work identically across JNI and
+ * Panama implementations.
  */
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
-class JniBacktraceTest {
+class BacktraceTest {
 
   @Test
   @DisplayName("Should create WasmBacktrace with frames")
@@ -185,39 +189,38 @@ class JniBacktraceTest {
   }
 
   @Test
-  @DisplayName("Should handle FrameInfo with defensive copy of symbols list")
-  void shouldHandleFrameInfoWithDefensiveCopyOfSymbolsList() {
+  @DisplayName("Should handle FrameInfo with defensive copied symbols list")
+  void shouldHandleFrameInfoWithDefensiveCopiedSymbolsList() {
     final FrameSymbol symbol = new FrameSymbol("test", "file.wasm", 42, 10);
     final FrameInfo frame =
         new FrameInfo(0, null, "test", 100, 50, Collections.singletonList(symbol));
 
-    // Verify defensive copy behavior
+    // Verify list is not null and has correct size
     assertNotNull(frame.getSymbols(), "Symbols list should not be null");
     assertEquals(1, frame.getSymbols().size(), "Should have one symbol");
 
-    // Get a copy and modify it - should not affect original
-    final java.util.List<FrameSymbol> copy = frame.getSymbols();
+    // Implementation returns defensive copy (mutable ArrayList) to protect internal state
+    // Verify modifying returned list doesn't affect original
+    final List<FrameSymbol> copy = frame.getSymbols();
     copy.clear();
-
-    // Original should still have the symbol (defensive copy)
-    assertEquals(1, frame.getSymbols().size(), "Original symbols list should be unaffected");
+    assertEquals(1, frame.getSymbols().size(), "Original should be unchanged after clearing copy");
   }
 
   @Test
-  @DisplayName("Should handle WasmBacktrace with defensive copy of frames list")
-  void shouldHandleBacktraceWithDefensiveCopyOfFramesList() {
+  @DisplayName("Should handle WasmBacktrace with defensive copied frames list")
+  void shouldHandleBacktraceWithDefensiveCopiedFramesList() {
     final FrameInfo frame = new FrameInfo(0, null, "test", 100, 50, Collections.emptyList());
     final WasmBacktrace backtrace = new WasmBacktrace(Collections.singletonList(frame), false);
 
-    // Verify defensive copy behavior
+    // Verify list is not null and has correct size
     assertNotNull(backtrace.getFrames(), "Frames list should not be null");
     assertEquals(1, backtrace.getFrames().size(), "Should have one frame");
 
-    // Get a copy and modify it - should not affect original
-    final java.util.List<FrameInfo> copy = backtrace.getFrames();
+    // Implementation returns defensive copy (mutable ArrayList) to protect internal state
+    // Verify modifying returned list doesn't affect original
+    final List<FrameInfo> copy = backtrace.getFrames();
     copy.clear();
-
-    // Original should still have the frame (defensive copy)
-    assertEquals(1, backtrace.getFrames().size(), "Original frames list should be unaffected");
+    assertEquals(
+        1, backtrace.getFrames().size(), "Original should be unchanged after clearing copy");
   }
 }
