@@ -15,7 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
@@ -63,14 +64,14 @@ class JniMemorySupports64BitTest {
     try {
       final boolean result = memory.supports64BitAddressing();
 
-      assertThat(result)
-          .as("supports64BitAddressing should return false when native call fails")
-          .isFalse();
+      assertFalse(
+          result,
+          "supports64BitAddressing should return false when native call fails");
 
       final String capturedLog = logHandler.getCapturedOutput();
-      assertThat(capturedLog)
-          .as("A WARNING log should be emitted when the native call fails")
-          .contains("Failed to query 64-bit addressing support");
+      assertTrue(
+          capturedLog.contains("Failed to query 64-bit addressing support"),
+          "A WARNING log should be emitted when the native call fails");
     } finally {
       memory.markClosedForTesting();
     }
@@ -84,7 +85,7 @@ class JniMemorySupports64BitTest {
     try {
       final boolean result = memory.supports64BitAddressing();
 
-      assertThat(result).as("Invalid handle should safely return false").isFalse();
+      assertFalse(result, "Invalid handle should safely return false");
     } finally {
       memory.markClosedForTesting();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -35,13 +36,13 @@ class BindgenConfigTest {
             .addWitSource(Path.of("src/main/wit"))
             .build();
 
-    assertThat(config.getCodeStyle()).isEqualTo(CodeStyle.MODERN);
-    assertThat(config.getPackageName()).isEqualTo("com.example");
-    assertThat(config.getOutputDirectory()).isEqualTo(Path.of("target/generated"));
-    assertThat(config.isGenerateJavadoc()).isTrue();
-    assertThat(config.isGenerateBuilders()).isTrue();
-    assertThat(config.hasWitSources()).isTrue();
-    assertThat(config.hasWasmSources()).isFalse();
+    assertEquals(CodeStyle.MODERN, config.getCodeStyle());
+    assertEquals("com.example", config.getPackageName());
+    assertEquals(Path.of("target/generated"), config.getOutputDirectory());
+    assertTrue(config.isGenerateJavadoc());
+    assertTrue(config.isGenerateBuilders());
+    assertTrue(config.hasWitSources());
+    assertFalse(config.hasWasmSources());
   }
 
   @Test
@@ -54,8 +55,8 @@ class BindgenConfigTest {
             .addWasmSource(Path.of("module.wasm"))
             .build();
 
-    assertThat(config.getCodeStyle()).isEqualTo(CodeStyle.LEGACY);
-    assertThat(config.hasWasmSources()).isTrue();
+    assertEquals(CodeStyle.LEGACY, config.getCodeStyle());
+    assertTrue(config.hasWasmSources());
   }
 
   @Test
@@ -66,9 +67,10 @@ class BindgenConfigTest {
             .addWitSource(Path.of("src/main/wit"))
             .build();
 
-    assertThatThrownBy(config::validate)
-        .isInstanceOf(BindgenException.class)
-        .hasMessageContaining("packageName is required");
+    BindgenException exception = assertThrows(BindgenException.class, config::validate);
+    assertTrue(
+        exception.getMessage().contains("packageName is required"),
+        "Expected message to contain: packageName is required");
   }
 
   @Test
@@ -79,9 +81,10 @@ class BindgenConfigTest {
             .addWitSource(Path.of("src/main/wit"))
             .build();
 
-    assertThatThrownBy(config::validate)
-        .isInstanceOf(BindgenException.class)
-        .hasMessageContaining("outputDirectory is required");
+    BindgenException exception = assertThrows(BindgenException.class, config::validate);
+    assertTrue(
+        exception.getMessage().contains("outputDirectory is required"),
+        "Expected message to contain: outputDirectory is required");
   }
 
   @Test
@@ -92,9 +95,10 @@ class BindgenConfigTest {
             .outputDirectory(Path.of("target/generated"))
             .build();
 
-    assertThatThrownBy(config::validate)
-        .isInstanceOf(BindgenException.class)
-        .hasMessageContaining("At least one WIT or WASM source must be specified");
+    BindgenException exception = assertThrows(BindgenException.class, config::validate);
+    assertTrue(
+        exception.getMessage().contains("At least one WIT or WASM source must be specified"),
+        "Expected message to contain: At least one WIT or WASM source must be specified");
   }
 
   @Test
@@ -120,8 +124,8 @@ class BindgenConfigTest {
             .wasmSources(List.of(Path.of("module1.wasm"), Path.of("module2.wasm")))
             .build();
 
-    assertThat(config.getWitSources()).hasSize(2);
-    assertThat(config.getWasmSources()).hasSize(2);
+    assertEquals(2, config.getWitSources().size());
+    assertEquals(2, config.getWasmSources().size());
   }
 
   @Test
@@ -140,8 +144,8 @@ class BindgenConfigTest {
             .addWitSource(Path.of("api.wit"))
             .build();
 
-    assertThat(config1).isEqualTo(config2);
-    assertThat(config1.hashCode()).isEqualTo(config2.hashCode());
+    assertEquals(config2, config1);
+    assertEquals(config2.hashCode(), config1.hashCode());
   }
 
   @Test
@@ -154,7 +158,7 @@ class BindgenConfigTest {
             .build();
 
     String toString = config.toString();
-    assertThat(toString).contains("com.example");
-    assertThat(toString).contains("MODERN");
+    assertTrue(toString.contains("com.example"), "Expected toString to contain: com.example");
+    assertTrue(toString.contains("MODERN"), "Expected toString to contain: MODERN");
   }
 }

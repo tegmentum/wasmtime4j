@@ -15,8 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.nio.charset.StandardCharsets;
@@ -74,9 +77,9 @@ class V128SimdTest extends DualRuntimeTest {
       final byte[] input = new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
       final WasmValue[] results = identity.call(WasmValue.v128(input));
 
-      assertThat(results).as("Should return one result").hasSize(1);
-      assertThat(results[0].isV128()).as("Result should be V128").isTrue();
-      assertThat(results[0].asV128()).as("V128 identity should return same bytes").isEqualTo(input);
+      assertEquals(1, results.length, "Should return one result");
+      assertTrue(results[0].isV128(), "Result should be V128");
+      assertArrayEquals(input, results[0].asV128(), "V128 identity should return same bytes");
 
       module.close();
     }
@@ -95,9 +98,9 @@ class V128SimdTest extends DualRuntimeTest {
       final WasmFunction zero = instance.getFunction("zero").orElseThrow();
 
       final WasmValue[] results = zero.call();
-      assertThat(results).hasSize(1);
-      assertThat(results[0].isV128()).isTrue();
-      assertThat(results[0].asV128()).isEqualTo(new byte[16]);
+      assertEquals(1, results.length);
+      assertTrue(results[0].isV128());
+      assertArrayEquals(new byte[16], results[0].asV128());
 
       module.close();
     }
@@ -116,14 +119,13 @@ class V128SimdTest extends DualRuntimeTest {
       final WasmFunction allOnes = instance.getFunction("all_ones").orElseThrow();
 
       final WasmValue[] results = allOnes.call();
-      assertThat(results).hasSize(1);
-      assertThat(results[0].isV128()).isTrue();
+      assertEquals(1, results.length);
+      assertTrue(results[0].isV128());
 
       final byte[] expected = new byte[16];
       java.util.Arrays.fill(expected, (byte) 0xFF);
-      assertThat(results[0].asV128())
-          .as("All-ones vector should have all bytes set to 0xFF")
-          .isEqualTo(expected);
+      assertArrayEquals(
+          expected, results[0].asV128(), "All-ones vector should have all bytes set to 0xFF");
 
       module.close();
     }
@@ -146,13 +148,14 @@ class V128SimdTest extends DualRuntimeTest {
       final WasmValue b = WasmValue.v128(intArrayToV128(10, 20, 30, 40));
 
       final WasmValue[] results = add.call(a, b);
-      assertThat(results).hasSize(1);
-      assertThat(results[0].isV128()).isTrue();
+      assertEquals(1, results.length);
+      assertTrue(results[0].isV128());
 
       final byte[] expected = intArrayToV128(11, 22, 33, 44);
-      assertThat(results[0].asV128())
-          .as("i32x4.add([1,2,3,4], [10,20,30,40]) should equal [11,22,33,44]")
-          .isEqualTo(expected);
+      assertArrayEquals(
+          expected,
+          results[0].asV128(),
+          "i32x4.add([1,2,3,4], [10,20,30,40]) should equal [11,22,33,44]");
 
       module.close();
     }
@@ -175,11 +178,12 @@ class V128SimdTest extends DualRuntimeTest {
       final WasmValue input = WasmValue.v128(high, low);
 
       final WasmValue[] results = identity.call(input);
-      assertThat(results).hasSize(1);
-      assertThat(results[0].isV128()).isTrue();
-      assertThat(results[0].asV128())
-          .as("Round-trip of high/low v128 should preserve bytes")
-          .isEqualTo(input.asV128());
+      assertEquals(1, results.length);
+      assertTrue(results[0].isV128());
+      assertArrayEquals(
+          input.asV128(),
+          results[0].asV128(),
+          "Round-trip of high/low v128 should preserve bytes");
 
       module.close();
     }
@@ -210,11 +214,9 @@ class V128SimdTest extends DualRuntimeTest {
     final WasmValue v2 = WasmValue.v128(bytes.clone());
     final WasmValue v3 = WasmValue.v128(new byte[16]);
 
-    assertThat(v1).as("V128 with same bytes should be equal").isEqualTo(v2);
-    assertThat(v1).as("V128 with different bytes should not be equal").isNotEqualTo(v3);
-    assertThat(v1.hashCode())
-        .as("Equal V128 values should have same hashCode")
-        .isEqualTo(v2.hashCode());
+    assertEquals(v1, v2, "V128 with same bytes should be equal");
+    assertNotEquals(v1, v3, "V128 with different bytes should not be equal");
+    assertEquals(v1.hashCode(), v2.hashCode(), "Equal V128 values should have same hashCode");
   }
 
   /**

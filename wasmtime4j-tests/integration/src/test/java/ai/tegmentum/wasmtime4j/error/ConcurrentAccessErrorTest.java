@@ -15,7 +15,9 @@
  */
 package ai.tegmentum.wasmtime4j.error;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -192,11 +194,11 @@ class ConcurrentAccessErrorTest extends DualRuntimeTest {
 
         for (final Future<Module> future : futures) {
           final Module module = future.get(30, TimeUnit.SECONDS);
-          assertThat(module).isNotNull();
+          assertNotNull(module);
           module.close();
         }
 
-        assertThat(errors).isEmpty();
+        assertTrue(errors.isEmpty(), "Expected no errors during concurrent compilation");
         LOGGER.info("Concurrent module compilation succeeded with " + numThreads + " threads");
       } finally {
         executor.shutdown();
@@ -255,12 +257,12 @@ class ConcurrentAccessErrorTest extends DualRuntimeTest {
         for (final Future<Integer> future : futures) {
           final int result = future.get(30, TimeUnit.SECONDS);
           // Each thread should have counted to incrementsPerThread
-          assertThat(result).isEqualTo(incrementsPerThread);
+          assertEquals(incrementsPerThread, result);
           totalSuccessful++;
         }
 
-        assertThat(errors).isEmpty();
-        assertThat(totalSuccessful).isEqualTo(numThreads);
+        assertTrue(errors.isEmpty(), "Expected no errors");
+        assertEquals(numThreads, totalSuccessful);
         LOGGER.info(
             "Separate stores in separate threads completed: "
                 + totalSuccessful
@@ -306,7 +308,7 @@ class ConcurrentAccessErrorTest extends DualRuntimeTest {
 
                       for (int j = 0; j < operationsPerThread; j++) {
                         final int expected = threadId * 1000 + j;
-                        assertThat(global.get().asInt()).isEqualTo(expected);
+                        assertEquals(expected, global.get().asInt());
                         global.set(WasmValue.i32(expected + 1));
                       }
 
@@ -327,8 +329,8 @@ class ConcurrentAccessErrorTest extends DualRuntimeTest {
           }
         }
 
-        assertThat(errors).isEmpty();
-        assertThat(successCount).isEqualTo(numThreads);
+        assertTrue(errors.isEmpty(), "Expected no errors");
+        assertEquals(numThreads, successCount);
         LOGGER.info("Concurrent global access test completed with " + successCount + " threads");
       } finally {
         executor.shutdown();
@@ -400,7 +402,7 @@ class ConcurrentAccessErrorTest extends DualRuntimeTest {
                       final Instance instance = store.createInstance(module);
                       final WasmMemory memory = instance.getMemory("memory").orElse(null);
 
-                      assertThat(memory).isNotNull();
+                      assertNotNull(memory);
 
                       // Each thread writes to a different offset
                       final int offset = threadId * 1024;
@@ -409,7 +411,7 @@ class ConcurrentAccessErrorTest extends DualRuntimeTest {
                       memory.writeByte(offset, testValue);
                       final byte readBack = memory.readByte(offset);
 
-                      assertThat(readBack).isEqualTo(testValue);
+                      assertEquals(testValue, readBack);
                       return true;
                     } catch (final Exception e) {
                       errors.add(e);
@@ -434,8 +436,8 @@ class ConcurrentAccessErrorTest extends DualRuntimeTest {
           }
         }
 
-        assertThat(errors).isEmpty();
-        assertThat(successCount).isEqualTo(numThreads);
+        assertTrue(errors.isEmpty(), "Expected no errors");
+        assertEquals(numThreads, successCount);
         LOGGER.info("Concurrent memory access test completed with " + successCount + " threads");
       } finally {
         module.close();
@@ -499,7 +501,7 @@ class ConcurrentAccessErrorTest extends DualRuntimeTest {
         LOGGER.info("Final global value: " + global.get().asInt());
 
         // All threads should complete (whether with errors or not)
-        assertThat(completedThreads.get()).isEqualTo(numThreads);
+        assertEquals(numThreads, completedThreads.get());
 
         // Document the behavior - either:
         // 1. All operations succeed (thread-safe implementation)

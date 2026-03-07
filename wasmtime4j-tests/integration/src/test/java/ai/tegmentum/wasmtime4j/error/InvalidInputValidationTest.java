@@ -15,8 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j.error;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -173,13 +176,12 @@ class InvalidInputValidationTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> engine.compileModule(null))
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for null WASM: " + e.getClass().getName());
-                assertThat(e)
-                    .isInstanceOfAny(IllegalArgumentException.class, NullPointerException.class);
-              });
+      try {
+        engine.compileModule(null);
+        org.junit.jupiter.api.Assertions.fail("Expected exception");
+      } catch (final IllegalArgumentException | NullPointerException e) {
+        LOGGER.info("Exception for null WASM: " + e.getClass().getName());
+      }
     }
 
     @ParameterizedTest
@@ -192,8 +194,8 @@ class InvalidInputValidationTest extends DualRuntimeTest {
 
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
-        assertThatThrownBy(() -> ((Linker) null).instantiate(store, module))
-            .isInstanceOf(NullPointerException.class);
+        org.junit.jupiter.api.Assertions.assertThrows(
+            NullPointerException.class, () -> ((Linker) null).instantiate(store, module));
       } finally {
         module.close();
       }
@@ -209,8 +211,8 @@ class InvalidInputValidationTest extends DualRuntimeTest {
 
       final Module module = engine.compileModule(SIMPLE_WASM);
       try {
-        assertThatThrownBy(() -> ((Store) null).createInstance(module))
-            .isInstanceOf(NullPointerException.class);
+        org.junit.jupiter.api.Assertions.assertThrows(
+            NullPointerException.class, () -> ((Store) null).createInstance(module));
       } finally {
         module.close();
       }
@@ -228,13 +230,12 @@ class InvalidInputValidationTest extends DualRuntimeTest {
       try {
         final Instance instance = store.createInstance(module);
 
-        assertThatThrownBy(() -> instance.getFunction(null))
-            .satisfies(
-                e -> {
-                  LOGGER.info("Exception for null function name: " + e.getClass().getName());
-                  assertThat(e)
-                      .isInstanceOfAny(IllegalArgumentException.class, NullPointerException.class);
-                });
+        try {
+          instance.getFunction(null);
+          org.junit.jupiter.api.Assertions.fail("Expected exception");
+        } catch (final IllegalArgumentException | NullPointerException e) {
+          LOGGER.info("Exception for null function name: " + e.getClass().getName());
+        }
       } finally {
         module.close();
       }
@@ -248,13 +249,12 @@ class InvalidInputValidationTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> store.createGlobal(null, true, WasmValue.i32(0)))
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for null value type: " + e.getClass().getName());
-                assertThat(e)
-                    .isInstanceOfAny(IllegalArgumentException.class, NullPointerException.class);
-              });
+      try {
+        store.createGlobal(null, true, WasmValue.i32(0));
+        org.junit.jupiter.api.Assertions.fail("Expected exception");
+      } catch (final IllegalArgumentException | NullPointerException e) {
+        LOGGER.info("Exception for null value type: " + e.getClass().getName());
+      }
     }
   }
 
@@ -276,23 +276,25 @@ class InvalidInputValidationTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmFunction add1Func = instance.getFunction("add1").orElse(null);
 
-        assertThat(add1Func).isNotNull();
+        assertNotNull(add1Func);
 
         // add1 expects 1 parameter, calling with 0
-        assertThatThrownBy(() -> add1Func.call())
-            .satisfies(
-                e -> {
-                  LOGGER.info("Exception for missing parameter: " + e.getClass().getName());
-                  LOGGER.info("Message: " + e.getMessage());
-                });
+        try {
+          add1Func.call();
+          org.junit.jupiter.api.Assertions.fail("Expected exception for missing parameter");
+        } catch (final Exception e) {
+          LOGGER.info("Exception for missing parameter: " + e.getClass().getName());
+          LOGGER.info("Message: " + e.getMessage());
+        }
 
         // add1 expects 1 parameter, calling with 2
-        assertThatThrownBy(() -> add1Func.call(WasmValue.i32(1), WasmValue.i32(2)))
-            .satisfies(
-                e -> {
-                  LOGGER.info("Exception for extra parameter: " + e.getClass().getName());
-                  LOGGER.info("Message: " + e.getMessage());
-                });
+        try {
+          add1Func.call(WasmValue.i32(1), WasmValue.i32(2));
+          org.junit.jupiter.api.Assertions.fail("Expected exception for extra parameter");
+        } catch (final Exception e) {
+          LOGGER.info("Exception for extra parameter: " + e.getClass().getName());
+          LOGGER.info("Message: " + e.getMessage());
+        }
       } finally {
         module.close();
       }
@@ -311,15 +313,16 @@ class InvalidInputValidationTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmFunction add1Func = instance.getFunction("add1").orElse(null);
 
-        assertThat(add1Func).isNotNull();
+        assertNotNull(add1Func);
 
         // add1 expects i32, passing an f64 (wrong type)
-        assertThatThrownBy(() -> add1Func.call(WasmValue.f64(3.14)))
-            .satisfies(
-                e -> {
-                  LOGGER.info("Exception for wrong type: " + e.getClass().getName());
-                  LOGGER.info("Message: " + e.getMessage());
-                });
+        try {
+          add1Func.call(WasmValue.f64(3.14));
+          org.junit.jupiter.api.Assertions.fail("Expected exception for wrong type");
+        } catch (final Exception e) {
+          LOGGER.info("Exception for wrong type: " + e.getClass().getName());
+          LOGGER.info("Message: " + e.getMessage());
+        }
       } finally {
         module.close();
       }
@@ -344,7 +347,7 @@ class InvalidInputValidationTest extends DualRuntimeTest {
         final java.util.Optional<WasmFunction> nonExistent = instance.getFunction("doesNotExist");
 
         // Should return empty Optional, not throw exception
-        assertThat(nonExistent).isEmpty();
+        assertTrue(nonExistent.isEmpty(), "Expected empty Optional for non-existent function");
         LOGGER.info("Non-existent function correctly returned empty");
       } finally {
         module.close();
@@ -365,7 +368,7 @@ class InvalidInputValidationTest extends DualRuntimeTest {
         final java.util.Optional<WasmMemory> nonExistent = instance.getMemory("doesNotExist");
 
         // Should return empty Optional, not throw exception
-        assertThat(nonExistent).isEmpty();
+        assertTrue(nonExistent.isEmpty(), "Expected empty Optional for non-existent memory");
         LOGGER.info("Non-existent memory correctly returned empty");
       } finally {
         module.close();
@@ -390,14 +393,15 @@ class InvalidInputValidationTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmMemory memory = instance.getMemory("memory").orElse(null);
 
-        assertThat(memory).isNotNull();
+        assertNotNull(memory);
 
-        assertThatThrownBy(() -> memory.readByte(-1))
-            .satisfies(
-                e -> {
-                  LOGGER.info("Exception for negative offset: " + e.getClass().getName());
-                  LOGGER.info("Message: " + e.getMessage());
-                });
+        try {
+          memory.readByte(-1);
+          org.junit.jupiter.api.Assertions.fail("Expected exception for negative offset");
+        } catch (final Exception e) {
+          LOGGER.info("Exception for negative offset: " + e.getClass().getName());
+          LOGGER.info("Message: " + e.getMessage());
+        }
       } finally {
         module.close();
       }
@@ -417,17 +421,18 @@ class InvalidInputValidationTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmMemory memory = instance.getMemory("memory").orElse(null);
 
-        assertThat(memory).isNotNull();
+        assertNotNull(memory);
 
         // Memory is 1 page (65536 bytes), access beyond that
         final long outOfBoundsOffset = 65536 * 2;
 
-        assertThatThrownBy(() -> memory.readByte((int) outOfBoundsOffset))
-            .satisfies(
-                e -> {
-                  LOGGER.info("Exception for OOB access: " + e.getClass().getName());
-                  LOGGER.info("Message: " + e.getMessage());
-                });
+        try {
+          memory.readByte((int) outOfBoundsOffset);
+          org.junit.jupiter.api.Assertions.fail("Expected exception for OOB access");
+        } catch (final Exception e) {
+          LOGGER.info("Exception for OOB access: " + e.getClass().getName());
+          LOGGER.info("Message: " + e.getMessage());
+        }
       } finally {
         module.close();
       }
@@ -448,14 +453,15 @@ class InvalidInputValidationTest extends DualRuntimeTest {
 
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, 10, 100);
 
-      assertThat(table).isNotNull();
+      assertNotNull(table);
 
-      assertThatThrownBy(() -> table.get(-1))
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for negative index: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-              });
+      try {
+        table.get(-1);
+        org.junit.jupiter.api.Assertions.fail("Expected exception for negative index");
+      } catch (final Exception e) {
+        LOGGER.info("Exception for negative index: " + e.getClass().getName());
+        LOGGER.info("Message: " + e.getMessage());
+      }
     }
 
     @ParameterizedTest
@@ -468,16 +474,17 @@ class InvalidInputValidationTest extends DualRuntimeTest {
 
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, 10, 100);
 
-      assertThat(table).isNotNull();
-      assertThat(table.getSize()).isEqualTo(10);
+      assertNotNull(table);
+      assertEquals(10, table.getSize());
 
       // Index 10 is out of bounds (valid indices are 0-9)
-      assertThatThrownBy(() -> table.get(10))
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for OOB table index: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-              });
+      try {
+        table.get(10);
+        org.junit.jupiter.api.Assertions.fail("Expected exception for OOB table index");
+      } catch (final Exception e) {
+        LOGGER.info("Exception for OOB table index: " + e.getClass().getName());
+        LOGGER.info("Message: " + e.getMessage());
+      }
     }
   }
 
@@ -496,15 +503,16 @@ class InvalidInputValidationTest extends DualRuntimeTest {
       final WasmGlobal immutableGlobal =
           store.createGlobal(WasmValueType.I32, false, WasmValue.i32(42));
 
-      assertThat(immutableGlobal).isNotNull();
-      assertThat(immutableGlobal.isMutable()).isFalse();
+      assertNotNull(immutableGlobal);
+      assertFalse(immutableGlobal.isMutable());
 
-      assertThatThrownBy(() -> immutableGlobal.set(WasmValue.i32(100)))
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for immutable global: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-              });
+      try {
+        immutableGlobal.set(WasmValue.i32(100));
+        org.junit.jupiter.api.Assertions.fail("Expected exception for immutable global");
+      } catch (final Exception e) {
+        LOGGER.info("Exception for immutable global: " + e.getClass().getName());
+        LOGGER.info("Message: " + e.getMessage());
+      }
     }
 
     @ParameterizedTest
@@ -517,15 +525,16 @@ class InvalidInputValidationTest extends DualRuntimeTest {
 
       final WasmGlobal i32Global = store.createGlobal(WasmValueType.I32, true, WasmValue.i32(42));
 
-      assertThat(i32Global).isNotNull();
+      assertNotNull(i32Global);
 
       // Try to read i64 from an i32 global - should throw when extracting wrong type
-      assertThatThrownBy(() -> i32Global.get().asLong())
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for wrong type access: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-              });
+      try {
+        i32Global.get().asLong();
+        org.junit.jupiter.api.Assertions.fail("Expected exception for wrong type access");
+      } catch (final Exception e) {
+        LOGGER.info("Exception for wrong type access: " + e.getClass().getName());
+        LOGGER.info("Message: " + e.getMessage());
+      }
     }
   }
 
@@ -542,12 +551,13 @@ class InvalidInputValidationTest extends DualRuntimeTest {
       store = engine.createStore();
 
       // Max size less than initial size
-      assertThatThrownBy(() -> store.createTable(WasmValueType.FUNCREF, 100, 10))
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for invalid table size: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-              });
+      try {
+        store.createTable(WasmValueType.FUNCREF, 100, 10);
+        org.junit.jupiter.api.Assertions.fail("Expected exception for invalid table size");
+      } catch (final Exception e) {
+        LOGGER.info("Exception for invalid table size: " + e.getClass().getName());
+        LOGGER.info("Message: " + e.getMessage());
+      }
     }
   }
 }

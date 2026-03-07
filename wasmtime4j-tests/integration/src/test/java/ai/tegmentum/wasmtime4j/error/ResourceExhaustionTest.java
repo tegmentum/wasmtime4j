@@ -15,8 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.error;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -215,7 +217,7 @@ class ResourceExhaustionTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmFunction growFunc = instance.getFunction("grow").orElse(null);
 
-        assertThat(growFunc).isNotNull();
+        assertNotNull(growFunc);
 
         // Memory has max 10 pages, min 1. Try to grow by 20 pages - should fail
         final WasmValue[] result = growFunc.call(WasmValue.i32(20));
@@ -223,7 +225,7 @@ class ResourceExhaustionTest extends DualRuntimeTest {
         LOGGER.info("Memory grow result for 20 pages: " + result[0].asInt());
 
         // Result should be -1 indicating failure
-        assertThat(result[0].asInt()).isEqualTo(-1);
+        assertEquals(-1, result[0].asInt());
       } finally {
         module.close();
       }
@@ -243,7 +245,7 @@ class ResourceExhaustionTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmFunction growFunc = instance.getFunction("grow").orElse(null);
 
-        assertThat(growFunc).isNotNull();
+        assertNotNull(growFunc);
 
         // Grow by 5 pages - should succeed (current 1 + 5 = 6, max is 10)
         final WasmValue[] result = growFunc.call(WasmValue.i32(5));
@@ -251,7 +253,7 @@ class ResourceExhaustionTest extends DualRuntimeTest {
         LOGGER.info("Memory grow result for 5 pages: " + result[0].asInt());
 
         // Result should be old size (1) indicating success
-        assertThat(result[0].asInt()).isEqualTo(1);
+        assertEquals(1, result[0].asInt());
       } finally {
         module.close();
       }
@@ -274,8 +276,8 @@ class ResourceExhaustionTest extends DualRuntimeTest {
       // Create a table with limited size
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, 5, 10);
 
-      assertThat(table).isNotNull();
-      assertThat(table.getSize()).isEqualTo(5);
+      assertNotNull(table);
+      assertEquals(5, table.getSize());
 
       // Try to grow beyond the max
       final long result = table.grow(20, null);
@@ -283,7 +285,7 @@ class ResourceExhaustionTest extends DualRuntimeTest {
       LOGGER.info("Table grow result for 20 elements: " + result);
 
       // Result should be -1 indicating failure
-      assertThat(result).isEqualTo(-1);
+      assertEquals(-1, result);
     }
 
     @ParameterizedTest
@@ -296,7 +298,7 @@ class ResourceExhaustionTest extends DualRuntimeTest {
 
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, 5, 10);
 
-      assertThat(table).isNotNull();
+      assertNotNull(table);
 
       // Grow by 3 elements - should succeed (5 + 3 = 8, max is 10)
       final long oldSize = table.grow(3, null);
@@ -305,8 +307,8 @@ class ResourceExhaustionTest extends DualRuntimeTest {
       LOGGER.info("New table size: " + table.getSize());
 
       // Result should be old size (5) indicating success
-      assertThat(oldSize).isEqualTo(5);
-      assertThat(table.getSize()).isEqualTo(8);
+      assertEquals(5, oldSize);
+      assertEquals(8, table.getSize());
     }
   }
 
@@ -328,19 +330,16 @@ class ResourceExhaustionTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmFunction recursiveFunc = instance.getFunction("recursive").orElse(null);
 
-        assertThat(recursiveFunc).isNotNull();
+        assertNotNull(recursiveFunc);
 
-        assertThatThrownBy(() -> recursiveFunc.call())
-            .isInstanceOf(TrapException.class)
-            .satisfies(
-                e -> {
-                  final TrapException trap = (TrapException) e;
-                  LOGGER.info("Stack overflow trap: " + trap.getMessage());
-                  LOGGER.info("Trap type: " + trap.getTrapType());
-                  // Should be a stack overflow trap
-                  assertThat(trap.getMessage().toLowerCase())
-                      .containsAnyOf("stack", "overflow", "call");
-                });
+        final TrapException trap = assertThrows(TrapException.class, () -> recursiveFunc.call());
+        LOGGER.info("Stack overflow trap: " + trap.getMessage());
+        LOGGER.info("Trap type: " + trap.getTrapType());
+        // Should be a stack overflow trap
+        final String msg = trap.getMessage().toLowerCase();
+        assertTrue(
+            msg.contains("stack") || msg.contains("overflow") || msg.contains("call"),
+            "Expected trap message to contain 'stack', 'overflow', or 'call', got: " + msg);
       } finally {
         module.close();
       }
@@ -431,18 +430,18 @@ class ResourceExhaustionTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmFunction oobReadFunc = instance.getFunction("oobRead").orElse(null);
 
-        assertThat(oobReadFunc).isNotNull();
+        assertNotNull(oobReadFunc);
 
-        assertThatThrownBy(() -> oobReadFunc.call())
-            .isInstanceOf(TrapException.class)
-            .satisfies(
-                e -> {
-                  final TrapException trap = (TrapException) e;
-                  LOGGER.info("OOB read trap: " + trap.getMessage());
-                  LOGGER.info("Trap type: " + trap.getTrapType());
-                  assertThat(trap.getMessage().toLowerCase())
-                      .containsAnyOf("memory", "bound", "access", "out");
-                });
+        final TrapException trap = assertThrows(TrapException.class, () -> oobReadFunc.call());
+        LOGGER.info("OOB read trap: " + trap.getMessage());
+        LOGGER.info("Trap type: " + trap.getTrapType());
+        final String msg = trap.getMessage().toLowerCase();
+        assertTrue(
+            msg.contains("memory")
+                || msg.contains("bound")
+                || msg.contains("access")
+                || msg.contains("out"),
+            "Expected trap message to contain 'memory', 'bound', 'access', or 'out', got: " + msg);
       } finally {
         module.close();
       }

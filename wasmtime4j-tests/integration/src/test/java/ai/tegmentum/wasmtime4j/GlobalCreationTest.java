@@ -15,9 +15,14 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -60,13 +65,13 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.i32(42);
       final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.I32);
-      assertThat(global.isMutable()).isTrue();
+      assertNotNull(global);
+      assertEquals(WasmValueType.I32, global.getType());
+      assertTrue(global.isMutable());
 
       final WasmValue value = global.get();
-      assertThat(value.getType()).isEqualTo(WasmValueType.I32);
-      assertThat(value.asInt()).isEqualTo(42);
+      assertEquals(WasmValueType.I32, value.getType());
+      assertEquals(42, value.asInt());
     }
   }
 
@@ -80,13 +85,13 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.i64(123456789L);
       final WasmGlobal global = store.createGlobal(WasmValueType.I64, true, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.I64);
-      assertThat(global.isMutable()).isTrue();
+      assertNotNull(global);
+      assertEquals(WasmValueType.I64, global.getType());
+      assertTrue(global.isMutable());
 
       final WasmValue value = global.get();
-      assertThat(value.getType()).isEqualTo(WasmValueType.I64);
-      assertThat(value.asLong()).isEqualTo(123456789L);
+      assertEquals(WasmValueType.I64, value.getType());
+      assertEquals(123456789L, value.asLong());
     }
   }
 
@@ -100,13 +105,13 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.f32(3.14159f);
       final WasmGlobal global = store.createGlobal(WasmValueType.F32, true, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.F32);
-      assertThat(global.isMutable()).isTrue();
+      assertNotNull(global);
+      assertEquals(WasmValueType.F32, global.getType());
+      assertTrue(global.isMutable());
 
       final WasmValue value = global.get();
-      assertThat(value.getType()).isEqualTo(WasmValueType.F32);
-      assertThat(value.asFloat()).isEqualTo(3.14159f, offset(0.00001f));
+      assertEquals(WasmValueType.F32, value.getType());
+      assertEquals(3.14159f, value.asFloat(), 0.00001f);
     }
   }
 
@@ -120,13 +125,13 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.f64(2.71828);
       final WasmGlobal global = store.createGlobal(WasmValueType.F64, true, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.F64);
-      assertThat(global.isMutable()).isTrue();
+      assertNotNull(global);
+      assertEquals(WasmValueType.F64, global.getType());
+      assertTrue(global.isMutable());
 
       final WasmValue value = global.get();
-      assertThat(value.getType()).isEqualTo(WasmValueType.F64);
-      assertThat(value.asDouble()).isEqualTo(2.71828, offset(0.00001));
+      assertEquals(WasmValueType.F64, value.getType());
+      assertEquals(2.71828, value.asDouble(), 0.00001);
     }
   }
 
@@ -144,13 +149,13 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.v128(vectorData);
       final WasmGlobal global = store.createGlobal(WasmValueType.V128, true, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.V128);
-      assertThat(global.isMutable()).isTrue();
+      assertNotNull(global);
+      assertEquals(WasmValueType.V128, global.getType());
+      assertTrue(global.isMutable());
 
       final WasmValue value = global.get();
-      assertThat(value.getType()).isEqualTo(WasmValueType.V128);
-      assertThat(value.asV128()).isEqualTo(vectorData);
+      assertEquals(WasmValueType.V128, value.getType());
+      assertArrayEquals(vectorData, value.asV128());
     }
   }
 
@@ -166,12 +171,12 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.i32(100);
       final WasmGlobal global = store.createGlobal(WasmValueType.I32, false, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.I32);
-      assertThat(global.isMutable()).isFalse();
+      assertNotNull(global);
+      assertEquals(WasmValueType.I32, global.getType());
+      assertFalse(global.isMutable());
 
       final WasmValue value = global.get();
-      assertThat(value.asInt()).isEqualTo(100);
+      assertEquals(100, value.asInt());
 
       // Attempting to set should throw
       assertThrows(
@@ -193,15 +198,15 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmGlobal global = store.createGlobal(WasmValueType.I32, true, initialValue);
 
       // Initial value
-      assertThat(global.get().asInt()).isEqualTo(100);
+      assertEquals(100, global.get().asInt());
 
       // Set new value
       global.set(WasmValue.i32(200));
-      assertThat(global.get().asInt()).isEqualTo(200);
+      assertEquals(200, global.get().asInt());
 
       // Set another value
       global.set(WasmValue.i32(-42));
-      assertThat(global.get().asInt()).isEqualTo(-42);
+      assertEquals(-42, global.get().asInt());
     }
   }
 
@@ -217,10 +222,10 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.i64(999L);
       final WasmGlobal global = store.createImmutableGlobal(WasmValueType.I64, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.I64);
-      assertThat(global.isMutable()).isFalse();
-      assertThat(global.get().asLong()).isEqualTo(999L);
+      assertNotNull(global);
+      assertEquals(WasmValueType.I64, global.getType());
+      assertFalse(global.isMutable());
+      assertEquals(999L, global.get().asLong());
     }
   }
 
@@ -234,14 +239,14 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.f32(1.23f);
       final WasmGlobal global = store.createMutableGlobal(WasmValueType.F32, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.F32);
-      assertThat(global.isMutable()).isTrue();
-      assertThat(global.get().asFloat()).isEqualTo(1.23f, offset(0.001f));
+      assertNotNull(global);
+      assertEquals(WasmValueType.F32, global.getType());
+      assertTrue(global.isMutable());
+      assertEquals(1.23f, global.get().asFloat(), 0.001f);
 
       // Test mutation
       global.set(WasmValue.f32(4.56f));
-      assertThat(global.get().asFloat()).isEqualTo(4.56f, offset(0.001f));
+      assertEquals(4.56f, global.get().asFloat(), 0.001f);
     }
   }
 
@@ -261,17 +266,17 @@ class GlobalCreationTest extends DualRuntimeTest {
         assertDoesNotThrow(
             () -> {
               final WasmGlobal global = store.createGlobal(valueType, true, initialValue);
-              assertThat(global).isNotNull();
-              assertThat(global.getType()).isEqualTo(valueType);
-              assertThat(global.isMutable()).isTrue();
+              assertNotNull(global);
+              assertEquals(valueType, global.getType());
+              assertTrue(global.isMutable());
 
               final WasmValue retrievedValue = global.get();
               if (valueType.isGcReference()) {
                 // GC reference types: null values may be returned as ANYREF/FUNCREF/EXTERNREF
                 // depending on the runtime representation, so verify the value is null
-                assertThat(retrievedValue.getValue()).isNull();
+                assertNull(retrievedValue.getValue());
               } else {
-                assertThat(retrievedValue.getType()).isEqualTo(valueType);
+                assertEquals(valueType, retrievedValue.getType());
                 assertValuesEqual(initialValue, retrievedValue);
               }
             });
@@ -361,13 +366,13 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.funcref(null); // Null function reference
       final WasmGlobal global = store.createGlobal(WasmValueType.FUNCREF, true, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.FUNCREF);
-      assertThat(global.isMutable()).isTrue();
+      assertNotNull(global);
+      assertEquals(WasmValueType.FUNCREF, global.getType());
+      assertTrue(global.isMutable());
 
       final WasmValue value = global.get();
-      assertThat(value.getType()).isEqualTo(WasmValueType.FUNCREF);
-      assertThat(value.asFuncref()).isNull();
+      assertEquals(WasmValueType.FUNCREF, value.getType());
+      assertNull(value.asFuncref());
     }
   }
 
@@ -381,13 +386,13 @@ class GlobalCreationTest extends DualRuntimeTest {
       final WasmValue initialValue = WasmValue.externref(null); // Null external reference
       final WasmGlobal global = store.createGlobal(WasmValueType.EXTERNREF, true, initialValue);
 
-      assertThat(global).isNotNull();
-      assertThat(global.getType()).isEqualTo(WasmValueType.EXTERNREF);
-      assertThat(global.isMutable()).isTrue();
+      assertNotNull(global);
+      assertEquals(WasmValueType.EXTERNREF, global.getType());
+      assertTrue(global.isMutable());
 
       final WasmValue value = global.get();
-      assertThat(value.getType()).isEqualTo(WasmValueType.EXTERNREF);
-      assertThat(value.asExternref()).isNull();
+      assertEquals(WasmValueType.EXTERNREF, value.getType());
+      assertNull(value.asExternref());
     }
   }
 
@@ -432,7 +437,7 @@ class GlobalCreationTest extends DualRuntimeTest {
 
       // Verify final value
       final int expectedValue = numThreads * incrementsPerThread;
-      assertThat(global.get().asInt()).isEqualTo(expectedValue);
+      assertEquals(expectedValue, global.get().asInt());
     }
   }
 
@@ -453,14 +458,14 @@ class GlobalCreationTest extends DualRuntimeTest {
       for (int i = 0; i < iterations; i++) {
         global.set(WasmValue.i64(i));
         final long value = global.get().asLong();
-        assertThat(value).isEqualTo(i);
+        assertEquals(i, value);
       }
 
       final long endTime = System.nanoTime();
       final long durationMs = (endTime - startTime) / 1_000_000;
 
       // Performance assertion - should complete in reasonable time
-      assertThat(durationMs).isLessThan(5000); // 5 seconds max for 100k operations
+      assertTrue(durationMs < 5000, "Expected < 5000ms, got " + durationMs); // 5 seconds max
 
       LOGGER.info(
           String.format(
@@ -513,29 +518,29 @@ class GlobalCreationTest extends DualRuntimeTest {
   }
 
   private static void assertValuesEqual(final WasmValue expected, final WasmValue actual) {
-    assertThat(actual.getType()).isEqualTo(expected.getType());
+    assertEquals(expected.getType(), actual.getType());
 
     switch (expected.getType()) {
       case I32:
-        assertThat(actual.asInt()).isEqualTo(expected.asInt());
+        assertEquals(expected.asInt(), actual.asInt());
         break;
       case I64:
-        assertThat(actual.asLong()).isEqualTo(expected.asLong());
+        assertEquals(expected.asLong(), actual.asLong());
         break;
       case F32:
-        assertThat(actual.asFloat()).isEqualTo(expected.asFloat(), offset(0.001f));
+        assertEquals(expected.asFloat(), actual.asFloat(), 0.001f);
         break;
       case F64:
-        assertThat(actual.asDouble()).isEqualTo(expected.asDouble(), offset(0.001));
+        assertEquals(expected.asDouble(), actual.asDouble(), 0.001);
         break;
       case V128:
-        assertThat(actual.asV128()).isEqualTo(expected.asV128());
+        assertArrayEquals(expected.asV128(), actual.asV128());
         break;
       case FUNCREF:
-        assertThat(actual.asFuncref()).isEqualTo(expected.asFuncref());
+        assertEquals(expected.asFuncref(), actual.asFuncref());
         break;
       case EXTERNREF:
-        assertThat(actual.asExternref()).isEqualTo(expected.asExternref());
+        assertEquals(expected.asExternref(), actual.asExternref());
         break;
       case ANYREF:
       case EQREF:
@@ -546,19 +551,10 @@ class GlobalCreationTest extends DualRuntimeTest {
       case NULLFUNCREF:
       case NULLEXTERNREF:
         // GC reference types: verify the value is null
-        assertThat(actual.getValue()).isNull();
+        assertNull(actual.getValue());
         break;
       default:
         throw new IllegalArgumentException("Unsupported value type: " + expected.getType());
     }
-  }
-
-  // Required for AssertJ offset() method
-  private static org.assertj.core.data.Offset<Float> offset(final float value) {
-    return org.assertj.core.data.Offset.offset(value);
-  }
-
-  private static org.assertj.core.data.Offset<Double> offset(final double value) {
-    return org.assertj.core.data.Offset.offset(value);
   }
 }

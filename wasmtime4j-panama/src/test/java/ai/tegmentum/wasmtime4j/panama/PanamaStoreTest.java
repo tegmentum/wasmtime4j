@@ -15,8 +15,9 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -95,7 +96,9 @@ class PanamaStoreTest {
     void shouldRejectNullEngine() throws Exception {
       final IllegalArgumentException ex =
           assertThrows(IllegalArgumentException.class, () -> new PanamaStore(null));
-      assertThat(ex.getMessage()).contains("Engine cannot be null");
+      assertTrue(
+          ex.getMessage().contains("Engine cannot be null"),
+          "Expected message to contain 'Engine cannot be null': " + ex.getMessage());
       LOGGER.info("Correctly rejected null engine: " + ex.getMessage());
     }
 
@@ -116,7 +119,7 @@ class PanamaStoreTest {
 
       assertTrue(store.isValid(), "Store should be valid after creation");
       assertNotNull(store.getNativeStore(), "Native store pointer should not be null");
-      assertThat(store.getEngine()).isSameAs(engine);
+      assertSame(engine, store.getEngine(), "Store engine should be same as provided engine");
       LOGGER.info("Successfully created valid store");
     }
 
@@ -127,7 +130,9 @@ class PanamaStoreTest {
 
       final IllegalArgumentException ex =
           assertThrows(IllegalArgumentException.class, () -> new PanamaStore(null, limits));
-      assertThat(ex.getMessage()).contains("Engine cannot be null");
+      assertTrue(
+          ex.getMessage().contains("Engine cannot be null"),
+          "Expected message to contain 'Engine cannot be null': " + ex.getMessage());
       LOGGER.info("Correctly rejected null engine with limits");
     }
 
@@ -136,7 +141,9 @@ class PanamaStoreTest {
     void shouldRejectNullLimits() throws Exception {
       final IllegalArgumentException ex =
           assertThrows(IllegalArgumentException.class, () -> new PanamaStore(engine, null));
-      assertThat(ex.getMessage()).contains("Limits cannot be null");
+      assertTrue(
+          ex.getMessage().contains("Limits cannot be null"),
+          "Expected message to contain 'Limits cannot be null': " + ex.getMessage());
       LOGGER.info("Correctly rejected null limits");
     }
 
@@ -164,7 +171,9 @@ class PanamaStoreTest {
     void shouldRejectNullModule() throws Exception {
       final IllegalArgumentException ex =
           assertThrows(IllegalArgumentException.class, () -> PanamaStore.forModule(null));
-      assertThat(ex.getMessage()).contains("module cannot be null");
+      assertTrue(
+          ex.getMessage().contains("module cannot be null"),
+          "Expected message to contain 'module cannot be null': " + ex.getMessage());
       LOGGER.info("Correctly rejected null module");
     }
 
@@ -204,7 +213,7 @@ class PanamaStoreTest {
 
       final CallbackRegistry registry = store.getCallbackRegistry();
       assertNotNull(registry, "Callback registry should not be null");
-      assertThat(registry).isInstanceOf(PanamaCallbackRegistry.class);
+      assertInstanceOf(PanamaCallbackRegistry.class, registry);
       LOGGER.info("Callback registry created lazily");
     }
 
@@ -215,7 +224,7 @@ class PanamaStoreTest {
 
       final CallbackRegistry registry1 = store.getCallbackRegistry();
       final CallbackRegistry registry2 = store.getCallbackRegistry();
-      assertThat(registry1).isSameAs(registry2);
+      assertSame(registry1, registry2, "Callback registry should be the same instance");
       LOGGER.info("Callback registry is singleton per store");
     }
   }
@@ -231,7 +240,7 @@ class PanamaStoreTest {
     void shouldReturnEngineReference() throws Exception {
       final PanamaStore store = createStore();
 
-      assertThat(store.getEngine()).isSameAs(engine);
+      assertSame(engine, store.getEngine(), "Store engine should be same as provided engine");
       LOGGER.info("Store returns correct engine reference");
     }
 

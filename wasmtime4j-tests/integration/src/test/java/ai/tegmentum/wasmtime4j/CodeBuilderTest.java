@@ -15,8 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
@@ -62,12 +64,12 @@ class CodeBuilderTest extends DualRuntimeTest {
       final byte[] binary = new byte[] {0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
 
       try (CodeBuilder builder = engine.codeBuilder()) {
-        assertThat(builder).isNotNull();
+        assertNotNull(builder);
         final CodeBuilder returned = builder.wasmBinary(binary);
-        assertThat(returned).as("wasmBinary should return the same builder").isSameAs(builder);
+        assertSame(builder, returned, "wasmBinary should return the same builder");
 
         final Module module = builder.compileModule();
-        assertThat(module).isNotNull();
+        assertNotNull(module);
         module.close();
       }
     }
@@ -82,8 +84,8 @@ class CodeBuilderTest extends DualRuntimeTest {
       try (CodeBuilder builder = engine.codeBuilder()) {
         builder.wasmBinaryOrText(SIMPLE_WAT.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         final Module module = builder.compileModule();
-        assertThat(module).isNotNull();
-        assertThat(module.hasExport("get42")).as("Module should export 'get42'").isTrue();
+        assertNotNull(module);
+        assertTrue(module.hasExport("get42"), "Module should export 'get42'");
         module.close();
       }
     }
@@ -99,9 +101,9 @@ class CodeBuilderTest extends DualRuntimeTest {
         builder.wasmBinaryOrText(MEMORY_WAT.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         builder.hint(CodeHint.MODULE);
         final Module module = builder.compileModule();
-        assertThat(module).isNotNull();
-        assertThat(module.hasExport("memory")).as("Module should export 'memory'").isTrue();
-        assertThat(module.hasExport("load")).as("Module should export 'load'").isTrue();
+        assertNotNull(module);
+        assertTrue(module.hasExport("memory"), "Module should export 'memory'");
+        assertTrue(module.hasExport("load"), "Module should export 'load'");
         module.close();
       }
     }
@@ -115,10 +117,10 @@ class CodeBuilderTest extends DualRuntimeTest {
     try (Engine engine = Engine.create()) {
       try (CodeBuilder builder = engine.codeBuilder()) {
         final CodeBuilder returned = builder.hint(CodeHint.MODULE);
-        assertThat(returned).as("hint should return the same builder").isSameAs(builder);
+        assertSame(builder, returned, "hint should return the same builder");
         builder.wasmBinaryOrText(SIMPLE_WAT.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         final Module module = builder.compileModule();
-        assertThat(module).isNotNull();
+        assertNotNull(module);
         module.close();
       }
     }
@@ -186,7 +188,7 @@ class CodeBuilderTest extends DualRuntimeTest {
                 .hint(CodeHint.MODULE)
                 .wasmBinaryOrText(SIMPLE_WAT.getBytes(java.nio.charset.StandardCharsets.UTF_8))
                 .compileModule();
-        assertThat(module).isNotNull();
+        assertNotNull(module);
         module.close();
       }
     }

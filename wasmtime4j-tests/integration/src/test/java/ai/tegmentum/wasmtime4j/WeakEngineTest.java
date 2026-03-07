@@ -15,7 +15,9 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.Optional;
@@ -46,12 +48,12 @@ class WeakEngineTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing WeakEngine upgrade while engine is alive");
     try (Engine engine = Engine.create()) {
       final WeakEngine weak = engine.weak();
-      assertThat(weak).as("weak() should return a non-null WeakEngine").isNotNull();
-      assertThat(weak.isValid()).as("WeakEngine should be valid while engine is alive").isTrue();
+      assertNotNull(weak, "weak() should return a non-null WeakEngine");
+      assertTrue(weak.isValid(), "WeakEngine should be valid while engine is alive");
 
       final Optional<Engine> upgraded = weak.upgrade();
-      assertThat(upgraded).as("upgrade() should return the engine while it is alive").isPresent();
-      assertThat(upgraded.get()).as("Upgraded engine should not be null").isNotNull();
+      assertTrue(upgraded.isPresent(), "upgrade() should return the engine while it is alive");
+      assertNotNull(upgraded.get(), "Upgraded engine should not be null");
 
       weak.close();
     }
@@ -64,15 +66,13 @@ class WeakEngineTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing WeakEngine after closing the weak reference");
     try (Engine engine = Engine.create()) {
       final WeakEngine weak = engine.weak();
-      assertThat(weak.isValid()).as("WeakEngine should be valid initially").isTrue();
+      assertTrue(weak.isValid(), "WeakEngine should be valid initially");
 
       weak.close();
-      assertThat(weak.isValid()).as("WeakEngine should be invalid after close").isFalse();
+      assertFalse(weak.isValid(), "WeakEngine should be invalid after close");
 
       final Optional<Engine> upgraded = weak.upgrade();
-      assertThat(upgraded)
-          .as("upgrade() should return empty after weak reference is closed")
-          .isEmpty();
+      assertTrue(upgraded.isEmpty(), "upgrade() should return empty after weak reference is closed");
     }
   }
 
@@ -85,23 +85,21 @@ class WeakEngineTest extends DualRuntimeTest {
       final WeakEngine weak1 = engine.weak();
       final WeakEngine weak2 = engine.weak();
 
-      assertThat(weak1.isValid()).as("First weak reference should be valid").isTrue();
-      assertThat(weak2.isValid()).as("Second weak reference should be valid").isTrue();
+      assertTrue(weak1.isValid(), "First weak reference should be valid");
+      assertTrue(weak2.isValid(), "Second weak reference should be valid");
 
       final Optional<Engine> upgraded1 = weak1.upgrade();
       final Optional<Engine> upgraded2 = weak2.upgrade();
-      assertThat(upgraded1).as("First weak should upgrade").isPresent();
-      assertThat(upgraded2).as("Second weak should upgrade").isPresent();
+      assertTrue(upgraded1.isPresent(), "First weak should upgrade");
+      assertTrue(upgraded2.isPresent(), "Second weak should upgrade");
 
       // Closing one weak reference should not affect the other
       weak1.close();
-      assertThat(weak1.isValid()).as("First weak should be invalid after close").isFalse();
-      assertThat(weak2.isValid()).as("Second weak should still be valid").isTrue();
+      assertFalse(weak1.isValid(), "First weak should be invalid after close");
+      assertTrue(weak2.isValid(), "Second weak should still be valid");
 
       final Optional<Engine> stillUpgraded = weak2.upgrade();
-      assertThat(stillUpgraded)
-          .as("Second weak should still upgrade after first is closed")
-          .isPresent();
+      assertTrue(stillUpgraded.isPresent(), "Second weak should still upgrade after first is closed");
 
       weak2.close();
     }
@@ -117,7 +115,7 @@ class WeakEngineTest extends DualRuntimeTest {
       weak.close();
       // Second close should not throw
       weak.close();
-      assertThat(weak.isValid()).as("WeakEngine should remain invalid").isFalse();
+      assertFalse(weak.isValid(), "WeakEngine should remain invalid");
     }
   }
 
@@ -129,7 +127,7 @@ class WeakEngineTest extends DualRuntimeTest {
     final WeakEngine weak;
     try (Engine engine = Engine.create()) {
       weak = engine.weak();
-      assertThat(weak.isValid()).as("WeakEngine should be valid before engine close").isTrue();
+      assertTrue(weak.isValid(), "WeakEngine should be valid before engine close");
     }
     // Engine is now closed; weak reference upgrade behavior depends on implementation.
     // The weak reference itself should still be closeable without error.

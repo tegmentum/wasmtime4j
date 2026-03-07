@@ -15,8 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -80,7 +80,9 @@ class PanamaLinkerTest {
     void shouldRejectNullEngine() {
       final IllegalArgumentException ex =
           assertThrows(IllegalArgumentException.class, () -> new PanamaLinker<>(null));
-      assertThat(ex.getMessage()).contains("Engine cannot be null");
+      assertTrue(
+          ex.getMessage().contains("Engine cannot be null"),
+          "Expected message to contain 'Engine cannot be null': " + ex.getMessage());
       LOGGER.info("Correctly rejected null engine: " + ex.getMessage());
     }
 
@@ -92,7 +94,9 @@ class PanamaLinkerTest {
 
       final IllegalStateException ex =
           assertThrows(IllegalStateException.class, () -> new PanamaLinker<>(closedEngine));
-      assertThat(ex.getMessage()).contains("closed");
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Expected message to contain 'closed': " + ex.getMessage());
       LOGGER.info("Correctly rejected closed engine: " + ex.getMessage());
     }
 
@@ -119,7 +123,7 @@ class PanamaLinkerTest {
     void shouldGetAndSetWasiContext() throws Exception {
       final PanamaLinker<?> linker = createLinker();
 
-      assertThat(linker.getWasiContext()).isNull();
+      assertNull(linker.getWasiContext(), "WASI context should be null initially");
       LOGGER.info("WASI context correctly null initially");
     }
   }

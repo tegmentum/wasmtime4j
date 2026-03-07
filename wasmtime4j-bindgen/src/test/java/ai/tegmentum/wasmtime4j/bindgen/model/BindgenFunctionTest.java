@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,14 +45,14 @@ class BindgenFunctionTest {
 
       BindgenFunction function = BindgenFunction.builder().name("doSomething").build();
 
-      assertThat(function.getName()).isEqualTo("doSomething");
-      assertThat(function.getParameters()).isEmpty();
-      assertThat(function.getReturnType()).isEmpty();
-      assertThat(function.getDocumentation()).isEmpty();
-      assertThat(function.isAsync()).isFalse();
-      assertThat(function.isConstructor()).isFalse();
-      assertThat(function.isStatic()).isFalse();
-      assertThat(function.hasReturnType()).isFalse();
+      assertEquals("doSomething", function.getName());
+      assertTrue(function.getParameters().isEmpty());
+      assertTrue(function.getReturnType().isEmpty());
+      assertTrue(function.getDocumentation().isEmpty());
+      assertFalse(function.isAsync());
+      assertFalse(function.isConstructor());
+      assertFalse(function.isStatic());
+      assertFalse(function.hasReturnType());
     }
 
     @Test
@@ -66,8 +68,8 @@ class BindgenFunctionTest {
       BindgenFunction function =
           BindgenFunction.builder().name("greet").addParameter(param1).addParameter(param2).build();
 
-      assertThat(function.getParameters()).hasSize(2);
-      assertThat(function.getParameters()).containsExactly(param1, param2);
+      assertEquals(2, function.getParameters().size());
+      assertEquals(List.of(param1, param2), function.getParameters());
     }
 
     @Test
@@ -80,9 +82,9 @@ class BindgenFunctionTest {
       BindgenFunction function =
           BindgenFunction.builder().name("increment").addParameter("value", i32Type).build();
 
-      assertThat(function.getParameters()).hasSize(1);
-      assertThat(function.getParameters().get(0).getName()).isEqualTo("value");
-      assertThat(function.getParameters().get(0).getType()).isEqualTo(i32Type);
+      assertEquals(1, function.getParameters().size());
+      assertEquals("value", function.getParameters().get(0).getName());
+      assertEquals(i32Type, function.getParameters().get(0).getType());
     }
 
     @Test
@@ -97,7 +99,7 @@ class BindgenFunctionTest {
 
       BindgenFunction function = BindgenFunction.builder().name("add").parameters(params).build();
 
-      assertThat(function.getParameters()).hasSize(2);
+      assertEquals(2, function.getParameters().size());
     }
 
     @Test
@@ -110,8 +112,9 @@ class BindgenFunctionTest {
       BindgenFunction function =
           BindgenFunction.builder().name("getName").returnType(returnType).build();
 
-      assertThat(function.getReturnType()).hasValue(returnType);
-      assertThat(function.hasReturnType()).isTrue();
+      assertTrue(function.getReturnType().isPresent());
+      assertEquals(returnType, function.getReturnType().get());
+      assertTrue(function.hasReturnType());
     }
 
     @Test
@@ -125,7 +128,8 @@ class BindgenFunctionTest {
               .documentation("Calculates the result based on input")
               .build();
 
-      assertThat(function.getDocumentation()).hasValue("Calculates the result based on input");
+      assertTrue(function.getDocumentation().isPresent());
+      assertEquals("Calculates the result based on input", function.getDocumentation().get());
     }
 
     @Test
@@ -135,7 +139,7 @@ class BindgenFunctionTest {
 
       BindgenFunction function = BindgenFunction.builder().name("fetchData").async(true).build();
 
-      assertThat(function.isAsync()).isTrue();
+      assertTrue(function.isAsync());
     }
 
     @Test
@@ -145,7 +149,7 @@ class BindgenFunctionTest {
 
       BindgenFunction function = BindgenFunction.builder().name("new").constructor(true).build();
 
-      assertThat(function.isConstructor()).isTrue();
+      assertTrue(function.isConstructor());
     }
 
     @Test
@@ -156,7 +160,7 @@ class BindgenFunctionTest {
       BindgenFunction function =
           BindgenFunction.builder().name("getInstance").staticMethod(true).build();
 
-      assertThat(function.isStatic()).isTrue();
+      assertTrue(function.isStatic());
     }
 
     @Test
@@ -178,13 +182,14 @@ class BindgenFunctionTest {
               .staticMethod(true)
               .build();
 
-      assertThat(function.getName()).isEqualTo("process");
-      assertThat(function.getParameters()).hasSize(1);
-      assertThat(function.getReturnType()).hasValue(stringType);
-      assertThat(function.getDocumentation()).isPresent();
-      assertThat(function.isAsync()).isTrue();
-      assertThat(function.isConstructor()).isFalse();
-      assertThat(function.isStatic()).isTrue();
+      assertEquals("process", function.getName());
+      assertEquals(1, function.getParameters().size());
+      assertTrue(function.getReturnType().isPresent());
+      assertEquals(stringType, function.getReturnType().get());
+      assertTrue(function.getDocumentation().isPresent());
+      assertTrue(function.isAsync());
+      assertFalse(function.isConstructor());
+      assertTrue(function.isStatic());
     }
   }
 
@@ -197,7 +202,7 @@ class BindgenFunctionTest {
     void getNameShouldReturnFunctionName() {
       BindgenFunction function = BindgenFunction.builder().name("testFunction").build();
 
-      assertThat(function.getName()).isEqualTo("testFunction");
+      assertEquals("testFunction", function.getName());
     }
 
     @Test
@@ -205,7 +210,7 @@ class BindgenFunctionTest {
     void getParametersShouldReturnEmptyListWhenNoParameters() {
       BindgenFunction function = BindgenFunction.builder().name("noParams").build();
 
-      assertThat(function.getParameters()).isEmpty();
+      assertTrue(function.getParameters().isEmpty());
     }
 
     @Test
@@ -213,7 +218,7 @@ class BindgenFunctionTest {
     void getReturnTypeShouldReturnEmptyWhenNoReturnType() {
       BindgenFunction function = BindgenFunction.builder().name("voidFunction").build();
 
-      assertThat(function.getReturnType()).isEmpty();
+      assertTrue(function.getReturnType().isEmpty());
     }
 
     @Test
@@ -221,7 +226,7 @@ class BindgenFunctionTest {
     void hasReturnTypeShouldReturnFalseForVoidFunctions() {
       BindgenFunction function = BindgenFunction.builder().name("voidFunction").build();
 
-      assertThat(function.hasReturnType()).isFalse();
+      assertFalse(function.hasReturnType());
     }
 
     @Test
@@ -233,7 +238,7 @@ class BindgenFunctionTest {
               .returnType(BindgenType.primitive("i32"))
               .build();
 
-      assertThat(function.hasReturnType()).isTrue();
+      assertTrue(function.hasReturnType());
     }
   }
 
@@ -262,8 +267,8 @@ class BindgenFunctionTest {
               .addParameter("b", i32Type)
               .build();
 
-      assertThat(function1).isEqualTo(function2);
-      assertThat(function1.hashCode()).isEqualTo(function2.hashCode());
+      assertEquals(function2, function1);
+      assertEquals(function2.hashCode(), function1.hashCode());
     }
 
     @Test
@@ -274,7 +279,7 @@ class BindgenFunctionTest {
       BindgenFunction function1 = BindgenFunction.builder().name("func1").build();
       BindgenFunction function2 = BindgenFunction.builder().name("func2").build();
 
-      assertThat(function1).isNotEqualTo(function2);
+      assertNotEquals(function2, function1);
     }
 
     @Test
@@ -294,7 +299,7 @@ class BindgenFunctionTest {
               .addParameter("b", BindgenType.primitive("i64"))
               .build();
 
-      assertThat(function1).isNotEqualTo(function2);
+      assertNotEquals(function2, function1);
     }
 
     @Test
@@ -302,7 +307,7 @@ class BindgenFunctionTest {
     void shouldNotBeEqualToNull() {
       BindgenFunction function = BindgenFunction.builder().name("func").build();
 
-      assertThat(function).isNotEqualTo(null);
+      assertNotEquals(null, function);
     }
 
     @Test
@@ -310,7 +315,7 @@ class BindgenFunctionTest {
     void shouldNotBeEqualToDifferentClass() {
       BindgenFunction function = BindgenFunction.builder().name("func").build();
 
-      assertThat(function).isNotEqualTo("func");
+      assertNotEquals("func", function);
     }
 
     @Test
@@ -318,7 +323,7 @@ class BindgenFunctionTest {
     void shouldBeEqualToItself() {
       BindgenFunction function = BindgenFunction.builder().name("func").build();
 
-      assertThat(function).isEqualTo(function);
+      assertEquals(function, function);
     }
   }
 
@@ -335,8 +340,12 @@ class BindgenFunctionTest {
 
       String toString = function.toString();
 
-      assertThat(toString).contains("name='myFunction'");
-      assertThat(toString).startsWith("BindgenFunction{");
+      assertTrue(
+          toString.contains("name='myFunction'"),
+          "Expected toString to contain: name='myFunction'");
+      assertTrue(
+          toString.startsWith("BindgenFunction{"),
+          "Expected toString to start with: BindgenFunction{");
     }
 
     @Test
@@ -351,7 +360,7 @@ class BindgenFunctionTest {
 
       String toString = function.toString();
 
-      assertThat(toString).contains("params=2");
+      assertTrue(toString.contains("params=2"), "Expected toString to contain: params=2");
     }
 
     @Test
@@ -365,7 +374,8 @@ class BindgenFunctionTest {
 
       String toString = function.toString();
 
-      assertThat(toString).contains("returns=string");
+      assertTrue(
+          toString.contains("returns=string"), "Expected toString to contain: returns=string");
     }
 
     @Test
@@ -375,7 +385,7 @@ class BindgenFunctionTest {
 
       String toString = function.toString();
 
-      assertThat(toString).doesNotContain("returns=");
+      assertFalse(toString.contains("returns="), "Expected toString not to contain: returns=");
     }
   }
 
@@ -396,8 +406,9 @@ class BindgenFunctionTest {
 
       List<BindgenParameter> params = function.getParameters();
 
-      assertThatThrownBy(() -> params.add(new BindgenParameter("b", BindgenType.primitive("i32"))))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> params.add(new BindgenParameter("b", BindgenType.primitive("i32"))));
     }
   }
 }

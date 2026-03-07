@@ -15,7 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.wasi;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
@@ -65,7 +65,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
       final WasiContext context = WasiContext.create().setEnv("TEST_VAR", "test_value");
 
       LOGGER.info("Created WASI context with single env var");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -83,7 +83,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
       final WasiContext context = WasiContext.create().setEnv(envVars);
 
       LOGGER.info("Created WASI context with " + envVars.size() + " env vars");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -95,7 +95,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
       final WasiContext context = WasiContext.create().setEnv("EMPTY_VAR", "");
 
       LOGGER.info("Created WASI context with empty env var value");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -108,7 +108,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
           WasiContext.create().setEnv("SPECIAL", "value with spaces and !@#$%^&*()");
 
       LOGGER.info("Created WASI context with special chars in env var");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -124,7 +124,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
               .setEnv("VAR3", "value3");
 
       LOGGER.info("Created WASI context with chained env vars");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
   }
 
@@ -141,7 +141,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
       final WasiContext context = WasiContext.create().setArgv(new String[] {"--help"});
 
       LOGGER.info("Created WASI context with single arg");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -163,7 +163,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
                   });
 
       LOGGER.info("Created WASI context with multiple args");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -178,7 +178,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
                   new String[] {"program", "argument with spaces", "--message", "Hello World"});
 
       LOGGER.info("Created WASI context with args containing spaces");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -190,7 +190,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
       final WasiContext context = WasiContext.create().setArgv(new String[] {});
 
       LOGGER.info("Created WASI context with no args");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
   }
 
@@ -211,7 +211,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
               .setArgv(new String[] {"myprogram", "--verbose"});
 
       LOGGER.info("Created WASI context with env vars and args");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -236,7 +236,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
                   });
 
       LOGGER.info("Created WASI context with realistic configuration");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
   }
 
@@ -253,7 +253,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
       final WasiContext context = WasiContext.create().inheritStdio();
 
       LOGGER.info("Created WASI context inheriting all stdio");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -269,7 +269,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
               .setArgv(new String[] {"app", "--test"});
 
       LOGGER.info("Created WASI context with stdio and env");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
   }
 
@@ -286,7 +286,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
       final WasiContext context = WasiContext.create().inheritEnv();
 
       LOGGER.info("Created WASI context inheriting host environment");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
 
     @ParameterizedTest
@@ -300,7 +300,7 @@ class WasiEnvironmentTest extends DualRuntimeTest {
           WasiContext.create().inheritEnv().setEnv("ADDITIONAL_VAR", "additional_value");
 
       LOGGER.info("Created WASI context with inherited and additional env");
-      assertThat(context).isNotNull();
+      assertNotNull(context);
     }
   }
 }

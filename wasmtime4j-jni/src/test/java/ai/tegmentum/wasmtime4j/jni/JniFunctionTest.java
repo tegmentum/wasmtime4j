@@ -15,7 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,9 +47,9 @@ class JniFunctionTest {
     final JniFunction function =
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
 
-    assertThat(function.getNativeHandle()).isEqualTo(VALID_HANDLE);
-    assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
-    assertThat(function.getResourceType()).isEqualTo("Function[" + FUNCTION_NAME + "]");
+    assertEquals(VALID_HANDLE, function.getNativeHandle());
+    assertEquals(FUNCTION_NAME, function.getName());
+    assertEquals("Function[" + FUNCTION_NAME + "]", function.getResourceType());
     assertFalse(function.isClosed());
   }
 
@@ -60,8 +60,12 @@ class JniFunctionTest {
             IllegalArgumentException.class,
             () -> new JniFunction(0L, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE));
 
-    assertThat(exception.getMessage()).contains("nativeHandle");
-    assertThat(exception.getMessage()).contains("invalid native handle");
+    assertTrue(
+        exception.getMessage().contains("nativeHandle"),
+        "Expected message to contain: nativeHandle");
+    assertTrue(
+        exception.getMessage().contains("invalid native handle"),
+        "Expected message to contain: invalid native handle");
   }
 
   @Test
@@ -71,8 +75,12 @@ class JniFunctionTest {
             IllegalArgumentException.class,
             () -> new JniFunction(VALID_HANDLE, null, VALID_MODULE_HANDLE, MOCK_STORE));
 
-    assertThat(exception.getMessage()).contains("name");
-    assertThat(exception.getMessage()).contains("must not be null");
+    assertTrue(
+        exception.getMessage().contains("name"),
+        "Expected message to contain: name");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
@@ -82,22 +90,26 @@ class JniFunctionTest {
             IllegalArgumentException.class,
             () -> new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, null));
 
-    assertThat(exception.getMessage()).contains("store");
-    assertThat(exception.getMessage()).contains("must not be null");
+    assertTrue(
+        exception.getMessage().contains("store"),
+        "Expected message to contain: store");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
   void testGetName() {
     final JniFunction function =
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
-    assertThat(function.getName()).isEqualTo(FUNCTION_NAME);
+    assertEquals(FUNCTION_NAME, function.getName());
   }
 
   @Test
   void testGetResourceType() {
     final JniFunction function =
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
-    assertThat(function.getResourceType()).isEqualTo("Function[" + FUNCTION_NAME + "]");
+    assertEquals("Function[" + FUNCTION_NAME + "]", function.getResourceType());
   }
 
   @Test
@@ -108,8 +120,12 @@ class JniFunctionTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> function.call((WasmValue[]) null));
 
-    assertThat(exception.getMessage()).contains("parameters");
-    assertThat(exception.getMessage()).contains("must not be null");
+    assertTrue(
+        exception.getMessage().contains("parameters"),
+        "Expected message to contain: parameters");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
@@ -137,9 +153,15 @@ class JniFunctionTest {
         new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, MOCK_STORE);
     final String toString = function.toString();
 
-    assertThat(toString).contains("Function[" + FUNCTION_NAME + "]");
-    assertThat(toString).contains("handle=0x" + Long.toHexString(VALID_HANDLE));
-    assertThat(toString).contains("closed=false");
+    assertTrue(
+        toString.contains("Function[" + FUNCTION_NAME + "]"),
+        "Expected string to contain: Function[" + FUNCTION_NAME + "]");
+    assertTrue(
+        toString.contains("handle=0x" + Long.toHexString(VALID_HANDLE)),
+        "Expected string to contain: handle=0x" + Long.toHexString(VALID_HANDLE));
+    assertTrue(
+        toString.contains("closed=false"),
+        "Expected string to contain: closed=false");
 
     // Note: Testing toString() after close() requires native methods
     // Integration tests will verify toString() behavior after close()

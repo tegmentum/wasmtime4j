@@ -15,9 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,8 +48,8 @@ class JniWasiContextImplTest {
   void testConstructorWithValidHandle() {
     final JniWasiContextImpl newContext = new JniWasiContextImpl(VALID_HANDLE);
 
-    assertThat(newContext).isNotNull();
-    assertThat(newContext.getNativeHandle()).isEqualTo(VALID_HANDLE);
+    assertNotNull(newContext);
+    assertEquals(VALID_HANDLE, newContext.getNativeHandle());
   }
 
   @Test
@@ -55,7 +57,9 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> new JniWasiContextImpl(0L));
 
-    assertThat(exception.getMessage()).contains("nativeHandle");
+    assertTrue(
+        exception.getMessage().contains("nativeHandle"),
+        "Expected message to contain: nativeHandle");
   }
 
   @Test
@@ -63,7 +67,9 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> new JniWasiContextImpl(-1L));
 
-    assertThat(exception.getMessage()).contains("nativeHandle");
+    assertTrue(
+        exception.getMessage().contains("nativeHandle"),
+        "Expected message to contain: nativeHandle");
   }
 
   // setArgv validation tests
@@ -73,7 +79,9 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> context.setArgv(null));
 
-    assertThat(exception.getMessage()).contains("Command line arguments cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Command line arguments cannot be null"),
+        "Expected message to contain: Command line arguments cannot be null");
   }
 
   // setEnv validation tests
@@ -83,7 +91,9 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> context.setEnv(null, "value"));
 
-    assertThat(exception.getMessage()).contains("Environment variable key cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Environment variable key cannot be null"),
+        "Expected message to contain: Environment variable key cannot be null");
   }
 
   @Test
@@ -91,7 +101,9 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> context.setEnv("KEY", null));
 
-    assertThat(exception.getMessage()).contains("Environment variable value cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Environment variable value cannot be null"),
+        "Expected message to contain: Environment variable value cannot be null");
   }
 
   // setEnv with Map validation tests
@@ -102,7 +114,9 @@ class JniWasiContextImplTest {
         assertThrows(
             IllegalArgumentException.class, () -> context.setEnv((Map<String, String>) null));
 
-    assertThat(exception.getMessage()).contains("Environment variables map cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Environment variables map cannot be null"),
+        "Expected message to contain: Environment variables map cannot be null");
   }
 
   @Test
@@ -121,7 +135,9 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> context.setEnv(env));
 
-    assertThat(exception.getMessage()).contains("Environment variable key cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Environment variable key cannot be null"),
+        "Expected message to contain: Environment variable key cannot be null");
   }
 
   @Test
@@ -132,7 +148,9 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> context.setEnv(env));
 
-    assertThat(exception.getMessage()).contains("Environment variable value cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Environment variable value cannot be null"),
+        "Expected message to contain: Environment variable value cannot be null");
   }
 
   // setStdin validation tests
@@ -142,7 +160,9 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> context.setStdin(null));
 
-    assertThat(exception.getMessage()).contains("Stdin path cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Stdin path cannot be null"),
+        "Expected message to contain: Stdin path cannot be null");
   }
 
   // setStdinBytes validation tests
@@ -152,18 +172,20 @@ class JniWasiContextImplTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> context.setStdinBytes(null));
 
-    assertThat(exception.getMessage()).contains("Stdin data cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Stdin data cannot be null"),
+        "Expected message to contain: Stdin data cannot be null");
   }
 
   // Pure Java getter tests
 
   @Test
   void testGetResourceType() {
-    assertThat(context.getResourceType()).isEqualTo("WasiContext");
+    assertEquals("WasiContext", context.getResourceType());
   }
 
   @Test
   void testGetNativeHandle() {
-    assertThat(context.getNativeHandle()).isEqualTo(VALID_HANDLE);
+    assertEquals(VALID_HANDLE, context.getNativeHandle());
   }
 }

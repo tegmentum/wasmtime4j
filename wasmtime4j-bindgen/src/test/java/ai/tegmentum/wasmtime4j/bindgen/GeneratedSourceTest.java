@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.TypeSpec;
@@ -62,8 +65,8 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile(TEST_PACKAGE, TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThat(source.getPackageName()).isEqualTo(TEST_PACKAGE);
-      assertThat(source.getClassName()).isEqualTo(TEST_CLASS);
+      assertEquals(TEST_PACKAGE, source.getPackageName());
+      assertEquals(TEST_CLASS, source.getClassName());
     }
 
     @Test
@@ -71,9 +74,10 @@ class GeneratedSourceTest {
     void shouldThrowWhenJavaFileIsNull() {
       LOGGER.info("Testing constructor with null JavaFile");
 
-      assertThatThrownBy(() -> new GeneratedSource(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("javaFile");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new GeneratedSource(null));
+      assertTrue(
+          exception.getMessage().contains("javaFile"), "Expected message to contain: javaFile");
     }
 
     @Test
@@ -84,8 +88,8 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile("", TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThat(source.getPackageName()).isEmpty();
-      assertThat(source.getClassName()).isEqualTo(TEST_CLASS);
+      assertTrue(source.getPackageName().isEmpty());
+      assertEquals(TEST_CLASS, source.getClassName());
     }
   }
 
@@ -99,7 +103,7 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile(TEST_PACKAGE, TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThat(source.getPackageName()).isEqualTo(TEST_PACKAGE);
+      assertEquals(TEST_PACKAGE, source.getPackageName());
     }
 
     @Test
@@ -108,7 +112,7 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile(TEST_PACKAGE, TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThat(source.getClassName()).isEqualTo(TEST_CLASS);
+      assertEquals(TEST_CLASS, source.getClassName());
     }
 
     @Test
@@ -117,7 +121,7 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile(TEST_PACKAGE, TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThat(source.getJavaFile()).isSameAs(javaFile);
+      assertSame(javaFile, source.getJavaFile());
     }
   }
 
@@ -133,7 +137,7 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile(TEST_PACKAGE, TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThat(source.getQualifiedName()).isEqualTo("com.example.test.TestClass");
+      assertEquals("com.example.test.TestClass", source.getQualifiedName());
     }
 
     @Test
@@ -144,7 +148,7 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile("", TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThat(source.getQualifiedName()).isEqualTo(TEST_CLASS);
+      assertEquals(TEST_CLASS, source.getQualifiedName());
     }
   }
 
@@ -161,7 +165,7 @@ class GeneratedSourceTest {
       GeneratedSource source = new GeneratedSource(javaFile);
 
       Path expectedPath = Path.of("com/example/test/TestClass.java");
-      assertThat(source.getRelativePath()).isEqualTo(expectedPath);
+      assertEquals(expectedPath, source.getRelativePath());
     }
 
     @Test
@@ -173,7 +177,7 @@ class GeneratedSourceTest {
       GeneratedSource source = new GeneratedSource(javaFile);
 
       Path expectedPath = Path.of("TestClass.java");
-      assertThat(source.getRelativePath()).isEqualTo(expectedPath);
+      assertEquals(expectedPath, source.getRelativePath());
     }
 
     @Test
@@ -183,7 +187,7 @@ class GeneratedSourceTest {
       GeneratedSource source = new GeneratedSource(javaFile);
 
       Path expectedPath = Path.of("org/example/deeply/nested/pkg/MyClass.java");
-      assertThat(source.getRelativePath()).isEqualTo(expectedPath);
+      assertEquals(expectedPath, source.getRelativePath());
     }
   }
 
@@ -201,8 +205,12 @@ class GeneratedSourceTest {
 
       String content = source.getContent();
 
-      assertThat(content).contains("package " + TEST_PACKAGE);
-      assertThat(content).contains("public class " + TEST_CLASS);
+      assertTrue(
+          content.contains("package " + TEST_PACKAGE),
+          "Expected content to contain: package " + TEST_PACKAGE);
+      assertTrue(
+          content.contains("public class " + TEST_CLASS),
+          "Expected content to contain: public class " + TEST_CLASS);
     }
   }
 
@@ -222,8 +230,8 @@ class GeneratedSourceTest {
       source.writeTo(tempDir);
 
       Path expectedFile = tempDir.resolve("com/example/test/TestClass.java");
-      assertThat(expectedFile).exists();
-      assertThat(expectedFile).isRegularFile();
+      assertTrue(Files.exists(expectedFile), "Expected file to exist: " + expectedFile);
+      assertTrue(Files.isRegularFile(expectedFile), "Expected regular file: " + expectedFile);
     }
 
     @Test
@@ -239,8 +247,12 @@ class GeneratedSourceTest {
       Path expectedFile = tempDir.resolve("com/example/test/TestClass.java");
       String content = Files.readString(expectedFile);
 
-      assertThat(content).contains("package " + TEST_PACKAGE);
-      assertThat(content).contains("public class " + TEST_CLASS);
+      assertTrue(
+          content.contains("package " + TEST_PACKAGE),
+          "Expected content to contain: package " + TEST_PACKAGE);
+      assertTrue(
+          content.contains("public class " + TEST_CLASS),
+          "Expected content to contain: public class " + TEST_CLASS);
     }
 
     @Test
@@ -249,9 +261,11 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile(TEST_PACKAGE, TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThatThrownBy(() -> source.writeTo(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("outputDirectory");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> source.writeTo(null));
+      assertTrue(
+          exception.getMessage().contains("outputDirectory"),
+          "Expected message to contain: outputDirectory");
     }
 
     @Test
@@ -265,9 +279,11 @@ class GeneratedSourceTest {
       Path targetFile = tempDir.resolve("custom/path/MySource.java");
       source.writeToFile(targetFile);
 
-      assertThat(targetFile).exists();
+      assertTrue(Files.exists(targetFile), "Expected file to exist: " + targetFile);
       String content = Files.readString(targetFile);
-      assertThat(content).contains("public class " + TEST_CLASS);
+      assertTrue(
+          content.contains("public class " + TEST_CLASS),
+          "Expected content to contain: public class " + TEST_CLASS);
     }
 
     @Test
@@ -281,8 +297,10 @@ class GeneratedSourceTest {
       Path targetFile = tempDir.resolve("a/b/c/d/e/Source.java");
       source.writeToFile(targetFile);
 
-      assertThat(targetFile).exists();
-      assertThat(targetFile.getParent()).isDirectory();
+      assertTrue(Files.exists(targetFile), "Expected file to exist: " + targetFile);
+      assertTrue(
+          Files.isDirectory(targetFile.getParent()),
+          "Expected parent to be a directory: " + targetFile.getParent());
     }
 
     @Test
@@ -291,9 +309,10 @@ class GeneratedSourceTest {
       JavaFile javaFile = createTestJavaFile(TEST_PACKAGE, TEST_CLASS);
       GeneratedSource source = new GeneratedSource(javaFile);
 
-      assertThatThrownBy(() -> source.writeToFile(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("filePath");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> source.writeToFile(null));
+      assertTrue(
+          exception.getMessage().contains("filePath"), "Expected message to contain: filePath");
     }
   }
 
@@ -312,8 +331,8 @@ class GeneratedSourceTest {
       GeneratedSource source1 = new GeneratedSource(javaFile1);
       GeneratedSource source2 = new GeneratedSource(javaFile2);
 
-      assertThat(source1).isEqualTo(source2);
-      assertThat(source1.hashCode()).isEqualTo(source2.hashCode());
+      assertEquals(source2, source1);
+      assertEquals(source2.hashCode(), source1.hashCode());
     }
 
     @Test
@@ -324,7 +343,7 @@ class GeneratedSourceTest {
       GeneratedSource source1 = new GeneratedSource(createTestJavaFile("pkg1", TEST_CLASS));
       GeneratedSource source2 = new GeneratedSource(createTestJavaFile("pkg2", TEST_CLASS));
 
-      assertThat(source1).isNotEqualTo(source2);
+      assertNotEquals(source2, source1);
     }
 
     @Test
@@ -335,7 +354,7 @@ class GeneratedSourceTest {
       GeneratedSource source1 = new GeneratedSource(createTestJavaFile(TEST_PACKAGE, "Class1"));
       GeneratedSource source2 = new GeneratedSource(createTestJavaFile(TEST_PACKAGE, "Class2"));
 
-      assertThat(source1).isNotEqualTo(source2);
+      assertNotEquals(source2, source1);
     }
 
     @Test
@@ -343,7 +362,7 @@ class GeneratedSourceTest {
     void shouldNotBeEqualToNull() {
       GeneratedSource source = new GeneratedSource(createTestJavaFile(TEST_PACKAGE, TEST_CLASS));
 
-      assertThat(source).isNotEqualTo(null);
+      assertNotEquals(null, source);
     }
 
     @Test
@@ -351,7 +370,7 @@ class GeneratedSourceTest {
     void shouldNotBeEqualToDifferentClass() {
       GeneratedSource source = new GeneratedSource(createTestJavaFile(TEST_PACKAGE, TEST_CLASS));
 
-      assertThat(source).isNotEqualTo(TEST_CLASS);
+      assertNotEquals(TEST_CLASS, source);
     }
 
     @Test
@@ -359,7 +378,7 @@ class GeneratedSourceTest {
     void shouldBeEqualToItself() {
       GeneratedSource source = new GeneratedSource(createTestJavaFile(TEST_PACKAGE, TEST_CLASS));
 
-      assertThat(source).isEqualTo(source);
+      assertEquals(source, source);
     }
   }
 
@@ -376,9 +395,13 @@ class GeneratedSourceTest {
 
       String toString = source.toString();
 
-      assertThat(toString).contains("com.example.test.TestClass");
-      assertThat(toString).startsWith("GeneratedSource{");
-      assertThat(toString).endsWith("}");
+      assertTrue(
+          toString.contains("com.example.test.TestClass"),
+          "Expected toString to contain: com.example.test.TestClass");
+      assertTrue(
+          toString.startsWith("GeneratedSource{"),
+          "Expected toString to start with: GeneratedSource{");
+      assertTrue(toString.endsWith("}"), "Expected toString to end with: }");
     }
 
     @Test
@@ -388,8 +411,8 @@ class GeneratedSourceTest {
 
       String toString = source.toString();
 
-      assertThat(toString).contains(TEST_CLASS);
-      assertThat(toString).doesNotContain(".");
+      assertTrue(toString.contains(TEST_CLASS), "Expected toString to contain: " + TEST_CLASS);
+      assertFalse(toString.contains("."), "Expected toString not to contain: .");
     }
   }
 }

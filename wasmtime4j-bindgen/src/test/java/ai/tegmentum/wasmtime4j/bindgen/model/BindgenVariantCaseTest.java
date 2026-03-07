@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
@@ -41,10 +43,10 @@ class BindgenVariantCaseTest {
 
       BindgenVariantCase variantCase = new BindgenVariantCase("none");
 
-      assertThat(variantCase.getName()).isEqualTo("none");
-      assertThat(variantCase.getPayload()).isEmpty();
-      assertThat(variantCase.hasPayload()).isFalse();
-      assertThat(variantCase.getDocumentation()).isEmpty();
+      assertEquals("none", variantCase.getName());
+      assertTrue(variantCase.getPayload().isEmpty());
+      assertFalse(variantCase.hasPayload());
+      assertTrue(variantCase.getDocumentation().isEmpty());
     }
 
     @Test
@@ -55,10 +57,11 @@ class BindgenVariantCaseTest {
       BindgenType payload = BindgenType.primitive("i32");
       BindgenVariantCase variantCase = new BindgenVariantCase("some", payload);
 
-      assertThat(variantCase.getName()).isEqualTo("some");
-      assertThat(variantCase.getPayload()).hasValue(payload);
-      assertThat(variantCase.hasPayload()).isTrue();
-      assertThat(variantCase.getDocumentation()).isEmpty();
+      assertEquals("some", variantCase.getName());
+      assertTrue(variantCase.getPayload().isPresent());
+      assertEquals(payload, variantCase.getPayload().get());
+      assertTrue(variantCase.hasPayload());
+      assertTrue(variantCase.getDocumentation().isEmpty());
     }
 
     @Test
@@ -70,10 +73,12 @@ class BindgenVariantCaseTest {
       BindgenVariantCase variantCase =
           new BindgenVariantCase("error", payload, "An error occurred");
 
-      assertThat(variantCase.getName()).isEqualTo("error");
-      assertThat(variantCase.getPayload()).hasValue(payload);
-      assertThat(variantCase.hasPayload()).isTrue();
-      assertThat(variantCase.getDocumentation()).hasValue("An error occurred");
+      assertEquals("error", variantCase.getName());
+      assertTrue(variantCase.getPayload().isPresent());
+      assertEquals(payload, variantCase.getPayload().get());
+      assertTrue(variantCase.hasPayload());
+      assertTrue(variantCase.getDocumentation().isPresent());
+      assertEquals("An error occurred", variantCase.getDocumentation().get());
     }
 
     @Test
@@ -83,10 +88,11 @@ class BindgenVariantCaseTest {
 
       BindgenVariantCase variantCase = new BindgenVariantCase("empty", null, "No value");
 
-      assertThat(variantCase.getName()).isEqualTo("empty");
-      assertThat(variantCase.getPayload()).isEmpty();
-      assertThat(variantCase.hasPayload()).isFalse();
-      assertThat(variantCase.getDocumentation()).hasValue("No value");
+      assertEquals("empty", variantCase.getName());
+      assertTrue(variantCase.getPayload().isEmpty());
+      assertFalse(variantCase.hasPayload());
+      assertTrue(variantCase.getDocumentation().isPresent());
+      assertEquals("No value", variantCase.getDocumentation().get());
     }
 
     @Test
@@ -94,9 +100,9 @@ class BindgenVariantCaseTest {
     void shouldThrowWhenNameIsNullSingleArg() {
       LOGGER.info("Testing single-arg constructor with null name");
 
-      assertThatThrownBy(() -> new BindgenVariantCase(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("name");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new BindgenVariantCase(null));
+      assertTrue(exception.getMessage().contains("name"), "Expected message to contain: name");
     }
 
     @Test
@@ -106,9 +112,9 @@ class BindgenVariantCaseTest {
 
       BindgenType payload = BindgenType.primitive("i32");
 
-      assertThatThrownBy(() -> new BindgenVariantCase(null, payload))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("name");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new BindgenVariantCase(null, payload));
+      assertTrue(exception.getMessage().contains("name"), "Expected message to contain: name");
     }
 
     @Test
@@ -118,9 +124,10 @@ class BindgenVariantCaseTest {
 
       BindgenType payload = BindgenType.primitive("i32");
 
-      assertThatThrownBy(() -> new BindgenVariantCase(null, payload, "docs"))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("name");
+      NullPointerException exception =
+          assertThrows(
+              NullPointerException.class, () -> new BindgenVariantCase(null, payload, "docs"));
+      assertTrue(exception.getMessage().contains("name"), "Expected message to contain: name");
     }
   }
 
@@ -133,7 +140,7 @@ class BindgenVariantCaseTest {
     void getNameShouldReturnCaseName() {
       BindgenVariantCase variantCase = new BindgenVariantCase("myCase");
 
-      assertThat(variantCase.getName()).isEqualTo("myCase");
+      assertEquals("myCase", variantCase.getName());
     }
 
     @Test
@@ -141,7 +148,7 @@ class BindgenVariantCaseTest {
     void getPayloadShouldReturnEmptyWhenNoPayload() {
       BindgenVariantCase variantCase = new BindgenVariantCase("noPayload");
 
-      assertThat(variantCase.getPayload()).isEmpty();
+      assertTrue(variantCase.getPayload().isEmpty());
     }
 
     @Test
@@ -150,7 +157,8 @@ class BindgenVariantCaseTest {
       BindgenType payload = BindgenType.primitive("u64");
       BindgenVariantCase variantCase = new BindgenVariantCase("withPayload", payload);
 
-      assertThat(variantCase.getPayload()).hasValue(payload);
+      assertTrue(variantCase.getPayload().isPresent());
+      assertEquals(payload, variantCase.getPayload().get());
     }
 
     @Test
@@ -158,7 +166,7 @@ class BindgenVariantCaseTest {
     void hasPayloadShouldReturnFalseWhenNoPayload() {
       BindgenVariantCase variantCase = new BindgenVariantCase("noPayload");
 
-      assertThat(variantCase.hasPayload()).isFalse();
+      assertFalse(variantCase.hasPayload());
     }
 
     @Test
@@ -167,7 +175,7 @@ class BindgenVariantCaseTest {
       BindgenVariantCase variantCase =
           new BindgenVariantCase("withPayload", BindgenType.primitive("i32"));
 
-      assertThat(variantCase.hasPayload()).isTrue();
+      assertTrue(variantCase.hasPayload());
     }
 
     @Test
@@ -175,7 +183,7 @@ class BindgenVariantCaseTest {
     void getDocumentationShouldReturnEmptyWhenNotSet() {
       BindgenVariantCase variantCase = new BindgenVariantCase("case");
 
-      assertThat(variantCase.getDocumentation()).isEmpty();
+      assertTrue(variantCase.getDocumentation().isEmpty());
     }
 
     @Test
@@ -183,7 +191,8 @@ class BindgenVariantCaseTest {
     void getDocumentationShouldReturnValueWhenSet() {
       BindgenVariantCase variantCase = new BindgenVariantCase("case", null, "Case documentation");
 
-      assertThat(variantCase.getDocumentation()).hasValue("Case documentation");
+      assertTrue(variantCase.getDocumentation().isPresent());
+      assertEquals("Case documentation", variantCase.getDocumentation().get());
     }
   }
 
@@ -199,8 +208,8 @@ class BindgenVariantCaseTest {
       BindgenVariantCase case1 = new BindgenVariantCase("none");
       BindgenVariantCase case2 = new BindgenVariantCase("none");
 
-      assertThat(case1).isEqualTo(case2);
-      assertThat(case1.hashCode()).isEqualTo(case2.hashCode());
+      assertEquals(case2, case1);
+      assertEquals(case2.hashCode(), case1.hashCode());
     }
 
     @Test
@@ -212,8 +221,8 @@ class BindgenVariantCaseTest {
       BindgenVariantCase case1 = new BindgenVariantCase("some", payload);
       BindgenVariantCase case2 = new BindgenVariantCase("some", payload);
 
-      assertThat(case1).isEqualTo(case2);
-      assertThat(case1.hashCode()).isEqualTo(case2.hashCode());
+      assertEquals(case2, case1);
+      assertEquals(case2.hashCode(), case1.hashCode());
     }
 
     @Test
@@ -225,8 +234,8 @@ class BindgenVariantCaseTest {
       BindgenVariantCase case1 = new BindgenVariantCase("case", payload, "Doc 1");
       BindgenVariantCase case2 = new BindgenVariantCase("case", payload, "Doc 2");
 
-      assertThat(case1).isEqualTo(case2);
-      assertThat(case1.hashCode()).isEqualTo(case2.hashCode());
+      assertEquals(case2, case1);
+      assertEquals(case2.hashCode(), case1.hashCode());
     }
 
     @Test
@@ -237,7 +246,7 @@ class BindgenVariantCaseTest {
       BindgenVariantCase case1 = new BindgenVariantCase("case1");
       BindgenVariantCase case2 = new BindgenVariantCase("case2");
 
-      assertThat(case1).isNotEqualTo(case2);
+      assertNotEquals(case2, case1);
     }
 
     @Test
@@ -248,7 +257,7 @@ class BindgenVariantCaseTest {
       BindgenVariantCase case1 = new BindgenVariantCase("case", BindgenType.primitive("i32"));
       BindgenVariantCase case2 = new BindgenVariantCase("case", BindgenType.primitive("i64"));
 
-      assertThat(case1).isNotEqualTo(case2);
+      assertNotEquals(case2, case1);
     }
 
     @Test
@@ -259,7 +268,7 @@ class BindgenVariantCaseTest {
       BindgenVariantCase case1 = new BindgenVariantCase("case");
       BindgenVariantCase case2 = new BindgenVariantCase("case", BindgenType.primitive("i32"));
 
-      assertThat(case1).isNotEqualTo(case2);
+      assertNotEquals(case2, case1);
     }
 
     @Test
@@ -267,7 +276,7 @@ class BindgenVariantCaseTest {
     void shouldNotBeEqualToNull() {
       BindgenVariantCase variantCase = new BindgenVariantCase("case");
 
-      assertThat(variantCase).isNotEqualTo(null);
+      assertNotEquals(null, variantCase);
     }
 
     @Test
@@ -275,7 +284,7 @@ class BindgenVariantCaseTest {
     void shouldNotBeEqualToDifferentClass() {
       BindgenVariantCase variantCase = new BindgenVariantCase("case");
 
-      assertThat(variantCase).isNotEqualTo("case");
+      assertNotEquals("case", variantCase);
     }
 
     @Test
@@ -283,7 +292,7 @@ class BindgenVariantCaseTest {
     void shouldBeEqualToItself() {
       BindgenVariantCase variantCase = new BindgenVariantCase("case");
 
-      assertThat(variantCase).isEqualTo(variantCase);
+      assertEquals(variantCase, variantCase);
     }
   }
 
@@ -300,10 +309,12 @@ class BindgenVariantCaseTest {
 
       String toString = variantCase.toString();
 
-      assertThat(toString).contains("name='none'");
-      assertThat(toString).startsWith("BindgenVariantCase{");
-      assertThat(toString).endsWith("}");
-      assertThat(toString).doesNotContain("payload=");
+      assertTrue(toString.contains("name='none'"), "Expected toString to contain: name='none'");
+      assertTrue(
+          toString.startsWith("BindgenVariantCase{"),
+          "Expected toString to start with: BindgenVariantCase{");
+      assertTrue(toString.endsWith("}"), "Expected toString to end with: }");
+      assertFalse(toString.contains("payload="), "Expected toString not to contain: payload=");
     }
 
     @Test
@@ -315,10 +326,12 @@ class BindgenVariantCaseTest {
 
       String toString = variantCase.toString();
 
-      assertThat(toString).contains("name='some'");
-      assertThat(toString).contains("payload=");
-      assertThat(toString).startsWith("BindgenVariantCase{");
-      assertThat(toString).endsWith("}");
+      assertTrue(toString.contains("name='some'"), "Expected toString to contain: name='some'");
+      assertTrue(toString.contains("payload="), "Expected toString to contain: payload=");
+      assertTrue(
+          toString.startsWith("BindgenVariantCase{"),
+          "Expected toString to start with: BindgenVariantCase{");
+      assertTrue(toString.endsWith("}"), "Expected toString to end with: }");
     }
   }
 }

@@ -15,10 +15,14 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -47,9 +51,10 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("test-iface", "1.0.0", "test:pkg", exports, null);
 
       final List<String> funcNames = def.getFunctionNames();
-      assertThat(funcNames)
-          .as("Each export should produce a function name with -func suffix")
-          .containsExactly("greet-func", "add-func");
+      assertEquals(
+          List.of("greet-func", "add-func"),
+          funcNames,
+          "Each export should produce a function name with -func suffix");
     }
 
     @Test
@@ -60,9 +65,10 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("test-iface", "1.0.0", "test:pkg", exports, null);
 
       final List<String> typeNames = def.getTypeNames();
-      assertThat(typeNames)
-          .as("Each export should produce a type name with -type suffix")
-          .containsExactly("greet-type", "add-type");
+      assertEquals(
+          List.of("greet-type", "add-type"),
+          typeNames,
+          "Each export should produce a type name with -type suffix");
     }
 
     @Test
@@ -72,8 +78,8 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", exports, null);
 
-      assertThat(def.getFunctionNames()).hasSize(3);
-      assertThat(def.getTypeNames()).hasSize(3);
+      assertEquals(3, def.getFunctionNames().size());
+      assertEquals(3, def.getTypeNames().size());
     }
 
     @Test
@@ -83,8 +89,8 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition(
               "iface", "1.0.0", "pkg", Collections.emptySet(), Collections.emptySet());
 
-      assertThat(def.getFunctionNames()).isEmpty();
-      assertThat(def.getTypeNames()).isEmpty();
+      assertTrue(def.getFunctionNames().isEmpty());
+      assertTrue(def.getTypeNames().isEmpty());
     }
   }
 
@@ -98,7 +104,7 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition(null, null, null, null, null);
 
-      assertThat(def.getName()).isEqualTo("unknown");
+      assertEquals("unknown", def.getName());
     }
 
     @Test
@@ -107,7 +113,7 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition(null, null, null, null, null);
 
-      assertThat(def.getVersion()).isEqualTo("1.0.0");
+      assertEquals("1.0.0", def.getVersion());
     }
 
     @Test
@@ -116,7 +122,7 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition(null, null, null, null, null);
 
-      assertThat(def.getPackageName()).isEqualTo("unknown");
+      assertEquals("unknown", def.getPackageName());
     }
 
     @Test
@@ -125,11 +131,11 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", null, null);
 
-      assertThat(def.getExportNames()).isEmpty();
-      assertThat(def.getImportNames()).isEmpty();
-      assertThat(def.getFunctionNames()).isEmpty();
-      assertThat(def.getTypeNames()).isEmpty();
-      assertThat(def.getDependencies()).isEmpty();
+      assertTrue(def.getExportNames().isEmpty());
+      assertTrue(def.getImportNames().isEmpty());
+      assertTrue(def.getFunctionNames().isEmpty());
+      assertTrue(def.getTypeNames().isEmpty());
+      assertTrue(def.getDependencies().isEmpty());
     }
   }
 
@@ -144,8 +150,10 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", null, imports);
 
-      assertThat(def.getDependencies())
-          .containsExactlyInAnyOrder("wasi:io/streams", "wasi:http/types");
+      assertEquals(
+          Set.of("wasi:io/streams", "wasi:http/types"),
+          new HashSet<>(def.getDependencies()));
+      assertEquals(2, def.getDependencies().size());
     }
 
     @Test
@@ -155,7 +163,7 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", null, imports);
 
-      assertThat(def.getDependencies()).isUnmodifiable();
+      assertThrows(UnsupportedOperationException.class, () -> def.getDependencies().add(null));
     }
   }
 
@@ -170,7 +178,7 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", exports, null);
 
-      assertThat(def.getFunctionNames()).isUnmodifiable();
+      assertThrows(UnsupportedOperationException.class, () -> def.getFunctionNames().add(null));
     }
 
     @Test
@@ -180,7 +188,7 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", exports, null);
 
-      assertThat(def.getTypeNames()).isUnmodifiable();
+      assertThrows(UnsupportedOperationException.class, () -> def.getTypeNames().add(null));
     }
 
     @Test
@@ -190,7 +198,7 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", exports, null);
 
-      assertThat(def.getExportNames()).isUnmodifiable();
+      assertThrows(UnsupportedOperationException.class, () -> def.getExportNames().add(null));
     }
 
     @Test
@@ -200,7 +208,7 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", null, imports);
 
-      assertThat(def.getImportNames()).isUnmodifiable();
+      assertThrows(UnsupportedOperationException.class, () -> def.getImportNames().add(null));
     }
   }
 
@@ -217,9 +225,7 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("iface", "1.0.0", "test:pkg", null, null);
 
       final WitCompatibilityResult result = def1.isCompatibleWith(def2);
-      assertThat(result.isCompatible())
-          .as("Same package and version should be compatible")
-          .isTrue();
+      assertTrue(result.isCompatible(), "Same package and version should be compatible");
     }
 
     @Test
@@ -231,7 +237,7 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg-b", null, null);
 
       final WitCompatibilityResult result = def1.isCompatibleWith(def2);
-      assertThat(result.isCompatible()).as("Different packages should be incompatible").isFalse();
+      assertFalse(result.isCompatible(), "Different packages should be incompatible");
     }
 
     @Test
@@ -243,7 +249,7 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("iface", "2.0.0", "pkg", null, null);
 
       final WitCompatibilityResult result = def1.isCompatibleWith(def2);
-      assertThat(result.isCompatible()).as("Different versions should be incompatible").isFalse();
+      assertFalse(result.isCompatible(), "Different versions should be incompatible");
     }
 
     @Test
@@ -253,7 +259,7 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", null, null);
 
       final WitCompatibilityResult result = def.isCompatibleWith(null);
-      assertThat(result.isCompatible()).as("Null other should be incompatible").isFalse();
+      assertFalse(result.isCompatible(), "Null other should be incompatible");
     }
   }
 
@@ -269,10 +275,18 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("my-iface", "1.0.0", "pkg", exports, null);
 
       final String witText = def.getWitText();
-      assertThat(witText).contains("interface my-iface {");
-      assertThat(witText).contains("hello-func() -> ();");
-      assertThat(witText).contains("type hello-type = string;");
-      assertThat(witText).endsWith("}\n");
+      assertTrue(
+          witText.contains("interface my-iface {"),
+          "Expected WIT text to contain: interface my-iface {");
+      assertTrue(
+          witText.contains("hello-func() -> ();"),
+          "Expected WIT text to contain: hello-func() -> ();");
+      assertTrue(
+          witText.contains("type hello-type = string;"),
+          "Expected WIT text to contain: type hello-type = string;");
+      assertTrue(
+          witText.endsWith("}\n"),
+          "Expected WIT text to end with: }\\n");
     }
 
     @Test
@@ -282,7 +296,7 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("empty", "1.0.0", "pkg", null, null);
 
       final String witText = def.getWitText();
-      assertThat(witText).isEqualTo("interface empty {\n}\n");
+      assertEquals("interface empty {\n}\n", witText);
     }
   }
 
@@ -299,12 +313,13 @@ class JniWitInterfaceDefinitionTest {
           new JniWitInterfaceDefinition("my-iface", "2.0.0", "my:pkg", exports, imports);
 
       final String str = def.toString();
-      assertThat(str).contains("my-iface");
-      assertThat(str).contains("2.0.0");
-      assertThat(str).contains("my:pkg");
-      assertThat(str).contains("functionCount=2");
-      assertThat(str).contains("typeCount=2");
-      assertThat(str).contains("dependencyCount=1");
+      assertTrue(str.contains("my-iface"), "Expected string to contain: my-iface");
+      assertTrue(str.contains("2.0.0"), "Expected string to contain: 2.0.0");
+      assertTrue(str.contains("my:pkg"), "Expected string to contain: my:pkg");
+      assertTrue(str.contains("functionCount=2"), "Expected string to contain: functionCount=2");
+      assertTrue(str.contains("typeCount=2"), "Expected string to contain: typeCount=2");
+      assertTrue(
+          str.contains("dependencyCount=1"), "Expected string to contain: dependencyCount=1");
     }
   }
 

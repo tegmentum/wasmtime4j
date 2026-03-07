@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.cli;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -78,14 +80,15 @@ class BindgenCliTest {
 
       int exitCode = new CommandLine(new BindgenCli()).execute("--help");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
       String output = outContent.toString();
-      assertThat(output).contains("wasmtime4j-bindgen");
-      assertThat(output).contains("--wit");
-      assertThat(output).contains("--wasm");
-      assertThat(output).contains("--package");
-      assertThat(output).contains("--output");
-      assertThat(output).contains("--style");
+      assertTrue(
+          output.contains("wasmtime4j-bindgen"), "Expected output to contain: wasmtime4j-bindgen");
+      assertTrue(output.contains("--wit"), "Expected output to contain: --wit");
+      assertTrue(output.contains("--wasm"), "Expected output to contain: --wasm");
+      assertTrue(output.contains("--package"), "Expected output to contain: --package");
+      assertTrue(output.contains("--output"), "Expected output to contain: --output");
+      assertTrue(output.contains("--style"), "Expected output to contain: --style");
     }
 
     @Test
@@ -95,10 +98,11 @@ class BindgenCliTest {
 
       int exitCode = new CommandLine(new BindgenCli()).execute("--version");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
       String output = outContent.toString();
-      assertThat(output).contains("wasmtime4j-bindgen");
-      assertThat(output).contains("1.0.0");
+      assertTrue(
+          output.contains("wasmtime4j-bindgen"), "Expected output to contain: wasmtime4j-bindgen");
+      assertTrue(output.contains("1.0.0"), "Expected output to contain: 1.0.0");
     }
   }
 
@@ -116,9 +120,9 @@ class BindgenCliTest {
 
       int exitCode = new CommandLine(new BindgenCli()).execute("--wasm", wasmFile.toString());
 
-      assertThat(exitCode).isNotEqualTo(0);
+      assertNotEquals(0, exitCode);
       String errOutput = errContent.toString();
-      assertThat(errOutput).contains("package");
+      assertTrue(errOutput.contains("package"), "Expected error output to contain: package");
     }
 
     @Test
@@ -128,9 +132,12 @@ class BindgenCliTest {
 
       int exitCode = new CommandLine(new BindgenCli()).execute("--package", "com.example");
 
-      assertThat(exitCode).isEqualTo(1);
+      assertEquals(1, exitCode);
       String errOutput = errContent.toString();
-      assertThat(errOutput).contains("At least one --wit or --wasm source must be specified");
+      assertTrue(
+          errOutput.contains("At least one --wit or --wasm source must be specified"),
+          "Expected error output to contain: At least one --wit or --wasm source must be"
+              + " specified");
     }
   }
 
@@ -160,7 +167,7 @@ class BindgenCliTest {
                   "--style",
                   "MODERN");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
     }
 
     @Test
@@ -185,7 +192,7 @@ class BindgenCliTest {
                   "--style",
                   "LEGACY");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
     }
 
     @Test
@@ -208,7 +215,7 @@ class BindgenCliTest {
                   "--style",
                   "modern");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
     }
 
     @Test
@@ -227,7 +234,7 @@ class BindgenCliTest {
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
       // No error about style means default was used
     }
   }
@@ -253,7 +260,7 @@ class BindgenCliTest {
             new CommandLine(new BindgenCli())
                 .execute("--wit", witFile.toString(), "--package", "com.example");
 
-        assertThat(exitCode).isEqualTo(0);
+        assertEquals(0, exitCode);
       } finally {
         System.setProperty("user.dir", originalDir);
       }
@@ -266,7 +273,7 @@ class BindgenCliTest {
       Files.writeString(witFile, VALID_WIT);
       Path outputDir = tempDir.resolve("new/nested/output");
 
-      assertThat(outputDir).doesNotExist();
+      assertFalse(Files.exists(outputDir), "Expected output directory not to exist yet");
 
       int exitCode =
           new CommandLine(new BindgenCli())
@@ -275,7 +282,7 @@ class BindgenCliTest {
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
     }
   }
 
@@ -298,9 +305,9 @@ class BindgenCliTest {
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
-      assertThat(exitCode).isEqualTo(1);
-      String errOutput = errContent.toString();
-      assertThat(errOutput).containsIgnoringCase("not found");
+      assertEquals(1, exitCode);
+      String errOutput = errContent.toString().toLowerCase();
+      assertTrue(errOutput.contains("not found"), "Expected error output to contain: not found");
     }
 
     @Test
@@ -317,8 +324,10 @@ class BindgenCliTest {
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
-      String errOutput = errContent.toString();
-      assertThat(errOutput).containsIgnoringCase("unexpected extension");
+      String errOutput = errContent.toString().toLowerCase();
+      assertTrue(
+          errOutput.contains("unexpected extension"),
+          "Expected error output to contain: unexpected extension");
     }
 
     @Test
@@ -339,8 +348,10 @@ class BindgenCliTest {
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
-      assertThat(exitCode).isEqualTo(1);
-      assertThat(errContent.toString()).contains("not yet implemented");
+      assertEquals(1, exitCode);
+      assertTrue(
+          errContent.toString().contains("not yet implemented"),
+          "Expected error output to contain: not yet implemented");
     }
   }
 
@@ -368,7 +379,7 @@ class BindgenCliTest {
                   outputDir.toString(),
                   "--no-javadoc");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
     }
 
     @Test
@@ -391,7 +402,7 @@ class BindgenCliTest {
                   outputDir.toString(),
                   "--no-builders");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
     }
 
     @Test
@@ -414,9 +425,9 @@ class BindgenCliTest {
                   outputDir.toString(),
                   "--verbose");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
       String output = outContent.toString();
-      assertThat(output).contains("Configuration:");
+      assertTrue(output.contains("Configuration:"), "Expected output to contain: Configuration:");
     }
 
     @Test
@@ -439,9 +450,9 @@ class BindgenCliTest {
                   outputDir.toString(),
                   "--dry-run");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
       String output = outContent.toString();
-      assertThat(output).contains("Dry run");
+      assertTrue(output.contains("Dry run"), "Expected output to contain: Dry run");
     }
   }
 
@@ -481,7 +492,7 @@ class BindgenCliTest {
                   "-o", outputDir.toString());
 
       // WASM introspection is not yet implemented, so this should fail
-      assertThat(exitCode).isEqualTo(1);
+      assertEquals(1, exitCode);
     }
 
     @Test
@@ -504,7 +515,7 @@ class BindgenCliTest {
                   "-s",
                   "LEGACY");
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
     }
 
     @Test
@@ -519,8 +530,10 @@ class BindgenCliTest {
               .execute(
                   "-w", witFile.toString(), "-p", "com.example", "-o", outputDir.toString(), "-v");
 
-      assertThat(exitCode).isEqualTo(0);
-      assertThat(outContent.toString()).contains("Configuration:");
+      assertEquals(0, exitCode);
+      assertTrue(
+          outContent.toString().contains("Configuration:"),
+          "Expected output to contain: Configuration:");
     }
   }
 
@@ -547,7 +560,7 @@ class BindgenCliTest {
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
-      assertThat(exitCode).isEqualTo(0);
+      assertEquals(0, exitCode);
     }
   }
 
@@ -571,8 +584,9 @@ class BindgenCliTest {
                   "--package", "com.example",
                   "--output", outputDir.toString());
 
-      assertThat(exitCode).isEqualTo(1);
-      assertThat(errContent.toString()).contains("Error:");
+      assertEquals(1, exitCode);
+      assertTrue(
+          errContent.toString().contains("Error:"), "Expected error output to contain: Error:");
     }
 
     @Test
@@ -593,9 +607,9 @@ class BindgenCliTest {
                   outputDir.toString(),
                   "--verbose");
 
-      assertThat(exitCode).isEqualTo(1);
+      assertEquals(1, exitCode);
       // Verbose mode shows more details
-      assertThat(errContent.toString()).isNotEmpty();
+      assertFalse(errContent.toString().isEmpty(), "Expected non-empty error output");
     }
   }
 }

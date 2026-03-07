@@ -15,9 +15,13 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -79,16 +83,18 @@ class JniCallbackRegistryTest {
     @Test
     @DisplayName("Null store should throw NullPointerException")
     void nullStoreShouldThrow() {
-      assertThatThrownBy(() -> new JniCallbackRegistry(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("Store cannot be null");
+      NullPointerException e =
+          assertThrows(NullPointerException.class, () -> new JniCallbackRegistry(null));
+      assertTrue(
+          e.getMessage().contains("Store cannot be null"),
+          "Expected message to contain: Store cannot be null");
     }
 
     @Test
     @DisplayName("Valid store should create registry successfully")
     void validStoreShouldCreateRegistry() {
-      assertThat(registry).isNotNull();
-      assertThat(registry.getCallbackCount()).isZero();
+      assertNotNull(registry);
+      assertEquals(0, registry.getCallbackCount());
     }
   }
 
@@ -99,26 +105,26 @@ class JniCallbackRegistryTest {
     @Test
     @DisplayName("New registry should have zero callback count")
     void newRegistryShouldHaveZeroCallbackCount() {
-      assertThat(registry.getCallbackCount()).as("New registry should have no callbacks").isZero();
+      assertEquals(0, registry.getCallbackCount(), "New registry should have no callbacks");
     }
 
     @Test
     @DisplayName("New registry should have no callback for any name")
     void newRegistryShouldHaveNoCallbacks() {
-      assertThat(registry.hasCallback("nonexistent"))
-          .as("New registry should not have any callbacks")
-          .isFalse();
+      assertFalse(
+          registry.hasCallback("nonexistent"),
+          "New registry should not have any callbacks");
     }
 
     @Test
     @DisplayName("New registry metrics should be zero")
     void newRegistryMetricsShouldBeZero() {
       final CallbackRegistry.CallbackMetrics metrics = registry.getMetrics();
-      assertThat(metrics.getTotalInvocations()).isZero();
-      assertThat(metrics.getFailureCount()).isZero();
-      assertThat(metrics.getTimeoutCount()).isZero();
-      assertThat(metrics.getTotalExecutionTimeNanos()).isZero();
-      assertThat(metrics.getAverageExecutionTimeNanos()).isEqualTo(0.0);
+      assertEquals(0, metrics.getTotalInvocations());
+      assertEquals(0, metrics.getFailureCount());
+      assertEquals(0, metrics.getTimeoutCount());
+      assertEquals(0, metrics.getTotalExecutionTimeNanos());
+      assertEquals(0.0, metrics.getAverageExecutionTimeNanos());
     }
   }
 
@@ -133,9 +139,13 @@ class JniCallbackRegistryTest {
           new FunctionType(
               new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      assertThatThrownBy(() -> registry.registerCallback(null, params -> params, funcType))
-          .isInstanceOf(WasmException.class)
-          .hasMessageContaining("Callback name cannot be null");
+      WasmException e =
+          assertThrows(
+              WasmException.class,
+              () -> registry.registerCallback(null, params -> params, funcType));
+      assertTrue(
+          e.getMessage().contains("Callback name cannot be null"),
+          "Expected message to contain: Callback name cannot be null");
     }
 
     @Test
@@ -145,17 +155,25 @@ class JniCallbackRegistryTest {
           new FunctionType(
               new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      assertThatThrownBy(() -> registry.registerCallback("test", null, funcType))
-          .isInstanceOf(WasmException.class)
-          .hasMessageContaining("Callback cannot be null");
+      WasmException e =
+          assertThrows(
+              WasmException.class,
+              () -> registry.registerCallback("test", null, funcType));
+      assertTrue(
+          e.getMessage().contains("Callback cannot be null"),
+          "Expected message to contain: Callback cannot be null");
     }
 
     @Test
     @DisplayName("registerCallback with null function type should throw WasmException")
     void registerWithNullFunctionTypeShouldThrow() {
-      assertThatThrownBy(() -> registry.registerCallback("test", params -> params, null))
-          .isInstanceOf(WasmException.class)
-          .hasMessageContaining("Function type cannot be null");
+      WasmException e =
+          assertThrows(
+              WasmException.class,
+              () -> registry.registerCallback("test", params -> params, null));
+      assertTrue(
+          e.getMessage().contains("Function type cannot be null"),
+          "Expected message to contain: Function type cannot be null");
     }
   }
 
@@ -170,14 +188,17 @@ class JniCallbackRegistryTest {
           new FunctionType(
               new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      assertThatThrownBy(
+      WasmException e =
+          assertThrows(
+              WasmException.class,
               () ->
                   registry.registerAsyncCallback(
                       null,
                       params -> java.util.concurrent.CompletableFuture.completedFuture(params),
-                      funcType))
-          .isInstanceOf(WasmException.class)
-          .hasMessageContaining("Callback name cannot be null");
+                      funcType));
+      assertTrue(
+          e.getMessage().contains("Callback name cannot be null"),
+          "Expected message to contain: Callback name cannot be null");
     }
 
     @Test
@@ -187,22 +208,29 @@ class JniCallbackRegistryTest {
           new FunctionType(
               new WasmValueType[] {WasmValueType.I32}, new WasmValueType[] {WasmValueType.I32});
 
-      assertThatThrownBy(() -> registry.registerAsyncCallback("test", null, funcType))
-          .isInstanceOf(WasmException.class)
-          .hasMessageContaining("Callback cannot be null");
+      WasmException e =
+          assertThrows(
+              WasmException.class,
+              () -> registry.registerAsyncCallback("test", null, funcType));
+      assertTrue(
+          e.getMessage().contains("Callback cannot be null"),
+          "Expected message to contain: Callback cannot be null");
     }
 
     @Test
     @DisplayName("registerAsyncCallback with null function type should throw WasmException")
     void registerAsyncWithNullFunctionTypeShouldThrow() {
-      assertThatThrownBy(
+      WasmException e =
+          assertThrows(
+              WasmException.class,
               () ->
                   registry.registerAsyncCallback(
                       "test",
                       params -> java.util.concurrent.CompletableFuture.completedFuture(params),
-                      null))
-          .isInstanceOf(WasmException.class)
-          .hasMessageContaining("Function type cannot be null");
+                      null));
+      assertTrue(
+          e.getMessage().contains("Function type cannot be null"),
+          "Expected message to contain: Function type cannot be null");
     }
   }
 
@@ -213,9 +241,11 @@ class JniCallbackRegistryTest {
     @Test
     @DisplayName("unregisterCallback with null handle should throw NullPointerException")
     void unregisterNullHandleShouldThrow() {
-      assertThatThrownBy(() -> registry.unregisterCallback(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("Callback handle cannot be null");
+      NullPointerException e =
+          assertThrows(NullPointerException.class, () -> registry.unregisterCallback(null));
+      assertTrue(
+          e.getMessage().contains("Callback handle cannot be null"),
+          "Expected message to contain: Callback handle cannot be null");
     }
   }
 
@@ -226,9 +256,11 @@ class JniCallbackRegistryTest {
     @Test
     @DisplayName("invokeCallback with null handle should throw NullPointerException")
     void invokeNullHandleShouldThrow() {
-      assertThatThrownBy(() -> registry.invokeCallback(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("Callback handle cannot be null");
+      NullPointerException e =
+          assertThrows(NullPointerException.class, () -> registry.invokeCallback(null));
+      assertTrue(
+          e.getMessage().contains("Callback handle cannot be null"),
+          "Expected message to contain: Callback handle cannot be null");
     }
   }
 
@@ -239,9 +271,11 @@ class JniCallbackRegistryTest {
     @Test
     @DisplayName("hasCallback with null name should throw NullPointerException")
     void hasCallbackNullNameShouldThrow() {
-      assertThatThrownBy(() -> registry.hasCallback(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("Callback name cannot be null");
+      NullPointerException e =
+          assertThrows(NullPointerException.class, () -> registry.hasCallback(null));
+      assertTrue(
+          e.getMessage().contains("Callback name cannot be null"),
+          "Expected message to contain: Callback name cannot be null");
     }
   }
 
@@ -253,33 +287,39 @@ class JniCallbackRegistryTest {
     @DisplayName("Double close should not throw")
     void doubleCloseShouldNotThrow() throws WasmException {
       registry.close();
-      assertThatCode(() -> registry.close())
-          .as("Second close should be a no-op")
-          .doesNotThrowAnyException();
+      assertDoesNotThrow(() -> registry.close(), "Second close should be a no-op");
     }
 
     @Test
     @DisplayName("registerCallback after close should throw IllegalStateException")
     void registerAfterCloseShouldThrow() throws WasmException {
       registry.close();
-      assertThatThrownBy(
-              () -> registry.registerCallback("test", params -> params, createSimpleFunctionType()))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("closed");
+      IllegalStateException e =
+          assertThrows(
+              IllegalStateException.class,
+              () ->
+                  registry.registerCallback(
+                      "test", params -> params, createSimpleFunctionType()));
+      assertTrue(
+          e.getMessage().contains("closed"),
+          "Expected message to contain: closed");
     }
 
     @Test
     @DisplayName("registerAsyncCallback after close should throw IllegalStateException")
     void registerAsyncAfterCloseShouldThrow() throws WasmException {
       registry.close();
-      assertThatThrownBy(
+      IllegalStateException e =
+          assertThrows(
+              IllegalStateException.class,
               () ->
                   registry.registerAsyncCallback(
                       "test",
                       params -> java.util.concurrent.CompletableFuture.completedFuture(params),
-                      createSimpleFunctionType()))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("closed");
+                      createSimpleFunctionType()));
+      assertTrue(
+          e.getMessage().contains("closed"),
+          "Expected message to contain: closed");
     }
 
     @Test
@@ -287,9 +327,9 @@ class JniCallbackRegistryTest {
     void hasCallbackAfterCloseShouldReturnFalse() throws WasmException {
       registry.close();
       // hasCallback and getCallbackCount do not call ensureNotClosed
-      assertThat(registry.hasCallback("test"))
-          .as("hasCallback should return false on closed empty registry")
-          .isFalse();
+      assertFalse(
+          registry.hasCallback("test"),
+          "hasCallback should return false on closed empty registry");
     }
 
     @Test
@@ -297,7 +337,7 @@ class JniCallbackRegistryTest {
     void getCallbackCountAfterCloseShouldWork() throws WasmException {
       registry.close();
       // getCallbackCount doesn't call ensureNotClosed
-      assertThat(registry.getCallbackCount()).isZero();
+      assertEquals(0, registry.getCallbackCount());
     }
 
     @Test
@@ -305,7 +345,7 @@ class JniCallbackRegistryTest {
     void getMetricsAfterCloseShouldWork() throws WasmException {
       registry.close();
       // getMetrics doesn't call ensureNotClosed
-      assertThat(registry.getMetrics()).isNotNull();
+      assertNotNull(registry.getMetrics());
     }
   }
 
@@ -316,9 +356,10 @@ class JniCallbackRegistryTest {
     @Test
     @DisplayName("JniCallbackRegistry should implement CallbackRegistry interface")
     void shouldImplementCallbackRegistry() {
-      assertThat(registry)
-          .as("JniCallbackRegistry should implement CallbackRegistry")
-          .isInstanceOf(CallbackRegistry.class);
+      assertInstanceOf(
+          CallbackRegistry.class,
+          registry,
+          "JniCallbackRegistry should implement CallbackRegistry");
     }
   }
 

@@ -15,9 +15,12 @@
  */
 package ai.tegmentum.wasmtime4j.panama.wasi;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.PanamaEngine;
@@ -86,9 +89,13 @@ class PanamaWasiLinkerConfigurationTest {
     void testAllowDirectoryAccessNullHostPath() {
       final String guestPath = "/guest/tmp";
 
-      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(null, guestPath))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Host path cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> wasiLinker.allowDirectoryAccess(null, guestPath));
+      assertTrue(
+          ex.getMessage().contains("Host path cannot be null"),
+          "Expected message to contain 'Host path cannot be null': " + ex.getMessage());
     }
 
     @Test
@@ -96,9 +103,13 @@ class PanamaWasiLinkerConfigurationTest {
     void testAllowDirectoryAccessNullGuestPath() {
       final Path hostPath = Paths.get("/tmp");
 
-      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(hostPath, null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Guest path cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> wasiLinker.allowDirectoryAccess(hostPath, null));
+      assertTrue(
+          ex.getMessage().contains("Guest path cannot be null"),
+          "Expected message to contain 'Guest path cannot be null': " + ex.getMessage());
     }
 
     @Test
@@ -133,9 +144,14 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on null environment variable name")
     void testSetEnvironmentVariableNullName() {
-      assertThatThrownBy(() -> wasiLinker.setEnvironmentVariable(null, "value"))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Environment variable name cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> wasiLinker.setEnvironmentVariable(null, "value"));
+      assertTrue(
+          ex.getMessage().contains("Environment variable name cannot be null"),
+          "Expected message to contain 'Environment variable name cannot be null': "
+              + ex.getMessage());
     }
 
     @Test
@@ -152,9 +168,13 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on null environment map")
     void testSetEnvironmentVariablesNullMap() {
-      assertThatThrownBy(() -> wasiLinker.setEnvironmentVariables(null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Environment map cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> wasiLinker.setEnvironmentVariables(null));
+      assertTrue(
+          ex.getMessage().contains("Environment map cannot be null"),
+          "Expected message to contain 'Environment map cannot be null': " + ex.getMessage());
     }
 
     @Test
@@ -174,9 +194,14 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on null variable names list")
     void testInheritEnvironmentVariablesNullList() {
-      assertThatThrownBy(() -> wasiLinker.inheritEnvironmentVariables(null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Variable names list cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> wasiLinker.inheritEnvironmentVariables(null));
+      assertTrue(
+          ex.getMessage().contains("Variable names list cannot be null"),
+          "Expected message to contain 'Variable names list cannot be null': "
+              + ex.getMessage());
     }
   }
 
@@ -203,9 +228,12 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on null arguments list")
     void testSetArgumentsNullList() {
-      assertThatThrownBy(() -> wasiLinker.setArguments(null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Arguments list cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> wasiLinker.setArguments(null));
+      assertTrue(
+          ex.getMessage().contains("Arguments list cannot be null"),
+          "Expected message to contain 'Arguments list cannot be null': " + ex.getMessage());
     }
 
     @Test
@@ -250,9 +278,12 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on null stdin config")
     void testConfigureStdinNullConfig() {
-      assertThatThrownBy(() -> wasiLinker.configureStdin(null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Config cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> wasiLinker.configureStdin(null));
+      assertTrue(
+          ex.getMessage().contains("Config cannot be null"),
+          "Expected message to contain 'Config cannot be null': " + ex.getMessage());
     }
 
     @Test
@@ -274,9 +305,12 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on null stdout config")
     void testConfigureStdoutNullConfig() {
-      assertThatThrownBy(() -> wasiLinker.configureStdout(null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Config cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> wasiLinker.configureStdout(null));
+      assertTrue(
+          ex.getMessage().contains("Config cannot be null"),
+          "Expected message to contain 'Config cannot be null': " + ex.getMessage());
     }
 
     @Test
@@ -298,9 +332,12 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on null stderr config")
     void testConfigureStderrNullConfig() {
-      assertThatThrownBy(() -> wasiLinker.configureStderr(null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Config cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> wasiLinker.configureStderr(null));
+      assertTrue(
+          ex.getMessage().contains("Config cannot be null"),
+          "Expected message to contain 'Config cannot be null': " + ex.getMessage());
     }
   }
 
@@ -368,32 +405,32 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should report valid state after creation")
     void testIsValidAfterCreation() {
-      assertThat(wasiLinker.isValid()).isTrue();
+      assertTrue(wasiLinker.isValid(), "WasiLinker should be valid after creation");
     }
 
     @Test
     @DisplayName("Should report invalid state after close")
     void testIsValidAfterClose() {
       wasiLinker.close();
-      assertThat(wasiLinker.isValid()).isFalse();
+      assertFalse(wasiLinker.isValid(), "WasiLinker should be invalid after close");
     }
 
     @Test
     @DisplayName("Should return engine")
     void testGetEngine() {
-      assertThat(wasiLinker.getEngine()).isEqualTo(engine);
+      assertEquals(engine, wasiLinker.getEngine(), "WasiLinker should return the engine");
     }
 
     @Test
     @DisplayName("Should return underlying linker")
     void testGetLinker() {
-      assertThat(wasiLinker.getLinker()).isEqualTo(linker);
+      assertEquals(linker, wasiLinker.getLinker(), "WasiLinker should return the linker");
     }
 
     @Test
     @DisplayName("Should return null config when created with null")
     void testGetConfigNull() {
-      assertThat(wasiLinker.getConfig()).isNull();
+      assertNull(wasiLinker.getConfig(), "Config should be null when created with null");
     }
 
     @Test
@@ -419,49 +456,70 @@ class PanamaWasiLinkerConfigurationTest {
     @Test
     @DisplayName("Should throw on allowDirectoryAccess after close")
     void testAllowDirectoryAccessAfterClose() {
-      assertThatThrownBy(() -> wasiLinker.allowDirectoryAccess(Paths.get("/tmp"), "/guest/tmp"))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("closed");
+      final IllegalStateException ex =
+          assertThrows(
+              IllegalStateException.class,
+              () -> wasiLinker.allowDirectoryAccess(Paths.get("/tmp"), "/guest/tmp"));
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Expected message to contain 'closed': " + ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw on setEnvironmentVariable after close")
     void testSetEnvironmentVariableAfterClose() {
-      assertThatThrownBy(() -> wasiLinker.setEnvironmentVariable("PATH", "/usr/bin"))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("closed");
+      final IllegalStateException ex =
+          assertThrows(
+              IllegalStateException.class,
+              () -> wasiLinker.setEnvironmentVariable("PATH", "/usr/bin"));
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Expected message to contain 'closed': " + ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw on setArguments after close")
     void testSetArgumentsAfterClose() {
-      assertThatThrownBy(() -> wasiLinker.setArguments(Arrays.asList("arg1")))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("closed");
+      final IllegalStateException ex =
+          assertThrows(
+              IllegalStateException.class,
+              () -> wasiLinker.setArguments(Arrays.asList("arg1")));
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Expected message to contain 'closed': " + ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw on configureStdin after close")
     void testConfigureStdinAfterClose() {
-      assertThatThrownBy(() -> wasiLinker.configureStdin(WasiStdioConfig.inherit()))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("closed");
+      final IllegalStateException ex =
+          assertThrows(
+              IllegalStateException.class,
+              () -> wasiLinker.configureStdin(WasiStdioConfig.inherit()));
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Expected message to contain 'closed': " + ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw on enableNetworkAccess after close")
     void testEnableNetworkAccessAfterClose() {
-      assertThatThrownBy(() -> wasiLinker.enableNetworkAccess())
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("closed");
+      final IllegalStateException ex =
+          assertThrows(
+              IllegalStateException.class, () -> wasiLinker.enableNetworkAccess());
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Expected message to contain 'closed': " + ex.getMessage());
     }
 
     @Test
     @DisplayName("Should throw on getLinker after close")
     void testGetLinkerAfterClose() {
-      assertThatThrownBy(() -> wasiLinker.getLinker())
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("closed");
+      final IllegalStateException ex =
+          assertThrows(IllegalStateException.class, () -> wasiLinker.getLinker());
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Expected message to contain 'closed': " + ex.getMessage());
     }
   }
 

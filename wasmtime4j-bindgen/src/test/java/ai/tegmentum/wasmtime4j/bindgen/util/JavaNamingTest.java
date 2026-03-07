@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,86 +27,88 @@ class JavaNamingTest {
 
   @Test
   void shouldConvertKebabCaseToClassName() {
-    assertThat(JavaNaming.toClassName("http-request")).isEqualTo("HttpRequest");
-    assertThat(JavaNaming.toClassName("my-custom-type")).isEqualTo("MyCustomType");
-    assertThat(JavaNaming.toClassName("simple")).isEqualTo("Simple");
+    assertEquals("HttpRequest", JavaNaming.toClassName("http-request"));
+    assertEquals("MyCustomType", JavaNaming.toClassName("my-custom-type"));
+    assertEquals("Simple", JavaNaming.toClassName("simple"));
   }
 
   @Test
   void shouldConvertKebabCaseToFieldName() {
-    assertThat(JavaNaming.toFieldName("get-value")).isEqualTo("getValue");
-    assertThat(JavaNaming.toFieldName("my-field")).isEqualTo("myField");
-    assertThat(JavaNaming.toFieldName("simple")).isEqualTo("simple");
+    assertEquals("getValue", JavaNaming.toFieldName("get-value"));
+    assertEquals("myField", JavaNaming.toFieldName("my-field"));
+    assertEquals("simple", JavaNaming.toFieldName("simple"));
   }
 
   @Test
   void shouldConvertToEnumConstant() {
-    assertThat(JavaNaming.toEnumConstant("my-value")).isEqualTo("MY_VALUE");
-    assertThat(JavaNaming.toEnumConstant("simple")).isEqualTo("SIMPLE");
-    assertThat(JavaNaming.toEnumConstant("http-request")).isEqualTo("HTTP_REQUEST");
+    assertEquals("MY_VALUE", JavaNaming.toEnumConstant("my-value"));
+    assertEquals("SIMPLE", JavaNaming.toEnumConstant("simple"));
+    assertEquals("HTTP_REQUEST", JavaNaming.toEnumConstant("http-request"));
   }
 
   @Test
   void shouldConvertWitPackageToJavaPackage() {
-    assertThat(JavaNaming.toPackageName("wasi:http")).isEqualTo("wasi.http");
-    assertThat(JavaNaming.toPackageName("my-package:types")).isEqualTo("my_package.types");
-    assertThat(JavaNaming.toPackageName("")).isEqualTo("");
+    assertEquals("wasi.http", JavaNaming.toPackageName("wasi:http"));
+    assertEquals("my_package.types", JavaNaming.toPackageName("my-package:types"));
+    assertEquals("", JavaNaming.toPackageName(""));
   }
 
   @Test
   void shouldEscapeJavaKeywords() {
-    assertThat(JavaNaming.toFieldName("class")).isEqualTo("class_");
-    assertThat(JavaNaming.toFieldName("import")).isEqualTo("import_");
-    assertThat(JavaNaming.toFieldName("default")).isEqualTo("default_");
-    assertThat(JavaNaming.toFieldName("record")).isEqualTo("record_");
+    assertEquals("class_", JavaNaming.toFieldName("class"));
+    assertEquals("import_", JavaNaming.toFieldName("import"));
+    assertEquals("default_", JavaNaming.toFieldName("default"));
+    assertEquals("record_", JavaNaming.toFieldName("record"));
   }
 
   @Test
   void shouldIdentifyKeywords() {
-    assertThat(JavaNaming.isKeyword("class")).isTrue();
-    assertThat(JavaNaming.isKeyword("void")).isTrue();
-    assertThat(JavaNaming.isKeyword("record")).isTrue();
-    assertThat(JavaNaming.isKeyword("myField")).isFalse();
+    assertTrue(JavaNaming.isKeyword("class"));
+    assertTrue(JavaNaming.isKeyword("void"));
+    assertTrue(JavaNaming.isKeyword("record"));
+    assertFalse(JavaNaming.isKeyword("myField"));
   }
 
   @Test
   void shouldValidateIdentifiers() {
-    assertThat(JavaNaming.isValidIdentifier("myField")).isTrue();
-    assertThat(JavaNaming.isValidIdentifier("MyClass")).isTrue();
-    assertThat(JavaNaming.isValidIdentifier("_private")).isTrue();
-    assertThat(JavaNaming.isValidIdentifier("123invalid")).isFalse();
-    assertThat(JavaNaming.isValidIdentifier("class")).isFalse(); // keyword
-    assertThat(JavaNaming.isValidIdentifier("")).isFalse();
-    assertThat(JavaNaming.isValidIdentifier(null)).isFalse();
+    assertTrue(JavaNaming.isValidIdentifier("myField"));
+    assertTrue(JavaNaming.isValidIdentifier("MyClass"));
+    assertTrue(JavaNaming.isValidIdentifier("_private"));
+    assertFalse(JavaNaming.isValidIdentifier("123invalid"));
+    assertFalse(JavaNaming.isValidIdentifier("class")); // keyword
+    assertFalse(JavaNaming.isValidIdentifier(""));
+    assertFalse(JavaNaming.isValidIdentifier(null));
   }
 
   @Test
   void shouldHandleSnakeCaseInput() {
-    assertThat(JavaNaming.toClassName("my_custom_type")).isEqualTo("MyCustomType");
-    assertThat(JavaNaming.toFieldName("get_value")).isEqualTo("getValue");
+    assertEquals("MyCustomType", JavaNaming.toClassName("my_custom_type"));
+    assertEquals("getValue", JavaNaming.toFieldName("get_value"));
   }
 
   @Test
   void shouldHandleMixedCase() {
-    assertThat(JavaNaming.toClassName("http-request_type")).isEqualTo("HttpRequestType");
+    assertEquals("HttpRequestType", JavaNaming.toClassName("http-request_type"));
   }
 
   @Test
   void shouldThrowOnEmptyClassName() {
-    assertThatThrownBy(() -> JavaNaming.toClassName(""))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("cannot be empty");
+    IllegalArgumentException exception =
+        assertThrows(IllegalArgumentException.class, () -> JavaNaming.toClassName(""));
+    assertTrue(
+        exception.getMessage().contains("cannot be empty"),
+        "Expected message to contain: cannot be empty");
   }
 
   @Test
   void shouldThrowOnNullClassName() {
-    assertThatThrownBy(() -> JavaNaming.toClassName(null)).isInstanceOf(NullPointerException.class);
+    assertThrows(NullPointerException.class, () -> JavaNaming.toClassName(null));
   }
 
   @Test
   void shouldHandleLeadingDigits() {
     // Leading digits should be prefixed with underscore
-    assertThat(JavaNaming.toClassName("123-type")).isEqualTo("_123Type");
-    assertThat(JavaNaming.toFieldName("2nd-value")).isEqualTo("_2ndValue");
+    assertEquals("_123Type", JavaNaming.toClassName("123-type"));
+    assertEquals("_2ndValue", JavaNaming.toFieldName("2nd-value"));
   }
 }

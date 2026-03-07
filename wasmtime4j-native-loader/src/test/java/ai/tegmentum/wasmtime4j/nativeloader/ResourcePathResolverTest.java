@@ -16,9 +16,9 @@
 
 package ai.tegmentum.wasmtime4j.nativeloader;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -191,9 +191,12 @@ final class ResourcePathResolverTest {
             () -> ResourcePathResolver.resolvePath(invalidPattern, "test", linuxInfo),
             "Should throw IllegalArgumentException for unresolved placeholders");
 
-    assertThat(exception.getMessage())
-        .contains("Resolved path contains unresolved placeholders")
-        .contains("{unknown}");
+    assertTrue(
+        exception.getMessage().contains("Resolved path contains unresolved placeholders"),
+        "Exception message should mention unresolved placeholders");
+    assertTrue(
+        exception.getMessage().contains("{unknown}"),
+        "Exception message should mention the unknown placeholder");
   }
 
   @Test

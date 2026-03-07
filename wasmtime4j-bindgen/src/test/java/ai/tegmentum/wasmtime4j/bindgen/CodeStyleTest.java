@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -42,15 +46,20 @@ class CodeStyleTest {
 
       CodeStyle[] styles = CodeStyle.values();
 
-      assertThat(styles).hasSize(2);
-      assertThat(styles).containsExactlyInAnyOrder(CodeStyle.MODERN, CodeStyle.LEGACY);
+      assertEquals(2, styles.length);
+      Set<CodeStyle> styleSet = new HashSet<>();
+      for (CodeStyle s : styles) {
+        styleSet.add(s);
+      }
+      assertEquals(Set.of(CodeStyle.MODERN, CodeStyle.LEGACY), styleSet);
+      assertEquals(2, styles.length);
     }
 
     @Test
     @DisplayName("should get style by name")
     void shouldGetStyleByName() {
-      assertThat(CodeStyle.valueOf("MODERN")).isEqualTo(CodeStyle.MODERN);
-      assertThat(CodeStyle.valueOf("LEGACY")).isEqualTo(CodeStyle.LEGACY);
+      assertEquals(CodeStyle.MODERN, CodeStyle.valueOf("MODERN"));
+      assertEquals(CodeStyle.LEGACY, CodeStyle.valueOf("LEGACY"));
     }
   }
 
@@ -63,7 +72,7 @@ class CodeStyleTest {
     void modernShouldRequireJava17() {
       LOGGER.info("Testing MODERN minimum Java version");
 
-      assertThat(CodeStyle.MODERN.getMinimumJavaVersion()).isEqualTo("17");
+      assertEquals("17", CodeStyle.MODERN.getMinimumJavaVersion());
     }
 
     @Test
@@ -71,15 +80,15 @@ class CodeStyleTest {
     void legacyShouldRequireJava8() {
       LOGGER.info("Testing LEGACY minimum Java version");
 
-      assertThat(CodeStyle.LEGACY.getMinimumJavaVersion()).isEqualTo("8");
+      assertEquals("8", CodeStyle.LEGACY.getMinimumJavaVersion());
     }
 
     @ParameterizedTest
     @EnumSource(CodeStyle.class)
     @DisplayName("all styles should have non-null minimum Java version")
     void allStylesShouldHaveNonNullMinimumJavaVersion(final CodeStyle style) {
-      assertThat(style.getMinimumJavaVersion()).isNotNull();
-      assertThat(style.getMinimumJavaVersion()).isNotEmpty();
+      assertNotNull(style.getMinimumJavaVersion());
+      assertFalse(style.getMinimumJavaVersion().isEmpty());
     }
   }
 
@@ -92,7 +101,7 @@ class CodeStyleTest {
     void modernShouldSupportRecords() {
       LOGGER.info("Testing MODERN records support");
 
-      assertThat(CodeStyle.MODERN.supportsRecords()).isTrue();
+      assertTrue(CodeStyle.MODERN.supportsRecords());
     }
 
     @Test
@@ -100,7 +109,7 @@ class CodeStyleTest {
     void legacyShouldNotSupportRecords() {
       LOGGER.info("Testing LEGACY records support");
 
-      assertThat(CodeStyle.LEGACY.supportsRecords()).isFalse();
+      assertFalse(CodeStyle.LEGACY.supportsRecords());
     }
 
     @Test
@@ -108,7 +117,7 @@ class CodeStyleTest {
     void modernShouldSupportSealedInterfaces() {
       LOGGER.info("Testing MODERN sealed interfaces support");
 
-      assertThat(CodeStyle.MODERN.supportsSealedInterfaces()).isTrue();
+      assertTrue(CodeStyle.MODERN.supportsSealedInterfaces());
     }
 
     @Test
@@ -116,7 +125,7 @@ class CodeStyleTest {
     void legacyShouldNotSupportSealedInterfaces() {
       LOGGER.info("Testing LEGACY sealed interfaces support");
 
-      assertThat(CodeStyle.LEGACY.supportsSealedInterfaces()).isFalse();
+      assertFalse(CodeStyle.LEGACY.supportsSealedInterfaces());
     }
 
     @Test
@@ -124,7 +133,7 @@ class CodeStyleTest {
     void modernShouldNotGenerateBuilders() {
       LOGGER.info("Testing MODERN builder generation");
 
-      assertThat(CodeStyle.MODERN.generatesBuilders()).isFalse();
+      assertFalse(CodeStyle.MODERN.generatesBuilders());
     }
 
     @Test
@@ -132,7 +141,7 @@ class CodeStyleTest {
     void legacyShouldGenerateBuilders() {
       LOGGER.info("Testing LEGACY builder generation");
 
-      assertThat(CodeStyle.LEGACY.generatesBuilders()).isTrue();
+      assertTrue(CodeStyle.LEGACY.generatesBuilders());
     }
   }
 
@@ -148,10 +157,10 @@ class CodeStyleTest {
       CodeStyle modern = CodeStyle.MODERN;
 
       // Modern style should have all modern features
-      assertThat(modern.supportsRecords()).isTrue();
-      assertThat(modern.supportsSealedInterfaces()).isTrue();
+      assertTrue(modern.supportsRecords());
+      assertTrue(modern.supportsSealedInterfaces());
       // Modern style should not need builders (records are enough)
-      assertThat(modern.generatesBuilders()).isFalse();
+      assertFalse(modern.generatesBuilders());
     }
 
     @Test
@@ -162,10 +171,10 @@ class CodeStyleTest {
       CodeStyle legacy = CodeStyle.LEGACY;
 
       // Legacy style should not have any modern features
-      assertThat(legacy.supportsRecords()).isFalse();
-      assertThat(legacy.supportsSealedInterfaces()).isFalse();
+      assertFalse(legacy.supportsRecords());
+      assertFalse(legacy.supportsSealedInterfaces());
       // Legacy style needs builders to create immutable objects
-      assertThat(legacy.generatesBuilders()).isTrue();
+      assertTrue(legacy.generatesBuilders());
     }
   }
 
@@ -176,13 +185,13 @@ class CodeStyleTest {
     @Test
     @DisplayName("MODERN toString should be 'MODERN'")
     void modernToStringShouldBeModern() {
-      assertThat(CodeStyle.MODERN.toString()).isEqualTo("MODERN");
+      assertEquals("MODERN", CodeStyle.MODERN.toString());
     }
 
     @Test
     @DisplayName("LEGACY toString should be 'LEGACY'")
     void legacyToStringShouldBeLegacy() {
-      assertThat(CodeStyle.LEGACY.toString()).isEqualTo("LEGACY");
+      assertEquals("LEGACY", CodeStyle.LEGACY.toString());
     }
   }
 
@@ -193,13 +202,13 @@ class CodeStyleTest {
     @Test
     @DisplayName("MODERN should have correct name")
     void modernShouldHaveCorrectName() {
-      assertThat(CodeStyle.MODERN.name()).isEqualTo("MODERN");
+      assertEquals("MODERN", CodeStyle.MODERN.name());
     }
 
     @Test
     @DisplayName("LEGACY should have correct name")
     void legacyShouldHaveCorrectName() {
-      assertThat(CodeStyle.LEGACY.name()).isEqualTo("LEGACY");
+      assertEquals("LEGACY", CodeStyle.LEGACY.name());
     }
   }
 }

@@ -15,9 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
@@ -78,10 +79,10 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
           // For now, we're validating the API exists and accepts correct parameters
           try {
             final int result = memory.atomicCompareAndSwapInt(0, 0, 42);
-            assertThat(result).isNotNegative();
+            assertTrue(result >= 0, "Expected non-negative result");
           } catch (final UnsupportedOperationException e) {
             // Expected for non-shared memory
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -118,9 +119,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final long result = memory.atomicCompareAndSwapLong(0, 0L, 42L);
-            assertThat(result).isNotNegative();
+            assertTrue(result >= 0, "Expected non-negative result");
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -147,9 +148,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final int result = memory.atomicLoadInt(0);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -174,9 +175,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final long result = memory.atomicLoadLong(0);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -192,7 +193,7 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
             memory.atomicStoreInt(0, 42);
             // No exception means success (or UnsupportedOperationException for non-shared)
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -218,7 +219,7 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
           try {
             memory.atomicStoreLong(0, 42L);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -234,9 +235,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final int result = memory.atomicAddInt(0, 5);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -261,9 +262,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final long result = memory.atomicAddLong(0, 5L);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -279,9 +280,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final int result = memory.atomicAndInt(0, 0xFF);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -295,9 +296,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final int result = memory.atomicOrInt(0, 0xFF);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -311,9 +312,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final int result = memory.atomicXorInt(0, 0xFF);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -330,7 +331,7 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
           try {
             memory.atomicFence();
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -344,9 +345,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final int result = memory.atomicNotify(0, 1);
-            assertThat(result).isNotNegative();
+            assertTrue(result >= 0, "Expected non-negative result");
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -382,9 +383,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final WaitResult result = memory.atomicWait32(0, 0, 1000L);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }
@@ -420,9 +421,9 @@ class AtomicMemoryOperationsTest extends DualRuntimeTest {
         () -> {
           try {
             final WaitResult result = memory.atomicWait64(0, 0L, 1000L);
-            assertThat(result).isNotNull();
+            assertNotNull(result);
           } catch (final UnsupportedOperationException e) {
-            assertThat(e.getMessage()).contains("shared");
+            assertTrue(e.getMessage().contains("shared"), "Expected message to contain 'shared'");
           }
         });
   }

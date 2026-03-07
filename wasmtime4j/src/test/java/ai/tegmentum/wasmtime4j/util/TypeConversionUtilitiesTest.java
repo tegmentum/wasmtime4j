@@ -15,8 +15,12 @@
  */
 package ai.tegmentum.wasmtime4j.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -42,7 +46,7 @@ class TypeConversionUtilitiesTest {
     @Test
     @DisplayName("V128_SIZE_BYTES should be 16")
     void v128SizeBytesShouldBe16() {
-      assertThat(TypeConversionUtilities.V128_SIZE_BYTES).isEqualTo(16);
+      assertEquals(16, TypeConversionUtilities.V128_SIZE_BYTES);
     }
   }
 
@@ -56,22 +60,22 @@ class TypeConversionUtilitiesTest {
       final WasmValueType[] original = {WasmValueType.I32, WasmValueType.I64};
       final WasmValueType[] copy = TypeConversionUtilities.copyTypes(original);
 
-      assertThat(copy).containsExactly(WasmValueType.I32, WasmValueType.I64);
-      assertThat(copy).isNotSameAs(original);
+      assertArrayEquals(new WasmValueType[] {WasmValueType.I32, WasmValueType.I64}, copy);
+      assertNotSame(original, copy);
     }
 
     @Test
     @DisplayName("copyTypes should return empty array for null input")
     void copyTypesShouldReturnEmptyForNull() {
       final WasmValueType[] result = TypeConversionUtilities.copyTypes(null);
-      assertThat(result).isEmpty();
+      assertEquals(0, result.length);
     }
 
     @Test
     @DisplayName("copyTypes should return empty array for empty input")
     void copyTypesShouldReturnEmptyForEmpty() {
       final WasmValueType[] result = TypeConversionUtilities.copyTypes(new WasmValueType[0]);
-      assertThat(result).isEmpty();
+      assertEquals(0, result.length);
     }
   }
 
@@ -83,15 +87,16 @@ class TypeConversionUtilitiesTest {
     @DisplayName("validateV128Size should pass for 16-byte array")
     void validateV128SizeShouldPassFor16Bytes() {
       final byte[] bytes = new byte[16];
-      TypeConversionUtilities.validateV128Size(bytes); // Should not throw
+      assertDoesNotThrow(() -> TypeConversionUtilities.validateV128Size(bytes));
     }
 
     @Test
     @DisplayName("validateV128Size should throw for null array")
     void validateV128SizeShouldThrowForNull() {
-      assertThatThrownBy(() -> TypeConversionUtilities.validateV128Size(null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("null");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class, () -> TypeConversionUtilities.validateV128Size(null));
+      assertTrue(exception.getMessage().contains("null"));
     }
 
     @ParameterizedTest
@@ -99,10 +104,12 @@ class TypeConversionUtilitiesTest {
     @DisplayName("validateV128Size should throw for wrong size")
     void validateV128SizeShouldThrowForWrongSize(final int size) {
       final byte[] bytes = new byte[size];
-      assertThatThrownBy(() -> TypeConversionUtilities.validateV128Size(bytes))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("16")
-          .hasMessageContaining(String.valueOf(size));
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.validateV128Size(bytes));
+      assertTrue(exception.getMessage().contains("16"));
+      assertTrue(exception.getMessage().contains(String.valueOf(size)));
     }
   }
 
@@ -116,32 +123,39 @@ class TypeConversionUtilitiesTest {
       final WasmValue[] params = {WasmValue.i32(1), WasmValue.i64(2L)};
       final WasmValueType[] expectedTypes = {WasmValueType.I32, WasmValueType.I64};
 
-      TypeConversionUtilities.validateParameterTypes(params, expectedTypes); // Should not throw
+      assertDoesNotThrow(
+          () -> TypeConversionUtilities.validateParameterTypes(params, expectedTypes));
     }
 
     @Test
     @DisplayName("validateParameterTypes should pass for empty arrays")
     void validateParameterTypesShouldPassForEmptyArrays() {
-      TypeConversionUtilities.validateParameterTypes(
-          new WasmValue[0], new WasmValueType[0]); // Should not throw
+      assertDoesNotThrow(
+          () ->
+              TypeConversionUtilities.validateParameterTypes(
+                  new WasmValue[0], new WasmValueType[0]));
     }
 
     @Test
     @DisplayName("validateParameterTypes should throw for null params")
     void validateParameterTypesShouldThrowForNullParams() {
       final WasmValueType[] expectedTypes = {WasmValueType.I32};
-      assertThatThrownBy(() -> TypeConversionUtilities.validateParameterTypes(null, expectedTypes))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("params");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.validateParameterTypes(null, expectedTypes));
+      assertTrue(exception.getMessage().contains("params"));
     }
 
     @Test
     @DisplayName("validateParameterTypes should throw for null expectedTypes")
     void validateParameterTypesShouldThrowForNullExpectedTypes() {
       final WasmValue[] params = {WasmValue.i32(1)};
-      assertThatThrownBy(() -> TypeConversionUtilities.validateParameterTypes(params, null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("expectedTypes");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.validateParameterTypes(params, null));
+      assertTrue(exception.getMessage().contains("expectedTypes"));
     }
 
     @Test
@@ -150,12 +164,13 @@ class TypeConversionUtilitiesTest {
       final WasmValue[] params = {WasmValue.i32(1)};
       final WasmValueType[] expectedTypes = {WasmValueType.I32, WasmValueType.I64};
 
-      assertThatThrownBy(
-              () -> TypeConversionUtilities.validateParameterTypes(params, expectedTypes))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("count mismatch")
-          .hasMessageContaining("1")
-          .hasMessageContaining("2");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.validateParameterTypes(params, expectedTypes));
+      assertTrue(exception.getMessage().contains("count mismatch"));
+      assertTrue(exception.getMessage().contains("1"));
+      assertTrue(exception.getMessage().contains("2"));
     }
 
     @Test
@@ -164,11 +179,12 @@ class TypeConversionUtilitiesTest {
       final WasmValue[] params = {WasmValue.i32(1)};
       final WasmValueType[] expectedTypes = {WasmValueType.I64};
 
-      assertThatThrownBy(
-              () -> TypeConversionUtilities.validateParameterTypes(params, expectedTypes))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("type mismatch")
-          .hasMessageContaining("index 0");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.validateParameterTypes(params, expectedTypes));
+      assertTrue(exception.getMessage().contains("type mismatch"));
+      assertTrue(exception.getMessage().contains("index 0"));
     }
 
     @Test
@@ -177,11 +193,12 @@ class TypeConversionUtilitiesTest {
       final WasmValue[] params = {null};
       final WasmValueType[] expectedTypes = {WasmValueType.I32};
 
-      assertThatThrownBy(
-              () -> TypeConversionUtilities.validateParameterTypes(params, expectedTypes))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("index 0")
-          .hasMessageContaining("null");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.validateParameterTypes(params, expectedTypes));
+      assertTrue(exception.getMessage().contains("index 0"));
+      assertTrue(exception.getMessage().contains("null"));
     }
   }
 
@@ -192,51 +209,52 @@ class TypeConversionUtilitiesTest {
     @Test
     @DisplayName("getValueSize should return 4 for I32")
     void getValueSizeShouldReturn4ForI32() {
-      assertThat(TypeConversionUtilities.getValueSize(WasmValueType.I32)).isEqualTo(4);
+      assertEquals(4, TypeConversionUtilities.getValueSize(WasmValueType.I32));
     }
 
     @Test
     @DisplayName("getValueSize should return 4 for F32")
     void getValueSizeShouldReturn4ForF32() {
-      assertThat(TypeConversionUtilities.getValueSize(WasmValueType.F32)).isEqualTo(4);
+      assertEquals(4, TypeConversionUtilities.getValueSize(WasmValueType.F32));
     }
 
     @Test
     @DisplayName("getValueSize should return 8 for I64")
     void getValueSizeShouldReturn8ForI64() {
-      assertThat(TypeConversionUtilities.getValueSize(WasmValueType.I64)).isEqualTo(8);
+      assertEquals(8, TypeConversionUtilities.getValueSize(WasmValueType.I64));
     }
 
     @Test
     @DisplayName("getValueSize should return 8 for F64")
     void getValueSizeShouldReturn8ForF64() {
-      assertThat(TypeConversionUtilities.getValueSize(WasmValueType.F64)).isEqualTo(8);
+      assertEquals(8, TypeConversionUtilities.getValueSize(WasmValueType.F64));
     }
 
     @Test
     @DisplayName("getValueSize should return 8 for FUNCREF")
     void getValueSizeShouldReturn8ForFuncref() {
-      assertThat(TypeConversionUtilities.getValueSize(WasmValueType.FUNCREF)).isEqualTo(8);
+      assertEquals(8, TypeConversionUtilities.getValueSize(WasmValueType.FUNCREF));
     }
 
     @Test
     @DisplayName("getValueSize should return 8 for EXTERNREF")
     void getValueSizeShouldReturn8ForExternref() {
-      assertThat(TypeConversionUtilities.getValueSize(WasmValueType.EXTERNREF)).isEqualTo(8);
+      assertEquals(8, TypeConversionUtilities.getValueSize(WasmValueType.EXTERNREF));
     }
 
     @Test
     @DisplayName("getValueSize should return 16 for V128")
     void getValueSizeShouldReturn16ForV128() {
-      assertThat(TypeConversionUtilities.getValueSize(WasmValueType.V128)).isEqualTo(16);
+      assertEquals(16, TypeConversionUtilities.getValueSize(WasmValueType.V128));
     }
 
     @Test
     @DisplayName("getValueSize should throw for null")
     void getValueSizeShouldThrowForNull() {
-      assertThatThrownBy(() -> TypeConversionUtilities.getValueSize(null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("valueType");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class, () -> TypeConversionUtilities.getValueSize(null));
+      assertTrue(exception.getMessage().contains("valueType"));
     }
   }
 
@@ -249,7 +267,7 @@ class TypeConversionUtilitiesTest {
     void writeReadIntShouldRoundTripPositive() {
       final byte[] buffer = new byte[4];
       TypeConversionUtilities.writeInt(buffer, 0, 0x12345678);
-      assertThat(TypeConversionUtilities.readInt(buffer, 0)).isEqualTo(0x12345678);
+      assertEquals(0x12345678, TypeConversionUtilities.readInt(buffer, 0));
     }
 
     @Test
@@ -257,7 +275,7 @@ class TypeConversionUtilitiesTest {
     void writeReadIntShouldRoundTripNegative() {
       final byte[] buffer = new byte[4];
       TypeConversionUtilities.writeInt(buffer, 0, -12345);
-      assertThat(TypeConversionUtilities.readInt(buffer, 0)).isEqualTo(-12345);
+      assertEquals(-12345, TypeConversionUtilities.readInt(buffer, 0));
     }
 
     @Test
@@ -265,7 +283,7 @@ class TypeConversionUtilitiesTest {
     void writeReadIntShouldRoundTripZero() {
       final byte[] buffer = new byte[4];
       TypeConversionUtilities.writeInt(buffer, 0, 0);
-      assertThat(TypeConversionUtilities.readInt(buffer, 0)).isEqualTo(0);
+      assertEquals(0, TypeConversionUtilities.readInt(buffer, 0));
     }
 
     @Test
@@ -273,7 +291,7 @@ class TypeConversionUtilitiesTest {
     void writeReadIntShouldRoundTripMaxValue() {
       final byte[] buffer = new byte[4];
       TypeConversionUtilities.writeInt(buffer, 0, Integer.MAX_VALUE);
-      assertThat(TypeConversionUtilities.readInt(buffer, 0)).isEqualTo(Integer.MAX_VALUE);
+      assertEquals(Integer.MAX_VALUE, TypeConversionUtilities.readInt(buffer, 0));
     }
 
     @Test
@@ -281,7 +299,7 @@ class TypeConversionUtilitiesTest {
     void writeReadIntShouldRoundTripMinValue() {
       final byte[] buffer = new byte[4];
       TypeConversionUtilities.writeInt(buffer, 0, Integer.MIN_VALUE);
-      assertThat(TypeConversionUtilities.readInt(buffer, 0)).isEqualTo(Integer.MIN_VALUE);
+      assertEquals(Integer.MIN_VALUE, TypeConversionUtilities.readInt(buffer, 0));
     }
 
     @Test
@@ -289,7 +307,7 @@ class TypeConversionUtilitiesTest {
     void writeIntShouldWriteLittleEndian() {
       final byte[] buffer = new byte[4];
       TypeConversionUtilities.writeInt(buffer, 0, 0x04030201);
-      assertThat(buffer).containsExactly(0x01, 0x02, 0x03, 0x04);
+      assertArrayEquals(new byte[] {0x01, 0x02, 0x03, 0x04}, buffer);
     }
 
     @Test
@@ -297,47 +315,56 @@ class TypeConversionUtilitiesTest {
     void writeIntShouldWorkAtOffset() {
       final byte[] buffer = new byte[8];
       TypeConversionUtilities.writeInt(buffer, 4, 0x12345678);
-      assertThat(TypeConversionUtilities.readInt(buffer, 4)).isEqualTo(0x12345678);
+      assertEquals(0x12345678, TypeConversionUtilities.readInt(buffer, 4));
     }
 
     @Test
     @DisplayName("writeInt should throw for null buffer")
     void writeIntShouldThrowForNullBuffer() {
-      assertThatThrownBy(() -> TypeConversionUtilities.writeInt(null, 0, 1))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("buffer");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.writeInt(null, 0, 1));
+      assertTrue(exception.getMessage().contains("buffer"));
     }
 
     @Test
     @DisplayName("writeInt should throw for negative offset")
     void writeIntShouldThrowForNegativeOffset() {
-      assertThatThrownBy(() -> TypeConversionUtilities.writeInt(new byte[4], -1, 1))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("offset");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.writeInt(new byte[4], -1, 1));
+      assertTrue(exception.getMessage().contains("offset"));
     }
 
     @Test
     @DisplayName("writeInt should throw for buffer overflow")
     void writeIntShouldThrowForBufferOverflow() {
-      assertThatThrownBy(() -> TypeConversionUtilities.writeInt(new byte[3], 0, 1))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("overflow");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.writeInt(new byte[3], 0, 1));
+      assertTrue(exception.getMessage().contains("overflow"));
     }
 
     @Test
     @DisplayName("readInt should throw for null buffer")
     void readIntShouldThrowForNullBuffer() {
-      assertThatThrownBy(() -> TypeConversionUtilities.readInt(null, 0))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("buffer");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class, () -> TypeConversionUtilities.readInt(null, 0));
+      assertTrue(exception.getMessage().contains("buffer"));
     }
 
     @Test
     @DisplayName("readInt should throw for buffer underflow")
     void readIntShouldThrowForBufferUnderflow() {
-      assertThatThrownBy(() -> TypeConversionUtilities.readInt(new byte[3], 0))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("underflow");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.readInt(new byte[3], 0));
+      assertTrue(exception.getMessage().contains("underflow"));
     }
   }
 
@@ -350,7 +377,7 @@ class TypeConversionUtilitiesTest {
     void writeReadLongShouldRoundTripPositive() {
       final byte[] buffer = new byte[8];
       TypeConversionUtilities.writeLong(buffer, 0, 0x123456789ABCDEF0L);
-      assertThat(TypeConversionUtilities.readLong(buffer, 0)).isEqualTo(0x123456789ABCDEF0L);
+      assertEquals(0x123456789ABCDEF0L, TypeConversionUtilities.readLong(buffer, 0));
     }
 
     @Test
@@ -358,7 +385,7 @@ class TypeConversionUtilitiesTest {
     void writeReadLongShouldRoundTripNegative() {
       final byte[] buffer = new byte[8];
       TypeConversionUtilities.writeLong(buffer, 0, -123456789012345L);
-      assertThat(TypeConversionUtilities.readLong(buffer, 0)).isEqualTo(-123456789012345L);
+      assertEquals(-123456789012345L, TypeConversionUtilities.readLong(buffer, 0));
     }
 
     @Test
@@ -366,7 +393,7 @@ class TypeConversionUtilitiesTest {
     void writeReadLongShouldRoundTripZero() {
       final byte[] buffer = new byte[8];
       TypeConversionUtilities.writeLong(buffer, 0, 0L);
-      assertThat(TypeConversionUtilities.readLong(buffer, 0)).isEqualTo(0L);
+      assertEquals(0L, TypeConversionUtilities.readLong(buffer, 0));
     }
 
     @Test
@@ -374,7 +401,7 @@ class TypeConversionUtilitiesTest {
     void writeReadLongShouldRoundTripMaxValue() {
       final byte[] buffer = new byte[8];
       TypeConversionUtilities.writeLong(buffer, 0, Long.MAX_VALUE);
-      assertThat(TypeConversionUtilities.readLong(buffer, 0)).isEqualTo(Long.MAX_VALUE);
+      assertEquals(Long.MAX_VALUE, TypeConversionUtilities.readLong(buffer, 0));
     }
 
     @Test
@@ -382,7 +409,7 @@ class TypeConversionUtilitiesTest {
     void writeReadLongShouldRoundTripMinValue() {
       final byte[] buffer = new byte[8];
       TypeConversionUtilities.writeLong(buffer, 0, Long.MIN_VALUE);
-      assertThat(TypeConversionUtilities.readLong(buffer, 0)).isEqualTo(Long.MIN_VALUE);
+      assertEquals(Long.MIN_VALUE, TypeConversionUtilities.readLong(buffer, 0));
     }
 
     @Test
@@ -390,7 +417,8 @@ class TypeConversionUtilitiesTest {
     void writeLongShouldWriteLittleEndian() {
       final byte[] buffer = new byte[8];
       TypeConversionUtilities.writeLong(buffer, 0, 0x0807060504030201L);
-      assertThat(buffer).containsExactly(0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08);
+      assertArrayEquals(
+          new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}, buffer);
     }
 
     @Test
@@ -398,39 +426,46 @@ class TypeConversionUtilitiesTest {
     void writeLongShouldWorkAtOffset() {
       final byte[] buffer = new byte[16];
       TypeConversionUtilities.writeLong(buffer, 8, 0x123456789ABCDEF0L);
-      assertThat(TypeConversionUtilities.readLong(buffer, 8)).isEqualTo(0x123456789ABCDEF0L);
+      assertEquals(0x123456789ABCDEF0L, TypeConversionUtilities.readLong(buffer, 8));
     }
 
     @Test
     @DisplayName("writeLong should throw for null buffer")
     void writeLongShouldThrowForNullBuffer() {
-      assertThatThrownBy(() -> TypeConversionUtilities.writeLong(null, 0, 1L))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("buffer");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.writeLong(null, 0, 1L));
+      assertTrue(exception.getMessage().contains("buffer"));
     }
 
     @Test
     @DisplayName("writeLong should throw for buffer overflow")
     void writeLongShouldThrowForBufferOverflow() {
-      assertThatThrownBy(() -> TypeConversionUtilities.writeLong(new byte[7], 0, 1L))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("overflow");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.writeLong(new byte[7], 0, 1L));
+      assertTrue(exception.getMessage().contains("overflow"));
     }
 
     @Test
     @DisplayName("readLong should throw for null buffer")
     void readLongShouldThrowForNullBuffer() {
-      assertThatThrownBy(() -> TypeConversionUtilities.readLong(null, 0))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("buffer");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class, () -> TypeConversionUtilities.readLong(null, 0));
+      assertTrue(exception.getMessage().contains("buffer"));
     }
 
     @Test
     @DisplayName("readLong should throw for buffer underflow")
     void readLongShouldThrowForBufferUnderflow() {
-      assertThatThrownBy(() -> TypeConversionUtilities.readLong(new byte[7], 0))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("underflow");
+      IllegalArgumentException exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> TypeConversionUtilities.readLong(new byte[7], 0));
+      assertTrue(exception.getMessage().contains("underflow"));
     }
   }
 
@@ -441,13 +476,13 @@ class TypeConversionUtilitiesTest {
     @Test
     @DisplayName("toNativeTypes should return empty array for null input")
     void toNativeTypesShouldReturnEmptyForNull() {
-      assertThat(TypeConversionUtilities.toNativeTypes(null)).isEmpty();
+      assertEquals(0, TypeConversionUtilities.toNativeTypes(null).length);
     }
 
     @Test
     @DisplayName("toNativeTypes should return empty array for empty input")
     void toNativeTypesShouldReturnEmptyForEmpty() {
-      assertThat(TypeConversionUtilities.toNativeTypes(new WasmValueType[0])).isEmpty();
+      assertEquals(0, TypeConversionUtilities.toNativeTypes(new WasmValueType[0]).length);
     }
 
     @Test
@@ -455,8 +490,8 @@ class TypeConversionUtilitiesTest {
     void toNativeTypesShouldConvertSingleType() {
       final WasmValueType[] types = {WasmValueType.I32};
       final int[] result = TypeConversionUtilities.toNativeTypes(types);
-      assertThat(result).hasSize(1);
-      assertThat(result[0]).isEqualTo(WasmValueType.I32.toNativeTypeCode());
+      assertEquals(1, result.length);
+      assertEquals(WasmValueType.I32.toNativeTypeCode(), result[0]);
     }
 
     @Test
@@ -464,10 +499,10 @@ class TypeConversionUtilitiesTest {
     void toNativeTypesShouldConvertMultipleTypes() {
       final WasmValueType[] types = {WasmValueType.I32, WasmValueType.I64, WasmValueType.F64};
       final int[] result = TypeConversionUtilities.toNativeTypes(types);
-      assertThat(result).hasSize(3);
-      assertThat(result[0]).isEqualTo(WasmValueType.I32.toNativeTypeCode());
-      assertThat(result[1]).isEqualTo(WasmValueType.I64.toNativeTypeCode());
-      assertThat(result[2]).isEqualTo(WasmValueType.F64.toNativeTypeCode());
+      assertEquals(3, result.length);
+      assertEquals(WasmValueType.I32.toNativeTypeCode(), result[0]);
+      assertEquals(WasmValueType.I64.toNativeTypeCode(), result[1]);
+      assertEquals(WasmValueType.F64.toNativeTypeCode(), result[2]);
     }
 
     @Test
@@ -475,11 +510,12 @@ class TypeConversionUtilitiesTest {
     void toNativeTypesShouldConvertAllTypes() {
       final WasmValueType[] allTypes = WasmValueType.values();
       final int[] result = TypeConversionUtilities.toNativeTypes(allTypes);
-      assertThat(result).hasSize(allTypes.length);
+      assertEquals(allTypes.length, result.length);
       for (int i = 0; i < allTypes.length; i++) {
-        assertThat(result[i])
-            .as("type code for %s at index %d", allTypes[i], i)
-            .isEqualTo(allTypes[i].toNativeTypeCode());
+        assertEquals(
+            allTypes[i].toNativeTypeCode(),
+            result[i],
+            String.format("type code for %s at index %d", allTypes[i], i));
       }
     }
   }
@@ -491,23 +527,23 @@ class TypeConversionUtilitiesTest {
     @Test
     @DisplayName("getTypeName should return 'null' for null")
     void getTypeNameShouldReturnNullForNull() {
-      assertThat(TypeConversionUtilities.getTypeName(null)).isEqualTo("null");
+      assertEquals("null", TypeConversionUtilities.getTypeName(null));
     }
 
     @Test
     @DisplayName("getTypeName should return class name for regular object")
     void getTypeNameShouldReturnClassName() {
-      assertThat(TypeConversionUtilities.getTypeName("test")).isEqualTo("String");
-      assertThat(TypeConversionUtilities.getTypeName(42)).isEqualTo("Integer");
-      assertThat(TypeConversionUtilities.getTypeName(3.14)).isEqualTo("Double");
+      assertEquals("String", TypeConversionUtilities.getTypeName("test"));
+      assertEquals("Integer", TypeConversionUtilities.getTypeName(42));
+      assertEquals("Double", TypeConversionUtilities.getTypeName(3.14));
     }
 
     @Test
     @DisplayName("getTypeName should return byte array with length")
     void getTypeNameShouldReturnByteArrayWithLength() {
-      assertThat(TypeConversionUtilities.getTypeName(new byte[0])).isEqualTo("byte[0]");
-      assertThat(TypeConversionUtilities.getTypeName(new byte[5])).isEqualTo("byte[5]");
-      assertThat(TypeConversionUtilities.getTypeName(new byte[16])).isEqualTo("byte[16]");
+      assertEquals("byte[0]", TypeConversionUtilities.getTypeName(new byte[0]));
+      assertEquals("byte[5]", TypeConversionUtilities.getTypeName(new byte[5]));
+      assertEquals("byte[16]", TypeConversionUtilities.getTypeName(new byte[16]));
     }
   }
 }

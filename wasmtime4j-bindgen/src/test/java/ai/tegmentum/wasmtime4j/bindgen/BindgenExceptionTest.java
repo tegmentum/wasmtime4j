@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -41,8 +45,8 @@ class BindgenExceptionTest {
 
       BindgenException exception = new BindgenException("Test error message");
 
-      assertThat(exception.getMessage()).isEqualTo("Test error message");
-      assertThat(exception.getCause()).isNull();
+      assertEquals("Test error message", exception.getMessage());
+      assertNull(exception.getCause());
     }
 
     @Test
@@ -53,8 +57,8 @@ class BindgenExceptionTest {
       IOException cause = new IOException("underlying cause");
       BindgenException exception = new BindgenException("Test error", cause);
 
-      assertThat(exception.getMessage()).isEqualTo("Test error");
-      assertThat(exception.getCause()).isEqualTo(cause);
+      assertEquals("Test error", exception.getMessage());
+      assertEquals(cause, exception.getCause());
     }
 
     @Test
@@ -65,8 +69,10 @@ class BindgenExceptionTest {
       IOException cause = new IOException("root cause");
       BindgenException exception = new BindgenException(cause);
 
-      assertThat(exception.getCause()).isEqualTo(cause);
-      assertThat(exception.getMessage()).contains("IOException");
+      assertEquals(cause, exception.getCause());
+      assertTrue(
+          exception.getMessage().contains("IOException"),
+          "Expected message to contain: IOException");
     }
   }
 
@@ -82,9 +88,12 @@ class BindgenExceptionTest {
       Exception cause = new RuntimeException("syntax error");
       BindgenException exception = BindgenException.witParseError("api.wit", cause);
 
-      assertThat(exception.getMessage()).contains("Failed to parse WIT file");
-      assertThat(exception.getMessage()).contains("api.wit");
-      assertThat(exception.getCause()).isEqualTo(cause);
+      assertTrue(
+          exception.getMessage().contains("Failed to parse WIT file"),
+          "Expected message to contain: Failed to parse WIT file");
+      assertTrue(
+          exception.getMessage().contains("api.wit"), "Expected message to contain: api.wit");
+      assertEquals(cause, exception.getCause());
     }
 
     @Test
@@ -95,9 +104,13 @@ class BindgenExceptionTest {
       Exception cause = new RuntimeException("invalid WASM");
       BindgenException exception = BindgenException.wasmIntrospectionError("module.wasm", cause);
 
-      assertThat(exception.getMessage()).contains("Failed to introspect WASM module");
-      assertThat(exception.getMessage()).contains("module.wasm");
-      assertThat(exception.getCause()).isEqualTo(cause);
+      assertTrue(
+          exception.getMessage().contains("Failed to introspect WASM module"),
+          "Expected message to contain: Failed to introspect WASM module");
+      assertTrue(
+          exception.getMessage().contains("module.wasm"),
+          "Expected message to contain: module.wasm");
+      assertEquals(cause, exception.getCause());
     }
 
     @Test
@@ -108,9 +121,12 @@ class BindgenExceptionTest {
       Exception cause = new RuntimeException("generation failed");
       BindgenException exception = BindgenException.codeGenerationError("MyRecord", cause);
 
-      assertThat(exception.getMessage()).contains("Failed to generate code for type");
-      assertThat(exception.getMessage()).contains("MyRecord");
-      assertThat(exception.getCause()).isEqualTo(cause);
+      assertTrue(
+          exception.getMessage().contains("Failed to generate code for type"),
+          "Expected message to contain: Failed to generate code for type");
+      assertTrue(
+          exception.getMessage().contains("MyRecord"), "Expected message to contain: MyRecord");
+      assertEquals(cause, exception.getCause());
     }
 
     @Test
@@ -120,9 +136,13 @@ class BindgenExceptionTest {
 
       BindgenException exception = BindgenException.configurationError("packageName is required");
 
-      assertThat(exception.getMessage()).contains("Configuration error");
-      assertThat(exception.getMessage()).contains("packageName is required");
-      assertThat(exception.getCause()).isNull();
+      assertTrue(
+          exception.getMessage().contains("Configuration error"),
+          "Expected message to contain: Configuration error");
+      assertTrue(
+          exception.getMessage().contains("packageName is required"),
+          "Expected message to contain: packageName is required");
+      assertNull(exception.getCause());
     }
 
     @Test
@@ -133,9 +153,13 @@ class BindgenExceptionTest {
       IOException cause = new IOException("file not found");
       BindgenException exception = BindgenException.ioError("reading config file", cause);
 
-      assertThat(exception.getMessage()).contains("I/O error during");
-      assertThat(exception.getMessage()).contains("reading config file");
-      assertThat(exception.getCause()).isEqualTo(cause);
+      assertTrue(
+          exception.getMessage().contains("I/O error during"),
+          "Expected message to contain: I/O error during");
+      assertTrue(
+          exception.getMessage().contains("reading config file"),
+          "Expected message to contain: reading config file");
+      assertEquals(cause, exception.getCause());
     }
   }
 
@@ -150,8 +174,10 @@ class BindgenExceptionTest {
 
       BindgenException exception = new BindgenException("test");
 
-      assertThat(exception).isInstanceOf(Exception.class);
-      assertThat(exception).isNotInstanceOf(RuntimeException.class);
+      assertInstanceOf(Exception.class, exception);
+      assertFalse(
+          RuntimeException.class.isAssignableFrom(exception.getClass()),
+          "Expected BindgenException not to be a RuntimeException");
     }
 
     @Test
@@ -161,7 +187,7 @@ class BindgenExceptionTest {
 
       BindgenException exception = new BindgenException("test");
 
-      assertThat(exception).isInstanceOf(java.io.Serializable.class);
+      assertInstanceOf(java.io.Serializable.class, exception);
     }
   }
 
@@ -175,7 +201,9 @@ class BindgenExceptionTest {
       BindgenException exception =
           BindgenException.witParseError("test.wit", new RuntimeException("error"));
 
-      assertThat(exception.getMessage()).startsWith("Failed to parse WIT file: ");
+      assertTrue(
+          exception.getMessage().startsWith("Failed to parse WIT file: "),
+          "Expected message to start with: Failed to parse WIT file: ");
     }
 
     @Test
@@ -184,7 +212,9 @@ class BindgenExceptionTest {
       BindgenException exception =
           BindgenException.wasmIntrospectionError("test.wasm", new RuntimeException("error"));
 
-      assertThat(exception.getMessage()).startsWith("Failed to introspect WASM module: ");
+      assertTrue(
+          exception.getMessage().startsWith("Failed to introspect WASM module: "),
+          "Expected message to start with: Failed to introspect WASM module: ");
     }
 
     @Test
@@ -193,7 +223,9 @@ class BindgenExceptionTest {
       BindgenException exception =
           BindgenException.codeGenerationError("TestType", new RuntimeException("error"));
 
-      assertThat(exception.getMessage()).startsWith("Failed to generate code for type: ");
+      assertTrue(
+          exception.getMessage().startsWith("Failed to generate code for type: "),
+          "Expected message to start with: Failed to generate code for type: ");
     }
 
     @Test
@@ -201,7 +233,9 @@ class BindgenExceptionTest {
     void configurationErrorMessageShouldHaveConsistentFormat() {
       BindgenException exception = BindgenException.configurationError("invalid setting");
 
-      assertThat(exception.getMessage()).startsWith("Configuration error: ");
+      assertTrue(
+          exception.getMessage().startsWith("Configuration error: "),
+          "Expected message to start with: Configuration error: ");
     }
 
     @Test
@@ -210,7 +244,9 @@ class BindgenExceptionTest {
       BindgenException exception =
           BindgenException.ioError("writing file", new IOException("error"));
 
-      assertThat(exception.getMessage()).startsWith("I/O error during ");
+      assertTrue(
+          exception.getMessage().startsWith("I/O error during "),
+          "Expected message to start with: I/O error during ");
     }
   }
 
@@ -228,12 +264,13 @@ class BindgenExceptionTest {
       BindgenException wit = BindgenException.witParseError("file.wit", originalCause);
       BindgenException wasm = BindgenException.wasmIntrospectionError("module.wasm", originalCause);
       BindgenException code = BindgenException.codeGenerationError("Type", originalCause);
-      BindgenException io = BindgenException.ioError("operation", originalCause);
 
-      assertThat(wit.getCause()).isSameAs(originalCause);
-      assertThat(wasm.getCause()).isSameAs(originalCause);
-      assertThat(code.getCause()).isSameAs(originalCause);
-      assertThat(io.getCause()).isSameAs(originalCause);
+      assertSame(originalCause, wit.getCause());
+      assertSame(originalCause, wasm.getCause());
+      assertSame(originalCause, code.getCause());
+
+      BindgenException io = BindgenException.ioError("operation", originalCause);
+      assertSame(originalCause, io.getCause());
     }
 
     @Test
@@ -241,7 +278,7 @@ class BindgenExceptionTest {
     void configurationErrorShouldHaveNoCause() {
       BindgenException exception = BindgenException.configurationError("test");
 
-      assertThat(exception.getCause()).isNull();
+      assertNull(exception.getCause());
     }
   }
 
@@ -254,7 +291,7 @@ class BindgenExceptionTest {
     void shouldHaveNonEmptyStackTrace() {
       BindgenException exception = new BindgenException("test");
 
-      assertThat(exception.getStackTrace()).isNotEmpty();
+      assertTrue(exception.getStackTrace().length > 0, "Expected non-empty stack trace");
     }
 
     @Test
@@ -263,7 +300,7 @@ class BindgenExceptionTest {
       BindgenException exception = BindgenException.configurationError("test");
 
       StackTraceElement[] stackTrace = exception.getStackTrace();
-      assertThat(stackTrace).isNotEmpty();
+      assertTrue(stackTrace.length > 0, "Expected non-empty stack trace");
 
       // The first element should be from within BindgenException
       boolean hasBindgenExceptionFrame = false;
@@ -273,7 +310,7 @@ class BindgenExceptionTest {
           break;
         }
       }
-      assertThat(hasBindgenExceptionFrame).isTrue();
+      assertTrue(hasBindgenExceptionFrame);
     }
   }
 }

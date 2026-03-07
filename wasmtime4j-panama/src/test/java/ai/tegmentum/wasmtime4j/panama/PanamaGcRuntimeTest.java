@@ -15,7 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.panama.exception.PanamaException;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +35,11 @@ class PanamaGcRuntimeTest {
     // PanamaGcRuntime resolves native symbols during class initialization.
     // When the native library is not loaded, an ExceptionInInitializerError is thrown
     // before the constructor validation can run. Both cases indicate correct rejection.
-    assertThatThrownBy(() -> new PanamaGcRuntime(0))
-        .isInstanceOfAny(PanamaException.class, ExceptionInInitializerError.class);
+    try {
+      new PanamaGcRuntime(0);
+      fail("Expected PanamaException or ExceptionInInitializerError");
+    } catch (final PanamaException | ExceptionInInitializerError e) {
+      // expected
+    }
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
@@ -42,8 +43,8 @@ class BindgenParameterTest {
       BindgenType type = BindgenType.primitive("i32");
       BindgenParameter param = new BindgenParameter("count", type);
 
-      assertThat(param.getName()).isEqualTo("count");
-      assertThat(param.getType()).isEqualTo(type);
+      assertEquals("count", param.getName());
+      assertEquals(type, param.getType());
     }
 
     @Test
@@ -53,9 +54,9 @@ class BindgenParameterTest {
 
       BindgenType type = BindgenType.primitive("i32");
 
-      assertThatThrownBy(() -> new BindgenParameter(null, type))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("name");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new BindgenParameter(null, type));
+      assertTrue(exception.getMessage().contains("name"), "Expected message to contain: name");
     }
 
     @Test
@@ -63,9 +64,9 @@ class BindgenParameterTest {
     void shouldThrowWhenTypeIsNull() {
       LOGGER.info("Testing constructor with null type");
 
-      assertThatThrownBy(() -> new BindgenParameter("param", null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("type");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new BindgenParameter("param", null));
+      assertTrue(exception.getMessage().contains("type"), "Expected message to contain: type");
     }
   }
 
@@ -78,7 +79,7 @@ class BindgenParameterTest {
     void getNameShouldReturnParameterName() {
       BindgenParameter param = new BindgenParameter("value", BindgenType.primitive("string"));
 
-      assertThat(param.getName()).isEqualTo("value");
+      assertEquals("value", param.getName());
     }
 
     @Test
@@ -87,8 +88,8 @@ class BindgenParameterTest {
       BindgenType type = BindgenType.primitive("u64");
       BindgenParameter param = new BindgenParameter("offset", type);
 
-      assertThat(param.getType()).isEqualTo(type);
-      assertThat(param.getType().getName()).isEqualTo("u64");
+      assertEquals(type, param.getType());
+      assertEquals("u64", param.getType().getName());
     }
   }
 
@@ -105,8 +106,8 @@ class BindgenParameterTest {
       BindgenParameter param1 = new BindgenParameter("value", type);
       BindgenParameter param2 = new BindgenParameter("value", type);
 
-      assertThat(param1).isEqualTo(param2);
-      assertThat(param1.hashCode()).isEqualTo(param2.hashCode());
+      assertEquals(param2, param1);
+      assertEquals(param2.hashCode(), param1.hashCode());
     }
 
     @Test
@@ -118,7 +119,7 @@ class BindgenParameterTest {
       BindgenParameter param1 = new BindgenParameter("value1", type);
       BindgenParameter param2 = new BindgenParameter("value2", type);
 
-      assertThat(param1).isNotEqualTo(param2);
+      assertNotEquals(param2, param1);
     }
 
     @Test
@@ -129,7 +130,7 @@ class BindgenParameterTest {
       BindgenParameter param1 = new BindgenParameter("value", BindgenType.primitive("i32"));
       BindgenParameter param2 = new BindgenParameter("value", BindgenType.primitive("i64"));
 
-      assertThat(param1).isNotEqualTo(param2);
+      assertNotEquals(param2, param1);
     }
 
     @Test
@@ -137,7 +138,7 @@ class BindgenParameterTest {
     void shouldNotBeEqualToNull() {
       BindgenParameter param = new BindgenParameter("value", BindgenType.primitive("i32"));
 
-      assertThat(param).isNotEqualTo(null);
+      assertNotEquals(null, param);
     }
 
     @Test
@@ -145,7 +146,7 @@ class BindgenParameterTest {
     void shouldNotBeEqualToDifferentClass() {
       BindgenParameter param = new BindgenParameter("value", BindgenType.primitive("i32"));
 
-      assertThat(param).isNotEqualTo("value");
+      assertNotEquals("value", param);
     }
 
     @Test
@@ -153,7 +154,7 @@ class BindgenParameterTest {
     void shouldBeEqualToItself() {
       BindgenParameter param = new BindgenParameter("value", BindgenType.primitive("i32"));
 
-      assertThat(param).isEqualTo(param);
+      assertEquals(param, param);
     }
   }
 
@@ -170,7 +171,7 @@ class BindgenParameterTest {
 
       String toString = param.toString();
 
-      assertThat(toString).isEqualTo("count: i32");
+      assertEquals("count: i32", toString);
     }
 
     @Test
@@ -181,7 +182,7 @@ class BindgenParameterTest {
 
       String toString = param.toString();
 
-      assertThat(toString).isEqualTo("names: list<string>");
+      assertEquals("names: list<string>", toString);
     }
   }
 }

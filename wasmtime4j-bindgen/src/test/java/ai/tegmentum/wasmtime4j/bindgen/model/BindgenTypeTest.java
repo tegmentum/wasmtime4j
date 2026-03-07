@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.bindgen.model.BindgenType.Kind;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,8 +48,8 @@ class BindgenTypeTest {
 
       Kind[] kinds = Kind.values();
 
-      assertThat(kinds)
-          .containsExactlyInAnyOrder(
+      Set<Kind> expectedKinds =
+          Set.of(
               Kind.PRIMITIVE,
               Kind.RECORD,
               Kind.VARIANT,
@@ -57,22 +62,24 @@ class BindgenTypeTest {
               Kind.RESOURCE,
               Kind.REFERENCE,
               Kind.FUNCTION);
+      assertEquals(expectedKinds, new HashSet<>(Arrays.asList(kinds)));
+      assertEquals(12, kinds.length);
     }
 
     @Test
     @DisplayName("should convert kind to string correctly")
     void shouldConvertKindToStringCorrectly() {
-      assertThat(Kind.PRIMITIVE.toString()).isEqualTo("PRIMITIVE");
-      assertThat(Kind.RECORD.toString()).isEqualTo("RECORD");
-      assertThat(Kind.VARIANT.toString()).isEqualTo("VARIANT");
+      assertEquals("PRIMITIVE", Kind.PRIMITIVE.toString());
+      assertEquals("RECORD", Kind.RECORD.toString());
+      assertEquals("VARIANT", Kind.VARIANT.toString());
     }
 
     @Test
     @DisplayName("should get kind by name")
     void shouldGetKindByName() {
-      assertThat(Kind.valueOf("PRIMITIVE")).isEqualTo(Kind.PRIMITIVE);
-      assertThat(Kind.valueOf("LIST")).isEqualTo(Kind.LIST);
-      assertThat(Kind.valueOf("OPTION")).isEqualTo(Kind.OPTION);
+      assertEquals(Kind.PRIMITIVE, Kind.valueOf("PRIMITIVE"));
+      assertEquals(Kind.LIST, Kind.valueOf("LIST"));
+      assertEquals(Kind.OPTION, Kind.valueOf("OPTION"));
     }
   }
 
@@ -87,12 +94,12 @@ class BindgenTypeTest {
 
       BindgenType type = BindgenType.primitive("i32");
 
-      assertThat(type.getName()).isEqualTo("i32");
-      assertThat(type.getKind()).isEqualTo(Kind.PRIMITIVE);
-      assertThat(type.isPrimitive()).isTrue();
-      assertThat(type.isRecord()).isFalse();
-      assertThat(type.isVariant()).isFalse();
-      assertThat(type.isEnum()).isFalse();
+      assertEquals("i32", type.getName());
+      assertEquals(Kind.PRIMITIVE, type.getKind());
+      assertTrue(type.isPrimitive());
+      assertFalse(type.isRecord());
+      assertFalse(type.isVariant());
+      assertFalse(type.isEnum());
     }
 
     @Test
@@ -102,9 +109,10 @@ class BindgenTypeTest {
 
       BindgenType type = BindgenType.reference("MyRecord");
 
-      assertThat(type.getName()).isEqualTo("MyRecord");
-      assertThat(type.getKind()).isEqualTo(Kind.REFERENCE);
-      assertThat(type.getReferencedTypeName()).hasValue("MyRecord");
+      assertEquals("MyRecord", type.getName());
+      assertEquals(Kind.REFERENCE, type.getKind());
+      assertTrue(type.getReferencedTypeName().isPresent());
+      assertEquals("MyRecord", type.getReferencedTypeName().get());
     }
 
     @Test
@@ -115,9 +123,10 @@ class BindgenTypeTest {
       BindgenType elementType = BindgenType.primitive("string");
       BindgenType listType = BindgenType.list(elementType);
 
-      assertThat(listType.getName()).isEqualTo("list<string>");
-      assertThat(listType.getKind()).isEqualTo(Kind.LIST);
-      assertThat(listType.getElementType()).hasValue(elementType);
+      assertEquals("list<string>", listType.getName());
+      assertEquals(Kind.LIST, listType.getKind());
+      assertTrue(listType.getElementType().isPresent());
+      assertEquals(elementType, listType.getElementType().get());
     }
 
     @Test
@@ -128,9 +137,10 @@ class BindgenTypeTest {
       BindgenType innerType = BindgenType.primitive("u32");
       BindgenType optionType = BindgenType.option(innerType);
 
-      assertThat(optionType.getName()).isEqualTo("option<u32>");
-      assertThat(optionType.getKind()).isEqualTo(Kind.OPTION);
-      assertThat(optionType.getElementType()).hasValue(innerType);
+      assertEquals("option<u32>", optionType.getName());
+      assertEquals(Kind.OPTION, optionType.getKind());
+      assertTrue(optionType.getElementType().isPresent());
+      assertEquals(innerType, optionType.getElementType().get());
     }
 
     @Test
@@ -142,10 +152,12 @@ class BindgenTypeTest {
       BindgenType errorType = BindgenType.primitive("u32");
       BindgenType resultType = BindgenType.result(okType, errorType);
 
-      assertThat(resultType.getName()).isEqualTo("result<string, u32>");
-      assertThat(resultType.getKind()).isEqualTo(Kind.RESULT);
-      assertThat(resultType.getOkType()).hasValue(okType);
-      assertThat(resultType.getErrorType()).hasValue(errorType);
+      assertEquals("result<string, u32>", resultType.getName());
+      assertEquals(Kind.RESULT, resultType.getKind());
+      assertTrue(resultType.getOkType().isPresent());
+      assertEquals(okType, resultType.getOkType().get());
+      assertTrue(resultType.getErrorType().isPresent());
+      assertEquals(errorType, resultType.getErrorType().get());
     }
 
     @Test
@@ -156,9 +168,10 @@ class BindgenTypeTest {
       BindgenType errorType = BindgenType.primitive("u32");
       BindgenType resultType = BindgenType.result(null, errorType);
 
-      assertThat(resultType.getName()).isEqualTo("result<_, u32>");
-      assertThat(resultType.getOkType()).isEmpty();
-      assertThat(resultType.getErrorType()).hasValue(errorType);
+      assertEquals("result<_, u32>", resultType.getName());
+      assertTrue(resultType.getOkType().isEmpty());
+      assertTrue(resultType.getErrorType().isPresent());
+      assertEquals(errorType, resultType.getErrorType().get());
     }
 
     @Test
@@ -169,9 +182,10 @@ class BindgenTypeTest {
       BindgenType okType = BindgenType.primitive("string");
       BindgenType resultType = BindgenType.result(okType, null);
 
-      assertThat(resultType.getName()).isEqualTo("result<string, _>");
-      assertThat(resultType.getOkType()).hasValue(okType);
-      assertThat(resultType.getErrorType()).isEmpty();
+      assertEquals("result<string, _>", resultType.getName());
+      assertTrue(resultType.getOkType().isPresent());
+      assertEquals(okType, resultType.getOkType().get());
+      assertTrue(resultType.getErrorType().isEmpty());
     }
   }
 
@@ -186,13 +200,13 @@ class BindgenTypeTest {
 
       BindgenType type = BindgenType.builder().name("test").build();
 
-      assertThat(type.getName()).isEqualTo("test");
-      assertThat(type.getKind()).isEqualTo(Kind.REFERENCE);
-      assertThat(type.getDocumentation()).isEmpty();
-      assertThat(type.getFields()).isEmpty();
-      assertThat(type.getCases()).isEmpty();
-      assertThat(type.getEnumValues()).isEmpty();
-      assertThat(type.getTupleElements()).isEmpty();
+      assertEquals("test", type.getName());
+      assertEquals(Kind.REFERENCE, type.getKind());
+      assertTrue(type.getDocumentation().isEmpty());
+      assertTrue(type.getFields().isEmpty());
+      assertTrue(type.getCases().isEmpty());
+      assertTrue(type.getEnumValues().isEmpty());
+      assertTrue(type.getTupleElements().isEmpty());
     }
 
     @Test
@@ -212,12 +226,13 @@ class BindgenTypeTest {
               .documentation("A person record")
               .build();
 
-      assertThat(recordType.getName()).isEqualTo("Person");
-      assertThat(recordType.getKind()).isEqualTo(Kind.RECORD);
-      assertThat(recordType.isRecord()).isTrue();
-      assertThat(recordType.getFields()).hasSize(2);
-      assertThat(recordType.getFields()).containsExactly(field1, field2);
-      assertThat(recordType.getDocumentation()).hasValue("A person record");
+      assertEquals("Person", recordType.getName());
+      assertEquals(Kind.RECORD, recordType.getKind());
+      assertTrue(recordType.isRecord());
+      assertEquals(2, recordType.getFields().size());
+      assertEquals(List.of(field1, field2), recordType.getFields());
+      assertTrue(recordType.getDocumentation().isPresent());
+      assertEquals("A person record", recordType.getDocumentation().get());
     }
 
     @Test
@@ -233,7 +248,7 @@ class BindgenTypeTest {
       BindgenType recordType =
           BindgenType.builder().name("Point").kind(Kind.RECORD).fields(fields).build();
 
-      assertThat(recordType.getFields()).hasSize(2);
+      assertEquals(2, recordType.getFields().size());
     }
 
     @Test
@@ -252,11 +267,11 @@ class BindgenTypeTest {
               .addCase(case2)
               .build();
 
-      assertThat(variantType.getName()).isEqualTo("MyOption");
-      assertThat(variantType.getKind()).isEqualTo(Kind.VARIANT);
-      assertThat(variantType.isVariant()).isTrue();
-      assertThat(variantType.getCases()).hasSize(2);
-      assertThat(variantType.getCases()).containsExactly(case1, case2);
+      assertEquals("MyOption", variantType.getName());
+      assertEquals(Kind.VARIANT, variantType.getKind());
+      assertTrue(variantType.isVariant());
+      assertEquals(2, variantType.getCases().size());
+      assertEquals(List.of(case1, case2), variantType.getCases());
     }
 
     @Test
@@ -272,7 +287,7 @@ class BindgenTypeTest {
       BindgenType variantType =
           BindgenType.builder().name("Either").kind(Kind.VARIANT).cases(cases).build();
 
-      assertThat(variantType.getCases()).hasSize(2);
+      assertEquals(2, variantType.getCases().size());
     }
 
     @Test
@@ -289,11 +304,11 @@ class BindgenTypeTest {
               .addEnumValue("blue")
               .build();
 
-      assertThat(enumType.getName()).isEqualTo("Color");
-      assertThat(enumType.getKind()).isEqualTo(Kind.ENUM);
-      assertThat(enumType.isEnum()).isTrue();
-      assertThat(enumType.getEnumValues()).hasSize(3);
-      assertThat(enumType.getEnumValues()).containsExactly("red", "green", "blue");
+      assertEquals("Color", enumType.getName());
+      assertEquals(Kind.ENUM, enumType.getKind());
+      assertTrue(enumType.isEnum());
+      assertEquals(3, enumType.getEnumValues().size());
+      assertEquals(List.of("red", "green", "blue"), enumType.getEnumValues());
     }
 
     @Test
@@ -306,8 +321,8 @@ class BindgenTypeTest {
       BindgenType enumType =
           BindgenType.builder().name("Day").kind(Kind.ENUM).enumValues(values).build();
 
-      assertThat(enumType.getEnumValues()).hasSize(3);
-      assertThat(enumType.getEnumValues()).containsExactly("monday", "tuesday", "wednesday");
+      assertEquals(3, enumType.getEnumValues().size());
+      assertEquals(List.of("monday", "tuesday", "wednesday"), enumType.getEnumValues());
     }
 
     @Test
@@ -323,8 +338,8 @@ class BindgenTypeTest {
                   Arrays.asList(BindgenType.primitive("i32"), BindgenType.primitive("string")))
               .build();
 
-      assertThat(tupleType.getKind()).isEqualTo(Kind.TUPLE);
-      assertThat(tupleType.getTupleElements()).hasSize(2);
+      assertEquals(Kind.TUPLE, tupleType.getKind());
+      assertEquals(2, tupleType.getTupleElements().size());
     }
 
     @Test
@@ -336,7 +351,8 @@ class BindgenTypeTest {
       BindgenType listType =
           BindgenType.builder().name("list<u8>").kind(Kind.LIST).elementType(elementType).build();
 
-      assertThat(listType.getElementType()).hasValue(elementType);
+      assertTrue(listType.getElementType().isPresent());
+      assertEquals(elementType, listType.getElementType().get());
     }
 
     @Test
@@ -355,8 +371,10 @@ class BindgenTypeTest {
               .errorType(errorType)
               .build();
 
-      assertThat(resultType.getOkType()).hasValue(okType);
-      assertThat(resultType.getErrorType()).hasValue(errorType);
+      assertTrue(resultType.getOkType().isPresent());
+      assertEquals(okType, resultType.getOkType().get());
+      assertTrue(resultType.getErrorType().isPresent());
+      assertEquals(errorType, resultType.getErrorType().get());
     }
 
     @Test
@@ -371,7 +389,8 @@ class BindgenTypeTest {
               .referencedTypeName("MyType")
               .build();
 
-      assertThat(refType.getReferencedTypeName()).hasValue("MyType");
+      assertTrue(refType.getReferencedTypeName().isPresent());
+      assertEquals("MyType", refType.getReferencedTypeName().get());
     }
   }
 
@@ -385,8 +404,8 @@ class BindgenTypeTest {
       BindgenType primitive = BindgenType.primitive("i32");
       BindgenType record = BindgenType.builder().name("R").kind(Kind.RECORD).build();
 
-      assertThat(primitive.isPrimitive()).isTrue();
-      assertThat(record.isPrimitive()).isFalse();
+      assertTrue(primitive.isPrimitive());
+      assertFalse(record.isPrimitive());
     }
 
     @Test
@@ -395,8 +414,8 @@ class BindgenTypeTest {
       BindgenType record = BindgenType.builder().name("R").kind(Kind.RECORD).build();
       BindgenType primitive = BindgenType.primitive("i32");
 
-      assertThat(record.isRecord()).isTrue();
-      assertThat(primitive.isRecord()).isFalse();
+      assertTrue(record.isRecord());
+      assertFalse(primitive.isRecord());
     }
 
     @Test
@@ -405,8 +424,8 @@ class BindgenTypeTest {
       BindgenType variant = BindgenType.builder().name("V").kind(Kind.VARIANT).build();
       BindgenType primitive = BindgenType.primitive("i32");
 
-      assertThat(variant.isVariant()).isTrue();
-      assertThat(primitive.isVariant()).isFalse();
+      assertTrue(variant.isVariant());
+      assertFalse(primitive.isVariant());
     }
 
     @Test
@@ -415,8 +434,8 @@ class BindgenTypeTest {
       BindgenType enumType = BindgenType.builder().name("E").kind(Kind.ENUM).build();
       BindgenType primitive = BindgenType.primitive("i32");
 
-      assertThat(enumType.isEnum()).isTrue();
-      assertThat(primitive.isEnum()).isFalse();
+      assertTrue(enumType.isEnum());
+      assertFalse(primitive.isEnum());
     }
   }
 
@@ -432,8 +451,8 @@ class BindgenTypeTest {
       BindgenType type1 = BindgenType.primitive("i32");
       BindgenType type2 = BindgenType.primitive("i32");
 
-      assertThat(type1).isEqualTo(type2);
-      assertThat(type1.hashCode()).isEqualTo(type2.hashCode());
+      assertEquals(type2, type1);
+      assertEquals(type2.hashCode(), type1.hashCode());
     }
 
     @Test
@@ -444,7 +463,7 @@ class BindgenTypeTest {
       BindgenType type1 = BindgenType.primitive("i32");
       BindgenType type2 = BindgenType.primitive("i64");
 
-      assertThat(type1).isNotEqualTo(type2);
+      assertNotEquals(type2, type1);
     }
 
     @Test
@@ -455,7 +474,7 @@ class BindgenTypeTest {
       BindgenType type1 = BindgenType.builder().name("MyType").kind(Kind.RECORD).build();
       BindgenType type2 = BindgenType.builder().name("MyType").kind(Kind.VARIANT).build();
 
-      assertThat(type1).isNotEqualTo(type2);
+      assertNotEquals(type2, type1);
     }
 
     @Test
@@ -463,7 +482,7 @@ class BindgenTypeTest {
     void shouldNotBeEqualToNull() {
       BindgenType type = BindgenType.primitive("i32");
 
-      assertThat(type).isNotEqualTo(null);
+      assertNotEquals(null, type);
     }
 
     @Test
@@ -471,7 +490,7 @@ class BindgenTypeTest {
     void shouldNotBeEqualToDifferentClass() {
       BindgenType type = BindgenType.primitive("i32");
 
-      assertThat(type).isNotEqualTo("i32");
+      assertNotEquals("i32", type);
     }
 
     @Test
@@ -479,7 +498,7 @@ class BindgenTypeTest {
     void shouldBeEqualToItself() {
       BindgenType type = BindgenType.primitive("i32");
 
-      assertThat(type).isEqualTo(type);
+      assertEquals(type, type);
     }
   }
 
@@ -495,10 +514,12 @@ class BindgenTypeTest {
       BindgenType type = BindgenType.primitive("string");
       String toString = type.toString();
 
-      assertThat(toString).contains("name='string'");
-      assertThat(toString).contains("kind=PRIMITIVE");
-      assertThat(toString).startsWith("BindgenType{");
-      assertThat(toString).endsWith("}");
+      assertTrue(toString.contains("name='string'"), "Expected toString to contain: name='string'");
+      assertTrue(
+          toString.contains("kind=PRIMITIVE"), "Expected toString to contain: kind=PRIMITIVE");
+      assertTrue(
+          toString.startsWith("BindgenType{"), "Expected toString to start with: BindgenType{");
+      assertTrue(toString.endsWith("}"), "Expected toString to end with: }");
     }
   }
 
@@ -520,9 +541,9 @@ class BindgenTypeTest {
 
       List<BindgenField> fields = recordType.getFields();
 
-      org.assertj.core.api.Assertions.assertThatThrownBy(
-              () -> fields.add(new BindgenField("f2", BindgenType.primitive("i32"))))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> fields.add(new BindgenField("f2", BindgenType.primitive("i32"))));
     }
 
     @Test
@@ -539,9 +560,8 @@ class BindgenTypeTest {
 
       List<BindgenVariantCase> cases = variantType.getCases();
 
-      org.assertj.core.api.Assertions.assertThatThrownBy(
-              () -> cases.add(new BindgenVariantCase("b")))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class, () -> cases.add(new BindgenVariantCase("b")));
     }
 
     @Test
@@ -554,8 +574,7 @@ class BindgenTypeTest {
 
       List<String> values = enumType.getEnumValues();
 
-      org.assertj.core.api.Assertions.assertThatThrownBy(() -> values.add("b"))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(UnsupportedOperationException.class, () -> values.add("b"));
     }
 
     @Test
@@ -572,9 +591,8 @@ class BindgenTypeTest {
 
       List<BindgenType> elements = tupleType.getTupleElements();
 
-      org.assertj.core.api.Assertions.assertThatThrownBy(
-              () -> elements.add(BindgenType.primitive("i64")))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class, () -> elements.add(BindgenType.primitive("i64")));
     }
   }
 }

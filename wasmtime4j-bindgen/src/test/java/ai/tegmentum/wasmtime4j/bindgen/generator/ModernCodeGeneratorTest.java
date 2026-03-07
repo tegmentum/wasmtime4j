@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.generator;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.bindgen.BindgenConfig;
 import ai.tegmentum.wasmtime4j.bindgen.BindgenException;
@@ -79,7 +80,7 @@ class ModernCodeGeneratorTest {
 
       ModernCodeGenerator gen = new ModernCodeGenerator(cfg);
 
-      assertThat(gen).isNotNull();
+      assertNotNull(gen);
     }
   }
 
@@ -103,9 +104,15 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("public final class Person");
-      assertThat(content).contains("private final String firstName");
-      assertThat(content).contains("private final int age");
+      assertTrue(
+          content.contains("public final class Person"),
+          "Expected content to contain: public final class Person");
+      assertTrue(
+          content.contains("private final String firstName"),
+          "Expected content to contain: private final String firstName");
+      assertTrue(
+          content.contains("private final int age"),
+          "Expected content to contain: private final int age");
     }
 
     @Test
@@ -125,8 +132,10 @@ class ModernCodeGeneratorTest {
 
       String content = source.getContent();
       // Modern style uses fieldName() not getFieldName()
-      assertThat(content).contains("public float x()");
-      assertThat(content).contains("public float y()");
+      assertTrue(
+          content.contains("public float x()"), "Expected content to contain: public float x()");
+      assertTrue(
+          content.contains("public float y()"), "Expected content to contain: public float y()");
     }
 
     @Test
@@ -142,8 +151,10 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("@Override");
-      assertThat(content).contains("public boolean equals(Object obj)");
+      assertTrue(content.contains("@Override"), "Expected content to contain: @Override");
+      assertTrue(
+          content.contains("public boolean equals(Object obj)"),
+          "Expected content to contain: public boolean equals(Object obj)");
     }
 
     @Test
@@ -159,8 +170,10 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("@Override");
-      assertThat(content).contains("public int hashCode()");
+      assertTrue(content.contains("@Override"), "Expected content to contain: @Override");
+      assertTrue(
+          content.contains("public int hashCode()"),
+          "Expected content to contain: public int hashCode()");
     }
 
     @Test
@@ -176,8 +189,10 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("@Override");
-      assertThat(content).contains("public String toString()");
+      assertTrue(content.contains("@Override"), "Expected content to contain: @Override");
+      assertTrue(
+          content.contains("public String toString()"),
+          "Expected content to contain: public String toString()");
     }
 
     @Test
@@ -191,7 +206,9 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(emptyRecord);
 
       String content = source.getContent();
-      assertThat(content).contains("public final class Empty");
+      assertTrue(
+          content.contains("public final class Empty"),
+          "Expected content to contain: public final class Empty");
     }
 
     @Test
@@ -208,7 +225,9 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("This is a documented type.");
+      assertTrue(
+          content.contains("This is a documented type."),
+          "Expected content to contain: This is a documented type.");
     }
   }
 
@@ -232,7 +251,9 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(variantType);
 
       String content = source.getContent();
-      assertThat(content).contains("public interface ResultType");
+      assertTrue(
+          content.contains("public interface ResultType"),
+          "Expected content to contain: public interface ResultType");
     }
 
     @Test
@@ -250,8 +271,10 @@ class ModernCodeGeneratorTest {
 
       String content = source.getContent();
       // Classes nested in interfaces are implicitly public and static
-      assertThat(content).contains("final class Some");
-      assertThat(content).contains("final class None");
+      assertTrue(
+          content.contains("final class Some"), "Expected content to contain: final class Some");
+      assertTrue(
+          content.contains("final class None"), "Expected content to contain: final class None");
     }
 
     @Test
@@ -267,7 +290,9 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(variantType);
 
       String content = source.getContent();
-      assertThat(content).contains("public String value()");
+      assertTrue(
+          content.contains("public String value()"),
+          "Expected content to contain: public String value()");
     }
   }
 
@@ -292,10 +317,11 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(enumType);
 
       String content = source.getContent();
-      assertThat(content).contains("public enum Color");
-      assertThat(content).contains("RED");
-      assertThat(content).contains("GREEN");
-      assertThat(content).contains("BLUE");
+      assertTrue(
+          content.contains("public enum Color"), "Expected content to contain: public enum Color");
+      assertTrue(content.contains("RED"), "Expected content to contain: RED");
+      assertTrue(content.contains("GREEN"), "Expected content to contain: GREEN");
+      assertTrue(content.contains("BLUE"), "Expected content to contain: BLUE");
     }
   }
 
@@ -314,9 +340,15 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateType(resourceType);
 
       String content = source.getContent();
-      assertThat(content).contains("public class FileHandle implements AutoCloseable");
-      assertThat(content).contains("private final long handle");
-      assertThat(content).contains("public void close()");
+      assertTrue(
+          content.contains("public class FileHandle implements AutoCloseable"),
+          "Expected content to contain: public class FileHandle implements AutoCloseable");
+      assertTrue(
+          content.contains("private final long handle"),
+          "Expected content to contain: private final long handle");
+      assertTrue(
+          content.contains("public void close()"),
+          "Expected content to contain: public void close()");
     }
 
     @Test
@@ -329,7 +361,9 @@ class ModernCodeGeneratorTest {
 
       String content = source.getContent();
       // Modern style uses handle() not getHandle()
-      assertThat(content).contains("public long handle()");
+      assertTrue(
+          content.contains("public long handle()"),
+          "Expected content to contain: public long handle()");
     }
   }
 
@@ -355,8 +389,12 @@ class ModernCodeGeneratorTest {
       GeneratedSource source = generator.generateInterface(iface);
 
       String content = source.getContent();
-      assertThat(content).contains("public interface Processor");
-      assertThat(content).contains("int process(String input)");
+      assertTrue(
+          content.contains("public interface Processor"),
+          "Expected content to contain: public interface Processor");
+      assertTrue(
+          content.contains("int process(String input)"),
+          "Expected content to contain: int process(String input)");
     }
 
     @Test
@@ -370,7 +408,9 @@ class ModernCodeGeneratorTest {
 
       String content = source.getContent();
       // Interface methods are implicitly public abstract
-      assertThat(content).contains("void doSomething()");
+      assertTrue(
+          content.contains("void doSomething()"),
+          "Expected content to contain: void doSomething()");
     }
   }
 
@@ -403,9 +443,13 @@ class ModernCodeGeneratorTest {
 
       List<GeneratedSource> sources = generator.generate(model);
 
-      assertThat(sources).hasSize(2);
-      assertThat(sources).anyMatch(s -> s.getClassName().equals("TypeOne"));
-      assertThat(sources).anyMatch(s -> s.getClassName().equals("TypeTwo"));
+      assertEquals(2, sources.size());
+      assertTrue(
+          sources.stream().anyMatch(s -> s.getClassName().equals("TypeOne")),
+          "Expected sources to contain TypeOne");
+      assertTrue(
+          sources.stream().anyMatch(s -> s.getClassName().equals("TypeTwo")),
+          "Expected sources to contain TypeTwo");
     }
 
     @Test
@@ -421,7 +465,9 @@ class ModernCodeGeneratorTest {
 
       List<GeneratedSource> sources = generator.generate(model);
 
-      assertThat(sources).anyMatch(s -> s.getClassName().equals("Api"));
+      assertTrue(
+          sources.stream().anyMatch(s -> s.getClassName().equals("Api")),
+          "Expected sources to contain Api");
     }
   }
 
@@ -436,8 +482,10 @@ class ModernCodeGeneratorTest {
 
       GeneratedSource source = generator.generateType(type);
 
-      assertThat(source.getPackageName()).isEqualTo(TEST_PACKAGE);
-      assertThat(source.getContent()).contains("package " + TEST_PACKAGE);
+      assertEquals(TEST_PACKAGE, source.getPackageName());
+      assertTrue(
+          source.getContent().contains("package " + TEST_PACKAGE),
+          "Expected content to contain: package " + TEST_PACKAGE);
     }
 
     @Test
@@ -448,7 +496,7 @@ class ModernCodeGeneratorTest {
 
       GeneratedSource source = generator.generateType(type);
 
-      assertThat(source.getClassName()).isEqualTo("MyKebabCaseType");
+      assertEquals("MyKebabCaseType", source.getClassName());
     }
   }
 }

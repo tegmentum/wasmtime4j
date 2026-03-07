@@ -15,8 +15,14 @@
  */
 package ai.tegmentum.wasmtime4j.jni.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -32,13 +38,13 @@ class JniTypeConverterTest {
 
   @Test
   void testTypeToString() {
-    assertThat(JniTypeConverter.typeToString(WasmValueType.I32)).isEqualTo("i32");
-    assertThat(JniTypeConverter.typeToString(WasmValueType.I64)).isEqualTo("i64");
-    assertThat(JniTypeConverter.typeToString(WasmValueType.F32)).isEqualTo("f32");
-    assertThat(JniTypeConverter.typeToString(WasmValueType.F64)).isEqualTo("f64");
-    assertThat(JniTypeConverter.typeToString(WasmValueType.V128)).isEqualTo("v128");
-    assertThat(JniTypeConverter.typeToString(WasmValueType.FUNCREF)).isEqualTo("funcref");
-    assertThat(JniTypeConverter.typeToString(WasmValueType.EXTERNREF)).isEqualTo("externref");
+    assertEquals("i32", JniTypeConverter.typeToString(WasmValueType.I32));
+    assertEquals("i64", JniTypeConverter.typeToString(WasmValueType.I64));
+    assertEquals("f32", JniTypeConverter.typeToString(WasmValueType.F32));
+    assertEquals("f64", JniTypeConverter.typeToString(WasmValueType.F64));
+    assertEquals("v128", JniTypeConverter.typeToString(WasmValueType.V128));
+    assertEquals("funcref", JniTypeConverter.typeToString(WasmValueType.FUNCREF));
+    assertEquals("externref", JniTypeConverter.typeToString(WasmValueType.EXTERNREF));
   }
 
   @Test
@@ -46,27 +52,30 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.typeToString(null));
 
-    assertThat(exception.getMessage()).contains("type").contains("must not be null");
+    assertTrue(exception.getMessage().contains("type"),
+        "Expected message to contain: type");
+    assertTrue(exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
   void testStringToType() {
-    assertThat(JniTypeConverter.stringToType("i32")).isEqualTo(WasmValueType.I32);
-    assertThat(JniTypeConverter.stringToType("i64")).isEqualTo(WasmValueType.I64);
-    assertThat(JniTypeConverter.stringToType("f32")).isEqualTo(WasmValueType.F32);
-    assertThat(JniTypeConverter.stringToType("f64")).isEqualTo(WasmValueType.F64);
-    assertThat(JniTypeConverter.stringToType("v128")).isEqualTo(WasmValueType.V128);
-    assertThat(JniTypeConverter.stringToType("funcref")).isEqualTo(WasmValueType.FUNCREF);
-    assertThat(JniTypeConverter.stringToType("externref")).isEqualTo(WasmValueType.EXTERNREF);
+    assertEquals(WasmValueType.I32, JniTypeConverter.stringToType("i32"));
+    assertEquals(WasmValueType.I64, JniTypeConverter.stringToType("i64"));
+    assertEquals(WasmValueType.F32, JniTypeConverter.stringToType("f32"));
+    assertEquals(WasmValueType.F64, JniTypeConverter.stringToType("f64"));
+    assertEquals(WasmValueType.V128, JniTypeConverter.stringToType("v128"));
+    assertEquals(WasmValueType.FUNCREF, JniTypeConverter.stringToType("funcref"));
+    assertEquals(WasmValueType.EXTERNREF, JniTypeConverter.stringToType("externref"));
   }
 
   @Test
   void testStringToTypeWithMixedCase() {
-    assertThat(JniTypeConverter.stringToType("I32")).isEqualTo(WasmValueType.I32);
-    assertThat(JniTypeConverter.stringToType("F64")).isEqualTo(WasmValueType.F64);
-    assertThat(JniTypeConverter.stringToType("V128")).isEqualTo(WasmValueType.V128);
-    assertThat(JniTypeConverter.stringToType("FuncRef")).isEqualTo(WasmValueType.FUNCREF);
-    assertThat(JniTypeConverter.stringToType("ExternRef")).isEqualTo(WasmValueType.EXTERNREF);
+    assertEquals(WasmValueType.I32, JniTypeConverter.stringToType("I32"));
+    assertEquals(WasmValueType.F64, JniTypeConverter.stringToType("F64"));
+    assertEquals(WasmValueType.V128, JniTypeConverter.stringToType("V128"));
+    assertEquals(WasmValueType.FUNCREF, JniTypeConverter.stringToType("FuncRef"));
+    assertEquals(WasmValueType.EXTERNREF, JniTypeConverter.stringToType("ExternRef"));
   }
 
   @Test
@@ -74,7 +83,10 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.stringToType(null));
 
-    assertThat(exception.getMessage()).contains("typeString").contains("must not be null");
+    assertTrue(exception.getMessage().contains("typeString"),
+        "Expected message to contain: typeString");
+    assertTrue(exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
@@ -83,26 +95,28 @@ class JniTypeConverterTest {
         assertThrows(
             IllegalArgumentException.class, () -> JniTypeConverter.stringToType("invalid"));
 
-    assertThat(exception.getMessage()).contains("Invalid WebAssembly type string: invalid");
+    assertTrue(
+        exception.getMessage().contains("Invalid WebAssembly type string: invalid"),
+        "Expected message to contain: Invalid WebAssembly type string: invalid");
   }
 
   @Test
   void testWasmValueToNativeParamBasicTypes() {
     // Test i32
     final WasmValue i32Value = WasmValue.i32(42);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(i32Value)).isEqualTo(42);
+    assertEquals(42, JniTypeConverter.wasmValueToNativeParam(i32Value));
 
     // Test i64
     final WasmValue i64Value = WasmValue.i64(100L);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(i64Value)).isEqualTo(100L);
+    assertEquals(100L, JniTypeConverter.wasmValueToNativeParam(i64Value));
 
     // Test f32
     final WasmValue f32Value = WasmValue.f32(2.5f);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(f32Value)).isEqualTo(2.5f);
+    assertEquals(2.5f, JniTypeConverter.wasmValueToNativeParam(f32Value));
 
     // Test f64
     final WasmValue f64Value = WasmValue.f64(2.718);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(f64Value)).isEqualTo(2.718);
+    assertEquals(2.718, JniTypeConverter.wasmValueToNativeParam(f64Value));
   }
 
   @Test
@@ -115,9 +129,9 @@ class JniTypeConverterTest {
     final WasmValue v128Value = WasmValue.v128(v128Bytes);
     final Object result = JniTypeConverter.wasmValueToNativeParam(v128Value);
 
-    assertThat(result).isInstanceOf(byte[].class);
-    assertThat((byte[]) result).hasSize(16);
-    assertThat((byte[]) result).isEqualTo(v128Bytes);
+    assertInstanceOf(byte[].class, result);
+    assertEquals(16, ((byte[]) result).length);
+    assertArrayEquals(v128Bytes, (byte[]) result);
   }
 
   @Test
@@ -132,25 +146,27 @@ class JniTypeConverterTest {
               // This should fail during WasmValue.v128() creation, not in converter
             });
 
-    assertThat(exception.getMessage()).contains("v128 value must be exactly 16 bytes");
+    assertTrue(
+        exception.getMessage().contains("v128 value must be exactly 16 bytes"),
+        "Expected message to contain: v128 value must be exactly 16 bytes");
   }
 
   @Test
   void testWasmValueToNativeParamReferenceTypes() {
     final Object funcRef = new Object();
     final WasmValue funcrefValue = WasmValue.funcref(funcRef);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(funcrefValue)).isSameAs(funcRef);
+    assertSame(funcRef, JniTypeConverter.wasmValueToNativeParam(funcrefValue));
 
     final String externRef = "external_data";
     final WasmValue externrefValue = WasmValue.externref(externRef);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(externrefValue)).isSameAs(externRef);
+    assertSame(externRef, JniTypeConverter.wasmValueToNativeParam(externrefValue));
 
     // Test null references
     final WasmValue nullFuncref = WasmValue.funcref(null);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(nullFuncref)).isNull();
+    assertNull(JniTypeConverter.wasmValueToNativeParam(nullFuncref));
 
     final WasmValue nullExternref = WasmValue.externref(null);
-    assertThat(JniTypeConverter.wasmValueToNativeParam(nullExternref)).isNull();
+    assertNull(JniTypeConverter.wasmValueToNativeParam(nullExternref));
   }
 
   @Test
@@ -159,7 +175,10 @@ class JniTypeConverterTest {
         assertThrows(
             IllegalArgumentException.class, () -> JniTypeConverter.wasmValueToNativeParam(null));
 
-    assertThat(exception.getMessage()).contains("value").contains("must not be null");
+    assertTrue(exception.getMessage().contains("value"),
+        "Expected message to contain: value");
+    assertTrue(exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
@@ -168,10 +187,10 @@ class JniTypeConverterTest {
 
     final Object[] nativeParams = JniTypeConverter.wasmValuesToNativeParams(values);
 
-    assertThat(nativeParams).hasSize(3);
-    assertThat(nativeParams[0]).isEqualTo(42);
-    assertThat(nativeParams[1]).isEqualTo(2.5);
-    assertThat(nativeParams[2]).isEqualTo("test");
+    assertEquals(3, nativeParams.length);
+    assertEquals(42, nativeParams[0]);
+    assertEquals(2.5, nativeParams[1]);
+    assertEquals("test", nativeParams[2]);
   }
 
   @Test
@@ -180,7 +199,10 @@ class JniTypeConverterTest {
         assertThrows(
             IllegalArgumentException.class, () -> JniTypeConverter.wasmValuesToNativeParams(null));
 
-    assertThat(exception.getMessage()).contains("values").contains("must not be null");
+    assertTrue(exception.getMessage().contains("values"),
+        "Expected message to contain: values");
+    assertTrue(exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
@@ -192,30 +214,32 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.wasmValuesToNativeParams(values));
 
-    assertThat(exception.getMessage()).contains("Parameter at index 1 is null");
+    assertTrue(
+        exception.getMessage().contains("Parameter at index 1 is null"),
+        "Expected message to contain: Parameter at index 1 is null");
   }
 
   @Test
   void testNativeResultToWasmValueBasicTypes() {
     // Test i32
     final WasmValue i32Result = JniTypeConverter.nativeResultToWasmValue(42, WasmValueType.I32);
-    assertThat(i32Result.getType()).isEqualTo(WasmValueType.I32);
-    assertThat(i32Result.asInt()).isEqualTo(42);
+    assertEquals(WasmValueType.I32, i32Result.getType());
+    assertEquals(42, i32Result.asInt());
 
     // Test i64
     final WasmValue i64Result = JniTypeConverter.nativeResultToWasmValue(100L, WasmValueType.I64);
-    assertThat(i64Result.getType()).isEqualTo(WasmValueType.I64);
-    assertThat(i64Result.asLong()).isEqualTo(100L);
+    assertEquals(WasmValueType.I64, i64Result.getType());
+    assertEquals(100L, i64Result.asLong());
 
     // Test f32
     final WasmValue f32Result = JniTypeConverter.nativeResultToWasmValue(2.5f, WasmValueType.F32);
-    assertThat(f32Result.getType()).isEqualTo(WasmValueType.F32);
-    assertThat(f32Result.asFloat()).isEqualTo(2.5f);
+    assertEquals(WasmValueType.F32, f32Result.getType());
+    assertEquals(2.5f, f32Result.asFloat());
 
     // Test f64
     final WasmValue f64Result = JniTypeConverter.nativeResultToWasmValue(2.718, WasmValueType.F64);
-    assertThat(f64Result.getType()).isEqualTo(WasmValueType.F64);
-    assertThat(f64Result.asDouble()).isEqualTo(2.718);
+    assertEquals(WasmValueType.F64, f64Result.getType());
+    assertEquals(2.718, f64Result.asDouble());
   }
 
   @Test
@@ -228,8 +252,8 @@ class JniTypeConverterTest {
     final WasmValue result =
         JniTypeConverter.nativeResultToWasmValue(v128Bytes, WasmValueType.V128);
 
-    assertThat(result.getType()).isEqualTo(WasmValueType.V128);
-    assertThat(result.asV128()).isEqualTo(v128Bytes);
+    assertEquals(WasmValueType.V128, result.getType());
+    assertArrayEquals(v128Bytes, result.asV128());
   }
 
   @Test
@@ -241,7 +265,9 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.nativeResultToWasmValue(invalidBytes, WasmValueType.V128));
 
-    assertThat(exception.getMessage()).contains("v128 result has invalid size: 8, expected 16");
+    assertTrue(
+        exception.getMessage().contains("v128 result has invalid size: 8, expected 16"),
+        "Expected message to contain: v128 result has invalid size: 8, expected 16");
   }
 
   @Test
@@ -249,20 +275,20 @@ class JniTypeConverterTest {
     final Object funcRef = new Object();
     final WasmValue funcrefResult =
         JniTypeConverter.nativeResultToWasmValue(funcRef, WasmValueType.FUNCREF);
-    assertThat(funcrefResult.getType()).isEqualTo(WasmValueType.FUNCREF);
-    assertThat(funcrefResult.asFuncref()).isSameAs(funcRef);
+    assertEquals(WasmValueType.FUNCREF, funcrefResult.getType());
+    assertSame(funcRef, funcrefResult.asFuncref());
 
     final String externRef = "external_data";
     final WasmValue externrefResult =
         JniTypeConverter.nativeResultToWasmValue(externRef, WasmValueType.EXTERNREF);
-    assertThat(externrefResult.getType()).isEqualTo(WasmValueType.EXTERNREF);
-    assertThat(externrefResult.asExternref()).isSameAs(externRef);
+    assertEquals(WasmValueType.EXTERNREF, externrefResult.getType());
+    assertSame(externRef, externrefResult.asExternref());
 
     // Test null references
     final WasmValue nullFuncrefResult =
         JniTypeConverter.nativeResultToWasmValue(null, WasmValueType.FUNCREF);
-    assertThat(nullFuncrefResult.getType()).isEqualTo(WasmValueType.FUNCREF);
-    assertThat(nullFuncrefResult.asFuncref()).isNull();
+    assertEquals(WasmValueType.FUNCREF, nullFuncrefResult.getType());
+    assertNull(nullFuncrefResult.asFuncref());
   }
 
   @Test
@@ -273,7 +299,9 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.nativeResultToWasmValue("not_an_int", WasmValueType.I32));
 
-    assertThat(exception.getMessage()).contains("Expected i32 result, got: String");
+    assertTrue(
+        exception.getMessage().contains("Expected i32 result, got: String"),
+        "Expected message to contain: Expected i32 result, got: String");
   }
 
   @Test
@@ -283,7 +311,10 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.nativeResultToWasmValue(42, null));
 
-    assertThat(exception.getMessage()).contains("expectedType").contains("must not be null");
+    assertTrue(exception.getMessage().contains("expectedType"),
+        "Expected message to contain: expectedType");
+    assertTrue(exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
@@ -294,13 +325,13 @@ class JniTypeConverterTest {
     final WasmValue[] wasmValues =
         JniTypeConverter.nativeResultsToWasmValues(nativeResults, expectedTypes);
 
-    assertThat(wasmValues).hasSize(3);
-    assertThat(wasmValues[0].getType()).isEqualTo(WasmValueType.I32);
-    assertThat(wasmValues[0].asInt()).isEqualTo(42);
-    assertThat(wasmValues[1].getType()).isEqualTo(WasmValueType.F64);
-    assertThat(wasmValues[1].asDouble()).isEqualTo(2.5);
-    assertThat(wasmValues[2].getType()).isEqualTo(WasmValueType.I64);
-    assertThat(wasmValues[2].asLong()).isEqualTo(100L);
+    assertEquals(3, wasmValues.length);
+    assertEquals(WasmValueType.I32, wasmValues[0].getType());
+    assertEquals(42, wasmValues[0].asInt());
+    assertEquals(WasmValueType.F64, wasmValues[1].getType());
+    assertEquals(2.5, wasmValues[1].asDouble());
+    assertEquals(WasmValueType.I64, wasmValues[2].getType());
+    assertEquals(100L, wasmValues[2].asLong());
   }
 
   @Test
@@ -313,7 +344,9 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.nativeResultsToWasmValues(nativeResults, expectedTypes));
 
-    assertThat(exception.getMessage()).contains("Result count mismatch: got 2, expected 1");
+    assertTrue(
+        exception.getMessage().contains("Result count mismatch: got 2, expected 1"),
+        "Expected message to contain: Result count mismatch: got 2, expected 1");
   }
 
   @Test
@@ -335,7 +368,9 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.validateParameterTypes(params, expectedTypes));
 
-    assertThat(exception.getMessage()).contains("Parameter count mismatch: got 1, expected 2");
+    assertTrue(
+        exception.getMessage().contains("Parameter count mismatch: got 1, expected 2"),
+        "Expected message to contain: Parameter count mismatch: got 1, expected 2");
   }
 
   @Test
@@ -348,8 +383,9 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.validateParameterTypes(params, expectedTypes));
 
-    assertThat(exception.getMessage())
-        .contains("Parameter type mismatch at index 1: got I32, expected F64");
+    assertTrue(
+        exception.getMessage().contains("Parameter type mismatch at index 1: got I32, expected F64"),
+        "Expected message to contain: Parameter type mismatch at index 1: got I32, expected F64");
   }
 
   @Test
@@ -362,7 +398,9 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.validateParameterTypes(params, expectedTypes));
 
-    assertThat(exception.getMessage()).contains("Parameter at index 1 is null");
+    assertTrue(
+        exception.getMessage().contains("Parameter at index 1 is null"),
+        "Expected message to contain: Parameter at index 1 is null");
   }
 
   @Test
@@ -376,7 +414,9 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.validateV128Size(null));
 
-    assertThat(exception.getMessage()).contains("v128 bytes cannot be null");
+    assertTrue(
+        exception.getMessage().contains("v128 bytes cannot be null"),
+        "Expected message to contain: v128 bytes cannot be null");
   }
 
   @Test
@@ -387,7 +427,9 @@ class JniTypeConverterTest {
         assertThrows(
             IllegalArgumentException.class, () -> JniTypeConverter.validateV128Size(invalidBytes));
 
-    assertThat(exception.getMessage()).contains("v128 must be exactly 16 bytes, got 8");
+    assertTrue(
+        exception.getMessage().contains("v128 must be exactly 16 bytes, got 8"),
+        "Expected message to contain: v128 must be exactly 16 bytes, got 8");
   }
 
   @Test
@@ -395,14 +437,14 @@ class JniTypeConverterTest {
     final WasmValueType[] original = {WasmValueType.I32, WasmValueType.F64};
     final WasmValueType[] copy = JniTypeConverter.copyTypes(original);
 
-    assertThat(copy).isEqualTo(original);
-    assertThat(copy).isNotSameAs(original); // Should be a different array instance
+    assertArrayEquals(original, copy);
+    assertNotSame(original, copy); // Should be a different array instance
   }
 
   @Test
   void testCopyTypesWithNull() {
     final WasmValueType[] copy = JniTypeConverter.copyTypes(null);
-    assertThat(copy).isEmpty();
+    assertEquals(0, copy.length);
   }
 
   @Test
@@ -410,7 +452,7 @@ class JniTypeConverterTest {
     final WasmValueType[] types = {WasmValueType.I32, WasmValueType.V128, WasmValueType.FUNCREF};
     final String[] strings = JniTypeConverter.typesToStrings(types);
 
-    assertThat(strings).containsExactly("i32", "v128", "funcref");
+    assertArrayEquals(new String[] {"i32", "v128", "funcref"}, strings);
   }
 
   @Test
@@ -418,7 +460,10 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.typesToStrings(null));
 
-    assertThat(exception.getMessage()).contains("types").contains("must not be null");
+    assertTrue(exception.getMessage().contains("types"),
+        "Expected message to contain: types");
+    assertTrue(exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
@@ -428,7 +473,9 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.typesToStrings(types));
 
-    assertThat(exception.getMessage()).contains("Type at index 1 is null");
+    assertTrue(
+        exception.getMessage().contains("Type at index 1 is null"),
+        "Expected message to contain: Type at index 1 is null");
   }
 
   @Test
@@ -436,7 +483,9 @@ class JniTypeConverterTest {
     final String[] strings = {"i32", "v128", "funcref"};
     final WasmValueType[] types = JniTypeConverter.stringsToTypes(strings);
 
-    assertThat(types).containsExactly(WasmValueType.I32, WasmValueType.V128, WasmValueType.FUNCREF);
+    assertArrayEquals(
+        new WasmValueType[] {WasmValueType.I32, WasmValueType.V128, WasmValueType.FUNCREF},
+        types);
   }
 
   @Test
@@ -444,7 +493,10 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.stringsToTypes(null));
 
-    assertThat(exception.getMessage()).contains("typeStrings").contains("must not be null");
+    assertTrue(exception.getMessage().contains("typeStrings"),
+        "Expected message to contain: typeStrings");
+    assertTrue(exception.getMessage().contains("must not be null"),
+        "Expected message to contain: must not be null");
   }
 
   @Test
@@ -455,7 +507,9 @@ class JniTypeConverterTest {
         assertThrows(
             IllegalArgumentException.class, () -> JniTypeConverter.stringsToTypes(strings));
 
-    assertThat(exception.getMessage()).contains("Type string at index 1 is null");
+    assertTrue(
+        exception.getMessage().contains("Type string at index 1 is null"),
+        "Expected message to contain: Type string at index 1 is null");
   }
 
   @Test
@@ -473,6 +527,6 @@ class JniTypeConverterTest {
     final String[] strings = JniTypeConverter.typesToStrings(originalTypes);
     final WasmValueType[] convertedTypes = JniTypeConverter.stringsToTypes(strings);
 
-    assertThat(convertedTypes).isEqualTo(originalTypes);
+    assertArrayEquals(originalTypes, convertedTypes);
   }
 }

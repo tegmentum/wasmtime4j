@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.generator;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.bindgen.BindgenConfig;
 import ai.tegmentum.wasmtime4j.bindgen.BindgenException;
@@ -77,7 +78,7 @@ class LegacyCodeGeneratorTest {
 
       LegacyCodeGenerator gen = new LegacyCodeGenerator(cfg);
 
-      assertThat(gen).isNotNull();
+      assertNotNull(gen);
     }
   }
 
@@ -101,9 +102,15 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("public final class Person");
-      assertThat(content).contains("private final String firstName");
-      assertThat(content).contains("private final int age");
+      assertTrue(
+          content.contains("public final class Person"),
+          "Expected content to contain: public final class Person");
+      assertTrue(
+          content.contains("private final String firstName"),
+          "Expected content to contain: private final String firstName");
+      assertTrue(
+          content.contains("private final int age"),
+          "Expected content to contain: private final int age");
     }
 
     @Test
@@ -123,8 +130,12 @@ class LegacyCodeGeneratorTest {
 
       String content = source.getContent();
       // Legacy style uses getXxx() not xxx()
-      assertThat(content).contains("public float getX()");
-      assertThat(content).contains("public float getY()");
+      assertTrue(
+          content.contains("public float getX()"),
+          "Expected content to contain: public float getX()");
+      assertTrue(
+          content.contains("public float getY()"),
+          "Expected content to contain: public float getY()");
     }
 
     @Test
@@ -143,11 +154,21 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("public static final class Builder");
-      assertThat(content).contains("public static Builder builder()");
-      assertThat(content).contains("public Builder name(");
-      assertThat(content).contains("public Builder value(");
-      assertThat(content).contains("public Config build()");
+      assertTrue(
+          content.contains("public static final class Builder"),
+          "Expected content to contain: public static final class Builder");
+      assertTrue(
+          content.contains("public static Builder builder()"),
+          "Expected content to contain: public static Builder builder()");
+      assertTrue(
+          content.contains("public Builder name("),
+          "Expected content to contain: public Builder name(");
+      assertTrue(
+          content.contains("public Builder value("),
+          "Expected content to contain: public Builder value(");
+      assertTrue(
+          content.contains("public Config build()"),
+          "Expected content to contain: public Config build()");
     }
 
     @Test
@@ -174,8 +195,11 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = noBuilderGenerator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).doesNotContain("class Builder");
-      assertThat(content).doesNotContain("public static Builder builder()");
+      assertFalse(
+          content.contains("class Builder"), "Expected content not to contain: class Builder");
+      assertFalse(
+          content.contains("public static Builder builder()"),
+          "Expected content not to contain: public static Builder builder()");
     }
 
     @Test
@@ -188,7 +212,8 @@ class LegacyCodeGeneratorTest {
 
       String content = source.getContent();
       // Builder is not useful for empty records
-      assertThat(content).doesNotContain("class Builder");
+      assertFalse(
+          content.contains("class Builder"), "Expected content not to contain: class Builder");
     }
 
     @Test
@@ -204,9 +229,13 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("@Override");
-      assertThat(content).contains("public boolean equals(Object obj)");
-      assertThat(content).contains("if (this == obj) return true");
+      assertTrue(content.contains("@Override"), "Expected content to contain: @Override");
+      assertTrue(
+          content.contains("public boolean equals(Object obj)"),
+          "Expected content to contain: public boolean equals(Object obj)");
+      assertTrue(
+          content.contains("if (this == obj) return true"),
+          "Expected content to contain: if (this == obj) return true");
     }
 
     @Test
@@ -222,8 +251,10 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("@Override");
-      assertThat(content).contains("public int hashCode()");
+      assertTrue(content.contains("@Override"), "Expected content to contain: @Override");
+      assertTrue(
+          content.contains("public int hashCode()"),
+          "Expected content to contain: public int hashCode()");
     }
 
     @Test
@@ -239,8 +270,10 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("@Override");
-      assertThat(content).contains("public String toString()");
+      assertTrue(content.contains("@Override"), "Expected content to contain: @Override");
+      assertTrue(
+          content.contains("public String toString()"),
+          "Expected content to contain: public String toString()");
     }
 
     @Test
@@ -257,7 +290,9 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(recordType);
 
       String content = source.getContent();
-      assertThat(content).contains("This is a documented type.");
+      assertTrue(
+          content.contains("This is a documented type."),
+          "Expected content to contain: This is a documented type.");
     }
   }
 
@@ -281,7 +316,9 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(variantType);
 
       String content = source.getContent();
-      assertThat(content).contains("public abstract class ResultType");
+      assertTrue(
+          content.contains("public abstract class ResultType"),
+          "Expected content to contain: public abstract class ResultType");
     }
 
     @Test
@@ -300,9 +337,15 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(variantType);
 
       String content = source.getContent();
-      assertThat(content).contains("public interface Visitor<T>");
-      assertThat(content).contains("T visitSome(Some value)");
-      assertThat(content).contains("T visitNone(None value)");
+      assertTrue(
+          content.contains("public interface Visitor<T>"),
+          "Expected content to contain: public interface Visitor<T>");
+      assertTrue(
+          content.contains("T visitSome(Some value)"),
+          "Expected content to contain: T visitSome(Some value)");
+      assertTrue(
+          content.contains("T visitNone(None value)"),
+          "Expected content to contain: T visitNone(None value)");
     }
 
     @Test
@@ -319,7 +362,9 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(variantType);
 
       String content = source.getContent();
-      assertThat(content).contains("public abstract <T> T accept(Visitor<T> visitor)");
+      assertTrue(
+          content.contains("public abstract <T> T accept(Visitor<T> visitor)"),
+          "Expected content to contain: public abstract <T> T accept(Visitor<T> visitor)");
     }
 
     @Test
@@ -336,8 +381,12 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(variantType);
 
       String content = source.getContent();
-      assertThat(content).contains("public static final class CaseOne extends MyVariant");
-      assertThat(content).contains("public static final class CaseTwo extends MyVariant");
+      assertTrue(
+          content.contains("public static final class CaseOne extends MyVariant"),
+          "Expected content to contain: public static final class CaseOne extends MyVariant");
+      assertTrue(
+          content.contains("public static final class CaseTwo extends MyVariant"),
+          "Expected content to contain: public static final class CaseTwo extends MyVariant");
     }
 
     @Test
@@ -354,7 +403,9 @@ class LegacyCodeGeneratorTest {
 
       String content = source.getContent();
       // Legacy style uses getValue() not value()
-      assertThat(content).contains("public String getValue()");
+      assertTrue(
+          content.contains("public String getValue()"),
+          "Expected content to contain: public String getValue()");
     }
   }
 
@@ -373,9 +424,15 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(resourceType);
 
       String content = source.getContent();
-      assertThat(content).contains("public class FileHandle implements AutoCloseable");
-      assertThat(content).contains("private final long handle");
-      assertThat(content).contains("public void close()");
+      assertTrue(
+          content.contains("public class FileHandle implements AutoCloseable"),
+          "Expected content to contain: public class FileHandle implements AutoCloseable");
+      assertTrue(
+          content.contains("private final long handle"),
+          "Expected content to contain: private final long handle");
+      assertTrue(
+          content.contains("public void close()"),
+          "Expected content to contain: public void close()");
     }
 
     @Test
@@ -388,7 +445,9 @@ class LegacyCodeGeneratorTest {
 
       String content = source.getContent();
       // Legacy style uses getHandle() not handle()
-      assertThat(content).contains("public long getHandle()");
+      assertTrue(
+          content.contains("public long getHandle()"),
+          "Expected content to contain: public long getHandle()");
     }
   }
 
@@ -414,11 +473,13 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateType(enumType);
 
       String content = source.getContent();
-      assertThat(content).contains("public enum Direction");
-      assertThat(content).contains("NORTH");
-      assertThat(content).contains("SOUTH");
-      assertThat(content).contains("EAST");
-      assertThat(content).contains("WEST");
+      assertTrue(
+          content.contains("public enum Direction"),
+          "Expected content to contain: public enum Direction");
+      assertTrue(content.contains("NORTH"), "Expected content to contain: NORTH");
+      assertTrue(content.contains("SOUTH"), "Expected content to contain: SOUTH");
+      assertTrue(content.contains("EAST"), "Expected content to contain: EAST");
+      assertTrue(content.contains("WEST"), "Expected content to contain: WEST");
     }
   }
 
@@ -444,8 +505,12 @@ class LegacyCodeGeneratorTest {
       GeneratedSource source = generator.generateInterface(iface);
 
       String content = source.getContent();
-      assertThat(content).contains("public interface Processor");
-      assertThat(content).contains("int process(String input)");
+      assertTrue(
+          content.contains("public interface Processor"),
+          "Expected content to contain: public interface Processor");
+      assertTrue(
+          content.contains("int process(String input)"),
+          "Expected content to contain: int process(String input)");
     }
   }
 
@@ -478,8 +543,12 @@ class LegacyCodeGeneratorTest {
       ModernCodeGenerator modernGen = new ModernCodeGenerator(modernConfig);
       GeneratedSource modernSource = modernGen.generateType(recordType);
 
-      assertThat(legacySource.getContent()).contains("public int getValue()");
-      assertThat(modernSource.getContent()).contains("public int value()");
+      assertTrue(
+          legacySource.getContent().contains("public int getValue()"),
+          "Expected legacy content to contain: public int getValue()");
+      assertTrue(
+          modernSource.getContent().contains("public int value()"),
+          "Expected modern content to contain: public int value()");
     }
 
     @Test
@@ -509,8 +578,12 @@ class LegacyCodeGeneratorTest {
       ModernCodeGenerator modernGen = new ModernCodeGenerator(modernConfig);
       GeneratedSource modernSource = modernGen.generateType(variantType);
 
-      assertThat(legacySource.getContent()).contains("public abstract class Option");
-      assertThat(modernSource.getContent()).contains("public interface Option");
+      assertTrue(
+          legacySource.getContent().contains("public abstract class Option"),
+          "Expected legacy content to contain: public abstract class Option");
+      assertTrue(
+          modernSource.getContent().contains("public interface Option"),
+          "Expected modern content to contain: public interface Option");
     }
   }
 }

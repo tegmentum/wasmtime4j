@@ -15,7 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -92,7 +92,7 @@ class PanamaEngineTest {
       final PanamaEngine engine = createEngine();
       final long id = engine.getId();
       LOGGER.info("Engine ID: " + id);
-      assertThat(id).isNotEqualTo(0L);
+      assertNotEquals(0L, id, "Engine ID should not be zero");
     }
 
     @Test

@@ -15,7 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.wasi;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -172,7 +172,7 @@ class WasiClockTest extends DualRuntimeTest {
 
       // Time should be positive and reasonable (after year 2020)
       // 2020-01-01 in nanoseconds since epoch is approximately 1577836800000000000
-      assertThat(timeNanos).isGreaterThan(1577836800000000000L);
+      assertTrue(timeNanos > 1577836800000000000L, "Realtime should be after year 2020");
     }
 
     @ParameterizedTest
@@ -196,7 +196,7 @@ class WasiClockTest extends DualRuntimeTest {
       LOGGER.info("Realtime clock value 2: " + time2 + " ns");
       LOGGER.info("Difference: " + (time2 - time1) + " ns");
 
-      assertThat(time2).isGreaterThan(time1);
+      assertTrue(time2 > time1, "Second realtime reading should be greater than first");
     }
 
     @ParameterizedTest
@@ -214,8 +214,8 @@ class WasiClockTest extends DualRuntimeTest {
       LOGGER.info("Realtime clock resolution: " + resolution + " ns");
 
       // Resolution should be positive and reasonable (nanoseconds to seconds)
-      assertThat(resolution).isGreaterThan(0);
-      assertThat(resolution).isLessThanOrEqualTo(1000000000L); // At most 1 second
+      assertTrue(resolution > 0, "Resolution should be positive");
+      assertTrue(resolution <= 1000000000L, "Resolution should be at most 1 second");
     }
   }
 
@@ -237,7 +237,7 @@ class WasiClockTest extends DualRuntimeTest {
       LOGGER.info("Monotonic clock value: " + timeNanos + " ns");
 
       // Monotonic clock should be non-negative
-      assertThat(timeNanos).isGreaterThanOrEqualTo(0);
+      assertTrue(timeNanos >= 0, "Monotonic clock should be non-negative");
     }
 
     @ParameterizedTest
@@ -256,7 +256,7 @@ class WasiClockTest extends DualRuntimeTest {
 
         LOGGER.info("Monotonic clock iteration " + i + ": " + currentTime + " ns");
 
-        assertThat(currentTime).isGreaterThanOrEqualTo(previousTime);
+        assertTrue(currentTime >= previousTime, "Monotonic clock should not go backwards");
         previousTime = currentTime;
       }
     }
@@ -276,8 +276,8 @@ class WasiClockTest extends DualRuntimeTest {
       LOGGER.info("Monotonic clock resolution: " + resolution + " ns");
 
       // Resolution should be positive and reasonable
-      assertThat(resolution).isGreaterThan(0);
-      assertThat(resolution).isLessThanOrEqualTo(1000000000L); // At most 1 second
+      assertTrue(resolution > 0, "Monotonic resolution should be positive");
+      assertTrue(resolution <= 1000000000L, "Monotonic resolution should be at most 1 second");
     }
 
     @ParameterizedTest
@@ -304,8 +304,8 @@ class WasiClockTest extends DualRuntimeTest {
 
       // Should be at least 40ms (allowing for scheduling variance)
       // and less than 200ms (reasonable upper bound)
-      assertThat(elapsedMillis).isGreaterThanOrEqualTo(40);
-      assertThat(elapsedMillis).isLessThan(200);
+      assertTrue(elapsedMillis >= 40, "Elapsed time should be at least 40ms");
+      assertTrue(elapsedMillis < 200, "Elapsed time should be less than 200ms");
     }
   }
 
@@ -333,7 +333,7 @@ class WasiClockTest extends DualRuntimeTest {
 
       // Realtime is since Unix epoch (1970), monotonic is since system boot
       // So realtime should be much larger
-      assertThat(realtimeNanos).isGreaterThan(monotonicNanos);
+      assertTrue(realtimeNanos > monotonicNanos, "Realtime should be greater than monotonic");
     }
   }
 }

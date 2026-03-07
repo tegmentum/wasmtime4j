@@ -15,8 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmValueType;
@@ -56,7 +59,9 @@ class JniFunctionReferenceTest {
         assertThrows(
             WasmException.class, () -> new JniFunctionReference(null, testFunctionType, testStore));
 
-    assertThat(exception.getMessage()).contains("Failed to create native function reference");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native function reference"),
+        "Expected message to contain: Failed to create native function reference");
   }
 
   @Test
@@ -65,7 +70,9 @@ class JniFunctionReferenceTest {
         assertThrows(
             WasmException.class, () -> new JniFunctionReference(testHostFunction, null, testStore));
 
-    assertThat(exception.getMessage()).contains("Failed to create native function reference");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native function reference"),
+        "Expected message to contain: Failed to create native function reference");
   }
 
   @Test
@@ -75,7 +82,9 @@ class JniFunctionReferenceTest {
             WasmException.class,
             () -> new JniFunctionReference(testHostFunction, testFunctionType, null));
 
-    assertThat(exception.getMessage()).contains("Failed to create native function reference");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native function reference"),
+        "Expected message to contain: Failed to create native function reference");
   }
 
   // Constructor tests - WASM function variant
@@ -85,7 +94,9 @@ class JniFunctionReferenceTest {
     final WasmException exception =
         assertThrows(WasmException.class, () -> new JniFunctionReference(null, testStore));
 
-    assertThat(exception.getMessage()).contains("Failed to create native function reference");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native function reference"),
+        "Expected message to contain: Failed to create native function reference");
   }
 
   @Test
@@ -95,7 +106,9 @@ class JniFunctionReferenceTest {
     final WasmException exception =
         assertThrows(WasmException.class, () -> new JniFunctionReference(wasmFunc, null));
 
-    assertThat(exception.getMessage()).contains("Failed to create native function reference");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native function reference"),
+        "Expected message to contain: Failed to create native function reference");
   }
 
   @Test
@@ -106,7 +119,9 @@ class JniFunctionReferenceTest {
     final WasmException exception =
         assertThrows(WasmException.class, () -> new JniFunctionReference(nonJniFunc, testStore));
 
-    assertThat(exception.getMessage()).contains("Failed to create native function reference");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native function reference"),
+        "Expected message to contain: Failed to create native function reference");
   }
 
   // Registry tests - these are static and don't require instances
@@ -115,24 +130,24 @@ class JniFunctionReferenceTest {
   void testRegistryStatsNotNull() {
     final long[] stats = JniFunctionReference.getRegistryStats();
 
-    assertThat(stats).isNotNull();
-    assertThat(stats).hasSize(2);
-    assertThat(stats[0]).isGreaterThanOrEqualTo(0); // registry size
-    assertThat(stats[1]).isGreaterThan(0); // next ID
+    assertNotNull(stats);
+    assertEquals(2, stats.length);
+    assertTrue(stats[0] >= 0, "Registry size should be >= 0"); // registry size
+    assertTrue(stats[1] > 0, "Next ID should be > 0"); // next ID
   }
 
   @Test
   void testGetFromRegistryWithInvalidId() {
     final JniFunctionReference result = JniFunctionReference.getFromRegistry(-1L);
 
-    assertThat(result).isNull();
+    assertNull(result);
   }
 
   @Test
   void testGetFromRegistryWithNonExistentId() {
     final JniFunctionReference result = JniFunctionReference.getFromRegistry(999999999L);
 
-    assertThat(result).isNull();
+    assertNull(result);
   }
 
   // Helper method to create mock WasmFunction

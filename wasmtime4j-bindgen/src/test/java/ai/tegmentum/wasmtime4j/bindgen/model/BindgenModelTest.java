@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,12 +47,12 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().build();
 
-      assertThat(model.getName()).isEmpty();
-      assertThat(model.getInterfaces()).isEmpty();
-      assertThat(model.getTypes()).isEmpty();
-      assertThat(model.getFunctions()).isEmpty();
-      assertThat(model.getSourceFile()).isEmpty();
-      assertThat(model.isEmpty()).isTrue();
+      assertTrue(model.getName().isEmpty());
+      assertTrue(model.getInterfaces().isEmpty());
+      assertTrue(model.getTypes().isEmpty());
+      assertTrue(model.getFunctions().isEmpty());
+      assertTrue(model.getSourceFile().isEmpty());
+      assertTrue(model.isEmpty());
     }
 
     @Test
@@ -58,7 +62,7 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().name("my-module").build();
 
-      assertThat(model.getName()).isEqualTo("my-module");
+      assertEquals("my-module", model.getName());
     }
 
     @Test
@@ -72,8 +76,8 @@ class BindgenModelTest {
       BindgenModel model =
           BindgenModel.builder().name("wasi").addInterface(iface1).addInterface(iface2).build();
 
-      assertThat(model.getInterfaces()).hasSize(2);
-      assertThat(model.getInterfaces()).containsExactly(iface1, iface2);
+      assertEquals(2, model.getInterfaces().size());
+      assertEquals(List.of(iface1, iface2), model.getInterfaces());
     }
 
     @Test
@@ -88,7 +92,7 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().name("wasi").interfaces(interfaces).build();
 
-      assertThat(model.getInterfaces()).hasSize(2);
+      assertEquals(2, model.getInterfaces().size());
     }
 
     @Test
@@ -103,8 +107,8 @@ class BindgenModelTest {
       BindgenModel model =
           BindgenModel.builder().name("module").addType(type1).addType(type2).build();
 
-      assertThat(model.getTypes()).hasSize(2);
-      assertThat(model.getTypes()).containsExactly(type1, type2);
+      assertEquals(2, model.getTypes().size());
+      assertEquals(List.of(type1, type2), model.getTypes());
     }
 
     @Test
@@ -117,7 +121,7 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().name("module").types(types).build();
 
-      assertThat(model.getTypes()).hasSize(2);
+      assertEquals(2, model.getTypes().size());
     }
 
     @Test
@@ -131,8 +135,8 @@ class BindgenModelTest {
       BindgenModel model =
           BindgenModel.builder().name("module").addFunction(func1).addFunction(func2).build();
 
-      assertThat(model.getFunctions()).hasSize(2);
-      assertThat(model.getFunctions()).containsExactly(func1, func2);
+      assertEquals(2, model.getFunctions().size());
+      assertEquals(List.of(func1, func2), model.getFunctions());
     }
 
     @Test
@@ -147,7 +151,7 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().name("module").functions(functions).build();
 
-      assertThat(model.getFunctions()).hasSize(2);
+      assertEquals(2, model.getFunctions().size());
     }
 
     @Test
@@ -158,7 +162,8 @@ class BindgenModelTest {
       BindgenModel model =
           BindgenModel.builder().name("module").sourceFile("/path/to/module.wasm").build();
 
-      assertThat(model.getSourceFile()).hasValue("/path/to/module.wasm");
+      assertTrue(model.getSourceFile().isPresent());
+      assertEquals("/path/to/module.wasm", model.getSourceFile().get());
     }
   }
 
@@ -175,8 +180,9 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().addType(type).build();
 
-      assertThat(model.hasType("MyType")).isTrue();
-      assertThat(model.lookupType("MyType")).hasValue(type);
+      assertTrue(model.hasType("MyType"));
+      assertTrue(model.lookupType("MyType").isPresent());
+      assertEquals(type, model.lookupType("MyType").get());
     }
 
     @Test
@@ -191,8 +197,8 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().types(types).build();
 
-      assertThat(model.hasType("Type1")).isTrue();
-      assertThat(model.hasType("Type2")).isTrue();
+      assertTrue(model.hasType("Type1"));
+      assertTrue(model.hasType("Type2"));
     }
 
     @Test
@@ -208,8 +214,9 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().addInterface(iface).build();
 
-      assertThat(model.hasType("InterfaceType")).isTrue();
-      assertThat(model.lookupType("InterfaceType")).hasValue(typeInInterface);
+      assertTrue(model.hasType("InterfaceType"));
+      assertTrue(model.lookupType("InterfaceType").isPresent());
+      assertEquals(typeInInterface, model.lookupType("InterfaceType").get());
     }
 
     @Test
@@ -219,7 +226,7 @@ class BindgenModelTest {
 
       BindgenModel model = BindgenModel.builder().build();
 
-      assertThat(model.lookupType("NonExistent")).isEmpty();
+      assertTrue(model.lookupType("NonExistent").isEmpty());
     }
 
     @Test
@@ -227,7 +234,7 @@ class BindgenModelTest {
     void hasTypeShouldReturnFalseForNonExistentType() {
       BindgenModel model = BindgenModel.builder().build();
 
-      assertThat(model.hasType("NonExistent")).isFalse();
+      assertFalse(model.hasType("NonExistent"));
     }
 
     @Test
@@ -241,7 +248,10 @@ class BindgenModelTest {
               .addType(BindgenType.builder().name("Type2").kind(BindgenType.Kind.ENUM).build())
               .build();
 
-      assertThat(model.getTypeNames()).containsExactlyInAnyOrder("Type1", "Type2");
+      List<String> typeNames = new java.util.ArrayList<>();
+      model.getTypeNames().forEach(typeNames::add);
+      assertEquals(Set.of("Type1", "Type2"), new HashSet<>(typeNames));
+      assertEquals(2, typeNames.size());
     }
 
     @Test
@@ -256,7 +266,7 @@ class BindgenModelTest {
               .addType(BindgenType.builder().name("Type3").build())
               .build();
 
-      assertThat(model.getTypeCount()).isEqualTo(3);
+      assertEquals(3, model.getTypeCount());
     }
   }
 
@@ -275,7 +285,7 @@ class BindgenModelTest {
               .addFunction(BindgenFunction.builder().name("func2").build())
               .build();
 
-      assertThat(model.getTotalFunctionCount()).isEqualTo(2);
+      assertEquals(2, model.getTotalFunctionCount());
     }
 
     @Test
@@ -296,7 +306,7 @@ class BindgenModelTest {
               .addFunction(BindgenFunction.builder().name("topLevelFunc").build())
               .build();
 
-      assertThat(model.getTotalFunctionCount()).isEqualTo(3);
+      assertEquals(3, model.getTotalFunctionCount());
     }
   }
 
@@ -309,7 +319,7 @@ class BindgenModelTest {
     void isEmptyShouldReturnTrueForEmptyModel() {
       BindgenModel model = BindgenModel.builder().build();
 
-      assertThat(model.isEmpty()).isTrue();
+      assertTrue(model.isEmpty());
     }
 
     @Test
@@ -320,7 +330,7 @@ class BindgenModelTest {
               .addInterface(BindgenInterface.builder().name("test").build())
               .build();
 
-      assertThat(model.isEmpty()).isFalse();
+      assertFalse(model.isEmpty());
     }
 
     @Test
@@ -328,7 +338,7 @@ class BindgenModelTest {
     void isEmptyShouldReturnFalseWhenTypesExist() {
       BindgenModel model = BindgenModel.builder().addType(BindgenType.primitive("i32")).build();
 
-      assertThat(model.isEmpty()).isFalse();
+      assertFalse(model.isEmpty());
     }
 
     @Test
@@ -339,7 +349,7 @@ class BindgenModelTest {
               .addFunction(BindgenFunction.builder().name("func").build())
               .build();
 
-      assertThat(model.isEmpty()).isFalse();
+      assertFalse(model.isEmpty());
     }
   }
 
@@ -361,9 +371,9 @@ class BindgenModelTest {
 
       BindgenModel merged = model1.merge(model2);
 
-      assertThat(merged.getName()).isEqualTo("model1");
-      assertThat(merged.getInterfaces()).hasSize(2);
-      assertThat(merged.getInterfaces()).containsExactly(iface1, iface2);
+      assertEquals("model1", merged.getName());
+      assertEquals(2, merged.getInterfaces().size());
+      assertEquals(List.of(iface1, iface2), merged.getInterfaces());
     }
 
     @Test
@@ -379,7 +389,7 @@ class BindgenModelTest {
 
       BindgenModel merged = model1.merge(model2);
 
-      assertThat(merged.getTypes()).hasSize(2);
+      assertEquals(2, merged.getTypes().size());
     }
 
     @Test
@@ -395,7 +405,7 @@ class BindgenModelTest {
 
       BindgenModel merged = model1.merge(model2);
 
-      assertThat(merged.getFunctions()).hasSize(2);
+      assertEquals(2, merged.getFunctions().size());
     }
   }
 
@@ -417,8 +427,8 @@ class BindgenModelTest {
       BindgenModel model2 =
           BindgenModel.builder().name("module").addType(type).addFunction(func).build();
 
-      assertThat(model1).isEqualTo(model2);
-      assertThat(model1.hashCode()).isEqualTo(model2.hashCode());
+      assertEquals(model2, model1);
+      assertEquals(model2.hashCode(), model1.hashCode());
     }
 
     @Test
@@ -429,7 +439,7 @@ class BindgenModelTest {
       BindgenModel model1 = BindgenModel.builder().name("module1").build();
       BindgenModel model2 = BindgenModel.builder().name("module2").build();
 
-      assertThat(model1).isNotEqualTo(model2);
+      assertNotEquals(model2, model1);
     }
 
     @Test
@@ -441,7 +451,7 @@ class BindgenModelTest {
       BindgenModel model2 =
           BindgenModel.builder().name("module").addType(BindgenType.primitive("i64")).build();
 
-      assertThat(model1).isNotEqualTo(model2);
+      assertNotEquals(model2, model1);
     }
 
     @Test
@@ -449,7 +459,7 @@ class BindgenModelTest {
     void shouldNotBeEqualToNull() {
       BindgenModel model = BindgenModel.builder().name("module").build();
 
-      assertThat(model).isNotEqualTo(null);
+      assertNotEquals(null, model);
     }
 
     @Test
@@ -457,7 +467,7 @@ class BindgenModelTest {
     void shouldNotBeEqualToDifferentClass() {
       BindgenModel model = BindgenModel.builder().name("module").build();
 
-      assertThat(model).isNotEqualTo("module");
+      assertNotEquals("module", model);
     }
 
     @Test
@@ -465,7 +475,7 @@ class BindgenModelTest {
     void shouldBeEqualToItself() {
       BindgenModel model = BindgenModel.builder().name("module").build();
 
-      assertThat(model).isEqualTo(model);
+      assertEquals(model, model);
     }
   }
 
@@ -488,12 +498,14 @@ class BindgenModelTest {
 
       String toString = model.toString();
 
-      assertThat(toString).contains("name='my-module'");
-      assertThat(toString).contains("interfaces=1");
-      assertThat(toString).contains("types=1");
-      assertThat(toString).contains("functions=1");
-      assertThat(toString).startsWith("BindgenModel{");
-      assertThat(toString).endsWith("}");
+      assertTrue(
+          toString.contains("name='my-module'"), "Expected toString to contain: name='my-module'");
+      assertTrue(toString.contains("interfaces=1"), "Expected toString to contain: interfaces=1");
+      assertTrue(toString.contains("types=1"), "Expected toString to contain: types=1");
+      assertTrue(toString.contains("functions=1"), "Expected toString to contain: functions=1");
+      assertTrue(
+          toString.startsWith("BindgenModel{"), "Expected toString to start with: BindgenModel{");
+      assertTrue(toString.endsWith("}"), "Expected toString to end with: }");
     }
   }
 
@@ -513,8 +525,9 @@ class BindgenModelTest {
 
       List<BindgenInterface> interfaces = model.getInterfaces();
 
-      assertThatThrownBy(() -> interfaces.add(BindgenInterface.builder().name("new").build()))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> interfaces.add(BindgenInterface.builder().name("new").build()));
     }
 
     @Test
@@ -526,8 +539,8 @@ class BindgenModelTest {
 
       List<BindgenType> types = model.getTypes();
 
-      assertThatThrownBy(() -> types.add(BindgenType.primitive("i64")))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class, () -> types.add(BindgenType.primitive("i64")));
     }
 
     @Test
@@ -542,8 +555,9 @@ class BindgenModelTest {
 
       List<BindgenFunction> functions = model.getFunctions();
 
-      assertThatThrownBy(() -> functions.add(BindgenFunction.builder().name("new").build()))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> functions.add(BindgenFunction.builder().name("new").build()));
     }
   }
 }

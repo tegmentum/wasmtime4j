@@ -15,8 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.security;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -244,8 +246,8 @@ class MemoryIsolationTest extends DualRuntimeTest {
         final WasmFunction readFunc = instance.getFunction("read").orElse(null);
         final WasmMemory memory = instance.getMemory("memory").orElse(null);
 
-        assertThat(readFunc).isNotNull();
-        assertThat(memory).isNotNull();
+        assertNotNull(readFunc);
+        assertNotNull(memory);
 
         // Memory is 1 page = 65536 bytes
         final long memorySize = memory.getSize() * 65536;
@@ -256,12 +258,11 @@ class MemoryIsolationTest extends DualRuntimeTest {
         LOGGER.info("Read at offset 0: " + result[0].asInt());
 
         // Invalid read beyond memory bounds - should trap
-        assertThatThrownBy(() -> readFunc.call(WasmValue.i32((int) memorySize + 1000)))
-            .isInstanceOf(TrapException.class)
-            .satisfies(
-                e -> {
-                  LOGGER.info("Out of bounds read trap: " + e.getMessage());
-                });
+        final TrapException readTrap =
+            assertThrows(
+                TrapException.class,
+                () -> readFunc.call(WasmValue.i32((int) memorySize + 1000)));
+        LOGGER.info("Out of bounds read trap: " + readTrap.getMessage());
       } finally {
         module.close();
       }
@@ -282,8 +283,8 @@ class MemoryIsolationTest extends DualRuntimeTest {
         final WasmFunction writeFunc = instance.getFunction("write").orElse(null);
         final WasmMemory memory = instance.getMemory("memory").orElse(null);
 
-        assertThat(writeFunc).isNotNull();
-        assertThat(memory).isNotNull();
+        assertNotNull(writeFunc);
+        assertNotNull(memory);
 
         final long memorySize = memory.getSize() * 65536;
 
@@ -292,13 +293,12 @@ class MemoryIsolationTest extends DualRuntimeTest {
         LOGGER.info("Write at offset 0 succeeded");
 
         // Invalid write beyond memory bounds - should trap
-        assertThatThrownBy(
-                () -> writeFunc.call(WasmValue.i32((int) memorySize + 1000), WasmValue.i32(42)))
-            .isInstanceOf(TrapException.class)
-            .satisfies(
-                e -> {
-                  LOGGER.info("Out of bounds write trap: " + e.getMessage());
-                });
+        final TrapException writeTrap =
+            assertThrows(
+                TrapException.class,
+                () ->
+                    writeFunc.call(WasmValue.i32((int) memorySize + 1000), WasmValue.i32(42)));
+        LOGGER.info("Out of bounds write trap: " + writeTrap.getMessage());
       } finally {
         module.close();
       }
@@ -327,8 +327,8 @@ class MemoryIsolationTest extends DualRuntimeTest {
         final WasmMemory memory1 = instance1.getMemory("memory").orElse(null);
         final WasmMemory memory2 = instance2.getMemory("memory").orElse(null);
 
-        assertThat(memory1).isNotNull();
-        assertThat(memory2).isNotNull();
+        assertNotNull(memory1);
+        assertNotNull(memory2);
 
         // Write different values to each memory at same offset
         memory1.writeByte(100, (byte) 0xAA);
@@ -338,9 +338,9 @@ class MemoryIsolationTest extends DualRuntimeTest {
         final byte value1 = memory1.readByte(100);
         final byte value2 = memory2.readByte(100);
 
-        assertThat(value1).isEqualTo((byte) 0xAA);
-        assertThat(value2).isEqualTo((byte) 0xBB);
-        assertThat(value1).isNotEqualTo(value2);
+        assertEquals((byte) 0xAA, value1);
+        assertEquals((byte) 0xBB, value2);
+        assertNotEquals(value1, value2);
 
         LOGGER.info("Memory isolation verified: instance1=" + value1 + ", instance2=" + value2);
       } finally {
@@ -371,8 +371,8 @@ class MemoryIsolationTest extends DualRuntimeTest {
         memory2.writeByte(200, (byte) 0x22);
 
         // Verify isolation
-        assertThat(memory1.readByte(200)).isEqualTo((byte) 0x11);
-        assertThat(memory2.readByte(200)).isEqualTo((byte) 0x22);
+        assertEquals((byte) 0x11, memory1.readByte(200));
+        assertEquals((byte) 0x22, memory2.readByte(200));
 
         LOGGER.info("Cross-store memory isolation verified");
       } finally {
@@ -401,12 +401,13 @@ class MemoryIsolationTest extends DualRuntimeTest {
 
         // Attempt to read using negative offset (which could wrap to host memory)
         // This should be handled safely
-        assertThatThrownBy(() -> readFunc.call(WasmValue.i32(-1)))
-            .satisfies(
-                e -> {
-                  LOGGER.info("Negative offset handled: " + e.getClass().getName());
-                  LOGGER.info("Message: " + e.getMessage());
-                });
+        try {
+          readFunc.call(WasmValue.i32(-1));
+          org.junit.jupiter.api.Assertions.fail("Expected exception for negative offset");
+        } catch (final Exception e) {
+          LOGGER.info("Negative offset handled: " + e.getClass().getName());
+          LOGGER.info("Message: " + e.getMessage());
+        }
       } finally {
         module.close();
       }
@@ -435,15 +436,16 @@ class MemoryIsolationTest extends DualRuntimeTest {
 
         // Last valid byte
         memory.writeByte(totalBytes - 1, (byte) 0xFF);
-        assertThat(memory.readByte(totalBytes - 1)).isEqualTo((byte) 0xFF);
+        assertEquals((byte) 0xFF, memory.readByte(totalBytes - 1));
         LOGGER.info("Last valid byte access successful");
 
         // First invalid byte - should throw
-        assertThatThrownBy(() -> memory.readByte(totalBytes))
-            .satisfies(
-                e -> {
-                  LOGGER.info("First invalid byte properly rejected: " + e.getMessage());
-                });
+        try {
+          memory.readByte(totalBytes);
+          org.junit.jupiter.api.Assertions.fail("Expected exception for first invalid byte");
+        } catch (final Exception e) {
+          LOGGER.info("First invalid byte properly rejected: " + e.getMessage());
+        }
       } finally {
         module.close();
       }
@@ -472,9 +474,8 @@ class MemoryIsolationTest extends DualRuntimeTest {
         for (int i = 0; i < 100; i++) {
           final int offset = (int) (Math.random() * 1000);
           final byte value = memory.readByte(offset);
-          assertThat(value)
-              .as("Memory at offset " + offset + " should be zero-initialized")
-              .isEqualTo((byte) 0);
+          assertEquals(
+              (byte) 0, value, "Memory at offset " + offset + " should be zero-initialized");
         }
 
         LOGGER.info("Memory zero-initialization verified");

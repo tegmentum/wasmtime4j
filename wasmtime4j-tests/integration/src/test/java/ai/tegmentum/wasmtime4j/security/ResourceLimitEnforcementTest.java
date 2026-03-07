@@ -15,8 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.security;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -294,8 +296,8 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
         final WasmFunction growFunc = instance.getFunction("grow").orElse(null);
         final WasmMemory memory = instance.getMemory("mem").orElse(null);
 
-        assertThat(growFunc).isNotNull();
-        assertThat(memory).isNotNull();
+        assertNotNull(growFunc);
+        assertNotNull(memory);
 
         // Memory has max 10 pages (1 initial), current = 1
         final long initialSize = memory.getSize();
@@ -304,17 +306,17 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
         // Try to grow by 5 pages - should succeed
         final WasmValue[] result1 = growFunc.call(WasmValue.i32(5));
         final int growth1 = result1[0].asInt();
-        assertThat(growth1).isEqualTo(1); // Returns old size
+        assertEquals(1, growth1); // Returns old size
         LOGGER.info("Grew by 5 pages, old size: " + growth1);
 
         // Try to grow by 10 more pages - should fail (would exceed max)
         final WasmValue[] result2 = growFunc.call(WasmValue.i32(10));
         final int growth2 = result2[0].asInt();
-        assertThat(growth2).isEqualTo(-1); // -1 indicates failure
+        assertEquals(-1, growth2); // -1 indicates failure
         LOGGER.info("Attempted to grow by 10 more pages, result: " + growth2);
 
         // Verify final size is at the max or less
-        assertThat(memory.getSize()).isLessThanOrEqualTo(10);
+        assertTrue(memory.getSize() <= 10);
         LOGGER.info("Final memory size: " + memory.getSize() + " pages");
       } finally {
         module.close();
@@ -335,10 +337,10 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmMemory memory = instance.getMemory("mem").orElse(null);
 
-        assertThat(memory).isNotNull();
+        assertNotNull(memory);
 
         // Memory should have at least the minimum (1 page)
-        assertThat(memory.getSize()).isGreaterThanOrEqualTo(1);
+        assertTrue(memory.getSize() >= 1);
         LOGGER.info("Memory enforces minimum of " + memory.getSize() + " pages");
       } finally {
         module.close();
@@ -363,19 +365,19 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
 
       final WasmTable table = store.createTable(WasmValueType.FUNCREF, initialSize, maxSize);
 
-      assertThat(table).isNotNull();
-      assertThat(table.getSize()).isEqualTo(initialSize);
+      assertNotNull(table);
+      assertEquals(initialSize, table.getSize());
 
       // Grow to max should succeed
       final long growResult1 = table.grow(maxSize - initialSize, null);
-      assertThat(growResult1).isEqualTo(initialSize); // Returns old size
-      assertThat(table.getSize()).isEqualTo(maxSize);
+      assertEquals(initialSize, growResult1); // Returns old size
+      assertEquals(maxSize, table.getSize());
       LOGGER.info("Table grew to max size: " + table.getSize());
 
       // Grow beyond max should fail
       final long growResult2 = table.grow(1, null);
-      assertThat(growResult2).isEqualTo(-1); // -1 indicates failure
-      assertThat(table.getSize()).isEqualTo(maxSize); // Size unchanged
+      assertEquals(-1, growResult2); // -1 indicates failure
+      assertEquals(maxSize, table.getSize()); // Size unchanged
       LOGGER.info("Table growth beyond max prevented");
     }
 
@@ -388,11 +390,12 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
       store = engine.createStore();
 
       // Max < initial should be rejected
-      assertThatThrownBy(() -> store.createTable(WasmValueType.FUNCREF, 10, 5))
-          .satisfies(
-              e -> {
-                LOGGER.info("Invalid table limits rejected: " + e.getMessage());
-              });
+      try {
+        store.createTable(WasmValueType.FUNCREF, 10, 5);
+        org.junit.jupiter.api.Assertions.fail("Expected exception for invalid table limits");
+      } catch (final Exception e) {
+        LOGGER.info("Invalid table limits rejected: " + e.getMessage());
+      }
     }
   }
 
@@ -419,7 +422,7 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
           final Instance instance = fuelStore.createInstance(module);
           final WasmFunction consumerFunc = instance.getFunction("consumer").orElse(null);
 
-          assertThat(consumerFunc).isNotNull();
+          assertNotNull(consumerFunc);
 
           // Set a limited amount of fuel
           fuelStore.setFuel(1000);
@@ -434,12 +437,10 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
           fuelStore.setFuel(100);
 
           // Run with large number of iterations - should run out of fuel
-          assertThatThrownBy(() -> consumerFunc.call(WasmValue.i32(10000)))
-              .isInstanceOf(TrapException.class)
-              .satisfies(
-                  e -> {
-                    LOGGER.info("Fuel exhausted trap: " + e.getMessage());
-                  });
+          final TrapException fuelTrap =
+              assertThrows(
+                  TrapException.class, () -> consumerFunc.call(WasmValue.i32(10000)));
+          LOGGER.info("Fuel exhausted trap: " + fuelTrap.getMessage());
         } finally {
           module.close();
         }
@@ -470,7 +471,7 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
           final Instance instance = epochStore.createInstance(module);
           final WasmFunction loopFunc = instance.getFunction("loop").orElse(null);
 
-          assertThat(loopFunc).isNotNull();
+          assertNotNull(loopFunc);
 
           // Set deadline 1 tick in the future
           epochStore.setEpochDeadline(1);
@@ -493,12 +494,8 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
           interrupterThread.start();
 
           // This should be interrupted
-          assertThatThrownBy(() -> loopFunc.call())
-              .isInstanceOf(TrapException.class)
-              .satisfies(
-                  e -> {
-                    LOGGER.info("Epoch interruption trap: " + e.getMessage());
-                  });
+          final TrapException epochTrap = assertThrows(TrapException.class, () -> loopFunc.call());
+          LOGGER.info("Epoch interruption trap: " + epochTrap.getMessage());
 
           interrupterThread.join(5000);
         } finally {
@@ -527,23 +524,23 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
         final WasmMemory memory = instance.getMemory("mem").orElse(null);
         final WasmFunction growFunc = instance.getFunction("grow").orElse(null);
 
-        assertThat(memory).isNotNull();
-        assertThat(growFunc).isNotNull();
+        assertNotNull(memory);
+        assertNotNull(growFunc);
 
         // Create table with limits
         final WasmTable table = store.createTable(WasmValueType.FUNCREF, 5, 20);
 
         // Both should respect their limits independently
-        assertThat(memory.getSize()).isLessThanOrEqualTo(10);
-        assertThat(table.getSize()).isLessThanOrEqualTo(20);
+        assertTrue(memory.getSize() <= 10);
+        assertTrue(table.getSize() <= 20);
 
         // Try to exceed both limits
         final WasmValue[] memoryGrowResultArr = growFunc.call(WasmValue.i32(100));
         final long memoryGrowResult = memoryGrowResultArr[0].asInt();
         final long tableGrowResult = table.grow(100, null);
 
-        assertThat(memoryGrowResult).isEqualTo(-1);
-        assertThat(tableGrowResult).isEqualTo(-1);
+        assertEquals(-1, memoryGrowResult);
+        assertEquals(-1, tableGrowResult);
 
         LOGGER.info("Multiple resource limits enforced simultaneously");
       } finally {

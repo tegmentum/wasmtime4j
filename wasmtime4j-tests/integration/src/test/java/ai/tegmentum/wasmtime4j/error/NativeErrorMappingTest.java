@@ -15,8 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.error;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
@@ -214,14 +216,11 @@ class NativeErrorMappingTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> engine.compileModule(INVALID_MAGIC_WASM))
-          .isInstanceOf(WasmException.class)
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for invalid magic: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-                assertThat(e.getMessage()).isNotEmpty();
-              });
+      final WasmException e =
+          assertThrows(WasmException.class, () -> engine.compileModule(INVALID_MAGIC_WASM));
+      LOGGER.info("Exception for invalid magic: " + e.getClass().getName());
+      LOGGER.info("Message: " + e.getMessage());
+      assertFalse(e.getMessage().isEmpty(), "Expected non-empty error message");
     }
 
     @ParameterizedTest
@@ -233,14 +232,11 @@ class NativeErrorMappingTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> engine.compileModule(INVALID_VERSION_WASM))
-          .isInstanceOf(WasmException.class)
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for invalid version: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-                assertThat(e.getMessage()).isNotEmpty();
-              });
+      final WasmException e =
+          assertThrows(WasmException.class, () -> engine.compileModule(INVALID_VERSION_WASM));
+      LOGGER.info("Exception for invalid version: " + e.getClass().getName());
+      LOGGER.info("Message: " + e.getMessage());
+      assertFalse(e.getMessage().isEmpty(), "Expected non-empty error message");
     }
 
     @ParameterizedTest
@@ -252,14 +248,11 @@ class NativeErrorMappingTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> engine.compileModule(TRUNCATED_WASM))
-          .isInstanceOf(WasmException.class)
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for truncated WASM: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-                assertThat(e.getMessage()).isNotEmpty();
-              });
+      final WasmException e =
+          assertThrows(WasmException.class, () -> engine.compileModule(TRUNCATED_WASM));
+      LOGGER.info("Exception for truncated WASM: " + e.getClass().getName());
+      LOGGER.info("Message: " + e.getMessage());
+      assertFalse(e.getMessage().isEmpty(), "Expected non-empty error message");
     }
 
     @ParameterizedTest
@@ -270,14 +263,13 @@ class NativeErrorMappingTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> engine.compileModule(null))
-          .isInstanceOf(
-              Exception.class) // Could be IllegalArgumentException or NullPointerException
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for null WASM: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-              });
+      try {
+        engine.compileModule(null);
+        org.junit.jupiter.api.Assertions.fail("Expected exception for null WASM");
+      } catch (final Exception e) {
+        LOGGER.info("Exception for null WASM: " + e.getClass().getName());
+        LOGGER.info("Message: " + e.getMessage());
+      }
     }
 
     @ParameterizedTest
@@ -288,14 +280,11 @@ class NativeErrorMappingTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> engine.compileModule(new byte[0]))
-          .isInstanceOf(WasmException.class)
-          .satisfies(
-              e -> {
-                LOGGER.info("Exception for empty WASM: " + e.getClass().getName());
-                LOGGER.info("Message: " + e.getMessage());
-                assertThat(e.getMessage()).isNotEmpty();
-              });
+      final WasmException e =
+          assertThrows(WasmException.class, () -> engine.compileModule(new byte[0]));
+      LOGGER.info("Exception for empty WASM: " + e.getClass().getName());
+      LOGGER.info("Message: " + e.getMessage());
+      assertFalse(e.getMessage().isEmpty(), "Expected non-empty error message");
     }
   }
 
@@ -317,17 +306,12 @@ class NativeErrorMappingTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmFunction trapFunc = instance.getFunction("trap").orElse(null);
 
-        assertThat(trapFunc).isNotNull();
+        assertNotNull(trapFunc);
 
-        assertThatThrownBy(() -> trapFunc.call())
-            .isInstanceOf(TrapException.class)
-            .satisfies(
-                e -> {
-                  final TrapException trapException = (TrapException) e;
-                  LOGGER.info("Trap exception: " + trapException.getMessage());
-                  LOGGER.info("Trap type: " + trapException.getTrapType());
-                  assertThat(trapException.getMessage()).isNotEmpty();
-                });
+        final TrapException trapException = assertThrows(TrapException.class, () -> trapFunc.call());
+        LOGGER.info("Trap exception: " + trapException.getMessage());
+        LOGGER.info("Trap type: " + trapException.getTrapType());
+        assertFalse(trapException.getMessage().isEmpty(), "Expected non-empty trap message");
       } finally {
         module.close();
       }
@@ -347,17 +331,15 @@ class NativeErrorMappingTest extends DualRuntimeTest {
         final Instance instance = store.createInstance(module);
         final WasmFunction divZeroFunc = instance.getFunction("divZero").orElse(null);
 
-        assertThat(divZeroFunc).isNotNull();
+        assertNotNull(divZeroFunc);
 
-        assertThatThrownBy(() -> divZeroFunc.call())
-            .isInstanceOf(TrapException.class)
-            .satisfies(
-                e -> {
-                  final TrapException trapException = (TrapException) e;
-                  LOGGER.info("Division by zero trap: " + trapException.getMessage());
-                  LOGGER.info("Trap type: " + trapException.getTrapType());
-                  assertThat(trapException.getMessage()).containsIgnoringCase("integer");
-                });
+        final TrapException trapException =
+            assertThrows(TrapException.class, () -> divZeroFunc.call());
+        LOGGER.info("Division by zero trap: " + trapException.getMessage());
+        LOGGER.info("Trap type: " + trapException.getTrapType());
+        assertTrue(
+            trapException.getMessage().toLowerCase().contains("integer"),
+            "Expected trap message to contain 'integer'");
       } finally {
         module.close();
       }
@@ -376,16 +358,13 @@ class NativeErrorMappingTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> engine.compileModule(INVALID_MAGIC_WASM))
-          .isInstanceOf(WasmException.class)
-          .satisfies(
-              e -> {
-                final String message = e.getMessage();
-                LOGGER.info("Error message: " + message);
-                // Error message should be descriptive, not empty or generic
-                assertThat(message).isNotEmpty();
-                assertThat(message.length()).isGreaterThan(5);
-              });
+      final WasmException e =
+          assertThrows(WasmException.class, () -> engine.compileModule(INVALID_MAGIC_WASM));
+      final String message = e.getMessage();
+      LOGGER.info("Error message: " + message);
+      // Error message should be descriptive, not empty or generic
+      assertFalse(message.isEmpty(), "Expected non-empty error message");
+      assertTrue(message.length() > 5, "Expected descriptive error message, got: " + message);
     }
 
     @ParameterizedTest
@@ -396,15 +375,12 @@ class NativeErrorMappingTest extends DualRuntimeTest {
       engine = Engine.create();
       store = engine.createStore();
 
-      assertThatThrownBy(() -> engine.compileModule(TRUNCATED_WASM))
-          .isInstanceOf(WasmException.class)
-          .satisfies(
-              e -> {
-                final String message = e.getMessage();
-                LOGGER.info("Error with context: " + message);
-                // Error should provide some indication of what went wrong
-                assertThat(message).isNotEmpty();
-              });
+      final WasmException e =
+          assertThrows(WasmException.class, () -> engine.compileModule(TRUNCATED_WASM));
+      final String message = e.getMessage();
+      LOGGER.info("Error with context: " + message);
+      // Error should provide some indication of what went wrong
+      assertFalse(message.isEmpty(), "Expected non-empty error message");
     }
   }
 }

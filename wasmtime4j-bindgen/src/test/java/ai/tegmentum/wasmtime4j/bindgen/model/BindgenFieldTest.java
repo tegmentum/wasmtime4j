@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
@@ -42,9 +43,9 @@ class BindgenFieldTest {
       BindgenType type = BindgenType.primitive("string");
       BindgenField field = new BindgenField("name", type);
 
-      assertThat(field.getName()).isEqualTo("name");
-      assertThat(field.getType()).isEqualTo(type);
-      assertThat(field.getDocumentation()).isEmpty();
+      assertEquals("name", field.getName());
+      assertEquals(type, field.getType());
+      assertTrue(field.getDocumentation().isEmpty());
     }
 
     @Test
@@ -55,9 +56,10 @@ class BindgenFieldTest {
       BindgenType type = BindgenType.primitive("i32");
       BindgenField field = new BindgenField("age", type, "The person's age in years");
 
-      assertThat(field.getName()).isEqualTo("age");
-      assertThat(field.getType()).isEqualTo(type);
-      assertThat(field.getDocumentation()).hasValue("The person's age in years");
+      assertEquals("age", field.getName());
+      assertEquals(type, field.getType());
+      assertTrue(field.getDocumentation().isPresent());
+      assertEquals("The person's age in years", field.getDocumentation().get());
     }
 
     @Test
@@ -68,8 +70,8 @@ class BindgenFieldTest {
       BindgenType type = BindgenType.primitive("bool");
       BindgenField field = new BindgenField("active", type, null);
 
-      assertThat(field.getName()).isEqualTo("active");
-      assertThat(field.getDocumentation()).isEmpty();
+      assertEquals("active", field.getName());
+      assertTrue(field.getDocumentation().isEmpty());
     }
 
     @Test
@@ -79,9 +81,9 @@ class BindgenFieldTest {
 
       BindgenType type = BindgenType.primitive("i32");
 
-      assertThatThrownBy(() -> new BindgenField(null, type))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("name");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new BindgenField(null, type));
+      assertTrue(exception.getMessage().contains("name"), "Expected message to contain: name");
     }
 
     @Test
@@ -89,9 +91,9 @@ class BindgenFieldTest {
     void shouldThrowWhenTypeIsNull() {
       LOGGER.info("Testing constructor with null type");
 
-      assertThatThrownBy(() -> new BindgenField("field", null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("type");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new BindgenField("field", null));
+      assertTrue(exception.getMessage().contains("type"), "Expected message to contain: type");
     }
 
     @Test
@@ -101,9 +103,9 @@ class BindgenFieldTest {
 
       BindgenType type = BindgenType.primitive("i32");
 
-      assertThatThrownBy(() -> new BindgenField(null, type, "docs"))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("name");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new BindgenField(null, type, "docs"));
+      assertTrue(exception.getMessage().contains("name"), "Expected message to contain: name");
     }
 
     @Test
@@ -111,9 +113,9 @@ class BindgenFieldTest {
     void shouldThrowWhenTypeIsNullWithDocumentation() {
       LOGGER.info("Testing three-arg constructor with null type");
 
-      assertThatThrownBy(() -> new BindgenField("field", null, "docs"))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("type");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> new BindgenField("field", null, "docs"));
+      assertTrue(exception.getMessage().contains("type"), "Expected message to contain: type");
     }
   }
 
@@ -126,7 +128,7 @@ class BindgenFieldTest {
     void getNameShouldReturnFieldName() {
       BindgenField field = new BindgenField("myField", BindgenType.primitive("string"));
 
-      assertThat(field.getName()).isEqualTo("myField");
+      assertEquals("myField", field.getName());
     }
 
     @Test
@@ -135,8 +137,8 @@ class BindgenFieldTest {
       BindgenType type = BindgenType.primitive("u64");
       BindgenField field = new BindgenField("counter", type);
 
-      assertThat(field.getType()).isEqualTo(type);
-      assertThat(field.getType().getName()).isEqualTo("u64");
+      assertEquals(type, field.getType());
+      assertEquals("u64", field.getType().getName());
     }
 
     @Test
@@ -144,7 +146,7 @@ class BindgenFieldTest {
     void getDocumentationShouldReturnEmptyWhenNotSet() {
       BindgenField field = new BindgenField("field", BindgenType.primitive("i32"));
 
-      assertThat(field.getDocumentation()).isEmpty();
+      assertTrue(field.getDocumentation().isEmpty());
     }
 
     @Test
@@ -152,7 +154,8 @@ class BindgenFieldTest {
     void getDocumentationShouldReturnValueWhenSet() {
       BindgenField field = new BindgenField("field", BindgenType.primitive("i32"), "Field docs");
 
-      assertThat(field.getDocumentation()).hasValue("Field docs");
+      assertTrue(field.getDocumentation().isPresent());
+      assertEquals("Field docs", field.getDocumentation().get());
     }
   }
 
@@ -169,8 +172,8 @@ class BindgenFieldTest {
       BindgenField field1 = new BindgenField("value", type);
       BindgenField field2 = new BindgenField("value", type);
 
-      assertThat(field1).isEqualTo(field2);
-      assertThat(field1.hashCode()).isEqualTo(field2.hashCode());
+      assertEquals(field2, field1);
+      assertEquals(field2.hashCode(), field1.hashCode());
     }
 
     @Test
@@ -182,8 +185,8 @@ class BindgenFieldTest {
       BindgenField field1 = new BindgenField("value", type, "Doc 1");
       BindgenField field2 = new BindgenField("value", type, "Doc 2");
 
-      assertThat(field1).isEqualTo(field2);
-      assertThat(field1.hashCode()).isEqualTo(field2.hashCode());
+      assertEquals(field2, field1);
+      assertEquals(field2.hashCode(), field1.hashCode());
     }
 
     @Test
@@ -195,7 +198,7 @@ class BindgenFieldTest {
       BindgenField field1 = new BindgenField("field1", type);
       BindgenField field2 = new BindgenField("field2", type);
 
-      assertThat(field1).isNotEqualTo(field2);
+      assertNotEquals(field2, field1);
     }
 
     @Test
@@ -206,7 +209,7 @@ class BindgenFieldTest {
       BindgenField field1 = new BindgenField("field", BindgenType.primitive("i32"));
       BindgenField field2 = new BindgenField("field", BindgenType.primitive("i64"));
 
-      assertThat(field1).isNotEqualTo(field2);
+      assertNotEquals(field2, field1);
     }
 
     @Test
@@ -214,7 +217,7 @@ class BindgenFieldTest {
     void shouldNotBeEqualToNull() {
       BindgenField field = new BindgenField("field", BindgenType.primitive("i32"));
 
-      assertThat(field).isNotEqualTo(null);
+      assertNotEquals(null, field);
     }
 
     @Test
@@ -222,7 +225,7 @@ class BindgenFieldTest {
     void shouldNotBeEqualToDifferentClass() {
       BindgenField field = new BindgenField("field", BindgenType.primitive("i32"));
 
-      assertThat(field).isNotEqualTo("field");
+      assertNotEquals("field", field);
     }
 
     @Test
@@ -230,7 +233,7 @@ class BindgenFieldTest {
     void shouldBeEqualToItself() {
       BindgenField field = new BindgenField("field", BindgenType.primitive("i32"));
 
-      assertThat(field).isEqualTo(field);
+      assertEquals(field, field);
     }
   }
 
@@ -247,10 +250,12 @@ class BindgenFieldTest {
 
       String toString = field.toString();
 
-      assertThat(toString).contains("name='myField'");
-      assertThat(toString).contains("type=");
-      assertThat(toString).startsWith("BindgenField{");
-      assertThat(toString).endsWith("}");
+      assertTrue(
+          toString.contains("name='myField'"), "Expected toString to contain: name='myField'");
+      assertTrue(toString.contains("type="), "Expected toString to contain: type=");
+      assertTrue(
+          toString.startsWith("BindgenField{"), "Expected toString to start with: BindgenField{");
+      assertTrue(toString.endsWith("}"), "Expected toString to end with: }");
     }
   }
 }

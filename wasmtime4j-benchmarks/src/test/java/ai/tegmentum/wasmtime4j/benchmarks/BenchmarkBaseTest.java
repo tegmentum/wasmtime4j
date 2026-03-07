@@ -15,8 +15,12 @@
  */
 package ai.tegmentum.wasmtime4j.benchmarks;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import org.junit.jupiter.api.Test;
@@ -27,33 +31,39 @@ final class BenchmarkBaseTest {
   @Test
   void testSimpleWatModuleIsDefined() {
     // Test that the simple WAT module string is defined and non-empty
-    assertThat(BenchmarkBase.SIMPLE_WAT_MODULE).isNotNull();
-    assertThat(BenchmarkBase.SIMPLE_WAT_MODULE).isNotEmpty();
-    assertThat(BenchmarkBase.SIMPLE_WAT_MODULE).contains("(module");
-    assertThat(BenchmarkBase.SIMPLE_WAT_MODULE).contains("add");
+    assertNotNull(BenchmarkBase.SIMPLE_WAT_MODULE);
+    assertTrue(!BenchmarkBase.SIMPLE_WAT_MODULE.isEmpty(), "SIMPLE_WAT_MODULE should not be empty");
+    assertTrue(BenchmarkBase.SIMPLE_WAT_MODULE.contains("(module"),
+        "Expected SIMPLE_WAT_MODULE to contain '(module'");
+    assertTrue(BenchmarkBase.SIMPLE_WAT_MODULE.contains("add"),
+        "Expected SIMPLE_WAT_MODULE to contain 'add'");
   }
 
   @Test
   void testComplexWatModuleIsDefined() {
     // Test that the complex WAT module string is defined and non-empty
-    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).isNotNull();
-    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).isNotEmpty();
-    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).contains("(module");
-    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).contains("fibonacci");
-    assertThat(BenchmarkBase.COMPLEX_WAT_MODULE).contains("memory");
+    assertNotNull(BenchmarkBase.COMPLEX_WAT_MODULE);
+    assertTrue(!BenchmarkBase.COMPLEX_WAT_MODULE.isEmpty(), "COMPLEX_WAT_MODULE should not be empty");
+    assertTrue(BenchmarkBase.COMPLEX_WAT_MODULE.contains("(module"),
+        "Expected COMPLEX_WAT_MODULE to contain '(module'");
+    assertTrue(BenchmarkBase.COMPLEX_WAT_MODULE.contains("fibonacci"),
+        "Expected COMPLEX_WAT_MODULE to contain 'fibonacci'");
+    assertTrue(BenchmarkBase.COMPLEX_WAT_MODULE.contains("memory"),
+        "Expected COMPLEX_WAT_MODULE to contain 'memory'");
   }
 
   @Test
   void testGetJavaVersion() {
     final int version = BenchmarkBase.getJavaVersion();
-    assertThat(version).isGreaterThanOrEqualTo(8);
-    assertThat(version).isLessThan(50); // Sanity check for future versions
+    assertTrue(version >= 8, "Java version should be >= 8, was: " + version);
+    assertTrue(version < 50, "Java version should be < 50 (sanity check), was: " + version);
   }
 
   @Test
   void testGetRecommendedRuntime() {
     final RuntimeType runtime = BenchmarkBase.getRecommendedRuntime();
-    assertThat(runtime).isIn(RuntimeType.JNI, RuntimeType.PANAMA);
+    assertTrue(runtime == RuntimeType.JNI || runtime == RuntimeType.PANAMA,
+        "Expected JNI or PANAMA, was: " + runtime);
   }
 
   @Test
@@ -64,65 +74,72 @@ final class BenchmarkBaseTest {
       0x01, 0x00, 0x00, 0x00 // WASM version 1
     };
     // Should not throw exception
-    BenchmarkBase.validateWasmModule(validWasmModule);
+    assertDoesNotThrow(() -> BenchmarkBase.validateWasmModule(validWasmModule));
   }
 
   @Test
   void testValidateWasmModuleWithNullModule() {
-    assertThatThrownBy(() -> BenchmarkBase.validateWasmModule(null))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("cannot be null");
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class, () -> BenchmarkBase.validateWasmModule(null));
+    assertTrue(ex.getMessage().contains("cannot be null"),
+        "Expected message to contain 'cannot be null', was: " + ex.getMessage());
   }
 
   @Test
   void testValidateWasmModuleWithTooSmallModule() {
     final byte[] tooSmall = new byte[4];
-    assertThatThrownBy(() -> BenchmarkBase.validateWasmModule(tooSmall))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("too small");
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class, () -> BenchmarkBase.validateWasmModule(tooSmall));
+    assertTrue(ex.getMessage().contains("too small"),
+        "Expected message to contain 'too small', was: " + ex.getMessage());
   }
 
   @Test
   void testValidateWasmModuleWithInvalidMagicNumber() {
     final byte[] invalidMagic = {0x01, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00};
-    assertThatThrownBy(() -> BenchmarkBase.validateWasmModule(invalidMagic))
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Invalid WASM magic number");
+    IllegalArgumentException ex =
+        assertThrows(
+            IllegalArgumentException.class, () -> BenchmarkBase.validateWasmModule(invalidMagic));
+    assertTrue(ex.getMessage().contains("Invalid WASM magic number"),
+        "Expected message to contain 'Invalid WASM magic number', was: " + ex.getMessage());
   }
 
   @Test
   void testFormatBenchmarkId() {
     final String id = BenchmarkBase.formatBenchmarkId("test_operation", RuntimeType.JNI);
-    assertThat(id).startsWith("test_operation_jni_");
-    assertThat(id)
-        .hasSizeGreaterThanOrEqualTo("test_operation_jni_".length() + 1); // Variable suffix
-    assertThat(id)
-        .hasSizeLessThanOrEqualTo("test_operation_jni_".length() + 4); // Max 4-digit suffix
+    assertTrue(id.startsWith("test_operation_jni_"),
+        "Expected id to start with 'test_operation_jni_', was: " + id);
+    assertTrue(id.length() >= "test_operation_jni_".length() + 1,
+        "Expected id length >= " + ("test_operation_jni_".length() + 1) + ", was: " + id.length());
+    assertTrue(id.length() <= "test_operation_jni_".length() + 4,
+        "Expected id length <= " + ("test_operation_jni_".length() + 4) + ", was: " + id.length());
   }
 
   @Test
   void testPreventOptimizationWithInt() {
     final int value = 42;
     final int result = BenchmarkBase.preventOptimization(value);
-    assertThat(result).isEqualTo(value);
+    assertEquals(value, result);
   }
 
   @Test
   void testPreventOptimizationWithByteArray() {
     final byte[] value = new byte[10];
     final int result = BenchmarkBase.preventOptimization(value);
-    assertThat(result).isEqualTo(10);
+    assertEquals(10, result);
   }
 
   @Test
   void testPreventOptimizationWithNullByteArray() {
     final int result = BenchmarkBase.preventOptimization((byte[]) null);
-    assertThat(result).isEqualTo(0);
+    assertEquals(0, result);
   }
 
   @Test
   void testRuntimeTypeValues() {
     // Test that all expected runtime types exist
-    assertThat(RuntimeType.values()).containsExactly(RuntimeType.JNI, RuntimeType.PANAMA);
+    assertArrayEquals(
+        new RuntimeType[] {RuntimeType.JNI, RuntimeType.PANAMA}, RuntimeType.values());
   }
 }

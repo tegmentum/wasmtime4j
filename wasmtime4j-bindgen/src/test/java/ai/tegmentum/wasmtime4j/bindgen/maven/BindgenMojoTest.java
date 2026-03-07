@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.maven;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,7 +68,9 @@ class BindgenMojoTest {
       mojo.execute();
 
       // Verify no output was generated
-      assertThat(tempDir.resolve("generated-sources")).doesNotExist();
+      assertFalse(
+          Files.exists(tempDir.resolve("generated-sources")),
+          "Expected generated-sources directory not to exist");
     }
   }
 
@@ -139,7 +144,7 @@ class BindgenMojoTest {
 
       Object result = parseMethod.invoke(mojo);
 
-      assertThat(result.toString()).isEqualTo("MODERN");
+      assertEquals("MODERN", result.toString());
     }
 
     @Test
@@ -154,7 +159,7 @@ class BindgenMojoTest {
 
       Object result = parseMethod.invoke(mojo);
 
-      assertThat(result.toString()).isEqualTo("LEGACY");
+      assertEquals("LEGACY", result.toString());
     }
 
     @Test
@@ -167,7 +172,7 @@ class BindgenMojoTest {
 
       Object result = parseMethod.invoke(mojo);
 
-      assertThat(result.toString()).isEqualTo("MODERN");
+      assertEquals("MODERN", result.toString());
     }
 
     @Test
@@ -180,10 +185,14 @@ class BindgenMojoTest {
       Method parseMethod = BindgenMojo.class.getDeclaredMethod("parseCodeStyle");
       parseMethod.setAccessible(true);
 
-      assertThatThrownBy(() -> parseMethod.invoke(mojo))
-          .hasCauseInstanceOf(MojoExecutionException.class)
-          .cause()
-          .hasMessageContaining("Invalid codeStyle");
+      InvocationTargetException exception =
+          assertThrows(InvocationTargetException.class, () -> parseMethod.invoke(mojo));
+      assertTrue(
+          exception.getCause() instanceof MojoExecutionException,
+          "Expected cause to be MojoExecutionException");
+      assertTrue(
+          exception.getCause().getMessage().contains("Invalid codeStyle"),
+          "Expected message to contain: Invalid codeStyle");
     }
   }
 
@@ -200,8 +209,8 @@ class BindgenMojoTest {
           BindgenMojo.class.getDeclaredMethod("matchesPattern", String.class, String.class);
       matchMethod.setAccessible(true);
 
-      assertThat((Boolean) matchMethod.invoke(mojo, "test.wit", "*.wit")).isTrue();
-      assertThat((Boolean) matchMethod.invoke(mojo, "test.wasm", "*.wit")).isFalse();
+      assertTrue((Boolean) matchMethod.invoke(mojo, "test.wit", "*.wit"));
+      assertFalse((Boolean) matchMethod.invoke(mojo, "test.wasm", "*.wit"));
     }
 
     @Test
@@ -211,8 +220,8 @@ class BindgenMojoTest {
           BindgenMojo.class.getDeclaredMethod("matchesPattern", String.class, String.class);
       matchMethod.setAccessible(true);
 
-      assertThat((Boolean) matchMethod.invoke(mojo, "test1.wit", "test?.wit")).isTrue();
-      assertThat((Boolean) matchMethod.invoke(mojo, "test12.wit", "test?.wit")).isFalse();
+      assertTrue((Boolean) matchMethod.invoke(mojo, "test1.wit", "test?.wit"));
+      assertFalse((Boolean) matchMethod.invoke(mojo, "test12.wit", "test?.wit"));
     }
 
     @Test
@@ -222,8 +231,8 @@ class BindgenMojoTest {
           BindgenMojo.class.getDeclaredMethod("matchesPattern", String.class, String.class);
       matchMethod.setAccessible(true);
 
-      assertThat((Boolean) matchMethod.invoke(mojo, "world.wit", "world.wit")).isTrue();
-      assertThat((Boolean) matchMethod.invoke(mojo, "hello.wit", "world.wit")).isFalse();
+      assertTrue((Boolean) matchMethod.invoke(mojo, "world.wit", "world.wit"));
+      assertFalse((Boolean) matchMethod.invoke(mojo, "hello.wit", "world.wit"));
     }
 
     @Test
@@ -233,8 +242,8 @@ class BindgenMojoTest {
           BindgenMojo.class.getDeclaredMethod("matchesPattern", String.class, String.class);
       matchMethod.setAccessible(true);
 
-      assertThat((Boolean) matchMethod.invoke(mojo, "test-api-v2.wit", "*-api-*.wit")).isTrue();
-      assertThat((Boolean) matchMethod.invoke(mojo, "test-other.wit", "*-api-*.wit")).isFalse();
+      assertTrue((Boolean) matchMethod.invoke(mojo, "test-api-v2.wit", "*-api-*.wit"));
+      assertFalse((Boolean) matchMethod.invoke(mojo, "test-other.wit", "*-api-*.wit"));
     }
   }
 
@@ -256,7 +265,7 @@ class BindgenMojoTest {
       Method matchMethod = BindgenMojo.class.getDeclaredMethod("matchesWitPatterns", Path.class);
       matchMethod.setAccessible(true);
 
-      assertThat((Boolean) matchMethod.invoke(mojo, witPath)).isTrue();
+      assertTrue((Boolean) matchMethod.invoke(mojo, witPath));
     }
 
     @Test
@@ -271,7 +280,7 @@ class BindgenMojoTest {
       Method matchMethod = BindgenMojo.class.getDeclaredMethod("matchesWitPatterns", Path.class);
       matchMethod.setAccessible(true);
 
-      assertThat((Boolean) matchMethod.invoke(mojo, excludedPath)).isFalse();
+      assertFalse((Boolean) matchMethod.invoke(mojo, excludedPath));
     }
 
     @Test
@@ -288,8 +297,8 @@ class BindgenMojoTest {
       Method matchMethod = BindgenMojo.class.getDeclaredMethod("matchesWitPatterns", Path.class);
       matchMethod.setAccessible(true);
 
-      assertThat((Boolean) matchMethod.invoke(mojo, includedPath)).isTrue();
-      assertThat((Boolean) matchMethod.invoke(mojo, notIncludedPath)).isFalse();
+      assertTrue((Boolean) matchMethod.invoke(mojo, includedPath));
+      assertFalse((Boolean) matchMethod.invoke(mojo, notIncludedPath));
     }
 
     @Test
@@ -305,7 +314,7 @@ class BindgenMojoTest {
       matchMethod.setAccessible(true);
 
       // Exclude takes priority
-      assertThat((Boolean) matchMethod.invoke(mojo, path)).isFalse();
+      assertFalse((Boolean) matchMethod.invoke(mojo, path));
     }
   }
 
@@ -334,8 +343,10 @@ class BindgenMojoTest {
       @SuppressWarnings("unchecked")
       List<Path> result = (List<Path>) collectMethod.invoke(mojo);
 
-      assertThat(result).hasSize(2);
-      assertThat(result).allMatch(p -> p.toString().endsWith(".wit"));
+      assertEquals(2, result.size());
+      assertTrue(
+          result.stream().allMatch(p -> p.toString().endsWith(".wit")),
+          "Expected all collected files to have .wit extension");
     }
 
     @Test
@@ -357,8 +368,10 @@ class BindgenMojoTest {
       @SuppressWarnings("unchecked")
       List<Path> result = (List<Path>) collectMethod.invoke(mojo);
 
-      assertThat(result).hasSize(2);
-      assertThat(result).allMatch(p -> p.toString().endsWith(".wasm"));
+      assertEquals(2, result.size());
+      assertTrue(
+          result.stream().allMatch(p -> p.toString().endsWith(".wasm")),
+          "Expected all collected files to have .wasm extension");
     }
 
     @Test
@@ -372,7 +385,7 @@ class BindgenMojoTest {
       @SuppressWarnings("unchecked")
       List<Path> result = (List<Path>) collectMethod.invoke(mojo);
 
-      assertThat(result).isEmpty();
+      assertTrue(result.isEmpty());
     }
 
     @Test
@@ -394,7 +407,7 @@ class BindgenMojoTest {
       @SuppressWarnings("unchecked")
       List<Path> result = (List<Path>) collectMethod.invoke(mojo);
 
-      assertThat(result).hasSize(2);
+      assertEquals(2, result.size());
     }
   }
 
@@ -409,7 +422,7 @@ class BindgenMojoTest {
       BindgenMojo freshMojo = new BindgenMojo();
 
       // These should not throw NPE when accessed via reflection
-      assertThat(freshMojo).isNotNull();
+      assertNotNull(freshMojo);
     }
   }
 

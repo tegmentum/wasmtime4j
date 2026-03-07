@@ -15,8 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.util.logging.Logger;
@@ -48,9 +51,9 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing ExnRef value creation");
 
     final WasmValue exn = WasmValue.exnref("exception-data");
-    assertThat(exn.getType()).isEqualTo(WasmValueType.EXNREF);
-    assertThat(exn.asExnref()).isEqualTo("exception-data");
-    assertThat(exn.isReference()).as("ExnRef should be a reference type").isTrue();
+    assertEquals(WasmValueType.EXNREF, exn.getType());
+    assertEquals("exception-data", exn.asExnref());
+    assertTrue(exn.isReference(), "ExnRef should be a reference type");
   }
 
   @ParameterizedTest
@@ -60,9 +63,9 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing null ExnRef creation");
 
     final WasmValue nullExn = WasmValue.nullExnRef();
-    assertThat(nullExn.getType()).isEqualTo(WasmValueType.EXNREF);
-    assertThat(nullExn.asExnref()).isNull();
-    assertThat(nullExn.getValue() == null).as("Null exnref should be null").isTrue();
+    assertEquals(WasmValueType.EXNREF, nullExn.getType());
+    assertNull(nullExn.asExnref());
+    assertNull(nullExn.getValue(), "Null exnref should be null");
   }
 
   @ParameterizedTest
@@ -72,8 +75,8 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing NULLEXNREF bottom type");
 
     final WasmValue nullExnBottom = WasmValue.nullNullExnRef();
-    assertThat(nullExnBottom.getType()).isEqualTo(WasmValueType.NULLEXNREF);
-    assertThat(nullExnBottom.getValue() == null).as("NULLEXNREF should be null").isTrue();
+    assertEquals(WasmValueType.NULLEXNREF, nullExnBottom.getType());
+    assertNull(nullExnBottom.getValue(), "NULLEXNREF should be null");
   }
 
   @ParameterizedTest
@@ -83,17 +86,17 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing ExnRef type hierarchy");
 
     // NULLEXNREF is a subtype of EXNREF
-    assertThat(WasmValueType.NULLEXNREF.isSubtypeOf(WasmValueType.EXNREF))
-        .as("NULLEXNREF should be subtype of EXNREF")
-        .isTrue();
+    assertTrue(
+        WasmValueType.NULLEXNREF.isSubtypeOf(WasmValueType.EXNREF),
+        "NULLEXNREF should be subtype of EXNREF");
 
     // EXNREF is not a subtype of NULLEXNREF
-    assertThat(WasmValueType.EXNREF.isSubtypeOf(WasmValueType.NULLEXNREF))
-        .as("EXNREF should not be subtype of NULLEXNREF")
-        .isFalse();
+    assertFalse(
+        WasmValueType.EXNREF.isSubtypeOf(WasmValueType.NULLEXNREF),
+        "EXNREF should not be subtype of NULLEXNREF");
 
     // EXNREF is a reference type
-    assertThat(WasmValueType.EXNREF.isReference()).as("EXNREF should be a reference type").isTrue();
+    assertTrue(WasmValueType.EXNREF.isReference(), "EXNREF should be a reference type");
   }
 
   @ParameterizedTest
@@ -118,9 +121,9 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing ContRef value creation");
 
     final WasmValue cont = WasmValue.contref("continuation-data");
-    assertThat(cont.getType()).isEqualTo(WasmValueType.CONTREF);
-    assertThat(cont.asContref()).isEqualTo("continuation-data");
-    assertThat(cont.isReference()).as("ContRef should be a reference type").isTrue();
+    assertEquals(WasmValueType.CONTREF, cont.getType());
+    assertEquals("continuation-data", cont.asContref());
+    assertTrue(cont.isReference(), "ContRef should be a reference type");
   }
 
   @ParameterizedTest
@@ -130,9 +133,9 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing null ContRef creation");
 
     final WasmValue nullCont = WasmValue.nullContRef();
-    assertThat(nullCont.getType()).isEqualTo(WasmValueType.CONTREF);
-    assertThat(nullCont.asContref()).isNull();
-    assertThat(nullCont.getValue() == null).as("Null contref should be null").isTrue();
+    assertEquals(WasmValueType.CONTREF, nullCont.getType());
+    assertNull(nullCont.asContref());
+    assertNull(nullCont.getValue(), "Null contref should be null");
   }
 
   @ParameterizedTest
@@ -142,8 +145,8 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing NULLCONTREF bottom type");
 
     final WasmValue nullContBottom = WasmValue.nullNullContRef();
-    assertThat(nullContBottom.getType()).isEqualTo(WasmValueType.NULLCONTREF);
-    assertThat(nullContBottom.getValue() == null).as("NULLCONTREF should be null").isTrue();
+    assertEquals(WasmValueType.NULLCONTREF, nullContBottom.getType());
+    assertNull(nullContBottom.getValue(), "NULLCONTREF should be null");
   }
 
   @ParameterizedTest
@@ -153,19 +156,17 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing ContRef type hierarchy");
 
     // NULLCONTREF is a subtype of CONTREF
-    assertThat(WasmValueType.NULLCONTREF.isSubtypeOf(WasmValueType.CONTREF))
-        .as("NULLCONTREF should be subtype of CONTREF")
-        .isTrue();
+    assertTrue(
+        WasmValueType.NULLCONTREF.isSubtypeOf(WasmValueType.CONTREF),
+        "NULLCONTREF should be subtype of CONTREF");
 
     // CONTREF is not a subtype of NULLCONTREF
-    assertThat(WasmValueType.CONTREF.isSubtypeOf(WasmValueType.NULLCONTREF))
-        .as("CONTREF should not be subtype of NULLCONTREF")
-        .isFalse();
+    assertFalse(
+        WasmValueType.CONTREF.isSubtypeOf(WasmValueType.NULLCONTREF),
+        "CONTREF should not be subtype of NULLCONTREF");
 
     // CONTREF is a reference type
-    assertThat(WasmValueType.CONTREF.isReference())
-        .as("CONTREF should be a reference type")
-        .isTrue();
+    assertTrue(WasmValueType.CONTREF.isReference(), "CONTREF should be a reference type");
   }
 
   @ParameterizedTest
@@ -190,12 +191,12 @@ class ExnRefContRefTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing ExnRef and ContRef are distinct types");
 
     // ExnRef is not a subtype of ContRef and vice versa
-    assertThat(WasmValueType.EXNREF.isSubtypeOf(WasmValueType.CONTREF))
-        .as("EXNREF should not be subtype of CONTREF")
-        .isFalse();
-    assertThat(WasmValueType.CONTREF.isSubtypeOf(WasmValueType.EXNREF))
-        .as("CONTREF should not be subtype of EXNREF")
-        .isFalse();
+    assertFalse(
+        WasmValueType.EXNREF.isSubtypeOf(WasmValueType.CONTREF),
+        "EXNREF should not be subtype of CONTREF");
+    assertFalse(
+        WasmValueType.CONTREF.isSubtypeOf(WasmValueType.EXNREF),
+        "CONTREF should not be subtype of EXNREF");
 
     // Can't cast between them
     final WasmValue exn = WasmValue.exnref("data");

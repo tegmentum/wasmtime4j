@@ -15,8 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
@@ -56,7 +59,9 @@ class JniHostFunctionTest {
             WasmException.class,
             () -> new JniHostFunction(null, testFunctionType, testImplementation, testStore));
 
-    assertThat(exception.getMessage()).contains("Failed to create native host function");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native host function"),
+        "Expected message to contain: Failed to create native host function");
   }
 
   @Test
@@ -66,7 +71,9 @@ class JniHostFunctionTest {
             WasmException.class,
             () -> new JniHostFunction("test", null, testImplementation, testStore));
 
-    assertThat(exception.getMessage()).contains("Failed to create native host function");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native host function"),
+        "Expected message to contain: Failed to create native host function");
   }
 
   @Test
@@ -76,7 +83,9 @@ class JniHostFunctionTest {
             WasmException.class,
             () -> new JniHostFunction("test", testFunctionType, null, testStore));
 
-    assertThat(exception.getMessage()).contains("Failed to create native host function");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native host function"),
+        "Expected message to contain: Failed to create native host function");
   }
 
   @Test
@@ -86,7 +95,9 @@ class JniHostFunctionTest {
             WasmException.class,
             () -> new JniHostFunction("test", testFunctionType, testImplementation, null));
 
-    assertThat(exception.getMessage()).contains("Failed to create native host function");
+    assertTrue(
+        exception.getMessage().contains("Failed to create native host function"),
+        "Expected message to contain: Failed to create native host function");
   }
 
   // Registry tests - these are static and don't require instances
@@ -95,23 +106,23 @@ class JniHostFunctionTest {
   void testRegistryStatsNotNull() {
     final long[] stats = JniHostFunction.getRegistryStats();
 
-    assertThat(stats).isNotNull();
-    assertThat(stats).hasSize(2);
-    assertThat(stats[0]).isGreaterThanOrEqualTo(0); // registry size
-    assertThat(stats[1]).isGreaterThan(0); // next ID
+    assertNotNull(stats);
+    assertEquals(2, stats.length);
+    assertTrue(stats[0] >= 0, "Registry size should be >= 0"); // registry size
+    assertTrue(stats[1] > 0, "Next ID should be > 0"); // next ID
   }
 
   @Test
   void testGetFromRegistryWithInvalidId() {
     final JniHostFunction result = JniHostFunction.getFromRegistry(-1L);
 
-    assertThat(result).isNull();
+    assertNull(result);
   }
 
   @Test
   void testGetFromRegistryWithNonExistentId() {
     final JniHostFunction result = JniHostFunction.getFromRegistry(999999999L);
 
-    assertThat(result).isNull();
+    assertNull(result);
   }
 }

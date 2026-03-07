@@ -15,7 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
@@ -54,9 +55,7 @@ class CustomCreatorConfigTest extends DualRuntimeTest {
         (type, minBytes, maxBytes, reservedBytes, guardBytes) -> new StubLinearMemory(minBytes);
 
     final EngineConfig config = Engine.builder().withHostMemory(creator);
-    assertThat(config.getMemoryCreator())
-        .as("getMemoryCreator should return the set creator")
-        .isSameAs(creator);
+    assertSame(creator, config.getMemoryCreator(), "getMemoryCreator should return the set creator");
   }
 
   @ParameterizedTest
@@ -79,9 +78,7 @@ class CustomCreatorConfigTest extends DualRuntimeTest {
     final StackCreator creator = (size, zeroed) -> new StubStackMemory(size);
 
     final EngineConfig config = Engine.builder().withHostStack(creator);
-    assertThat(config.getStackCreator())
-        .as("getStackCreator should return the set creator")
-        .isSameAs(creator);
+    assertSame(creator, config.getStackCreator(), "getStackCreator should return the set creator");
   }
 
   @ParameterizedTest
@@ -107,7 +104,7 @@ class CustomCreatorConfigTest extends DualRuntimeTest {
     final EngineConfig config = Engine.builder().withHostMemory(creator);
     // Engine creation should succeed even with a custom creator configured
     try (Engine engine = Engine.create(config)) {
-      assertThat(engine).as("Engine should be created with MemoryCreator").isNotNull();
+      assertNotNull(engine, "Engine should be created with MemoryCreator");
     }
   }
 
@@ -125,12 +122,8 @@ class CustomCreatorConfigTest extends DualRuntimeTest {
         Engine.builder().withHostMemory(memCreator).withHostStack(stackCreator);
     final EngineConfig copy = original.copy();
 
-    assertThat(copy.getMemoryCreator())
-        .as("Copy should preserve MemoryCreator")
-        .isSameAs(memCreator);
-    assertThat(copy.getStackCreator())
-        .as("Copy should preserve StackCreator")
-        .isSameAs(stackCreator);
+    assertSame(memCreator, copy.getMemoryCreator(), "Copy should preserve MemoryCreator");
+    assertSame(stackCreator, copy.getStackCreator(), "Copy should preserve StackCreator");
   }
 
   /** Minimal stub LinearMemory for testing config wiring only. */

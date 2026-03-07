@@ -15,7 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.jni.exception.JniException;
 import org.junit.jupiter.api.DisplayName;
@@ -32,8 +33,9 @@ class JniGcRuntimeTest {
   @Test
   @DisplayName("Constructor should reject zero engine handle")
   void constructorShouldRejectZeroEngineHandle() {
-    assertThatThrownBy(() -> new JniGcRuntime(0))
-        .isInstanceOf(JniException.class)
-        .hasMessageContaining("Invalid engine handle");
+    JniException e = assertThrows(JniException.class, () -> new JniGcRuntime(0));
+    assertTrue(
+        e.getMessage().contains("Invalid engine handle"),
+        "Expected message to contain: Invalid engine handle");
   }
 }

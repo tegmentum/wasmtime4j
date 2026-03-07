@@ -15,9 +15,13 @@
  */
 package ai.tegmentum.wasmtime4j.jni.type;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.type.FuncType;
@@ -53,9 +57,9 @@ class JniTypeSystemTest {
 
       final JniFuncType funcType = new JniFuncType(params, results);
 
-      assertThat(funcType.getParams()).isEqualTo(params);
-      assertThat(funcType.getResults()).isEqualTo(results);
-      assertThat(funcType.getKind()).isEqualTo(WasmTypeKind.FUNCTION);
+      assertEquals(params, funcType.getParams());
+      assertEquals(results, funcType.getResults());
+      assertEquals(WasmTypeKind.FUNCTION, funcType.getKind());
     }
 
     @Test
@@ -64,8 +68,8 @@ class JniTypeSystemTest {
       final JniFuncType funcType =
           new JniFuncType(Collections.emptyList(), Collections.emptyList());
 
-      assertThat(funcType.getParams()).isEmpty();
-      assertThat(funcType.getResults()).isEmpty();
+      assertTrue(funcType.getParams().isEmpty());
+      assertTrue(funcType.getResults().isEmpty());
     }
 
     @Test
@@ -76,8 +80,12 @@ class JniTypeSystemTest {
 
       final JniFuncType funcType = new JniFuncType(params, results);
 
-      assertThat(funcType.getParams()).containsExactly(WasmValueType.I32, WasmValueType.F32);
-      assertThat(funcType.getResults()).containsExactly(WasmValueType.I64);
+      assertEquals(
+          List.of(WasmValueType.I32, WasmValueType.F32),
+          funcType.getParams());
+      assertEquals(
+          List.of(WasmValueType.I64),
+          funcType.getResults());
     }
 
     @Test
@@ -104,7 +112,9 @@ class JniTypeSystemTest {
               IllegalArgumentException.class,
               () -> new JniFuncType(paramsWithNull, Collections.emptyList()));
 
-      assertThat(exception.getMessage()).contains("Parameter type at index 1 is null");
+      assertTrue(
+          exception.getMessage().contains("Parameter type at index 1 is null"),
+          "Expected message to contain: Parameter type at index 1 is null");
     }
 
     @Test
@@ -117,7 +127,9 @@ class JniTypeSystemTest {
               IllegalArgumentException.class,
               () -> new JniFuncType(Collections.emptyList(), resultsWithNull));
 
-      assertThat(exception.getMessage()).contains("Result type at index 0 is null");
+      assertTrue(
+          exception.getMessage().contains("Result type at index 0 is null"),
+          "Expected message to contain: Result type at index 0 is null");
     }
 
     @Test
@@ -130,10 +142,10 @@ class JniTypeSystemTest {
       final JniFuncType funcType3 =
           new JniFuncType(Arrays.asList(WasmValueType.F32), Arrays.asList(WasmValueType.I64));
 
-      assertThat(funcType1).isEqualTo(funcType2);
-      assertThat(funcType1).isNotEqualTo(funcType3);
-      assertThat(funcType1).isNotEqualTo(null);
-      assertThat(funcType1).isNotEqualTo("not a FuncType");
+      assertEquals(funcType1, funcType2);
+      assertNotEquals(funcType1, funcType3);
+      assertNotEquals(null, funcType1);
+      assertNotEquals("not a FuncType", funcType1);
     }
 
     @Test
@@ -144,7 +156,7 @@ class JniTypeSystemTest {
       final JniFuncType funcType2 =
           new JniFuncType(Arrays.asList(WasmValueType.I32), Arrays.asList(WasmValueType.I64));
 
-      assertThat(funcType1.hashCode()).isEqualTo(funcType2.hashCode());
+      assertEquals(funcType1.hashCode(), funcType2.hashCode());
     }
 
     @Test
@@ -155,9 +167,9 @@ class JniTypeSystemTest {
 
       final String result = funcType.toString();
 
-      assertThat(result).contains("FuncType");
-      assertThat(result).contains("I32");
-      assertThat(result).contains("F64");
+      assertTrue(result.contains("FuncType"), "Expected string to contain: FuncType");
+      assertTrue(result.contains("I32"), "Expected string to contain: I32");
+      assertTrue(result.contains("F64"), "Expected string to contain: F64");
     }
 
     @Test
@@ -190,9 +202,9 @@ class JniTypeSystemTest {
     void shouldCreateMutableGlobalType() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.I32, true);
 
-      assertThat(globalType.getValueType()).isEqualTo(WasmValueType.I32);
-      assertThat(globalType.isMutable()).isTrue();
-      assertThat(globalType.getKind()).isEqualTo(WasmTypeKind.GLOBAL);
+      assertEquals(WasmValueType.I32, globalType.getValueType());
+      assertTrue(globalType.isMutable());
+      assertEquals(WasmTypeKind.GLOBAL, globalType.getKind());
     }
 
     @Test
@@ -200,8 +212,8 @@ class JniTypeSystemTest {
     void shouldCreateImmutableGlobalType() {
       final JniGlobalType globalType = new JniGlobalType(WasmValueType.F64, false);
 
-      assertThat(globalType.getValueType()).isEqualTo(WasmValueType.F64);
-      assertThat(globalType.isMutable()).isFalse();
+      assertEquals(WasmValueType.F64, globalType.getValueType());
+      assertFalse(globalType.isMutable());
     }
 
     @Test
@@ -218,10 +230,10 @@ class JniTypeSystemTest {
       final JniGlobalType globalType3 = new JniGlobalType(WasmValueType.I32, false);
       final JniGlobalType globalType4 = new JniGlobalType(WasmValueType.I64, true);
 
-      assertThat(globalType1).isEqualTo(globalType2);
-      assertThat(globalType1).isNotEqualTo(globalType3);
-      assertThat(globalType1).isNotEqualTo(globalType4);
-      assertThat(globalType1).isNotEqualTo(null);
+      assertEquals(globalType1, globalType2);
+      assertNotEquals(globalType1, globalType3);
+      assertNotEquals(globalType1, globalType4);
+      assertNotEquals(null, globalType1);
     }
 
     @Test
@@ -230,7 +242,7 @@ class JniTypeSystemTest {
       final JniGlobalType globalType1 = new JniGlobalType(WasmValueType.I64, false);
       final JniGlobalType globalType2 = new JniGlobalType(WasmValueType.I64, false);
 
-      assertThat(globalType1.hashCode()).isEqualTo(globalType2.hashCode());
+      assertEquals(globalType1.hashCode(), globalType2.hashCode());
     }
 
     @Test
@@ -240,9 +252,9 @@ class JniTypeSystemTest {
 
       final String result = globalType.toString();
 
-      assertThat(result).contains("GlobalType");
-      assertThat(result).contains("F32");
-      assertThat(result).contains("true");
+      assertTrue(result.contains("GlobalType"), "Expected string to contain: GlobalType");
+      assertTrue(result.contains("F32"), "Expected string to contain: F32");
+      assertTrue(result.contains("true"), "Expected string to contain: true");
     }
   }
 
@@ -255,11 +267,11 @@ class JniTypeSystemTest {
     void shouldCreateMemoryTypeWithMinimumOnly() {
       final JniMemoryType memoryType = new JniMemoryType(1, null, false, false);
 
-      assertThat(memoryType.getMinimum()).isEqualTo(1);
-      assertThat(memoryType.getMaximum()).isEmpty();
-      assertThat(memoryType.is64Bit()).isFalse();
-      assertThat(memoryType.isShared()).isFalse();
-      assertThat(memoryType.getKind()).isEqualTo(WasmTypeKind.MEMORY);
+      assertEquals(1, memoryType.getMinimum());
+      assertTrue(memoryType.getMaximum().isEmpty());
+      assertFalse(memoryType.is64Bit());
+      assertFalse(memoryType.isShared());
+      assertEquals(WasmTypeKind.MEMORY, memoryType.getKind());
     }
 
     @Test
@@ -267,8 +279,9 @@ class JniTypeSystemTest {
     void shouldCreateMemoryTypeWithMaximum() {
       final JniMemoryType memoryType = new JniMemoryType(1, 10L, false, false);
 
-      assertThat(memoryType.getMinimum()).isEqualTo(1);
-      assertThat(memoryType.getMaximum()).isPresent().contains(10L);
+      assertEquals(1, memoryType.getMinimum());
+      assertTrue(memoryType.getMaximum().isPresent());
+      assertEquals(10L, memoryType.getMaximum().get());
     }
 
     @Test
@@ -276,8 +289,8 @@ class JniTypeSystemTest {
     void shouldCreate64BitSharedMemoryType() {
       final JniMemoryType memoryType = new JniMemoryType(0, 100L, true, true);
 
-      assertThat(memoryType.is64Bit()).isTrue();
-      assertThat(memoryType.isShared()).isTrue();
+      assertTrue(memoryType.is64Bit());
+      assertTrue(memoryType.isShared());
     }
 
     @Test
@@ -287,7 +300,9 @@ class JniTypeSystemTest {
           assertThrows(
               IllegalArgumentException.class, () -> new JniMemoryType(-1, null, false, false));
 
-      assertThat(exception.getMessage()).contains("cannot be negative");
+      assertTrue(
+          exception.getMessage().contains("cannot be negative"),
+          "Expected message to contain: cannot be negative");
     }
 
     @Test
@@ -297,7 +312,9 @@ class JniTypeSystemTest {
           assertThrows(
               IllegalArgumentException.class, () -> new JniMemoryType(10, 5L, false, false));
 
-      assertThat(exception.getMessage()).contains("cannot be less than minimum");
+      assertTrue(
+          exception.getMessage().contains("cannot be less than minimum"),
+          "Expected message to contain: cannot be less than minimum");
     }
 
     @Test
@@ -313,8 +330,8 @@ class JniTypeSystemTest {
       final JniMemoryType memoryType2 = new JniMemoryType(1, 10L, true, false);
       final JniMemoryType memoryType3 = new JniMemoryType(2, 10L, true, false);
 
-      assertThat(memoryType1).isEqualTo(memoryType2);
-      assertThat(memoryType1).isNotEqualTo(memoryType3);
+      assertEquals(memoryType1, memoryType2);
+      assertNotEquals(memoryType1, memoryType3);
     }
 
     @Test
@@ -323,7 +340,7 @@ class JniTypeSystemTest {
       final JniMemoryType memoryType1 = new JniMemoryType(1, 10L, false, true);
       final JniMemoryType memoryType2 = new JniMemoryType(1, 10L, false, true);
 
-      assertThat(memoryType1.hashCode()).isEqualTo(memoryType2.hashCode());
+      assertEquals(memoryType1.hashCode(), memoryType2.hashCode());
     }
 
     @Test
@@ -333,10 +350,10 @@ class JniTypeSystemTest {
 
       final String result = memoryType.toString();
 
-      assertThat(result).contains("MemoryType");
-      assertThat(result).contains("min=1");
-      assertThat(result).contains("max=10");
-      assertThat(result).contains("64bit=true");
+      assertTrue(result.contains("MemoryType"), "Expected string to contain: MemoryType");
+      assertTrue(result.contains("min=1"), "Expected string to contain: min=1");
+      assertTrue(result.contains("max=10"), "Expected string to contain: max=10");
+      assertTrue(result.contains("64bit=true"), "Expected string to contain: 64bit=true");
     }
 
     @Test
@@ -346,7 +363,7 @@ class JniTypeSystemTest {
 
       final String result = memoryType.toString();
 
-      assertThat(result).contains("unlimited");
+      assertTrue(result.contains("unlimited"), "Expected string to contain: unlimited");
     }
   }
 
@@ -359,10 +376,10 @@ class JniTypeSystemTest {
     void shouldCreateTableTypeWithFuncrefElementType() {
       final JniTableType tableType = new JniTableType(WasmValueType.FUNCREF, 1, null);
 
-      assertThat(tableType.getElementType()).isEqualTo(WasmValueType.FUNCREF);
-      assertThat(tableType.getMinimum()).isEqualTo(1);
-      assertThat(tableType.getMaximum()).isEmpty();
-      assertThat(tableType.getKind()).isEqualTo(WasmTypeKind.TABLE);
+      assertEquals(WasmValueType.FUNCREF, tableType.getElementType());
+      assertEquals(1, tableType.getMinimum());
+      assertTrue(tableType.getMaximum().isEmpty());
+      assertEquals(WasmTypeKind.TABLE, tableType.getKind());
     }
 
     @Test
@@ -370,8 +387,9 @@ class JniTypeSystemTest {
     void shouldCreateTableTypeWithExternrefElementType() {
       final JniTableType tableType = new JniTableType(WasmValueType.EXTERNREF, 0, 100L);
 
-      assertThat(tableType.getElementType()).isEqualTo(WasmValueType.EXTERNREF);
-      assertThat(tableType.getMaximum()).isPresent().contains(100L);
+      assertEquals(WasmValueType.EXTERNREF, tableType.getElementType());
+      assertTrue(tableType.getMaximum().isPresent());
+      assertEquals(100L, tableType.getMaximum().get());
     }
 
     @Test
@@ -387,7 +405,9 @@ class JniTypeSystemTest {
           assertThrows(
               IllegalArgumentException.class, () -> new JniTableType(WasmValueType.I32, 0, null));
 
-      assertThat(exception.getMessage()).contains("reference type");
+      assertTrue(
+          exception.getMessage().contains("reference type"),
+          "Expected message to contain: reference type");
     }
 
     @Test
@@ -398,7 +418,9 @@ class JniTypeSystemTest {
               IllegalArgumentException.class,
               () -> new JniTableType(WasmValueType.FUNCREF, -1, null));
 
-      assertThat(exception.getMessage()).contains("cannot be negative");
+      assertTrue(
+          exception.getMessage().contains("cannot be negative"),
+          "Expected message to contain: cannot be negative");
     }
 
     @Test
@@ -409,7 +431,9 @@ class JniTypeSystemTest {
               IllegalArgumentException.class,
               () -> new JniTableType(WasmValueType.FUNCREF, 10, 5L));
 
-      assertThat(exception.getMessage()).contains("cannot be less than minimum");
+      assertTrue(
+          exception.getMessage().contains("cannot be less than minimum"),
+          "Expected message to contain: cannot be less than minimum");
     }
 
     @Test
@@ -419,8 +443,8 @@ class JniTypeSystemTest {
       final JniTableType tableType2 = new JniTableType(WasmValueType.FUNCREF, 1, 10L);
       final JniTableType tableType3 = new JniTableType(WasmValueType.EXTERNREF, 1, 10L);
 
-      assertThat(tableType1).isEqualTo(tableType2);
-      assertThat(tableType1).isNotEqualTo(tableType3);
+      assertEquals(tableType1, tableType2);
+      assertNotEquals(tableType1, tableType3);
     }
 
     @Test
@@ -429,7 +453,7 @@ class JniTypeSystemTest {
       final JniTableType tableType1 = new JniTableType(WasmValueType.FUNCREF, 0, 50L);
       final JniTableType tableType2 = new JniTableType(WasmValueType.FUNCREF, 0, 50L);
 
-      assertThat(tableType1.hashCode()).isEqualTo(tableType2.hashCode());
+      assertEquals(tableType1.hashCode(), tableType2.hashCode());
     }
 
     @Test
@@ -439,10 +463,10 @@ class JniTypeSystemTest {
 
       final String result = tableType.toString();
 
-      assertThat(result).contains("TableType");
-      assertThat(result).contains("FUNCREF");
-      assertThat(result).contains("min=1");
-      assertThat(result).contains("max=100");
+      assertTrue(result.contains("TableType"), "Expected string to contain: TableType");
+      assertTrue(result.contains("FUNCREF"), "Expected string to contain: FUNCREF");
+      assertTrue(result.contains("min=1"), "Expected string to contain: min=1");
+      assertTrue(result.contains("max=100"), "Expected string to contain: max=100");
     }
   }
 
@@ -456,9 +480,9 @@ class JniTypeSystemTest {
       final FuncType funcType =
           new JniFuncType(Arrays.asList(WasmValueType.I32), Arrays.asList(WasmValueType.I64));
 
-      assertThat(funcType).isInstanceOf(FuncType.class);
-      assertThat(funcType.getParams()).hasSize(1);
-      assertThat(funcType.getResults()).hasSize(1);
+      assertInstanceOf(FuncType.class, funcType);
+      assertEquals(1, funcType.getParams().size());
+      assertEquals(1, funcType.getResults().size());
     }
 
     @Test
@@ -466,8 +490,8 @@ class JniTypeSystemTest {
     void jniGlobalTypeShouldImplementGlobalTypeInterface() {
       final GlobalType globalType = new JniGlobalType(WasmValueType.F32, true);
 
-      assertThat(globalType).isInstanceOf(GlobalType.class);
-      assertThat(globalType.getValueType()).isEqualTo(WasmValueType.F32);
+      assertInstanceOf(GlobalType.class, globalType);
+      assertEquals(WasmValueType.F32, globalType.getValueType());
     }
 
     @Test
@@ -475,8 +499,8 @@ class JniTypeSystemTest {
     void jniMemoryTypeShouldImplementMemoryTypeInterface() {
       final MemoryType memoryType = new JniMemoryType(1, 10L, false, false);
 
-      assertThat(memoryType).isInstanceOf(MemoryType.class);
-      assertThat(memoryType.getMinimum()).isEqualTo(1);
+      assertInstanceOf(MemoryType.class, memoryType);
+      assertEquals(1, memoryType.getMinimum());
     }
 
     @Test
@@ -484,8 +508,8 @@ class JniTypeSystemTest {
     void jniTableTypeShouldImplementTableTypeInterface() {
       final TableType tableType = new JniTableType(WasmValueType.FUNCREF, 0, 100L);
 
-      assertThat(tableType).isInstanceOf(TableType.class);
-      assertThat(tableType.getElementType()).isEqualTo(WasmValueType.FUNCREF);
+      assertInstanceOf(TableType.class, tableType);
+      assertEquals(WasmValueType.FUNCREF, tableType.getElementType());
     }
   }
 }

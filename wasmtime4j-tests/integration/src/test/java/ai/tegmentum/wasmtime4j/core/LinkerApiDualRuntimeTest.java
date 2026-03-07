@@ -15,10 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.core;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -169,7 +169,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
       final Linker<?> linker = Linker.create(engine);
       resources.add(linker);
 
-      assertThat(linker.getEngine()).isSameAs(engine);
+      assertSame(engine, linker.getEngine());
       LOGGER.info("[" + runtime + "] Linker returns correct engine reference");
     }
   }
@@ -251,7 +251,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         final Object result = linker.allowShadowing(true);
-        assertThat(result).isSameAs(linker);
+        assertSame(linker, result);
         LOGGER.info("[" + runtime + "] allowShadowing returns this for fluent chaining");
       }
     }
@@ -268,7 +268,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         final Object result = linker.allowUnknownExports(true);
-        assertThat(result).isSameAs(linker);
+        assertSame(linker, result);
         LOGGER.info("[" + runtime + "] allowUnknownExports returns this for fluent chaining");
       }
     }
@@ -753,7 +753,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         resources.add(linker);
 
         final List<ImportInfo> registry = linker.getImportRegistry();
-        assertThat(registry).isEmpty();
+        assertTrue(registry.isEmpty());
         LOGGER.info("[" + runtime + "] Empty linker has empty import registry");
       }
     }
@@ -773,7 +773,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
         linker.defineHostFunction("env", "log", funcType, params -> new WasmValue[0]);
 
         final List<ImportInfo> registry = linker.getImportRegistry();
-        assertThat(registry).isNotEmpty();
+        assertFalse(registry.isEmpty());
         LOGGER.info("[" + runtime + "] Registry has " + registry.size() + " entries after define");
       }
     }
@@ -800,7 +800,7 @@ public class LinkerApiDualRuntimeTest extends DualRuntimeTest {
           assertNotNull(def, "Linker.LinkerDefinition should not be null");
           count++;
         }
-        assertThat(count).isGreaterThan(0);
+        assertTrue(count > 0, "iter() should return at least one definition");
         LOGGER.info("[" + runtime + "] iter() returned " + count + " definitions");
       }
     }

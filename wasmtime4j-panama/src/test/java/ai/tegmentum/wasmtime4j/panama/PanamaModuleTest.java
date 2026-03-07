@@ -15,8 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -127,7 +127,9 @@ class PanamaModuleTest {
       final IllegalArgumentException ex =
           assertThrows(IllegalArgumentException.class, () -> new PanamaModule(null, validWasm));
 
-      assertThat(ex.getMessage()).contains("Engine cannot be null");
+      assertTrue(
+          ex.getMessage().contains("Engine cannot be null"),
+          "Expected message to contain 'Engine cannot be null': " + ex.getMessage());
       LOGGER.info("Correctly rejected null engine: " + ex.getMessage());
     }
 
@@ -138,7 +140,9 @@ class PanamaModuleTest {
           assertThrows(
               IllegalArgumentException.class, () -> new PanamaModule(engine, (byte[]) null));
 
-      assertThat(ex.getMessage()).contains("WASM bytes cannot be null or empty");
+      assertTrue(
+          ex.getMessage().contains("WASM bytes cannot be null or empty"),
+          "Expected message to contain 'WASM bytes cannot be null or empty': " + ex.getMessage());
       LOGGER.info("Correctly rejected null bytes: " + ex.getMessage());
     }
 
@@ -148,7 +152,9 @@ class PanamaModuleTest {
       final IllegalArgumentException ex =
           assertThrows(IllegalArgumentException.class, () -> new PanamaModule(engine, new byte[0]));
 
-      assertThat(ex.getMessage()).contains("WASM bytes cannot be null or empty");
+      assertTrue(
+          ex.getMessage().contains("WASM bytes cannot be null or empty"),
+          "Expected message to contain 'WASM bytes cannot be null or empty': " + ex.getMessage());
       LOGGER.info("Correctly rejected empty bytes: " + ex.getMessage());
     }
 
@@ -199,10 +205,10 @@ class PanamaModuleTest {
       final PanamaModule module = compileWat(EMPTY_MODULE_WAT);
 
       final List<ExportType> exports = module.getExports();
-      assertThat(exports).isEmpty();
+      assertTrue(exports.isEmpty(), "Empty module should have no exports");
 
       final List<ExportType> moduleExports = module.getExports();
-      assertThat(moduleExports).isEmpty();
+      assertTrue(moduleExports.isEmpty(), "Empty module should have no exports (second call)");
       LOGGER.info("Empty module correctly has no exports");
     }
   }
@@ -219,10 +225,10 @@ class PanamaModuleTest {
       final PanamaModule module = compileWat(EMPTY_MODULE_WAT);
 
       final List<ImportType> imports = module.getImports();
-      assertThat(imports).isEmpty();
+      assertTrue(imports.isEmpty(), "Empty module should have no imports");
 
       final List<ImportType> moduleImports = module.getImports();
-      assertThat(moduleImports).isEmpty();
+      assertTrue(moduleImports.isEmpty(), "Empty module should have no imports (second call)");
       LOGGER.info("Empty module correctly has no imports");
     }
 
@@ -232,7 +238,7 @@ class PanamaModuleTest {
       final PanamaModule module = compileWat(IMPORT_MODULE_WAT);
 
       final List<ImportType> imports = module.getImports();
-      assertThat(imports).hasSize(2);
+      assertEquals(2, imports.size(), "Should have 2 imports");
 
       final boolean hasFuncImport =
           imports.stream()
@@ -308,7 +314,7 @@ class PanamaModuleTest {
 
       final String name = module.getName();
       assertNotNull(name, "Named module should not return null name");
-      assertThat(name).isEqualTo("test_module");
+      assertEquals("test_module", name, "Module name should be 'test_module'");
       LOGGER.info("Named module getName() returned: " + name);
     }
   }

@@ -15,10 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.lang.foreign.MemorySegment;
@@ -49,9 +49,11 @@ class PanamaInstanceTest {
     @Test
     @DisplayName("PanamaInstance constructor should reject null module")
     void panamaInstanceConstructorShouldRejectNullModule() {
-      assertThatThrownBy(() -> new PanamaInstance(null, null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Module cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(IllegalArgumentException.class, () -> new PanamaInstance(null, null));
+      assertTrue(
+          ex.getMessage().contains("Module cannot be null"),
+          "Expected message to contain 'Module cannot be null': " + ex.getMessage());
     }
   }
 
@@ -62,17 +64,24 @@ class PanamaInstanceTest {
     @Test
     @DisplayName("PanamaInstancePre constructor should reject null native instance")
     void panamaInstancePreConstructorShouldRejectNullNativeInstance() {
-      assertThatThrownBy(() -> new PanamaInstancePre(null, null, null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Native InstancePre cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> new PanamaInstancePre(null, null, null));
+      assertTrue(
+          ex.getMessage().contains("Native InstancePre cannot be null"),
+          "Expected message to contain 'Native InstancePre cannot be null': " + ex.getMessage());
     }
 
     @Test
     @DisplayName("PanamaInstancePre constructor should reject MemorySegment.NULL")
     void panamaInstancePreConstructorShouldRejectNullSegment() {
-      assertThatThrownBy(() -> new PanamaInstancePre(MemorySegment.NULL, null, null))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Native InstancePre cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> new PanamaInstancePre(MemorySegment.NULL, null, null));
+      assertTrue(
+          ex.getMessage().contains("Native InstancePre cannot be null"),
+          "Expected message to contain 'Native InstancePre cannot be null': " + ex.getMessage());
     }
   }
 
@@ -87,7 +96,7 @@ class PanamaInstanceTest {
           ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder()
               .creationTime(Instant.now())
               .build();
-      assertThat(stats).isNotNull();
+      assertNotNull(stats, "PreInstantiationStatistics should not be null");
     }
 
     @Test
@@ -97,7 +106,7 @@ class PanamaInstanceTest {
           ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder()
               .preparationTime(Duration.ofMillis(100))
               .build();
-      assertThat(stats).isNotNull();
+      assertNotNull(stats, "PreInstantiationStatistics should not be null");
     }
 
     @Test
@@ -107,7 +116,7 @@ class PanamaInstanceTest {
           ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder()
               .instancesCreated(5L)
               .build();
-      assertThat(stats).isNotNull();
+      assertNotNull(stats, "PreInstantiationStatistics should not be null");
     }
 
     @Test
@@ -117,7 +126,7 @@ class PanamaInstanceTest {
           ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics.builder()
               .averageInstantiationTime(Duration.ofNanos(50000))
               .build();
-      assertThat(stats).isNotNull();
+      assertNotNull(stats, "PreInstantiationStatistics should not be null");
     }
   }
 

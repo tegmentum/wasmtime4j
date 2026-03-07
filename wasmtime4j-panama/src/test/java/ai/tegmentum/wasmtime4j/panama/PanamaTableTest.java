@@ -15,9 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -121,7 +123,10 @@ class PanamaTableTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class, () -> new PanamaTable(null, (PanamaInstance) null));
-    assertThat(exception.getMessage()).contains("Native table pointer cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Native table pointer cannot be null"),
+        "Expected message to contain 'Native table pointer cannot be null': "
+            + exception.getMessage());
   }
 
   @Test
@@ -131,7 +136,10 @@ class PanamaTableTest {
         assertThrows(
             IllegalArgumentException.class,
             () -> new PanamaTable(MemorySegment.NULL, (PanamaInstance) null));
-    assertThat(exception.getMessage()).contains("Native table pointer cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Native table pointer cannot be null"),
+        "Expected message to contain 'Native table pointer cannot be null': "
+            + exception.getMessage());
   }
 
   @Test
@@ -141,7 +149,10 @@ class PanamaTableTest {
         assertThrows(
             IllegalArgumentException.class,
             () -> new PanamaTable(null, WasmValueType.FUNCREF, (PanamaStore) null));
-    assertThat(exception.getMessage()).contains("Native table pointer cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Native table pointer cannot be null"),
+        "Expected message to contain 'Native table pointer cannot be null': "
+            + exception.getMessage());
   }
 
   // ==================== Table Retrieval Tests ====================
@@ -155,7 +166,7 @@ class PanamaTableTest {
     void shouldReturnPanamaTableInstance() throws Exception {
       final PanamaInstance instance = createTableTestInstance();
       final WasmTable table = getTable(instance);
-      assertThat(table).isInstanceOf(PanamaTable.class);
+      assertInstanceOf(PanamaTable.class, table);
     }
   }
 
@@ -353,7 +364,7 @@ class PanamaTableTest {
       final PanamaTable table = (PanamaTable) getTable(instance);
       final MemorySegment nativePtr = table.getNativeTable();
       assertNotNull(nativePtr, "Native table pointer should not be null");
-      assertThat(nativePtr).isNotEqualTo(MemorySegment.NULL);
+      assertNotEquals(MemorySegment.NULL, nativePtr, "Native table pointer should not be NULL");
       LOGGER.info("Native table pointer: " + nativePtr);
     }
   }
@@ -370,7 +381,7 @@ class PanamaTableTest {
       final PanamaInstance instance = createTableTestInstance();
       final PanamaTable table = (PanamaTable) getTable(instance);
       table.close();
-      assertThat(table.supports64BitAddressing()).isFalse();
+      assertFalse(table.supports64BitAddressing(), "Closed table should not support 64-bit addressing");
     }
   }
 }

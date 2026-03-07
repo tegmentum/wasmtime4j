@@ -15,7 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,9 +38,12 @@ class PanamaTypedFuncTest {
     @Test
     @DisplayName("constructor should reject null function")
     void constructorShouldRejectNullFunction() {
-      assertThatThrownBy(() -> new PanamaTypedFunc(null, "ii->i"))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Function cannot be null");
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> new PanamaTypedFunc(null, "ii->i"));
+      assertTrue(
+          ex.getMessage().contains("Function cannot be null"),
+          "Expected message to contain 'Function cannot be null': " + ex.getMessage());
     }
   }
 }

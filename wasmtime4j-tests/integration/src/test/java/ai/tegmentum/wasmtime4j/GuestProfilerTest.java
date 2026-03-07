@@ -15,8 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.debug.GuestProfiler;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
@@ -56,8 +58,8 @@ class GuestProfilerTest extends DualRuntimeTest {
 
       final GuestProfiler profiler =
           engine.createGuestProfiler("test-module", Duration.ofMillis(1), Map.of("main", module));
-      assertThat(profiler).as("createGuestProfiler should return non-null").isNotNull();
-      assertThat(profiler.isActive()).as("New profiler should be active").isTrue();
+      assertNotNull(profiler, "createGuestProfiler should return non-null");
+      assertTrue(profiler.isActive(), "New profiler should be active");
 
       profiler.close();
       module.close();
@@ -77,17 +79,15 @@ class GuestProfilerTest extends DualRuntimeTest {
 
         // Finish without any samples — should still produce valid profile JSON
         final byte[] profileData = profiler.finish();
-        assertThat(profileData)
-            .as("Profile data should not be null or empty")
-            .isNotNull()
-            .isNotEmpty();
+        assertNotNull(profileData, "Profile data should not be null");
+        assertTrue(profileData.length > 0, "Profile data should not be empty");
 
         // Profile data should be valid JSON (starts with '{')
         final String json = new String(profileData, StandardCharsets.UTF_8);
         LOGGER.info("[" + runtime + "] Profile JSON length: " + json.length() + " chars");
-        assertThat(json).as("Profile should be JSON").startsWith("{");
+        assertTrue(json.startsWith("{"), "Profile should be JSON");
 
-        assertThat(profiler.isActive()).as("Profiler should be inactive after finish").isFalse();
+        assertFalse(profiler.isActive(), "Profiler should be inactive after finish");
       }
 
       module.close();
@@ -111,10 +111,10 @@ class GuestProfilerTest extends DualRuntimeTest {
 
         // Finish and verify we get profile data
         final byte[] profileData = profiler.finish();
-        assertThat(profileData).as("Profile data after sample should not be empty").isNotEmpty();
+        assertTrue(profileData.length > 0, "Profile data after sample should not be empty");
 
         final String json = new String(profileData, StandardCharsets.UTF_8);
-        assertThat(json).as("Profile should be valid JSON").startsWith("{");
+        assertTrue(json.startsWith("{"), "Profile should be valid JSON");
       }
 
       module.close();
@@ -166,7 +166,7 @@ class GuestProfilerTest extends DualRuntimeTest {
       profiler.close();
       // Second close should not throw
       profiler.close();
-      assertThat(profiler.isActive()).as("Profiler should be inactive after close").isFalse();
+      assertFalse(profiler.isActive(), "Profiler should be inactive after close");
 
       module.close();
     }

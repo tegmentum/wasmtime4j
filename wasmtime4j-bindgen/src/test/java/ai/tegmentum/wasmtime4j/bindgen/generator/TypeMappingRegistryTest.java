@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.generator;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.bindgen.CodeStyle;
 import com.squareup.javapoet.ArrayTypeName;
@@ -60,8 +62,8 @@ class TypeMappingRegistryTest {
 
       TypeMappingRegistry reg = new TypeMappingRegistry(CodeStyle.LEGACY, "com.example");
 
-      assertThat(reg.getCodeStyle()).isEqualTo(CodeStyle.LEGACY);
-      assertThat(reg.getBasePackage()).isEqualTo("com.example");
+      assertEquals(CodeStyle.LEGACY, reg.getCodeStyle());
+      assertEquals("com.example", reg.getBasePackage());
     }
 
     @Test
@@ -69,9 +71,11 @@ class TypeMappingRegistryTest {
     void shouldThrowWhenCodeStyleIsNull() {
       LOGGER.info("Testing constructor with null codeStyle");
 
-      assertThatThrownBy(() -> new TypeMappingRegistry(null, TEST_PACKAGE))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("codeStyle");
+      NullPointerException exception =
+          assertThrows(
+              NullPointerException.class, () -> new TypeMappingRegistry(null, TEST_PACKAGE));
+      assertTrue(
+          exception.getMessage().contains("codeStyle"), "Expected message to contain: codeStyle");
     }
 
     @Test
@@ -79,9 +83,12 @@ class TypeMappingRegistryTest {
     void shouldThrowWhenBasePackageIsNull() {
       LOGGER.info("Testing constructor with null basePackage");
 
-      assertThatThrownBy(() -> new TypeMappingRegistry(CodeStyle.MODERN, null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("basePackage");
+      NullPointerException exception =
+          assertThrows(
+              NullPointerException.class, () -> new TypeMappingRegistry(CodeStyle.MODERN, null));
+      assertTrue(
+          exception.getMessage().contains("basePackage"),
+          "Expected message to contain: basePackage");
     }
   }
 
@@ -112,7 +119,7 @@ class TypeMappingRegistryTest {
 
       TypeName result = registry.mapWitPrimitive(witType);
 
-      assertThat(result.toString()).isEqualTo(expected);
+      assertEquals(expected, result.toString());
     }
 
     @Test
@@ -122,7 +129,7 @@ class TypeMappingRegistryTest {
 
       TypeName result = registry.mapWitPrimitive("string");
 
-      assertThat(result).isEqualTo(ClassName.get(String.class));
+      assertEquals(ClassName.get(String.class), result);
     }
 
     @Test
@@ -130,25 +137,29 @@ class TypeMappingRegistryTest {
     void shouldHandleCaseInsensitiveTypeNames() {
       LOGGER.info("Testing case-insensitivity");
 
-      assertThat(registry.mapWitPrimitive("BOOL")).isEqualTo(TypeName.BOOLEAN);
-      assertThat(registry.mapWitPrimitive("Bool")).isEqualTo(TypeName.BOOLEAN);
-      assertThat(registry.mapWitPrimitive("S32")).isEqualTo(TypeName.INT);
+      assertEquals(TypeName.BOOLEAN, registry.mapWitPrimitive("BOOL"));
+      assertEquals(TypeName.BOOLEAN, registry.mapWitPrimitive("Bool"));
+      assertEquals(TypeName.INT, registry.mapWitPrimitive("S32"));
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for unknown type")
     void shouldThrowForUnknownType() {
-      assertThatThrownBy(() -> registry.mapWitPrimitive("unknown"))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Unknown WIT primitive type: unknown");
+      IllegalArgumentException exception =
+          assertThrows(IllegalArgumentException.class, () -> registry.mapWitPrimitive("unknown"));
+      assertTrue(
+          exception.getMessage().contains("Unknown WIT primitive type: unknown"),
+          "Expected message to contain: Unknown WIT primitive type: unknown");
     }
 
     @Test
     @DisplayName("should throw NullPointerException for null type")
     void shouldThrowForNullType() {
-      assertThatThrownBy(() -> registry.mapWitPrimitive(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("witPrimitive");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> registry.mapWitPrimitive(null));
+      assertTrue(
+          exception.getMessage().contains("witPrimitive"),
+          "Expected message to contain: witPrimitive");
     }
   }
 
@@ -164,7 +175,7 @@ class TypeMappingRegistryTest {
 
       TypeName result = registry.mapWasmType(wasmType);
 
-      assertThat(result.toString()).isEqualTo(expected);
+      assertEquals(expected, result.toString());
     }
 
     @Test
@@ -172,7 +183,7 @@ class TypeMappingRegistryTest {
     void shouldMapV128ToByteArray() {
       TypeName result = registry.mapWasmType("v128");
 
-      assertThat(result).isEqualTo(ArrayTypeName.of(TypeName.BYTE));
+      assertEquals(ArrayTypeName.of(TypeName.BYTE), result);
     }
 
     @Test
@@ -180,7 +191,7 @@ class TypeMappingRegistryTest {
     void shouldMapFuncrefToFunctionReference() {
       TypeName result = registry.mapWasmType("funcref");
 
-      assertThat(result.toString()).isEqualTo("ai.tegmentum.wasmtime4j.FunctionReference");
+      assertEquals("ai.tegmentum.wasmtime4j.FunctionReference", result.toString());
     }
 
     @Test
@@ -188,30 +199,33 @@ class TypeMappingRegistryTest {
     void shouldMapExternrefToObject() {
       TypeName result = registry.mapWasmType("externref");
 
-      assertThat(result).isEqualTo(ClassName.get(Object.class));
+      assertEquals(ClassName.get(Object.class), result);
     }
 
     @Test
     @DisplayName("should handle case-insensitive WASM types")
     void shouldHandleCaseInsensitiveWasmTypes() {
-      assertThat(registry.mapWasmType("I32")).isEqualTo(TypeName.INT);
-      assertThat(registry.mapWasmType("F64")).isEqualTo(TypeName.DOUBLE);
+      assertEquals(TypeName.INT, registry.mapWasmType("I32"));
+      assertEquals(TypeName.DOUBLE, registry.mapWasmType("F64"));
     }
 
     @Test
     @DisplayName("should throw IllegalArgumentException for unknown WASM type")
     void shouldThrowForUnknownWasmType() {
-      assertThatThrownBy(() -> registry.mapWasmType("invalid"))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Unknown WASM type: invalid");
+      IllegalArgumentException exception =
+          assertThrows(IllegalArgumentException.class, () -> registry.mapWasmType("invalid"));
+      assertTrue(
+          exception.getMessage().contains("Unknown WASM type: invalid"),
+          "Expected message to contain: Unknown WASM type: invalid");
     }
 
     @Test
     @DisplayName("should throw NullPointerException for null WASM type")
     void shouldThrowForNullWasmType() {
-      assertThatThrownBy(() -> registry.mapWasmType(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("wasmType");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> registry.mapWasmType(null));
+      assertTrue(
+          exception.getMessage().contains("wasmType"), "Expected message to contain: wasmType");
     }
   }
 
@@ -226,8 +240,8 @@ class TypeMappingRegistryTest {
 
       TypeName result = registry.mapList(TypeName.INT);
 
-      assertThat(result).isInstanceOf(ParameterizedTypeName.class);
-      assertThat(result.toString()).isEqualTo("java.util.List<java.lang.Integer>");
+      assertInstanceOf(ParameterizedTypeName.class, result);
+      assertEquals("java.util.List<java.lang.Integer>", result.toString());
     }
 
     @Test
@@ -235,24 +249,25 @@ class TypeMappingRegistryTest {
     void shouldCreateListOfString() {
       TypeName result = registry.mapList(ClassName.get(String.class));
 
-      assertThat(result.toString()).isEqualTo("java.util.List<java.lang.String>");
+      assertEquals("java.util.List<java.lang.String>", result.toString());
     }
 
     @Test
     @DisplayName("should box primitive types in list")
     void shouldBoxPrimitiveTypesInList() {
-      assertThat(registry.mapList(TypeName.BOOLEAN).toString())
-          .isEqualTo("java.util.List<java.lang.Boolean>");
-      assertThat(registry.mapList(TypeName.LONG).toString())
-          .isEqualTo("java.util.List<java.lang.Long>");
+      assertEquals(
+          "java.util.List<java.lang.Boolean>", registry.mapList(TypeName.BOOLEAN).toString());
+      assertEquals("java.util.List<java.lang.Long>", registry.mapList(TypeName.LONG).toString());
     }
 
     @Test
     @DisplayName("should throw NullPointerException for null element type")
     void shouldThrowForNullElementType() {
-      assertThatThrownBy(() -> registry.mapList(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("elementType");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> registry.mapList(null));
+      assertTrue(
+          exception.getMessage().contains("elementType"),
+          "Expected message to contain: elementType");
     }
   }
 
@@ -267,8 +282,8 @@ class TypeMappingRegistryTest {
 
       TypeName result = registry.mapOption(TypeName.INT);
 
-      assertThat(result).isInstanceOf(ParameterizedTypeName.class);
-      assertThat(result.toString()).isEqualTo("java.util.Optional<java.lang.Integer>");
+      assertInstanceOf(ParameterizedTypeName.class, result);
+      assertEquals("java.util.Optional<java.lang.Integer>", result.toString());
     }
 
     @Test
@@ -276,15 +291,16 @@ class TypeMappingRegistryTest {
     void shouldCreateOptionalOfString() {
       TypeName result = registry.mapOption(ClassName.get(String.class));
 
-      assertThat(result.toString()).isEqualTo("java.util.Optional<java.lang.String>");
+      assertEquals("java.util.Optional<java.lang.String>", result.toString());
     }
 
     @Test
     @DisplayName("should throw NullPointerException for null inner type")
     void shouldThrowForNullInnerType() {
-      assertThatThrownBy(() -> registry.mapOption(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("innerType");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> registry.mapOption(null));
+      assertTrue(
+          exception.getMessage().contains("innerType"), "Expected message to contain: innerType");
     }
   }
 
@@ -299,9 +315,10 @@ class TypeMappingRegistryTest {
 
       TypeName result = registry.mapResult(TypeName.INT, ClassName.get(String.class));
 
-      assertThat(result).isInstanceOf(ParameterizedTypeName.class);
-      assertThat(result.toString())
-          .isEqualTo("ai.tegmentum.wasmtime4j.wit.WitResult<java.lang.Integer, java.lang.String>");
+      assertInstanceOf(ParameterizedTypeName.class, result);
+      assertEquals(
+          "ai.tegmentum.wasmtime4j.wit.WitResult<java.lang.Integer, java.lang.String>",
+          result.toString());
     }
 
     @Test
@@ -309,8 +326,9 @@ class TypeMappingRegistryTest {
     void shouldUseVoidForNullOkType() {
       TypeName result = registry.mapResult(null, ClassName.get(String.class));
 
-      assertThat(result.toString())
-          .isEqualTo("ai.tegmentum.wasmtime4j.wit.WitResult<java.lang.Void, java.lang.String>");
+      assertEquals(
+          "ai.tegmentum.wasmtime4j.wit.WitResult<java.lang.Void, java.lang.String>",
+          result.toString());
     }
 
     @Test
@@ -318,8 +336,9 @@ class TypeMappingRegistryTest {
     void shouldUseVoidForNullErrorType() {
       TypeName result = registry.mapResult(TypeName.INT, null);
 
-      assertThat(result.toString())
-          .isEqualTo("ai.tegmentum.wasmtime4j.wit.WitResult<java.lang.Integer, java.lang.Void>");
+      assertEquals(
+          "ai.tegmentum.wasmtime4j.wit.WitResult<java.lang.Integer, java.lang.Void>",
+          result.toString());
     }
 
     @Test
@@ -327,8 +346,9 @@ class TypeMappingRegistryTest {
     void shouldUseVoidForBothNullTypes() {
       TypeName result = registry.mapResult(null, null);
 
-      assertThat(result.toString())
-          .isEqualTo("ai.tegmentum.wasmtime4j.wit.WitResult<java.lang.Void, java.lang.Void>");
+      assertEquals(
+          "ai.tegmentum.wasmtime4j.wit.WitResult<java.lang.Void, java.lang.Void>",
+          result.toString());
     }
   }
 
@@ -343,7 +363,7 @@ class TypeMappingRegistryTest {
 
       TypeName result = registry.mapTuple(List.of());
 
-      assertThat(result).isEqualTo(ClassName.get(Void.class));
+      assertEquals(ClassName.get(Void.class), result);
     }
 
     @Test
@@ -351,7 +371,7 @@ class TypeMappingRegistryTest {
     void shouldReturnElementTypeForSingleElement() {
       TypeName result = registry.mapTuple(List.of(TypeName.INT));
 
-      assertThat(result).isEqualTo(TypeName.INT);
+      assertEquals(TypeName.INT, result);
     }
 
     @Test
@@ -359,7 +379,7 @@ class TypeMappingRegistryTest {
     void shouldReturnTuple2ForTwoElements() {
       TypeName result = registry.mapTuple(Arrays.asList(TypeName.INT, TypeName.LONG));
 
-      assertThat(result.toString()).isEqualTo(TEST_PACKAGE + ".tuple.Tuple2");
+      assertEquals(TEST_PACKAGE + ".tuple.Tuple2", result.toString());
     }
 
     @Test
@@ -369,15 +389,17 @@ class TypeMappingRegistryTest {
           registry.mapTuple(
               Arrays.asList(TypeName.INT, TypeName.LONG, TypeName.FLOAT, TypeName.DOUBLE));
 
-      assertThat(result.toString()).isEqualTo(TEST_PACKAGE + ".tuple.Tuple4");
+      assertEquals(TEST_PACKAGE + ".tuple.Tuple4", result.toString());
     }
 
     @Test
     @DisplayName("should throw NullPointerException for null list")
     void shouldThrowForNullList() {
-      assertThatThrownBy(() -> registry.mapTuple(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("elementTypes");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> registry.mapTuple(null));
+      assertTrue(
+          exception.getMessage().contains("elementTypes"),
+          "Expected message to contain: elementTypes");
     }
   }
 
@@ -392,8 +414,8 @@ class TypeMappingRegistryTest {
 
       ClassName result = registry.mapGeneratedType("my-type");
 
-      assertThat(result.packageName()).isEqualTo(TEST_PACKAGE);
-      assertThat(result.simpleName()).isEqualTo("MyType");
+      assertEquals(TEST_PACKAGE, result.packageName());
+      assertEquals("MyType", result.simpleName());
     }
 
     @Test
@@ -401,7 +423,7 @@ class TypeMappingRegistryTest {
     void shouldConvertKebabCaseToPascalCase() {
       ClassName result = registry.mapGeneratedType("my-long-type-name");
 
-      assertThat(result.simpleName()).isEqualTo("MyLongTypeName");
+      assertEquals("MyLongTypeName", result.simpleName());
     }
 
     @Test
@@ -409,7 +431,7 @@ class TypeMappingRegistryTest {
     void shouldConvertSnakeCaseToPascalCase() {
       ClassName result = registry.mapGeneratedType("my_long_type_name");
 
-      assertThat(result.simpleName()).isEqualTo("MyLongTypeName");
+      assertEquals("MyLongTypeName", result.simpleName());
     }
 
     @Test
@@ -417,15 +439,16 @@ class TypeMappingRegistryTest {
     void shouldCapitalizeFirstLetter() {
       ClassName result = registry.mapGeneratedType("lowercase");
 
-      assertThat(result.simpleName()).isEqualTo("Lowercase");
+      assertEquals("Lowercase", result.simpleName());
     }
 
     @Test
     @DisplayName("should throw NullPointerException for null type name")
     void shouldThrowForNullTypeName() {
-      assertThatThrownBy(() -> registry.mapGeneratedType(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("typeName");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> registry.mapGeneratedType(null));
+      assertTrue(
+          exception.getMessage().contains("typeName"), "Expected message to contain: typeName");
     }
   }
 
@@ -440,16 +463,18 @@ class TypeMappingRegistryTest {
 
       ClassName result = registry.mapInterface("my-interface");
 
-      assertThat(result.packageName()).isEqualTo(TEST_PACKAGE);
-      assertThat(result.simpleName()).isEqualTo("MyInterface");
+      assertEquals(TEST_PACKAGE, result.packageName());
+      assertEquals("MyInterface", result.simpleName());
     }
 
     @Test
     @DisplayName("should throw NullPointerException for null interface name")
     void shouldThrowForNullInterfaceName() {
-      assertThatThrownBy(() -> registry.mapInterface(null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("interfaceName");
+      NullPointerException exception =
+          assertThrows(NullPointerException.class, () -> registry.mapInterface(null));
+      assertTrue(
+          exception.getMessage().contains("interfaceName"),
+          "Expected message to contain: interfaceName");
     }
   }
 
@@ -465,28 +490,28 @@ class TypeMappingRegistryTest {
         })
     @DisplayName("should return true for primitive types")
     void shouldReturnTrueForPrimitives(final String typeName) {
-      assertThat(registry.isPrimitive(typeName)).isTrue();
+      assertTrue(registry.isPrimitive(typeName));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"record", "variant", "my-type", "list", "option"})
     @DisplayName("should return false for non-primitive types")
     void shouldReturnFalseForNonPrimitives(final String typeName) {
-      assertThat(registry.isPrimitive(typeName)).isFalse();
+      assertFalse(registry.isPrimitive(typeName));
     }
 
     @Test
     @DisplayName("should handle case-insensitive primitive check")
     void shouldHandleCaseInsensitivePrimitiveCheck() {
-      assertThat(registry.isPrimitive("BOOL")).isTrue();
-      assertThat(registry.isPrimitive("String")).isTrue();
-      assertThat(registry.isPrimitive("S32")).isTrue();
+      assertTrue(registry.isPrimitive("BOOL"));
+      assertTrue(registry.isPrimitive("String"));
+      assertTrue(registry.isPrimitive("S32"));
     }
 
     @Test
     @DisplayName("should return false for null")
     void shouldReturnFalseForNull() {
-      assertThat(registry.isPrimitive(null)).isFalse();
+      assertFalse(registry.isPrimitive(null));
     }
   }
 
@@ -500,8 +525,8 @@ class TypeMappingRegistryTest {
       TypeMappingRegistry modernRegistry = new TypeMappingRegistry(CodeStyle.MODERN, TEST_PACKAGE);
       TypeMappingRegistry legacyRegistry = new TypeMappingRegistry(CodeStyle.LEGACY, TEST_PACKAGE);
 
-      assertThat(modernRegistry.getCodeStyle()).isEqualTo(CodeStyle.MODERN);
-      assertThat(legacyRegistry.getCodeStyle()).isEqualTo(CodeStyle.LEGACY);
+      assertEquals(CodeStyle.MODERN, modernRegistry.getCodeStyle());
+      assertEquals(CodeStyle.LEGACY, legacyRegistry.getCodeStyle());
     }
 
     @Test
@@ -510,8 +535,8 @@ class TypeMappingRegistryTest {
       TypeMappingRegistry reg1 = new TypeMappingRegistry(CodeStyle.MODERN, "com.example.one");
       TypeMappingRegistry reg2 = new TypeMappingRegistry(CodeStyle.MODERN, "org.another.pkg");
 
-      assertThat(reg1.getBasePackage()).isEqualTo("com.example.one");
-      assertThat(reg2.getBasePackage()).isEqualTo("org.another.pkg");
+      assertEquals("com.example.one", reg1.getBasePackage());
+      assertEquals("org.another.pkg", reg2.getBasePackage());
     }
   }
 }

@@ -15,7 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
 import java.nio.charset.StandardCharsets;
@@ -67,7 +70,7 @@ class ModulePropertiesTest extends DualRuntimeTest {
       final Module module = Module.compile(engine, SIMPLE_WAT.getBytes(StandardCharsets.UTF_8));
       final ImageRange range = module.imageRange();
 
-      assertThat(range).as("imageRange should not be null").isNotNull();
+      assertNotNull(range, "imageRange should not be null");
       LOGGER.info(
           "["
               + runtime
@@ -78,10 +81,8 @@ class ModulePropertiesTest extends DualRuntimeTest {
               + ", size="
               + range.getSize());
 
-      assertThat(range.getSize()).as("Image range size should be positive").isGreaterThan(0);
-      assertThat(range.getEnd())
-          .as("End should be >= start")
-          .isGreaterThanOrEqualTo(range.getStart());
+      assertTrue(range.getSize() > 0, "Image range size should be positive");
+      assertTrue(range.getEnd() >= range.getStart(), "End should be >= start");
 
       module.close();
     }
@@ -96,13 +97,11 @@ class ModulePropertiesTest extends DualRuntimeTest {
       final Module module =
           Module.compile(engine, MULTI_EXPORT_WAT.getBytes(StandardCharsets.UTF_8));
 
-      assertThat(module.hasExport("add")).as("Module should export 'add'").isTrue();
-      assertThat(module.hasExport("sub")).as("Module should export 'sub'").isTrue();
-      assertThat(module.hasExport("memory")).as("Module should export 'memory'").isTrue();
-      assertThat(module.hasExport("answer")).as("Module should export 'answer'").isTrue();
-      assertThat(module.hasExport("nonexistent"))
-          .as("Module should not export 'nonexistent'")
-          .isFalse();
+      assertTrue(module.hasExport("add"), "Module should export 'add'");
+      assertTrue(module.hasExport("sub"), "Module should export 'sub'");
+      assertTrue(module.hasExport("memory"), "Module should export 'memory'");
+      assertTrue(module.hasExport("answer"), "Module should export 'answer'");
+      assertFalse(module.hasExport("nonexistent"), "Module should not export 'nonexistent'");
 
       module.close();
     }
@@ -117,20 +116,18 @@ class ModulePropertiesTest extends DualRuntimeTest {
       final Module original = Module.compile(engine, SIMPLE_WAT.getBytes(StandardCharsets.UTF_8));
 
       final byte[] serialized = original.serialize();
-      assertThat(serialized)
-          .as("Serialized bytes should not be null or empty")
-          .isNotNull()
-          .isNotEmpty();
+      assertNotNull(serialized, "Serialized bytes should not be null");
+      assertTrue(serialized.length > 0, "Serialized bytes should not be empty");
       LOGGER.info("[" + runtime + "] Serialized module size: " + serialized.length + " bytes");
 
       final Module deserialized = Module.deserialize(engine, serialized);
-      assertThat(deserialized).as("Deserialized module should not be null").isNotNull();
-      assertThat(deserialized.isValid()).as("Deserialized module should be valid").isTrue();
+      assertNotNull(deserialized, "Deserialized module should not be null");
+      assertTrue(deserialized.isValid(), "Deserialized module should be valid");
 
       // Verify the deserialized module can be instantiated
       try (Store store = Store.create(engine)) {
         final Instance instance = Instance.create(store, deserialized);
-        assertThat(instance).as("Should instantiate from deserialized module").isNotNull();
+        assertNotNull(instance, "Should instantiate from deserialized module");
       }
 
       original.close();
@@ -148,15 +145,14 @@ class ModulePropertiesTest extends DualRuntimeTest {
           Module.compile(engine, MULTI_EXPORT_WAT.getBytes(StandardCharsets.UTF_8));
 
       final java.util.List<ai.tegmentum.wasmtime4j.type.ExportType> exports = module.getExports();
-      assertThat(exports).as("Module should have 4 exports").hasSize(4);
+      assertEquals(4, exports.size(), "Module should have 4 exports");
 
-      final java.util.List<String> names =
+      final java.util.Set<String> names =
           exports.stream()
               .map(ai.tegmentum.wasmtime4j.type.ExportType::getName)
-              .collect(java.util.stream.Collectors.toList());
-      assertThat(names)
-          .as("Export names should match")
-          .containsExactlyInAnyOrder("memory", "add", "sub", "answer");
+              .collect(java.util.stream.Collectors.toSet());
+      assertEquals(
+          java.util.Set.of("memory", "add", "sub", "answer"), names, "Export names should match");
 
       LOGGER.info("[" + runtime + "] Export names: " + names);
       module.close();
@@ -171,10 +167,10 @@ class ModulePropertiesTest extends DualRuntimeTest {
     try (Engine engine = Engine.create()) {
       final Module module = Module.compile(engine, SIMPLE_WAT.getBytes(StandardCharsets.UTF_8));
 
-      assertThat(module.isValid()).as("Module should be valid after compilation").isTrue();
+      assertTrue(module.isValid(), "Module should be valid after compilation");
 
       module.close();
-      assertThat(module.isValid()).as("Module should be invalid after close").isFalse();
+      assertFalse(module.isValid(), "Module should be invalid after close");
     }
   }
 }

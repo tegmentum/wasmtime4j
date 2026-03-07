@@ -15,8 +15,9 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,9 +67,9 @@ class JniLinkerTest {
   void testConstructorWithValidParameters() {
     final JniLinker<Object> newLinker = new JniLinker<>(VALID_HANDLE, testEngine);
 
-    assertThat(newLinker).isNotNull();
-    assertThat(newLinker.getNativeHandle()).isEqualTo(VALID_HANDLE);
-    assertThat(newLinker.getEngine()).isEqualTo(testEngine);
+    assertNotNull(newLinker);
+    assertEquals(VALID_HANDLE, newLinker.getNativeHandle());
+    assertEquals(testEngine, newLinker.getEngine());
     newLinker.markClosedForTesting();
   }
 
@@ -86,7 +87,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineHostFunction(null, "func", testFunctionType, testImplementation));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Module name cannot be null"),
+        "Expected message to contain: Module name cannot be null");
   }
 
   @Test
@@ -96,7 +99,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineHostFunction("env", null, testFunctionType, testImplementation));
 
-    assertThat(exception.getMessage()).contains("Function name cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Function name cannot be null"),
+        "Expected message to contain: Function name cannot be null");
   }
 
   @Test
@@ -106,7 +111,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineHostFunction("env", "func", null, testImplementation));
 
-    assertThat(exception.getMessage()).contains("Function type cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Function type cannot be null"),
+        "Expected message to contain: Function type cannot be null");
   }
 
   @Test
@@ -116,7 +123,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineHostFunction("env", "func", testFunctionType, null));
 
-    assertThat(exception.getMessage()).contains("Implementation cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Implementation cannot be null"),
+        "Expected message to contain: Implementation cannot be null");
   }
 
   // defineMemory validation tests
@@ -130,7 +139,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineMemory(null, "env", "memory", memory));
 
-    assertThat(exception.getMessage()).contains("Store cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Store cannot be null"),
+        "Expected message to contain: Store cannot be null");
     memory.markClosedForTesting();
   }
 
@@ -143,7 +154,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineMemory(testStore, null, "memory", memory));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Module name cannot be null"),
+        "Expected message to contain: Module name cannot be null");
     memory.markClosedForTesting();
   }
 
@@ -154,7 +167,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineMemory(testStore, "env", "memory", null));
 
-    assertThat(exception.getMessage()).contains("Memory cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Memory cannot be null"),
+        "Expected message to contain: Memory cannot be null");
   }
 
   // defineTable validation tests
@@ -167,7 +182,9 @@ class JniLinkerTest {
         assertThrows(
             IllegalArgumentException.class, () -> linker.defineTable(null, "env", "table", table));
 
-    assertThat(exception.getMessage()).contains("Store cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Store cannot be null"),
+        "Expected message to contain: Store cannot be null");
     table.markClosedForTesting();
   }
 
@@ -180,7 +197,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineTable(testStore, null, "table", table));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Module name cannot be null"),
+        "Expected message to contain: Module name cannot be null");
     table.markClosedForTesting();
   }
 
@@ -191,7 +210,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineTable(testStore, "env", "table", null));
 
-    assertThat(exception.getMessage()).contains("Table cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Table cannot be null"),
+        "Expected message to contain: Table cannot be null");
   }
 
   // defineGlobal validation tests
@@ -205,7 +226,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineGlobal(null, "env", "global", global));
 
-    assertThat(exception.getMessage()).contains("Store cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Store cannot be null"),
+        "Expected message to contain: Store cannot be null");
     global.markClosedForTesting();
   }
 
@@ -218,7 +241,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineGlobal(testStore, null, "global", global));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Module name cannot be null"),
+        "Expected message to contain: Module name cannot be null");
     global.markClosedForTesting();
   }
 
@@ -229,7 +254,9 @@ class JniLinkerTest {
             IllegalArgumentException.class,
             () -> linker.defineGlobal(testStore, "env", "global", null));
 
-    assertThat(exception.getMessage()).contains("Global cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Global cannot be null"),
+        "Expected message to contain: Global cannot be null");
   }
 
   // defineInstance validation tests
@@ -243,7 +270,9 @@ class JniLinkerTest {
         assertThrows(
             IllegalArgumentException.class, () -> linker.defineInstance(testStore, null, instance));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Module name cannot be null"),
+        "Expected message to contain: Module name cannot be null");
     instance.markClosedForTesting();
     module.markClosedForTesting();
   }
@@ -254,7 +283,9 @@ class JniLinkerTest {
         assertThrows(
             IllegalArgumentException.class, () -> linker.defineInstance(testStore, "test", null));
 
-    assertThat(exception.getMessage()).contains("Instance cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Instance cannot be null"),
+        "Expected message to contain: Instance cannot be null");
   }
 
   // instantiate validation tests
@@ -266,7 +297,9 @@ class JniLinkerTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> linker.instantiate(null, module));
 
-    assertThat(exception.getMessage()).contains("Store cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Store cannot be null"),
+        "Expected message to contain: Store cannot be null");
     module.markClosedForTesting();
   }
 
@@ -276,7 +309,9 @@ class JniLinkerTest {
         assertThrows(
             IllegalArgumentException.class, () -> linker.instantiate(testStore, (Module) null));
 
-    assertThat(exception.getMessage()).contains("Module cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Module cannot be null"),
+        "Expected message to contain: Module cannot be null");
   }
 
   // instantiate (named) validation tests
@@ -289,7 +324,9 @@ class JniLinkerTest {
         assertThrows(
             IllegalArgumentException.class, () -> linker.instantiate(null, "test", module));
 
-    assertThat(exception.getMessage()).contains("Store cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Store cannot be null"),
+        "Expected message to contain: Store cannot be null");
     module.markClosedForTesting();
   }
 
@@ -301,7 +338,9 @@ class JniLinkerTest {
         assertThrows(
             IllegalArgumentException.class, () -> linker.instantiate(testStore, null, module));
 
-    assertThat(exception.getMessage()).contains("Module name cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Module name cannot be null"),
+        "Expected message to contain: Module name cannot be null");
     module.markClosedForTesting();
   }
 
@@ -311,7 +350,9 @@ class JniLinkerTest {
         assertThrows(
             IllegalArgumentException.class, () -> linker.instantiate(testStore, "test", null));
 
-    assertThat(exception.getMessage()).contains("Module cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Module cannot be null"),
+        "Expected message to contain: Module cannot be null");
   }
 
   @Test
@@ -319,8 +360,8 @@ class JniLinkerTest {
     final java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> registry =
         linker.getImportRegistry();
 
-    assertThat(registry).isNotNull();
-    assertThat(registry).isEmpty();
+    assertNotNull(registry);
+    assertTrue(registry.isEmpty());
   }
 
   // State validation tests
@@ -391,7 +432,9 @@ class JniLinkerTest {
             IllegalStateException.class,
             () -> linker.defineHostFunction("env", "func", testFunctionType, testImplementation));
 
-    assertThat(exception.getMessage()).contains("closed");
+    assertTrue(
+        exception.getMessage().contains("closed"),
+        "Expected message to contain: closed");
   }
 
   @Test
@@ -402,7 +445,9 @@ class JniLinkerTest {
     final IllegalStateException exception =
         assertThrows(IllegalStateException.class, () -> linker.instantiate(testStore, module));
 
-    assertThat(exception.getMessage()).contains("closed");
+    assertTrue(
+        exception.getMessage().contains("closed"),
+        "Expected message to contain: closed");
     module.markClosedForTesting();
   }
 }

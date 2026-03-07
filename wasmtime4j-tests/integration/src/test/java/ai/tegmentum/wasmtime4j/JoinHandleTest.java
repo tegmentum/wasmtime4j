@@ -15,8 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.tests.framework.DualRuntimeTest;
@@ -51,10 +54,10 @@ class JoinHandleTest extends DualRuntimeTest {
 
       final JoinHandle<Integer> handle = store.submitTask(s -> 40 + 2);
 
-      assertThat(handle).as("submitTask should return a non-null handle").isNotNull();
+      assertNotNull(handle, "submitTask should return a non-null handle");
       final Integer result = handle.join();
-      assertThat(result).as("Task result should be 42").isEqualTo(42);
-      assertThat(handle.isDone()).as("Handle should be done after join").isTrue();
+      assertEquals(42, result, "Task result should be 42");
+      assertTrue(handle.isDone(), "Handle should be done after join");
     }
   }
 
@@ -69,10 +72,10 @@ class JoinHandleTest extends DualRuntimeTest {
       final JoinHandle<String> handle = store.submitTask(s -> "future-result");
 
       final CompletableFuture<String> future = handle.toFuture();
-      assertThat(future).as("toFuture should return a non-null future").isNotNull();
+      assertNotNull(future, "toFuture should return a non-null future");
 
       final String result = future.get();
-      assertThat(result).as("Future result should match").isEqualTo("future-result");
+      assertEquals("future-result", result, "Future result should match");
     }
   }
 
@@ -88,8 +91,8 @@ class JoinHandleTest extends DualRuntimeTest {
 
       // Wait for completion
       final String result = handle.join();
-      assertThat(result).isEqualTo("hello");
-      assertThat(handle.isDone()).as("Handle should be done after join").isTrue();
+      assertEquals("hello", result);
+      assertTrue(handle.isDone(), "Handle should be done after join");
     }
   }
 
@@ -109,7 +112,7 @@ class JoinHandleTest extends DualRuntimeTest {
 
       assertThrows(
           WasmException.class, handle::join, "Joining a failed task should throw WasmException");
-      assertThat(handle.isDone()).as("Handle should be done after exception").isTrue();
+      assertTrue(handle.isDone(), "Handle should be done after exception");
     }
   }
 
@@ -128,7 +131,7 @@ class JoinHandleTest extends DualRuntimeTest {
 
       // Cancel after completion should return false
       final boolean cancelled = handle.cancel();
-      assertThat(cancelled).as("Cancelling a completed task should return false").isFalse();
+      assertFalse(cancelled, "Cancelling a completed task should return false");
     }
   }
 

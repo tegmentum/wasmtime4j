@@ -15,10 +15,13 @@
  */
 package ai.tegmentum.wasmtime4j.jni.exception;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link JniException}. */
@@ -29,9 +32,9 @@ class JniExceptionTest {
     final String message = "Test error message";
     final JniException exception = new JniException(message);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getCause()).isNull();
-    assertThat(exception.getNativeErrorCode()).isNull();
+    assertEquals(message, exception.getMessage());
+    assertNull(exception.getCause());
+    assertNull(exception.getNativeErrorCode());
     assertFalse(exception.hasNativeErrorCode());
   }
 
@@ -41,9 +44,9 @@ class JniExceptionTest {
     final RuntimeException cause = new RuntimeException("Root cause");
     final JniException exception = new JniException(message, cause);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getCause()).isEqualTo(cause);
-    assertThat(exception.getNativeErrorCode()).isNull();
+    assertEquals(message, exception.getMessage());
+    assertEquals(cause, exception.getCause());
+    assertNull(exception.getNativeErrorCode());
     assertFalse(exception.hasNativeErrorCode());
   }
 
@@ -53,9 +56,9 @@ class JniExceptionTest {
     final int errorCode = 42;
     final JniException exception = new JniException(message, errorCode);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getCause()).isNull();
-    assertThat(exception.getNativeErrorCode()).isEqualTo(errorCode);
+    assertEquals(message, exception.getMessage());
+    assertNull(exception.getCause());
+    assertEquals(errorCode, exception.getNativeErrorCode());
     assertTrue(exception.hasNativeErrorCode());
   }
 
@@ -66,9 +69,9 @@ class JniExceptionTest {
     final int errorCode = 123;
     final JniException exception = new JniException(message, cause, errorCode);
 
-    assertThat(exception.getMessage()).isEqualTo(message);
-    assertThat(exception.getCause()).isEqualTo(cause);
-    assertThat(exception.getNativeErrorCode()).isEqualTo(errorCode);
+    assertEquals(message, exception.getMessage());
+    assertEquals(cause, exception.getCause());
+    assertEquals(errorCode, exception.getNativeErrorCode());
     assertTrue(exception.hasNativeErrorCode());
   }
 
@@ -78,9 +81,11 @@ class JniExceptionTest {
     final JniException exception = new JniException(message);
     final String toString = exception.toString();
 
-    assertThat(toString).contains(message);
-    assertThat(toString).contains("JniException");
-    assertThat(toString).doesNotContain("native error code");
+    assertTrue(toString.contains(message), "Expected string to contain: " + message);
+    assertTrue(toString.contains("JniException"), "Expected string to contain: JniException");
+    assertFalse(
+        toString.contains("native error code"),
+        "Expected string not to contain: native error code");
   }
 
   @Test
@@ -90,21 +95,25 @@ class JniExceptionTest {
     final JniException exception = new JniException(message, errorCode);
     final String toString = exception.toString();
 
-    assertThat(toString).contains(message);
-    assertThat(toString).contains("JniException");
-    assertThat(toString).contains("native error code: 42");
+    assertTrue(toString.contains(message), "Expected string to contain: " + message);
+    assertTrue(toString.contains("JniException"), "Expected string to contain: JniException");
+    assertTrue(
+        toString.contains("native error code: 42"),
+        "Expected string to contain: native error code: 42");
   }
 
   @Test
   void testInheritanceFromWasmException() {
     final JniException exception = new JniException("test");
-    assertThat(exception).isInstanceOf(ai.tegmentum.wasmtime4j.exception.WasmException.class);
+    assertInstanceOf(ai.tegmentum.wasmtime4j.exception.WasmException.class, exception);
   }
 
   @Test
   void testSerialVersionUid() {
     // Ensure serialVersionUID is defined for serialization compatibility
-    assertThat(JniException.class.getDeclaredFields())
-        .anyMatch(field -> field.getName().equals("serialVersionUID"));
+    assertTrue(
+        Arrays.stream(JniException.class.getDeclaredFields())
+            .anyMatch(field -> field.getName().equals("serialVersionUID")),
+        "Expected serialVersionUID field to be defined");
   }
 }

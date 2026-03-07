@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI. All rights reserved.
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.bindgen.model;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,11 +44,11 @@ class BindgenInterfaceTest {
 
       BindgenInterface iface = BindgenInterface.builder().name("my-interface").build();
 
-      assertThat(iface.getName()).isEqualTo("my-interface");
-      assertThat(iface.getPackageName()).isEmpty();
-      assertThat(iface.getTypes()).isEmpty();
-      assertThat(iface.getFunctions()).isEmpty();
-      assertThat(iface.getDocumentation()).isEmpty();
+      assertEquals("my-interface", iface.getName());
+      assertTrue(iface.getPackageName().isEmpty());
+      assertTrue(iface.getTypes().isEmpty());
+      assertTrue(iface.getFunctions().isEmpty());
+      assertTrue(iface.getDocumentation().isEmpty());
     }
 
     @Test
@@ -58,8 +59,9 @@ class BindgenInterfaceTest {
       BindgenInterface iface =
           BindgenInterface.builder().name("types").packageName("wasi:io").build();
 
-      assertThat(iface.getName()).isEqualTo("types");
-      assertThat(iface.getPackageName()).hasValue("wasi:io");
+      assertEquals("types", iface.getName());
+      assertTrue(iface.getPackageName().isPresent());
+      assertEquals("wasi:io", iface.getPackageName().get());
     }
 
     @Test
@@ -74,8 +76,8 @@ class BindgenInterfaceTest {
       BindgenInterface iface =
           BindgenInterface.builder().name("types").addType(type1).addType(type2).build();
 
-      assertThat(iface.getTypes()).hasSize(2);
-      assertThat(iface.getTypes()).containsExactly(type1, type2);
+      assertEquals(2, iface.getTypes().size());
+      assertEquals(List.of(type1, type2), iface.getTypes());
     }
 
     @Test
@@ -88,7 +90,7 @@ class BindgenInterfaceTest {
 
       BindgenInterface iface = BindgenInterface.builder().name("primitives").types(types).build();
 
-      assertThat(iface.getTypes()).hasSize(2);
+      assertEquals(2, iface.getTypes().size());
     }
 
     @Test
@@ -102,8 +104,8 @@ class BindgenInterfaceTest {
       BindgenInterface iface =
           BindgenInterface.builder().name("api").addFunction(func1).addFunction(func2).build();
 
-      assertThat(iface.getFunctions()).hasSize(2);
-      assertThat(iface.getFunctions()).containsExactly(func1, func2);
+      assertEquals(2, iface.getFunctions().size());
+      assertEquals(List.of(func1, func2), iface.getFunctions());
     }
 
     @Test
@@ -118,7 +120,7 @@ class BindgenInterfaceTest {
 
       BindgenInterface iface = BindgenInterface.builder().name("io").functions(functions).build();
 
-      assertThat(iface.getFunctions()).hasSize(2);
+      assertEquals(2, iface.getFunctions().size());
     }
 
     @Test
@@ -132,7 +134,8 @@ class BindgenInterfaceTest {
               .documentation("This interface provides utility functions")
               .build();
 
-      assertThat(iface.getDocumentation()).hasValue("This interface provides utility functions");
+      assertTrue(iface.getDocumentation().isPresent());
+      assertEquals("This interface provides utility functions", iface.getDocumentation().get());
     }
 
     @Test
@@ -152,11 +155,12 @@ class BindgenInterfaceTest {
               .documentation("Calculator interface")
               .build();
 
-      assertThat(iface.getName()).isEqualTo("calculator");
-      assertThat(iface.getPackageName()).hasValue("math:core");
-      assertThat(iface.getTypes()).hasSize(1);
-      assertThat(iface.getFunctions()).hasSize(1);
-      assertThat(iface.getDocumentation()).isPresent();
+      assertEquals("calculator", iface.getName());
+      assertTrue(iface.getPackageName().isPresent());
+      assertEquals("math:core", iface.getPackageName().get());
+      assertEquals(1, iface.getTypes().size());
+      assertEquals(1, iface.getFunctions().size());
+      assertTrue(iface.getDocumentation().isPresent());
     }
   }
 
@@ -171,7 +175,7 @@ class BindgenInterfaceTest {
 
       BindgenInterface iface = BindgenInterface.builder().name("types").build();
 
-      assertThat(iface.getFullyQualifiedName()).isEqualTo("types");
+      assertEquals("types", iface.getFullyQualifiedName());
     }
 
     @Test
@@ -182,7 +186,7 @@ class BindgenInterfaceTest {
       BindgenInterface iface =
           BindgenInterface.builder().name("types").packageName("wasi:io").build();
 
-      assertThat(iface.getFullyQualifiedName()).isEqualTo("wasi:io/types");
+      assertEquals("wasi:io/types", iface.getFullyQualifiedName());
     }
 
     @Test
@@ -192,7 +196,7 @@ class BindgenInterfaceTest {
 
       BindgenInterface iface = BindgenInterface.builder().name("types").packageName("").build();
 
-      assertThat(iface.getFullyQualifiedName()).isEqualTo("types");
+      assertEquals("types", iface.getFullyQualifiedName());
     }
   }
 
@@ -205,7 +209,7 @@ class BindgenInterfaceTest {
     void getNameShouldReturnInterfaceName() {
       BindgenInterface iface = BindgenInterface.builder().name("test-interface").build();
 
-      assertThat(iface.getName()).isEqualTo("test-interface");
+      assertEquals("test-interface", iface.getName());
     }
 
     @Test
@@ -213,7 +217,7 @@ class BindgenInterfaceTest {
     void getPackageNameShouldReturnEmptyWhenNotSet() {
       BindgenInterface iface = BindgenInterface.builder().name("test").build();
 
-      assertThat(iface.getPackageName()).isEmpty();
+      assertTrue(iface.getPackageName().isEmpty());
     }
 
     @Test
@@ -222,7 +226,8 @@ class BindgenInterfaceTest {
       BindgenInterface iface =
           BindgenInterface.builder().name("test").packageName("my:pkg").build();
 
-      assertThat(iface.getPackageName()).hasValue("my:pkg");
+      assertTrue(iface.getPackageName().isPresent());
+      assertEquals("my:pkg", iface.getPackageName().get());
     }
 
     @Test
@@ -230,7 +235,7 @@ class BindgenInterfaceTest {
     void getTypesShouldReturnEmptyListWhenNoTypes() {
       BindgenInterface iface = BindgenInterface.builder().name("empty").build();
 
-      assertThat(iface.getTypes()).isEmpty();
+      assertTrue(iface.getTypes().isEmpty());
     }
 
     @Test
@@ -238,7 +243,7 @@ class BindgenInterfaceTest {
     void getFunctionsShouldReturnEmptyListWhenNoFunctions() {
       BindgenInterface iface = BindgenInterface.builder().name("empty").build();
 
-      assertThat(iface.getFunctions()).isEmpty();
+      assertTrue(iface.getFunctions().isEmpty());
     }
   }
 
@@ -257,8 +262,8 @@ class BindgenInterfaceTest {
       BindgenInterface iface2 =
           BindgenInterface.builder().name("types").packageName("wasi:io").build();
 
-      assertThat(iface1).isEqualTo(iface2);
-      assertThat(iface1.hashCode()).isEqualTo(iface2.hashCode());
+      assertEquals(iface2, iface1);
+      assertEquals(iface2.hashCode(), iface1.hashCode());
     }
 
     @Test
@@ -272,7 +277,7 @@ class BindgenInterfaceTest {
       BindgenInterface iface2 =
           BindgenInterface.builder().name("types").addType(BindgenType.primitive("i64")).build();
 
-      assertThat(iface1).isEqualTo(iface2);
+      assertEquals(iface2, iface1);
     }
 
     @Test
@@ -283,7 +288,7 @@ class BindgenInterfaceTest {
       BindgenInterface iface1 = BindgenInterface.builder().name("types").build();
       BindgenInterface iface2 = BindgenInterface.builder().name("functions").build();
 
-      assertThat(iface1).isNotEqualTo(iface2);
+      assertNotEquals(iface2, iface1);
     }
 
     @Test
@@ -297,7 +302,7 @@ class BindgenInterfaceTest {
       BindgenInterface iface2 =
           BindgenInterface.builder().name("types").packageName("pkg2").build();
 
-      assertThat(iface1).isNotEqualTo(iface2);
+      assertNotEquals(iface2, iface1);
     }
 
     @Test
@@ -305,7 +310,7 @@ class BindgenInterfaceTest {
     void shouldNotBeEqualToNull() {
       BindgenInterface iface = BindgenInterface.builder().name("test").build();
 
-      assertThat(iface).isNotEqualTo(null);
+      assertNotEquals(null, iface);
     }
 
     @Test
@@ -313,7 +318,7 @@ class BindgenInterfaceTest {
     void shouldNotBeEqualToDifferentClass() {
       BindgenInterface iface = BindgenInterface.builder().name("test").build();
 
-      assertThat(iface).isNotEqualTo("test");
+      assertNotEquals("test", iface);
     }
 
     @Test
@@ -321,7 +326,7 @@ class BindgenInterfaceTest {
     void shouldBeEqualToItself() {
       BindgenInterface iface = BindgenInterface.builder().name("test").build();
 
-      assertThat(iface).isEqualTo(iface);
+      assertEquals(iface, iface);
     }
   }
 
@@ -343,11 +348,13 @@ class BindgenInterfaceTest {
 
       String toString = iface.toString();
 
-      assertThat(toString).contains("name='api'");
-      assertThat(toString).contains("types=1");
-      assertThat(toString).contains("functions=1");
-      assertThat(toString).startsWith("BindgenInterface{");
-      assertThat(toString).endsWith("}");
+      assertTrue(toString.contains("name='api'"), "Expected toString to contain: name='api'");
+      assertTrue(toString.contains("types=1"), "Expected toString to contain: types=1");
+      assertTrue(toString.contains("functions=1"), "Expected toString to contain: functions=1");
+      assertTrue(
+          toString.startsWith("BindgenInterface{"),
+          "Expected toString to start with: BindgenInterface{");
+      assertTrue(toString.endsWith("}"), "Expected toString to end with: }");
     }
 
     @Test
@@ -358,7 +365,9 @@ class BindgenInterfaceTest {
 
       String toString = iface.toString();
 
-      assertThat(toString).contains("name='wasi:io/types'");
+      assertTrue(
+          toString.contains("name='wasi:io/types'"),
+          "Expected toString to contain: name='wasi:io/types'");
     }
   }
 
@@ -376,8 +385,8 @@ class BindgenInterfaceTest {
 
       List<BindgenType> types = iface.getTypes();
 
-      assertThatThrownBy(() -> types.add(BindgenType.primitive("i64")))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class, () -> types.add(BindgenType.primitive("i64")));
     }
 
     @Test
@@ -393,8 +402,9 @@ class BindgenInterfaceTest {
 
       List<BindgenFunction> functions = iface.getFunctions();
 
-      assertThatThrownBy(() -> functions.add(BindgenFunction.builder().name("set").build()))
-          .isInstanceOf(UnsupportedOperationException.class);
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> functions.add(BindgenFunction.builder().name("set").build()));
     }
   }
 }

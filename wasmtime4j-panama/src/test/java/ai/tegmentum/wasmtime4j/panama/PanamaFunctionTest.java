@@ -15,9 +15,9 @@
  */
 package ai.tegmentum.wasmtime4j.panama;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -134,7 +134,9 @@ class PanamaFunctionTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class, () -> new PanamaFunction(null, "test", funcType));
-    assertThat(exception.getMessage()).contains("Instance cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Instance cannot be null"),
+        "Expected message to contain 'Instance cannot be null': " + exception.getMessage());
   }
 
   @Test
@@ -146,7 +148,9 @@ class PanamaFunctionTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class, () -> new PanamaFunction(instance, null, funcType));
-    assertThat(exception.getMessage()).contains("Name cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Name cannot be null"),
+        "Expected message to contain 'Name cannot be null': " + exception.getMessage());
   }
 
   @Test
@@ -156,7 +160,9 @@ class PanamaFunctionTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class, () -> new PanamaFunction(instance, "test", null));
-    assertThat(exception.getMessage()).contains("Function type cannot be null");
+    assertTrue(
+        exception.getMessage().contains("Function type cannot be null"),
+        "Expected message to contain 'Function type cannot be null': " + exception.getMessage());
   }
 
   // ==================== Function Retrieval Tests ====================
@@ -187,7 +193,7 @@ class PanamaFunctionTest {
     void shouldReturnPanamaFunctionInstance() throws Exception {
       final PanamaInstance instance = createFunctionTestInstance();
       final WasmFunction func = getFunction(instance, "return_i32");
-      assertThat(func).isInstanceOf(PanamaFunction.class);
+      assertInstanceOf(PanamaFunction.class, func);
     }
   }
 

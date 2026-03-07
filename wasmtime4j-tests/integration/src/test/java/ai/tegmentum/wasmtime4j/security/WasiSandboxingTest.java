@@ -15,7 +15,11 @@
  */
 package ai.tegmentum.wasmtime4j.security;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.RuntimeType;
@@ -94,11 +98,11 @@ class WasiSandboxingTest extends DualRuntimeTest {
       final WasiConfig config =
           WasiConfig.builder().withPreopenDirectory("/sandbox", allowedDir).build();
 
-      assertThat(config.getPreopenDirectories()).containsKey("/sandbox");
-      assertThat(config.getPreopenDirectories()).hasSize(1);
+      assertTrue(config.getPreopenDirectories().containsKey("/sandbox"));
+      assertEquals(1, config.getPreopenDirectories().size());
 
       // The disallowed directory should NOT be accessible
-      assertThat(config.getPreopenDirectories().containsValue(disallowedDir)).isFalse();
+      assertFalse(config.getPreopenDirectories().containsValue(disallowedDir));
 
       LOGGER.info(
           "WASI config created with preopened directory: " + config.getPreopenDirectories());
@@ -123,8 +127,10 @@ class WasiSandboxingTest extends DualRuntimeTest {
               .withPreopenDirectory("/tmp", dir3)
               .build();
 
-      assertThat(config.getPreopenDirectories()).hasSize(3);
-      assertThat(config.getPreopenDirectories()).containsKeys("/app", "/data", "/tmp");
+      assertEquals(3, config.getPreopenDirectories().size());
+      assertTrue(config.getPreopenDirectories().containsKey("/app"));
+      assertTrue(config.getPreopenDirectories().containsKey("/data"));
+      assertTrue(config.getPreopenDirectories().containsKey("/tmp"));
 
       LOGGER.info("Multiple preopened directories configured: " + config.getPreopenDirectories());
     }
@@ -145,8 +151,8 @@ class WasiSandboxingTest extends DualRuntimeTest {
           WasiConfig.builder().withPreopenDirectory("/sandbox", safeDir).build();
 
       // Verify configuration was created (implementation should handle safely)
-      assertThat(config).isNotNull();
-      assertThat(config.getPreopenDirectories()).isNotEmpty();
+      assertNotNull(config);
+      assertFalse(config.getPreopenDirectories().isEmpty());
 
       LOGGER.info("Path traversal prevention test passed");
     }
@@ -173,13 +179,13 @@ class WasiSandboxingTest extends DualRuntimeTest {
               .build();
 
       // Config should only have the explicitly configured variables
-      assertThat(config.getEnvironment()).hasSize(2);
-      assertThat(config.getEnvironment()).containsEntry("APP_NAME", "test-app");
-      assertThat(config.getEnvironment()).containsEntry("APP_VERSION", "1.0.0");
+      assertEquals(2, config.getEnvironment().size());
+      assertEquals("test-app", config.getEnvironment().get("APP_NAME"));
+      assertEquals("1.0.0", config.getEnvironment().get("APP_VERSION"));
 
       // System environment variables should NOT be present (unless inherited)
-      assertThat(config.getEnvironment().containsKey("PATH")).isFalse();
-      assertThat(config.getEnvironment().containsKey("HOME")).isFalse();
+      assertFalse(config.getEnvironment().containsKey("PATH"));
+      assertFalse(config.getEnvironment().containsKey("HOME"));
 
       LOGGER.info("Environment sandboxing verified: " + config.getEnvironment());
     }
@@ -195,7 +201,7 @@ class WasiSandboxingTest extends DualRuntimeTest {
       final WasiConfig config = WasiConfig.defaultConfig();
 
       // Default config should have empty environment
-      assertThat(config.getEnvironment()).isEmpty();
+      assertTrue(config.getEnvironment().isEmpty());
 
       LOGGER.info("Default config has no environment variables exposed");
     }
@@ -220,9 +226,9 @@ class WasiSandboxingTest extends DualRuntimeTest {
               .withArgument("--verbose")
               .build();
 
-      assertThat(config.getArguments()).hasSize(3);
-      assertThat(config.getArguments())
-          .containsExactly("--config", "/app/config.json", "--verbose");
+      assertEquals(3, config.getArguments().size());
+      assertEquals(java.util.List.of("--config", "/app/config.json", "--verbose"),
+          config.getArguments());
 
       LOGGER.info("Arguments sandboxed: " + config.getArguments());
     }
@@ -237,7 +243,7 @@ class WasiSandboxingTest extends DualRuntimeTest {
 
       final WasiConfig config = WasiConfig.defaultConfig();
 
-      assertThat(config.getArguments()).isEmpty();
+      assertTrue(config.getArguments().isEmpty());
 
       LOGGER.info("Default config has no arguments");
     }
@@ -272,16 +278,16 @@ class WasiSandboxingTest extends DualRuntimeTest {
               .build();
 
       // Verify configs are isolated from each other
-      assertThat(config1.getPreopenDirectories().get("/data")).isEqualTo(dir1);
-      assertThat(config2.getPreopenDirectories().get("/data")).isEqualTo(dir2);
+      assertEquals(dir1, config1.getPreopenDirectories().get("/data"));
+      assertEquals(dir2, config2.getPreopenDirectories().get("/data"));
 
-      assertThat(config1.getEnvironment().get("CONTEXT")).isEqualTo("1");
-      assertThat(config2.getEnvironment().get("CONTEXT")).isEqualTo("2");
+      assertEquals("1", config1.getEnvironment().get("CONTEXT"));
+      assertEquals("2", config2.getEnvironment().get("CONTEXT"));
 
       // Configs should be independent objects
-      assertThat(config1).isNotSameAs(config2);
-      assertThat(config1.getPreopenDirectories()).isNotSameAs(config2.getPreopenDirectories());
-      assertThat(config1.getEnvironment()).isNotSameAs(config2.getEnvironment());
+      assertNotSame(config1, config2);
+      assertNotSame(config1.getPreopenDirectories(), config2.getPreopenDirectories());
+      assertNotSame(config1.getEnvironment(), config2.getEnvironment());
 
       LOGGER.info("Two isolated WASI configs created and verified");
     }
@@ -302,9 +308,9 @@ class WasiSandboxingTest extends DualRuntimeTest {
       final WasiConfig config = WasiConfig.defaultConfig();
 
       // Default config should be maximally restrictive
-      assertThat(config.getEnvironment()).isEmpty();
-      assertThat(config.getArguments()).isEmpty();
-      assertThat(config.getPreopenDirectories()).isEmpty();
+      assertTrue(config.getEnvironment().isEmpty());
+      assertTrue(config.getArguments().isEmpty());
+      assertTrue(config.getPreopenDirectories().isEmpty());
 
       LOGGER.info("Default WASI config has minimal permissions");
     }
@@ -321,7 +327,7 @@ class WasiSandboxingTest extends DualRuntimeTest {
       // Without any preopened directories, filesystem should be inaccessible
       final WasiConfig config = WasiConfig.builder().build();
 
-      assertThat(config.getPreopenDirectories()).isEmpty();
+      assertTrue(config.getPreopenDirectories().isEmpty());
 
       LOGGER.info("Filesystem access requires explicit configuration");
     }
