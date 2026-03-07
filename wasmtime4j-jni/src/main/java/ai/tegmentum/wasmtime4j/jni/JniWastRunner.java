@@ -137,12 +137,13 @@ public final class JniWastRunner {
    * Convenience method to execute a WAST file and throw an exception if it fails.
    *
    * @param filePath the path to the WAST file
-   * @throws WastExecutionException if any directives fail or execution errors occur
+   * @throws ai.tegmentum.wasmtime4j.wast.WastRunner.WastExecutionException if any directives fail
+   *     or execution errors occur
    */
   public static void executeWastFileOrThrow(final String filePath) {
     final WastExecutionResult result = executeWastFile(filePath);
     if (!result.allPassed()) {
-      throw new WastExecutionException(result);
+      throw new ai.tegmentum.wasmtime4j.wast.WastRunner.WastExecutionException(result);
     }
   }
 
@@ -151,12 +152,13 @@ public final class JniWastRunner {
    *
    * @param filename the filename for error reporting
    * @param wastContent the WAST content
-   * @throws WastExecutionException if any directives fail or execution errors occur
+   * @throws ai.tegmentum.wasmtime4j.wast.WastRunner.WastExecutionException if any directives fail
+   *     or execution errors occur
    */
   public static void executeWastStringOrThrow(final String filename, final String wastContent) {
     final WastExecutionResult result = executeWastString(filename, wastContent);
     if (!result.allPassed()) {
-      throw new WastExecutionException(result);
+      throw new ai.tegmentum.wasmtime4j.wast.WastRunner.WastExecutionException(result);
     }
   }
 
@@ -179,42 +181,6 @@ public final class JniWastRunner {
    */
   private static native WastExecutionResult nativeExecuteWastBuffer(
       String filename, byte[] content);
-
-  /** Exception thrown when WAST execution fails. */
-  public static final class WastExecutionException extends RuntimeException {
-    private static final long serialVersionUID = 1L;
-    private final transient WastExecutionResult result;
-
-    /**
-     * Creates a new WAST execution exception.
-     *
-     * @param result the execution result that failed
-     */
-    public WastExecutionException(final WastExecutionResult result) {
-      super(createMessage(result));
-      this.result = result;
-    }
-
-    /**
-     * Gets the execution result.
-     *
-     * @return the result
-     */
-    public WastExecutionResult getResult() {
-      return result;
-    }
-
-    private static String createMessage(final WastExecutionResult result) {
-      if (result.getExecutionError() != null) {
-        return String.format(
-            "WAST execution failed for %s: %s", result.getFilePath(), result.getExecutionError());
-      } else {
-        return String.format(
-            "WAST execution failed for %s: %d of %d directives failed",
-            result.getFilePath(), result.getFailedDirectives(), result.getTotalDirectives());
-      }
-    }
-  }
 
   // Private constructor to prevent instantiation
   private JniWastRunner() {

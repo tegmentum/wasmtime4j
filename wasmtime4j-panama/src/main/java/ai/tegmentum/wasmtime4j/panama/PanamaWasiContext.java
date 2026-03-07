@@ -80,8 +80,12 @@ public final class PanamaWasiContext implements WasiContext {
    * @return the native context memory segment
    */
   public MemorySegment getNativeContext() {
-    ensureNotClosed();
-    return this.contextHandle;
+    resourceHandle.beginOperation();
+    try {
+      return this.contextHandle;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -89,24 +93,29 @@ public final class PanamaWasiContext implements WasiContext {
     if (argv == null) {
       throw new IllegalArgumentException("Command line arguments cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      // Allocate array of string pointers
-      final MemorySegment argsArray = arena.allocate(ValueLayout.ADDRESS, argv.length);
+      try (Arena arena = Arena.ofConfined()) {
+        // Allocate array of string pointers
+        final MemorySegment argsArray = arena.allocate(ValueLayout.ADDRESS, argv.length);
 
-      // Convert each string to C string and store pointer
-      for (int i = 0; i < argv.length; i++) {
-        final MemorySegment argStr = arena.allocateFrom(argv[i]);
-        argsArray.setAtIndex(ValueLayout.ADDRESS, i, argStr);
+        // Convert each string to C string and store pointer
+        for (int i = 0; i < argv.length; i++) {
+          final MemorySegment argStr = arena.allocateFrom(argv[i]);
+          argsArray.setAtIndex(ValueLayout.ADDRESS, i, argStr);
+        }
+
+        final int result =
+            NATIVE_BINDINGS.wasiContextSetArgv(contextHandle, argsArray, argv.length);
+        if (result != 0) {
+          throw new RuntimeException("Failed to set command line arguments");
+        }
       }
-
-      final int result = NATIVE_BINDINGS.wasiContextSetArgv(contextHandle, argsArray, argv.length);
-      if (result != 0) {
-        throw new RuntimeException("Failed to set command line arguments");
-      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -117,18 +126,22 @@ public final class PanamaWasiContext implements WasiContext {
     if (value == null) {
       throw new IllegalArgumentException("Environment variable value cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment keyStr = arena.allocateFrom(key);
-      final MemorySegment valueStr = arena.allocateFrom(value);
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment keyStr = arena.allocateFrom(key);
+        final MemorySegment valueStr = arena.allocateFrom(value);
 
-      final int result = NATIVE_BINDINGS.wasiContextSetEnv(contextHandle, keyStr, valueStr);
-      if (result != 0) {
-        throw new RuntimeException("Failed to set environment variable");
+        final int result = NATIVE_BINDINGS.wasiContextSetEnv(contextHandle, keyStr, valueStr);
+        if (result != 0) {
+          throw new RuntimeException("Failed to set environment variable");
+        }
       }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -136,45 +149,61 @@ public final class PanamaWasiContext implements WasiContext {
     if (env == null) {
       throw new IllegalArgumentException("Environment variables map cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    for (Map.Entry<String, String> entry : env.entrySet()) {
-      setEnv(entry.getKey(), entry.getValue());
+      for (Map.Entry<String, String> entry : env.entrySet()) {
+        setEnv(entry.getKey(), entry.getValue());
+      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
   public WasiContext inheritEnv() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final int result = NATIVE_BINDINGS.wasiContextInheritEnv(contextHandle);
-    if (result != 0) {
-      throw new RuntimeException("Failed to inherit environment variables");
+      final int result = NATIVE_BINDINGS.wasiContextInheritEnv(contextHandle);
+      if (result != 0) {
+        throw new RuntimeException("Failed to inherit environment variables");
+      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
   public WasiContext inheritArgs() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final int result = NATIVE_BINDINGS.wasiContextInheritArgs(contextHandle);
-    if (result != 0) {
-      throw new RuntimeException("Failed to inherit command-line arguments");
+      final int result = NATIVE_BINDINGS.wasiContextInheritArgs(contextHandle);
+      if (result != 0) {
+        throw new RuntimeException("Failed to inherit command-line arguments");
+      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
   public WasiContext inheritStdio() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final int result = NATIVE_BINDINGS.wasiContextInheritStdio(contextHandle);
-    if (result != 0) {
-      throw new RuntimeException("Failed to inherit stdio");
+      final int result = NATIVE_BINDINGS.wasiContextInheritStdio(contextHandle);
+      if (result != 0) {
+        throw new RuntimeException("Failed to inherit stdio");
+      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -182,17 +211,21 @@ public final class PanamaWasiContext implements WasiContext {
     if (path == null) {
       throw new IllegalArgumentException("Stdin path cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment pathStr = arena.allocateFrom(path.toString());
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment pathStr = arena.allocateFrom(path.toString());
 
-      final int result = NATIVE_BINDINGS.wasiContextSetStdin(contextHandle, pathStr);
-      if (result != 0) {
-        throw new RuntimeException("Failed to set stdin path");
+        final int result = NATIVE_BINDINGS.wasiContextSetStdin(contextHandle, pathStr);
+        if (result != 0) {
+          throw new RuntimeException("Failed to set stdin path");
+        }
       }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -200,28 +233,32 @@ public final class PanamaWasiContext implements WasiContext {
     if (data == null) {
       throw new IllegalArgumentException("Stdin data cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment dataSegment;
-      final long dataLen;
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment dataSegment;
+        final long dataLen;
 
-      if (data.length == 0) {
-        dataSegment = MemorySegment.NULL;
-        dataLen = 0;
-      } else {
-        dataSegment = arena.allocate(data.length);
-        dataSegment.copyFrom(MemorySegment.ofArray(data));
-        dataLen = data.length;
+        if (data.length == 0) {
+          dataSegment = MemorySegment.NULL;
+          dataLen = 0;
+        } else {
+          dataSegment = arena.allocate(data.length);
+          dataSegment.copyFrom(MemorySegment.ofArray(data));
+          dataLen = data.length;
+        }
+
+        final int result =
+            NATIVE_BINDINGS.wasiContextSetStdinBytes(contextHandle, dataSegment, dataLen);
+        if (result != 0) {
+          throw new RuntimeException("Failed to set stdin bytes");
+        }
       }
-
-      final int result =
-          NATIVE_BINDINGS.wasiContextSetStdinBytes(contextHandle, dataSegment, dataLen);
-      if (result != 0) {
-        throw new RuntimeException("Failed to set stdin bytes");
-      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -229,17 +266,21 @@ public final class PanamaWasiContext implements WasiContext {
     if (path == null) {
       throw new IllegalArgumentException("Stdout path cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment pathStr = arena.allocateFrom(path.toString());
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment pathStr = arena.allocateFrom(path.toString());
 
-      final int result = NATIVE_BINDINGS.wasiContextSetStdout(contextHandle, pathStr);
-      if (result != 0) {
-        throw new RuntimeException("Failed to set stdout path");
+        final int result = NATIVE_BINDINGS.wasiContextSetStdout(contextHandle, pathStr);
+        if (result != 0) {
+          throw new RuntimeException("Failed to set stdout path");
+        }
       }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -247,17 +288,21 @@ public final class PanamaWasiContext implements WasiContext {
     if (path == null) {
       throw new IllegalArgumentException("Stderr path cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment pathStr = arena.allocateFrom(path.toString());
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment pathStr = arena.allocateFrom(path.toString());
 
-      final int result = NATIVE_BINDINGS.wasiContextSetStderr(contextHandle, pathStr);
-      if (result != 0) {
-        throw new RuntimeException("Failed to set stderr path");
+        final int result = NATIVE_BINDINGS.wasiContextSetStderr(contextHandle, pathStr);
+        if (result != 0) {
+          throw new RuntimeException("Failed to set stderr path");
+        }
       }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -265,17 +310,21 @@ public final class PanamaWasiContext implements WasiContext {
     if (path == null) {
       throw new IllegalArgumentException("Stdout append path cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment pathStr = arena.allocateFrom(path.toString());
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment pathStr = arena.allocateFrom(path.toString());
 
-      final int result = NATIVE_BINDINGS.wasiContextSetStdoutAppend(contextHandle, pathStr);
-      if (result != 0) {
-        throw new RuntimeException("Failed to set stdout append path");
+        final int result = NATIVE_BINDINGS.wasiContextSetStdoutAppend(contextHandle, pathStr);
+        if (result != 0) {
+          throw new RuntimeException("Failed to set stdout append path");
+        }
       }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -283,17 +332,21 @@ public final class PanamaWasiContext implements WasiContext {
     if (path == null) {
       throw new IllegalArgumentException("Stderr append path cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment pathStr = arena.allocateFrom(path.toString());
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment pathStr = arena.allocateFrom(path.toString());
 
-      final int result = NATIVE_BINDINGS.wasiContextSetStderrAppend(contextHandle, pathStr);
-      if (result != 0) {
-        throw new RuntimeException("Failed to set stderr append path");
+        final int result = NATIVE_BINDINGS.wasiContextSetStderrAppend(contextHandle, pathStr);
+        if (result != 0) {
+          throw new RuntimeException("Failed to set stderr append path");
+        }
       }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -305,19 +358,23 @@ public final class PanamaWasiContext implements WasiContext {
     if (guestPath == null) {
       throw new IllegalArgumentException("Guest path cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment hostPathStr = arena.allocateFrom(hostPath.toString());
-      final MemorySegment guestPathStr = arena.allocateFrom(guestPath);
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment hostPathStr = arena.allocateFrom(hostPath.toString());
+        final MemorySegment guestPathStr = arena.allocateFrom(guestPath);
 
-      final int result =
-          NATIVE_BINDINGS.wasiContextPreopenDir(contextHandle, hostPathStr, guestPathStr);
-      if (result != 0) {
-        throw new WasmException("Failed to add pre-opened directory");
+        final int result =
+            NATIVE_BINDINGS.wasiContextPreopenDir(contextHandle, hostPathStr, guestPathStr);
+        if (result != 0) {
+          throw new WasmException("Failed to add pre-opened directory");
+        }
       }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -329,34 +386,46 @@ public final class PanamaWasiContext implements WasiContext {
     if (guestPath == null) {
       throw new IllegalArgumentException("Guest path cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment hostPathStr = arena.allocateFrom(hostPath.toString());
-      final MemorySegment guestPathStr = arena.allocateFrom(guestPath);
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment hostPathStr = arena.allocateFrom(hostPath.toString());
+        final MemorySegment guestPathStr = arena.allocateFrom(guestPath);
 
-      final int result =
-          NATIVE_BINDINGS.wasiContextPreopenDirReadonly(contextHandle, hostPathStr, guestPathStr);
-      if (result != 0) {
-        throw new WasmException("Failed to add read-only pre-opened directory");
+        final int result =
+            NATIVE_BINDINGS.wasiContextPreopenDirReadonly(contextHandle, hostPathStr, guestPathStr);
+        if (result != 0) {
+          throw new WasmException("Failed to add read-only pre-opened directory");
+        }
       }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
   public WasiContext setWorkingDirectory(final String workingDir) {
     // Working directory support requires additional native binding
     // For now, this is a no-op that doesn't fail
-    ensureNotClosed();
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public WasiContext setNetworkEnabled(final boolean enabled) {
-    ensureNotClosed();
-    this.networkEnabled = enabled;
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      this.networkEnabled = enabled;
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -366,15 +435,23 @@ public final class PanamaWasiContext implements WasiContext {
     }
     // Resource limiting requires additional native binding
     // For now, this is a no-op that doesn't fail
-    ensureNotClosed();
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public WasiContext setAsyncIoEnabled(final boolean enabled) {
-    ensureNotClosed();
-    this.asyncIoEnabled = enabled;
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      this.asyncIoEnabled = enabled;
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -382,9 +459,13 @@ public final class PanamaWasiContext implements WasiContext {
     if (maxOps < -1) {
       throw new IllegalArgumentException("maxOps must be >= -1");
     }
-    ensureNotClosed();
-    this.maxAsyncOperations = maxOps;
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      this.maxAsyncOperations = maxOps;
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -392,23 +473,35 @@ public final class PanamaWasiContext implements WasiContext {
     if (timeoutMs < -1) {
       throw new IllegalArgumentException("timeoutMs must be >= -1");
     }
-    ensureNotClosed();
-    this.asyncTimeoutMs = timeoutMs;
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      this.asyncTimeoutMs = timeoutMs;
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public WasiContext setComponentModelEnabled(final boolean enabled) {
-    ensureNotClosed();
-    this.componentModelEnabled = enabled;
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      this.componentModelEnabled = enabled;
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public WasiContext setProcessEnabled(final boolean enabled) {
-    ensureNotClosed();
-    this.processEnabled = enabled;
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      this.processEnabled = enabled;
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -418,8 +511,12 @@ public final class PanamaWasiContext implements WasiContext {
     }
     // Filesystem working directory requires additional native binding
     // For now, this is a no-op that doesn't fail
-    ensureNotClosed();
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // ===== WASI Preview 2 Config Getters =====
@@ -482,80 +579,88 @@ public final class PanamaWasiContext implements WasiContext {
 
   @Override
   public java.util.Map<String, String> getEnvironment() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment outPtr = arena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment outLen = arena.allocate(ValueLayout.JAVA_LONG);
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment outPtr = arena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment outLen = arena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result = NATIVE_BINDINGS.wasiContextGetEnvironment(contextHandle, outPtr, outLen);
-      if (result != 0) {
-        return java.util.Collections.emptyMap();
-      }
-
-      final MemorySegment dataPtr = outPtr.get(ValueLayout.ADDRESS, 0);
-      final long length = outLen.get(ValueLayout.JAVA_LONG, 0);
-
-      if (dataPtr.equals(MemorySegment.NULL) || length == 0) {
-        if (!dataPtr.equals(MemorySegment.NULL)) {
-          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        final int result = NATIVE_BINDINGS.wasiContextGetEnvironment(contextHandle, outPtr, outLen);
+        if (result != 0) {
+          return java.util.Collections.emptyMap();
         }
-        return java.util.Collections.emptyMap();
-      }
 
-      final MemorySegment sizedPtr = dataPtr.reinterpret(length);
-      final byte[] bytes = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
-      NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        final MemorySegment dataPtr = outPtr.get(ValueLayout.ADDRESS, 0);
+        final long length = outLen.get(ValueLayout.JAVA_LONG, 0);
 
-      final String data = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-      final java.util.Map<String, String> env = new java.util.LinkedHashMap<>();
-      for (String line : data.split("\n")) {
-        if (!line.isEmpty()) {
-          final int eqIdx = line.indexOf('=');
-          if (eqIdx > 0) {
-            env.put(line.substring(0, eqIdx), line.substring(eqIdx + 1));
+        if (dataPtr.equals(MemorySegment.NULL) || length == 0) {
+          if (!dataPtr.equals(MemorySegment.NULL)) {
+            NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+          }
+          return java.util.Collections.emptyMap();
+        }
+
+        final MemorySegment sizedPtr = dataPtr.reinterpret(length);
+        final byte[] bytes = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
+        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+
+        final String data = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+        final java.util.Map<String, String> env = new java.util.LinkedHashMap<>();
+        for (String line : data.split("\n")) {
+          if (!line.isEmpty()) {
+            final int eqIdx = line.indexOf('=');
+            if (eqIdx > 0) {
+              env.put(line.substring(0, eqIdx), line.substring(eqIdx + 1));
+            }
           }
         }
+        return java.util.Collections.unmodifiableMap(env);
       }
-      return java.util.Collections.unmodifiableMap(env);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public java.util.List<String> getArguments() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment outPtr = arena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment outLen = arena.allocate(ValueLayout.JAVA_LONG);
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment outPtr = arena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment outLen = arena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result = NATIVE_BINDINGS.wasiContextGetArguments(contextHandle, outPtr, outLen);
-      if (result != 0) {
-        return java.util.Collections.emptyList();
-      }
-
-      final MemorySegment dataPtr = outPtr.get(ValueLayout.ADDRESS, 0);
-      final long length = outLen.get(ValueLayout.JAVA_LONG, 0);
-
-      if (dataPtr.equals(MemorySegment.NULL) || length == 0) {
-        if (!dataPtr.equals(MemorySegment.NULL)) {
-          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        final int result = NATIVE_BINDINGS.wasiContextGetArguments(contextHandle, outPtr, outLen);
+        if (result != 0) {
+          return java.util.Collections.emptyList();
         }
-        return java.util.Collections.emptyList();
-      }
 
-      final MemorySegment sizedPtr = dataPtr.reinterpret(length);
-      final byte[] bytes = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
-      NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        final MemorySegment dataPtr = outPtr.get(ValueLayout.ADDRESS, 0);
+        final long length = outLen.get(ValueLayout.JAVA_LONG, 0);
 
-      final String data = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
-      final java.util.List<String> args = new java.util.ArrayList<>();
-      for (String line : data.split("\n")) {
-        if (!line.isEmpty()) {
-          args.add(line);
+        if (dataPtr.equals(MemorySegment.NULL) || length == 0) {
+          if (!dataPtr.equals(MemorySegment.NULL)) {
+            NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+          }
+          return java.util.Collections.emptyList();
         }
+
+        final MemorySegment sizedPtr = dataPtr.reinterpret(length);
+        final byte[] bytes = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
+        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+
+        final String data = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+        final java.util.List<String> args = new java.util.ArrayList<>();
+        for (String line : data.split("\n")) {
+          if (!line.isEmpty()) {
+            args.add(line);
+          }
+        }
+        return java.util.Collections.unmodifiableList(args);
       }
-      return java.util.Collections.unmodifiableList(args);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -563,89 +668,109 @@ public final class PanamaWasiContext implements WasiContext {
 
   @Override
   public WasiContext enableOutputCapture() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final int result = NATIVE_BINDINGS.wasiContextEnableOutputCapture(contextHandle);
-    if (result != 0) {
-      throw new WasmException("Failed to enable output capture");
+      final int result = NATIVE_BINDINGS.wasiContextEnableOutputCapture(contextHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to enable output capture");
+      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
   public byte[] getStdoutCapture() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      // Allocate space for the length output parameter (size_t = long on 64-bit)
-      final MemorySegment lengthOut = arena.allocate(ValueLayout.JAVA_LONG);
+      try (Arena arena = Arena.ofConfined()) {
+        // Allocate space for the length output parameter (size_t = long on 64-bit)
+        final MemorySegment lengthOut = arena.allocate(ValueLayout.JAVA_LONG);
 
-      final MemorySegment dataPtr =
-          NATIVE_BINDINGS.wasiContextGetStdoutCapture(contextHandle, lengthOut);
+        final MemorySegment dataPtr =
+            NATIVE_BINDINGS.wasiContextGetStdoutCapture(contextHandle, lengthOut);
 
-      if (dataPtr == null || dataPtr.equals(MemorySegment.NULL)) {
-        return null;
-      }
+        if (dataPtr == null || dataPtr.equals(MemorySegment.NULL)) {
+          return null;
+        }
 
-      final long length = lengthOut.get(ValueLayout.JAVA_LONG, 0);
-      if (length == 0) {
+        final long length = lengthOut.get(ValueLayout.JAVA_LONG, 0);
+        if (length == 0) {
+          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+          return new byte[0];
+        }
+
+        // Reinterpret the segment to have the correct size
+        final MemorySegment sizedPtr = dataPtr.reinterpret(length);
+        final byte[] data = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
+
+        // Free the native buffer
         NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
-        return new byte[0];
+
+        return data;
       }
-
-      // Reinterpret the segment to have the correct size
-      final MemorySegment sizedPtr = dataPtr.reinterpret(length);
-      final byte[] data = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
-
-      // Free the native buffer
-      NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
-
-      return data;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public byte[] getStderrCapture() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena arena = Arena.ofConfined()) {
-      // Allocate space for the length output parameter (size_t = long on 64-bit)
-      final MemorySegment lengthOut = arena.allocate(ValueLayout.JAVA_LONG);
+      try (Arena arena = Arena.ofConfined()) {
+        // Allocate space for the length output parameter (size_t = long on 64-bit)
+        final MemorySegment lengthOut = arena.allocate(ValueLayout.JAVA_LONG);
 
-      final MemorySegment dataPtr =
-          NATIVE_BINDINGS.wasiContextGetStderrCapture(contextHandle, lengthOut);
+        final MemorySegment dataPtr =
+            NATIVE_BINDINGS.wasiContextGetStderrCapture(contextHandle, lengthOut);
 
-      if (dataPtr == null || dataPtr.equals(MemorySegment.NULL)) {
-        return null;
-      }
+        if (dataPtr == null || dataPtr.equals(MemorySegment.NULL)) {
+          return null;
+        }
 
-      final long length = lengthOut.get(ValueLayout.JAVA_LONG, 0);
-      if (length == 0) {
+        final long length = lengthOut.get(ValueLayout.JAVA_LONG, 0);
+        if (length == 0) {
+          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+          return new byte[0];
+        }
+
+        // Reinterpret the segment to have the correct size
+        final MemorySegment sizedPtr = dataPtr.reinterpret(length);
+        final byte[] data = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
+
+        // Free the native buffer
         NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
-        return new byte[0];
+
+        return data;
       }
-
-      // Reinterpret the segment to have the correct size
-      final MemorySegment sizedPtr = dataPtr.reinterpret(length);
-      final byte[] data = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
-
-      // Free the native buffer
-      NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
-
-      return data;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public boolean hasStdoutCapture() {
-    ensureNotClosed();
-    return NATIVE_BINDINGS.wasiContextHasStdoutCapture(contextHandle) == 1;
+    resourceHandle.beginOperation();
+    try {
+      return NATIVE_BINDINGS.wasiContextHasStdoutCapture(contextHandle) == 1;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public boolean hasStderrCapture() {
-    ensureNotClosed();
-    return NATIVE_BINDINGS.wasiContextHasStderrCapture(contextHandle) == 1;
+    resourceHandle.beginOperation();
+    try {
+      return NATIVE_BINDINGS.wasiContextHasStderrCapture(contextHandle) == 1;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -660,9 +785,5 @@ public final class PanamaWasiContext implements WasiContext {
   /** Closes this WASI context and releases native resources. */
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

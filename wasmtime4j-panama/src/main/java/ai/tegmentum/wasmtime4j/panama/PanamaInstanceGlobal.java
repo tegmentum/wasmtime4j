@@ -106,142 +106,151 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
 
   @Override
   public WasmValue get() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment i32Value = tempArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment i64Value = tempArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment f32Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-      final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-      final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+        final MemorySegment i32Value = tempArena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment i64Value = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment f32Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+        final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+        final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result =
-          NATIVE_BINDINGS.instanceGetGlobalValue(
-              instance.getNativeInstance(),
-              store.getNativeStore(),
-              nameSegment,
-              i32Value,
-              i64Value,
-              f32Value,
-              f64Value,
-              refIdPresent,
-              refId);
+        final int result =
+            NATIVE_BINDINGS.instanceGetGlobalValue(
+                instance.getNativeInstance(),
+                store.getNativeStore(),
+                nameSegment,
+                i32Value,
+                i64Value,
+                f32Value,
+                f64Value,
+                refIdPresent,
+                refId);
 
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to get global value: " + PanamaErrorMapper.getErrorDescription(result));
+        if (result != 0) {
+          throw new RuntimeException(
+              "Failed to get global value: " + PanamaErrorMapper.getErrorDescription(result));
+        }
+
+        // Convert based on type
+        switch (type) {
+          case I32:
+            return WasmValue.i32(i32Value.get(ValueLayout.JAVA_INT, 0));
+          case I64:
+            return WasmValue.i64(i64Value.get(ValueLayout.JAVA_LONG, 0));
+          case F32:
+            return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
+          case F64:
+            return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
+          case FUNCREF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.funcref(null);
+          case EXTERNREF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.externref(null);
+          default:
+            throw new UnsupportedOperationException("Unsupported type: " + type);
+        }
       }
-
-      // Convert based on type
-      switch (type) {
-        case I32:
-          return WasmValue.i32(i32Value.get(ValueLayout.JAVA_INT, 0));
-        case I64:
-          return WasmValue.i64(i64Value.get(ValueLayout.JAVA_LONG, 0));
-        case F32:
-          return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
-        case F64:
-          return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
-        case FUNCREF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.funcref(null);
-        case EXTERNREF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.externref(null);
-        default:
-          throw new UnsupportedOperationException("Unsupported type: " + type);
-      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void set(final WasmValue value) {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (value == null) {
-      throw new IllegalArgumentException("Value cannot be null");
-    }
-    if (!mutable) {
-      throw new UnsupportedOperationException("Cannot set value of immutable global");
-    }
-    if (value.getType() != type) {
-      throw new WasmTypeException(
-          "Type mismatch: cannot set " + value.getType() + " value on " + type + " global");
-    }
+      if (value == null) {
+        throw new IllegalArgumentException("Value cannot be null");
+      }
+      if (!mutable) {
+        throw new UnsupportedOperationException("Cannot set value of immutable global");
+      }
+      if (value.getType() != type) {
+        throw new WasmTypeException(
+            "Type mismatch: cannot set " + value.getType() + " value on " + type + " global");
+      }
 
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
 
-      // Extract value based on type
-      int valueTypeCode = type.toNativeTypeCode();
-      int i32Value = 0;
-      long i64Value = 0L;
-      double f32Value = 0.0;
-      double f64Value = 0.0;
-      int refIdPresent = 0;
-      long refId = 0L;
+        // Extract value based on type
+        int valueTypeCode = type.toNativeTypeCode();
+        int i32Value = 0;
+        long i64Value = 0L;
+        double f32Value = 0.0;
+        double f64Value = 0.0;
+        int refIdPresent = 0;
+        long refId = 0L;
 
-      switch (type) {
-        case I32:
-          i32Value = value.asInt();
-          break;
-        case I64:
-          i64Value = value.asLong();
-          break;
-        case F32:
-          f32Value = value.asFloat();
-          break;
-        case F64:
-          f64Value = value.asDouble();
-          break;
-        case FUNCREF:
-        case EXTERNREF:
-          final Object refValue = value.getValue();
-          if (refValue != null) {
-            refIdPresent = 1;
-            if (refValue instanceof ai.tegmentum.wasmtime4j.func.FunctionReference funcReference) {
-              refId = funcReference.getId();
-            } else if (refValue instanceof Long) {
-              refId = (Long) refValue;
-            } else if (refValue instanceof Integer) {
-              refId = ((Integer) refValue).longValue();
-            } else {
-              throw new IllegalArgumentException(
-                  "Unsupported reference value type: "
-                      + refValue.getClass().getName()
-                      + ". Expected FunctionReference, Long, or Integer.");
+        switch (type) {
+          case I32:
+            i32Value = value.asInt();
+            break;
+          case I64:
+            i64Value = value.asLong();
+            break;
+          case F32:
+            f32Value = value.asFloat();
+            break;
+          case F64:
+            f64Value = value.asDouble();
+            break;
+          case FUNCREF:
+          case EXTERNREF:
+            final Object refValue = value.getValue();
+            if (refValue != null) {
+              refIdPresent = 1;
+              if (refValue
+                  instanceof ai.tegmentum.wasmtime4j.func.FunctionReference funcReference) {
+                refId = funcReference.getId();
+              } else if (refValue instanceof Long) {
+                refId = (Long) refValue;
+              } else if (refValue instanceof Integer) {
+                refId = ((Integer) refValue).longValue();
+              } else {
+                throw new IllegalArgumentException(
+                    "Unsupported reference value type: "
+                        + refValue.getClass().getName()
+                        + ". Expected FunctionReference, Long, or Integer.");
+              }
             }
-          }
-          break;
-        default:
-          throw new UnsupportedOperationException("Unsupported type: " + type);
-      }
+            break;
+          default:
+            throw new UnsupportedOperationException("Unsupported type: " + type);
+        }
 
-      final int result =
-          NATIVE_BINDINGS.instanceSetGlobalValue(
-              instance.getNativeInstance(),
-              store.getNativeStore(),
-              nameSegment,
-              valueTypeCode,
-              i32Value,
-              i64Value,
-              f32Value,
-              f64Value,
-              refIdPresent,
-              refId);
+        final int result =
+            NATIVE_BINDINGS.instanceSetGlobalValue(
+                instance.getNativeInstance(),
+                store.getNativeStore(),
+                nameSegment,
+                valueTypeCode,
+                i32Value,
+                i64Value,
+                f32Value,
+                f64Value,
+                refIdPresent,
+                refId);
 
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to set global value: " + PanamaErrorMapper.getErrorDescription(result));
+        if (result != 0) {
+          throw new RuntimeException(
+              "Failed to set global value: " + PanamaErrorMapper.getErrorDescription(result));
+        }
       }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -257,25 +266,29 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
 
   @Override
   public ai.tegmentum.wasmtime4j.type.GlobalType getGlobalType() {
-    ensureNotClosed();
-    final WasmValueType valueType = getType();
-    final boolean mutableFlag = isMutable();
-    return new ai.tegmentum.wasmtime4j.type.GlobalType() {
-      @Override
-      public WasmValueType getValueType() {
-        return valueType;
-      }
+    resourceHandle.beginOperation();
+    try {
+      final WasmValueType valueType = getType();
+      final boolean mutableFlag = isMutable();
+      return new ai.tegmentum.wasmtime4j.type.GlobalType() {
+        @Override
+        public WasmValueType getValueType() {
+          return valueType;
+        }
 
-      @Override
-      public boolean isMutable() {
-        return mutableFlag;
-      }
+        @Override
+        public boolean isMutable() {
+          return mutableFlag;
+        }
 
-      @Override
-      public ai.tegmentum.wasmtime4j.type.WasmTypeKind getKind() {
-        return ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL;
-      }
-    };
+        @Override
+        public ai.tegmentum.wasmtime4j.type.WasmTypeKind getKind() {
+          return ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL;
+        }
+      };
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -288,33 +301,33 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
    * @return the native global pointer, or NULL if the global cannot be found
    */
   MemorySegment getGlobalPointer() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
 
-      // Use the wrapped version that returns a properly wrapped Global struct
-      // compatible with panamaLinkerDefineGlobal
-      final MemorySegment globalPtr =
-          NATIVE_BINDINGS.instanceGetGlobalWrapped(
-              instance.getNativeInstance(), store.getNativeStore(), nameSegment);
+        // Use the wrapped version that returns a properly wrapped Global struct
+        // compatible with panamaLinkerDefineGlobal
+        final MemorySegment globalPtr =
+            NATIVE_BINDINGS.instanceGetGlobalWrapped(
+                instance.getNativeInstance(), store.getNativeStore(), nameSegment);
 
-      if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
-        LOGGER.warning("Failed to get native global pointer for: " + name);
-        return MemorySegment.NULL;
+        if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+          LOGGER.warning("Failed to get native global pointer for: " + name);
+          return MemorySegment.NULL;
+        }
+
+        return globalPtr;
       }
-
-      return globalPtr;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

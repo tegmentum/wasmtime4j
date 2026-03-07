@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.CodeHint;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.exception.ErrorMapper;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * JNI implementation of the {@link CodeBuilder} interface.
@@ -33,6 +34,7 @@ final class JniCodeBuilder implements CodeBuilder {
   private long nativeHandle;
   private final long engineHandle;
   private volatile boolean closed;
+  private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
 
   // Load native library
   static {
@@ -65,12 +67,16 @@ final class JniCodeBuilder implements CodeBuilder {
     if (bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be empty");
     }
-    ensureNotClosed();
-    final int result = nativeWasmBinary(nativeHandle, bytes);
-    if (result != 0) {
-      throw ErrorMapper.mapErrorCode(result, "Failed to set wasm binary");
+    beginOperation();
+    try {
+      final int result = nativeWasmBinary(nativeHandle, bytes);
+      if (result != 0) {
+        throw ErrorMapper.mapErrorCode(result, "Failed to set wasm binary");
+      }
+      return this;
+    } finally {
+      endOperation();
     }
-    return this;
   }
 
   @Override
@@ -81,12 +87,16 @@ final class JniCodeBuilder implements CodeBuilder {
     if (bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be empty");
     }
-    ensureNotClosed();
-    final int result = nativeWasmBinaryOrText(nativeHandle, bytes);
-    if (result != 0) {
-      throw ErrorMapper.mapErrorCode(result, "Failed to set wasm binary or text");
+    beginOperation();
+    try {
+      final int result = nativeWasmBinaryOrText(nativeHandle, bytes);
+      if (result != 0) {
+        throw ErrorMapper.mapErrorCode(result, "Failed to set wasm binary or text");
+      }
+      return this;
+    } finally {
+      endOperation();
     }
-    return this;
   }
 
   @Override
@@ -97,12 +107,16 @@ final class JniCodeBuilder implements CodeBuilder {
     if (bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be empty");
     }
-    ensureNotClosed();
-    final int result = nativeDwarfPackage(nativeHandle, bytes);
-    if (result != 0) {
-      throw ErrorMapper.mapErrorCode(result, "Failed to set DWARF package");
+    beginOperation();
+    try {
+      final int result = nativeDwarfPackage(nativeHandle, bytes);
+      if (result != 0) {
+        throw ErrorMapper.mapErrorCode(result, "Failed to set DWARF package");
+      }
+      return this;
+    } finally {
+      endOperation();
     }
-    return this;
   }
 
   @Override
@@ -110,9 +124,13 @@ final class JniCodeBuilder implements CodeBuilder {
     if (hint == null) {
       throw new IllegalArgumentException("hint cannot be null");
     }
-    ensureNotClosed();
-    nativeHint(nativeHandle, hint.ordinal());
-    return this;
+    beginOperation();
+    try {
+      nativeHint(nativeHandle, hint.ordinal());
+      return this;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -123,9 +141,13 @@ final class JniCodeBuilder implements CodeBuilder {
     if (bytes == null || bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be null or empty");
     }
-    ensureNotClosed();
-    nativeCompileTimeBuiltinsBinary(nativeHandle, name, bytes);
-    return this;
+    beginOperation();
+    try {
+      nativeCompileTimeBuiltinsBinary(nativeHandle, name, bytes);
+      return this;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -136,9 +158,13 @@ final class JniCodeBuilder implements CodeBuilder {
     if (bytes == null || bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be null or empty");
     }
-    ensureNotClosed();
-    nativeCompileTimeBuiltinsBinaryOrText(nativeHandle, name, bytes);
-    return this;
+    beginOperation();
+    try {
+      nativeCompileTimeBuiltinsBinaryOrText(nativeHandle, name, bytes);
+      return this;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -146,66 +172,97 @@ final class JniCodeBuilder implements CodeBuilder {
     if (importName == null || importName.isEmpty()) {
       throw new IllegalArgumentException("importName cannot be null or empty");
     }
-    ensureNotClosed();
-    nativeExposeUnsafeIntrinsics(nativeHandle, importName);
-    return this;
+    beginOperation();
+    try {
+      nativeExposeUnsafeIntrinsics(nativeHandle, importName);
+      return this;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public Module compileModule() throws WasmException {
-    ensureNotClosed();
-    final long moduleHandle = nativeCompileModule(nativeHandle);
-    if (moduleHandle == 0) {
-      throw new WasmException("Failed to compile module via CodeBuilder");
+    beginOperation();
+    try {
+      final long moduleHandle = nativeCompileModule(nativeHandle);
+      if (moduleHandle == 0) {
+        throw new WasmException("Failed to compile module via CodeBuilder");
+      }
+      return new JniModule(moduleHandle, null);
+    } finally {
+      endOperation();
     }
-    return new JniModule(moduleHandle, null);
   }
 
   @Override
   public byte[] compileModuleSerialized() throws WasmException {
-    ensureNotClosed();
-    final byte[] result = nativeCompileModuleSerialized(nativeHandle);
-    if (result == null || result.length == 0) {
-      throw new WasmException("Failed to compile module serialized via CodeBuilder");
+    beginOperation();
+    try {
+      final byte[] result = nativeCompileModuleSerialized(nativeHandle);
+      if (result == null || result.length == 0) {
+        throw new WasmException("Failed to compile module serialized via CodeBuilder");
+      }
+      return result;
+    } finally {
+      endOperation();
     }
-    return result;
   }
 
   @Override
   public long compileComponent() throws WasmException {
-    ensureNotClosed();
-    final long componentHandle = nativeCompileComponent(nativeHandle);
-    if (componentHandle == 0) {
-      throw new WasmException("Failed to compile component via CodeBuilder");
+    beginOperation();
+    try {
+      final long componentHandle = nativeCompileComponent(nativeHandle);
+      if (componentHandle == 0) {
+        throw new WasmException("Failed to compile component via CodeBuilder");
+      }
+      return componentHandle;
+    } finally {
+      endOperation();
     }
-    return componentHandle;
   }
 
   @Override
   public byte[] compileComponentSerialized() throws WasmException {
-    ensureNotClosed();
-    final byte[] result = nativeCompileComponentSerialized(nativeHandle);
-    if (result == null || result.length == 0) {
-      throw new WasmException("Failed to compile component serialized via CodeBuilder");
+    beginOperation();
+    try {
+      final byte[] result = nativeCompileComponentSerialized(nativeHandle);
+      if (result == null || result.length == 0) {
+        throw new WasmException("Failed to compile component serialized via CodeBuilder");
+      }
+      return result;
+    } finally {
+      endOperation();
     }
-    return result;
   }
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-      if (nativeHandle != 0) {
-        nativeDestroy(nativeHandle);
-        nativeHandle = 0;
+    closeLock.writeLock().lock();
+    try {
+      if (!closed) {
+        closed = true;
+        if (nativeHandle != 0) {
+          nativeDestroy(nativeHandle);
+          nativeHandle = 0;
+        }
       }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 
-  private void ensureNotClosed() {
+  private void beginOperation() {
+    closeLock.readLock().lock();
     if (closed) {
+      closeLock.readLock().unlock();
       throw new IllegalStateException("CodeBuilder has been closed");
     }
+  }
+
+  private void endOperation() {
+    closeLock.readLock().unlock();
   }
 
   // Native methods

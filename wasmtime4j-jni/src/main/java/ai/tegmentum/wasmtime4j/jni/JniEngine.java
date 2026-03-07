@@ -90,13 +90,16 @@ public class JniEngine extends JniResource implements Engine {
 
   @Override
   public Store createStore() throws WasmException {
-    ensureNotClosed();
-
-    final long storeHandle = nativeCreateStore(nativeHandle);
-    if (storeHandle == 0) {
-      throw new WasmException("Failed to create store");
+    beginOperation();
+    try {
+      final long storeHandle = nativeCreateStore(nativeHandle);
+      if (storeHandle == 0) {
+        throw new WasmException("Failed to create store");
+      }
+      return new JniStore(storeHandle, this);
+    } finally {
+      endOperation();
     }
-    return new JniStore(storeHandle, this);
   }
 
   @Override
@@ -119,45 +122,64 @@ public class JniEngine extends JniResource implements Engine {
       throw new IllegalArgumentException(
           "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
     }
-    ensureNotClosed();
-
-    final long memoryHandle = nativeCreateSharedMemory(nativeHandle, initialPages, maxPages);
-    if (memoryHandle == 0) {
-      throw new WasmException("Failed to create shared memory");
+    beginOperation();
+    try {
+      final long memoryHandle = nativeCreateSharedMemory(nativeHandle, initialPages, maxPages);
+      if (memoryHandle == 0) {
+        throw new WasmException("Failed to create shared memory");
+      }
+      return new JniMemory(memoryHandle, null);
+    } finally {
+      endOperation();
     }
-    return new JniMemory(memoryHandle, null);
   }
 
   @Override
   public boolean isEpochInterruptionEnabled() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsEpochInterruptionEnabled(nativeHandle);
+    try {
+      return nativeIsEpochInterruptionEnabled(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean isCoredumpOnTrapEnabled() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsCoredumpOnTrapEnabled(nativeHandle);
+    try {
+      return nativeIsCoredumpOnTrapEnabled(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean isFuelEnabled() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsFuelEnabled(nativeHandle);
+    try {
+      return nativeIsFuelEnabled(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long getStackSizeLimit() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return 0;
     }
-    return nativeGetStackSizeLimit(nativeHandle);
+    try {
+      return nativeGetStackSizeLimit(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -165,10 +187,14 @@ public class JniEngine extends JniResource implements Engine {
     if (feature == null) {
       return false;
     }
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeSupportsFeature(nativeHandle, feature.name());
+    try {
+      return nativeSupportsFeature(nativeHandle, feature.name());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -178,14 +204,22 @@ public class JniEngine extends JniResource implements Engine {
 
   @Override
   public void incrementEpoch() {
-    ensureNotClosed();
-    nativeIncrementEpoch(nativeHandle);
+    beginOperation();
+    try {
+      nativeIncrementEpoch(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void unloadProcessHandlers() throws WasmException {
-    ensureNotClosed();
-    nativeUnloadProcessHandlers(nativeHandle);
+    beginOperation();
+    try {
+      nativeUnloadProcessHandlers(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -196,13 +230,16 @@ public class JniEngine extends JniResource implements Engine {
     if (wasmBytes.length == 0) {
       throw new IllegalArgumentException("wasmBytes cannot be empty");
     }
-    ensureNotClosed();
-
-    final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
-    if (moduleHandle == 0) {
-      throw new WasmException("Failed to compile module from bytes");
+    beginOperation();
+    try {
+      final long moduleHandle = nativeCompileModule(nativeHandle, wasmBytes);
+      if (moduleHandle == 0) {
+        throw new WasmException("Failed to compile module from bytes");
+      }
+      return new JniModule(moduleHandle, this);
+    } finally {
+      endOperation();
     }
-    return new JniModule(moduleHandle, this);
   }
 
   @Override
@@ -214,13 +251,16 @@ public class JniEngine extends JniResource implements Engine {
     if (dwarfPackage == null || dwarfPackage.length == 0) {
       throw new IllegalArgumentException("dwarfPackage cannot be null or empty");
     }
-    ensureNotClosed();
-
-    final long moduleHandle = nativeCompileModuleWithDwarf(nativeHandle, wasmBytes, dwarfPackage);
-    if (moduleHandle == 0) {
-      throw new WasmException("Failed to compile module with DWARF package");
+    beginOperation();
+    try {
+      final long moduleHandle = nativeCompileModuleWithDwarf(nativeHandle, wasmBytes, dwarfPackage);
+      if (moduleHandle == 0) {
+        throw new WasmException("Failed to compile module with DWARF package");
+      }
+      return new JniModule(moduleHandle, this);
+    } finally {
+      endOperation();
     }
-    return new JniModule(moduleHandle, this);
   }
 
   @Override
@@ -231,13 +271,16 @@ public class JniEngine extends JniResource implements Engine {
     if (wat.isEmpty()) {
       throw new IllegalArgumentException("wat cannot be empty");
     }
-    ensureNotClosed();
-
-    final long moduleHandle = nativeCompileWat(nativeHandle, wat);
-    if (moduleHandle == 0) {
-      throw new WasmException("Failed to compile WAT");
+    beginOperation();
+    try {
+      final long moduleHandle = nativeCompileWat(nativeHandle, wat);
+      if (moduleHandle == 0) {
+        throw new WasmException("Failed to compile WAT");
+      }
+      return new JniModule(moduleHandle, this);
+    } finally {
+      endOperation();
     }
-    return new JniModule(moduleHandle, this);
   }
 
   @Override
@@ -248,13 +291,16 @@ public class JniEngine extends JniResource implements Engine {
     if (wasmBytes.length == 0) {
       throw new IllegalArgumentException("wasmBytes cannot be empty");
     }
-    ensureNotClosed();
-
-    final byte[] precompiled = nativePrecompileModule(nativeHandle, wasmBytes);
-    if (precompiled == null || precompiled.length == 0) {
-      throw new WasmException("Failed to precompile module");
+    beginOperation();
+    try {
+      final byte[] precompiled = nativePrecompileModule(nativeHandle, wasmBytes);
+      if (precompiled == null || precompiled.length == 0) {
+        throw new WasmException("Failed to precompile module");
+      }
+      return precompiled;
+    } finally {
+      endOperation();
     }
-    return precompiled;
   }
 
   @Override
@@ -262,9 +308,8 @@ public class JniEngine extends JniResource implements Engine {
     if (stream == null) {
       throw new IllegalArgumentException("stream cannot be null");
     }
-    ensureNotClosed();
 
-    // Read entire stream into byte array
+    // Read entire stream into byte array outside the lock
     // Wasmtime requires complete bytecode before compilation
     final byte[] wasmBytes = StreamUtils.readAllBytes(stream);
 
@@ -280,19 +325,26 @@ public class JniEngine extends JniResource implements Engine {
     if (path == null) {
       throw new IllegalArgumentException("path cannot be null");
     }
-    ensureNotClosed();
-
-    final long moduleHandle = JniModule.nativeCompileFromFile(nativeHandle, path.toString());
-    if (moduleHandle == 0) {
-      throw new WasmException("Failed to compile module from file: " + path);
+    beginOperation();
+    try {
+      final long moduleHandle = JniModule.nativeCompileFromFile(nativeHandle, path.toString());
+      if (moduleHandle == 0) {
+        throw new WasmException("Failed to compile module from file: " + path);
+      }
+      return new JniModule(moduleHandle, this);
+    } finally {
+      endOperation();
     }
-    return new JniModule(moduleHandle, this);
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.CodeBuilder codeBuilder() throws WasmException {
-    ensureNotClosed();
-    return new JniCodeBuilder(nativeHandle);
+    beginOperation();
+    try {
+      return new JniCodeBuilder(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -303,25 +355,32 @@ public class JniEngine extends JniResource implements Engine {
     if (wasmBytes.length == 0) {
       throw new IllegalArgumentException("wasmBytes cannot be empty");
     }
-    ensureNotClosed();
-
-    final byte[] precompiled = nativePrecompileComponent(nativeHandle, wasmBytes);
-    if (precompiled == null || precompiled.length == 0) {
-      throw new WasmException("Failed to precompile component");
+    beginOperation();
+    try {
+      final byte[] precompiled = nativePrecompileComponent(nativeHandle, wasmBytes);
+      if (precompiled == null || precompiled.length == 0) {
+        throw new WasmException("Failed to precompile component");
+      }
+      return precompiled;
+    } finally {
+      endOperation();
     }
-    return precompiled;
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.pool.PoolStatistics getPoolingAllocatorMetrics() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return null;
     }
-    final long[] metrics = nativeGetPoolingAllocatorMetrics(nativeHandle);
-    if (metrics == null) {
-      return null;
+    try {
+      final long[] metrics = nativeGetPoolingAllocatorMetrics(nativeHandle);
+      if (metrics == null) {
+        return null;
+      }
+      return new ai.tegmentum.wasmtime4j.jni.pool.JniPoolStatistics(metrics);
+    } finally {
+      endOperation();
     }
-    return new ai.tegmentum.wasmtime4j.jni.pool.JniPoolStatistics(metrics);
   }
 
   private native long nativeCompileModule(long engineHandle, byte[] wasmBytes);
@@ -382,13 +441,15 @@ public class JniEngine extends JniResource implements Engine {
 
   @Override
   public boolean isPulley() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
     try {
       return nativeIsPulley(nativeHandle);
     } catch (final Exception e) {
       return false;
+    } finally {
+      endOperation();
     }
   }
 
@@ -396,7 +457,7 @@ public class JniEngine extends JniResource implements Engine {
 
   @Override
   public byte[] precompileCompatibilityHash() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return new byte[0];
     }
     try {
@@ -404,6 +465,8 @@ public class JniEngine extends JniResource implements Engine {
       return hash != null ? hash : new byte[0];
     } catch (final Exception e) {
       return new byte[0];
+    } finally {
+      endOperation();
     }
   }
 
@@ -415,14 +478,17 @@ public class JniEngine extends JniResource implements Engine {
     if (bytes.length == 0) {
       return null;
     }
-    ensureNotClosed();
-
-    final int result = nativeDetectPrecompiled(nativeHandle, bytes);
-    // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
-    if (result < 0) {
-      return null;
+    beginOperation();
+    try {
+      final int result = nativeDetectPrecompiled(nativeHandle, bytes);
+      // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
+      if (result < 0) {
+        return null;
+      }
+      return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
+    } finally {
+      endOperation();
     }
-    return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
   }
 
   private native byte[] nativePrecompileCompatibilityHash(long engineHandle);
@@ -434,38 +500,54 @@ public class JniEngine extends JniResource implements Engine {
     if (other == null) {
       throw new IllegalArgumentException("other cannot be null");
     }
-    if (isClosed()) {
-      return false;
-    }
     if (!(other instanceof JniEngine)) {
       return false;
     }
-    final JniEngine otherEngine = (JniEngine) other;
-    return nativeEngineSame(this.nativeHandle, otherEngine.nativeHandle);
+    if (!tryBeginOperation()) {
+      return false;
+    }
+    try {
+      final JniEngine otherEngine = (JniEngine) other;
+      return nativeEngineSame(this.nativeHandle, otherEngine.nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean isAsync() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsAsync(nativeHandle);
+    try {
+      return nativeIsAsync(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean isRecording() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsRecording(nativeHandle);
+    try {
+      return nativeIsRecording(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean isReplaying() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsReplaying(nativeHandle);
+    try {
+      return nativeIsReplaying(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -483,9 +565,12 @@ public class JniEngine extends JniResource implements Engine {
     if (modules == null || modules.isEmpty()) {
       throw new IllegalArgumentException("modules cannot be null or empty");
     }
-    ensureNotClosed();
-
-    return new JniGuestProfiler(nativeHandle, moduleName, interval.toNanos(), modules);
+    beginOperation();
+    try {
+      return new JniGuestProfiler(nativeHandle, moduleName, interval.toNanos(), modules);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -507,30 +592,37 @@ public class JniEngine extends JniResource implements Engine {
     if (!(component instanceof JniComponentImpl)) {
       throw new IllegalArgumentException("Component must be a JNI component");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final long componentHandle = ((JniComponentImpl) component).getNativeHandle();
+      if (componentHandle == 0) {
+        throw new WasmException("Component has invalid native handle");
+      }
 
-    final long componentHandle = ((JniComponentImpl) component).getNativeHandle();
-    if (componentHandle == 0) {
-      throw new WasmException("Component has invalid native handle");
+      return new JniGuestProfiler(
+          nativeHandle,
+          componentName,
+          interval.toNanos(),
+          componentHandle,
+          extraModules != null ? extraModules : java.util.Collections.emptyMap());
+    } finally {
+      endOperation();
     }
-
-    return new JniGuestProfiler(
-        nativeHandle,
-        componentName,
-        interval.toNanos(),
-        componentHandle,
-        extraModules != null ? extraModules : java.util.Collections.emptyMap());
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.WeakEngine weak() {
-    ensureNotClosed();
-    final long weakHandle = nativeCreateWeakEngine(nativeHandle);
-    if (weakHandle == 0) {
-      throw new ai.tegmentum.wasmtime4j.jni.exception.JniResourceException(
-          "Failed to create weak engine reference");
+    beginOperation();
+    try {
+      final long weakHandle = nativeCreateWeakEngine(nativeHandle);
+      if (weakHandle == 0) {
+        throw new ai.tegmentum.wasmtime4j.jni.exception.JniResourceException(
+            "Failed to create weak engine reference");
+      }
+      return new JniWeakEngine(weakHandle, this);
+    } finally {
+      endOperation();
     }
-    return new JniWeakEngine(weakHandle, this);
   }
 
   private native boolean nativeEngineSame(long handle1, long handle2);

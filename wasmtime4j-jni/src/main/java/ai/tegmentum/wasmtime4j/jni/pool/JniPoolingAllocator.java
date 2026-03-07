@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.pool.PoolingAllocator;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
 /**
@@ -45,6 +46,7 @@ public final class JniPoolingAllocator implements PoolingAllocator {
   private final long nativeHandle;
   private final Instant createdAt;
   private volatile boolean closed = false;
+  private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
 
   /**
    * Creates a new JniPoolingAllocator with the specified configuration.
@@ -96,77 +98,98 @@ public final class JniPoolingAllocator implements PoolingAllocator {
 
   @Override
   public long allocateInstance() throws WasmException {
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final long instanceId = nativeAllocateInstance(nativeHandle);
+      if (instanceId < 0) {
+        throw new WasmException("Failed to allocate instance from pool");
+      }
 
-    final long instanceId = nativeAllocateInstance(nativeHandle);
-    if (instanceId < 0) {
-      throw new WasmException("Failed to allocate instance from pool");
+      return instanceId;
+    } finally {
+      endOperation();
     }
-
-    return instanceId;
   }
 
   @Override
   public void reuseInstance(final long instanceId) throws WasmException {
-    ensureNotClosed();
-
-    final boolean success = nativeReuseInstance(nativeHandle, instanceId);
-    if (!success) {
-      throw new WasmException("Failed to reuse instance: " + instanceId);
+    beginOperation();
+    try {
+      final boolean success = nativeReuseInstance(nativeHandle, instanceId);
+      if (!success) {
+        throw new WasmException("Failed to reuse instance: " + instanceId);
+      }
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void releaseInstance(final long instanceId) throws WasmException {
-    ensureNotClosed();
-
-    final boolean success = nativeReleaseInstance(nativeHandle, instanceId);
-    if (!success) {
-      throw new WasmException("Failed to release instance: " + instanceId);
+    beginOperation();
+    try {
+      final boolean success = nativeReleaseInstance(nativeHandle, instanceId);
+      if (!success) {
+        throw new WasmException("Failed to release instance: " + instanceId);
+      }
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public PoolStatistics getStatistics() {
-    ensureNotClosed();
+    beginOperation();
+    try {
+      // Statistics returned as a 12-element array matching PoolingAllocatorMetrics fields
+      final long[] stats = nativeGetStatistics(nativeHandle);
+      if (stats == null || stats.length < 12) {
+        LOGGER.warning("Failed to get pool statistics, returning empty statistics");
+        return new JniPoolStatistics();
+      }
 
-    // Statistics returned as a 12-element array matching PoolingAllocatorMetrics fields
-    final long[] stats = nativeGetStatistics(nativeHandle);
-    if (stats == null || stats.length < 12) {
-      LOGGER.warning("Failed to get pool statistics, returning empty statistics");
-      return new JniPoolStatistics();
+      return new JniPoolStatistics(stats);
+    } finally {
+      endOperation();
     }
-
-    return new JniPoolStatistics(stats);
   }
 
   @Override
   public void resetStatistics() throws WasmException {
-    ensureNotClosed();
-
-    final boolean success = nativeResetStatistics(nativeHandle);
-    if (!success) {
-      throw new WasmException("Failed to reset pool statistics");
+    beginOperation();
+    try {
+      final boolean success = nativeResetStatistics(nativeHandle);
+      if (!success) {
+        throw new WasmException("Failed to reset pool statistics");
+      }
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void warmPools() throws WasmException {
-    ensureNotClosed();
-
-    final boolean success = nativeWarmPools(nativeHandle);
-    if (!success) {
-      throw new WasmException("Failed to warm pools");
+    beginOperation();
+    try {
+      final boolean success = nativeWarmPools(nativeHandle);
+      if (!success) {
+        throw new WasmException("Failed to warm pools");
+      }
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void performMaintenance() throws WasmException {
-    ensureNotClosed();
-
-    final boolean success = nativePerformMaintenance(nativeHandle);
-    if (!success) {
-      throw new WasmException("Failed to perform pool maintenance");
+    beginOperation();
+    try {
+      final boolean success = nativePerformMaintenance(nativeHandle);
+      if (!success) {
+        throw new WasmException("Failed to perform pool maintenance");
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -175,14 +198,17 @@ public final class JniPoolingAllocator implements PoolingAllocator {
     if (engineConfig == null) {
       throw new IllegalArgumentException("engineConfig cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      // Set pooling allocator configuration on the engine config
+      engineConfig.setPoolingAllocatorEnabled(true);
+      engineConfig.setInstancePoolSize(config.getInstancePoolSize());
+      engineConfig.setMaxMemoryPerInstance(config.getMaxMemoryPerInstance());
 
-    // Set pooling allocator configuration on the engine config
-    engineConfig.setPoolingAllocatorEnabled(true);
-    engineConfig.setInstancePoolSize(config.getInstancePoolSize());
-    engineConfig.setMaxMemoryPerInstance(config.getMaxMemoryPerInstance());
-
-    LOGGER.fine("Configured engine to use pooling allocator");
+      LOGGER.fine("Configured engine to use pooling allocator");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -192,21 +218,33 @@ public final class JniPoolingAllocator implements PoolingAllocator {
 
   @Override
   public boolean isValid() {
-    return !closed && nativeHandle != 0;
+    if (!tryBeginOperation()) {
+      return false;
+    }
+    try {
+      return nativeHandle != 0;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
+    closeLock.writeLock().lock();
+    try {
+      if (closed) {
+        return;
+      }
+      closed = true;
 
-    if (nativeHandle != 0) {
-      nativeDestroy(nativeHandle);
-    }
+      if (nativeHandle != 0) {
+        nativeDestroy(nativeHandle);
+      }
 
-    LOGGER.fine("Closed JNI pooling allocator");
+      LOGGER.fine("Closed JNI pooling allocator");
+    } finally {
+      closeLock.writeLock().unlock();
+    }
   }
 
   /**
@@ -218,10 +256,25 @@ public final class JniPoolingAllocator implements PoolingAllocator {
     return nativeHandle;
   }
 
-  private void ensureNotClosed() {
+  private void beginOperation() {
+    closeLock.readLock().lock();
     if (closed) {
-      throw new IllegalStateException("Pooling allocator has been closed");
+      closeLock.readLock().unlock();
+      throw new IllegalStateException("JniPoolingAllocator has been closed");
     }
+  }
+
+  private void endOperation() {
+    closeLock.readLock().unlock();
+  }
+
+  private boolean tryBeginOperation() {
+    closeLock.readLock().lock();
+    if (closed) {
+      closeLock.readLock().unlock();
+      return false;
+    }
+    return true;
   }
 
   // Native methods

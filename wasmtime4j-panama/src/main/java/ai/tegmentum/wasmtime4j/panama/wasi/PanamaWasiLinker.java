@@ -115,162 +115,220 @@ public final class PanamaWasiLinker implements WasiLinker {
   @Override
   public void allowDirectoryAccess(final Path hostPath, final String guestPath)
       throws WasmException {
-    ensureNotClosed();
-    if (hostPath == null) {
-      throw new IllegalArgumentException("Host path cannot be null");
-    }
-    if (guestPath == null) {
-      throw new IllegalArgumentException("Guest path cannot be null");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (hostPath == null) {
+        throw new IllegalArgumentException("Host path cannot be null");
+      }
+      if (guestPath == null) {
+        throw new IllegalArgumentException("Guest path cannot be null");
+      }
 
-    directoryMappings.put(hostPath, new DirectoryMapping(guestPath));
-    LOGGER.fine("Added directory mapping: " + hostPath + " -> " + guestPath);
+      directoryMappings.put(hostPath, new DirectoryMapping(guestPath));
+      LOGGER.fine("Added directory mapping: " + hostPath + " -> " + guestPath);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void setEnvironmentVariable(final String name, final String value) {
-    ensureNotClosed();
-    if (name == null) {
-      throw new IllegalArgumentException("Environment variable name cannot be null");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (name == null) {
+        throw new IllegalArgumentException("Environment variable name cannot be null");
+      }
 
-    environmentVariables.put(name, value);
-    LOGGER.fine("Set environment variable: " + name);
+      environmentVariables.put(name, value);
+      LOGGER.fine("Set environment variable: " + name);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void setEnvironmentVariables(final Map<String, String> environment) {
-    ensureNotClosed();
-    if (environment == null) {
-      throw new IllegalArgumentException("Environment map cannot be null");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (environment == null) {
+        throw new IllegalArgumentException("Environment map cannot be null");
+      }
 
-    environmentVariables.putAll(environment);
-    LOGGER.fine("Added " + environment.size() + " environment variables");
+      environmentVariables.putAll(environment);
+      LOGGER.fine("Added " + environment.size() + " environment variables");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void inheritEnvironment() throws WasmException {
-    ensureNotClosed();
-    inheritAllEnvironment = true;
-    LOGGER.fine("Enabled full environment inheritance");
+    resourceHandle.beginOperation();
+    try {
+      inheritAllEnvironment = true;
+      LOGGER.fine("Enabled full environment inheritance");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void inheritEnvironmentVariables(final List<String> variableNames) throws WasmException {
-    ensureNotClosed();
-    if (variableNames == null) {
-      throw new IllegalArgumentException("Variable names list cannot be null");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (variableNames == null) {
+        throw new IllegalArgumentException("Variable names list cannot be null");
+      }
 
-    inheritedEnvironmentVariables = new ArrayList<>(variableNames);
-    LOGGER.fine("Set " + variableNames.size() + " environment variables to inherit");
+      inheritedEnvironmentVariables = new ArrayList<>(variableNames);
+      LOGGER.fine("Set " + variableNames.size() + " environment variables to inherit");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void setArguments(final List<String> args) {
-    ensureNotClosed();
-    if (args == null) {
-      throw new IllegalArgumentException("Arguments list cannot be null");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (args == null) {
+        throw new IllegalArgumentException("Arguments list cannot be null");
+      }
 
-    arguments.clear();
-    arguments.addAll(args);
-    LOGGER.fine("Set " + args.size() + " command line arguments");
+      arguments.clear();
+      arguments.addAll(args);
+      LOGGER.fine("Set " + args.size() + " command line arguments");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void configureStdin(final WasiStdioConfig config) throws WasmException {
-    ensureNotClosed();
-    if (config == null) {
-      throw new IllegalArgumentException("Config cannot be null");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (config == null) {
+        throw new IllegalArgumentException("Config cannot be null");
+      }
 
-    stdinConfig = config;
-    LOGGER.fine("Configured stdin: " + config.getType());
+      stdinConfig = config;
+      LOGGER.fine("Configured stdin: " + config.getType());
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void configureStdout(final WasiStdioConfig config) throws WasmException {
-    ensureNotClosed();
-    if (config == null) {
-      throw new IllegalArgumentException("Config cannot be null");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (config == null) {
+        throw new IllegalArgumentException("Config cannot be null");
+      }
 
-    stdoutConfig = config;
-    LOGGER.fine("Configured stdout: " + config.getType());
+      stdoutConfig = config;
+      LOGGER.fine("Configured stdout: " + config.getType());
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void configureStderr(final WasiStdioConfig config) throws WasmException {
-    ensureNotClosed();
-    if (config == null) {
-      throw new IllegalArgumentException("Config cannot be null");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (config == null) {
+        throw new IllegalArgumentException("Config cannot be null");
+      }
 
-    stderrConfig = config;
-    LOGGER.fine("Configured stderr: " + config.getType());
+      stderrConfig = config;
+      LOGGER.fine("Configured stderr: " + config.getType());
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void enableNetworkAccess() throws WasmException {
-    ensureNotClosed();
-    networkEnabled = true;
-    LOGGER.fine("Enabled network access");
+    resourceHandle.beginOperation();
+    try {
+      networkEnabled = true;
+      LOGGER.fine("Enabled network access");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void disableNetworkAccess() {
-    ensureNotClosed();
-    networkEnabled = false;
-    LOGGER.fine("Disabled network access");
+    resourceHandle.beginOperation();
+    try {
+      networkEnabled = false;
+      LOGGER.fine("Disabled network access");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void setMaxFileSize(final Long maxSizeBytes) {
-    ensureNotClosed();
-    maxFileSize = maxSizeBytes;
-    LOGGER.fine("Set max file size: " + maxSizeBytes);
+    resourceHandle.beginOperation();
+    try {
+      maxFileSize = maxSizeBytes;
+      LOGGER.fine("Set max file size: " + maxSizeBytes);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void setMaxOpenFiles(final Integer max) {
-    ensureNotClosed();
-    maxOpenFiles = max;
-    LOGGER.fine("Set max open files: " + max);
+    resourceHandle.beginOperation();
+    try {
+      maxOpenFiles = max;
+      LOGGER.fine("Set max open files: " + max);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public Instance instantiate(final Store store, final Module module) throws WasmException {
-    ensureNotClosed();
-    if (store == null) {
-      throw new IllegalArgumentException("Store cannot be null");
+    resourceHandle.beginOperation();
+    try {
+      if (store == null) {
+        throw new IllegalArgumentException("Store cannot be null");
+      }
+      if (module == null) {
+        throw new IllegalArgumentException("Module cannot be null");
+      }
+
+      // Build WASI context from accumulated configuration
+      final PanamaWasiContext context = buildWasiContext();
+
+      // Get the native store handle
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException(
+            "Store must be a PanamaStore instance for Panama runtime");
+      }
+      final PanamaStore panamaStore = (PanamaStore) store;
+
+      // Add WASI context to the store
+      final int addResult =
+          NATIVE_BINDINGS.wasiCtxAddToStore(
+              context.getNativeHandle(), panamaStore.getNativeStore());
+      if (addResult != 0) {
+        throw PanamaErrorMapper.mapNativeError(addResult, "Failed to add WASI context to store");
+      }
+
+      // Enable WASI on the linker
+      linker.enableWasi();
+
+      // Instantiate with the configured linker
+      return linker.instantiate(store, module);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (module == null) {
-      throw new IllegalArgumentException("Module cannot be null");
-    }
-
-    // Build WASI context from accumulated configuration
-    final PanamaWasiContext context = buildWasiContext();
-
-    // Get the native store handle
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance for Panama runtime");
-    }
-    final PanamaStore panamaStore = (PanamaStore) store;
-
-    // Add WASI context to the store
-    final int addResult =
-        NATIVE_BINDINGS.wasiCtxAddToStore(context.getNativeHandle(), panamaStore.getNativeStore());
-    if (addResult != 0) {
-      throw PanamaErrorMapper.mapNativeError(addResult, "Failed to add WASI context to store");
-    }
-
-    // Enable WASI on the linker
-    linker.enableWasi();
-
-    // Instantiate with the configured linker
-    return linker.instantiate(store, module);
   }
 
   /**
@@ -446,8 +504,12 @@ public final class PanamaWasiLinker implements WasiLinker {
 
   @Override
   public Linker<?> getLinker() {
-    ensureNotClosed();
-    return linker;
+    resourceHandle.beginOperation();
+    try {
+      return linker;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -468,10 +530,6 @@ public final class PanamaWasiLinker implements WasiLinker {
   @Override
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 
   /** Internal class to hold directory mapping configuration. */

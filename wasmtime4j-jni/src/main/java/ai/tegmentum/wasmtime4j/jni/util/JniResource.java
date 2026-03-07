@@ -22,6 +22,7 @@ import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
 /**
@@ -78,6 +79,13 @@ public abstract class JniResource implements AutoCloseable {
 
   /** Flag to track if this resource has been closed. */
   private final AtomicBoolean closed = new AtomicBoolean(false);
+
+  /**
+   * Read-write lock protecting against use-after-free race conditions. Operations acquire the read
+   * lock (shared, non-exclusive), while {@link #close()} acquires the write lock (exclusive). This
+   * prevents the native handle from being freed while operations are in-flight.
+   */
+  private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
 
   /** Phantom reference for safe automatic cleanup. */
   private final PhantomReference<JniResource> phantomRef;
@@ -183,6 +191,10 @@ public abstract class JniResource implements AutoCloseable {
   /**
    * Ensures that this resource has not been closed.
    *
+   * <p><b>Warning:</b> This method does NOT acquire the close lock. For thread-safe operation
+   * guarding, use {@link #beginOperation()} / {@link #endOperation()} instead to prevent
+   * use-after-free race conditions with concurrent {@link #close()} calls.
+   *
    * @throws IllegalStateException if the resource has been closed
    */
   protected final void ensureNotClosed() {
@@ -194,6 +206,60 @@ public abstract class JniResource implements AutoCloseable {
   }
 
   /**
+   * Begins a guarded operation by acquiring the read lock and verifying the resource is not closed.
+   *
+   * <p>Every call to {@code beginOperation()} <b>must</b> be paired with {@link #endOperation()} in
+   * a {@code finally} block:
+   *
+   * <pre>{@code
+   * beginOperation();
+   * try {
+   *     return nativeDoSomething(nativeHandle);
+   * } finally {
+   *     endOperation();
+   * }
+   * }</pre>
+   *
+   * @throws IllegalStateException if the resource has been closed
+   */
+  protected final void beginOperation() {
+    closeLock.readLock().lock();
+    if (closed.get()) {
+      closeLock.readLock().unlock();
+      throw new IllegalStateException(
+          String.format(
+              "%s resource has been closed (handle: 0x%x)", getResourceType(), nativeHandle));
+    }
+  }
+
+  /**
+   * Ends a guarded operation by releasing the read lock.
+   *
+   * <p>Must be called in a {@code finally} block after {@link #beginOperation()}.
+   */
+  protected final void endOperation() {
+    closeLock.readLock().unlock();
+  }
+
+  /**
+   * Attempts to begin a guarded operation. Returns {@code false} if the resource is closed, without
+   * throwing. If this returns {@code true}, the caller <b>must</b> call {@link #endOperation()} in
+   * a {@code finally} block.
+   *
+   * <p>Use this for methods that return a default value when closed instead of throwing.
+   *
+   * @return {@code true} if the operation can proceed (lock acquired), {@code false} if closed
+   */
+  protected final boolean tryBeginOperation() {
+    closeLock.readLock().lock();
+    if (closed.get()) {
+      closeLock.readLock().unlock();
+      return false;
+    }
+    return true;
+  }
+
+  /**
    * Closes this resource and releases any native resources.
    *
    * <p>This method is idempotent - calling it multiple times has no additional effect. It is
@@ -201,23 +267,29 @@ public abstract class JniResource implements AutoCloseable {
    */
   @Override
   public final void close() {
-    if (closed.compareAndSet(false, true)) {
-      try {
-        // Clean up phantom reference tracking
-        PHANTOM_REFS.remove(phantomRef);
-        phantomRef.clear();
+    closeLock.writeLock().lock();
+    try {
+      if (closed.compareAndSet(false, true)) {
+        try {
+          // Clean up phantom reference tracking
+          PHANTOM_REFS.remove(phantomRef);
+          phantomRef.clear();
 
-        // Perform actual resource cleanup
-        doClose();
-        LOGGER.fine(
-            String.format("Closed %s resource with handle: 0x%x", getResourceType(), nativeHandle));
-      } catch (final Exception e) {
-        LOGGER.warning(
-            String.format(
-                "Error closing %s resource with handle: 0x%x: %s",
-                getResourceType(), nativeHandle, e.getMessage()));
-        // Don't re-throw exceptions from close() to avoid issues in try-with-resources
+          // Perform actual resource cleanup
+          doClose();
+          LOGGER.fine(
+              String.format(
+                  "Closed %s resource with handle: 0x%x", getResourceType(), nativeHandle));
+        } catch (final Exception e) {
+          LOGGER.warning(
+              String.format(
+                  "Error closing %s resource with handle: 0x%x: %s",
+                  getResourceType(), nativeHandle, e.getMessage()));
+          // Don't re-throw exceptions from close() to avoid issues in try-with-resources
+        }
       }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 

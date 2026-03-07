@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
 import ai.tegmentum.wasmtime4j.component.ComponentInstancePre;
 import ai.tegmentum.wasmtime4j.component.ComponentStoreConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
 /**
@@ -39,6 +40,7 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
   private final Engine engine;
   private final JniComponentImpl component;
   private volatile boolean closed = false;
+  private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
 
   /**
    * Creates a new JNI ComponentInstancePre with the given native handle.
@@ -56,18 +58,21 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
 
   @Override
   public ComponentInstance instantiate() throws WasmException {
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final long engineHandle = component.getEngine().getNativeHandle();
+      final long instanceId = nativeInstantiate(nativeHandle, engineHandle);
+      if (instanceId == 0) {
+        throw new WasmException("Failed to instantiate from ComponentInstancePre");
+      }
 
-    final long engineHandle = component.getEngine().getNativeHandle();
-    final long instanceId = nativeInstantiate(nativeHandle, engineHandle);
-    if (instanceId == 0) {
-      throw new WasmException("Failed to instantiate from ComponentInstancePre");
+      final JniComponent.JniComponentInstanceHandle instanceWrapper =
+          new JniComponent.JniComponentInstanceHandle(engineHandle, instanceId);
+      return new JniComponentInstanceImpl(
+          instanceWrapper, component, new ComponentInstanceConfig(), this);
+    } finally {
+      endOperation();
     }
-
-    final JniComponent.JniComponentInstanceHandle instanceWrapper =
-        new JniComponent.JniComponentInstanceHandle(engineHandle, instanceId);
-    return new JniComponentInstanceImpl(
-        instanceWrapper, component, new ComponentInstanceConfig(), this);
   }
 
   @Override
@@ -75,24 +80,27 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
     if (config == null) {
       throw new IllegalArgumentException("config must not be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final long engineHandle = component.getEngine().getNativeHandle();
+      final long instanceId =
+          nativeInstantiateWithConfig(
+              nativeHandle,
+              engineHandle,
+              config.getFuelLimit(),
+              config.getEpochDeadline(),
+              config.getMaxMemoryBytes());
+      if (instanceId == 0) {
+        throw new WasmException("Failed to instantiate from ComponentInstancePre with config");
+      }
 
-    final long engineHandle = component.getEngine().getNativeHandle();
-    final long instanceId =
-        nativeInstantiateWithConfig(
-            nativeHandle,
-            engineHandle,
-            config.getFuelLimit(),
-            config.getEpochDeadline(),
-            config.getMaxMemoryBytes());
-    if (instanceId == 0) {
-      throw new WasmException("Failed to instantiate from ComponentInstancePre with config");
+      final JniComponent.JniComponentInstanceHandle instanceWrapper =
+          new JniComponent.JniComponentInstanceHandle(engineHandle, instanceId);
+      return new JniComponentInstanceImpl(
+          instanceWrapper, component, new ComponentInstanceConfig(), this);
+    } finally {
+      endOperation();
     }
-
-    final JniComponent.JniComponentInstanceHandle instanceWrapper =
-        new JniComponent.JniComponentInstanceHandle(engineHandle, instanceId);
-    return new JniComponentInstanceImpl(
-        instanceWrapper, component, new ComponentInstanceConfig(), this);
   }
 
   @Override
@@ -107,57 +115,105 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
 
   @Override
   public boolean isValid() {
-    if (closed || nativeHandle == 0) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsValid(nativeHandle) != 0;
+    try {
+      if (nativeHandle == 0) {
+        return false;
+      }
+      return nativeIsValid(nativeHandle) != 0;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long getInstanceCount() {
-    if (closed || nativeHandle == 0) {
+    if (!tryBeginOperation()) {
       return 0;
     }
-    return nativeInstanceCount(nativeHandle);
+    try {
+      if (nativeHandle == 0) {
+        return 0;
+      }
+      return nativeInstanceCount(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long getPreparationTimeNs() {
-    if (closed || nativeHandle == 0) {
+    if (!tryBeginOperation()) {
       return 0;
     }
-    return nativePreparationTimeNs(nativeHandle);
+    try {
+      if (nativeHandle == 0) {
+        return 0;
+      }
+      return nativePreparationTimeNs(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long getAverageInstantiationTimeNs() {
-    if (closed || nativeHandle == 0) {
+    if (!tryBeginOperation()) {
       return 0;
     }
-    return nativeAvgInstantiationTimeNs(nativeHandle);
+    try {
+      if (nativeHandle == 0) {
+        return 0;
+      }
+      return nativeAvgInstantiationTimeNs(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
+    closeLock.writeLock().lock();
+    try {
+      if (!closed) {
+        closed = true;
 
-      if (nativeHandle == 0) {
-        return;
-      }
+        if (nativeHandle == 0) {
+          return;
+        }
 
-      try {
-        nativeDestroy(nativeHandle);
-      } catch (final Exception e) {
-        LOGGER.warning("Error destroying ComponentInstancePre: " + e.getMessage());
+        try {
+          nativeDestroy(nativeHandle);
+        } catch (final Exception e) {
+          LOGGER.warning("Error destroying ComponentInstancePre: " + e.getMessage());
+        }
       }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 
-  private void ensureNotClosed() {
+  private void beginOperation() {
+    closeLock.readLock().lock();
     if (closed) {
-      throw new IllegalStateException("ComponentInstancePre has been closed");
+      closeLock.readLock().unlock();
+      throw new IllegalStateException("JniComponentInstancePre has been closed");
     }
+  }
+
+  private void endOperation() {
+    closeLock.readLock().unlock();
+  }
+
+  private boolean tryBeginOperation() {
+    closeLock.readLock().lock();
+    if (closed) {
+      closeLock.readLock().unlock();
+      return false;
+    }
+    return true;
   }
 
   // Native method declarations

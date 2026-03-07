@@ -243,21 +243,25 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Check if the export exists and is a function
-    final MemorySegment modulePtr = module.getNativeModule();
-    final MemorySegment namePtr =
-        getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-    final int exportKind = NATIVE_ENGINE_BINDINGS.moduleGetExportKind(modulePtr, namePtr);
+      // Check if the export exists and is a function
+      final MemorySegment modulePtr = module.getNativeModule();
+      final MemorySegment namePtr =
+          getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      final int exportKind = NATIVE_ENGINE_BINDINGS.moduleGetExportKind(modulePtr, namePtr);
 
-    // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
-    if (exportKind != 1) {
-      return Optional.empty();
+      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+      if (exportKind != 1) {
+        return Optional.empty();
+      }
+
+      final FunctionType functionType = lookupFunctionType(name);
+      return Optional.of(new PanamaFunction(this, name, functionType));
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final FunctionType functionType = lookupFunctionType(name);
-    return Optional.of(new PanamaFunction(this, name, functionType));
   }
 
   /**
@@ -282,37 +286,41 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Check if the global export exists by calling native
-    final MemorySegment nameSegment =
-        getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.instanceHasGlobalExport(
-            nativeInstance, store.getNativeStore(), nameSegment);
+      // Check if the global export exists by calling native
+      final MemorySegment nameSegment =
+          getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.instanceHasGlobalExport(
+              nativeInstance, store.getNativeStore(), nameSegment);
 
-    // Result is 0 on success (global exists), non-zero on error/not found
-    if (result != 0) {
-      return Optional.empty();
+      // Result is 0 on success (global exists), non-zero on error/not found
+      if (result != 0) {
+        return Optional.empty();
+      }
+
+      // Query the global's type and mutability from the instance
+      final MemorySegment valueTypeOut = getArena().allocate(ValueLayout.JAVA_INT);
+      final MemorySegment isMutableOut = getArena().allocate(ValueLayout.JAVA_INT);
+      final int typeResult =
+          NATIVE_INSTANCE_BINDINGS.instanceGetGlobalType(
+              nativeInstance, store.getNativeStore(), nameSegment, valueTypeOut, isMutableOut);
+
+      if (typeResult != 0) {
+        return Optional.empty();
+      }
+
+      final int typeCode = valueTypeOut.get(ValueLayout.JAVA_INT, 0);
+      final boolean mutable = isMutableOut.get(ValueLayout.JAVA_INT, 0) != 0;
+      final WasmValueType type = WasmValueType.fromNativeTypeCode(typeCode);
+
+      // Return an instance-bound global that uses instance-specific methods
+      return Optional.of(new PanamaInstanceGlobal(this, store, name, type, mutable));
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Query the global's type and mutability from the instance
-    final MemorySegment valueTypeOut = getArena().allocate(ValueLayout.JAVA_INT);
-    final MemorySegment isMutableOut = getArena().allocate(ValueLayout.JAVA_INT);
-    final int typeResult =
-        NATIVE_INSTANCE_BINDINGS.instanceGetGlobalType(
-            nativeInstance, store.getNativeStore(), nameSegment, valueTypeOut, isMutableOut);
-
-    if (typeResult != 0) {
-      return Optional.empty();
-    }
-
-    final int typeCode = valueTypeOut.get(ValueLayout.JAVA_INT, 0);
-    final boolean mutable = isMutableOut.get(ValueLayout.JAVA_INT, 0) != 0;
-    final WasmValueType type = WasmValueType.fromNativeTypeCode(typeCode);
-
-    // Return an instance-bound global that uses instance-specific methods
-    return Optional.of(new PanamaInstanceGlobal(this, store, name, type, mutable));
   }
 
   @Override
@@ -320,18 +328,22 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena tagArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tagArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment tagPtr =
-          NATIVE_INSTANCE_BINDINGS.instanceGetTagByName(
-              nativeInstance, store.getNativeStore(), nameSegment);
-      if (tagPtr == null || tagPtr.equals(MemorySegment.NULL)) {
-        return Optional.empty();
+      try (final Arena tagArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tagArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+        final MemorySegment tagPtr =
+            NATIVE_INSTANCE_BINDINGS.instanceGetTagByName(
+                nativeInstance, store.getNativeStore(), nameSegment);
+        if (tagPtr == null || tagPtr.equals(MemorySegment.NULL)) {
+          return Optional.empty();
+        }
+        return Optional.of(new PanamaTag(tagPtr, store.getNativeStore()));
       }
-      return Optional.of(new PanamaTag(tagPtr, store.getNativeStore()));
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -340,26 +352,30 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Check if the export exists and is a memory using moduleGetExportKind
-    // Note: This is more reliable than instanceHasMemoryExport for shared memories
-    // because shared memory exports are Extern::SharedMemory, not Extern::Memory
-    try (final Arena checkArena = Arena.ofConfined()) {
-      final int exportKind =
-          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
-              module.getNativeModule(),
-              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      // Check if the export exists and is a memory using moduleGetExportKind
+      // Note: This is more reliable than instanceHasMemoryExport for shared memories
+      // because shared memory exports are Extern::SharedMemory, not Extern::Memory
+      try (final Arena checkArena = Arena.ofConfined()) {
+        final int exportKind =
+            NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
+                module.getNativeModule(),
+                checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
-      if (exportKind != 3) {
-        return Optional.empty();
+        // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+        if (exportKind != 3) {
+          return Optional.empty();
+        }
       }
-    }
 
-    // Return a PanamaMemory that stores just the name
-    // The actual memory will be looked up fresh for each operation
-    return Optional.of(new PanamaMemory(name, this));
+      // Return a PanamaMemory that stores just the name
+      // The actual memory will be looked up fresh for each operation
+      return Optional.of(new PanamaMemory(name, this));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -367,19 +383,23 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final MemorySegment nameSegment =
-        getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-    final MemorySegment tablePtr =
-        NATIVE_INSTANCE_BINDINGS.instanceGetTableByName(
-            nativeInstance, store.getNativeStore(), nameSegment);
+      final MemorySegment nameSegment =
+          getArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      final MemorySegment tablePtr =
+          NATIVE_INSTANCE_BINDINGS.instanceGetTableByName(
+              nativeInstance, store.getNativeStore(), nameSegment);
 
-    if (tablePtr == null || tablePtr.equals(MemorySegment.NULL)) {
-      return Optional.empty();
+      if (tablePtr == null || tablePtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+
+      return Optional.of(new PanamaTable(tablePtr, this));
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    return Optional.of(new PanamaTable(tablePtr, this));
   }
 
   @Override
@@ -387,130 +407,164 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena arena = Arena.ofConfined()) {
-      final java.lang.foreign.MemorySegment nameSegment =
-          arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-      final java.lang.foreign.MemorySegment result =
-          NATIVE_INSTANCE_BINDINGS.instanceGetSharedMemoryByName(
-              nativeInstance, store.getNativeStore(), nameSegment);
-      if (result == null || result.equals(java.lang.foreign.MemorySegment.NULL)) {
-        return Optional.empty();
+      try (final Arena arena = Arena.ofConfined()) {
+        final java.lang.foreign.MemorySegment nameSegment =
+            arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+        final java.lang.foreign.MemorySegment result =
+            NATIVE_INSTANCE_BINDINGS.instanceGetSharedMemoryByName(
+                nativeInstance, store.getNativeStore(), nameSegment);
+        if (result == null || result.equals(java.lang.foreign.MemorySegment.NULL)) {
+          return Optional.empty();
+        }
+        return Optional.of(new PanamaMemory(name, this));
       }
-      return Optional.of(new PanamaMemory(name, this));
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public String[] getExportNames() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Get the export count
-    final long exportCount = NATIVE_ENGINE_BINDINGS.moduleExportCount(module.getNativeModule());
-    if (exportCount <= 0) {
-      return new String[0];
-    }
-
-    try (final Arena exportArena = Arena.ofConfined()) {
-      // Allocate array of pointers to hold C string pointers
-      final MemorySegment namesArray = exportArena.allocate(ValueLayout.ADDRESS, (int) exportCount);
-
-      // Call native function to populate the array
-      final long actualCount =
-          NATIVE_ENGINE_BINDINGS.moduleGetExportNames(
-              module.getNativeModule(), namesArray, exportCount);
-
-      if (actualCount <= 0) {
+      // Get the export count
+      final long exportCount = NATIVE_ENGINE_BINDINGS.moduleExportCount(module.getNativeModule());
+      if (exportCount <= 0) {
         return new String[0];
       }
 
-      // Convert C strings to Java strings
-      final String[] exportNames = new String[(int) actualCount];
-      for (int i = 0; i < actualCount; i++) {
-        final MemorySegment cStringPtr = namesArray.getAtIndex(ValueLayout.ADDRESS, i);
-        if (cStringPtr != null && !cStringPtr.equals(MemorySegment.NULL)) {
-          // Reinterpret as unbounded segment to read null-terminated string
-          final MemorySegment unboundedPtr = cStringPtr.reinterpret(Long.MAX_VALUE);
-          exportNames[i] = unboundedPtr.getString(0);
-          // Free the C string allocated by Rust
-          NATIVE_MEMORY_BINDINGS.freeString(cStringPtr);
-        }
-      }
+      try (final Arena exportArena = Arena.ofConfined()) {
+        // Allocate array of pointers to hold C string pointers
+        final MemorySegment namesArray =
+            exportArena.allocate(ValueLayout.ADDRESS, (int) exportCount);
 
-      return exportNames;
+        // Call native function to populate the array
+        final long actualCount =
+            NATIVE_ENGINE_BINDINGS.moduleGetExportNames(
+                module.getNativeModule(), namesArray, exportCount);
+
+        if (actualCount <= 0) {
+          return new String[0];
+        }
+
+        // Convert C strings to Java strings
+        final String[] exportNames = new String[(int) actualCount];
+        for (int i = 0; i < actualCount; i++) {
+          final MemorySegment cStringPtr = namesArray.getAtIndex(ValueLayout.ADDRESS, i);
+          if (cStringPtr != null && !cStringPtr.equals(MemorySegment.NULL)) {
+            // Reinterpret as unbounded segment to read null-terminated string
+            final MemorySegment unboundedPtr = cStringPtr.reinterpret(Long.MAX_VALUE);
+            exportNames[i] = unboundedPtr.getString(0);
+            // Free the C string allocated by Rust
+            NATIVE_MEMORY_BINDINGS.freeString(cStringPtr);
+          }
+        }
+
+        return exportNames;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public Optional<WasmFunction> debugFunction(final int functionIndex) {
-    ensureNotClosed();
-    final MemorySegment funcPtr =
-        NATIVE_INSTANCE_BINDINGS.instanceDebugFunction(
-            nativeInstance, store.getNativeStore(), functionIndex);
-    if (funcPtr == null || funcPtr.equals(MemorySegment.NULL)) {
-      return Optional.empty();
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment funcPtr =
+          NATIVE_INSTANCE_BINDINGS.instanceDebugFunction(
+              nativeInstance, store.getNativeStore(), functionIndex);
+      if (funcPtr == null || funcPtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaCallerFunction(funcPtr, store, "__debug_func_" + functionIndex));
+    } finally {
+      resourceHandle.endOperation();
     }
-    return Optional.of(new PanamaCallerFunction(funcPtr, store, "__debug_func_" + functionIndex));
   }
 
   @Override
   public Optional<WasmGlobal> debugGlobal(final int globalIndex) {
-    ensureNotClosed();
-    final MemorySegment globalPtr =
-        NATIVE_INSTANCE_BINDINGS.instanceDebugGlobal(
-            nativeInstance, store.getNativeStore(), globalIndex);
-    if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
-      return Optional.empty();
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment globalPtr =
+          NATIVE_INSTANCE_BINDINGS.instanceDebugGlobal(
+              nativeInstance, store.getNativeStore(), globalIndex);
+      if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaGlobal(globalPtr, store));
+    } finally {
+      resourceHandle.endOperation();
     }
-    return Optional.of(new PanamaGlobal(globalPtr, store));
   }
 
   @Override
   public Optional<WasmMemory> debugMemory(final int memoryIndex) {
-    ensureNotClosed();
-    final MemorySegment memoryPtr =
-        NATIVE_INSTANCE_BINDINGS.instanceDebugMemory(
-            nativeInstance, store.getNativeStore(), memoryIndex);
-    if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
-      return Optional.empty();
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment memoryPtr =
+          NATIVE_INSTANCE_BINDINGS.instanceDebugMemory(
+              nativeInstance, store.getNativeStore(), memoryIndex);
+      if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaMemory(memoryPtr, store));
+    } finally {
+      resourceHandle.endOperation();
     }
-    return Optional.of(new PanamaMemory(memoryPtr, store));
   }
 
   @Override
   public Optional<WasmMemory> debugSharedMemory(final int memoryIndex) {
-    ensureNotClosed();
-    final MemorySegment memoryPtr =
-        NATIVE_INSTANCE_BINDINGS.instanceDebugSharedMemory(
-            nativeInstance, store.getNativeStore(), memoryIndex);
-    if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
-      return Optional.empty();
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment memoryPtr =
+          NATIVE_INSTANCE_BINDINGS.instanceDebugSharedMemory(
+              nativeInstance, store.getNativeStore(), memoryIndex);
+      if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaMemory(memoryPtr, store));
+    } finally {
+      resourceHandle.endOperation();
     }
-    return Optional.of(new PanamaMemory(memoryPtr, store));
   }
 
   @Override
   public Optional<WasmTable> debugTable(final int tableIndex) {
-    ensureNotClosed();
-    final MemorySegment tablePtr =
-        NATIVE_INSTANCE_BINDINGS.instanceDebugTable(
-            nativeInstance, store.getNativeStore(), tableIndex);
-    if (tablePtr == null || tablePtr.equals(MemorySegment.NULL)) {
-      return Optional.empty();
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment tablePtr =
+          NATIVE_INSTANCE_BINDINGS.instanceDebugTable(
+              nativeInstance, store.getNativeStore(), tableIndex);
+      if (tablePtr == null || tablePtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaTable(tablePtr, this));
+    } finally {
+      resourceHandle.endOperation();
     }
-    return Optional.of(new PanamaTable(tablePtr, this));
   }
 
   @Override
   public Optional<Tag> debugTag(final int tagIndex) {
-    ensureNotClosed();
-    final MemorySegment tagPtr =
-        NATIVE_INSTANCE_BINDINGS.instanceDebugTag(nativeInstance, store.getNativeStore(), tagIndex);
-    if (tagPtr == null || tagPtr.equals(MemorySegment.NULL)) {
-      return Optional.empty();
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment tagPtr =
+          NATIVE_INSTANCE_BINDINGS.instanceDebugTag(
+              nativeInstance, store.getNativeStore(), tagIndex);
+      if (tagPtr == null || tagPtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      return Optional.of(new PanamaTag(tagPtr, store.getNativeStore()));
+    } finally {
+      resourceHandle.endOperation();
     }
-    return Optional.of(new PanamaTag(tagPtr, store.getNativeStore()));
   }
 
   @Override
@@ -518,15 +572,19 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena checkArena = Arena.ofConfined()) {
-      final int exportKind =
-          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
-              module.getNativeModule(),
-              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
-      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
-      return exportKind > 0;
+      try (final Arena checkArena = Arena.ofConfined()) {
+        final int exportKind =
+            NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
+                module.getNativeModule(),
+                checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+        // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+        return exportKind > 0;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -535,30 +593,34 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena checkArena = Arena.ofConfined()) {
-      final int exportKind =
-          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
-              module.getNativeModule(),
-              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      try (final Arena checkArena = Arena.ofConfined()) {
+        final int exportKind =
+            NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
+                module.getNativeModule(),
+                checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
-      switch (exportKind) {
-        case 1: // Function
-          return getFunction(name).map(f -> new PanamaExternFunc(MemorySegment.NULL, store));
-        case 2: // Global
-          return getGlobal(name).map(g -> new PanamaExternGlobal(MemorySegment.NULL, store));
-        case 3: // Memory
-          return getMemory(name).map(m -> new PanamaExternMemory(MemorySegment.NULL, store));
-        case 4: // Table
-          return getTable(name).map(t -> new PanamaExternTable(MemorySegment.NULL, store));
-        default:
-          return Optional.empty();
+        // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+        switch (exportKind) {
+          case 1: // Function
+            return getFunction(name).map(f -> new PanamaExternFunc(MemorySegment.NULL, store));
+          case 2: // Global
+            return getGlobal(name).map(g -> new PanamaExternGlobal(MemorySegment.NULL, store));
+          case 3: // Memory
+            return getMemory(name).map(m -> new PanamaExternMemory(MemorySegment.NULL, store));
+          case 4: // Table
+            return getTable(name).map(t -> new PanamaExternTable(MemorySegment.NULL, store));
+          default:
+            return Optional.empty();
+        }
+      } catch (final Exception e) {
+        LOGGER.warning("Error getting export: " + name + " - " + e.getMessage());
+        return Optional.empty();
       }
-    } catch (final Exception e) {
-      LOGGER.warning("Error getting export: " + name + " - " + e.getMessage());
-      return Optional.empty();
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -573,41 +635,45 @@ public final class PanamaInstance implements Instance {
     if (moduleExport == null) {
       throw new IllegalArgumentException("ModuleExport cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalStateException("Store must be a PanamaStore instance");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-
-    try (final Arena exportArena = Arena.ofConfined()) {
-      final MemorySegment outHandle = exportArena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment outType = exportArena.allocate(ValueLayout.JAVA_INT);
-
-      final MemorySegment moduleExportPtr = MemorySegment.ofAddress(moduleExport.nativeHandle());
-
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.panamaInstanceGetModuleExport(
-              nativeInstance, panamaStore.getNativeStore(), moduleExportPtr, outHandle, outType);
-
-      if (result != 0) {
-        return Optional.empty();
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalStateException("Store must be a PanamaStore instance");
       }
 
-      final MemorySegment externHandle = outHandle.get(ValueLayout.ADDRESS, 0);
-      final int externType = outType.get(ValueLayout.JAVA_INT, 0);
+      final PanamaStore panamaStore = (PanamaStore) store;
 
-      if (externHandle.equals(MemorySegment.NULL)
-          || externHandle.address() == 0
-          || externType < 0) {
+      try (final Arena exportArena = Arena.ofConfined()) {
+        final MemorySegment outHandle = exportArena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment outType = exportArena.allocate(ValueLayout.JAVA_INT);
+
+        final MemorySegment moduleExportPtr = MemorySegment.ofAddress(moduleExport.nativeHandle());
+
+        final int result =
+            NATIVE_INSTANCE_BINDINGS.panamaInstanceGetModuleExport(
+                nativeInstance, panamaStore.getNativeStore(), moduleExportPtr, outHandle, outType);
+
+        if (result != 0) {
+          return Optional.empty();
+        }
+
+        final MemorySegment externHandle = outHandle.get(ValueLayout.ADDRESS, 0);
+        final int externType = outType.get(ValueLayout.JAVA_INT, 0);
+
+        if (externHandle.equals(MemorySegment.NULL)
+            || externHandle.address() == 0
+            || externType < 0) {
+          return Optional.empty();
+        }
+
+        return Optional.of(createExternFromNative(externHandle, externType, panamaStore));
+      } catch (final Exception e) {
+        LOGGER.warning("Error getting module export: " + e.getMessage());
         return Optional.empty();
       }
-
-      return Optional.of(createExternFromNative(externHandle, externType, panamaStore));
-    } catch (final Exception e) {
-      LOGGER.warning("Error getting module export: " + e.getMessage());
-      return Optional.empty();
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -649,15 +715,19 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena checkArena = Arena.ofConfined()) {
-      final int exportKind =
-          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
-              module.getNativeModule(),
-              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
-      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
-      return exportKind == 1;
+      try (final Arena checkArena = Arena.ofConfined()) {
+        final int exportKind =
+            NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
+                module.getNativeModule(),
+                checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+        // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+        return exportKind == 1;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -672,15 +742,19 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena checkArena = Arena.ofConfined()) {
-      final int exportKind =
-          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
-              module.getNativeModule(),
-              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
-      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
-      return exportKind == 3;
+      try (final Arena checkArena = Arena.ofConfined()) {
+        final int exportKind =
+            NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
+                module.getNativeModule(),
+                checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+        // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+        return exportKind == 3;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -695,15 +769,19 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena checkArena = Arena.ofConfined()) {
-      final int exportKind =
-          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
-              module.getNativeModule(),
-              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
-      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
-      return exportKind == 4;
+      try (final Arena checkArena = Arena.ofConfined()) {
+        final int exportKind =
+            NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
+                module.getNativeModule(),
+                checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+        // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+        return exportKind == 4;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -718,15 +796,19 @@ public final class PanamaInstance implements Instance {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena checkArena = Arena.ofConfined()) {
-      final int exportKind =
-          NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
-              module.getNativeModule(),
-              checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
-      // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
-      return exportKind == 2;
+      try (final Arena checkArena = Arena.ofConfined()) {
+        final int exportKind =
+            NATIVE_ENGINE_BINDINGS.moduleGetExportKind(
+                module.getNativeModule(),
+                checkArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+        // exportKind: 0=not found, 1=function, 2=global, 3=memory, 4=table
+        return exportKind == 2;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -764,62 +846,67 @@ public final class PanamaInstance implements Instance {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Maximum possible results (matches MAX_RESULTS_BUFFER_SIZE / 20)
-    final int maxResults = 32;
+      // Maximum possible results (matches MAX_RESULTS_BUFFER_SIZE / 20)
+      final int maxResults = 32;
 
-    // Get or create cached function name segment (avoids repeated string encoding)
-    final MemorySegment functionNameSegment =
-        functionNameCache.computeIfAbsent(
-            functionName,
-            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      // Get or create cached function name segment (avoids repeated string encoding)
+      final MemorySegment functionNameSegment =
+          functionNameCache.computeIfAbsent(
+              functionName,
+              name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    // Get thread-local call context (reuses arena and buffers across calls)
-    final CallContext ctx = CALL_CONTEXT.get();
+      // Get thread-local call context (reuses arena and buffers across calls)
+      final CallContext ctx = CALL_CONTEXT.get();
 
-    // Get or allocate params buffer from thread-local context
-    final MemorySegment paramsSegment;
-    final int paramCount = (params != null) ? params.length : 0;
-    if (paramCount > 0) {
-      paramsSegment = ctx.getParamsBuffer(paramCount);
-      for (int i = 0; i < paramCount; i++) {
-        WasmValueMarshaller.marshalWasmValue(params[i], paramsSegment, i, this::registerExternRef);
+      // Get or allocate params buffer from thread-local context
+      final MemorySegment paramsSegment;
+      final int paramCount = (params != null) ? params.length : 0;
+      if (paramCount > 0) {
+        paramsSegment = ctx.getParamsBuffer(paramCount);
+        for (int i = 0; i < paramCount; i++) {
+          WasmValueMarshaller.marshalWasmValue(
+              params[i], paramsSegment, i, this::registerExternRef);
+        }
+      } else {
+        paramsSegment = MemorySegment.NULL;
       }
-    } else {
-      paramsSegment = MemorySegment.NULL;
+
+      // Use pre-allocated results buffer from thread-local context
+      final MemorySegment resultsSegment = ctx.resultsBuffer;
+
+      // Call native function using invokeExact fast path
+      final long resultCount =
+          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
+              nativeInstance,
+              store.getNativeStore(),
+              functionNameSegment,
+              paramsSegment,
+              paramCount,
+              resultsSegment,
+              maxResults);
+
+      if (resultCount < 0) {
+        final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      }
+
+      // Unmarshal results - allocate new array each time to avoid aliasing bugs
+      // (returning pooled arrays caused results to be overwritten by subsequent calls)
+      final int count = (int) resultCount;
+      final WasmValue[] results = new WasmValue[count];
+      for (int i = 0; i < count; i++) {
+        results[i] =
+            WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, EXTERN_REF_REGISTRY::get);
+      }
+
+      return results;
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Use pre-allocated results buffer from thread-local context
-    final MemorySegment resultsSegment = ctx.resultsBuffer;
-
-    // Call native function using invokeExact fast path
-    final long resultCount =
-        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-            nativeInstance,
-            store.getNativeStore(),
-            functionNameSegment,
-            paramsSegment,
-            paramCount,
-            resultsSegment,
-            maxResults);
-
-    if (resultCount < 0) {
-      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
-      throw new WasmException(
-          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
-    }
-
-    // Unmarshal results - allocate new array each time to avoid aliasing bugs
-    // (returning pooled arrays caused results to be overwritten by subsequent calls)
-    final int count = (int) resultCount;
-    final WasmValue[] results = new WasmValue[count];
-    for (int i = 0; i < count; i++) {
-      results[i] =
-          WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, EXTERN_REF_REGISTRY::get);
-    }
-
-    return results;
   }
 
   /**
@@ -848,87 +935,91 @@ public final class PanamaInstance implements Instance {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
-      // Get function handle by name
-      final java.lang.foreign.MemorySegment funcPtrOut =
-          arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
-      final java.lang.foreign.MemorySegment nameSegment =
-          arena.allocateFrom(functionName, java.nio.charset.StandardCharsets.UTF_8);
+      try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
+        // Get function handle by name
+        final java.lang.foreign.MemorySegment funcPtrOut =
+            arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+        final java.lang.foreign.MemorySegment nameSegment =
+            arena.allocateFrom(functionName, java.nio.charset.StandardCharsets.UTF_8);
 
-      final int getResult =
-          NATIVE_INSTANCE_BINDINGS.funcGet(
-              nativeInstance, store.getNativeStore(), nameSegment, funcPtrOut);
-      if (getResult != 0) {
-        throw new WasmException("Failed to get function '" + functionName + "' for async call");
-      }
+        final int getResult =
+            NATIVE_INSTANCE_BINDINGS.funcGet(
+                nativeInstance, store.getNativeStore(), nameSegment, funcPtrOut);
+        if (getResult != 0) {
+          throw new WasmException("Failed to get function '" + functionName + "' for async call");
+        }
 
-      final java.lang.foreign.MemorySegment funcHandle =
-          funcPtrOut.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
-      if (funcHandle == null
-          || funcHandle.equals(java.lang.foreign.MemorySegment.NULL)
-          || funcHandle.address() == 0) {
-        throw new WasmException("Function '" + functionName + "' not found");
-      }
+        final java.lang.foreign.MemorySegment funcHandle =
+            funcPtrOut.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
+        if (funcHandle == null
+            || funcHandle.equals(java.lang.foreign.MemorySegment.NULL)
+            || funcHandle.address() == 0) {
+          throw new WasmException("Function '" + functionName + "' not found");
+        }
 
-      try {
-        // Use max results buffer (same as callFunction)
-        final int maxResults = 32;
+        try {
+          // Use max results buffer (same as callFunction)
+          final int maxResults = 32;
 
-        // Marshal parameters
-        final int paramCount = (params != null) ? params.length : 0;
-        final java.lang.foreign.MemorySegment paramsSegment;
-        if (paramCount > 0) {
-          paramsSegment =
-              arena.allocate(
-                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
-                  java.lang.foreign.ValueLayout.JAVA_INT.byteAlignment());
-          for (int i = 0; i < paramCount; i++) {
-            WasmValueMarshaller.marshalWasmValue(
-                params[i], paramsSegment, i, this::registerExternRef);
+          // Marshal parameters
+          final int paramCount = (params != null) ? params.length : 0;
+          final java.lang.foreign.MemorySegment paramsSegment;
+          if (paramCount > 0) {
+            paramsSegment =
+                arena.allocate(
+                    (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
+                    java.lang.foreign.ValueLayout.JAVA_INT.byteAlignment());
+            for (int i = 0; i < paramCount; i++) {
+              WasmValueMarshaller.marshalWasmValue(
+                  params[i], paramsSegment, i, this::registerExternRef);
+            }
+          } else {
+            paramsSegment = java.lang.foreign.MemorySegment.NULL;
           }
-        } else {
-          paramsSegment = java.lang.foreign.MemorySegment.NULL;
+
+          // Allocate results buffer
+          final java.lang.foreign.MemorySegment resultsSegment =
+              arena.allocate(
+                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * maxResults,
+                  java.lang.foreign.ValueLayout.JAVA_INT.byteAlignment());
+
+          // Call async - returns result count on success, negative on error
+          final long resultCount =
+              NATIVE_INSTANCE_BINDINGS.funcCallNativeAsync(
+                  funcHandle,
+                  store.getNativeStore(),
+                  paramsSegment,
+                  paramCount,
+                  resultsSegment,
+                  maxResults);
+
+          if (resultCount < 0) {
+            final String errorMsg =
+                ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
+            throw new WasmException(
+                errorMsg != null
+                    ? errorMsg
+                    : "Async function call failed for '" + functionName + "'");
+          }
+
+          final int count = (int) resultCount;
+          final WasmValue[] results = new WasmValue[count];
+          for (int i = 0; i < count; i++) {
+            results[i] =
+                WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, EXTERN_REF_REGISTRY::get);
+          }
+          return results;
+
+        } finally {
+          // Always free the function handle
+          NATIVE_INSTANCE_BINDINGS.funcDestroy(funcHandle);
         }
-
-        // Allocate results buffer
-        final java.lang.foreign.MemorySegment resultsSegment =
-            arena.allocate(
-                (long) WasmValueMarshaller.WASM_VALUE_SIZE * maxResults,
-                java.lang.foreign.ValueLayout.JAVA_INT.byteAlignment());
-
-        // Call async - returns result count on success, negative on error
-        final long resultCount =
-            NATIVE_INSTANCE_BINDINGS.funcCallNativeAsync(
-                funcHandle,
-                store.getNativeStore(),
-                paramsSegment,
-                paramCount,
-                resultsSegment,
-                maxResults);
-
-        if (resultCount < 0) {
-          final String errorMsg =
-              ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
-          throw new WasmException(
-              errorMsg != null
-                  ? errorMsg
-                  : "Async function call failed for '" + functionName + "'");
-        }
-
-        final int count = (int) resultCount;
-        final WasmValue[] results = new WasmValue[count];
-        for (int i = 0; i < count; i++) {
-          results[i] =
-              WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, EXTERN_REF_REGISTRY::get);
-        }
-        return results;
-
-      } finally {
-        // Always free the function handle
-        NATIVE_INSTANCE_BINDINGS.funcDestroy(funcHandle);
       }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -938,18 +1029,22 @@ public final class PanamaInstance implements Instance {
    * @return list of exported function names
    */
   List<String> getFunctionNames() {
-    ensureNotClosed();
-    final List<String> functionNames = new java.util.ArrayList<>();
-    final String[] exportNames = getExportNames();
+    resourceHandle.beginOperation();
+    try {
+      final List<String> functionNames = new java.util.ArrayList<>();
+      final String[] exportNames = getExportNames();
 
-    for (final String name : exportNames) {
-      final Optional<WasmFunction> function = getFunction(name);
-      if (function.isPresent()) {
-        functionNames.add(name);
+      for (final String name : exportNames) {
+        final Optional<WasmFunction> function = getFunction(name);
+        if (function.isPresent()) {
+          functionNames.add(name);
+        }
       }
-    }
 
-    return Collections.unmodifiableList(functionNames);
+      return Collections.unmodifiableList(functionNames);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -958,18 +1053,22 @@ public final class PanamaInstance implements Instance {
    * @return list of exported memory names
    */
   List<String> getMemoryNames() {
-    ensureNotClosed();
-    final List<String> memoryNames = new java.util.ArrayList<>();
-    final String[] exportNames = getExportNames();
+    resourceHandle.beginOperation();
+    try {
+      final List<String> memoryNames = new java.util.ArrayList<>();
+      final String[] exportNames = getExportNames();
 
-    for (final String name : exportNames) {
-      final Optional<WasmMemory> memory = getMemory(name);
-      if (memory.isPresent()) {
-        memoryNames.add(name);
+      for (final String name : exportNames) {
+        final Optional<WasmMemory> memory = getMemory(name);
+        if (memory.isPresent()) {
+          memoryNames.add(name);
+        }
       }
-    }
 
-    return Collections.unmodifiableList(memoryNames);
+      return Collections.unmodifiableList(memoryNames);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -978,18 +1077,22 @@ public final class PanamaInstance implements Instance {
    * @return list of exported table names
    */
   List<String> getTableNames() {
-    ensureNotClosed();
-    final List<String> tableNames = new java.util.ArrayList<>();
-    final String[] exportNames = getExportNames();
+    resourceHandle.beginOperation();
+    try {
+      final List<String> tableNames = new java.util.ArrayList<>();
+      final String[] exportNames = getExportNames();
 
-    for (final String name : exportNames) {
-      final Optional<WasmTable> table = getTable(name);
-      if (table.isPresent()) {
-        tableNames.add(name);
+      for (final String name : exportNames) {
+        final Optional<WasmTable> table = getTable(name);
+        if (table.isPresent()) {
+          tableNames.add(name);
+        }
       }
-    }
 
-    return Collections.unmodifiableList(tableNames);
+      return Collections.unmodifiableList(tableNames);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -998,18 +1101,22 @@ public final class PanamaInstance implements Instance {
    * @return list of exported global names
    */
   List<String> getGlobalNames() {
-    ensureNotClosed();
-    final List<String> globalNames = new java.util.ArrayList<>();
-    final String[] exportNames = getExportNames();
+    resourceHandle.beginOperation();
+    try {
+      final List<String> globalNames = new java.util.ArrayList<>();
+      final String[] exportNames = getExportNames();
 
-    for (final String name : exportNames) {
-      final Optional<WasmGlobal> global = getGlobal(name);
-      if (global.isPresent()) {
-        globalNames.add(name);
+      for (final String name : exportNames) {
+        final Optional<WasmGlobal> global = getGlobal(name);
+        if (global.isPresent()) {
+          globalNames.add(name);
+        }
       }
-    }
 
-    return Collections.unmodifiableList(globalNames);
+      return Collections.unmodifiableList(globalNames);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -1018,18 +1125,22 @@ public final class PanamaInstance implements Instance {
    * @return number of function exports
    */
   int getFunctionCount() {
-    ensureNotClosed();
-    int count = 0;
-    final String[] exportNames = getExportNames();
+    resourceHandle.beginOperation();
+    try {
+      int count = 0;
+      final String[] exportNames = getExportNames();
 
-    for (final String name : exportNames) {
-      final Optional<WasmFunction> function = getFunction(name);
-      if (function.isPresent()) {
-        count++;
+      for (final String name : exportNames) {
+        final Optional<WasmFunction> function = getFunction(name);
+        if (function.isPresent()) {
+          count++;
+        }
       }
-    }
 
-    return count;
+      return count;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -1038,18 +1149,22 @@ public final class PanamaInstance implements Instance {
    * @return number of memory exports
    */
   int getMemoryCount() {
-    ensureNotClosed();
-    int count = 0;
-    final String[] exportNames = getExportNames();
+    resourceHandle.beginOperation();
+    try {
+      int count = 0;
+      final String[] exportNames = getExportNames();
 
-    for (final String name : exportNames) {
-      final Optional<WasmMemory> memory = getMemory(name);
-      if (memory.isPresent()) {
-        count++;
+      for (final String name : exportNames) {
+        final Optional<WasmMemory> memory = getMemory(name);
+        if (memory.isPresent()) {
+          count++;
+        }
       }
-    }
 
-    return count;
+      return count;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -1058,18 +1173,22 @@ public final class PanamaInstance implements Instance {
    * @return number of table exports
    */
   int getTableCount() {
-    ensureNotClosed();
-    int count = 0;
-    final String[] exportNames = getExportNames();
+    resourceHandle.beginOperation();
+    try {
+      int count = 0;
+      final String[] exportNames = getExportNames();
 
-    for (final String name : exportNames) {
-      final Optional<WasmTable> table = getTable(name);
-      if (table.isPresent()) {
-        count++;
+      for (final String name : exportNames) {
+        final Optional<WasmTable> table = getTable(name);
+        if (table.isPresent()) {
+          count++;
+        }
       }
-    }
 
-    return count;
+      return count;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -1078,18 +1197,22 @@ public final class PanamaInstance implements Instance {
    * @return number of global exports
    */
   int getGlobalCount() {
-    ensureNotClosed();
-    int count = 0;
-    final String[] exportNames = getExportNames();
+    resourceHandle.beginOperation();
+    try {
+      int count = 0;
+      final String[] exportNames = getExportNames();
 
-    for (final String name : exportNames) {
-      final Optional<WasmGlobal> global = getGlobal(name);
-      if (global.isPresent()) {
-        count++;
+      for (final String name : exportNames) {
+        final Optional<WasmGlobal> global = getGlobal(name);
+        if (global.isPresent()) {
+          count++;
+        }
       }
-    }
 
-    return count;
+      return count;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -1115,46 +1238,50 @@ public final class PanamaInstance implements Instance {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Get or create cached function name segment
-    final MemorySegment functionNameSegment =
-        functionNameCache.computeIfAbsent(
-            functionName,
-            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      // Get or create cached function name segment
+      final MemorySegment functionNameSegment =
+          functionNameCache.computeIfAbsent(
+              functionName,
+              name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    // Get thread-local call context
-    final CallContext ctx = CALL_CONTEXT.get();
-    final MemorySegment params = ctx.getParamsBuffer(2);
+      // Get thread-local call context
+      final CallContext ctx = CALL_CONTEXT.get();
+      final MemorySegment params = ctx.getParamsBuffer(2);
 
-    // Direct primitive writes - no WasmValue objects created
-    // Tag 0 = I32, value at offset+4
-    params.set(ValueLayout.JAVA_INT, 0, 0); // Tag: I32
-    params.set(ValueLayout.JAVA_INT, 4, arg1); // Value 1
-    params.set(ValueLayout.JAVA_INT, 20, 0); // Tag: I32
-    params.set(ValueLayout.JAVA_INT, 24, arg2); // Value 2
+      // Direct primitive writes - no WasmValue objects created
+      // Tag 0 = I32, value at offset+4
+      params.set(ValueLayout.JAVA_INT, 0, 0); // Tag: I32
+      params.set(ValueLayout.JAVA_INT, 4, arg1); // Value 1
+      params.set(ValueLayout.JAVA_INT, 20, 0); // Tag: I32
+      params.set(ValueLayout.JAVA_INT, 24, arg2); // Value 2
 
-    final long resultCount =
-        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-            nativeInstance,
-            store.getNativeStore(),
-            functionNameSegment,
-            params,
-            2,
-            ctx.resultsBuffer,
-            1);
+      final long resultCount =
+          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
+              nativeInstance,
+              store.getNativeStore(),
+              functionNameSegment,
+              params,
+              2,
+              ctx.resultsBuffer,
+              1);
 
-    if (resultCount < 0) {
-      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
-      throw new WasmException(
-          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      if (resultCount < 0) {
+        final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      }
+      if (resultCount != 1) {
+        throw new WasmException("Expected 1 result, got " + resultCount);
+      }
+
+      // Direct primitive read - no WasmValue creation
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (resultCount != 1) {
-      throw new WasmException("Expected 1 result, got " + resultCount);
-    }
-
-    // Direct primitive read - no WasmValue creation
-    return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
   }
 
   /**
@@ -1170,39 +1297,43 @@ public final class PanamaInstance implements Instance {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final MemorySegment functionNameSegment =
-        functionNameCache.computeIfAbsent(
-            functionName,
-            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      final MemorySegment functionNameSegment =
+          functionNameCache.computeIfAbsent(
+              functionName,
+              name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    final CallContext ctx = CALL_CONTEXT.get();
-    final MemorySegment params = ctx.getParamsBuffer(1);
+      final CallContext ctx = CALL_CONTEXT.get();
+      final MemorySegment params = ctx.getParamsBuffer(1);
 
-    params.set(ValueLayout.JAVA_INT, 0, 0); // Tag: I32
-    params.set(ValueLayout.JAVA_INT, 4, arg); // Value
+      params.set(ValueLayout.JAVA_INT, 0, 0); // Tag: I32
+      params.set(ValueLayout.JAVA_INT, 4, arg); // Value
 
-    final long resultCount =
-        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-            nativeInstance,
-            store.getNativeStore(),
-            functionNameSegment,
-            params,
-            1,
-            ctx.resultsBuffer,
-            1);
+      final long resultCount =
+          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
+              nativeInstance,
+              store.getNativeStore(),
+              functionNameSegment,
+              params,
+              1,
+              ctx.resultsBuffer,
+              1);
 
-    if (resultCount < 0) {
-      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
-      throw new WasmException(
-          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      if (resultCount < 0) {
+        final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      }
+      if (resultCount != 1) {
+        throw new WasmException("Expected 1 result, got " + resultCount);
+      }
+
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (resultCount != 1) {
-      throw new WasmException("Expected 1 result, got " + resultCount);
-    }
-
-    return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
   }
 
   /**
@@ -1217,35 +1348,39 @@ public final class PanamaInstance implements Instance {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final MemorySegment functionNameSegment =
-        functionNameCache.computeIfAbsent(
-            functionName,
-            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      final MemorySegment functionNameSegment =
+          functionNameCache.computeIfAbsent(
+              functionName,
+              name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    final CallContext ctx = CALL_CONTEXT.get();
+      final CallContext ctx = CALL_CONTEXT.get();
 
-    final long resultCount =
-        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-            nativeInstance,
-            store.getNativeStore(),
-            functionNameSegment,
-            MemorySegment.NULL,
-            0,
-            ctx.resultsBuffer,
-            1);
+      final long resultCount =
+          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
+              nativeInstance,
+              store.getNativeStore(),
+              functionNameSegment,
+              MemorySegment.NULL,
+              0,
+              ctx.resultsBuffer,
+              1);
 
-    if (resultCount < 0) {
-      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
-      throw new WasmException(
-          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      if (resultCount < 0) {
+        final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      }
+      if (resultCount != 1) {
+        throw new WasmException("Expected 1 result, got " + resultCount);
+      }
+
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (resultCount != 1) {
-      throw new WasmException("Expected 1 result, got " + resultCount);
-    }
-
-    return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
   }
 
   /**
@@ -1259,29 +1394,33 @@ public final class PanamaInstance implements Instance {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final MemorySegment functionNameSegment =
-        functionNameCache.computeIfAbsent(
-            functionName,
-            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      final MemorySegment functionNameSegment =
+          functionNameCache.computeIfAbsent(
+              functionName,
+              name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    final CallContext ctx = CALL_CONTEXT.get();
+      final CallContext ctx = CALL_CONTEXT.get();
 
-    final long resultCount =
-        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-            nativeInstance,
-            store.getNativeStore(),
-            functionNameSegment,
-            MemorySegment.NULL,
-            0,
-            ctx.resultsBuffer,
-            0);
+      final long resultCount =
+          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
+              nativeInstance,
+              store.getNativeStore(),
+              functionNameSegment,
+              MemorySegment.NULL,
+              0,
+              ctx.resultsBuffer,
+              0);
 
-    if (resultCount < 0) {
-      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
-      throw new WasmException(
-          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      if (resultCount < 0) {
+        final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1298,39 +1437,43 @@ public final class PanamaInstance implements Instance {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final MemorySegment functionNameSegment =
-        functionNameCache.computeIfAbsent(
-            functionName,
-            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      final MemorySegment functionNameSegment =
+          functionNameCache.computeIfAbsent(
+              functionName,
+              name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    final CallContext ctx = CALL_CONTEXT.get();
-    final MemorySegment params = ctx.getParamsBuffer(1);
+      final CallContext ctx = CALL_CONTEXT.get();
+      final MemorySegment params = ctx.getParamsBuffer(1);
 
-    params.set(ValueLayout.JAVA_INT, 0, 1); // Tag: I64
-    params.set(ValueLayout.JAVA_LONG_UNALIGNED, 4, arg); // Value
+      params.set(ValueLayout.JAVA_INT, 0, 1); // Tag: I64
+      params.set(ValueLayout.JAVA_LONG_UNALIGNED, 4, arg); // Value
 
-    final long resultCount =
-        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-            nativeInstance,
-            store.getNativeStore(),
-            functionNameSegment,
-            params,
-            1,
-            ctx.resultsBuffer,
-            1);
+      final long resultCount =
+          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
+              nativeInstance,
+              store.getNativeStore(),
+              functionNameSegment,
+              params,
+              1,
+              ctx.resultsBuffer,
+              1);
 
-    if (resultCount < 0) {
-      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
-      throw new WasmException(
-          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      if (resultCount < 0) {
+        final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      }
+      if (resultCount != 1) {
+        throw new WasmException("Expected 1 result, got " + resultCount);
+      }
+
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_LONG_UNALIGNED, 4);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (resultCount != 1) {
-      throw new WasmException("Expected 1 result, got " + resultCount);
-    }
-
-    return ctx.resultsBuffer.get(ValueLayout.JAVA_LONG_UNALIGNED, 4);
   }
 
   /**
@@ -1346,39 +1489,43 @@ public final class PanamaInstance implements Instance {
     if (functionName == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final MemorySegment functionNameSegment =
-        functionNameCache.computeIfAbsent(
-            functionName,
-            name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
+      final MemorySegment functionNameSegment =
+          functionNameCache.computeIfAbsent(
+              functionName,
+              name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-    final CallContext ctx = CALL_CONTEXT.get();
-    final MemorySegment params = ctx.getParamsBuffer(1);
+      final CallContext ctx = CALL_CONTEXT.get();
+      final MemorySegment params = ctx.getParamsBuffer(1);
 
-    params.set(ValueLayout.JAVA_INT, 0, 3); // Tag: F64
-    params.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4, arg); // Value
+      params.set(ValueLayout.JAVA_INT, 0, 3); // Tag: F64
+      params.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4, arg); // Value
 
-    final long resultCount =
-        NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-            nativeInstance,
-            store.getNativeStore(),
-            functionNameSegment,
-            params,
-            1,
-            ctx.resultsBuffer,
-            1);
+      final long resultCount =
+          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
+              nativeInstance,
+              store.getNativeStore(),
+              functionNameSegment,
+              params,
+              1,
+              ctx.resultsBuffer,
+              1);
 
-    if (resultCount < 0) {
-      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
-      throw new WasmException(
-          errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      if (resultCount < 0) {
+        final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
+      }
+      if (resultCount != 1) {
+        throw new WasmException("Expected 1 result, got " + resultCount);
+      }
+
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (resultCount != 1) {
-      throw new WasmException("Expected 1 result, got " + resultCount);
-    }
-
-    return ctx.resultsBuffer.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4);
   }
 
   @Override
@@ -1421,18 +1568,6 @@ public final class PanamaInstance implements Instance {
         });
   }
 
-  /**
-   * Ensures the instance is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-    if (disposed.get()) {
-      throw new IllegalStateException("Instance has been disposed");
-    }
-  }
-
   // Memory delegation methods - called by PanamaMemory to ensure single store context
 
   /**
@@ -1442,22 +1577,26 @@ public final class PanamaInstance implements Instance {
    * @return size in pages
    */
   long getMemorySize(final PanamaMemory memory) {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+        final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.instanceGetMemorySizePages(
-              nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
+        final int result =
+            NATIVE_INSTANCE_BINDINGS.instanceGetMemorySizePages(
+                nativeInstance, store.getNativeStore(), nameSegment, sizeOut);
 
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
+        if (result != 0) {
+          throw new RuntimeException(
+              "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
+        }
+
+        return sizeOut.get(ValueLayout.JAVA_LONG, 0);
       }
-
-      return sizeOut.get(ValueLayout.JAVA_LONG, 0);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1468,33 +1607,37 @@ public final class PanamaInstance implements Instance {
    * @return maximum size in pages, or -1 if unlimited
    */
   int getMemoryMaxSize(final PanamaMemory memory) {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
 
-      // First get the memory pointer
-      final MemorySegment memoryPtr =
-          NATIVE_INSTANCE_BINDINGS.instanceGetMemoryByName(
-              nativeInstance, store.getNativeStore(), nameSegment);
+        // First get the memory pointer
+        final MemorySegment memoryPtr =
+            NATIVE_INSTANCE_BINDINGS.instanceGetMemoryByName(
+                nativeInstance, store.getNativeStore(), nameSegment);
 
-      if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
-        return -1; // Memory not found
+        if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+          return -1; // Memory not found
+        }
+
+        // Now get the max size
+        final MemorySegment maxSizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final int result =
+            NATIVE_MEMORY_BINDINGS.panamaMemoryGetMaximum(
+                memoryPtr, store.getNativeStore(), maxSizeOut);
+
+        if (result != 0) {
+          return -1; // Failed to get max size
+        }
+
+        final long maxSize = maxSizeOut.get(ValueLayout.JAVA_LONG, 0);
+        // Return as int, clamping if necessary (though unlikely for page counts)
+        return maxSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxSize;
       }
-
-      // Now get the max size
-      final MemorySegment maxSizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
-      final int result =
-          NATIVE_MEMORY_BINDINGS.panamaMemoryGetMaximum(
-              memoryPtr, store.getNativeStore(), maxSizeOut);
-
-      if (result != 0) {
-        return -1; // Failed to get max size
-      }
-
-      final long maxSize = maxSizeOut.get(ValueLayout.JAVA_LONG, 0);
-      // Return as int, clamping if necessary (though unlikely for page counts)
-      return maxSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxSize;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1506,21 +1649,25 @@ public final class PanamaInstance implements Instance {
    * @return previous size in pages, or -1 if growth failed
    */
   long growMemory(final PanamaMemory memory, final long pages) {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+        final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.instanceGrowMemory(
-              nativeInstance, store.getNativeStore(), nameSegment, pages, previousPagesOut);
+        final int result =
+            NATIVE_INSTANCE_BINDINGS.instanceGrowMemory(
+                nativeInstance, store.getNativeStore(), nameSegment, pages, previousPagesOut);
 
-      if (result != 0) {
-        return -1L; // Growth failed
+        if (result != 0) {
+          return -1L; // Growth failed
+        }
+
+        return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
       }
-
-      return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1532,29 +1679,33 @@ public final class PanamaInstance implements Instance {
    * @return the previous size in pages, or -1 if growth failed
    */
   long growMemoryAsync(final PanamaMemory memory, final long pages) {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tempArena.allocateFrom(memory.getMemoryName(), java.nio.charset.StandardCharsets.UTF_8);
 
-      // Get the native memory ptr from the instance export
-      final MemorySegment memPtr =
-          NATIVE_INSTANCE_BINDINGS.instanceGetMemoryByName(
-              nativeInstance, store.getNativeStore(), nameSegment);
-      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-        return -1L;
+        // Get the native memory ptr from the instance export
+        final MemorySegment memPtr =
+            NATIVE_INSTANCE_BINDINGS.instanceGetMemoryByName(
+                nativeInstance, store.getNativeStore(), nameSegment);
+        if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+          return -1L;
+        }
+
+        final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final NativeMemoryBindings memBindings = NativeMemoryBindings.getInstance();
+        final int result =
+            memBindings.panamaMemoryGrowAsync(
+                memPtr, store.getNativeStore(), pages, previousPagesOut);
+
+        if (result != 0) {
+          return -1L;
+        }
+        return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
       }
-
-      final MemorySegment previousPagesOut = tempArena.allocate(ValueLayout.JAVA_LONG);
-      final NativeMemoryBindings memBindings = NativeMemoryBindings.getInstance();
-      final int result =
-          memBindings.panamaMemoryGrowAsync(
-              memPtr, store.getNativeStore(), pages, previousPagesOut);
-
-      if (result != 0) {
-        return -1L;
-      }
-      return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1566,29 +1717,33 @@ public final class PanamaInstance implements Instance {
    * @throws ai.tegmentum.wasmtime4j.exception.WasmException if conversion fails
    */
   long funcToRaw(final String functionName) throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment =
-          tempArena.allocateFrom(functionName, java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment funcPtrOut = tempArena.allocate(ValueLayout.ADDRESS);
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment =
+            tempArena.allocateFrom(functionName, java.nio.charset.StandardCharsets.UTF_8);
+        final MemorySegment funcPtrOut = tempArena.allocate(ValueLayout.ADDRESS);
 
-      // Get the func ptr from instance export
-      final int getResult =
-          NATIVE_INSTANCE_BINDINGS.funcGet(
-              nativeInstance, store.getNativeStore(), nameSegment, funcPtrOut);
-      if (getResult != 0) {
-        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-            "Failed to get function pointer for: " + functionName);
-      }
-      final MemorySegment funcPtr = funcPtrOut.get(ValueLayout.ADDRESS, 0);
+        // Get the func ptr from instance export
+        final int getResult =
+            NATIVE_INSTANCE_BINDINGS.funcGet(
+                nativeInstance, store.getNativeStore(), nameSegment, funcPtrOut);
+        if (getResult != 0) {
+          throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+              "Failed to get function pointer for: " + functionName);
+        }
+        final MemorySegment funcPtr = funcPtrOut.get(ValueLayout.ADDRESS, 0);
 
-      try {
-        // Convert to raw funcref
-        return NATIVE_INSTANCE_BINDINGS.funcToRaw(funcPtr, store.getNativeStore());
-      } finally {
-        // Clean up the function handle
-        NATIVE_INSTANCE_BINDINGS.funcDestroy(funcPtr);
+        try {
+          // Convert to raw funcref
+          return NATIVE_INSTANCE_BINDINGS.funcToRaw(funcPtr, store.getNativeStore());
+        } finally {
+          // Clean up the function handle
+          NATIVE_INSTANCE_BINDINGS.funcDestroy(funcPtr);
+        }
       }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 }

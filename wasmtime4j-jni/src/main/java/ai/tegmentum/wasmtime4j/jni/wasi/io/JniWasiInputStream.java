@@ -72,58 +72,73 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
   @Override
   public byte[] read(final long length) throws WasmException {
     Validation.requirePositive(length, "length");
-    ensureNotClosed();
-
-    final byte[] result = nativeRead(contextHandle, nativeHandle, length);
-    if (result == null) {
-      throw new WasmException("Native read returned null");
+    beginOperation();
+    try {
+      final byte[] result = nativeRead(contextHandle, nativeHandle, length);
+      if (result == null) {
+        throw new WasmException("Native read returned null");
+      }
+      lastAccessedAt = java.time.Instant.now();
+      return result;
+    } finally {
+      endOperation();
     }
-    lastAccessedAt = java.time.Instant.now();
-    return result;
   }
 
   @Override
   public byte[] blockingRead(final long length) throws WasmException {
     Validation.requirePositive(length, "length");
-    ensureNotClosed();
-
-    final byte[] result = nativeBlockingRead(contextHandle, nativeHandle, length);
-    if (result == null) {
-      throw new WasmException("Native blocking read returned null");
+    beginOperation();
+    try {
+      final byte[] result = nativeBlockingRead(contextHandle, nativeHandle, length);
+      if (result == null) {
+        throw new WasmException("Native blocking read returned null");
+      }
+      lastAccessedAt = java.time.Instant.now();
+      return result;
+    } finally {
+      endOperation();
     }
-    lastAccessedAt = java.time.Instant.now();
-    return result;
   }
 
   @Override
   public long skip(final long length) throws WasmException {
     Validation.requirePositive(length, "length");
-    ensureNotClosed();
-
-    final long skipped = nativeSkip(contextHandle, nativeHandle, length);
-    lastAccessedAt = java.time.Instant.now();
-    return skipped;
+    beginOperation();
+    try {
+      final long skipped = nativeSkip(contextHandle, nativeHandle, length);
+      lastAccessedAt = java.time.Instant.now();
+      return skipped;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long blockingSkip(final long length) throws WasmException {
     Validation.requirePositive(length, "length");
-    ensureNotClosed();
-
-    // Note: Current native implementation doesn't have separate blocking skip
-    // so we use the same as skip for now
-    return nativeSkip(contextHandle, nativeHandle, length);
+    beginOperation();
+    try {
+      // Note: Current native implementation doesn't have separate blocking skip
+      // so we use the same as skip for now
+      return nativeSkip(contextHandle, nativeHandle, length);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public WasiPollable subscribe() throws WasmException {
-    ensureNotClosed();
-
-    final long pollableHandle = nativeSubscribe(contextHandle, nativeHandle);
-    if (pollableHandle == 0) {
-      throw new WasmException("Failed to create pollable for input stream");
+    beginOperation();
+    try {
+      final long pollableHandle = nativeSubscribe(contextHandle, nativeHandle);
+      if (pollableHandle == 0) {
+        throw new WasmException("Failed to create pollable for input stream");
+      }
+      return new JniWasiPollable(contextHandle, pollableHandle);
+    } finally {
+      endOperation();
     }
-    return new JniWasiPollable(contextHandle, pollableHandle);
   }
 
   public long getId() {
@@ -158,38 +173,41 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      switch (operation) {
+        case "read":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("read requires a length parameter");
+          }
+          return read(((Number) parameters[0]).longValue());
 
-    switch (operation) {
-      case "read":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("read requires a length parameter");
-        }
-        return read(((Number) parameters[0]).longValue());
+        case "blocking-read":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("blocking-read requires a length parameter");
+          }
+          return blockingRead(((Number) parameters[0]).longValue());
 
-      case "blocking-read":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("blocking-read requires a length parameter");
-        }
-        return blockingRead(((Number) parameters[0]).longValue());
+        case "skip":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("skip requires a length parameter");
+          }
+          return skip(((Number) parameters[0]).longValue());
 
-      case "skip":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("skip requires a length parameter");
-        }
-        return skip(((Number) parameters[0]).longValue());
+        case "blocking-skip":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("blocking-skip requires a length parameter");
+          }
+          return blockingSkip(((Number) parameters[0]).longValue());
 
-      case "blocking-skip":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("blocking-skip requires a length parameter");
-        }
-        return blockingSkip(((Number) parameters[0]).longValue());
+        case "subscribe":
+          return subscribe();
 
-      case "subscribe":
-        return subscribe();
-
-      default:
-        throw new WasmException("Unknown operation: " + operation);
+        default:
+          throw new WasmException("Unknown operation: " + operation);
+      }
+    } finally {
+      endOperation();
     }
   }
 

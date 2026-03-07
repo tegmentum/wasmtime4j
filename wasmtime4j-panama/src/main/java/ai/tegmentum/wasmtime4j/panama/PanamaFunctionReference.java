@@ -272,17 +272,21 @@ public final class PanamaFunctionReference implements FunctionReference {
 
   @Override
   public WasmValue[] call(final WasmValue... params) throws WasmException {
-    ensureNotClosed();
-    Objects.requireNonNull(params, "Parameters cannot be null");
+    resourceHandle.beginOperation();
+    try {
+      Objects.requireNonNull(params, "Parameters cannot be null");
 
-    if (hostFunction != null) {
-      // Direct call to host function
-      return hostFunction.execute(params);
-    } else if (wasmFunction != null) {
-      // Delegate to WebAssembly function
-      return wasmFunction.call(params);
-    } else {
-      throw new WasmException("Function reference has no associated function");
+      if (hostFunction != null) {
+        // Direct call to host function
+        return hostFunction.execute(params);
+      } else if (wasmFunction != null) {
+        // Delegate to WebAssembly function
+        return wasmFunction.call(params);
+      } else {
+        throw new WasmException("Function reference has no associated function");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -867,15 +871,6 @@ public final class PanamaFunctionReference implements FunctionReference {
   }
 
   /**
-   * Ensures the function reference is not closed.
-   *
-   * @throws WasmException if the function reference has been closed
-   */
-  private void ensureNotClosed() throws WasmException {
-    resourceHandle.ensureNotClosed();
-  }
-
-  /**
    * Gets the current registry statistics for debugging.
    *
    * @return array containing [count, nextId]
@@ -1207,13 +1202,17 @@ public final class PanamaFunctionReference implements FunctionReference {
 
   @Override
   public String toString() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return "PanamaFunctionReference{name='" + functionName + "', closed=true}";
     }
+    try {
 
-    final String type = isHostFunction() ? "host" : (isWasmFunction() ? "wasm" : "unknown");
-    return String.format(
-        "PanamaFunctionReference{name='%s', type=%s, functionType=%s, id=%d, nativeId=%d}",
-        functionName, type, functionType, functionReferenceId, nativeRegistryId);
+      final String type = isHostFunction() ? "host" : (isWasmFunction() ? "wasm" : "unknown");
+      return String.format(
+          "PanamaFunctionReference{name='%s', type=%s, functionType=%s, id=%d, nativeId=%d}",
+          functionName, type, functionType, functionReferenceId, nativeRegistryId);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 }

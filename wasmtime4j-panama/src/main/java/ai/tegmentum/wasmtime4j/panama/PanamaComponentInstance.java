@@ -169,119 +169,123 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public Object invoke(final String functionName, final Object... args) throws WasmException {
     Objects.requireNonNull(functionName, "functionName cannot be null");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (var arena = Arena.ofConfined()) {
-      // Allocate C string for function name
-      final MemorySegment funcNameSegment = arena.allocateFrom(functionName);
+      try (var arena = Arena.ofConfined()) {
+        // Allocate C string for function name
+        final MemorySegment funcNameSegment = arena.allocateFrom(functionName);
 
-      // Marshal parameters
-      final MemorySegment paramsPtr;
-      final int paramsCount;
+        // Marshal parameters
+        final MemorySegment paramsPtr;
+        final int paramsCount;
 
-      if (args != null && args.length > 0) {
-        // Convert arguments to WIT values and marshal
-        final List<MarshalledValue> marshalledParams = new ArrayList<>(args.length);
+        if (args != null && args.length > 0) {
+          // Convert arguments to WIT values and marshal
+          final List<MarshalledValue> marshalledParams = new ArrayList<>(args.length);
 
-        for (final Object arg : args) {
-          final WitValue witValue = convertToWitValue(arg);
-          final MarshalledValue marshalled = PanamaWitValueMarshaller.marshal(witValue, arena);
-          marshalledParams.add(marshalled);
+          for (final Object arg : args) {
+            final WitValue witValue = convertToWitValue(arg);
+            final MarshalledValue marshalled = PanamaWitValueMarshaller.marshal(witValue, arena);
+            marshalledParams.add(marshalled);
+          }
+
+          // Allocate WitValueFFI array
+          final int ffiStructSize = 16; // sizeof(WitValueFFI): i32 + i32 + ptr (8 bytes on 64-bit)
+          paramsPtr = arena.allocate(ffiStructSize * marshalledParams.size());
+
+          // Fill WitValueFFI structures
+          for (int i = 0; i < marshalledParams.size(); i++) {
+            final MarshalledValue marshalled = marshalledParams.get(i);
+            final long offset = (long) i * ffiStructSize;
+
+            // WitValueFFI { type_discriminator: i32, data_length: i32, data_ptr: *const u8 }
+            paramsPtr.set(ValueLayout.JAVA_INT, offset, marshalled.getTypeDiscriminator());
+            paramsPtr.set(ValueLayout.JAVA_INT, offset + 4, marshalled.getData().length);
+
+            // Allocate and copy data
+            final MemorySegment dataSegment =
+                arena.allocateFrom(ValueLayout.JAVA_BYTE, marshalled.getData());
+            paramsPtr.set(ValueLayout.ADDRESS, offset + 8, dataSegment);
+          }
+
+          paramsCount = marshalledParams.size();
+        } else {
+          paramsPtr = MemorySegment.NULL;
+          paramsCount = 0;
         }
 
-        // Allocate WitValueFFI array
-        final int ffiStructSize = 16; // sizeof(WitValueFFI): i32 + i32 + ptr (8 bytes on 64-bit)
-        paramsPtr = arena.allocate(ffiStructSize * marshalledParams.size());
+        // Allocate output parameters
+        final MemorySegment resultsOut = arena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment resultsCountOut = arena.allocate(ValueLayout.JAVA_INT);
 
-        // Fill WitValueFFI structures
-        for (int i = 0; i < marshalledParams.size(); i++) {
-          final MarshalledValue marshalled = marshalledParams.get(i);
+        // Call enhanced component invoke with instance ID
+        final int errorCode =
+            NATIVE_BINDINGS.enhancedComponentInvoke(
+                enhancedEngineHandle,
+                instanceId,
+                funcNameSegment,
+                paramsPtr,
+                paramsCount,
+                resultsOut,
+                resultsCountOut);
+
+        if (errorCode != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              errorCode, "Failed to invoke component function '" + functionName + "'");
+        }
+
+        // Unmarshal results
+        final int resultCount = resultsCountOut.get(ValueLayout.JAVA_INT, 0);
+
+        if (resultCount == 0) {
+          return null;
+        }
+
+        final MemorySegment resultsArrayPtr = resultsOut.get(ValueLayout.ADDRESS, 0);
+
+        if (resultsArrayPtr == null || resultsArrayPtr.equals(MemorySegment.NULL)) {
+          return null;
+        }
+
+        // Read WitValueFFI results
+        final int ffiStructSize = 16; // sizeof(WitValueFFI): i32 + i32 + ptr (8 bytes on 64-bit)
+        final MemorySegment resultsArrayWithSize =
+            resultsArrayPtr.reinterpret(ffiStructSize * resultCount);
+        final List<Object> results = new ArrayList<>(resultCount);
+
+        for (int i = 0; i < resultCount; i++) {
           final long offset = (long) i * ffiStructSize;
 
-          // WitValueFFI { type_discriminator: i32, data_length: i32, data_ptr: *const u8 }
-          paramsPtr.set(ValueLayout.JAVA_INT, offset, marshalled.getTypeDiscriminator());
-          paramsPtr.set(ValueLayout.JAVA_INT, offset + 4, marshalled.getData().length);
+          final int typeDiscriminator = resultsArrayWithSize.get(ValueLayout.JAVA_INT, offset);
+          final int dataLength = resultsArrayWithSize.get(ValueLayout.JAVA_INT, offset + 4);
+          final MemorySegment dataPtr = resultsArrayWithSize.get(ValueLayout.ADDRESS, offset + 8);
 
-          // Allocate and copy data
-          final MemorySegment dataSegment =
-              arena.allocateFrom(ValueLayout.JAVA_BYTE, marshalled.getData());
-          paramsPtr.set(ValueLayout.ADDRESS, offset + 8, dataSegment);
+          // Reinterpret pointer with correct size
+          final MemorySegment dataPtrWithSize = dataPtr.reinterpret(dataLength);
+
+          // Copy data from native memory
+          final byte[] data = new byte[dataLength];
+          MemorySegment.copy(dataPtrWithSize, ValueLayout.JAVA_BYTE, 0, data, 0, dataLength);
+
+          // Unmarshal using PanamaWitValueMarshaller
+          final WitValue witValue =
+              PanamaWitValueMarshaller.unmarshal(typeDiscriminator, data, arena);
+          results.add(witValue.toJava());
         }
 
-        paramsCount = marshalledParams.size();
-      } else {
-        paramsPtr = MemorySegment.NULL;
-        paramsCount = 0;
+        // Return single result or list based on count
+        if (resultCount == 1) {
+          return results.get(0);
+        } else {
+          return results;
+        }
+
+      } catch (final ValidationException e) {
+        throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
       }
-
-      // Allocate output parameters
-      final MemorySegment resultsOut = arena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment resultsCountOut = arena.allocate(ValueLayout.JAVA_INT);
-
-      // Call enhanced component invoke with instance ID
-      final int errorCode =
-          NATIVE_BINDINGS.enhancedComponentInvoke(
-              enhancedEngineHandle,
-              instanceId,
-              funcNameSegment,
-              paramsPtr,
-              paramsCount,
-              resultsOut,
-              resultsCountOut);
-
-      if (errorCode != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            errorCode, "Failed to invoke component function '" + functionName + "'");
-      }
-
-      // Unmarshal results
-      final int resultCount = resultsCountOut.get(ValueLayout.JAVA_INT, 0);
-
-      if (resultCount == 0) {
-        return null;
-      }
-
-      final MemorySegment resultsArrayPtr = resultsOut.get(ValueLayout.ADDRESS, 0);
-
-      if (resultsArrayPtr == null || resultsArrayPtr.equals(MemorySegment.NULL)) {
-        return null;
-      }
-
-      // Read WitValueFFI results
-      final int ffiStructSize = 16; // sizeof(WitValueFFI): i32 + i32 + ptr (8 bytes on 64-bit)
-      final MemorySegment resultsArrayWithSize =
-          resultsArrayPtr.reinterpret(ffiStructSize * resultCount);
-      final List<Object> results = new ArrayList<>(resultCount);
-
-      for (int i = 0; i < resultCount; i++) {
-        final long offset = (long) i * ffiStructSize;
-
-        final int typeDiscriminator = resultsArrayWithSize.get(ValueLayout.JAVA_INT, offset);
-        final int dataLength = resultsArrayWithSize.get(ValueLayout.JAVA_INT, offset + 4);
-        final MemorySegment dataPtr = resultsArrayWithSize.get(ValueLayout.ADDRESS, offset + 8);
-
-        // Reinterpret pointer with correct size
-        final MemorySegment dataPtrWithSize = dataPtr.reinterpret(dataLength);
-
-        // Copy data from native memory
-        final byte[] data = new byte[dataLength];
-        MemorySegment.copy(dataPtrWithSize, ValueLayout.JAVA_BYTE, 0, data, 0, dataLength);
-
-        // Unmarshal using PanamaWitValueMarshaller
-        final WitValue witValue =
-            PanamaWitValueMarshaller.unmarshal(typeDiscriminator, data, arena);
-        results.add(witValue.toJava());
-      }
-
-      // Return single result or list based on count
-      if (resultCount == 1) {
-        return results.get(0);
-      } else {
-        return results;
-      }
-
-    } catch (final ValidationException e) {
-      throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -352,13 +356,17 @@ final class PanamaComponentInstance implements ComponentInstance {
   @Override
   public boolean hasFunction(final String functionName) {
     Objects.requireNonNull(functionName, "functionName cannot be null");
-    ensureNotClosed();
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment nameSegment = arena.allocateFrom(functionName);
-      final int result =
-          NATIVE_BINDINGS.enhancedComponentInstanceHasFunc(
-              enhancedEngineHandle, instanceId, nameSegment);
-      return result == 1;
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena arena = Arena.ofConfined()) {
+        final MemorySegment nameSegment = arena.allocateFrom(functionName);
+        final int result =
+            NATIVE_BINDINGS.enhancedComponentInstanceHasFunc(
+                enhancedEngineHandle, instanceId, nameSegment);
+        return result == 1;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -368,119 +376,135 @@ final class PanamaComponentInstance implements ComponentInstance {
     if (calls == null || calls.isEmpty()) {
       throw new IllegalArgumentException("calls cannot be null or empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final String jsonInput = ConcurrentCallCodec.serializeCalls(calls);
-    final byte[] jsonBytes = jsonInput.getBytes(StandardCharsets.UTF_8);
+      final String jsonInput = ConcurrentCallCodec.serializeCalls(calls);
+      final byte[] jsonBytes = jsonInput.getBytes(StandardCharsets.UTF_8);
 
-    try (final Arena arena = Arena.ofConfined()) {
-      // Allocate input JSON bytes
-      final MemorySegment jsonSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, jsonBytes);
+      try (final Arena arena = Arena.ofConfined()) {
+        // Allocate input JSON bytes
+        final MemorySegment jsonSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, jsonBytes);
 
-      // Allocate output parameters
-      final MemorySegment resultPtrOut = arena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment resultLenOut = arena.allocate(ValueLayout.JAVA_LONG);
+        // Allocate output parameters
+        final MemorySegment resultPtrOut = arena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment resultLenOut = arena.allocate(ValueLayout.JAVA_LONG);
 
-      final int errorCode =
-          NATIVE_BINDINGS.enhancedComponentRunConcurrent(
-              enhancedEngineHandle,
-              instanceId,
-              jsonSegment,
-              jsonBytes.length,
-              resultPtrOut,
-              resultLenOut);
+        final int errorCode =
+            NATIVE_BINDINGS.enhancedComponentRunConcurrent(
+                enhancedEngineHandle,
+                instanceId,
+                jsonSegment,
+                jsonBytes.length,
+                resultPtrOut,
+                resultLenOut);
 
-      // Read result pointer and length
-      final MemorySegment resultPtr = resultPtrOut.get(ValueLayout.ADDRESS, 0);
-      final long resultLen = resultLenOut.get(ValueLayout.JAVA_LONG, 0);
+        // Read result pointer and length
+        final MemorySegment resultPtr = resultPtrOut.get(ValueLayout.ADDRESS, 0);
+        final long resultLen = resultLenOut.get(ValueLayout.JAVA_LONG, 0);
 
-      try {
-        if (errorCode != 0) {
-          // On error, the result buffer contains an error message
-          if (resultPtr != null && !resultPtr.equals(MemorySegment.NULL) && resultLen > 0) {
-            final MemorySegment resultWithSize = resultPtr.reinterpret(resultLen);
-            final byte[] errorBytes = new byte[(int) resultLen];
-            MemorySegment.copy(
-                resultWithSize, ValueLayout.JAVA_BYTE, 0, errorBytes, 0, (int) resultLen);
-            final String errorMsg = new String(errorBytes, StandardCharsets.UTF_8);
-            throw new WasmException("Concurrent call failed: " + errorMsg);
+        try {
+          if (errorCode != 0) {
+            // On error, the result buffer contains an error message
+            if (resultPtr != null && !resultPtr.equals(MemorySegment.NULL) && resultLen > 0) {
+              final MemorySegment resultWithSize = resultPtr.reinterpret(resultLen);
+              final byte[] errorBytes = new byte[(int) resultLen];
+              MemorySegment.copy(
+                  resultWithSize, ValueLayout.JAVA_BYTE, 0, errorBytes, 0, (int) resultLen);
+              final String errorMsg = new String(errorBytes, StandardCharsets.UTF_8);
+              throw new WasmException("Concurrent call failed: " + errorMsg);
+            }
+            throw new WasmException("Concurrent call failed with error code: " + errorCode);
           }
-          throw new WasmException("Concurrent call failed with error code: " + errorCode);
-        }
 
-        if (resultPtr == null || resultPtr.equals(MemorySegment.NULL) || resultLen == 0) {
-          throw new WasmException("Native concurrent call returned null result");
-        }
+          if (resultPtr == null || resultPtr.equals(MemorySegment.NULL) || resultLen == 0) {
+            throw new WasmException("Native concurrent call returned null result");
+          }
 
-        // Read result JSON
-        final MemorySegment resultWithSize = resultPtr.reinterpret(resultLen);
-        final byte[] resultBytes = new byte[(int) resultLen];
-        MemorySegment.copy(
-            resultWithSize, ValueLayout.JAVA_BYTE, 0, resultBytes, 0, (int) resultLen);
-        final String jsonResult = new String(resultBytes, StandardCharsets.UTF_8);
+          // Read result JSON
+          final MemorySegment resultWithSize = resultPtr.reinterpret(resultLen);
+          final byte[] resultBytes = new byte[(int) resultLen];
+          MemorySegment.copy(
+              resultWithSize, ValueLayout.JAVA_BYTE, 0, resultBytes, 0, (int) resultLen);
+          final String jsonResult = new String(resultBytes, StandardCharsets.UTF_8);
 
-        return ConcurrentCallCodec.deserializeResults(jsonResult);
-      } finally {
-        // Always free the result buffer
-        if (resultPtr != null && !resultPtr.equals(MemorySegment.NULL) && resultLen > 0) {
-          NATIVE_BINDINGS.freeConcurrentResult(resultPtr, resultLen);
+          return ConcurrentCallCodec.deserializeResults(jsonResult);
+        } finally {
+          // Always free the result buffer
+          if (resultPtr != null && !resultPtr.equals(MemorySegment.NULL) && resultLen > 0) {
+            NATIVE_BINDINGS.freeConcurrentResult(resultPtr, resultLen);
+          }
         }
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Concurrent call execution failed: " + e.getMessage(), e);
       }
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Concurrent call execution failed: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public boolean hasResource(final String resourceName) throws WasmException {
     Objects.requireNonNull(resourceName, "resourceName cannot be null");
-    ensureNotClosed();
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment nameSegment = arena.allocateFrom(resourceName);
-      final int result =
-          NATIVE_BINDINGS.enhancedComponentInstanceHasResource(
-              enhancedEngineHandle, instanceId, nameSegment);
-      return result == 1;
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena arena = Arena.ofConfined()) {
+        final MemorySegment nameSegment = arena.allocateFrom(resourceName);
+        final int result =
+            NATIVE_BINDINGS.enhancedComponentInstanceHasResource(
+                enhancedEngineHandle, instanceId, nameSegment);
+        return result == 1;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public Optional<Module> getModule(final String moduleName) throws WasmException {
     Objects.requireNonNull(moduleName, "moduleName cannot be null");
-    ensureNotClosed();
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment nameSegment = arena.allocateFrom(moduleName);
-      final MemorySegment moduleOut = arena.allocate(ValueLayout.ADDRESS);
-      final int result =
-          NATIVE_BINDINGS.enhancedComponentInstanceGetModule(
-              enhancedEngineHandle, instanceId, nameSegment, moduleOut);
-      if (result != 0) {
-        return Optional.empty();
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena arena = Arena.ofConfined()) {
+        final MemorySegment nameSegment = arena.allocateFrom(moduleName);
+        final MemorySegment moduleOut = arena.allocate(ValueLayout.ADDRESS);
+        final int result =
+            NATIVE_BINDINGS.enhancedComponentInstanceGetModule(
+                enhancedEngineHandle, instanceId, nameSegment, moduleOut);
+        if (result != 0) {
+          return Optional.empty();
+        }
+        final MemorySegment modulePtr = moduleOut.get(ValueLayout.ADDRESS, 0);
+        if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+          return Optional.empty();
+        }
+        return Optional.of(new PanamaModule(modulePtr));
+      } catch (final Exception e) {
+        throw new WasmException("Failed to get module '" + moduleName + "': " + e.getMessage(), e);
       }
-      final MemorySegment modulePtr = moduleOut.get(ValueLayout.ADDRESS, 0);
-      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
-        return Optional.empty();
-      }
-      return Optional.of(new PanamaModule(modulePtr));
-    } catch (final Exception e) {
-      throw new WasmException("Failed to get module '" + moduleName + "': " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public Optional<ComponentFunction> getFunc(final String functionName) throws WasmException {
     Objects.requireNonNull(functionName, "functionName cannot be null");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Check if the function exists in exported functions
-    final Set<String> exportedFunctions = getExportedFunctions();
-    if (exportedFunctions.contains(functionName)) {
-      return Optional.of(new PanamaComponentFunction(functionName, this));
+      // Check if the function exists in exported functions
+      final Set<String> exportedFunctions = getExportedFunctions();
+      if (exportedFunctions.contains(functionName)) {
+        return Optional.of(new PanamaComponentFunction(functionName, this));
+      }
+
+      return Optional.empty();
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    return Optional.empty();
   }
 
   @Override
@@ -489,19 +513,23 @@ final class PanamaComponentInstance implements ComponentInstance {
     if (exportIndex == null) {
       throw new IllegalArgumentException("exportIndex cannot be null");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MemorySegment indexPtr = MemorySegment.ofAddress(exportIndex.getNativeHandle());
-      final int found =
-          NATIVE_BINDINGS.enhancedComponentInstanceHasFuncByIndex(
-              enhancedEngineHandle, instanceId, indexPtr);
-      if (found != 1) {
-        return Optional.empty();
+
+      try {
+        final MemorySegment indexPtr = MemorySegment.ofAddress(exportIndex.getNativeHandle());
+        final int found =
+            NATIVE_BINDINGS.enhancedComponentInstanceHasFuncByIndex(
+                enhancedEngineHandle, instanceId, indexPtr);
+        if (found != 1) {
+          return Optional.empty();
+        }
+        return Optional.of(new PanamaComponentFunction("__indexed_export__", this));
+      } catch (final Exception e) {
+        throw new WasmException("Failed to get function by export index", e);
       }
-      return Optional.of(new PanamaComponentFunction("__indexed_export__", this));
-    } catch (final Exception e) {
-      throw new WasmException("Failed to get function by export index", e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -517,97 +545,105 @@ final class PanamaComponentInstance implements ComponentInstance {
     if (name == null || name.isEmpty()) {
       throw new IllegalArgumentException("name cannot be null or empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena arena = Arena.ofConfined()) {
-      final byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
-      final MemorySegment nameSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
-      final MemorySegment outIndexPtr = arena.allocate(ValueLayout.ADDRESS);
+      try (final Arena arena = Arena.ofConfined()) {
+        final byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
+        final MemorySegment nameSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, nameBytes);
+        final MemorySegment outIndexPtr = arena.allocate(ValueLayout.ADDRESS);
 
-      final MemorySegment parentPtr =
-          (parentIndex != null)
-              ? MemorySegment.ofAddress(parentIndex.getNativeHandle())
-              : MemorySegment.NULL;
+        final MemorySegment parentPtr =
+            (parentIndex != null)
+                ? MemorySegment.ofAddress(parentIndex.getNativeHandle())
+                : MemorySegment.NULL;
 
-      final int kindCode =
-          NATIVE_BINDINGS.enhancedComponentInstanceGetExport(
-              enhancedEngineHandle,
-              instanceId,
-              parentPtr,
-              nameSegment,
-              nameBytes.length,
-              outIndexPtr);
+        final int kindCode =
+            NATIVE_BINDINGS.enhancedComponentInstanceGetExport(
+                enhancedEngineHandle,
+                instanceId,
+                parentPtr,
+                nameSegment,
+                nameBytes.length,
+                outIndexPtr);
 
-      if (kindCode == -1) {
-        return Optional.empty();
+        if (kindCode == -1) {
+          return Optional.empty();
+        }
+        if (kindCode == -2) {
+          throw new WasmException("Native error looking up export: " + name);
+        }
+
+        final MemorySegment indexPtr = outIndexPtr.get(ValueLayout.ADDRESS, 0);
+        final ai.tegmentum.wasmtime4j.component.ComponentItemKind kind =
+            ai.tegmentum.wasmtime4j.component.ComponentExportItem.kindFromCode(kindCode);
+        final ComponentExportIndex exportIndex = new PanamaComponentExportIndex(indexPtr);
+        return Optional.of(
+            new ai.tegmentum.wasmtime4j.component.ComponentExportItem(kind, exportIndex));
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Failed to get export: " + name, e);
       }
-      if (kindCode == -2) {
-        throw new WasmException("Native error looking up export: " + name);
-      }
-
-      final MemorySegment indexPtr = outIndexPtr.get(ValueLayout.ADDRESS, 0);
-      final ai.tegmentum.wasmtime4j.component.ComponentItemKind kind =
-          ai.tegmentum.wasmtime4j.component.ComponentExportItem.kindFromCode(kindCode);
-      final ComponentExportIndex exportIndex = new PanamaComponentExportIndex(indexPtr);
-      return Optional.of(
-          new ai.tegmentum.wasmtime4j.component.ComponentExportItem(kind, exportIndex));
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Failed to get export: " + name, e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public Set<String> getExportedFunctions() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (var arena = java.lang.foreign.Arena.ofConfined()) {
-      // Allocate output parameters
-      final MemorySegment functionsOut = arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
-      final MemorySegment countOut = arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+      try (var arena = java.lang.foreign.Arena.ofConfined()) {
+        // Allocate output parameters
+        final MemorySegment functionsOut = arena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+        final MemorySegment countOut = arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
 
-      // Call enhanced component get exports with instance ID
-      final int errorCode =
-          NATIVE_BINDINGS.enhancedComponentGetExports(
-              enhancedEngineHandle, instanceId, functionsOut, countOut);
+        // Call enhanced component get exports with instance ID
+        final int errorCode =
+            NATIVE_BINDINGS.enhancedComponentGetExports(
+                enhancedEngineHandle, instanceId, functionsOut, countOut);
 
-      if (errorCode != 0) {
+        if (errorCode != 0) {
+          // If we can't get exports, return empty set
+          return Set.of();
+        }
+
+        // Read the count
+        final int count = countOut.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+
+        if (count == 0) {
+          return Set.of();
+        }
+
+        // Read the array of string pointers
+        final MemorySegment stringsPtr = functionsOut.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
+
+        if (stringsPtr == null || stringsPtr.equals(MemorySegment.NULL)) {
+          return Set.of();
+        }
+
+        // Extract function names
+        final Set<String> functionNames = new java.util.HashSet<>();
+        for (int i = 0; i < count; i++) {
+          final MemorySegment strPtr =
+              stringsPtr.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
+          if (strPtr != null && !strPtr.equals(MemorySegment.NULL)) {
+            functionNames.add(strPtr.getString(0));
+          }
+        }
+
+        // Free the string array
+        NATIVE_BINDINGS.componentFreeStringArray(stringsPtr, count);
+
+        return functionNames;
+      } catch (final Exception e) {
         // If we can't get exports, return empty set
         return Set.of();
       }
-
-      // Read the count
-      final int count = countOut.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
-
-      if (count == 0) {
-        return Set.of();
-      }
-
-      // Read the array of string pointers
-      final MemorySegment stringsPtr = functionsOut.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
-
-      if (stringsPtr == null || stringsPtr.equals(MemorySegment.NULL)) {
-        return Set.of();
-      }
-
-      // Extract function names
-      final Set<String> functionNames = new java.util.HashSet<>();
-      for (int i = 0; i < count; i++) {
-        final MemorySegment strPtr =
-            stringsPtr.getAtIndex(java.lang.foreign.ValueLayout.ADDRESS, i);
-        if (strPtr != null && !strPtr.equals(MemorySegment.NULL)) {
-          functionNames.add(strPtr.getString(0));
-        }
-      }
-
-      // Free the string array
-      NATIVE_BINDINGS.componentFreeStringArray(stringsPtr, count);
-
-      return functionNames;
-    } catch (final Exception e) {
-      // If we can't get exports, return empty set
-      return Set.of();
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -654,9 +690,5 @@ final class PanamaComponentInstance implements ComponentInstance {
    */
   PanamaStore getStore() {
     return store;
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

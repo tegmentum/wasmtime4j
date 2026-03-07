@@ -70,14 +70,22 @@ public final class JniWasiPollable extends JniResource implements WasiPollable {
 
   @Override
   public void block() throws WasmException {
-    ensureNotClosed();
-    nativeBlock(contextHandle, nativeHandle);
+    beginOperation();
+    try {
+      nativeBlock(contextHandle, nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean ready() throws WasmException {
-    ensureNotClosed();
-    return nativeReady(contextHandle, nativeHandle);
+    beginOperation();
+    try {
+      return nativeReady(contextHandle, nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override

@@ -223,16 +223,23 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
   @Override
   public HandlingResult handle(final Throwable exception) {
-    if (resourceHandle.isClosed() || !enabled.get()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return HandlingResult.NOT_HANDLED;
     }
+    try {
+      if (!enabled.get()) {
+        return HandlingResult.NOT_HANDLED;
+      }
 
-    if (exception == null) {
-      return HandlingResult.NOT_HANDLED;
+      if (exception == null) {
+        return HandlingResult.NOT_HANDLED;
+      }
+
+      LOGGER.fine("Handling exception: " + exception.getClass().getName());
+      return HandlingResult.HANDLED;
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    LOGGER.fine("Handling exception: " + exception.getClass().getName());
-    return HandlingResult.HANDLED;
   }
 
   @Override
@@ -260,40 +267,44 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
     Validation.requireNonNull(name, "Exception tag name");
     Validation.requireNonNull(parameterTypes, "Parameter types");
     Validation.requireNonBlank(name, "Exception tag name");
-    ensureNotClosed();
-
-    if (tagsByName.containsKey(name)) {
-      throw new IllegalArgumentException("Exception tag already exists: " + name);
-    }
-
+    resourceHandle.beginOperation();
     try {
-      final MemorySegment nameSegment = arena.allocateFrom(name.trim());
 
-      final byte[] typesArray = new byte[parameterTypes.size()];
-      for (int i = 0; i < parameterTypes.size(); i++) {
-        typesArray[i] = (byte) parameterTypes.get(i).ordinal();
-      }
-      final MemorySegment typesSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, typesArray);
-
-      final long tagHandle =
-          (long)
-              CREATE_TAG.invoke(
-                  nativeHandle, nameSegment, typesSegment, (long) parameterTypes.size());
-
-      if (tagHandle == 0L) {
-        throw new RuntimeException("Failed to create native exception tag: " + name);
+      if (tagsByName.containsKey(name)) {
+        throw new IllegalArgumentException("Exception tag already exists: " + name);
       }
 
-      final ExceptionTag tag =
-          new DefaultExceptionTag(tagHandle, name, new ArrayList<>(parameterTypes), false);
+      try {
+        final MemorySegment nameSegment = arena.allocateFrom(name.trim());
 
-      tagsByName.put(name, tag);
-      tagsByHandle.put(tagHandle, tag);
+        final byte[] typesArray = new byte[parameterTypes.size()];
+        for (int i = 0; i < parameterTypes.size(); i++) {
+          typesArray[i] = (byte) parameterTypes.get(i).ordinal();
+        }
+        final MemorySegment typesSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, typesArray);
 
-      LOGGER.fine("Created exception tag '" + name + "' with handle: " + tagHandle);
-      return tag;
-    } catch (final Throwable e) {
-      throw new RuntimeException("Failed to create exception tag: " + name, e);
+        final long tagHandle =
+            (long)
+                CREATE_TAG.invoke(
+                    nativeHandle, nameSegment, typesSegment, (long) parameterTypes.size());
+
+        if (tagHandle == 0L) {
+          throw new RuntimeException("Failed to create native exception tag: " + name);
+        }
+
+        final ExceptionTag tag =
+            new DefaultExceptionTag(tagHandle, name, new ArrayList<>(parameterTypes), false);
+
+        tagsByName.put(name, tag);
+        tagsByHandle.put(tagHandle, tag);
+
+        LOGGER.fine("Created exception tag '" + name + "' with handle: " + tagHandle);
+        return tag;
+      } catch (final Throwable e) {
+        throw new RuntimeException("Failed to create exception tag: " + name, e);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -312,54 +323,63 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
   @Override
   public String captureStackTrace(final long tagHandle) {
-    ensureNotClosed();
-
-    if (tagHandle == 0L) {
-      return null;
-    }
-
-    if (!config.isStackTracesEnabled()) {
-      return null;
-    }
-
+    resourceHandle.beginOperation();
     try {
-      final MemorySegment traceSegment =
-          (MemorySegment) CAPTURE_STACK_TRACE.invoke(nativeHandle, tagHandle);
 
-      if (traceSegment == null || traceSegment.address() == 0L) {
+      if (tagHandle == 0L) {
         return null;
       }
 
-      final String trace = traceSegment.reinterpret(Long.MAX_VALUE).getString(0);
-      FREE_STRING.invoke(traceSegment);
+      if (!config.isStackTracesEnabled()) {
+        return null;
+      }
 
-      LOGGER.fine("Captured stack trace for tag handle: " + tagHandle);
-      return trace;
-    } catch (final Throwable e) {
-      LOGGER.warning("Failed to capture stack trace: " + e.getMessage());
-      return null;
+      try {
+        final MemorySegment traceSegment =
+            (MemorySegment) CAPTURE_STACK_TRACE.invoke(nativeHandle, tagHandle);
+
+        if (traceSegment == null || traceSegment.address() == 0L) {
+          return null;
+        }
+
+        final String trace = traceSegment.reinterpret(Long.MAX_VALUE).getString(0);
+        FREE_STRING.invoke(traceSegment);
+
+        LOGGER.fine("Captured stack trace for tag handle: " + tagHandle);
+        return trace;
+      } catch (final Throwable e) {
+        LOGGER.warning("Failed to capture stack trace: " + e.getMessage());
+        return null;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public boolean performUnwinding(final int currentDepth) {
-    ensureNotClosed();
-
-    if (currentDepth < 0) {
-      throw new IllegalArgumentException("Current depth cannot be negative");
-    }
-
-    if (!config.isExceptionUnwindingEnabled()) {
-      return false;
-    }
-
+    resourceHandle.beginOperation();
     try {
-      final boolean shouldContinue = (boolean) PERFORM_UNWINDING.invoke(nativeHandle, currentDepth);
-      LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
-      return shouldContinue;
-    } catch (final Throwable e) {
-      LOGGER.warning("Failed to perform unwinding: " + e.getMessage());
-      return false;
+
+      if (currentDepth < 0) {
+        throw new IllegalArgumentException("Current depth cannot be negative");
+      }
+
+      if (!config.isExceptionUnwindingEnabled()) {
+        return false;
+      }
+
+      try {
+        final boolean shouldContinue =
+            (boolean) PERFORM_UNWINDING.invoke(nativeHandle, currentDepth);
+        LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
+        return shouldContinue;
+      } catch (final Throwable e) {
+        LOGGER.warning("Failed to perform unwinding: " + e.getMessage());
+        return false;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -389,8 +409,12 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
    * @return the native handle
    */
   public MemorySegment getNativeHandle() {
-    ensureNotClosed();
-    return nativeHandle;
+    resourceHandle.beginOperation();
+    try {
+      return nativeHandle;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -400,9 +424,5 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
    */
   public boolean isClosed() {
     return resourceHandle.isClosed();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

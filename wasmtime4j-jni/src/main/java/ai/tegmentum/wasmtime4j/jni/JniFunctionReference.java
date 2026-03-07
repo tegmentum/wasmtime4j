@@ -250,17 +250,20 @@ public final class JniFunctionReference extends JniResource implements FunctionR
 
   @Override
   public WasmValue[] call(final WasmValue... params) throws WasmException {
-    ensureNotClosed();
-
-    if (hostFunction != null) {
-      // Direct call to host function
-      return hostFunction.execute(params);
-    } else if (wasmFunction != null) {
-      // Delegate to WebAssembly function
-      return wasmFunction.call(params);
-    } else {
-      // Call through native function reference
-      return callNative(params);
+    beginOperation();
+    try {
+      if (hostFunction != null) {
+        // Direct call to host function
+        return hostFunction.execute(params);
+      } else if (wasmFunction != null) {
+        // Delegate to WebAssembly function
+        return wasmFunction.call(params);
+      } else {
+        // Call through native function reference
+        return callNative(params);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -577,13 +580,17 @@ public final class JniFunctionReference extends JniResource implements FunctionR
 
   @Override
   public String toString() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return "JniFunctionReference{name='" + functionName + "', closed=true}";
     }
 
-    final String type = isHostFunction() ? "host" : (isWasmFunction() ? "wasm" : "native");
-    return String.format(
-        "JniFunctionReference{name='%s', type=%s, functionType=%s, id=%d, handle=0x%x}",
-        functionName, type, functionType, functionReferenceId, getNativeHandle());
+    try {
+      final String type = isHostFunction() ? "host" : (isWasmFunction() ? "wasm" : "native");
+      return String.format(
+          "JniFunctionReference{name='%s', type=%s, functionType=%s, id=%d, handle=0x%x}",
+          functionName, type, functionType, functionReferenceId, getNativeHandle());
+    } finally {
+      endOperation();
+    }
   }
 }

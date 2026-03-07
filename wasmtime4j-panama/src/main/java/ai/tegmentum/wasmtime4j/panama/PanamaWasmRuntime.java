@@ -131,29 +131,41 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public Engine createEngine() throws WasmException {
-    ensureNotClosed();
-    return new PanamaEngine(new EngineConfig(), this);
+    resourceHandle.beginOperation();
+    try {
+      return new PanamaEngine(new EngineConfig(), this);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public Engine createEngine(final EngineConfig config) throws WasmException {
     Validation.requireNonNull(config, "config");
-    ensureNotClosed();
-    return new PanamaEngine(config, this);
+    resourceHandle.beginOperation();
+    try {
+      return new PanamaEngine(config, this);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public Module compileModule(final Engine engine, final byte[] wasmBytes) throws WasmException {
     Validation.requireNonNull(engine, "engine");
     Validation.requireNonNull(wasmBytes, "wasmBytes");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      return engine.compileModule(wasmBytes);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    return engine.compileModule(wasmBytes);
   }
 
   @Override
@@ -170,36 +182,48 @@ public final class PanamaWasmRuntime implements WasmRuntime {
           "Engine must be a PanamaEngine instance for Panama runtime");
     }
 
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    return engine.compileWat(watText);
+      return engine.compileWat(watText);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public Store createStore(final Engine engine) throws WasmException {
     Validation.requireNonNull(engine, "engine");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      return engine.createStore();
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    return engine.createStore();
   }
 
   @Override
   public Store tryCreateStore(final Engine engine) throws WasmException {
     Validation.requireNonNull(engine, "engine");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
+      return panamaEngine.tryCreateStore();
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-    return panamaEngine.tryCreateStore();
   }
 
   @Override
@@ -221,80 +245,97 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       throw new IllegalArgumentException("Execution timeout cannot be negative");
     }
 
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
+      return new PanamaStore(panamaEngine, fuelLimit, memoryLimitBytes, executionTimeoutSeconds);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-    return new PanamaStore(panamaEngine, fuelLimit, memoryLimitBytes, executionTimeoutSeconds);
   }
 
   @Override
   public Store createStore(final Engine engine, final StoreLimits limits) throws WasmException {
     Validation.requireNonNull(engine, "engine");
     Validation.requireNonNull(limits, "limits");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
+      return new PanamaStore(panamaEngine, limits);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-    return new PanamaStore(panamaEngine, limits);
   }
 
   @Override
   public Tag createTag(final Store store, final TagType tagType) throws WasmException {
     Validation.requireNonNull(store, "store");
     Validation.requireNonNull(tagType, "tagType");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance for Panama runtime");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException(
+            "Store must be a PanamaStore instance for Panama runtime");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final java.lang.foreign.MemorySegment storeHandle = panamaStore.getNativeStore();
+      final FunctionType funcType = tagType.getFunctionType();
+
+      // Convert function type to native format
+      final WasmValueType[] funcParamTypes = funcType.getParamTypes();
+      final int[] paramTypes = new int[funcParamTypes.length];
+      for (int i = 0; i < funcParamTypes.length; i++) {
+        paramTypes[i] = funcParamTypes[i].toNativeTypeCode();
+      }
+
+      final WasmValueType[] funcReturnTypes = funcType.getReturnTypes();
+      final int[] returnTypes = new int[funcReturnTypes.length];
+      for (int i = 0; i < funcReturnTypes.length; i++) {
+        returnTypes[i] = funcReturnTypes[i].toNativeTypeCode();
+      }
+
+      final java.lang.foreign.MemorySegment tagPtr =
+          NativeInstanceBindings.getInstance().tagCreate(storeHandle, paramTypes, returnTypes);
+
+      if (tagPtr == null || tagPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+        throw new WasmException("Failed to create tag");
+      }
+
+      return new PanamaTag(tagPtr, storeHandle);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final java.lang.foreign.MemorySegment storeHandle = panamaStore.getNativeStore();
-    final FunctionType funcType = tagType.getFunctionType();
-
-    // Convert function type to native format
-    final WasmValueType[] funcParamTypes = funcType.getParamTypes();
-    final int[] paramTypes = new int[funcParamTypes.length];
-    for (int i = 0; i < funcParamTypes.length; i++) {
-      paramTypes[i] = funcParamTypes[i].toNativeTypeCode();
-    }
-
-    final WasmValueType[] funcReturnTypes = funcType.getReturnTypes();
-    final int[] returnTypes = new int[funcReturnTypes.length];
-    for (int i = 0; i < funcReturnTypes.length; i++) {
-      returnTypes[i] = funcReturnTypes[i].toNativeTypeCode();
-    }
-
-    final java.lang.foreign.MemorySegment tagPtr =
-        NativeInstanceBindings.getInstance().tagCreate(storeHandle, paramTypes, returnTypes);
-
-    if (tagPtr == null || tagPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
-      throw new WasmException("Failed to create tag");
-    }
-
-    return new PanamaTag(tagPtr, storeHandle);
   }
 
   @Override
   public <T> Linker<T> createLinker(final Engine engine) throws WasmException {
     Validation.requireNonNull(engine, "engine");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      return new PanamaLinker<>((PanamaEngine) engine);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    return new PanamaLinker<>((PanamaEngine) engine);
   }
 
   @Override
@@ -302,67 +343,83 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       final Engine engine, final boolean allowUnknownExports, final boolean allowShadowing)
       throws WasmException {
     Validation.requireNonNull(engine, "engine");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      final PanamaLinker<T> linker = new PanamaLinker<>((PanamaEngine) engine);
+      linker.allowUnknownExports(allowUnknownExports);
+      linker.allowShadowing(allowShadowing);
+      return linker;
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaLinker<T> linker = new PanamaLinker<>((PanamaEngine) engine);
-    linker.allowUnknownExports(allowUnknownExports);
-    linker.allowShadowing(allowShadowing);
-    return linker;
   }
 
   @Override
   public <T> ai.tegmentum.wasmtime4j.component.ComponentLinker<T> createComponentLinker(
       final Engine engine) throws WasmException {
     Validation.requireNonNull(engine, "engine");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      LOGGER.fine("Creating component linker for engine");
+      return new PanamaComponentLinker<>((PanamaEngine) engine);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    LOGGER.fine("Creating component linker for engine");
-    return new PanamaComponentLinker<>((PanamaEngine) engine);
   }
 
   @Override
   public Instance instantiate(final Module module) throws WasmException {
     Validation.requireNonNull(module, "module");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException(
-          "Module must be a PanamaModule instance for Panama runtime");
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException(
+            "Module must be a PanamaModule instance for Panama runtime");
+      }
+
+      final PanamaModule panamaModule = (PanamaModule) module;
+      final Engine engine = panamaModule.getEngine();
+      final Store store = createStore(engine);
+
+      return panamaModule.instantiate(store, ImportMap.empty());
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaModule panamaModule = (PanamaModule) module;
-    final Engine engine = panamaModule.getEngine();
-    final Store store = createStore(engine);
-
-    return panamaModule.instantiate(store, ImportMap.empty());
   }
 
   @Override
   public Instance instantiate(final Module module, final ImportMap imports) throws WasmException {
     Validation.requireNonNull(module, "module");
     Validation.requireNonNull(imports, "imports");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException(
-          "Module must be a PanamaModule instance for Panama runtime");
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException(
+            "Module must be a PanamaModule instance for Panama runtime");
+      }
+
+      final PanamaModule panamaModule = (PanamaModule) module;
+      final Engine engine = panamaModule.getEngine();
+      final Store store = createStore(engine);
+
+      return panamaModule.instantiate(store, imports);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaModule panamaModule = (PanamaModule) module;
-    final Engine engine = panamaModule.getEngine();
-    final Store store = createStore(engine);
-
-    return panamaModule.instantiate(store, imports);
   }
 
   @Override
@@ -374,10 +431,14 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public ComponentEngine createComponentEngine(final ComponentEngineConfig config)
       throws WasmException {
     Validation.requireNonNull(config, "config");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    LOGGER.fine("Creating component engine with config: " + config);
-    return new PanamaComponentEngine(config);
+      LOGGER.fine("Creating component engine with config: " + config);
+      return new PanamaComponentEngine(config);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -401,21 +462,28 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       final ai.tegmentum.wasmtime4j.Store store, final long raw)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     Validation.requireNonNull(store, "store");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance for Panama runtime");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException(
+            "Store must be a PanamaStore instance for Panama runtime");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
+      final MemorySegment funcHandle = bindings.funcFromRaw(panamaStore.getNativeStore(), raw);
+
+      if (funcHandle == null
+          || funcHandle.equals(MemorySegment.NULL)
+          || funcHandle.address() == 0) {
+        return null;
+      }
+
+      return new PanamaCallerFunction(funcHandle, panamaStore, "<from-raw>");
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final NativeInstanceBindings bindings = NativeInstanceBindings.getInstance();
-    final MemorySegment funcHandle = bindings.funcFromRaw(panamaStore.getNativeStore(), raw);
-
-    if (funcHandle == null || funcHandle.equals(MemorySegment.NULL) || funcHandle.address() == 0) {
-      return null;
-    }
-
-    return new PanamaCallerFunction(funcHandle, panamaStore, "<from-raw>");
   }
 
   @Override
@@ -423,54 +491,63 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       throws WasmException {
     Validation.requireNonNull(engine, "engine");
     Validation.requireNonNull(serializedBytes, "serializedBytes");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
-    }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-
-    try (Arena arena = Arena.ofConfined()) {
-      // Allocate output parameter for module pointer
-      final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
-
-      // Copy serialized bytes to native memory
-      final MemorySegment dataSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, serializedBytes);
-
-      // Call native deserialize
-      final int result =
-          NativeEngineBindings.getInstance()
-              .moduleDeserialize(
-                  panamaEngine.getNativeEngine(),
-                  dataSegment,
-                  serializedBytes.length,
-                  modulePtrPtr);
-
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Failed to deserialize module");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
       }
 
-      // Get the module pointer
-      final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
 
-      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Module deserialization returned null");
+      try (Arena arena = Arena.ofConfined()) {
+        // Allocate output parameter for module pointer
+        final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        // Copy serialized bytes to native memory
+        final MemorySegment dataSegment =
+            arena.allocateFrom(ValueLayout.JAVA_BYTE, serializedBytes);
+
+        // Call native deserialize
+        final int result =
+            NativeEngineBindings.getInstance()
+                .moduleDeserialize(
+                    panamaEngine.getNativeEngine(),
+                    dataSegment,
+                    serializedBytes.length,
+                    modulePtrPtr);
+
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(result, "Failed to deserialize module");
+        }
+
+        // Get the module pointer
+        final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Module deserialization returned null");
+        }
+
+        return new PanamaModule(panamaEngine, modulePtr);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Error deserializing module: " + e.getMessage(), e);
       }
-
-      return new PanamaModule(panamaEngine, modulePtr);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Error deserializing module: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public WasiContext createWasiContext() throws WasmException {
-    ensureNotClosed();
-    return new PanamaWasiContext();
+    resourceHandle.beginOperation();
+    try {
+      return new PanamaWasiContext();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -478,32 +555,37 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       throws WasmException {
     Validation.requireNonNull(linker, "linker");
     Validation.requireNonNull(context, "context");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Cast to Panama implementation to access enableWasi()
-    if (!(linker instanceof PanamaLinker)) {
-      throw new IllegalArgumentException("Linker must be a PanamaLinker instance");
+      // Cast to Panama implementation to access enableWasi()
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance");
+      }
+      if (!(context instanceof PanamaWasiContext)) {
+        throw new IllegalArgumentException("WasiContext must be a PanamaWasiContext instance");
+      }
+
+      @SuppressWarnings("unchecked")
+      final PanamaLinker<WasiContext> panamaLinker = (PanamaLinker<WasiContext>) linker;
+      final PanamaWasiContext panamaWasiContext = (PanamaWasiContext) context;
+
+      // Enable WASI on the linker - this adds all WASI imports
+      panamaLinker.enableWasi();
+
+      // Store the WASI context on the linker so it can be attached to the store during
+      // instantiation
+      panamaLinker.setWasiContext(panamaWasiContext);
+
+      // Track WASI imports for hasImport() checks
+      for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P1_IMPORTS) {
+        panamaLinker.addImport(entry[0], entry[1]);
+      }
+
+      LOGGER.fine("Added WASI imports to Panama linker");
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (!(context instanceof PanamaWasiContext)) {
-      throw new IllegalArgumentException("WasiContext must be a PanamaWasiContext instance");
-    }
-
-    @SuppressWarnings("unchecked")
-    final PanamaLinker<WasiContext> panamaLinker = (PanamaLinker<WasiContext>) linker;
-    final PanamaWasiContext panamaWasiContext = (PanamaWasiContext) context;
-
-    // Enable WASI on the linker - this adds all WASI imports
-    panamaLinker.enableWasi();
-
-    // Store the WASI context on the linker so it can be attached to the store during instantiation
-    panamaLinker.setWasiContext(panamaWasiContext);
-
-    // Track WASI imports for hasImport() checks
-    for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P1_IMPORTS) {
-      panamaLinker.addImport(entry[0], entry[1]);
-    }
-
-    LOGGER.fine("Added WASI imports to Panama linker");
   }
 
   @Override
@@ -511,68 +593,80 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       throws WasmException {
     Validation.requireNonNull(linker, "linker");
     Validation.requireNonNull(context, "context");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(linker instanceof PanamaLinker)) {
-      throw new IllegalArgumentException("Linker must be a PanamaLinker instance");
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance");
+      }
+      if (!(context instanceof PanamaWasiContext)) {
+        throw new IllegalArgumentException("Context must be a PanamaWasiContext instance");
+      }
+
+      final PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
+      final PanamaWasiContext panamaContext = (PanamaWasiContext) context;
+
+      // Enable WASI Preview 1 on the linker (which supports Preview 2 module patterns)
+      panamaLinker.enableWasi();
+
+      // Set the WASI context on the linker for use during instantiation
+      panamaLinker.setWasiContext(panamaContext);
+
+      // Track WASI Preview 2 imports for hasImport() checks
+      // Note: These are marker imports - full Preview 2 component model requires Component Linker
+      for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P2_IMPORTS) {
+        panamaLinker.addImport(entry[0], entry[1]);
+      }
+
+      LOGGER.fine("Added WASI Preview 2 support to linker");
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (!(context instanceof PanamaWasiContext)) {
-      throw new IllegalArgumentException("Context must be a PanamaWasiContext instance");
-    }
-
-    final PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
-    final PanamaWasiContext panamaContext = (PanamaWasiContext) context;
-
-    // Enable WASI Preview 1 on the linker (which supports Preview 2 module patterns)
-    panamaLinker.enableWasi();
-
-    // Set the WASI context on the linker for use during instantiation
-    panamaLinker.setWasiContext(panamaContext);
-
-    // Track WASI Preview 2 imports for hasImport() checks
-    // Note: These are marker imports - full Preview 2 component model requires Component Linker
-    for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P2_IMPORTS) {
-      panamaLinker.addImport(entry[0], entry[1]);
-    }
-
-    LOGGER.fine("Added WASI Preview 2 support to linker");
   }
 
   @Override
   public void addComponentModelToLinker(final Linker<WasiContext> linker) throws WasmException {
     Validation.requireNonNull(linker, "linker");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(linker instanceof PanamaLinker)) {
-      throw new IllegalArgumentException("Linker must be a PanamaLinker instance");
+      if (!(linker instanceof PanamaLinker)) {
+        throw new IllegalArgumentException("Linker must be a PanamaLinker instance");
+      }
+
+      // Component Model requires using Component Linker API, not the regular Linker
+      // For regular modules that want component-like features, enable WASI which provides
+      // the standard interface bindings
+      final PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
+      panamaLinker.enableWasi();
+
+      LOGGER.fine("Enabled Component Model compatible imports on linker");
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Component Model requires using Component Linker API, not the regular Linker
-    // For regular modules that want component-like features, enable WASI which provides
-    // the standard interface bindings
-    final PanamaLinker<?> panamaLinker = (PanamaLinker<?>) linker;
-    panamaLinker.enableWasi();
-
-    LOGGER.fine("Enabled Component Model compatible imports on linker");
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiLinker createWasiLinker(final Engine engine)
       throws WasmException {
     Validation.requireNonNull(engine, "engine");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException("Engine must be a PanamaEngine instance");
+      }
+
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
+
+      // Create a linker with WASI support
+      @SuppressWarnings("unchecked")
+      final PanamaLinker<Object> linker = new PanamaLinker<>(panamaEngine);
+
+      return new ai.tegmentum.wasmtime4j.panama.wasi.PanamaWasiLinker(linker, panamaEngine, null);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-
-    // Create a linker with WASI support
-    @SuppressWarnings("unchecked")
-    final PanamaLinker<Object> linker = new PanamaLinker<>(panamaEngine);
-
-    return new ai.tegmentum.wasmtime4j.panama.wasi.PanamaWasiLinker(linker, panamaEngine, null);
   }
 
   @Override
@@ -581,19 +675,23 @@ public final class PanamaWasmRuntime implements WasmRuntime {
       throws WasmException {
     Validation.requireNonNull(engine, "engine");
     Validation.requireNonNull(config, "config");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException("Engine must be a PanamaEngine instance");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException("Engine must be a PanamaEngine instance");
+      }
+
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
+
+      // Create a linker with WASI support and config
+      @SuppressWarnings("unchecked")
+      final PanamaLinker<Object> linker = new PanamaLinker<>(panamaEngine);
+
+      return new ai.tegmentum.wasmtime4j.panama.wasi.PanamaWasiLinker(linker, panamaEngine, config);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-
-    // Create a linker with WASI support and config
-    @SuppressWarnings("unchecked")
-    final PanamaLinker<Object> linker = new PanamaLinker<>(panamaEngine);
-
-    return new ai.tegmentum.wasmtime4j.panama.wasi.PanamaWasiLinker(linker, panamaEngine, config);
   }
 
   @Override
@@ -603,28 +701,32 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
   @Override
   public ai.tegmentum.wasmtime4j.gc.GcRuntime getGcRuntime() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (defaultGcRuntime != null) {
-      return defaultGcRuntime;
-    }
-
-    synchronized (gcRuntimeLock) {
       if (defaultGcRuntime != null) {
         return defaultGcRuntime;
       }
 
-      try {
-        final Engine engine = createEngine();
-        gcRuntimeEngine = engine;
-        final long engineHandle = ((PanamaEngine) engine).getNativeEngine().address();
-        defaultGcRuntime = new PanamaGcRuntime(engineHandle);
+      synchronized (gcRuntimeLock) {
+        if (defaultGcRuntime != null) {
+          return defaultGcRuntime;
+        }
 
-        LOGGER.fine("Initialized default GC runtime for Panama");
-        return defaultGcRuntime;
-      } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaException e) {
-        throw new WasmException("Failed to create Panama GC runtime", e);
+        try {
+          final Engine engine = createEngine();
+          gcRuntimeEngine = engine;
+          final long engineHandle = ((PanamaEngine) engine).getNativeEngine().address();
+          defaultGcRuntime = new PanamaGcRuntime(engineHandle);
+
+          LOGGER.fine("Initialized default GC runtime for Panama");
+          return defaultGcRuntime;
+        } catch (final ai.tegmentum.wasmtime4j.panama.exception.PanamaException e) {
+          throw new WasmException("Failed to create Panama GC runtime", e);
+        }
       }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -632,13 +734,17 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public Module deserializeModuleFile(final Engine engine, final Path path) throws WasmException {
     Validation.requireNonNull(engine, "engine");
     Validation.requireNonNull(path, "path");
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final byte[] serializedBytes = Files.readAllBytes(path);
-      return deserializeModule(engine, serializedBytes);
-    } catch (final IOException e) {
-      throw new WasmException("Failed to read serialized module file: " + path, e);
+
+      try {
+        final byte[] serializedBytes = Files.readAllBytes(path);
+        return deserializeModule(engine, serializedBytes);
+      } catch (final IOException e) {
+        throw new WasmException("Failed to read serialized module file: " + path, e);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -646,39 +752,43 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public Module moduleFromTrustedFile(final Engine engine, final Path path) throws WasmException {
     Validation.requireNonNull(engine, "engine");
     Validation.requireNonNull(path, "path");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
-    }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment pathStr = arena.allocateFrom(path.toString());
-
-      final int result =
-          NativeEngineBindings.getInstance()
-              .moduleFromTrustedFile(panamaEngine.getNativeEngine(), pathStr, modulePtrPtr);
-
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            result, "Failed to load module from trusted file: " + path);
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
       }
 
-      final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
 
-      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Module from trusted file returned null");
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment pathStr = arena.allocateFrom(path.toString());
+
+        final int result =
+            NativeEngineBindings.getInstance()
+                .moduleFromTrustedFile(panamaEngine.getNativeEngine(), pathStr, modulePtrPtr);
+
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              result, "Failed to load module from trusted file: " + path);
+        }
+
+        final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Module from trusted file returned null");
+        }
+
+        return new PanamaModule(panamaEngine, modulePtr);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Error loading module from trusted file: " + e.getMessage(), e);
       }
-
-      return new PanamaModule(panamaEngine, modulePtr);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Error loading module from trusted file: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -686,83 +796,91 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   public Module deserializeModuleRaw(final Engine engine, final byte[] bytes) throws WasmException {
     Validation.requireNonNull(engine, "engine");
     Validation.requireNonNull(bytes, "bytes");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
-    }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment dataSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, bytes);
-
-      final int result =
-          NativeEngineBindings.getInstance()
-              .moduleDeserializeRaw(
-                  panamaEngine.getNativeEngine(), dataSegment, bytes.length, modulePtrPtr);
-
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            result, "Failed to deserialize module from raw bytes");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
       }
 
-      final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
 
-      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Module raw deserialization returned null");
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment dataSegment = arena.allocateFrom(ValueLayout.JAVA_BYTE, bytes);
+
+        final int result =
+            NativeEngineBindings.getInstance()
+                .moduleDeserializeRaw(
+                    panamaEngine.getNativeEngine(), dataSegment, bytes.length, modulePtrPtr);
+
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              result, "Failed to deserialize module from raw bytes");
+        }
+
+        final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Module raw deserialization returned null");
+        }
+
+        return new PanamaModule(panamaEngine, modulePtr);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Error deserializing module from raw bytes: " + e.getMessage(), e);
       }
-
-      return new PanamaModule(panamaEngine, modulePtr);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Error deserializing module from raw bytes: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public Module deserializeModuleOpenFile(final Engine engine, final int fd) throws WasmException {
     Validation.requireNonNull(engine, "engine");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (fd < 0) {
-      throw new IllegalArgumentException("File descriptor must be non-negative");
-    }
-
-    if (!(engine instanceof PanamaEngine)) {
-      throw new IllegalArgumentException(
-          "Engine must be a PanamaEngine instance for Panama runtime");
-    }
-
-    final PanamaEngine panamaEngine = (PanamaEngine) engine;
-
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          NativeEngineBindings.getInstance()
-              .moduleDeserializeOpenFile(panamaEngine.getNativeEngine(), fd, modulePtrPtr);
-
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            result, "Failed to deserialize module from file descriptor: " + fd);
+      if (fd < 0) {
+        throw new IllegalArgumentException("File descriptor must be non-negative");
       }
 
-      final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
-
-      if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Module deserialization from file descriptor returned null");
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
       }
 
-      return new PanamaModule(panamaEngine, modulePtr);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException(
-          "Error deserializing module from file descriptor: " + e.getMessage(), e);
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
+
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment modulePtrPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            NativeEngineBindings.getInstance()
+                .moduleDeserializeOpenFile(panamaEngine.getNativeEngine(), fd, modulePtrPtr);
+
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              result, "Failed to deserialize module from file descriptor: " + fd);
+        }
+
+        final MemorySegment modulePtr = modulePtrPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (modulePtr == null || modulePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Module deserialization from file descriptor returned null");
+        }
+
+        return new PanamaModule(panamaEngine, modulePtr);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException(
+            "Error deserializing module from file descriptor: " + e.getMessage(), e);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -804,55 +922,67 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   @Override
   public ExnRef createExnRef(final Store store, final Tag tag, final WasmValue[] fields)
       throws WasmException {
-    ensureNotClosed();
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    resourceHandle.beginOperation();
+    try {
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
+      return PanamaExnRef.createExnRef((PanamaStore) store, tag, fields);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return PanamaExnRef.createExnRef((PanamaStore) store, tag, fields);
   }
 
   @Override
   public ExnRef exnRefFromRaw(final Store store, final long raw) throws WasmException {
-    ensureNotClosed();
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    resourceHandle.beginOperation();
+    try {
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
+      return PanamaExnRef.fromRawExnRef((PanamaStore) store, raw);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return PanamaExnRef.fromRawExnRef((PanamaStore) store, raw);
   }
 
   @Override
   public long externRefToRaw(final Store store, final long externRefId) throws WasmException {
-    ensureNotClosed();
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    resourceHandle.beginOperation();
+    try {
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final long result =
+          NativeInstanceBindings.getInstance()
+              .externRefToRaw(panamaStore.getNativeStore(), externRefId);
+      if (result == -1L) {
+        throw new WasmException("Failed to convert ExternRef to raw");
+      }
+      return result;
+    } finally {
+      resourceHandle.endOperation();
     }
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final long result =
-        NativeInstanceBindings.getInstance()
-            .externRefToRaw(panamaStore.getNativeStore(), externRefId);
-    if (result == -1L) {
-      throw new WasmException("Failed to convert ExternRef to raw");
-    }
-    return result;
   }
 
   @Override
   public long externRefFromRaw(final Store store, final long raw) throws WasmException {
-    ensureNotClosed();
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+    resourceHandle.beginOperation();
+    try {
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
+      final PanamaStore panamaStore = (PanamaStore) store;
+      return NativeInstanceBindings.getInstance()
+          .externRefFromRaw(panamaStore.getNativeStore(), (int) raw);
+    } finally {
+      resourceHandle.endOperation();
     }
-    final PanamaStore panamaStore = (PanamaStore) store;
-    return NativeInstanceBindings.getInstance()
-        .externRefFromRaw(panamaStore.getNativeStore(), (int) raw);
   }
 
   @Override
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

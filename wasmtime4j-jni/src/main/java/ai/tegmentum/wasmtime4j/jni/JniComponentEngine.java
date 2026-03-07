@@ -187,8 +187,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   @Override
   public Component compileComponent(final byte[] componentBytes) throws WasmException {
     Validation.requireNonEmpty(componentBytes, "componentBytes");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final JniComponent.JniComponentHandle componentHandle =
           nativeEngine.loadComponentFromBytes(componentBytes);
@@ -198,6 +197,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       return component;
     } catch (final Exception e) {
       throw new WasmException("Failed to compile component from bytes", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -206,8 +207,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       throws WasmException {
     Validation.requireNonEmpty(componentBytes, "componentBytes");
     Validation.requireNonEmpty(name, "name");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final JniComponent.JniComponentHandle componentHandle =
           nativeEngine.loadComponentFromBytes(componentBytes);
@@ -216,6 +216,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       return component;
     } catch (final Exception e) {
       throw new WasmException("Failed to compile component from bytes with name", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -224,9 +226,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     Validation.requireNonNull(source, "source");
     Validation.requireNonNull(target, "target");
 
+    beginOperation();
     try {
-      ensureNotClosed();
-
       // Get exported and imported interfaces
       final Set<String> sourceExports = source.getExportedInterfaces();
       final Set<String> targetImports = target.getImportedInterfaces();
@@ -253,6 +254,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
           "Compatibility check failed: " + e.getMessage(),
           Collections.emptySet(),
           Collections.emptySet());
+    } finally {
+      endOperation();
     }
   }
 
@@ -261,13 +264,14 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       throws WasmException {
     Validation.requireNonNull(component, "component");
     Validation.requireNonNull(store, "store");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       // Delegate to component's instantiate method
       return component.instantiate();
     } catch (final Exception e) {
       throw new WasmException("Failed to create component instance", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -278,8 +282,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     Validation.requireNonNull(component, "component");
     Validation.requireNonNull(store, "store");
     Validation.requireNonNull(imports, "imports");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       // Validate that imports satisfy component's requirements
       final Set<String> componentImports = component.getImportedInterfaces();
@@ -305,6 +308,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
     } catch (final Exception e) {
       throw new WasmException("Failed to create component instance with imports", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -380,8 +385,7 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
   @Override
   public Component deserializeComponent(final byte[] bytes) throws WasmException {
     Validation.requireNonEmpty(bytes, "bytes");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long componentHandle =
           JniComponent.nativeDeserializeComponent(getNativeHandle(), bytes);
@@ -394,14 +398,15 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       return component;
     } catch (final Exception e) {
       throw new WasmException("Failed to deserialize component", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Component deserializeComponentFile(final String path) throws WasmException {
     Validation.requireNonEmpty(path, "path");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long componentHandle =
           JniComponent.nativeDeserializeComponentFile(getNativeHandle(), path);
@@ -414,6 +419,8 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       return component;
     } catch (final Exception e) {
       throw new WasmException("Failed to deserialize component from file: " + path, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -425,16 +432,17 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
     if (bytes.length == 0) {
       return null;
     }
-    if (isClosed()) {
-      throw new IllegalStateException("Engine has been closed");
+    beginOperation();
+    try {
+      final int result = nativeDetectPrecompiled(getNativeHandle(), bytes);
+      // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
+      if (result < 0) {
+        return null;
+      }
+      return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
+    } finally {
+      endOperation();
     }
-
-    final int result = nativeDetectPrecompiled(getNativeHandle(), bytes);
-    // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
-    if (result < 0) {
-      return null;
-    }
-    return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
   }
 
   private native int nativeDetectPrecompiled(long engineHandle, byte[] bytes);

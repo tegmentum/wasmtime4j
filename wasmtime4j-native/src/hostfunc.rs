@@ -62,6 +62,29 @@ fn cleanup_gc_ref_ids(ids: &[u64]) {
     }
 }
 
+/// Drop guard that ensures temporary GC ref and funcref IDs are cleaned up
+/// even when early returns via `?` skip explicit cleanup calls.
+struct TempIdCleanupGuard {
+    gc_ref_ids: Vec<u64>,
+    funcref_ids: Vec<u64>,
+}
+
+impl TempIdCleanupGuard {
+    fn new(gc_ref_ids: Vec<u64>, funcref_ids: Vec<u64>) -> Self {
+        Self {
+            gc_ref_ids,
+            funcref_ids,
+        }
+    }
+}
+
+impl Drop for TempIdCleanupGuard {
+    fn drop(&mut self) {
+        cleanup_gc_ref_ids(&self.gc_ref_ids);
+        cleanup_temp_funcref_ids(&self.funcref_ids);
+    }
+}
+
 /// Compare ValType values since they don't implement PartialEq
 fn valtype_eq(a: &ValType, b: &ValType) -> bool {
     match (a, b) {
@@ -335,6 +358,9 @@ impl HostFunction {
             let (wasm_params, temp_funcref_ids, temp_gc_ref_ids) =
                 marshal_params_from_wasmtime(params, store_id, &caller)?;
 
+            // Guard ensures cleanup even if early return via ? occurs
+            let _cleanup = TempIdCleanupGuard::new(temp_gc_ref_ids, temp_funcref_ids);
+
             // Create minimal caller context based on usage pattern (if needed)
             if requires_caller {
                 let _context =
@@ -349,8 +375,6 @@ impl HostFunction {
                 wasmtime::Error::msg(format!("Host function execution failed: {}", e))
             })?;
 
-            // Clean up temporary registrations from param marshalling
-            cleanup_temp_funcref_ids(&temp_funcref_ids);
             log::debug!(
                 "[HOSTFUNC] Callback returned {} results",
                 wasm_results.len()
@@ -358,9 +382,6 @@ impl HostFunction {
 
             // Marshal results (mutable borrow of caller for ExternRef creation)
             marshal_results_to_wasmtime(&wasm_results, results, store_id, &mut caller)?;
-
-            // Clean up any remaining GC refs not consumed by result marshalling
-            cleanup_gc_ref_ids(&temp_gc_ref_ids);
 
             log::debug!("[HOSTFUNC] Host function callback completed successfully");
             Ok(())
@@ -476,6 +497,9 @@ impl HostFunction {
                     let (wasm_params, temp_funcref_ids, temp_gc_ref_ids) =
                         marshal_params_from_wasmtime(params, store_id, &caller)?;
 
+                    // Guard ensures cleanup even if early return via ? occurs
+                    let _cleanup = TempIdCleanupGuard::new(temp_gc_ref_ids, temp_funcref_ids);
+
                     if requires_caller {
                         let _context = create_optimized_caller_context(&mut caller, usage)?;
                     }
@@ -487,7 +511,6 @@ impl HostFunction {
                                 e
                             ))
                         })?;
-                    cleanup_temp_funcref_ids(&temp_funcref_ids);
 
                     marshal_results_to_wasmtime(
                         &wasm_results,
@@ -495,7 +518,6 @@ impl HostFunction {
                         store_id,
                         &mut caller,
                     )?;
-                    cleanup_gc_ref_ids(&temp_gc_ref_ids);
 
                     Ok(())
                 }) as Box<dyn Future<Output = Result<(), wasmtime::Error>> + Send>

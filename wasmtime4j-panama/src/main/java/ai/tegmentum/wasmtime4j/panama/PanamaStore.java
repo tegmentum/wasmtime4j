@@ -807,37 +807,41 @@ public final class PanamaStore implements Store {
     if (limiter == null) {
       throw new IllegalArgumentException("ResourceLimiter cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Remove any previously registered limiter
-    final long oldLimiterId = limiterCallbackId.get();
-    if (oldLimiterId != 0) {
-      RESOURCE_LIMITERS.remove(oldLimiterId);
-      limiterCallbackId.set(0);
-    }
+      // Remove any previously registered limiter
+      final long oldLimiterId = limiterCallbackId.get();
+      if (oldLimiterId != 0) {
+        RESOURCE_LIMITERS.remove(oldLimiterId);
+        limiterCallbackId.set(0);
+      }
 
-    // Check if upcall stubs were created successfully
-    if (MEMORY_GROWING_STUB == null || TABLE_GROWING_STUB == null) {
-      throw new WasmException("Resource limiter callback infrastructure not initialized");
-    }
+      // Check if upcall stubs were created successfully
+      if (MEMORY_GROWING_STUB == null || TABLE_GROWING_STUB == null) {
+        throw new WasmException("Resource limiter callback infrastructure not initialized");
+      }
 
-    final long newCallbackId = LIMITER_CALLBACK_ID_COUNTER.getAndIncrement();
-    RESOURCE_LIMITERS.put(newCallbackId, limiter);
-    limiterCallbackId.set(newCallbackId);
+      final long newCallbackId = LIMITER_CALLBACK_ID_COUNTER.getAndIncrement();
+      RESOURCE_LIMITERS.put(newCallbackId, limiter);
+      limiterCallbackId.set(newCallbackId);
 
-    final int result =
-        NATIVE_BINDINGS.storeSetResourceLimiter(
-            nativeStore,
-            newCallbackId,
-            MEMORY_GROWING_STUB,
-            TABLE_GROWING_STUB,
-            MEMORY_GROW_FAILED_STUB != null ? MEMORY_GROW_FAILED_STUB : MemorySegment.NULL,
-            TABLE_GROW_FAILED_STUB != null ? TABLE_GROW_FAILED_STUB : MemorySegment.NULL);
+      final int result =
+          NATIVE_BINDINGS.storeSetResourceLimiter(
+              nativeStore,
+              newCallbackId,
+              MEMORY_GROWING_STUB,
+              TABLE_GROWING_STUB,
+              MEMORY_GROW_FAILED_STUB != null ? MEMORY_GROW_FAILED_STUB : MemorySegment.NULL,
+              TABLE_GROW_FAILED_STUB != null ? TABLE_GROW_FAILED_STUB : MemorySegment.NULL);
 
-    if (result != 0) {
-      RESOURCE_LIMITERS.remove(newCallbackId);
-      limiterCallbackId.set(0);
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure resource limiter");
+      if (result != 0) {
+        RESOURCE_LIMITERS.remove(newCallbackId);
+        limiterCallbackId.set(0);
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to configure resource limiter");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -846,38 +850,43 @@ public final class PanamaStore implements Store {
     if (limiter == null) {
       throw new IllegalArgumentException("ResourceLimiterAsync cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Remove any previously registered sync limiter
-    final long oldLimiterId = limiterCallbackId.get();
-    if (oldLimiterId != 0) {
-      RESOURCE_LIMITERS.remove(oldLimiterId);
-      RESOURCE_LIMITERS_ASYNC.remove(oldLimiterId);
-      limiterCallbackId.set(0);
-    }
+      // Remove any previously registered sync limiter
+      final long oldLimiterId = limiterCallbackId.get();
+      if (oldLimiterId != 0) {
+        RESOURCE_LIMITERS.remove(oldLimiterId);
+        RESOURCE_LIMITERS_ASYNC.remove(oldLimiterId);
+        limiterCallbackId.set(0);
+      }
 
-    // Check if upcall stubs were created successfully
-    if (MEMORY_GROWING_STUB == null || TABLE_GROWING_STUB == null) {
-      throw new WasmException("Resource limiter callback infrastructure not initialized");
-    }
+      // Check if upcall stubs were created successfully
+      if (MEMORY_GROWING_STUB == null || TABLE_GROWING_STUB == null) {
+        throw new WasmException("Resource limiter callback infrastructure not initialized");
+      }
 
-    final long newCallbackId = LIMITER_CALLBACK_ID_COUNTER.getAndIncrement();
-    RESOURCE_LIMITERS_ASYNC.put(newCallbackId, limiter);
-    limiterCallbackId.set(newCallbackId);
+      final long newCallbackId = LIMITER_CALLBACK_ID_COUNTER.getAndIncrement();
+      RESOURCE_LIMITERS_ASYNC.put(newCallbackId, limiter);
+      limiterCallbackId.set(newCallbackId);
 
-    final int result =
-        NATIVE_BINDINGS.storeSetResourceLimiterAsync(
-            nativeStore,
-            newCallbackId,
-            MEMORY_GROWING_STUB,
-            TABLE_GROWING_STUB,
-            MEMORY_GROW_FAILED_STUB != null ? MEMORY_GROW_FAILED_STUB : MemorySegment.NULL,
-            TABLE_GROW_FAILED_STUB != null ? TABLE_GROW_FAILED_STUB : MemorySegment.NULL);
+      final int result =
+          NATIVE_BINDINGS.storeSetResourceLimiterAsync(
+              nativeStore,
+              newCallbackId,
+              MEMORY_GROWING_STUB,
+              TABLE_GROWING_STUB,
+              MEMORY_GROW_FAILED_STUB != null ? MEMORY_GROW_FAILED_STUB : MemorySegment.NULL,
+              TABLE_GROW_FAILED_STUB != null ? TABLE_GROW_FAILED_STUB : MemorySegment.NULL);
 
-    if (result != 0) {
-      RESOURCE_LIMITERS_ASYNC.remove(newCallbackId);
-      limiterCallbackId.set(0);
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure async resource limiter");
+      if (result != 0) {
+        RESOURCE_LIMITERS_ASYNC.remove(newCallbackId);
+        limiterCallbackId.set(0);
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to configure async resource limiter");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -886,51 +895,59 @@ public final class PanamaStore implements Store {
     if (fuel < 0) {
       throw new IllegalArgumentException("Fuel cannot be negative");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle setFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetFuel();
-      if (setFuelHandle == null) {
-        throw new WasmException("Panama store set fuel function not available");
-      }
 
-      final int result = (int) setFuelHandle.invoke(nativeStore, fuel);
+      try {
+        final MethodHandle setFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetFuel();
+        if (setFuelHandle == null) {
+          throw new WasmException("Panama store set fuel function not available");
+        }
 
-      if (result != 0) {
-        throw new WasmException("Failed to set fuel");
+        final int result = (int) setFuelHandle.invoke(nativeStore, fuel);
+
+        if (result != 0) {
+          throw new WasmException("Failed to set fuel");
+        }
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error setting fuel: " + e.getMessage(), e);
       }
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error setting fuel: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public long getFuel() throws WasmException {
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle getFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetFuel();
-      if (getFuelHandle == null) {
-        throw new WasmException("Panama store get fuel function not available");
+
+      try {
+        final MethodHandle getFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetFuel();
+        if (getFuelHandle == null) {
+          throw new WasmException("Panama store get fuel function not available");
+        }
+
+        final MemorySegment fuelSegment = arena.allocate(ValueLayout.JAVA_LONG);
+
+        final int result = (int) getFuelHandle.invoke(nativeStore, fuelSegment);
+
+        if (result != 0) {
+          throw new WasmException("Failed to get fuel");
+        }
+
+        return fuelSegment.get(ValueLayout.JAVA_LONG, 0);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error getting fuel: " + e.getMessage(), e);
       }
-
-      final MemorySegment fuelSegment = arena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result = (int) getFuelHandle.invoke(nativeStore, fuelSegment);
-
-      if (result != 0) {
-        throw new WasmException("Failed to get fuel");
-      }
-
-      return fuelSegment.get(ValueLayout.JAVA_LONG, 0);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error getting fuel: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -939,47 +956,56 @@ public final class PanamaStore implements Store {
     if (fuel < 0) {
       throw new IllegalArgumentException("Fuel cannot be negative");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle addFuelHandle = NATIVE_BINDINGS.getPanamaStoreAddFuel();
-      if (addFuelHandle == null) {
-        throw new WasmException("Panama store add fuel function not available");
-      }
 
-      final int result = (int) addFuelHandle.invoke(nativeStore, fuel);
+      try {
+        final MethodHandle addFuelHandle = NATIVE_BINDINGS.getPanamaStoreAddFuel();
+        if (addFuelHandle == null) {
+          throw new WasmException("Panama store add fuel function not available");
+        }
 
-      if (result != 0) {
-        throw new WasmException("Failed to add fuel");
+        final int result = (int) addFuelHandle.invoke(nativeStore, fuel);
+
+        if (result != 0) {
+          throw new WasmException("Failed to add fuel");
+        }
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error adding fuel: " + e.getMessage(), e);
       }
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error adding fuel: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void setEpochDeadline(final long ticks) throws WasmException {
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle setEpochDeadlineHandle = NATIVE_BINDINGS.getPanamaStoreSetEpochDeadline();
-      if (setEpochDeadlineHandle == null) {
-        throw new WasmException("Panama store set epoch deadline function not available");
-      }
 
-      final int result = (int) setEpochDeadlineHandle.invoke(nativeStore, ticks);
+      try {
+        final MethodHandle setEpochDeadlineHandle =
+            NATIVE_BINDINGS.getPanamaStoreSetEpochDeadline();
+        if (setEpochDeadlineHandle == null) {
+          throw new WasmException("Panama store set epoch deadline function not available");
+        }
 
-      if (result != 0) {
-        throw new WasmException("Failed to set epoch deadline");
+        final int result = (int) setEpochDeadlineHandle.invoke(nativeStore, ticks);
+
+        if (result != 0) {
+          throw new WasmException("Failed to set epoch deadline");
+        }
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error setting epoch deadline: " + e.getMessage(), e);
       }
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error setting epoch deadline: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -988,55 +1014,63 @@ public final class PanamaStore implements Store {
     if (fuel < 0) {
       throw new IllegalArgumentException("Fuel cannot be negative");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle consumeFuelHandle = NATIVE_BINDINGS.getPanamaStoreConsumeFuel();
-      if (consumeFuelHandle == null) {
-        throw new WasmException("Panama store consume fuel function not available");
+
+      try {
+        final MethodHandle consumeFuelHandle = NATIVE_BINDINGS.getPanamaStoreConsumeFuel();
+        if (consumeFuelHandle == null) {
+          throw new WasmException("Panama store consume fuel function not available");
+        }
+
+        final MemorySegment consumedSegment = arena.allocate(ValueLayout.JAVA_LONG);
+
+        final int result = (int) consumeFuelHandle.invoke(nativeStore, fuel, consumedSegment);
+
+        if (result != 0) {
+          throw new WasmException("Failed to consume fuel");
+        }
+
+        return consumedSegment.get(ValueLayout.JAVA_LONG, 0);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error consuming fuel: " + e.getMessage(), e);
       }
-
-      final MemorySegment consumedSegment = arena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result = (int) consumeFuelHandle.invoke(nativeStore, fuel, consumedSegment);
-
-      if (result != 0) {
-        throw new WasmException("Failed to consume fuel");
-      }
-
-      return consumedSegment.get(ValueLayout.JAVA_LONG, 0);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error consuming fuel: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public long hostcallFuel() throws WasmException {
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle getHostcallFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetHostcallFuel();
-      if (getHostcallFuelHandle == null) {
-        throw new WasmException("Panama store get hostcall fuel function not available");
+
+      try {
+        final MethodHandle getHostcallFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetHostcallFuel();
+        if (getHostcallFuelHandle == null) {
+          throw new WasmException("Panama store get hostcall fuel function not available");
+        }
+
+        final MemorySegment fuelSegment = arena.allocate(ValueLayout.JAVA_LONG);
+
+        final int result = (int) getHostcallFuelHandle.invoke(nativeStore, fuelSegment);
+
+        if (result != 0) {
+          throw new WasmException("Failed to get hostcall fuel");
+        }
+
+        return fuelSegment.get(ValueLayout.JAVA_LONG, 0);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error getting hostcall fuel: " + e.getMessage(), e);
       }
-
-      final MemorySegment fuelSegment = arena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result = (int) getHostcallFuelHandle.invoke(nativeStore, fuelSegment);
-
-      if (result != 0) {
-        throw new WasmException("Failed to get hostcall fuel");
-      }
-
-      return fuelSegment.get(ValueLayout.JAVA_LONG, 0);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error getting hostcall fuel: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1045,24 +1079,28 @@ public final class PanamaStore implements Store {
     if (fuel < 0) {
       throw new IllegalArgumentException("Fuel cannot be negative");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle setHostcallFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetHostcallFuel();
-      if (setHostcallFuelHandle == null) {
-        throw new WasmException("Panama store set hostcall fuel function not available");
-      }
 
-      final int result = (int) setHostcallFuelHandle.invoke(nativeStore, fuel);
+      try {
+        final MethodHandle setHostcallFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetHostcallFuel();
+        if (setHostcallFuelHandle == null) {
+          throw new WasmException("Panama store set hostcall fuel function not available");
+        }
 
-      if (result != 0) {
-        throw new WasmException("Failed to set hostcall fuel");
+        final int result = (int) setHostcallFuelHandle.invoke(nativeStore, fuel);
+
+        if (result != 0) {
+          throw new WasmException("Failed to set hostcall fuel");
+        }
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error setting hostcall fuel: " + e.getMessage(), e);
       }
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error setting hostcall fuel: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1081,17 +1119,22 @@ public final class PanamaStore implements Store {
     if (implementation == null) {
       throw new IllegalArgumentException("implementation cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Adapt the HostFunction interface to PanamaHostFunction.HostFunctionCallback
-    final PanamaHostFunction.HostFunctionCallback callback = implementation::execute;
+      // Adapt the HostFunction interface to PanamaHostFunction.HostFunctionCallback
+      final PanamaHostFunction.HostFunctionCallback callback = implementation::execute;
 
-    // Create the Panama host function with implementation and store reference for caller context
-    final PanamaHostFunction hostFunction =
-        new PanamaHostFunction(name, functionType, callback, implementation, this, resourceManager);
+      // Create the Panama host function with implementation and store reference for caller context
+      final PanamaHostFunction hostFunction =
+          new PanamaHostFunction(
+              name, functionType, callback, implementation, this, resourceManager);
 
-    LOGGER.fine("Created host function '" + name + "' in store");
-    return hostFunction;
+      LOGGER.fine("Created host function '" + name + "' in store");
+      return hostFunction;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -1109,16 +1152,20 @@ public final class PanamaStore implements Store {
     if (implementation == null) {
       throw new IllegalArgumentException("implementation cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaHostFunction.HostFunctionCallback callback = implementation::execute;
+      final PanamaHostFunction.HostFunctionCallback callback = implementation::execute;
 
-    final PanamaHostFunction hostFunction =
-        new PanamaHostFunction(
-            name, functionType, callback, implementation, this, resourceManager, true);
+      final PanamaHostFunction hostFunction =
+          new PanamaHostFunction(
+              name, functionType, callback, implementation, this, resourceManager, true);
 
-    LOGGER.fine("Created unchecked host function '" + name + "' in store");
-    return hostFunction;
+      LOGGER.fine("Created unchecked host function '" + name + "' in store");
+      return hostFunction;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -1143,12 +1190,16 @@ public final class PanamaStore implements Store {
     if (wasiCtx == null) {
       throw new WasmException("No WASI context is configured for this store");
     }
-    ensureNotClosed();
-    final int result =
-        NativeStoreBindings.getInstance()
-            .storeSetWasiContext(nativeStore, wasiCtx.getNativeContext());
-    if (result != 0) {
-      throw new WasmException("Failed to re-apply WASI context to store");
+    resourceHandle.beginOperation();
+    try {
+      final int result =
+          NativeStoreBindings.getInstance()
+              .storeSetWasiContext(nativeStore, wasiCtx.getNativeContext());
+      if (result != 0) {
+        throw new WasmException("Failed to re-apply WASI context to store");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1171,122 +1222,126 @@ public final class PanamaStore implements Store {
               + " does not match global type "
               + valueType);
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaGlobalCreate();
-      if (createHandle == null) {
-        throw new WasmException("Panama global creation function not available");
-      }
 
-      // Extract values based on type
-      int i32Value = 0;
-      long i64Value = 0L;
-      double f32Value = 0.0;
-      double f64Value = 0.0;
-      int refIdPresent = 0;
-      long refId = 0L;
-      MemorySegment v128BytesPtr = MemorySegment.NULL;
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaGlobalCreate();
+        if (createHandle == null) {
+          throw new WasmException("Panama global creation function not available");
+        }
 
-      switch (valueType) {
-        case I32:
-          i32Value = (Integer) initialValue.getValue();
-          break;
-        case I64:
-          i64Value = (Long) initialValue.getValue();
-          break;
-        case F32:
-          f32Value = ((Float) initialValue.getValue()).doubleValue();
-          break;
-        case F64:
-          f64Value = (Double) initialValue.getValue();
-          break;
-        case V128:
-          final byte[] v128Bytes = (byte[]) initialValue.getValue();
-          if (v128Bytes != null && v128Bytes.length == 16) {
-            v128BytesPtr = arena.allocate(16);
-            MemorySegment.copy(v128Bytes, 0, v128BytesPtr, ValueLayout.JAVA_BYTE, 0, 16);
-          }
-          break;
-        case FUNCREF:
-          if (initialValue.getValue() != null) {
-            refIdPresent = 1;
-            final Object funcVal = initialValue.getValue();
-            if (funcVal instanceof FunctionReference) {
-              refId = ((FunctionReference) funcVal).getId();
-            } else if (funcVal instanceof Long) {
-              refId = (Long) funcVal;
-            } else {
-              throw new IllegalArgumentException(
-                  "FUNCREF value must be FunctionReference or Long, got: " + funcVal.getClass());
+        // Extract values based on type
+        int i32Value = 0;
+        long i64Value = 0L;
+        double f32Value = 0.0;
+        double f64Value = 0.0;
+        int refIdPresent = 0;
+        long refId = 0L;
+        MemorySegment v128BytesPtr = MemorySegment.NULL;
+
+        switch (valueType) {
+          case I32:
+            i32Value = (Integer) initialValue.getValue();
+            break;
+          case I64:
+            i64Value = (Long) initialValue.getValue();
+            break;
+          case F32:
+            f32Value = ((Float) initialValue.getValue()).doubleValue();
+            break;
+          case F64:
+            f64Value = (Double) initialValue.getValue();
+            break;
+          case V128:
+            final byte[] v128Bytes = (byte[]) initialValue.getValue();
+            if (v128Bytes != null && v128Bytes.length == 16) {
+              v128BytesPtr = arena.allocate(16);
+              MemorySegment.copy(v128Bytes, 0, v128BytesPtr, ValueLayout.JAVA_BYTE, 0, 16);
             }
-          }
-          break;
-        case EXTERNREF:
-          if (initialValue.getValue() != null) {
-            refIdPresent = 1;
-            final Object externVal = initialValue.getValue();
-            if (externVal instanceof ExternRef) {
-              refId = ((ExternRef<?>) externVal).getId();
-            } else if (externVal instanceof Long) {
-              refId = (Long) externVal;
-            } else {
-              throw new IllegalArgumentException(
-                  "EXTERNREF value must be ExternRef or Long, got: " + externVal.getClass());
+            break;
+          case FUNCREF:
+            if (initialValue.getValue() != null) {
+              refIdPresent = 1;
+              final Object funcVal = initialValue.getValue();
+              if (funcVal instanceof FunctionReference) {
+                refId = ((FunctionReference) funcVal).getId();
+              } else if (funcVal instanceof Long) {
+                refId = (Long) funcVal;
+              } else {
+                throw new IllegalArgumentException(
+                    "FUNCREF value must be FunctionReference or Long, got: " + funcVal.getClass());
+              }
             }
-          }
-          break;
-        case ANYREF:
-        case EQREF:
-        case I31REF:
-        case STRUCTREF:
-        case ARRAYREF:
-        case NULLREF:
-        case NULLFUNCREF:
-        case NULLEXTERNREF:
-          // GC reference types: null initial value (refIdPresent defaults to 0)
-          break;
-        default:
-          throw new IllegalArgumentException("Unsupported global type: " + valueType);
+            break;
+          case EXTERNREF:
+            if (initialValue.getValue() != null) {
+              refIdPresent = 1;
+              final Object externVal = initialValue.getValue();
+              if (externVal instanceof ExternRef) {
+                refId = ((ExternRef<?>) externVal).getId();
+              } else if (externVal instanceof Long) {
+                refId = (Long) externVal;
+              } else {
+                throw new IllegalArgumentException(
+                    "EXTERNREF value must be ExternRef or Long, got: " + externVal.getClass());
+              }
+            }
+            break;
+          case ANYREF:
+          case EQREF:
+          case I31REF:
+          case STRUCTREF:
+          case ARRAYREF:
+          case NULLREF:
+          case NULLFUNCREF:
+          case NULLEXTERNREF:
+            // GC reference types: null initial value (refIdPresent defaults to 0)
+            break;
+          default:
+            throw new IllegalArgumentException("Unsupported global type: " + valueType);
+        }
+
+        final MemorySegment globalPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    valueType.toNativeTypeCode(),
+                    isMutable ? 1 : 0,
+                    i32Value,
+                    i64Value,
+                    f32Value,
+                    f64Value,
+                    refIdPresent,
+                    refId,
+                    v128BytesPtr,
+                    MemorySegment.NULL, // name = null
+                    globalPtr);
+
+        if (result != 0) {
+          final String nativeError =
+              ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new WasmException(
+              "Failed to create global"
+                  + (nativeError != null ? ": " + nativeError : " (error code: " + result + ")"));
+        }
+
+        final MemorySegment nativeGlobalPtr = globalPtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeGlobalPtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created global pointer is null");
+        }
+
+        return new PanamaGlobal(nativeGlobalPtr, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating global: " + e.getMessage(), e);
       }
-
-      final MemorySegment globalPtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  valueType.toNativeTypeCode(),
-                  isMutable ? 1 : 0,
-                  i32Value,
-                  i64Value,
-                  f32Value,
-                  f64Value,
-                  refIdPresent,
-                  refId,
-                  v128BytesPtr,
-                  MemorySegment.NULL, // name = null
-                  globalPtr);
-
-      if (result != 0) {
-        final String nativeError =
-            ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
-        throw new WasmException(
-            "Failed to create global"
-                + (nativeError != null ? ": " + nativeError : " (error code: " + result + ")"));
-      }
-
-      final MemorySegment nativeGlobalPtr = globalPtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeGlobalPtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created global pointer is null");
-      }
-
-      return new PanamaGlobal(nativeGlobalPtr, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating global: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1309,55 +1364,59 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException(
           "Max size (" + maxSize + ") cannot be less than initial size (" + initialSize + ")");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreate();
-      if (createHandle == null) {
-        throw new WasmException("Panama table creation function not available");
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreate();
+        if (createHandle == null) {
+          throw new WasmException("Panama table creation function not available");
+        }
+
+        // Convert element type to native code
+        final int elementTypeCode;
+        if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
+          elementTypeCode = 5; // FUNCREF
+        } else if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+          elementTypeCode = 6; // EXTERNREF
+        } else {
+          throw new IllegalArgumentException("Unsupported table element type: " + elementType);
+        }
+
+        final int hasMaximum = (maxSize == -1) ? 0 : 1;
+        final int maximumSize = (maxSize == -1) ? 0 : maxSize;
+
+        final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    elementTypeCode,
+                    initialSize,
+                    hasMaximum,
+                    maximumSize,
+                    MemorySegment.NULL, // name = null
+                    tablePtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create table");
+        }
+
+        final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeTablePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created table pointer is null");
+        }
+
+        return new PanamaTable(nativeTablePtr, elementType, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating table: " + e.getMessage(), e);
       }
-
-      // Convert element type to native code
-      final int elementTypeCode;
-      if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
-        elementTypeCode = 5; // FUNCREF
-      } else if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
-        elementTypeCode = 6; // EXTERNREF
-      } else {
-        throw new IllegalArgumentException("Unsupported table element type: " + elementType);
-      }
-
-      final int hasMaximum = (maxSize == -1) ? 0 : 1;
-      final int maximumSize = (maxSize == -1) ? 0 : maxSize;
-
-      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  elementTypeCode,
-                  initialSize,
-                  hasMaximum,
-                  maximumSize,
-                  MemorySegment.NULL, // name = null
-                  tablePtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create table");
-      }
-
-      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeTablePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created table pointer is null");
-      }
-
-      return new PanamaTable(nativeTablePtr, elementType, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating table: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1384,56 +1443,60 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException(
           "Max size (" + maxSize + ") cannot be less than initial size (" + initialSize + ")");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreateWithInit();
-      if (createHandle == null) {
-        throw new WasmException("Panama table creation with init function not available");
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreateWithInit();
+        if (createHandle == null) {
+          throw new WasmException("Panama table creation with init function not available");
+        }
+
+        final int elementTypeCode;
+        if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
+          elementTypeCode = 5;
+        } else if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+          elementTypeCode = 6;
+        } else {
+          throw new IllegalArgumentException("Unsupported table element type: " + elementType);
+        }
+
+        final int hasMaximum = (maxSize == -1) ? 0 : 1;
+        final int maximumSize = (maxSize == -1) ? 0 : maxSize;
+        final long initRefId = wasmValueToRefId(initValue);
+
+        final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    elementTypeCode,
+                    initialSize,
+                    hasMaximum,
+                    maximumSize,
+                    MemorySegment.NULL, // name = null
+                    initRefId,
+                    tablePtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create table with init value");
+        }
+
+        final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeTablePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created table pointer is null");
+        }
+
+        return new PanamaTable(nativeTablePtr, elementType, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating table with init value: " + e.getMessage(), e);
       }
-
-      final int elementTypeCode;
-      if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
-        elementTypeCode = 5;
-      } else if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
-        elementTypeCode = 6;
-      } else {
-        throw new IllegalArgumentException("Unsupported table element type: " + elementType);
-      }
-
-      final int hasMaximum = (maxSize == -1) ? 0 : 1;
-      final int maximumSize = (maxSize == -1) ? 0 : maxSize;
-      final long initRefId = wasmValueToRefId(initValue);
-
-      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  elementTypeCode,
-                  initialSize,
-                  hasMaximum,
-                  maximumSize,
-                  MemorySegment.NULL, // name = null
-                  initRefId,
-                  tablePtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create table with init value");
-      }
-
-      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeTablePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created table pointer is null");
-      }
-
-      return new PanamaTable(nativeTablePtr, elementType, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating table with init value: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1450,48 +1513,52 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException(
           "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
-      if (createHandle == null) {
-        throw new WasmException("Panama memory creation function not available");
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
+        if (createHandle == null) {
+          throw new WasmException("Panama memory creation function not available");
+        }
+
+        final long maximumPages = (maxPages == -1) ? 0L : (long) maxPages;
+        final int isShared = 0; // Not shared
+        final int is64 = 0; // Standard 32-bit memory
+        final int memoryIndex = 0; // Not used for direct creation
+
+        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    (long) initialPages,
+                    maximumPages,
+                    isShared,
+                    is64,
+                    memoryIndex,
+                    MemorySegment.NULL, // name = null
+                    memoryPtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create memory");
+        }
+
+        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created memory pointer is null");
+        }
+
+        return new PanamaMemory(nativeMemoryPtr, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating memory: " + e.getMessage(), e);
       }
-
-      final long maximumPages = (maxPages == -1) ? 0L : (long) maxPages;
-      final int isShared = 0; // Not shared
-      final int is64 = 0; // Standard 32-bit memory
-      final int memoryIndex = 0; // Not used for direct creation
-
-      final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  (long) initialPages,
-                  maximumPages,
-                  isShared,
-                  is64,
-                  memoryIndex,
-                  MemorySegment.NULL, // name = null
-                  memoryPtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create memory");
-      }
-
-      final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created memory pointer is null");
-      }
-
-      return new PanamaMemory(nativeMemoryPtr, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating memory: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1508,47 +1575,51 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException(
           "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
-      if (createHandle == null) {
-        throw new WasmException("Panama memory creation function not available");
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
+        if (createHandle == null) {
+          throw new WasmException("Panama memory creation function not available");
+        }
+
+        final int isShared = 1; // Shared memory
+        final int is64 = 0; // Standard 32-bit memory
+        final int memoryIndex = 0; // Not used for direct creation
+
+        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    (long) initialPages,
+                    (long) maxPages,
+                    isShared,
+                    is64,
+                    memoryIndex,
+                    MemorySegment.NULL, // name = null
+                    memoryPtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create shared memory");
+        }
+
+        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created shared memory pointer is null");
+        }
+
+        return new PanamaMemory(nativeMemoryPtr, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating shared memory: " + e.getMessage(), e);
       }
-
-      final int isShared = 1; // Shared memory
-      final int is64 = 0; // Standard 32-bit memory
-      final int memoryIndex = 0; // Not used for direct creation
-
-      final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  (long) initialPages,
-                  (long) maxPages,
-                  isShared,
-                  is64,
-                  memoryIndex,
-                  MemorySegment.NULL, // name = null
-                  memoryPtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create shared memory");
-      }
-
-      final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created shared memory pointer is null");
-      }
-
-      return new PanamaMemory(nativeMemoryPtr, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating shared memory: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1570,48 +1641,52 @@ public final class PanamaStore implements Store {
     if (memoryType.isShared() && maxPages < 1) {
       throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
-      if (createHandle == null) {
-        throw new WasmException("Panama memory creation function not available");
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
+        if (createHandle == null) {
+          throw new WasmException("Panama memory creation function not available");
+        }
+
+        final long maximumPages = (maxPages == -1) ? 0L : maxPages;
+        final int isShared = memoryType.isShared() ? 1 : 0;
+        final int is64 = memoryType.is64Bit() ? 1 : 0;
+        final int memoryIndex = 0;
+
+        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    minPages,
+                    maximumPages,
+                    isShared,
+                    is64,
+                    memoryIndex,
+                    MemorySegment.NULL, // name = null
+                    memoryPtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create memory from type");
+        }
+
+        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created memory pointer is null");
+        }
+
+        return new PanamaMemory(nativeMemoryPtr, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating memory from type: " + e.getMessage(), e);
       }
-
-      final long maximumPages = (maxPages == -1) ? 0L : maxPages;
-      final int isShared = memoryType.isShared() ? 1 : 0;
-      final int is64 = memoryType.is64Bit() ? 1 : 0;
-      final int memoryIndex = 0;
-
-      final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  minPages,
-                  maximumPages,
-                  isShared,
-                  is64,
-                  memoryIndex,
-                  MemorySegment.NULL, // name = null
-                  memoryPtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create memory from type");
-      }
-
-      final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created memory pointer is null");
-      }
-
-      return new PanamaMemory(nativeMemoryPtr, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating memory from type: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1640,74 +1715,78 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException(
           "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final int elementTypeCode;
-      if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
-        elementTypeCode = 5;
-      } else {
-        elementTypeCode = 6;
-      }
 
-      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
-      final int result;
-
-      if (is64) {
-        final MethodHandle create64Handle = MEMORY_BINDINGS.getPanamaTableCreate64();
-        if (create64Handle == null) {
-          throw new WasmException("Panama 64-bit table creation function not available");
+      try {
+        final int elementTypeCode;
+        if (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) {
+          elementTypeCode = 5;
+        } else {
+          elementTypeCode = 6;
         }
 
-        final int hasMaximum = (maxSize == -1) ? 0 : 1;
-        final long maximumSize = (maxSize == -1) ? 0L : maxSize;
+        final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+        final int result;
 
-        result =
-            (int)
-                create64Handle.invoke(
-                    nativeStore,
-                    elementTypeCode,
-                    minSize,
-                    hasMaximum,
-                    maximumSize,
-                    MemorySegment.NULL, // name = null
-                    tablePtr);
-      } else {
-        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreate();
-        if (createHandle == null) {
-          throw new WasmException("Panama table creation function not available");
+        if (is64) {
+          final MethodHandle create64Handle = MEMORY_BINDINGS.getPanamaTableCreate64();
+          if (create64Handle == null) {
+            throw new WasmException("Panama 64-bit table creation function not available");
+          }
+
+          final int hasMaximum = (maxSize == -1) ? 0 : 1;
+          final long maximumSize = (maxSize == -1) ? 0L : maxSize;
+
+          result =
+              (int)
+                  create64Handle.invoke(
+                      nativeStore,
+                      elementTypeCode,
+                      minSize,
+                      hasMaximum,
+                      maximumSize,
+                      MemorySegment.NULL, // name = null
+                      tablePtr);
+        } else {
+          final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreate();
+          if (createHandle == null) {
+            throw new WasmException("Panama table creation function not available");
+          }
+
+          final int hasMaximum = (maxSize == -1) ? 0 : 1;
+          final int maximumSize = (maxSize == -1) ? 0 : (int) maxSize;
+
+          result =
+              (int)
+                  createHandle.invoke(
+                      nativeStore,
+                      elementTypeCode,
+                      (int) minSize,
+                      hasMaximum,
+                      maximumSize,
+                      MemorySegment.NULL, // name = null
+                      tablePtr);
         }
 
-        final int hasMaximum = (maxSize == -1) ? 0 : 1;
-        final int maximumSize = (maxSize == -1) ? 0 : (int) maxSize;
+        if (result != 0) {
+          throw new WasmException("Failed to create table from type");
+        }
 
-        result =
-            (int)
-                createHandle.invoke(
-                    nativeStore,
-                    elementTypeCode,
-                    (int) minSize,
-                    hasMaximum,
-                    maximumSize,
-                    MemorySegment.NULL, // name = null
-                    tablePtr);
-      }
+        final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeTablePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created table pointer is null");
+        }
 
-      if (result != 0) {
-        throw new WasmException("Failed to create table from type");
+        return new PanamaTable(nativeTablePtr, elementType, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating table from type: " + e.getMessage(), e);
       }
-
-      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeTablePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created table pointer is null");
-      }
-
-      return new PanamaTable(nativeTablePtr, elementType, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating table from type: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1738,50 +1817,54 @@ public final class PanamaStore implements Store {
       throw new IllegalArgumentException(
           "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreateWithInit();
-      if (createHandle == null) {
-        throw new WasmException("Panama table creation with init function not available");
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaTableCreateWithInit();
+        if (createHandle == null) {
+          throw new WasmException("Panama table creation with init function not available");
+        }
+
+        final int elementTypeCode =
+            (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) ? 5 : 6;
+        final int hasMaximum = (maxSize == -1) ? 0 : 1;
+        final int maximumSize = (maxSize == -1) ? 0 : (int) maxSize;
+        final long initRefId = wasmValueToRefId(initValue);
+
+        final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    elementTypeCode,
+                    (int) minSize,
+                    hasMaximum,
+                    maximumSize,
+                    MemorySegment.NULL,
+                    initRefId,
+                    tablePtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create table from type with init value");
+        }
+
+        final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeTablePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created table pointer is null");
+        }
+
+        return new PanamaTable(nativeTablePtr, elementType, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException(
+            "Error creating table from type with init value: " + e.getMessage(), e);
       }
-
-      final int elementTypeCode =
-          (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) ? 5 : 6;
-      final int hasMaximum = (maxSize == -1) ? 0 : 1;
-      final int maximumSize = (maxSize == -1) ? 0 : (int) maxSize;
-      final long initRefId = wasmValueToRefId(initValue);
-
-      final MemorySegment tablePtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int)
-              createHandle.invoke(
-                  nativeStore,
-                  elementTypeCode,
-                  (int) minSize,
-                  hasMaximum,
-                  maximumSize,
-                  MemorySegment.NULL,
-                  initRefId,
-                  tablePtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create table from type with init value");
-      }
-
-      final MemorySegment nativeTablePtr = tablePtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeTablePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created table pointer is null");
-      }
-
-      return new PanamaTable(nativeTablePtr, elementType, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException(
-          "Error creating table from type with init value: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1804,37 +1887,50 @@ public final class PanamaStore implements Store {
       final ai.tegmentum.wasmtime4j.func.HostFunction implementation,
       final ai.tegmentum.wasmtime4j.type.FunctionType functionType)
       throws WasmException {
-    ensureNotClosed();
-    Validation.requireNonNull(implementation, "implementation");
-    Validation.requireNonNull(functionType, "functionType");
+    resourceHandle.beginOperation();
+    try {
+      Validation.requireNonNull(implementation, "implementation");
+      Validation.requireNonNull(functionType, "functionType");
 
-    return new PanamaFunctionReference(implementation, functionType, this, resourceManager);
+      return new PanamaFunctionReference(implementation, functionType, this, resourceManager);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.func.FunctionReference createFunctionReference(
       final ai.tegmentum.wasmtime4j.WasmFunction function) throws WasmException {
-    ensureNotClosed();
-    Validation.requireNonNull(function, "function");
+    resourceHandle.beginOperation();
+    try {
+      Validation.requireNonNull(function, "function");
 
-    // Create a host function wrapper that delegates to the wasm function
-    final ai.tegmentum.wasmtime4j.func.HostFunction wrapper = function::call;
+      // Create a host function wrapper that delegates to the wasm function
+      final ai.tegmentum.wasmtime4j.func.HostFunction wrapper = function::call;
 
-    return new PanamaFunctionReference(wrapper, function.getFunctionType(), this, resourceManager);
+      return new PanamaFunctionReference(
+          wrapper, function.getFunctionType(), this, resourceManager);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.func.CallbackRegistry getCallbackRegistry() {
-    ensureNotClosed();
-    // Lazy initialization of callback registry
-    if (callbackRegistry == null) {
-      synchronized (this) {
-        if (callbackRegistry == null) {
-          callbackRegistry = new PanamaCallbackRegistry(this, resourceManager);
+    resourceHandle.beginOperation();
+    try {
+      // Lazy initialization of callback registry
+      if (callbackRegistry == null) {
+        synchronized (this) {
+          if (callbackRegistry == null) {
+            callbackRegistry = new PanamaCallbackRegistry(this, resourceManager);
+          }
         }
       }
+      return callbackRegistry;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return callbackRegistry;
   }
 
   @Override
@@ -1846,35 +1942,39 @@ public final class PanamaStore implements Store {
     if (!(module instanceof PanamaModule)) {
       throw new IllegalArgumentException("Module must be a PanamaModule");
     }
-    ensureNotClosed();
-
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle createHandle = INSTANCE_BINDINGS.getPanamaInstanceCreate();
-      if (createHandle == null) {
-        throw new WasmException("Panama instance creation function not available");
+
+      try {
+        final MethodHandle createHandle = INSTANCE_BINDINGS.getPanamaInstanceCreate();
+        if (createHandle == null) {
+          throw new WasmException("Panama instance creation function not available");
+        }
+
+        final PanamaModule panamaModule = (PanamaModule) module;
+        final MemorySegment instancePtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int) createHandle.invoke(nativeStore, panamaModule.getNativeModule(), instancePtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create instance");
+        }
+
+        final MemorySegment nativeInstancePtr = instancePtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeInstancePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created instance pointer is null");
+        }
+
+        return new PanamaInstance(nativeInstancePtr, panamaModule, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating instance: " + e.getMessage(), e);
       }
-
-      final PanamaModule panamaModule = (PanamaModule) module;
-      final MemorySegment instancePtr = arena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          (int) createHandle.invoke(nativeStore, panamaModule.getNativeModule(), instancePtr);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create instance");
-      }
-
-      final MemorySegment nativeInstancePtr = instancePtr.get(ValueLayout.ADDRESS, 0);
-      if (nativeInstancePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created instance pointer is null");
-      }
-
-      return new PanamaInstance(nativeInstancePtr, panamaModule, this);
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error creating instance: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1891,52 +1991,57 @@ public final class PanamaStore implements Store {
     if (!(module instanceof PanamaModule)) {
       throw new IllegalArgumentException("Module must be a PanamaModule");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaModule panamaModule = (PanamaModule) module;
+      final PanamaModule panamaModule = (PanamaModule) module;
 
-    if (imports.length == 0) {
-      return createInstance(module);
-    }
+      if (imports.length == 0) {
+        return createInstance(module);
+      }
 
-    try (final Arena importArena = Arena.ofConfined()) {
-      final MemorySegment externPtrs = importArena.allocate(ValueLayout.ADDRESS, imports.length);
-      final MemorySegment externTypes = importArena.allocate(ValueLayout.JAVA_INT, imports.length);
+      try (final Arena importArena = Arena.ofConfined()) {
+        final MemorySegment externPtrs = importArena.allocate(ValueLayout.ADDRESS, imports.length);
+        final MemorySegment externTypes =
+            importArena.allocate(ValueLayout.JAVA_INT, imports.length);
 
-      for (int i = 0; i < imports.length; i++) {
-        final ai.tegmentum.wasmtime4j.Extern ext = imports[i];
-        if (ext == null) {
-          throw new IllegalArgumentException("Import at index " + i + " is null");
+        for (int i = 0; i < imports.length; i++) {
+          final ai.tegmentum.wasmtime4j.Extern ext = imports[i];
+          if (ext == null) {
+            throw new IllegalArgumentException("Import at index " + i + " is null");
+          }
+          externPtrs.setAtIndex(ValueLayout.ADDRESS, i, extractExternHandle(ext));
+          externTypes.setAtIndex(ValueLayout.JAVA_INT, i, externTypeToNativeCode(ext.getType()));
         }
-        externPtrs.setAtIndex(ValueLayout.ADDRESS, i, extractExternHandle(ext));
-        externTypes.setAtIndex(ValueLayout.JAVA_INT, i, externTypeToNativeCode(ext.getType()));
+
+        final MemorySegment instanceOut = importArena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            INSTANCE_BINDINGS.panamaInstanceCreateWithImports(
+                nativeStore,
+                panamaModule.getNativeModule(),
+                externPtrs,
+                externTypes,
+                imports.length,
+                instanceOut);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create instance with imports");
+        }
+
+        final MemorySegment instancePtr = instanceOut.get(ValueLayout.ADDRESS, 0);
+        if (instancePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created instance pointer is null");
+        }
+
+        return new PanamaInstance(instancePtr, panamaModule, this);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Throwable e) {
+        throw new WasmException("Error creating instance with imports: " + e.getMessage(), e);
       }
-
-      final MemorySegment instanceOut = importArena.allocate(ValueLayout.ADDRESS);
-
-      final int result =
-          INSTANCE_BINDINGS.panamaInstanceCreateWithImports(
-              nativeStore,
-              panamaModule.getNativeModule(),
-              externPtrs,
-              externTypes,
-              imports.length,
-              instanceOut);
-
-      if (result != 0) {
-        throw new WasmException("Failed to create instance with imports");
-      }
-
-      final MemorySegment instancePtr = instanceOut.get(ValueLayout.ADDRESS, 0);
-      if (instancePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException("Created instance pointer is null");
-      }
-
-      return new PanamaInstance(instancePtr, panamaModule, this);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw new WasmException("Error creating instance with imports: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -2011,8 +2116,12 @@ public final class PanamaStore implements Store {
    * @return the arena resource manager
    */
   public ArenaResourceManager getResourceManager() {
-    ensureNotClosed();
-    return resourceManager;
+    resourceHandle.beginOperation();
+    try {
+      return resourceManager;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -2026,10 +2135,14 @@ public final class PanamaStore implements Store {
 
   @Override
   public void gc() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    final int result = NATIVE_BINDINGS.storeGc(nativeStore);
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to perform garbage collection");
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_BINDINGS.storeGc(nativeStore);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to perform garbage collection");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -2049,43 +2162,59 @@ public final class PanamaStore implements Store {
   @Override
   public ai.tegmentum.wasmtime4j.ExnRef takePendingException()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    final java.lang.foreign.MemorySegment exnRefPtr =
-        NATIVE_BINDINGS.storeTakePendingException(nativeStore);
-    if (exnRefPtr == null || exnRefPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
-      return null;
+    resourceHandle.beginOperation();
+    try {
+      final java.lang.foreign.MemorySegment exnRefPtr =
+          NATIVE_BINDINGS.storeTakePendingException(nativeStore);
+      if (exnRefPtr == null || exnRefPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+        return null;
+      }
+      return new PanamaExnRef(exnRefPtr, nativeStore);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return new PanamaExnRef(exnRefPtr, nativeStore);
   }
 
   @Override
   public boolean hasPendingException() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.storeHasPendingException(nativeStore) != 0;
+    try {
+      return NATIVE_BINDINGS.storeHasPendingException(nativeStore) != 0;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void epochDeadlineAsyncYieldAndUpdate(final long deltaTicks)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    if (deltaTicks < 0) {
-      throw new IllegalArgumentException("deltaTicks cannot be negative");
-    }
-    final int result =
-        NATIVE_BINDINGS.storeEpochDeadlineAsyncYieldAndUpdate(nativeStore, deltaTicks);
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to set epoch deadline async yield");
+    resourceHandle.beginOperation();
+    try {
+      if (deltaTicks < 0) {
+        throw new IllegalArgumentException("deltaTicks cannot be negative");
+      }
+      final int result =
+          NATIVE_BINDINGS.storeEpochDeadlineAsyncYieldAndUpdate(nativeStore, deltaTicks);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to set epoch deadline async yield");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void epochDeadlineTrap() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    final int result = NATIVE_BINDINGS.storeEpochDeadlineTrap(nativeStore);
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to set epoch deadline trap");
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_BINDINGS.storeEpochDeadlineTrap(nativeStore);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to set epoch deadline trap");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -2093,58 +2222,63 @@ public final class PanamaStore implements Store {
   public void epochDeadlineCallback(
       final ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback callback)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    LOGGER.fine("epochDeadlineCallback called, callback=" + callback);
+      LOGGER.fine("epochDeadlineCallback called, callback=" + callback);
 
-    // Remove existing callback if any
-    final long oldEpochId = epochCallbackId.get();
-    if (oldEpochId != 0) {
-      EPOCH_CALLBACKS.remove(oldEpochId);
-      epochCallbackId.set(0);
-    }
-
-    // Store callback reference to prevent GC
-    this.epochDeadlineCallback = callback;
-
-    int result;
-    if (callback == null) {
-      // Clear the callback
-      result = NATIVE_BINDINGS.storeClearEpochDeadlineCallback(nativeStore);
-    } else {
-      // Check if upcall stub was created successfully
-      if (EPOCH_CALLBACK_STUB == null) {
-        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-            "Epoch callback infrastructure not initialized");
-      }
-
-      // Generate a unique callback ID and register the callback
-      final long newCallbackId = EPOCH_CALLBACK_ID_COUNTER.getAndIncrement();
-      EPOCH_CALLBACKS.put(newCallbackId, callback);
-      epochCallbackId.set(newCallbackId);
-
-      LOGGER.fine(
-          "Calling native storeSetEpochDeadlineCallbackFn: callbackId="
-              + newCallbackId
-              + ", stub="
-              + EPOCH_CALLBACK_STUB);
-
-      // Set the callback with function pointer
-      result =
-          NATIVE_BINDINGS.storeSetEpochDeadlineCallbackFn(
-              nativeStore, EPOCH_CALLBACK_STUB, newCallbackId);
-
-      LOGGER.fine("Native call returned: " + result);
-
-      if (result != 0) {
-        // Cleanup on failure
-        EPOCH_CALLBACKS.remove(newCallbackId);
+      // Remove existing callback if any
+      final long oldEpochId = epochCallbackId.get();
+      if (oldEpochId != 0) {
+        EPOCH_CALLBACKS.remove(oldEpochId);
         epochCallbackId.set(0);
       }
-    }
 
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure epoch deadline callback");
+      // Store callback reference to prevent GC
+      this.epochDeadlineCallback = callback;
+
+      int result;
+      if (callback == null) {
+        // Clear the callback
+        result = NATIVE_BINDINGS.storeClearEpochDeadlineCallback(nativeStore);
+      } else {
+        // Check if upcall stub was created successfully
+        if (EPOCH_CALLBACK_STUB == null) {
+          throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+              "Epoch callback infrastructure not initialized");
+        }
+
+        // Generate a unique callback ID and register the callback
+        final long newCallbackId = EPOCH_CALLBACK_ID_COUNTER.getAndIncrement();
+        EPOCH_CALLBACKS.put(newCallbackId, callback);
+        epochCallbackId.set(newCallbackId);
+
+        LOGGER.fine(
+            "Calling native storeSetEpochDeadlineCallbackFn: callbackId="
+                + newCallbackId
+                + ", stub="
+                + EPOCH_CALLBACK_STUB);
+
+        // Set the callback with function pointer
+        result =
+            NATIVE_BINDINGS.storeSetEpochDeadlineCallbackFn(
+                nativeStore, EPOCH_CALLBACK_STUB, newCallbackId);
+
+        LOGGER.fine("Native call returned: " + result);
+
+        if (result != 0) {
+          // Cleanup on failure
+          EPOCH_CALLBACKS.remove(newCallbackId);
+          epochCallbackId.set(0);
+        }
+      }
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to configure epoch deadline callback");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -2156,53 +2290,61 @@ public final class PanamaStore implements Store {
     if (handler == null) {
       throw new NullPointerException("handler cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Remove previous debug handler registration if any
-    final long oldDebugId = debugHandlerCallbackId.get();
-    if (oldDebugId != 0) {
-      DEBUG_HANDLERS.remove(oldDebugId);
-      debugHandlerCallbackId.set(0);
-    }
+      // Remove previous debug handler registration if any
+      final long oldDebugId = debugHandlerCallbackId.get();
+      if (oldDebugId != 0) {
+        DEBUG_HANDLERS.remove(oldDebugId);
+        debugHandlerCallbackId.set(0);
+      }
 
-    this.debugHandler = handler;
+      this.debugHandler = handler;
 
-    if (DEBUG_HANDLER_STUB == null) {
-      throw new IllegalStateException("Debug handler callback infrastructure not initialized");
-    }
+      if (DEBUG_HANDLER_STUB == null) {
+        throw new IllegalStateException("Debug handler callback infrastructure not initialized");
+      }
 
-    // Generate a unique callback ID and register the handler
-    final long newDebugId = DEBUG_HANDLER_ID_COUNTER.getAndIncrement();
-    DEBUG_HANDLERS.put(newDebugId, handler);
-    debugHandlerCallbackId.set(newDebugId);
+      // Generate a unique callback ID and register the handler
+      final long newDebugId = DEBUG_HANDLER_ID_COUNTER.getAndIncrement();
+      DEBUG_HANDLERS.put(newDebugId, handler);
+      debugHandlerCallbackId.set(newDebugId);
 
-    final int result =
-        NATIVE_BINDINGS.storeSetDebugHandlerFn(nativeStore, DEBUG_HANDLER_STUB, newDebugId);
+      final int result =
+          NATIVE_BINDINGS.storeSetDebugHandlerFn(nativeStore, DEBUG_HANDLER_STUB, newDebugId);
 
-    if (result != 0) {
-      // Cleanup on failure
-      DEBUG_HANDLERS.remove(newDebugId);
-      debugHandlerCallbackId.set(0);
-      throw new IllegalStateException("Failed to set debug handler: native error " + result);
+      if (result != 0) {
+        // Cleanup on failure
+        DEBUG_HANDLERS.remove(newDebugId);
+        debugHandlerCallbackId.set(0);
+        throw new IllegalStateException("Failed to set debug handler: native error " + result);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void clearDebugHandler() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Remove debug handler registration
-    final long oldDebugId = debugHandlerCallbackId.get();
-    if (oldDebugId != 0) {
-      DEBUG_HANDLERS.remove(oldDebugId);
-      debugHandlerCallbackId.set(0);
-    }
+      // Remove debug handler registration
+      final long oldDebugId = debugHandlerCallbackId.get();
+      if (oldDebugId != 0) {
+        DEBUG_HANDLERS.remove(oldDebugId);
+        debugHandlerCallbackId.set(0);
+      }
 
-    this.debugHandler = null;
+      this.debugHandler = null;
 
-    final int result = NATIVE_BINDINGS.storeClearDebugHandler(nativeStore);
-    if (result != 0) {
-      throw new IllegalStateException("Failed to clear debug handler: native error " + result);
+      final int result = NATIVE_BINDINGS.storeClearDebugHandler(nativeStore);
+      if (result != 0) {
+        throw new IllegalStateException("Failed to clear debug handler: native error " + result);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -2215,54 +2357,62 @@ public final class PanamaStore implements Store {
   @Override
   public void setCallHook(final ai.tegmentum.wasmtime4j.func.CallHookHandler handler)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Remove previous callback registration if any
-    final long oldHookId = callHookCallbackId.get();
-    if (oldHookId != 0) {
-      CALL_HOOK_HANDLERS.remove(oldHookId);
-      callHookCallbackId.set(0);
-    }
-
-    this.callHookHandler = handler;
-    int result;
-    if (handler == null) {
-      result = NATIVE_BINDINGS.storeClearCallHook(nativeStore);
-    } else if (CALL_HOOK_STUB == null) {
-      // Fallback to no-op hook if stub creation failed
-      LOGGER.warning("Call hook stub not available, installing no-op hook");
-      result = NATIVE_BINDINGS.storeSetCallHook(nativeStore);
-    } else {
-      // Register callback and install hook with function pointer
-      final long id = CALL_HOOK_CALLBACK_ID_COUNTER.getAndIncrement();
-      CALL_HOOK_HANDLERS.put(id, handler);
-      callHookCallbackId.set(id);
-      result = INSTANCE_BINDINGS.storeSetCallHookFn(nativeStore, CALL_HOOK_STUB, id);
-    }
-    if (result != 0) {
-      // Clean up on failure
-      final long failedHookId = callHookCallbackId.get();
-      if (failedHookId != 0) {
-        CALL_HOOK_HANDLERS.remove(failedHookId);
+      // Remove previous callback registration if any
+      final long oldHookId = callHookCallbackId.get();
+      if (oldHookId != 0) {
+        CALL_HOOK_HANDLERS.remove(oldHookId);
         callHookCallbackId.set(0);
       }
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure call hook");
+
+      this.callHookHandler = handler;
+      int result;
+      if (handler == null) {
+        result = NATIVE_BINDINGS.storeClearCallHook(nativeStore);
+      } else if (CALL_HOOK_STUB == null) {
+        // Fallback to no-op hook if stub creation failed
+        LOGGER.warning("Call hook stub not available, installing no-op hook");
+        result = NATIVE_BINDINGS.storeSetCallHook(nativeStore);
+      } else {
+        // Register callback and install hook with function pointer
+        final long id = CALL_HOOK_CALLBACK_ID_COUNTER.getAndIncrement();
+        CALL_HOOK_HANDLERS.put(id, handler);
+        callHookCallbackId.set(id);
+        result = INSTANCE_BINDINGS.storeSetCallHookFn(nativeStore, CALL_HOOK_STUB, id);
+      }
+      if (result != 0) {
+        // Clean up on failure
+        final long failedHookId = callHookCallbackId.get();
+        if (failedHookId != 0) {
+          CALL_HOOK_HANDLERS.remove(failedHookId);
+          callHookCallbackId.set(0);
+        }
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to configure call hook");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void setCallHookAsync(final ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler handler)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    this.asyncCallHookHandler = handler;
-    int result;
-    if (handler == null) {
-      result = NATIVE_BINDINGS.storeClearCallHookAsync(nativeStore);
-    } else {
-      result = NATIVE_BINDINGS.storeSetCallHookAsync(nativeStore);
-    }
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to configure async call hook");
+    resourceHandle.beginOperation();
+    try {
+      this.asyncCallHookHandler = handler;
+      int result;
+      if (handler == null) {
+        result = NATIVE_BINDINGS.storeClearCallHookAsync(nativeStore);
+      } else {
+        result = NATIVE_BINDINGS.storeSetCallHookAsync(nativeStore);
+      }
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to configure async call hook");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -2360,10 +2510,6 @@ public final class PanamaStore implements Store {
    *
    * @throws IllegalStateException if closed
    */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-  }
-
   // ===== Fuel Async Methods =====
 
   private long fuelAsyncYieldInterval = 0;
@@ -2373,23 +2519,27 @@ public final class PanamaStore implements Store {
     if (interval < 0) {
       throw new IllegalArgumentException("Interval cannot be negative");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
     try {
-      final MethodHandle handle = NATIVE_BINDINGS.getPanamaStoreSetFuelAsyncYieldInterval();
-      if (handle == null) {
-        throw new WasmException(
-            "Panama store set fuel async yield interval function not available");
+      try {
+        final MethodHandle handle = NATIVE_BINDINGS.getPanamaStoreSetFuelAsyncYieldInterval();
+        if (handle == null) {
+          throw new WasmException(
+              "Panama store set fuel async yield interval function not available");
+        }
+        final int result = (int) handle.invoke(nativeStore, interval);
+        if (result != 0) {
+          throw new WasmException("Failed to set fuel async yield interval");
+        }
+        this.fuelAsyncYieldInterval = interval;
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error setting fuel async yield interval: " + e.getMessage(), e);
       }
-      final int result = (int) handle.invoke(nativeStore, interval);
-      if (result != 0) {
-        throw new WasmException("Failed to set fuel async yield interval");
-      }
-      this.fuelAsyncYieldInterval = interval;
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error setting fuel async yield interval: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -2403,15 +2553,23 @@ public final class PanamaStore implements Store {
   @Override
   public ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    return captureBacktraceInternal(false);
+    resourceHandle.beginOperation();
+    try {
+      return captureBacktraceInternal(false);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    return captureBacktraceInternal(true);
+    resourceHandle.beginOperation();
+    try {
+      return captureBacktraceInternal(true);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   private ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktraceInternal(final boolean force)
@@ -2463,175 +2621,198 @@ public final class PanamaStore implements Store {
 
   @Override
   public boolean isSingleStep() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
     try {
-      final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreIsSingleStep();
-      if (handle == null) {
+      try {
+        final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreIsSingleStep();
+        if (handle == null) {
+          return false;
+        }
+        final int result = (int) handle.invoke(nativeStore);
+        return result == 1;
+      } catch (final Throwable e) {
         return false;
       }
-      final int result = (int) handle.invoke(nativeStore);
-      return result == 1;
-    } catch (final Throwable e) {
-      return false;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
       throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
     try {
-      final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreDebugExitFrames();
-      if (handle == null) {
-        throw new WasmException("Panama store debug exit frames function not available");
-      }
+      try {
+        final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreDebugExitFrames();
+        if (handle == null) {
+          throw new WasmException("Panama store debug exit frames function not available");
+        }
 
-      // Phase 1: get frame count with null data pointer
-      final java.lang.foreign.MemorySegment countSegment = arena.allocate(ValueLayout.JAVA_INT);
-      final int countResult =
-          (int) handle.invoke(nativeStore, java.lang.foreign.MemorySegment.NULL, countSegment);
-      if (countResult == -1) {
-        return java.util.Collections.emptyList(); // debugging not enabled
-      }
-      if (countResult < 0) {
-        throw new WasmException("Failed to get debug exit frames: error code " + countResult);
-      }
-      final int frameCount = countSegment.get(ValueLayout.JAVA_INT, 0);
-      if (frameCount <= 0) {
-        return java.util.Collections.emptyList();
-      }
+        // Phase 1: get frame count with null data pointer
+        final java.lang.foreign.MemorySegment countSegment = arena.allocate(ValueLayout.JAVA_INT);
+        final int countResult =
+            (int) handle.invoke(nativeStore, java.lang.foreign.MemorySegment.NULL, countSegment);
+        if (countResult == -1) {
+          return java.util.Collections.emptyList(); // debugging not enabled
+        }
+        if (countResult < 0) {
+          throw new WasmException("Failed to get debug exit frames: error code " + countResult);
+        }
+        final int frameCount = countSegment.get(ValueLayout.JAVA_INT, 0);
+        if (frameCount <= 0) {
+          return java.util.Collections.emptyList();
+        }
 
-      // Phase 2: allocate buffer and get frame data
-      final java.lang.foreign.MemorySegment dataSegment =
-          arena.allocate(ValueLayout.JAVA_INT, (long) frameCount * 4);
-      final int dataResult = (int) handle.invoke(nativeStore, dataSegment, countSegment);
-      if (dataResult < 0) {
-        throw new WasmException("Failed to get debug exit frame data: error code " + dataResult);
-      }
+        // Phase 2: allocate buffer and get frame data
+        final java.lang.foreign.MemorySegment dataSegment =
+            arena.allocate(ValueLayout.JAVA_INT, (long) frameCount * 4);
+        final int dataResult = (int) handle.invoke(nativeStore, dataSegment, countSegment);
+        if (dataResult < 0) {
+          throw new WasmException("Failed to get debug exit frame data: error code " + dataResult);
+        }
 
-      // Parse frame data: 4 ints per frame [func_index, pc, num_locals, num_stacks]
-      final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
-          new java.util.ArrayList<>(frameCount);
-      for (int i = 0; i < frameCount; i++) {
-        final long base = (long) i * 4 * ValueLayout.JAVA_INT.byteSize();
-        frames.add(
-            new ai.tegmentum.wasmtime4j.debug.FrameHandle(
-                0L, // no native ptr for snapshot approach
-                dataSegment.get(ValueLayout.JAVA_INT, base), // functionIndex
-                dataSegment.get(ValueLayout.JAVA_INT, base + ValueLayout.JAVA_INT.byteSize()), // pc
-                dataSegment.get(ValueLayout.JAVA_INT, base + 2 * ValueLayout.JAVA_INT.byteSize()),
-                dataSegment.get(ValueLayout.JAVA_INT, base + 3 * ValueLayout.JAVA_INT.byteSize()),
-                null, // instance (not available in snapshot)
-                null)); // module (not available in snapshot)
+        // Parse frame data: 4 ints per frame [func_index, pc, num_locals, num_stacks]
+        final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
+            new java.util.ArrayList<>(frameCount);
+        for (int i = 0; i < frameCount; i++) {
+          final long base = (long) i * 4 * ValueLayout.JAVA_INT.byteSize();
+          frames.add(
+              new ai.tegmentum.wasmtime4j.debug.FrameHandle(
+                  0L, // no native ptr for snapshot approach
+                  dataSegment.get(ValueLayout.JAVA_INT, base), // functionIndex
+                  dataSegment.get(
+                      ValueLayout.JAVA_INT, base + ValueLayout.JAVA_INT.byteSize()), // pc
+                  dataSegment.get(ValueLayout.JAVA_INT, base + 2 * ValueLayout.JAVA_INT.byteSize()),
+                  dataSegment.get(ValueLayout.JAVA_INT, base + 3 * ValueLayout.JAVA_INT.byteSize()),
+                  null, // instance (not available in snapshot)
+                  null)); // module (not available in snapshot)
+        }
+        return frames;
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error getting debug exit frames: " + e.getMessage(), e);
       }
-      return frames;
-    } catch (final Throwable e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException("Error getting debug exit frames: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public boolean isAsync() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
     try {
-      final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreIsAsync();
-      if (handle == null) {
+      try {
+        final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreIsAsync();
+        if (handle == null) {
+          return false;
+        }
+        final int result = (int) handle.invoke(nativeStore);
+        return result == 1;
+      } catch (final Throwable e) {
         return false;
       }
-      final int result = (int) handle.invoke(nativeStore);
-      return result == 1;
-    } catch (final Throwable e) {
-      return false;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public java.util.Optional<java.util.List<ai.tegmentum.wasmtime4j.debug.Breakpoint>>
       breakpoints() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
     try {
-      final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreBreakpointCount();
-      if (handle == null) {
+      try {
+        final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreBreakpointCount();
+        if (handle == null) {
+          return java.util.Optional.empty();
+        }
+        final int result = (int) handle.invoke(nativeStore);
+        if (result == -1) {
+          return java.util.Optional.empty(); // debugging not enabled
+        }
+        if (result < 0) {
+          return java.util.Optional.empty(); // error
+        }
+        // We can return the count but not individual breakpoint details without iteration support
+        return java.util.Optional.of(java.util.Collections.emptyList());
+      } catch (final Throwable e) {
         return java.util.Optional.empty();
       }
-      final int result = (int) handle.invoke(nativeStore);
-      if (result == -1) {
-        return java.util.Optional.empty(); // debugging not enabled
-      }
-      if (result < 0) {
-        return java.util.Optional.empty(); // error
-      }
-      // We can return the count but not individual breakpoint details without iteration support
-      return java.util.Optional.of(java.util.Collections.emptyList());
-    } catch (final Throwable e) {
-      return java.util.Optional.empty();
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public java.util.Optional<ai.tegmentum.wasmtime4j.debug.BreakpointEditor> editBreakpoints() {
-    ensureNotClosed();
-    final java.lang.invoke.MethodHandle addHandle = NATIVE_BINDINGS.getStoreAddBreakpoint();
-    final java.lang.invoke.MethodHandle removeHandle = NATIVE_BINDINGS.getStoreRemoveBreakpoint();
-    final java.lang.invoke.MethodHandle singleStepHandle = NATIVE_BINDINGS.getStoreSetSingleStep();
-    if (addHandle == null || removeHandle == null || singleStepHandle == null) {
-      return java.util.Optional.empty();
+    resourceHandle.beginOperation();
+    try {
+      final java.lang.invoke.MethodHandle addHandle = NATIVE_BINDINGS.getStoreAddBreakpoint();
+      final java.lang.invoke.MethodHandle removeHandle = NATIVE_BINDINGS.getStoreRemoveBreakpoint();
+      final java.lang.invoke.MethodHandle singleStepHandle =
+          NATIVE_BINDINGS.getStoreSetSingleStep();
+      if (addHandle == null || removeHandle == null || singleStepHandle == null) {
+        return java.util.Optional.empty();
+      }
+      final java.lang.foreign.MemorySegment storeRef = nativeStore;
+      return java.util.Optional.of(
+          new ai.tegmentum.wasmtime4j.debug.BreakpointEditor() {
+            @Override
+            public ai.tegmentum.wasmtime4j.debug.BreakpointEditor addBreakpoint(
+                final ai.tegmentum.wasmtime4j.Module module, final int pc) {
+              java.util.Objects.requireNonNull(module, "module cannot be null");
+              if (pc < 0) {
+                throw new IllegalArgumentException("pc cannot be negative: " + pc);
+              }
+              try {
+                final java.lang.foreign.MemorySegment modulePtr =
+                    ((PanamaModule) module).getNativeModule();
+                addHandle.invoke(storeRef, modulePtr, pc);
+              } catch (final Throwable e) {
+                throw new RuntimeException("Failed to add breakpoint: " + e.getMessage(), e);
+              }
+              return this;
+            }
+
+            @Override
+            public ai.tegmentum.wasmtime4j.debug.BreakpointEditor removeBreakpoint(
+                final ai.tegmentum.wasmtime4j.Module module, final int pc) {
+              java.util.Objects.requireNonNull(module, "module cannot be null");
+              if (pc < 0) {
+                throw new IllegalArgumentException("pc cannot be negative: " + pc);
+              }
+              try {
+                final java.lang.foreign.MemorySegment modulePtr =
+                    ((PanamaModule) module).getNativeModule();
+                removeHandle.invoke(storeRef, modulePtr, pc);
+              } catch (final Throwable e) {
+                throw new RuntimeException("Failed to remove breakpoint: " + e.getMessage(), e);
+              }
+              return this;
+            }
+
+            @Override
+            public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(
+                final boolean enabled) {
+              try {
+                singleStepHandle.invoke(storeRef, enabled ? 1 : 0);
+              } catch (final Throwable e) {
+                throw new RuntimeException("Failed to set single step: " + e.getMessage(), e);
+              }
+              return this;
+            }
+
+            @Override
+            public void apply() {
+              // Breakpoint edits are applied immediately via native calls
+            }
+          });
+    } finally {
+      resourceHandle.endOperation();
     }
-    final java.lang.foreign.MemorySegment storeRef = nativeStore;
-    return java.util.Optional.of(
-        new ai.tegmentum.wasmtime4j.debug.BreakpointEditor() {
-          @Override
-          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor addBreakpoint(
-              final ai.tegmentum.wasmtime4j.Module module, final int pc) {
-            java.util.Objects.requireNonNull(module, "module cannot be null");
-            if (pc < 0) {
-              throw new IllegalArgumentException("pc cannot be negative: " + pc);
-            }
-            try {
-              final java.lang.foreign.MemorySegment modulePtr =
-                  ((PanamaModule) module).getNativeModule();
-              addHandle.invoke(storeRef, modulePtr, pc);
-            } catch (final Throwable e) {
-              throw new RuntimeException("Failed to add breakpoint: " + e.getMessage(), e);
-            }
-            return this;
-          }
-
-          @Override
-          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor removeBreakpoint(
-              final ai.tegmentum.wasmtime4j.Module module, final int pc) {
-            java.util.Objects.requireNonNull(module, "module cannot be null");
-            if (pc < 0) {
-              throw new IllegalArgumentException("pc cannot be negative: " + pc);
-            }
-            try {
-              final java.lang.foreign.MemorySegment modulePtr =
-                  ((PanamaModule) module).getNativeModule();
-              removeHandle.invoke(storeRef, modulePtr, pc);
-            } catch (final Throwable e) {
-              throw new RuntimeException("Failed to remove breakpoint: " + e.getMessage(), e);
-            }
-            return this;
-          }
-
-          @Override
-          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(final boolean enabled) {
-            try {
-              singleStepHandle.invoke(storeRef, enabled ? 1 : 0);
-            } catch (final Throwable e) {
-              throw new RuntimeException("Failed to set single step: " + e.getMessage(), e);
-            }
-            return this;
-          }
-
-          @Override
-          public void apply() {
-            // Breakpoint edits are applied immediately via native calls
-          }
-        });
   }
 
   // ===== Native Async Bridge Methods =====
@@ -2641,139 +2822,159 @@ public final class PanamaStore implements Store {
 
   @Override
   public java.util.concurrent.CompletableFuture<Void> gcAsync() {
-    ensureNotClosed();
-    if (ASYNC_COMPLETION_STUB == null) {
-      return Store.super.gcAsync(); // fallback to default if stub unavailable
-    }
-    final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
-    final java.util.concurrent.CompletableFuture<Long> rawFuture =
-        new java.util.concurrent.CompletableFuture<>();
-    ASYNC_FUTURES.put(callbackId, rawFuture);
+    resourceHandle.beginOperation();
     try {
-      NATIVE_BINDINGS.storeGcAsyncBridge(nativeStore, ASYNC_COMPLETION_STUB, callbackId);
-    } catch (final Exception e) {
-      ASYNC_FUTURES.remove(callbackId);
-      rawFuture.completeExceptionally(new WasmException("Failed to start async gc: " + e, e));
+      if (ASYNC_COMPLETION_STUB == null) {
+        return Store.super.gcAsync(); // fallback to default if stub unavailable
+      }
+      final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
+      final java.util.concurrent.CompletableFuture<Long> rawFuture =
+          new java.util.concurrent.CompletableFuture<>();
+      ASYNC_FUTURES.put(callbackId, rawFuture);
+      try {
+        NATIVE_BINDINGS.storeGcAsyncBridge(nativeStore, ASYNC_COMPLETION_STUB, callbackId);
+      } catch (final Exception e) {
+        ASYNC_FUTURES.remove(callbackId);
+        rawFuture.completeExceptionally(new WasmException("Failed to start async gc: " + e, e));
+      }
+      return rawFuture.thenApply(v -> null);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return rawFuture.thenApply(v -> null);
   }
 
   @Override
   public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.Instance>
       createInstanceAsync(final ai.tegmentum.wasmtime4j.Module module) {
     java.util.Objects.requireNonNull(module, "Module cannot be null");
-    ensureNotClosed();
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule");
-    }
-    if (ASYNC_COMPLETION_STUB == null) {
-      return Store.super.createInstanceAsync(module);
-    }
-    final PanamaModule panamaModule = (PanamaModule) module;
-    final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
-    final java.util.concurrent.CompletableFuture<Long> rawFuture =
-        new java.util.concurrent.CompletableFuture<>();
-    ASYNC_FUTURES.put(callbackId, rawFuture);
+    resourceHandle.beginOperation();
     try {
-      NATIVE_BINDINGS.storeCreateInstanceAsyncBridge(
-          nativeStore, panamaModule.getNativeModule(), ASYNC_COMPLETION_STUB, callbackId);
-    } catch (final Exception e) {
-      ASYNC_FUTURES.remove(callbackId);
-      rawFuture.completeExceptionally(
-          new WasmException("Failed to start async createInstance: " + e, e));
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule");
+      }
+      if (ASYNC_COMPLETION_STUB == null) {
+        return Store.super.createInstanceAsync(module);
+      }
+      final PanamaModule panamaModule = (PanamaModule) module;
+      final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
+      final java.util.concurrent.CompletableFuture<Long> rawFuture =
+          new java.util.concurrent.CompletableFuture<>();
+      ASYNC_FUTURES.put(callbackId, rawFuture);
+      try {
+        NATIVE_BINDINGS.storeCreateInstanceAsyncBridge(
+            nativeStore, panamaModule.getNativeModule(), ASYNC_COMPLETION_STUB, callbackId);
+      } catch (final Exception e) {
+        ASYNC_FUTURES.remove(callbackId);
+        rawFuture.completeExceptionally(
+            new WasmException("Failed to start async createInstance: " + e, e));
+      }
+      return rawFuture.thenApply(
+          ptr -> {
+            final MemorySegment instancePtr =
+                MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
+            return new PanamaInstance(instancePtr, panamaModule, this);
+          });
+    } finally {
+      resourceHandle.endOperation();
     }
-    return rawFuture.thenApply(
-        ptr -> {
-          final MemorySegment instancePtr =
-              MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
-          return new PanamaInstance(instancePtr, panamaModule, this);
-        });
   }
 
   @Override
   public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
       createMemoryAsync(final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) {
     Validation.requireNonNull(memoryType, "memoryType");
-    ensureNotClosed();
-    if (ASYNC_COMPLETION_STUB == null) {
-      return Store.super.createMemoryAsync(memoryType);
-    }
-
-    final long minPages = memoryType.getMinimum();
-    final long maxPages = memoryType.getMaximum().orElse(-1L);
-    final int isShared = memoryType.isShared() ? 1 : 0;
-    final int is64 = memoryType.is64Bit() ? 1 : 0;
-
-    if (minPages < 0) {
-      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
-    }
-    if (maxPages != -1 && maxPages < minPages) {
-      throw new IllegalArgumentException(
-          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
-    }
-
-    final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
-    final java.util.concurrent.CompletableFuture<Long> rawFuture =
-        new java.util.concurrent.CompletableFuture<>();
-    ASYNC_FUTURES.put(callbackId, rawFuture);
+    resourceHandle.beginOperation();
     try {
-      NATIVE_BINDINGS.storeCreateMemoryAsyncBridge(
-          nativeStore, minPages, maxPages, isShared, is64, ASYNC_COMPLETION_STUB, callbackId);
-    } catch (final Exception e) {
-      ASYNC_FUTURES.remove(callbackId);
-      rawFuture.completeExceptionally(
-          new WasmException("Failed to start async createMemory: " + e, e));
+      if (ASYNC_COMPLETION_STUB == null) {
+        return Store.super.createMemoryAsync(memoryType);
+      }
+
+      final long minPages = memoryType.getMinimum();
+      final long maxPages = memoryType.getMaximum().orElse(-1L);
+      final int isShared = memoryType.isShared() ? 1 : 0;
+      final int is64 = memoryType.is64Bit() ? 1 : 0;
+
+      if (minPages < 0) {
+        throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+      }
+      if (maxPages != -1 && maxPages < minPages) {
+        throw new IllegalArgumentException(
+            "Maximum pages ("
+                + maxPages
+                + ") cannot be less than minimum pages ("
+                + minPages
+                + ")");
+      }
+
+      final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
+      final java.util.concurrent.CompletableFuture<Long> rawFuture =
+          new java.util.concurrent.CompletableFuture<>();
+      ASYNC_FUTURES.put(callbackId, rawFuture);
+      try {
+        NATIVE_BINDINGS.storeCreateMemoryAsyncBridge(
+            nativeStore, minPages, maxPages, isShared, is64, ASYNC_COMPLETION_STUB, callbackId);
+      } catch (final Exception e) {
+        ASYNC_FUTURES.remove(callbackId);
+        rawFuture.completeExceptionally(
+            new WasmException("Failed to start async createMemory: " + e, e));
+      }
+      return rawFuture.thenApply(
+          ptr -> {
+            final MemorySegment memPtr = MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
+            return new PanamaMemory(memPtr, this);
+          });
+    } finally {
+      resourceHandle.endOperation();
     }
-    return rawFuture.thenApply(
-        ptr -> {
-          final MemorySegment memPtr = MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
-          return new PanamaMemory(memPtr, this);
-        });
   }
 
   @Override
   public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
       final ai.tegmentum.wasmtime4j.type.TableType tableType) {
     Validation.requireNonNull(tableType, "tableType");
-    ensureNotClosed();
-    if (ASYNC_COMPLETION_STUB == null) {
-      return Store.super.createTableAsync(tableType);
-    }
-
-    final ai.tegmentum.wasmtime4j.WasmValueType elementType = tableType.getElementType();
-    final long minSize = tableType.getMinimum();
-    final long maxSize = tableType.getMaximum().orElse(-1L);
-
-    if (elementType != ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF
-        && elementType != ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
-      throw new IllegalArgumentException(
-          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
-    }
-
-    final int elemTypeCode =
-        (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) ? 0x70 : 0x6F;
-
-    final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
-    final java.util.concurrent.CompletableFuture<Long> rawFuture =
-        new java.util.concurrent.CompletableFuture<>();
-    ASYNC_FUTURES.put(callbackId, rawFuture);
+    resourceHandle.beginOperation();
     try {
-      NATIVE_BINDINGS.storeCreateTableAsyncBridge(
-          nativeStore,
-          elemTypeCode,
-          (int) minSize,
-          (int) maxSize,
-          ASYNC_COMPLETION_STUB,
-          callbackId);
-    } catch (final Exception e) {
-      ASYNC_FUTURES.remove(callbackId);
-      rawFuture.completeExceptionally(
-          new WasmException("Failed to start async createTable: " + e, e));
+      if (ASYNC_COMPLETION_STUB == null) {
+        return Store.super.createTableAsync(tableType);
+      }
+
+      final ai.tegmentum.wasmtime4j.WasmValueType elementType = tableType.getElementType();
+      final long minSize = tableType.getMinimum();
+      final long maxSize = tableType.getMaximum().orElse(-1L);
+
+      if (elementType != ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF
+          && elementType != ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF) {
+        throw new IllegalArgumentException(
+            "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+      }
+
+      final int elemTypeCode =
+          (elementType == ai.tegmentum.wasmtime4j.WasmValueType.FUNCREF) ? 0x70 : 0x6F;
+
+      final long callbackId = ASYNC_CALLBACK_ID_COUNTER.getAndIncrement();
+      final java.util.concurrent.CompletableFuture<Long> rawFuture =
+          new java.util.concurrent.CompletableFuture<>();
+      ASYNC_FUTURES.put(callbackId, rawFuture);
+      try {
+        NATIVE_BINDINGS.storeCreateTableAsyncBridge(
+            nativeStore,
+            elemTypeCode,
+            (int) minSize,
+            (int) maxSize,
+            ASYNC_COMPLETION_STUB,
+            callbackId);
+      } catch (final Exception e) {
+        ASYNC_FUTURES.remove(callbackId);
+        rawFuture.completeExceptionally(
+            new WasmException("Failed to start async createTable: " + e, e));
+      }
+      return rawFuture.thenApply(
+          ptr -> {
+            final MemorySegment tablePtr = MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
+            return new PanamaTable(tablePtr, this);
+          });
+    } finally {
+      resourceHandle.endOperation();
     }
-    return rawFuture.thenApply(
-        ptr -> {
-          final MemorySegment tablePtr = MemorySegment.ofAddress(ptr).reinterpret(Long.MAX_VALUE);
-          return new PanamaTable(tablePtr, this);
-        });
   }
 }

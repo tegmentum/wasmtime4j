@@ -228,10 +228,14 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
 
   @Override
   public boolean isValid() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return bindings.wasiHttpContextIsValid(contextPtr) != 0;
+    try {
+      return bindings.wasiHttpContextIsValid(contextPtr) != 0;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -239,28 +243,36 @@ public final class PanamaWasiHttpContext implements WasiHttpContext {
     if (host == null) {
       throw new IllegalArgumentException("host cannot be null");
     }
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
+    try {
 
-    final MemorySegment hostStr = arena.allocateFrom(host);
-    return bindings.wasiHttpContextIsHostAllowed(contextPtr, hostStr) != 0;
+      final MemorySegment hostStr = arena.allocateFrom(host);
+      return bindings.wasiHttpContextIsHostAllowed(contextPtr, hostStr) != 0;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public WasiHttpStats getStats() {
-    if (resourceHandle.isClosed()) {
-      throw new IllegalStateException("WASI HTTP context has been closed");
+    resourceHandle.beginOperation();
+    try {
+      return new PanamaWasiHttpStats(bindings, contextPtr);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return new PanamaWasiHttpStats(bindings, contextPtr);
   }
 
   @Override
   public void resetStats() {
-    if (resourceHandle.isClosed()) {
-      throw new IllegalStateException("WASI HTTP context has been closed");
+    resourceHandle.beginOperation();
+    try {
+      bindings.wasiHttpContextResetStats(contextPtr);
+    } finally {
+      resourceHandle.endOperation();
     }
-    bindings.wasiHttpContextResetStats(contextPtr);
   }
 
   @Override

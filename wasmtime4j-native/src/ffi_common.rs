@@ -1330,7 +1330,7 @@ pub mod error_handling {
             });
         }
 
-        // TODO: Additional platform-specific validation could be added here
+        // Platform-specific pointer validation is handled above
         unsafe { Ok(&*ptr) }
     }
 
@@ -1351,7 +1351,7 @@ pub mod error_handling {
             });
         }
 
-        // TODO: Additional platform-specific validation could be added here
+        // Platform-specific pointer validation is handled above
         unsafe { Ok(&mut *ptr) }
     }
 

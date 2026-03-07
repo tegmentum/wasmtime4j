@@ -85,9 +85,13 @@ public final class WasiContext extends JniResource {
    * @throws JniException if the context is closed or name is invalid
    */
   public String getEnvironmentVariable(final String name) {
-    ensureNotClosed();
     Validation.requireNonEmpty(name, "name");
-    return contextData.getEnvironmentVariable(name);
+    beginOperation();
+    try {
+      return contextData.getEnvironmentVariable(name);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -97,8 +101,12 @@ public final class WasiContext extends JniResource {
    * @throws JniException if the context is closed
    */
   public Map<String, String> getEnvironment() {
-    ensureNotClosed();
-    return contextData.getEnvironment();
+    beginOperation();
+    try {
+      return contextData.getEnvironment();
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -108,8 +116,12 @@ public final class WasiContext extends JniResource {
    * @throws JniException if the context is closed
    */
   public String[] getArguments() {
-    ensureNotClosed();
-    return contextData.getArguments();
+    beginOperation();
+    try {
+      return contextData.getArguments();
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -119,8 +131,12 @@ public final class WasiContext extends JniResource {
    * @throws JniException if the context is closed
    */
   public Map<String, Path> getPreopenedDirectories() {
-    ensureNotClosed();
-    return contextData.getPreopenedDirectories();
+    beginOperation();
+    try {
+      return contextData.getPreopenedDirectories();
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -130,8 +146,12 @@ public final class WasiContext extends JniResource {
    * @throws JniException if the context is closed
    */
   public Path getWorkingDirectory() {
-    ensureNotClosed();
-    return contextData.getWorkingDirectory();
+    beginOperation();
+    try {
+      return contextData.getWorkingDirectory();
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -145,9 +165,13 @@ public final class WasiContext extends JniResource {
    * @throws JniException if the path is not accessible or validation fails
    */
   public Path validatePath(final String path) {
-    ensureNotClosed();
     Validation.requireNonEmpty(path, "path");
-    return contextData.validatePath(path);
+    beginOperation();
+    try {
+      return contextData.validatePath(path);
+    } finally {
+      endOperation();
+    }
   }
 
   /**

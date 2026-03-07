@@ -133,25 +133,33 @@ public final class PanamaMemory implements WasmMemory {
 
   @Override
   public long dataPtr() {
-    ensureNotClosed();
-    final MemorySegment directMem = getDirectMemorySegment();
-    return directMem.address();
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment directMem = getDirectMemorySegment();
+      return directMem.address();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public int pageSizeLog2() {
-    ensureNotClosed();
-    try (final Arena localArena = Arena.ofConfined()) {
-      final MemorySegment pageSizeLog2Out = localArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment memPtr = getMemoryPointer();
-      final PanamaStore panamaStore = getPanamaStore();
-      final MemorySegment storePtr = panamaStore.getNativeStore();
-      final int result =
-          NATIVE_BINDINGS.panamaMemoryGetPageSizeLog2(memPtr, storePtr, pageSizeLog2Out);
-      if (result != 0) {
-        return 16; // Default to standard 64KB page size
+    resourceHandle.beginOperation();
+    try {
+      try (final Arena localArena = Arena.ofConfined()) {
+        final MemorySegment pageSizeLog2Out = localArena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment memPtr = getMemoryPointer();
+        final PanamaStore panamaStore = getPanamaStore();
+        final MemorySegment storePtr = panamaStore.getNativeStore();
+        final int result =
+            NATIVE_BINDINGS.panamaMemoryGetPageSizeLog2(memPtr, storePtr, pageSizeLog2Out);
+        if (result != 0) {
+          return 16; // Default to standard 64KB page size
+        }
+        return pageSizeLog2Out.get(ValueLayout.JAVA_INT, 0);
       }
-      return pageSizeLog2Out.get(ValueLayout.JAVA_INT, 0);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -167,25 +175,30 @@ public final class PanamaMemory implements WasmMemory {
 
   @Override
   public int getSize() {
-    ensureNotClosed();
-    if (instance != null) {
-      final long size = instance.getMemorySize(this);
-      return (int) Math.min(size, Integer.MAX_VALUE);
-    }
-    // Memory created directly by store - use native memory pointer
-    if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
-      try (final Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment sizeOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
-        final int result =
-            NATIVE_BINDINGS.panamaMemorySizePages(nativeMemory, store.getNativeStore(), sizeOutPtr);
-        if (result == 0) {
-          return (int) Math.min(sizeOutPtr.get(ValueLayout.JAVA_LONG, 0), Integer.MAX_VALUE);
-        }
-        throw new IllegalStateException(
-            "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
+    resourceHandle.beginOperation();
+    try {
+      if (instance != null) {
+        final long size = instance.getMemorySize(this);
+        return (int) Math.min(size, Integer.MAX_VALUE);
       }
+      // Memory created directly by store - use native memory pointer
+      if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
+        try (final Arena tempArena = Arena.ofConfined()) {
+          final MemorySegment sizeOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+          final int result =
+              NATIVE_BINDINGS.panamaMemorySizePages(
+                  nativeMemory, store.getNativeStore(), sizeOutPtr);
+          if (result == 0) {
+            return (int) Math.min(sizeOutPtr.get(ValueLayout.JAVA_LONG, 0), Integer.MAX_VALUE);
+          }
+          throw new IllegalStateException(
+              "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
+        }
+      }
+      throw new IllegalStateException("Cannot get size: memory not associated with an instance");
+    } finally {
+      resourceHandle.endOperation();
     }
-    throw new IllegalStateException("Cannot get size: memory not associated with an instance");
   }
 
   @Override
@@ -193,58 +206,70 @@ public final class PanamaMemory implements WasmMemory {
     if (pages < 0) {
       throw new IllegalArgumentException("Pages cannot be negative");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    long result;
-    if (instance != null) {
-      result = instance.growMemory(this, (long) pages);
-    } else if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
-      // Memory created directly by store - use native memory pointer
-      try (final Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment previousPagesOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
-        final int growResult =
-            NATIVE_BINDINGS.panamaMemoryGrow(
-                nativeMemory, store.getNativeStore(), (long) pages, previousPagesOutPtr);
-        if (growResult == 0) {
-          result = previousPagesOutPtr.get(ValueLayout.JAVA_LONG, 0);
-        } else {
-          result = -1L; // Grow failed
+      long result;
+      if (instance != null) {
+        result = instance.growMemory(this, (long) pages);
+      } else if (nativeMemory != null
+          && !nativeMemory.equals(MemorySegment.NULL)
+          && store != null) {
+        // Memory created directly by store - use native memory pointer
+        try (final Arena tempArena = Arena.ofConfined()) {
+          final MemorySegment previousPagesOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+          final int growResult =
+              NATIVE_BINDINGS.panamaMemoryGrow(
+                  nativeMemory, store.getNativeStore(), (long) pages, previousPagesOutPtr);
+          if (growResult == 0) {
+            result = previousPagesOutPtr.get(ValueLayout.JAVA_LONG, 0);
+          } else {
+            result = -1L; // Grow failed
+          }
         }
+      } else {
+        throw new IllegalStateException("Cannot grow: memory not associated with an instance");
       }
-    } else {
-      throw new IllegalStateException("Cannot grow: memory not associated with an instance");
-    }
 
-    // Invalidate cached direct memory segment since grow may relocate memory
-    if (result >= 0) {
-      invalidateDirectMemoryCache();
-    }
+      // Invalidate cached direct memory segment since grow may relocate memory
+      if (result >= 0) {
+        invalidateDirectMemoryCache();
+      }
 
-    return (int) Math.min(result, Integer.MAX_VALUE);
+      return (int) Math.min(result, Integer.MAX_VALUE);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public int getMaxSize() {
-    ensureNotClosed();
-    if (instance != null) {
-      return instance.getMemoryMaxSize(this);
-    }
-    // Memory created directly by store - use native memory pointer
-    if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
-      try (final Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment maxOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
-        final int result =
-            NATIVE_BINDINGS.panamaMemoryGetMaximum(nativeMemory, store.getNativeStore(), maxOutPtr);
-        if (result == 0) {
-          final long maxPages = maxOutPtr.get(ValueLayout.JAVA_LONG, 0);
-          // -1 means unlimited, return Integer.MAX_VALUE for API compatibility
-          return maxPages < 0 ? Integer.MAX_VALUE : (int) maxPages;
-        }
-        throw new IllegalStateException(
-            "Failed to get memory max size: " + PanamaErrorMapper.getErrorDescription(result));
+    resourceHandle.beginOperation();
+    try {
+      if (instance != null) {
+        return instance.getMemoryMaxSize(this);
       }
+      // Memory created directly by store - use native memory pointer
+      if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
+        try (final Arena tempArena = Arena.ofConfined()) {
+          final MemorySegment maxOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+          final int result =
+              NATIVE_BINDINGS.panamaMemoryGetMaximum(
+                  nativeMemory, store.getNativeStore(), maxOutPtr);
+          if (result == 0) {
+            final long maxPages = maxOutPtr.get(ValueLayout.JAVA_LONG, 0);
+            // -1 means unlimited, return Integer.MAX_VALUE for API compatibility
+            return maxPages < 0 ? Integer.MAX_VALUE : (int) maxPages;
+          }
+          throw new IllegalStateException(
+              "Failed to get memory max size: " + PanamaErrorMapper.getErrorDescription(result));
+        }
+      }
+      throw new IllegalStateException(
+          "Cannot get max size: memory not associated with an instance");
+    } finally {
+      resourceHandle.endOperation();
     }
-    throw new IllegalStateException("Cannot get max size: memory not associated with an instance");
   }
 
   @Override
@@ -252,59 +277,71 @@ public final class PanamaMemory implements WasmMemory {
       value = "EI_EXPOSE_BUF",
       justification = "Returns duplicate() of buffer, not the internal reference")
   public ByteBuffer getBuffer() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final long currentTime = System.currentTimeMillis();
+      final long currentTime = System.currentTimeMillis();
 
-    // Performance optimization: use cached ByteBuffer if still valid
-    if (cachedByteBuffer != null
-        && (currentTime - lastByteBufferCheck) < BUFFER_CACHE_VALIDITY_MS) {
-      // Check if memory size changed (due to grow)
-      final long currentSizeBytes = (long) getSize() * PAGE_SIZE;
-      if (currentSizeBytes == cachedByteBufferSize) {
-        return cachedByteBuffer.duplicate();
+      // Performance optimization: use cached ByteBuffer if still valid
+      if (cachedByteBuffer != null
+          && (currentTime - lastByteBufferCheck) < BUFFER_CACHE_VALIDITY_MS) {
+        // Check if memory size changed (due to grow)
+        final long currentSizeBytes = (long) getSize() * PAGE_SIZE;
+        if (currentSizeBytes == cachedByteBufferSize) {
+          return cachedByteBuffer.duplicate();
+        }
       }
+
+      // Get current memory size
+      final long sizeBytes = (long) getSize() * PAGE_SIZE;
+      if (sizeBytes > Integer.MAX_VALUE) {
+        throw new IllegalStateException("Memory too large for ByteBuffer: " + sizeBytes + " bytes");
+      }
+
+      // Read entire memory into ByteBuffer
+      final byte[] data = new byte[(int) sizeBytes];
+      if (sizeBytes > 0) {
+        readBytes(0, data, 0, (int) sizeBytes);
+      }
+
+      cachedByteBuffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+      cachedByteBufferSize = sizeBytes;
+      lastByteBufferCheck = currentTime;
+
+      return cachedByteBuffer.duplicate();
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Get current memory size
-    final long sizeBytes = (long) getSize() * PAGE_SIZE;
-    if (sizeBytes > Integer.MAX_VALUE) {
-      throw new IllegalStateException("Memory too large for ByteBuffer: " + sizeBytes + " bytes");
-    }
-
-    // Read entire memory into ByteBuffer
-    final byte[] data = new byte[(int) sizeBytes];
-    if (sizeBytes > 0) {
-      readBytes(0, data, 0, (int) sizeBytes);
-    }
-
-    cachedByteBuffer = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
-    cachedByteBufferSize = sizeBytes;
-    lastByteBufferCheck = currentTime;
-
-    return cachedByteBuffer.duplicate();
   }
 
   @Override
   public byte readByte(final int offset) {
     Validation.requireNonNegative(offset, "offset");
-    ensureNotClosed();
-    final MemorySegment directMem = getDirectMemorySegment();
-    if (offset >= directMemorySize) {
-      throw new IndexOutOfBoundsException("Offset " + offset + " is out of bounds");
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment directMem = getDirectMemorySegment();
+      if (offset >= directMemorySize) {
+        throw new IndexOutOfBoundsException("Offset " + offset + " is out of bounds");
+      }
+      return directMem.get(ValueLayout.JAVA_BYTE, offset);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return directMem.get(ValueLayout.JAVA_BYTE, offset);
   }
 
   @Override
   public void writeByte(final int offset, final byte value) {
     Validation.requireNonNegative(offset, "offset");
-    ensureNotClosed();
-    final MemorySegment directMem = getDirectMemorySegment();
-    if (offset >= directMemorySize) {
-      throw new IndexOutOfBoundsException("Offset " + offset + " is out of bounds");
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment directMem = getDirectMemorySegment();
+      if (offset >= directMemorySize) {
+        throw new IndexOutOfBoundsException("Offset " + offset + " is out of bounds");
+      }
+      directMem.set(ValueLayout.JAVA_BYTE, offset, value);
+    } finally {
+      resourceHandle.endOperation();
     }
-    directMem.set(ValueLayout.JAVA_BYTE, offset, value);
   }
 
   @Override
@@ -323,29 +360,33 @@ public final class PanamaMemory implements WasmMemory {
               + ", array length="
               + dest.length);
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Bounds check against cached size (initializes direct memory if needed)
-    final MemorySegment directMem = getDirectMemorySegment();
-    if ((long) offset + length > directMemorySize) {
-      throw new IndexOutOfBoundsException(
-          "Memory access out of bounds: offset="
-              + offset
-              + ", length="
-              + length
-              + ", size="
-              + directMemorySize);
-    }
+      // Bounds check against cached size (initializes direct memory if needed)
+      final MemorySegment directMem = getDirectMemorySegment();
+      if ((long) offset + length > directMemorySize) {
+        throw new IndexOutOfBoundsException(
+            "Memory access out of bounds: offset="
+                + offset
+                + ", length="
+                + length
+                + ", size="
+                + directMemorySize);
+      }
 
-    // Performance optimization: use ByteBuffer for small operations (JVM intrinsics)
-    // MemorySegment.copy is better for large bulk transfers
-    if (length < BULK_OPERATION_THRESHOLD) {
-      final ByteBuffer buffer = getDirectByteBuffer();
-      // Use absolute get to avoid position() overhead (Java 13+)
-      buffer.get(offset, dest, destOffset, length);
-    } else {
-      // Use MemorySegment.copy for large operations
-      MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, offset, dest, destOffset, length);
+      // Performance optimization: use ByteBuffer for small operations (JVM intrinsics)
+      // MemorySegment.copy is better for large bulk transfers
+      if (length < BULK_OPERATION_THRESHOLD) {
+        final ByteBuffer buffer = getDirectByteBuffer();
+        // Use absolute get to avoid position() overhead (Java 13+)
+        buffer.get(offset, dest, destOffset, length);
+      } else {
+        // Use MemorySegment.copy for large operations
+        MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, offset, dest, destOffset, length);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -365,29 +406,33 @@ public final class PanamaMemory implements WasmMemory {
               + ", array length="
               + src.length);
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Bounds check against cached size (initializes direct memory if needed)
-    final MemorySegment directMem = getDirectMemorySegment();
-    if ((long) offset + length > directMemorySize) {
-      throw new IndexOutOfBoundsException(
-          "Memory access out of bounds: offset="
-              + offset
-              + ", length="
-              + length
-              + ", size="
-              + directMemorySize);
-    }
+      // Bounds check against cached size (initializes direct memory if needed)
+      final MemorySegment directMem = getDirectMemorySegment();
+      if ((long) offset + length > directMemorySize) {
+        throw new IndexOutOfBoundsException(
+            "Memory access out of bounds: offset="
+                + offset
+                + ", length="
+                + length
+                + ", size="
+                + directMemorySize);
+      }
 
-    // Performance optimization: use ByteBuffer for small operations (JVM intrinsics)
-    // MemorySegment.copy is better for large bulk transfers
-    if (length < BULK_OPERATION_THRESHOLD) {
-      final ByteBuffer buffer = getDirectByteBuffer();
-      // Use absolute put to avoid position() overhead (Java 13+)
-      buffer.put(offset, src, srcOffset, length);
-    } else {
-      // Use MemorySegment.copy for large operations
-      MemorySegment.copy(src, srcOffset, directMem, ValueLayout.JAVA_BYTE, offset, length);
+      // Performance optimization: use ByteBuffer for small operations (JVM intrinsics)
+      // MemorySegment.copy is better for large bulk transfers
+      if (length < BULK_OPERATION_THRESHOLD) {
+        final ByteBuffer buffer = getDirectByteBuffer();
+        // Use absolute put to avoid position() overhead (Java 13+)
+        buffer.put(offset, src, srcOffset, length);
+      } else {
+        // Use MemorySegment.copy for large operations
+        MemorySegment.copy(src, srcOffset, directMem, ValueLayout.JAVA_BYTE, offset, length);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -396,40 +441,52 @@ public final class PanamaMemory implements WasmMemory {
     Validation.requireNonNegative(destOffset, "destOffset");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
-    if (length == 0) {
-      return;
-    }
-    final MemorySegment directMem = getDirectMemorySegment();
-    if ((long) srcOffset + length > directMemorySize) {
-      throw new IndexOutOfBoundsException(
-          "Source range [" + srcOffset + ", " + (srcOffset + length) + ") is out of bounds");
-    }
-    if ((long) destOffset + length > directMemorySize) {
-      throw new IndexOutOfBoundsException(
-          "Destination range [" + destOffset + ", " + (destOffset + length) + ") is out of bounds");
-    }
+    resourceHandle.beginOperation();
+    try {
+      if (length == 0) {
+        return;
+      }
+      final MemorySegment directMem = getDirectMemorySegment();
+      if ((long) srcOffset + length > directMemorySize) {
+        throw new IndexOutOfBoundsException(
+            "Source range [" + srcOffset + ", " + (srcOffset + length) + ") is out of bounds");
+      }
+      if ((long) destOffset + length > directMemorySize) {
+        throw new IndexOutOfBoundsException(
+            "Destination range ["
+                + destOffset
+                + ", "
+                + (destOffset + length)
+                + ") is out of bounds");
+      }
 
-    // Handle overlapping regions correctly by reading into temp then writing back
-    final byte[] temp = new byte[length];
-    MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, srcOffset, temp, 0, length);
-    MemorySegment.copy(temp, 0, directMem, ValueLayout.JAVA_BYTE, destOffset, length);
+      // Handle overlapping regions correctly by reading into temp then writing back
+      final byte[] temp = new byte[length];
+      MemorySegment.copy(directMem, ValueLayout.JAVA_BYTE, srcOffset, temp, 0, length);
+      MemorySegment.copy(temp, 0, directMem, ValueLayout.JAVA_BYTE, destOffset, length);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void fill(final int offset, final byte value, final int length) {
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
-    if (length == 0) {
-      return;
+    resourceHandle.beginOperation();
+    try {
+      if (length == 0) {
+        return;
+      }
+      final MemorySegment directMem = getDirectMemorySegment();
+      if ((long) offset + length > directMemorySize) {
+        throw new IndexOutOfBoundsException(
+            "Range [" + offset + ", " + (offset + length) + ") is out of bounds");
+      }
+      directMem.asSlice(offset, length).fill(value);
+    } finally {
+      resourceHandle.endOperation();
     }
-    final MemorySegment directMem = getDirectMemorySegment();
-    if ((long) offset + length > directMemorySize) {
-      throw new IndexOutOfBoundsException(
-          "Range [" + offset + ", " + (offset + length) + ") is out of bounds");
-    }
-    directMem.asSlice(offset, length).fill(value);
   }
 
   @Override
@@ -439,48 +496,52 @@ public final class PanamaMemory implements WasmMemory {
     Validation.requireNonNegative(dataSegmentIndex, "dataSegmentIndex");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (length == 0) {
-      return; // Nothing to do
+      if (length == 0) {
+        return; // Nothing to do
+      }
+
+      if (instance == null) {
+        throw new IllegalStateException("Cannot init: memory not associated with an instance");
+      }
+
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
+      final MemorySegment instancePtr = instance.getNativeInstance();
+
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
+      }
+
+      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Instance pointer is null");
+      }
+
+      final int result =
+          NATIVE_BINDINGS.panamaMemoryInit(
+              memPtr, storePtr, instancePtr, destOffset, dataSegmentIndex, srcOffset, length);
+
+      if (result != 0) {
+        throw new RuntimeException(
+            "Failed to initialize memory from data segment: "
+                + PanamaErrorMapper.getErrorDescription(result));
+      }
+
+      LOGGER.fine(
+          "Initialized memory range ["
+              + destOffset
+              + ", "
+              + (destOffset + length)
+              + ") from data segment "
+              + dataSegmentIndex
+              + " at offset "
+              + srcOffset);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    if (instance == null) {
-      throw new IllegalStateException("Cannot init: memory not associated with an instance");
-    }
-
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
-    final MemorySegment instancePtr = instance.getNativeInstance();
-
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
-    }
-
-    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Instance pointer is null");
-    }
-
-    final int result =
-        NATIVE_BINDINGS.panamaMemoryInit(
-            memPtr, storePtr, instancePtr, destOffset, dataSegmentIndex, srcOffset, length);
-
-    if (result != 0) {
-      throw new RuntimeException(
-          "Failed to initialize memory from data segment: "
-              + PanamaErrorMapper.getErrorDescription(result));
-    }
-
-    LOGGER.fine(
-        "Initialized memory range ["
-            + destOffset
-            + ", "
-            + (destOffset + length)
-            + ") from data segment "
-            + dataSegmentIndex
-            + " at offset "
-            + srcOffset);
   }
 
   @Override
@@ -488,92 +549,104 @@ public final class PanamaMemory implements WasmMemory {
     if (dataSegmentIndex < 0) {
       throw new IllegalArgumentException("Data segment index cannot be negative");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (instance == null) {
-      throw new IllegalStateException(
-          "Cannot drop data segment: memory not associated with an instance");
+      if (instance == null) {
+        throw new IllegalStateException(
+            "Cannot drop data segment: memory not associated with an instance");
+      }
+
+      final MemorySegment instancePtr = instance.getNativeInstance();
+
+      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Instance pointer is null");
+      }
+
+      final int result = NATIVE_BINDINGS.dataSegmentDrop(instancePtr, dataSegmentIndex);
+
+      if (result != 0) {
+        throw new RuntimeException(
+            "Failed to drop data segment: " + PanamaErrorMapper.getErrorDescription(result));
+      }
+
+      LOGGER.fine("Dropped data segment: " + dataSegmentIndex);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final MemorySegment instancePtr = instance.getNativeInstance();
-
-    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Instance pointer is null");
-    }
-
-    final int result = NATIVE_BINDINGS.dataSegmentDrop(instancePtr, dataSegmentIndex);
-
-    if (result != 0) {
-      throw new RuntimeException(
-          "Failed to drop data segment: " + PanamaErrorMapper.getErrorDescription(result));
-    }
-
-    LOGGER.fine("Dropped data segment: " + dataSegmentIndex);
   }
 
   @Override
   public boolean isShared() {
-    ensureNotClosed();
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment isSharedOut = localArena.allocate(ValueLayout.JAVA_INT);
-      final PanamaStore panamaStore = getPanamaStore();
-      final MemorySegment memPtr = getMemoryPointer();
-      final MemorySegment storePtr = panamaStore.getNativeStore();
-      final int result = NATIVE_BINDINGS.panamaMemoryIsShared(memPtr, storePtr, isSharedOut);
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to query memory shared status: "
-                + PanamaErrorMapper.getErrorDescription(result));
+    resourceHandle.beginOperation();
+    try {
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment isSharedOut = localArena.allocate(ValueLayout.JAVA_INT);
+        final PanamaStore panamaStore = getPanamaStore();
+        final MemorySegment memPtr = getMemoryPointer();
+        final MemorySegment storePtr = panamaStore.getNativeStore();
+        final int result = NATIVE_BINDINGS.panamaMemoryIsShared(memPtr, storePtr, isSharedOut);
+        if (result != 0) {
+          throw new RuntimeException(
+              "Failed to query memory shared status: "
+                  + PanamaErrorMapper.getErrorDescription(result));
+        }
+        return isSharedOut.get(ValueLayout.JAVA_INT, 0) != 0;
       }
-      return isSharedOut.get(ValueLayout.JAVA_INT, 0) != 0;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.type.MemoryType getMemoryType() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Get type characteristics from native calls
-    final boolean is64Bit = supports64BitAddressing();
-    final boolean sharedFlag = isShared();
+      // Get type characteristics from native calls
+      final boolean is64Bit = supports64BitAddressing();
+      final boolean sharedFlag = isShared();
 
-    // Get memory pointer and store pointer
-    final MemorySegment memPtr = getMemoryPointer();
-    final PanamaStore panamaStore = getPanamaStore();
-    final MemorySegment storePtr = panamaStore.getNativeStore();
+      // Get memory pointer and store pointer
+      final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore panamaStore = getPanamaStore();
+      final MemorySegment storePtr = panamaStore.getNativeStore();
 
-    // Get minimum from native
-    final MemorySegment minimumOut = arena.allocate(ValueLayout.JAVA_LONG);
-    final int minResult = NATIVE_BINDINGS.panamaMemoryGetMinimum(memPtr, storePtr, minimumOut);
-    if (minResult != 0) {
-      throw new IllegalStateException(
-          "Failed to get memory minimum: " + PanamaErrorMapper.getErrorDescription(minResult));
+      // Get minimum from native
+      final MemorySegment minimumOut = arena.allocate(ValueLayout.JAVA_LONG);
+      final int minResult = NATIVE_BINDINGS.panamaMemoryGetMinimum(memPtr, storePtr, minimumOut);
+      if (minResult != 0) {
+        throw new IllegalStateException(
+            "Failed to get memory minimum: " + PanamaErrorMapper.getErrorDescription(minResult));
+      }
+      final long minimum = minimumOut.get(ValueLayout.JAVA_LONG, 0);
+
+      // Get maximum from native (-1 means unlimited)
+      final MemorySegment maximumOut = arena.allocate(ValueLayout.JAVA_LONG);
+      final int maxResult = NATIVE_BINDINGS.panamaMemoryGetMaximum(memPtr, storePtr, maximumOut);
+      if (maxResult != 0) {
+        throw new IllegalStateException(
+            "Failed to get memory maximum: " + PanamaErrorMapper.getErrorDescription(maxResult));
+      }
+      final long maxValue = maximumOut.get(ValueLayout.JAVA_LONG, 0);
+      final Long maximum = maxValue == -1 ? null : maxValue;
+
+      // Get page size log2 from native
+      final MemorySegment pageSizeLog2Out = arena.allocate(ValueLayout.JAVA_INT);
+      final int psResult =
+          NATIVE_BINDINGS.panamaMemoryGetPageSizeLog2(memPtr, storePtr, pageSizeLog2Out);
+      final int pageSizeLog2;
+      if (psResult != 0) {
+        pageSizeLog2 = 16; // Default to standard 64KB page size
+      } else {
+        pageSizeLog2 = pageSizeLog2Out.get(ValueLayout.JAVA_INT, 0);
+      }
+
+      return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
+          minimum, maximum, is64Bit, sharedFlag, pageSizeLog2);
+    } finally {
+      resourceHandle.endOperation();
     }
-    final long minimum = minimumOut.get(ValueLayout.JAVA_LONG, 0);
-
-    // Get maximum from native (-1 means unlimited)
-    final MemorySegment maximumOut = arena.allocate(ValueLayout.JAVA_LONG);
-    final int maxResult = NATIVE_BINDINGS.panamaMemoryGetMaximum(memPtr, storePtr, maximumOut);
-    if (maxResult != 0) {
-      throw new IllegalStateException(
-          "Failed to get memory maximum: " + PanamaErrorMapper.getErrorDescription(maxResult));
-    }
-    final long maxValue = maximumOut.get(ValueLayout.JAVA_LONG, 0);
-    final Long maximum = maxValue == -1 ? null : maxValue;
-
-    // Get page size log2 from native
-    final MemorySegment pageSizeLog2Out = arena.allocate(ValueLayout.JAVA_INT);
-    final int psResult =
-        NATIVE_BINDINGS.panamaMemoryGetPageSizeLog2(memPtr, storePtr, pageSizeLog2Out);
-    final int pageSizeLog2;
-    if (psResult != 0) {
-      pageSizeLog2 = 16; // Default to standard 64KB page size
-    } else {
-      pageSizeLog2 = pageSizeLog2Out.get(ValueLayout.JAVA_INT, 0);
-    }
-
-    return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
-        minimum, maximum, is64Bit, sharedFlag, pageSizeLog2);
   }
 
   /**
@@ -737,17 +810,21 @@ public final class PanamaMemory implements WasmMemory {
       throw new IllegalArgumentException(
           "Offset must be non-negative and " + alignment + "-byte aligned");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
 
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
+      }
+
+      return nativeCall.execute(memPtr, storePtr);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    return nativeCall.execute(memPtr, storePtr);
   }
 
   /**
@@ -957,32 +1034,36 @@ public final class PanamaMemory implements WasmMemory {
               + ", array length="
               + dest.length);
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (length == 0) {
-      return;
-    }
-
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
-
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
-    }
-
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment buffer = localArena.allocate(length);
-      final int result =
-          NATIVE_BINDINGS.panamaMemoryReadBytes(memPtr, storePtr, offset, length, buffer);
-
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to read memory bytes: " + PanamaErrorMapper.getErrorDescription(result));
+      if (length == 0) {
+        return;
       }
 
-      // Bulk copy from native buffer to destination array
-      MemorySegment.copy(buffer, ValueLayout.JAVA_BYTE, 0, dest, destOffset, length);
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
+
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
+      }
+
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment buffer = localArena.allocate(length);
+        final int result =
+            NATIVE_BINDINGS.panamaMemoryReadBytes(memPtr, storePtr, offset, length, buffer);
+
+        if (result != 0) {
+          throw new RuntimeException(
+              "Failed to read memory bytes: " + PanamaErrorMapper.getErrorDescription(result));
+        }
+
+        // Bulk copy from native buffer to destination array
+        MemorySegment.copy(buffer, ValueLayout.JAVA_BYTE, 0, dest, destOffset, length);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1002,58 +1083,66 @@ public final class PanamaMemory implements WasmMemory {
               + ", array length="
               + src.length);
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (length == 0) {
-      return;
-    }
-
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
-
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
-    }
-
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment buffer = localArena.allocate(length);
-
-      // Bulk copy from source array to native buffer
-      MemorySegment.copy(src, srcOffset, buffer, ValueLayout.JAVA_BYTE, 0, length);
-
-      final int result =
-          NATIVE_BINDINGS.panamaMemoryWriteBytes(memPtr, storePtr, offset, length, buffer);
-
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to write memory bytes: " + PanamaErrorMapper.getErrorDescription(result));
+      if (length == 0) {
+        return;
       }
+
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
+
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
+      }
+
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment buffer = localArena.allocate(length);
+
+        // Bulk copy from source array to native buffer
+        MemorySegment.copy(src, srcOffset, buffer, ValueLayout.JAVA_BYTE, 0, length);
+
+        final int result =
+            NATIVE_BINDINGS.panamaMemoryWriteBytes(memPtr, storePtr, offset, length, buffer);
+
+        if (result != 0) {
+          throw new RuntimeException(
+              "Failed to write memory bytes: " + PanamaErrorMapper.getErrorDescription(result));
+        }
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public long getSize64() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
 
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
-    }
-
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment sizeOut = localArena.allocate(ValueLayout.JAVA_LONG);
-      final int result = NATIVE_BINDINGS.panamaMemorySizePages64(memPtr, storePtr, sizeOut);
-
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
       }
 
-      return sizeOut.get(ValueLayout.JAVA_LONG, 0);
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment sizeOut = localArena.allocate(ValueLayout.JAVA_LONG);
+        final int result = NATIVE_BINDINGS.panamaMemorySizePages64(memPtr, storePtr, sizeOut);
+
+        if (result != 0) {
+          throw new RuntimeException(
+              "Failed to get memory size: " + PanamaErrorMapper.getErrorDescription(result));
+        }
+
+        return sizeOut.get(ValueLayout.JAVA_LONG, 0);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1062,69 +1151,81 @@ public final class PanamaMemory implements WasmMemory {
     if (pages < 0) {
       throw new IllegalArgumentException("Pages cannot be negative");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
 
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
-    }
-
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment previousPagesOut = localArena.allocate(ValueLayout.JAVA_LONG);
-      final int result =
-          NATIVE_BINDINGS.panamaMemoryGrow64(memPtr, storePtr, pages, previousPagesOut);
-
-      if (result != 0) {
-        return -1; // Growth failed
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
       }
 
-      return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment previousPagesOut = localArena.allocate(ValueLayout.JAVA_LONG);
+        final int result =
+            NATIVE_BINDINGS.panamaMemoryGrow64(memPtr, storePtr, pages, previousPagesOut);
+
+        if (result != 0) {
+          return -1; // Growth failed
+        }
+
+        return previousPagesOut.get(ValueLayout.JAVA_LONG, 0);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public boolean supports64BitAddressing() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
 
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      return false; // Conservative default
-    }
-
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment is64BitOut = localArena.allocate(ValueLayout.JAVA_INT);
-      final int result = NATIVE_BINDINGS.panamaMemoryIs64Bit(memPtr, storePtr, is64BitOut);
-
-      if (result != 0) {
-        return false; // Conservative default on error
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        return false; // Conservative default
       }
 
-      return is64BitOut.get(ValueLayout.JAVA_INT, 0) != 0;
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment is64BitOut = localArena.allocate(ValueLayout.JAVA_INT);
+        final int result = NATIVE_BINDINGS.panamaMemoryIs64Bit(memPtr, storePtr, is64BitOut);
+
+        if (result != 0) {
+          return false; // Conservative default on error
+        }
+
+        return is64BitOut.get(ValueLayout.JAVA_INT, 0) != 0;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void atomicFence() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
 
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
-    }
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
+      }
 
-    final int errorCode = NATIVE_BINDINGS.memoryAtomicFence(memPtr, storePtr);
+      final int errorCode = NATIVE_BINDINGS.memoryAtomicFence(memPtr, storePtr);
 
-    if (errorCode != 0) {
-      throwAtomicOperationError(errorCode, "Atomic operation failed");
+      if (errorCode != 0) {
+        throwAtomicOperationError(errorCode, "Atomic operation failed");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1136,25 +1237,29 @@ public final class PanamaMemory implements WasmMemory {
     if (count < 0) {
       throw new IllegalArgumentException("Count cannot be negative");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
 
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
+      }
+
+      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+      final int errorCode =
+          NATIVE_BINDINGS.memoryAtomicNotify(memPtr, storePtr, offset, count, resultOut);
+
+      if (errorCode != 0) {
+        throwAtomicOperationError(errorCode, "Atomic operation failed");
+      }
+
+      return resultOut.get(ValueLayout.JAVA_INT, 0);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-    final int errorCode =
-        NATIVE_BINDINGS.memoryAtomicNotify(memPtr, storePtr, offset, count, resultOut);
-
-    if (errorCode != 0) {
-      throwAtomicOperationError(errorCode, "Atomic operation failed");
-    }
-
-    return resultOut.get(ValueLayout.JAVA_INT, 0);
   }
 
   @Override
@@ -1165,26 +1270,30 @@ public final class PanamaMemory implements WasmMemory {
     if (timeoutNanos < 0 && timeoutNanos != -1) {
       throw new IllegalArgumentException("Timeout must be non-negative or -1 for infinite");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
 
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
+      }
+
+      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+      final int errorCode =
+          NATIVE_BINDINGS.memoryAtomicWait32(
+              memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
+
+      if (errorCode != 0) {
+        throwAtomicOperationError(errorCode, "Atomic operation failed");
+      }
+
+      return WaitResult.fromNativeCode(resultOut.get(ValueLayout.JAVA_INT, 0));
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-    final int errorCode =
-        NATIVE_BINDINGS.memoryAtomicWait32(
-            memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
-
-    if (errorCode != 0) {
-      throwAtomicOperationError(errorCode, "Atomic operation failed");
-    }
-
-    return WaitResult.fromNativeCode(resultOut.get(ValueLayout.JAVA_INT, 0));
   }
 
   @Override
@@ -1195,26 +1304,30 @@ public final class PanamaMemory implements WasmMemory {
     if (timeoutNanos < 0 && timeoutNanos != -1) {
       throw new IllegalArgumentException("Timeout must be non-negative or -1 for infinite");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore actualStore = getPanamaStore();
-    final MemorySegment storePtr = actualStore.getNativeStore();
-    final MemorySegment memPtr = getMemoryPointer();
+      final PanamaStore actualStore = getPanamaStore();
+      final MemorySegment storePtr = actualStore.getNativeStore();
+      final MemorySegment memPtr = getMemoryPointer();
 
-    if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Memory pointer is null");
+      if (memPtr == null || memPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Memory pointer is null");
+      }
+
+      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
+      final int errorCode =
+          NATIVE_BINDINGS.memoryAtomicWait64(
+              memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
+
+      if (errorCode != 0) {
+        throwAtomicOperationError(errorCode, "Atomic operation failed");
+      }
+
+      return WaitResult.fromNativeCode(resultOut.get(ValueLayout.JAVA_INT, 0));
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-    final int errorCode =
-        NATIVE_BINDINGS.memoryAtomicWait64(
-            memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
-
-    if (errorCode != 0) {
-      throwAtomicOperationError(errorCode, "Atomic operation failed");
-    }
-
-    return WaitResult.fromNativeCode(resultOut.get(ValueLayout.JAVA_INT, 0));
   }
 
   @Override
@@ -1222,23 +1335,29 @@ public final class PanamaMemory implements WasmMemory {
     if (pages < 0) {
       throw new IllegalArgumentException("Pages cannot be negative");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (instance != null) {
-      return instance.growMemoryAsync(this, pages);
-    } else if (nativeMemory != null && !nativeMemory.equals(MemorySegment.NULL) && store != null) {
-      try (final Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment previousPagesOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
-        final int growResult =
-            NATIVE_BINDINGS.panamaMemoryGrowAsync(
-                nativeMemory, store.getNativeStore(), pages, previousPagesOutPtr);
-        if (growResult == 0) {
-          return previousPagesOutPtr.get(ValueLayout.JAVA_LONG, 0);
+      if (instance != null) {
+        return instance.growMemoryAsync(this, pages);
+      } else if (nativeMemory != null
+          && !nativeMemory.equals(MemorySegment.NULL)
+          && store != null) {
+        try (final Arena tempArena = Arena.ofConfined()) {
+          final MemorySegment previousPagesOutPtr = tempArena.allocate(ValueLayout.JAVA_LONG);
+          final int growResult =
+              NATIVE_BINDINGS.panamaMemoryGrowAsync(
+                  nativeMemory, store.getNativeStore(), pages, previousPagesOutPtr);
+          if (growResult == 0) {
+            return previousPagesOutPtr.get(ValueLayout.JAVA_LONG, 0);
+          }
+          return -1L; // Grow failed
         }
-        return -1L; // Grow failed
       }
+      throw new IllegalStateException("Cannot grow async: memory not associated with an instance");
+    } finally {
+      resourceHandle.endOperation();
     }
-    throw new IllegalStateException("Cannot grow async: memory not associated with an instance");
   }
 
   /** Closes the memory and releases resources. */
@@ -1305,15 +1424,6 @@ public final class PanamaMemory implements WasmMemory {
    */
   String getExportName() {
     return memoryName;
-  }
-
-  /**
-   * Ensures the memory is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 
   /**

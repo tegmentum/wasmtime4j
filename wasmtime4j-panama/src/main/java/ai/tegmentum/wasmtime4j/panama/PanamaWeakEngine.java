@@ -64,19 +64,23 @@ final class PanamaWeakEngine implements WeakEngine {
 
   @Override
   public Optional<Engine> upgrade() {
-    if (resourceHandle.isClosed()) {
-      return Optional.empty();
-    }
-    final MemorySegment enginePtr = NATIVE_BINDINGS.weakEngineUpgrade(nativeWeakEngine);
-    if (enginePtr == null || enginePtr.equals(MemorySegment.NULL)) {
+    if (!resourceHandle.tryBeginOperation()) {
       return Optional.empty();
     }
     try {
-      return Optional.of(
-          new PanamaEngine(sourceEngine.getConfig(), sourceEngine.getRuntime(), enginePtr));
-    } catch (final Exception e) {
-      LOGGER.warning("Failed to create PanamaEngine from upgraded weak reference: " + e);
-      return Optional.empty();
+      final MemorySegment enginePtr = NATIVE_BINDINGS.weakEngineUpgrade(nativeWeakEngine);
+      if (enginePtr == null || enginePtr.equals(MemorySegment.NULL)) {
+        return Optional.empty();
+      }
+      try {
+        return Optional.of(
+            new PanamaEngine(sourceEngine.getConfig(), sourceEngine.getRuntime(), enginePtr));
+      } catch (final Exception e) {
+        LOGGER.warning("Failed to create PanamaEngine from upgraded weak reference: " + e);
+        return Optional.empty();
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 

@@ -124,8 +124,12 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callVoidToVoid() throws WasmException {
-    ensureNotClosed();
-    function.call();
+    resourceHandle.beginOperation();
+    try {
+      function.call();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -135,8 +139,12 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callI32ToVoid(final int param) throws WasmException {
-    ensureNotClosed();
-    function.call(WasmValue.i32(param));
+    resourceHandle.beginOperation();
+    try {
+      function.call(WasmValue.i32(param));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -147,8 +155,12 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callI32I32ToVoid(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    function.call(WasmValue.i32(param1), WasmValue.i32(param2));
+    resourceHandle.beginOperation();
+    try {
+      function.call(WasmValue.i32(param1), WasmValue.i32(param2));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -158,8 +170,12 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callI64ToVoid(final long param) throws WasmException {
-    ensureNotClosed();
-    function.call(WasmValue.i64(param));
+    resourceHandle.beginOperation();
+    try {
+      function.call(WasmValue.i64(param));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -170,8 +186,12 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callI64I64ToVoid(final long param1, final long param2) throws WasmException {
-    ensureNotClosed();
-    function.call(WasmValue.i64(param1), WasmValue.i64(param2));
+    resourceHandle.beginOperation();
+    try {
+      function.call(WasmValue.i64(param1), WasmValue.i64(param2));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -182,12 +202,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public int callI32ToI32(final int param) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.i32(param));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.i32(param));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asInt();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asInt();
   }
 
   /**
@@ -199,12 +223,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public int callI32I32ToI32(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.i32(param1), WasmValue.i32(param2));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.i32(param1), WasmValue.i32(param2));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asInt();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asInt();
   }
 
   /**
@@ -215,12 +243,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public long callI64ToI64(final long param) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.i64(param));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.i64(param));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asLong();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asLong();
   }
 
   /**
@@ -232,12 +264,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public long callI64I64ToI64(final long param1, final long param2) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.i64(param1), WasmValue.i64(param2));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.i64(param1), WasmValue.i64(param2));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asLong();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asLong();
   }
 
   /**
@@ -248,12 +284,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public float callF32ToF32(final float param) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.f32(param));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.f32(param));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asFloat();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asFloat();
   }
 
   /**
@@ -264,12 +304,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public double callF64ToF64(final double param) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.f64(param));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.f64(param));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asDouble();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asDouble();
   }
 
   /**
@@ -281,12 +325,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public float callF32F32ToF32(final float param1, final float param2) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.f32(param1), WasmValue.f32(param2));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.f32(param1), WasmValue.f32(param2));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asFloat();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asFloat();
   }
 
   /**
@@ -298,12 +346,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public double callF64F64ToF64(final double param1, final double param2) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.f64(param1), WasmValue.f64(param2));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.f64(param1), WasmValue.f64(param2));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asDouble();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asDouble();
   }
 
   /**
@@ -317,13 +369,17 @@ public final class PanamaTypedFunc implements TypedFunc {
    */
   public int callI32I32I32ToI32(final int param1, final int param2, final int param3)
       throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results =
-        function.call(WasmValue.i32(param1), WasmValue.i32(param2), WasmValue.i32(param3));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results =
+          function.call(WasmValue.i32(param1), WasmValue.i32(param2), WasmValue.i32(param3));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asInt();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asInt();
   }
 
   /**
@@ -337,13 +393,17 @@ public final class PanamaTypedFunc implements TypedFunc {
    */
   public long callI64I64I64ToI64(final long param1, final long param2, final long param3)
       throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results =
-        function.call(WasmValue.i64(param1), WasmValue.i64(param2), WasmValue.i64(param3));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results =
+          function.call(WasmValue.i64(param1), WasmValue.i64(param2), WasmValue.i64(param3));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asLong();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asLong();
   }
 
   @Override
@@ -367,13 +427,17 @@ public final class PanamaTypedFunc implements TypedFunc {
    */
   public float callF32F32F32ToF32(final float param1, final float param2, final float param3)
       throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results =
-        function.call(WasmValue.f32(param1), WasmValue.f32(param2), WasmValue.f32(param3));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results =
+          function.call(WasmValue.f32(param1), WasmValue.f32(param2), WasmValue.f32(param3));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asFloat();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asFloat();
   }
 
   /**
@@ -387,13 +451,17 @@ public final class PanamaTypedFunc implements TypedFunc {
    */
   public double callF64F64F64ToF64(final double param1, final double param2, final double param3)
       throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results =
-        function.call(WasmValue.f64(param1), WasmValue.f64(param2), WasmValue.f64(param3));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results =
+          function.call(WasmValue.f64(param1), WasmValue.f64(param2), WasmValue.f64(param3));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asDouble();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asDouble();
   }
 
   /**
@@ -405,12 +473,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public long callI32I32ToI64(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.i32(param1), WasmValue.i32(param2));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.i32(param1), WasmValue.i32(param2));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asLong();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asLong();
   }
 
   /**
@@ -421,12 +493,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public int callI64ToI32(final long param) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.i64(param));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.i64(param));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asInt();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asInt();
   }
 
   /**
@@ -438,12 +514,16 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public float callI32F32ToF32(final int param1, final float param2) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.i32(param1), WasmValue.f32(param2));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.i32(param1), WasmValue.f32(param2));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asFloat();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asFloat();
   }
 
   /**
@@ -455,25 +535,20 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public float callF32I32ToF32(final float param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    final WasmValue[] results = function.call(WasmValue.f32(param1), WasmValue.i32(param2));
-    if (results.length != 1) {
-      throw new WasmException("Expected 1 result, got " + results.length);
+    resourceHandle.beginOperation();
+    try {
+      final WasmValue[] results = function.call(WasmValue.f32(param1), WasmValue.i32(param2));
+      if (results.length != 1) {
+        throw new WasmException("Expected 1 result, got " + results.length);
+      }
+      return results[0].asFloat();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return results[0].asFloat();
   }
 
   /** Closes the typed function and releases resources. */
   public void close() {
     resourceHandle.close();
-  }
-
-  /**
-   * Ensures the typed function is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

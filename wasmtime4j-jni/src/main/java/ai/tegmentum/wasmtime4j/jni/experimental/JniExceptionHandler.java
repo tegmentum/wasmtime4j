@@ -28,6 +28,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
 /**
@@ -50,6 +52,7 @@ public final class JniExceptionHandler implements ExceptionHandler {
   private final String handlerName;
   private final AtomicBoolean enabled;
   private final AtomicBoolean closed;
+  private final ReadWriteLock closeLock = new ReentrantReadWriteLock();
 
   /**
    * Creates a new JNI exception handler with default configuration.
@@ -136,23 +139,26 @@ public final class JniExceptionHandler implements ExceptionHandler {
     Validation.requireNonNull(name, "Exception tag name");
     Validation.requireNonNull(parameterTypes, "Parameter types");
     Validation.requireNonBlank(name, "Exception tag name");
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final String trimmedName = name.trim();
+      if (tagsByName.containsKey(trimmedName)) {
+        throw new IllegalArgumentException("Exception tag already exists: " + trimmedName);
+      }
 
-    final String trimmedName = name.trim();
-    if (tagsByName.containsKey(trimmedName)) {
-      throw new IllegalArgumentException("Exception tag already exists: " + trimmedName);
+      final long tagHandle = nextTagHandle.getAndIncrement();
+
+      final ExceptionTag tag =
+          new DefaultExceptionTag(tagHandle, trimmedName, new ArrayList<>(parameterTypes), false);
+
+      tagsByName.put(trimmedName, tag);
+      tagsByHandle.put(tagHandle, tag);
+
+      LOGGER.fine("Created exception tag '" + trimmedName + "' with handle: " + tagHandle);
+      return tag;
+    } finally {
+      endOperation();
     }
-
-    final long tagHandle = nextTagHandle.getAndIncrement();
-
-    final ExceptionTag tag =
-        new DefaultExceptionTag(tagHandle, trimmedName, new ArrayList<>(parameterTypes), false);
-
-    tagsByName.put(trimmedName, tag);
-    tagsByHandle.put(tagHandle, tag);
-
-    LOGGER.fine("Created exception tag '" + trimmedName + "' with handle: " + tagHandle);
-    return tag;
   }
 
   @Override
@@ -170,51 +176,56 @@ public final class JniExceptionHandler implements ExceptionHandler {
 
   @Override
   public String captureStackTrace(final long tagHandle) {
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (tagHandle == 0L) {
+        return null;
+      }
 
-    if (tagHandle == 0L) {
-      return null;
+      if (!config.isStackTracesEnabled()) {
+        return null;
+      }
+
+      // Generate a simulated WASM stack trace matching the Rust implementation
+      final ExceptionTag tag = tagsByHandle.get(tagHandle);
+      final String tagInfo;
+      if (tag != null) {
+        tagInfo = "exception tag '" + tag.getTagName() + "' (handle: " + tag.getTagHandle() + ")";
+      } else {
+        tagInfo = "unknown tag (handle: " + tagHandle + ")";
+      }
+
+      final String trace =
+          "wasm function 0: <"
+              + tagInfo
+              + ">\n"
+              + "wasm function 1: <wasm_entry>\n"
+              + "wasm function 2: <wasm_start>";
+
+      LOGGER.fine("Captured stack trace for tag handle: " + tagHandle);
+      return trace;
+    } finally {
+      endOperation();
     }
-
-    if (!config.isStackTracesEnabled()) {
-      return null;
-    }
-
-    // Generate a simulated WASM stack trace matching the Rust implementation
-    final ExceptionTag tag = tagsByHandle.get(tagHandle);
-    final String tagInfo;
-    if (tag != null) {
-      tagInfo = "exception tag '" + tag.getTagName() + "' (handle: " + tag.getTagHandle() + ")";
-    } else {
-      tagInfo = "unknown tag (handle: " + tagHandle + ")";
-    }
-
-    final String trace =
-        "wasm function 0: <"
-            + tagInfo
-            + ">\n"
-            + "wasm function 1: <wasm_entry>\n"
-            + "wasm function 2: <wasm_start>";
-
-    LOGGER.fine("Captured stack trace for tag handle: " + tagHandle);
-    return trace;
   }
 
   @Override
   public boolean performUnwinding(final int currentDepth) {
-    ensureNotClosed();
-
     if (currentDepth < 0) {
       throw new IllegalArgumentException("Current depth cannot be negative");
     }
+    beginOperation();
+    try {
+      if (!config.isExceptionUnwindingEnabled()) {
+        return false;
+      }
 
-    if (!config.isExceptionUnwindingEnabled()) {
-      return false;
+      final boolean shouldContinue = currentDepth < config.getMaxUnwindDepth();
+      LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
+      return shouldContinue;
+    } finally {
+      endOperation();
     }
-
-    final boolean shouldContinue = currentDepth < config.getMaxUnwindDepth();
-    LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
-    return shouldContinue;
   }
 
   @Override
@@ -224,10 +235,15 @@ public final class JniExceptionHandler implements ExceptionHandler {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      tagsByName.clear();
-      tagsByHandle.clear();
-      LOGGER.info("Closed JNI exception handler: " + handlerName);
+    closeLock.writeLock().lock();
+    try {
+      if (closed.compareAndSet(false, true)) {
+        tagsByName.clear();
+        tagsByHandle.clear();
+        LOGGER.info("Closed JNI exception handler: " + handlerName);
+      }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 
@@ -250,9 +266,15 @@ public final class JniExceptionHandler implements ExceptionHandler {
     return closed.get();
   }
 
-  private void ensureNotClosed() {
+  private void beginOperation() {
+    closeLock.readLock().lock();
     if (closed.get()) {
+      closeLock.readLock().unlock();
       throw new IllegalStateException("Exception handler is closed");
     }
+  }
+
+  private void endOperation() {
+    closeLock.readLock().unlock();
   }
 }

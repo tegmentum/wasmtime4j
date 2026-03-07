@@ -55,8 +55,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (argv == null) {
       throw new IllegalArgumentException("Command line arguments cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetArgv(nativeHandle, argv);
       if (result != 0) {
@@ -68,6 +67,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set command line arguments", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -79,8 +80,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (value == null) {
       throw new IllegalArgumentException("Environment variable value cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetEnv(nativeHandle, key, value);
       if (result != 0) {
@@ -92,6 +92,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set environment variable", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -100,18 +102,20 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (env == null) {
       throw new IllegalArgumentException("Environment variables map cannot be null");
     }
-    ensureNotClosed();
-
-    for (Map.Entry<String, String> entry : env.entrySet()) {
-      setEnv(entry.getKey(), entry.getValue());
+    beginOperation();
+    try {
+      for (Map.Entry<String, String> entry : env.entrySet()) {
+        setEnv(entry.getKey(), entry.getValue());
+      }
+      return this;
+    } finally {
+      endOperation();
     }
-    return this;
   }
 
   @Override
   public WasiContext inheritEnv() {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeInheritEnv(nativeHandle);
       if (result != 0) {
@@ -123,13 +127,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to inherit environment variables", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public WasiContext inheritArgs() {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeInheritArgs(nativeHandle);
       if (result != 0) {
@@ -141,13 +146,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to inherit command-line arguments", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public WasiContext inheritStdio() {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeInheritStdio(nativeHandle);
       if (result != 0) {
@@ -159,6 +165,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to inherit stdio", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -167,8 +175,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (path == null) {
       throw new IllegalArgumentException("Stdin path cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetStdin(nativeHandle, path.toString());
       if (result != 0) {
@@ -180,6 +187,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set stdin path", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -188,8 +197,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (data == null) {
       throw new IllegalArgumentException("Stdin data cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetStdinBytes(nativeHandle, data);
       if (result != 0) {
@@ -201,6 +209,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set stdin bytes", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -209,8 +219,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (path == null) {
       throw new IllegalArgumentException("Stdout path cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetStdout(nativeHandle, path.toString());
       if (result != 0) {
@@ -222,6 +231,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set stdout path", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -230,8 +241,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (path == null) {
       throw new IllegalArgumentException("Stderr path cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetStderr(nativeHandle, path.toString());
       if (result != 0) {
@@ -243,6 +253,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set stderr path", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -251,8 +263,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (path == null) {
       throw new IllegalArgumentException("Stdout append path cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetStdoutAppend(nativeHandle, path.toString());
       if (result != 0) {
@@ -264,6 +275,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set stdout append path", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -272,8 +285,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (path == null) {
       throw new IllegalArgumentException("Stderr append path cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetStderrAppend(nativeHandle, path.toString());
       if (result != 0) {
@@ -285,6 +297,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set stderr append path", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -296,8 +310,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (guestPath == null) {
       throw new IllegalArgumentException("Guest path cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativePreopenedDir(nativeHandle, hostPath.toString(), guestPath);
       if (result != 0) {
@@ -309,6 +322,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw e;
       }
       throw new WasmException("Failed to add preopened directory", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -320,8 +335,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (guestPath == null) {
       throw new IllegalArgumentException("Guest path cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativePreopenedDirReadOnly(nativeHandle, hostPath.toString(), guestPath);
       if (result != 0) {
@@ -333,6 +347,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw e;
       }
       throw new WasmException("Failed to add read-only preopened directory", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -341,8 +357,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (workingDir == null) {
       throw new IllegalArgumentException("Working directory cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetWorkingDirectory(nativeHandle, workingDir);
       if (result != 0) {
@@ -354,13 +369,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set working directory", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public WasiContext setNetworkEnabled(boolean enabled) {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetNetworkEnabled(nativeHandle, enabled);
       if (result != 0) {
@@ -372,6 +388,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set network enabled state", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -380,8 +398,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (maxFds < -1) {
       throw new IllegalArgumentException("Maximum file descriptors must be >= -1");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetMaxOpenFiles(nativeHandle, maxFds);
       if (result != 0) {
@@ -393,6 +410,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set maximum open files", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -400,8 +419,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public WasiContext setAsyncIoEnabled(boolean enabled) {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetAsyncIoEnabled(nativeHandle, enabled);
       if (result != 0) {
@@ -413,6 +431,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set async I/O enabled state", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -421,8 +441,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (maxOps < -1) {
       throw new IllegalArgumentException("Maximum async operations must be >= -1");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetMaxAsyncOperations(nativeHandle, maxOps);
       if (result != 0) {
@@ -434,6 +453,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set maximum async operations", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -442,8 +463,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (timeoutMs < -1) {
       throw new IllegalArgumentException("Async timeout must be >= -1");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetAsyncTimeout(nativeHandle, timeoutMs);
       if (result != 0) {
@@ -455,13 +475,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set async timeout", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public WasiContext setComponentModelEnabled(boolean enabled) {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetComponentModelEnabled(nativeHandle, enabled);
       if (result != 0) {
@@ -473,13 +494,14 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set component model enabled state", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public WasiContext setProcessEnabled(boolean enabled) {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetProcessEnabled(nativeHandle, enabled);
       if (result != 0) {
@@ -491,6 +513,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set process enabled state", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -499,8 +523,7 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
     if (workingDir == null) {
       throw new IllegalArgumentException("Filesystem working directory cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeSetFilesystemWorkingDir(nativeHandle, workingDir.toString());
       if (result != 0) {
@@ -512,6 +535,8 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw (RuntimeException) e;
       }
       throw new RuntimeException("Failed to set filesystem working directory", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -519,49 +544,54 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
 
   @Override
   public java.util.Map<String, String> getEnvironment() {
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final String data = nativeGetEnvironment(nativeHandle);
+      if (data == null || data.isEmpty()) {
+        return java.util.Collections.emptyMap();
+      }
 
-    final String data = nativeGetEnvironment(nativeHandle);
-    if (data == null || data.isEmpty()) {
-      return java.util.Collections.emptyMap();
-    }
-
-    final java.util.Map<String, String> env = new java.util.LinkedHashMap<>();
-    for (String line : data.split("\n")) {
-      if (!line.isEmpty()) {
-        final int eqIdx = line.indexOf('=');
-        if (eqIdx > 0) {
-          env.put(line.substring(0, eqIdx), line.substring(eqIdx + 1));
+      final java.util.Map<String, String> env = new java.util.LinkedHashMap<>();
+      for (String line : data.split("\n")) {
+        if (!line.isEmpty()) {
+          final int eqIdx = line.indexOf('=');
+          if (eqIdx > 0) {
+            env.put(line.substring(0, eqIdx), line.substring(eqIdx + 1));
+          }
         }
       }
+      return java.util.Collections.unmodifiableMap(env);
+    } finally {
+      endOperation();
     }
-    return java.util.Collections.unmodifiableMap(env);
   }
 
   @Override
   public java.util.List<String> getArguments() {
-    ensureNotClosed();
-
-    final String data = nativeGetArguments(nativeHandle);
-    if (data == null || data.isEmpty()) {
-      return java.util.Collections.emptyList();
-    }
-
-    final java.util.List<String> args = new java.util.ArrayList<>();
-    for (String line : data.split("\n")) {
-      if (!line.isEmpty()) {
-        args.add(line);
+    beginOperation();
+    try {
+      final String data = nativeGetArguments(nativeHandle);
+      if (data == null || data.isEmpty()) {
+        return java.util.Collections.emptyList();
       }
+
+      final java.util.List<String> args = new java.util.ArrayList<>();
+      for (String line : data.split("\n")) {
+        if (!line.isEmpty()) {
+          args.add(line);
+        }
+      }
+      return java.util.Collections.unmodifiableList(args);
+    } finally {
+      endOperation();
     }
-    return java.util.Collections.unmodifiableList(args);
   }
 
   // ===== Output Capture methods =====
 
   @Override
   public WasiContext enableOutputCapture() throws WasmException {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final int result = nativeEnableOutputCapture(nativeHandle);
       if (result != 0) {
@@ -573,33 +603,51 @@ public final class JniWasiContextImpl extends JniResource implements WasiContext
         throw e;
       }
       throw new WasmException("Failed to enable output capture", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public byte[] getStdoutCapture() {
-    ensureNotClosed();
-    return nativeGetStdoutCapture(nativeHandle);
+    beginOperation();
+    try {
+      return nativeGetStdoutCapture(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public byte[] getStderrCapture() {
-    ensureNotClosed();
-    return nativeGetStderrCapture(nativeHandle);
+    beginOperation();
+    try {
+      return nativeGetStderrCapture(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean hasStdoutCapture() {
-    ensureNotClosed();
-    final int result = nativeHasStdoutCapture(nativeHandle);
-    return result == 1;
+    beginOperation();
+    try {
+      final int result = nativeHasStdoutCapture(nativeHandle);
+      return result == 1;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean hasStderrCapture() {
-    ensureNotClosed();
-    final int result = nativeHasStderrCapture(nativeHandle);
-    return result == 1;
+    beginOperation();
+    try {
+      final int result = nativeHasStderrCapture(nativeHandle);
+      return result == 1;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override

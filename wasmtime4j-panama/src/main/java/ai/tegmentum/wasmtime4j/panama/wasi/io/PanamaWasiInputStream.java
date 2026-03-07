@@ -171,11 +171,10 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   public byte[] read(final long length) throws WasmException {
     Validation.requirePositive(length, "length");
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment buffer = arena.allocate(length);
       final MemorySegment outLength = arena.allocate(ValueLayout.JAVA_LONG);
@@ -201,6 +200,8 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error reading from WASI input stream: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -208,11 +209,10 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   public byte[] blockingRead(final long length) throws WasmException {
     Validation.requirePositive(length, "length");
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment buffer = arena.allocate(length);
       final MemorySegment outLength = arena.allocate(ValueLayout.JAVA_LONG);
@@ -238,6 +238,8 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error performing blocking read: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -245,11 +247,10 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   public long skip(final long length) throws WasmException {
     Validation.requirePositive(length, "length");
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outSkipped = arena.allocate(ValueLayout.JAVA_LONG);
 
@@ -271,6 +272,8 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error skipping bytes in input stream: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -278,24 +281,26 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   public long blockingSkip(final long length) throws WasmException {
     Validation.requirePositive(length, "length");
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
-    // Note: Current native implementation doesn't have separate blocking skip
-    // so we use the same as skip for now
-    return skip(length);
+    try {
+      // Note: Current native implementation doesn't have separate blocking skip
+      // so we use the same as skip for now
+      return skip(length);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public WasiPollable subscribe() throws WasmException {
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try {
       final MemorySegment pollableHandle =
           (MemorySegment) SUBSCRIBE_HANDLE.invoke(contextHandle, nativeHandle);
@@ -310,6 +315,8 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error creating pollable: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -338,41 +345,44 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
       throw new IllegalArgumentException("Operation cannot be null or empty");
     }
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
+    try {
+      switch (operation) {
+        case "read":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("read requires a length parameter");
+          }
+          return read(((Number) parameters[0]).longValue());
 
-    switch (operation) {
-      case "read":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("read requires a length parameter");
-        }
-        return read(((Number) parameters[0]).longValue());
+        case "blocking-read":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("blocking-read requires a length parameter");
+          }
+          return blockingRead(((Number) parameters[0]).longValue());
 
-      case "blocking-read":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("blocking-read requires a length parameter");
-        }
-        return blockingRead(((Number) parameters[0]).longValue());
+        case "skip":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("skip requires a length parameter");
+          }
+          return skip(((Number) parameters[0]).longValue());
 
-      case "skip":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("skip requires a length parameter");
-        }
-        return skip(((Number) parameters[0]).longValue());
+        case "blocking-skip":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("blocking-skip requires a length parameter");
+          }
+          return blockingSkip(((Number) parameters[0]).longValue());
 
-      case "blocking-skip":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("blocking-skip requires a length parameter");
-        }
-        return blockingSkip(((Number) parameters[0]).longValue());
+        case "subscribe":
+          return subscribe();
 
-      case "subscribe":
-        return subscribe();
-
-      default:
-        throw new WasmException("Unknown operation: " + operation);
+        default:
+          throw new WasmException("Unknown operation: " + operation);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -390,8 +400,12 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
    * @return the native memory segment
    */
   public MemorySegment getNativeHandle() {
-    ensureNotClosed();
-    return nativeHandle;
+    resourceHandle.beginOperation();
+    try {
+      return nativeHandle;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -406,9 +420,5 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   @Override
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

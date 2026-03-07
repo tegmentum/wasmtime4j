@@ -106,58 +106,62 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
     if (params == null) {
       throw new IllegalArgumentException("Parameters cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena arena = Arena.ofConfined()) {
-      final FunctionType funcType = getFunctionType();
-      final int paramCount = params.length;
-      final int resultCount = funcType.getReturnCount();
+      try (final Arena arena = Arena.ofConfined()) {
+        final FunctionType funcType = getFunctionType();
+        final int paramCount = params.length;
+        final int resultCount = funcType.getReturnCount();
 
-      // Allocate memory using 20-byte FfiWasmValue layout (matching native Rust struct)
-      final MemorySegment paramsSegment =
-          paramCount > 0
-              ? arena.allocate(
-                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
-                  ValueLayout.JAVA_INT.byteAlignment())
-              : MemorySegment.NULL;
-      final MemorySegment resultsSegment =
-          resultCount > 0
-              ? arena.allocate(
-                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * resultCount,
-                  ValueLayout.JAVA_INT.byteAlignment())
-              : MemorySegment.NULL;
+        // Allocate memory using 20-byte FfiWasmValue layout (matching native Rust struct)
+        final MemorySegment paramsSegment =
+            paramCount > 0
+                ? arena.allocate(
+                    (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
+                    ValueLayout.JAVA_INT.byteAlignment())
+                : MemorySegment.NULL;
+        final MemorySegment resultsSegment =
+            resultCount > 0
+                ? arena.allocate(
+                    (long) WasmValueMarshaller.WASM_VALUE_SIZE * resultCount,
+                    ValueLayout.JAVA_INT.byteAlignment())
+                : MemorySegment.NULL;
 
-      // Marshal parameters using WasmValueMarshaller (correct 20-byte layout)
-      if (paramCount > 0) {
-        for (int i = 0; i < paramCount; i++) {
-          WasmValueMarshaller.marshalWasmValue(params[i], paramsSegment, i, null);
+        // Marshal parameters using WasmValueMarshaller (correct 20-byte layout)
+        if (paramCount > 0) {
+          for (int i = 0; i < paramCount; i++) {
+            WasmValueMarshaller.marshalWasmValue(params[i], paramsSegment, i, null);
+          }
         }
-      }
 
-      // Call native function
-      final MemorySegment storePtr = store.getNativeStore();
-      final int result =
-          bindings.funcCall(
-              funcHandle, storePtr, paramsSegment, paramCount, resultsSegment, resultCount);
+        // Call native function
+        final MemorySegment storePtr = store.getNativeStore();
+        final int result =
+            bindings.funcCall(
+                funcHandle, storePtr, paramsSegment, paramCount, resultsSegment, resultCount);
 
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Function call failed for '" + name + "'");
-      }
-
-      // Unmarshal results using WasmValueMarshaller (correct 20-byte layout)
-      if (resultCount > 0) {
-        final WasmValue[] results = new WasmValue[resultCount];
-        for (int i = 0; i < resultCount; i++) {
-          results[i] = WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, null);
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(result, "Function call failed for '" + name + "'");
         }
-        return results;
-      }
-      return new WasmValue[0];
 
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Failed to call function '" + name + "': " + e.getMessage(), e);
+        // Unmarshal results using WasmValueMarshaller (correct 20-byte layout)
+        if (resultCount > 0) {
+          final WasmValue[] results = new WasmValue[resultCount];
+          for (int i = 0; i < resultCount; i++) {
+            results[i] = WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, null);
+          }
+          return results;
+        }
+        return new WasmValue[0];
+
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Failed to call function '" + name + "': " + e.getMessage(), e);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -167,54 +171,62 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
       return cachedFunctionType;
     }
 
-    ensureNotClosed();
+    resourceHandle.beginOperation();
     try {
-      final MemorySegment storePtr = store.getNativeStore();
-      final MemorySegment funcTypePtr = bindings.funcGetType(funcHandle, storePtr);
+      try {
+        final MemorySegment storePtr = store.getNativeStore();
+        final MemorySegment funcTypePtr = bindings.funcGetType(funcHandle, storePtr);
 
-      if (funcTypePtr == null || funcTypePtr.equals(MemorySegment.NULL)) {
-        // Return empty function type if native call fails
+        if (funcTypePtr == null || funcTypePtr.equals(MemorySegment.NULL)) {
+          // Return empty function type if native call fails
+          cachedFunctionType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
+          return cachedFunctionType;
+        }
+
+        // Parse function type from native pointer
+        // The native layer returns a struct with param count, return count, and type arrays
+        final int paramCount = funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+        final int returnCount = funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 4);
+
+        final WasmValueType[] paramTypes = new WasmValueType[paramCount];
+        final WasmValueType[] returnTypes = new WasmValueType[returnCount];
+
+        // Types start at offset 8 (after two ints)
+        for (int i = 0; i < paramCount; i++) {
+          final int typeVal = funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 8 + i * 4L);
+          paramTypes[i] = WasmValueType.fromNativeTypeCode(typeVal);
+        }
+        for (int i = 0; i < returnCount; i++) {
+          final int typeVal =
+              funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 8 + (paramCount + i) * 4L);
+          returnTypes[i] = WasmValueType.fromNativeTypeCode(typeVal);
+        }
+
+        // Clean up the native function type
+        bindings.funcTypeDestroy(funcTypePtr);
+
+        cachedFunctionType = new FunctionType(paramTypes, returnTypes);
+        return cachedFunctionType;
+
+      } catch (final Exception e) {
+        LOGGER.log(Level.WARNING, "Failed to get function type for '" + name + "'", e);
+        // Return empty type on error
         cachedFunctionType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
         return cachedFunctionType;
       }
-
-      // Parse function type from native pointer
-      // The native layer returns a struct with param count, return count, and type arrays
-      final int paramCount = funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
-      final int returnCount = funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 4);
-
-      final WasmValueType[] paramTypes = new WasmValueType[paramCount];
-      final WasmValueType[] returnTypes = new WasmValueType[returnCount];
-
-      // Types start at offset 8 (after two ints)
-      for (int i = 0; i < paramCount; i++) {
-        final int typeVal = funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 8 + i * 4L);
-        paramTypes[i] = WasmValueType.fromNativeTypeCode(typeVal);
-      }
-      for (int i = 0; i < returnCount; i++) {
-        final int typeVal =
-            funcTypePtr.get(java.lang.foreign.ValueLayout.JAVA_INT, 8 + (paramCount + i) * 4L);
-        returnTypes[i] = WasmValueType.fromNativeTypeCode(typeVal);
-      }
-
-      // Clean up the native function type
-      bindings.funcTypeDestroy(funcTypePtr);
-
-      cachedFunctionType = new FunctionType(paramTypes, returnTypes);
-      return cachedFunctionType;
-
-    } catch (final Exception e) {
-      LOGGER.log(Level.WARNING, "Failed to get function type for '" + name + "'", e);
-      // Return empty type on error
-      cachedFunctionType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
-      return cachedFunctionType;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public long toRawFuncRef() throws WasmException {
-    ensureNotClosed();
-    return bindings.funcToRaw(funcHandle, store.getNativeStore());
+    resourceHandle.beginOperation();
+    try {
+      return bindings.funcToRaw(funcHandle, store.getNativeStore());
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -254,56 +266,61 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
     if (params == null) {
       throw new IllegalArgumentException("Parameters cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena arena = Arena.ofConfined()) {
-      final FunctionType funcType = getFunctionType();
-      final int paramCount = params.length;
-      final int resultCount = funcType.getReturnCount();
+      try (final Arena arena = Arena.ofConfined()) {
+        final FunctionType funcType = getFunctionType();
+        final int paramCount = params.length;
+        final int resultCount = funcType.getReturnCount();
 
-      final MemorySegment paramsSegment =
-          paramCount > 0
-              ? arena.allocate(
-                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
-                  ValueLayout.JAVA_INT.byteAlignment())
-              : MemorySegment.NULL;
-      final MemorySegment resultsSegment =
-          resultCount > 0
-              ? arena.allocate(
-                  (long) WasmValueMarshaller.WASM_VALUE_SIZE * resultCount,
-                  ValueLayout.JAVA_INT.byteAlignment())
-              : MemorySegment.NULL;
+        final MemorySegment paramsSegment =
+            paramCount > 0
+                ? arena.allocate(
+                    (long) WasmValueMarshaller.WASM_VALUE_SIZE * paramCount,
+                    ValueLayout.JAVA_INT.byteAlignment())
+                : MemorySegment.NULL;
+        final MemorySegment resultsSegment =
+            resultCount > 0
+                ? arena.allocate(
+                    (long) WasmValueMarshaller.WASM_VALUE_SIZE * resultCount,
+                    ValueLayout.JAVA_INT.byteAlignment())
+                : MemorySegment.NULL;
 
-      if (paramCount > 0) {
-        for (int i = 0; i < paramCount; i++) {
-          WasmValueMarshaller.marshalWasmValue(params[i], paramsSegment, i, null);
+        if (paramCount > 0) {
+          for (int i = 0; i < paramCount; i++) {
+            WasmValueMarshaller.marshalWasmValue(params[i], paramsSegment, i, null);
+          }
         }
-      }
 
-      final MemorySegment storePtr = store.getNativeStore();
-      final long nativeResultCount =
-          bindings.funcCallNativeAsync(
-              funcHandle, storePtr, paramsSegment, paramCount, resultsSegment, resultCount);
+        final MemorySegment storePtr = store.getNativeStore();
+        final long nativeResultCount =
+            bindings.funcCallNativeAsync(
+                funcHandle, storePtr, paramsSegment, paramCount, resultsSegment, resultCount);
 
-      if (nativeResultCount < 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            (int) nativeResultCount, "Async function call failed for '" + name + "'");
-      }
-
-      final int actualCount = (int) nativeResultCount;
-      if (actualCount > 0) {
-        final WasmValue[] results = new WasmValue[actualCount];
-        for (int i = 0; i < actualCount; i++) {
-          results[i] = WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, null);
+        if (nativeResultCount < 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              (int) nativeResultCount, "Async function call failed for '" + name + "'");
         }
-        return results;
-      }
-      return new WasmValue[0];
 
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Failed async call to function '" + name + "': " + e.getMessage(), e);
+        final int actualCount = (int) nativeResultCount;
+        if (actualCount > 0) {
+          final WasmValue[] results = new WasmValue[actualCount];
+          for (int i = 0; i < actualCount; i++) {
+            results[i] = WasmValueMarshaller.unmarshalWasmValue(resultsSegment, i, null);
+          }
+          return results;
+        }
+        return new WasmValue[0];
+
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException(
+            "Failed async call to function '" + name + "': " + e.getMessage(), e);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -317,55 +334,55 @@ final class PanamaCallerFunction implements WasmFunction, TypedFunc.TypedFunctio
     if (funcType == null) {
       return false;
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final WasmValueType[] paramTypes = funcType.getParamTypes();
-    final WasmValueType[] resultTypes = funcType.getReturnTypes();
+      final WasmValueType[] paramTypes = funcType.getParamTypes();
+      final WasmValueType[] resultTypes = funcType.getReturnTypes();
 
-    try (final Arena matchArena = Arena.ofConfined()) {
-      final MemorySegment paramCodes =
-          paramTypes.length > 0
-              ? matchArena.allocate(ValueLayout.JAVA_INT, paramTypes.length)
-              : MemorySegment.NULL;
-      for (int i = 0; i < paramTypes.length; i++) {
-        paramCodes.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i].ordinal());
+      try (final Arena matchArena = Arena.ofConfined()) {
+        final MemorySegment paramCodes =
+            paramTypes.length > 0
+                ? matchArena.allocate(ValueLayout.JAVA_INT, paramTypes.length)
+                : MemorySegment.NULL;
+        for (int i = 0; i < paramTypes.length; i++) {
+          paramCodes.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i].ordinal());
+        }
+
+        final MemorySegment resultCodes =
+            resultTypes.length > 0
+                ? matchArena.allocate(ValueLayout.JAVA_INT, resultTypes.length)
+                : MemorySegment.NULL;
+        for (int i = 0; i < resultTypes.length; i++) {
+          resultCodes.setAtIndex(ValueLayout.JAVA_INT, i, resultTypes[i].ordinal());
+        }
+
+        final MemorySegment storePtr = store.getNativeStore();
+        final int result =
+            bindings.funcMatchesTy(
+                funcHandle,
+                storePtr,
+                paramCodes,
+                paramTypes.length,
+                resultCodes,
+                resultTypes.length);
+        if (result < 0) {
+          throw new WasmException("Native func_matches_ty check failed");
+        }
+        return result == 1;
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("func_matches_ty failed: " + e.getMessage(), e);
       }
-
-      final MemorySegment resultCodes =
-          resultTypes.length > 0
-              ? matchArena.allocate(ValueLayout.JAVA_INT, resultTypes.length)
-              : MemorySegment.NULL;
-      for (int i = 0; i < resultTypes.length; i++) {
-        resultCodes.setAtIndex(ValueLayout.JAVA_INT, i, resultTypes[i].ordinal());
-      }
-
-      final MemorySegment storePtr = store.getNativeStore();
-      final int result =
-          bindings.funcMatchesTy(
-              funcHandle, storePtr, paramCodes, paramTypes.length, resultCodes, resultTypes.length);
-      if (result < 0) {
-        throw new WasmException("Native func_matches_ty check failed");
-      }
-      return result == 1;
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("func_matches_ty failed: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   /** Closes the function and releases resources. */
   public void close() {
     resourceHandle.close();
-  }
-
-  /**
-   * Ensures the function is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 
   /**

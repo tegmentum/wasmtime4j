@@ -67,8 +67,12 @@ public final class PanamaNnGraph implements NnGraph {
 
   @Override
   public long getNativeHandle() {
-    resourceHandle.ensureNotClosed();
-    return nativePtr.address();
+    resourceHandle.beginOperation();
+    try {
+      return nativePtr.address();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -83,12 +87,16 @@ public final class PanamaNnGraph implements NnGraph {
 
   @Override
   public NnGraphExecutionContext createExecutionContext() throws NnException {
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment execPtr = bindings.nnGraphCreateExecCtx(arena, nativePtr);
-      return new PanamaNnGraphExecutionContext(execPtr, this);
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment execPtr = bindings.nnGraphCreateExecCtx(arena, nativePtr);
+        return new PanamaNnGraphExecutionContext(execPtr, this);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 

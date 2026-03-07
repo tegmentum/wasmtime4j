@@ -68,8 +68,12 @@ public final class PanamaNnGraphExecutionContext implements NnGraphExecutionCont
 
   @Override
   public long getNativeHandle() {
-    resourceHandle.ensureNotClosed();
-    return nativePtr.address();
+    resourceHandle.beginOperation();
+    try {
+      return nativePtr.address();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -88,17 +92,21 @@ public final class PanamaNnGraphExecutionContext implements NnGraphExecutionCont
         throw new IllegalArgumentException("Input tensor at index " + i + " cannot be null");
       }
     }
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    for (int i = 0; i < inputs.size(); i++) {
-      final NnTensor tensor = inputs.get(i);
-      if (tensor.isNamed()) {
-        setInput(tensor.getName(), tensor);
-      } else {
-        setInput(i, tensor);
+      for (int i = 0; i < inputs.size(); i++) {
+        final NnTensor tensor = inputs.get(i);
+        if (tensor.isNamed()) {
+          setInput(tensor.getName(), tensor);
+        } else {
+          setInput(i, tensor);
+        }
       }
+      return computeNoInputs();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return computeNoInputs();
   }
 
   @Override
@@ -112,12 +120,16 @@ public final class PanamaNnGraphExecutionContext implements NnGraphExecutionCont
         throw new IllegalArgumentException("Input tensor at index " + i + " cannot be null");
       }
     }
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    for (int i = 0; i < inputs.length; i++) {
-      setInput(i, inputs[i]);
+      for (int i = 0; i < inputs.length; i++) {
+        setInput(i, inputs[i]);
+      }
+      return computeNoInputs();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return computeNoInputs();
   }
 
   @Override
@@ -126,17 +138,21 @@ public final class PanamaNnGraphExecutionContext implements NnGraphExecutionCont
     if (index < 0) {
       throw new IndexOutOfBoundsException("Input index cannot be negative: " + index);
     }
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
-    try (Arena arena = Arena.ofConfined()) {
-      bindings.nnExecSetInputByIndex(
-          arena,
-          nativePtr,
-          index,
-          tensor.getDimensions(),
-          tensor.getType().getNativeCode(),
-          tensor.getData());
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
+      try (Arena arena = Arena.ofConfined()) {
+        bindings.nnExecSetInputByIndex(
+            arena,
+            nativePtr,
+            index,
+            tensor.getDimensions(),
+            tensor.getType().getNativeCode(),
+            tensor.getData());
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -144,43 +160,51 @@ public final class PanamaNnGraphExecutionContext implements NnGraphExecutionCont
   public void setInput(final String name, final NnTensor tensor) throws NnException {
     Objects.requireNonNull(name, "name cannot be null");
     Objects.requireNonNull(tensor, "tensor cannot be null");
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
-    try (Arena arena = Arena.ofConfined()) {
-      bindings.nnExecSetInputByName(
-          arena,
-          nativePtr,
-          name,
-          tensor.getDimensions(),
-          tensor.getType().getNativeCode(),
-          tensor.getData());
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
+      try (Arena arena = Arena.ofConfined()) {
+        bindings.nnExecSetInputByName(
+            arena,
+            nativePtr,
+            name,
+            tensor.getDimensions(),
+            tensor.getType().getNativeCode(),
+            tensor.getData());
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public List<NnTensor> computeNoInputs() throws NnException {
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
-    try (Arena arena = Arena.ofConfined()) {
-      bindings.nnExecCompute(arena, nativePtr);
-    }
-
-    // Probe outputs starting from index 0
-    final List<NnTensor> outputs = new ArrayList<>();
-    for (int i = 0; i < 1024; i++) {
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
       try (Arena arena = Arena.ofConfined()) {
-        final byte[] serialized = bindings.nnExecGetOutputByIndex(arena, nativePtr, i);
-        if (serialized == null) {
+        bindings.nnExecCompute(arena, nativePtr);
+      }
+
+      // Probe outputs starting from index 0
+      final List<NnTensor> outputs = new ArrayList<>();
+      for (int i = 0; i < 1024; i++) {
+        try (Arena arena = Arena.ofConfined()) {
+          final byte[] serialized = bindings.nnExecGetOutputByIndex(arena, nativePtr, i);
+          if (serialized == null) {
+            break;
+          }
+          outputs.add(NnTensor.deserializeFromNative(null, serialized));
+        } catch (NnException e) {
           break;
         }
-        outputs.add(NnTensor.deserializeFromNative(null, serialized));
-      } catch (NnException e) {
-        break;
       }
+      return outputs;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return outputs;
   }
 
   @Override
@@ -188,30 +212,38 @@ public final class PanamaNnGraphExecutionContext implements NnGraphExecutionCont
     if (index < 0) {
       throw new IndexOutOfBoundsException("Output index cannot be negative: " + index);
     }
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
-    try (Arena arena = Arena.ofConfined()) {
-      final byte[] serialized = bindings.nnExecGetOutputByIndex(arena, nativePtr, index);
-      if (serialized == null) {
-        throw new NnException("Failed to get output tensor at index " + index);
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
+      try (Arena arena = Arena.ofConfined()) {
+        final byte[] serialized = bindings.nnExecGetOutputByIndex(arena, nativePtr, index);
+        if (serialized == null) {
+          throw new NnException("Failed to get output tensor at index " + index);
+        }
+        return NnTensor.deserializeFromNative(null, serialized);
       }
-      return NnTensor.deserializeFromNative(null, serialized);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public NnTensor getOutput(final String name) throws NnException {
     Objects.requireNonNull(name, "name cannot be null");
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
-    try (Arena arena = Arena.ofConfined()) {
-      final byte[] serialized = bindings.nnExecGetOutputByName(arena, nativePtr, name);
-      if (serialized == null) {
-        throw new NnException("Failed to get output tensor with name: " + name);
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
+      try (Arena arena = Arena.ofConfined()) {
+        final byte[] serialized = bindings.nnExecGetOutputByName(arena, nativePtr, name);
+        if (serialized == null) {
+          throw new NnException("Failed to get output tensor with name: " + name);
+        }
+        return NnTensor.deserializeFromNative(name, serialized);
       }
-      return NnTensor.deserializeFromNative(name, serialized);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 

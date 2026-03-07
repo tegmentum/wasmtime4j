@@ -27,11 +27,13 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use wasmtime::*;
 
-/// Real WebAssembly GC reference using Wasmtime's native GC system
+/// Metadata for a WebAssembly GC reference managed by Wasmtime's native GC system.
+///
+/// The actual GC reference is held as an `OwnedRooted<T>` in `WasmtimeGcOperations::gc_objects`
+/// which correctly manages the rooting lifetime. This struct tracks only the type information
+/// and object identity needed for validation in `WasmGcRuntime`.
 #[derive(Clone)]
 pub struct WasmtimeGcRef {
-    /// Actual Wasmtime GC reference (rooted to prevent collection)
-    pub gc_ref: Arc<wasmtime::Rooted<wasmtime::AnyRef>>,
     /// Type information for the reference
     pub ref_type: GcReferenceType,
     /// Object ID for tracking
@@ -186,17 +188,14 @@ impl WasmGcRuntime {
         let result = gc_ops.struct_new(&type_def, &field_values, object_id);
 
         if result.success {
-            // Store the real GC reference
-            if let Some(gc_ref) = result.gc_object {
-                let wasmtime_ref = WasmtimeGcRef {
-                    gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::StructRef(type_def.clone()),
-                    object_id,
-                };
+            // Store metadata for type validation (actual GC ref is OwnedRooted in gc_operations)
+            let wasmtime_ref = WasmtimeGcRef {
+                ref_type: GcReferenceType::StructRef(type_def.clone()),
+                object_id,
+            };
 
-                if let Ok(mut gc_objects) = self.gc_objects.write() {
-                    gc_objects.insert(object_id, wasmtime_ref);
-                }
+            if let Ok(mut gc_objects) = self.gc_objects.write() {
+                gc_objects.insert(object_id, wasmtime_ref);
             }
 
             // Increment allocation count
@@ -273,16 +272,13 @@ impl WasmGcRuntime {
         let result = gc_ops.struct_new_async(&type_def, &field_values, object_id);
 
         if result.success {
-            if let Some(gc_ref) = result.gc_object {
-                let wasmtime_ref = WasmtimeGcRef {
-                    gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::StructRef(type_def.clone()),
-                    object_id,
-                };
+            let wasmtime_ref = WasmtimeGcRef {
+                ref_type: GcReferenceType::StructRef(type_def.clone()),
+                object_id,
+            };
 
-                if let Ok(mut gc_objects) = self.gc_objects.write() {
-                    gc_objects.insert(object_id, wasmtime_ref);
-                }
+            if let Ok(mut gc_objects) = self.gc_objects.write() {
+                gc_objects.insert(object_id, wasmtime_ref);
             }
 
             self.allocation_count.fetch_add(1, Ordering::Relaxed);
@@ -515,17 +511,13 @@ impl WasmGcRuntime {
         let result = gc_ops.array_new(&type_def, &elements, object_id);
 
         if result.success {
-            // Store the real GC reference
-            if let Some(gc_ref) = result.gc_array {
-                let wasmtime_ref = WasmtimeGcRef {
-                    gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::ArrayRef(Box::new(type_def.clone())),
-                    object_id,
-                };
+            let wasmtime_ref = WasmtimeGcRef {
+                ref_type: GcReferenceType::ArrayRef(Box::new(type_def.clone())),
+                object_id,
+            };
 
-                if let Ok(mut gc_objects) = self.gc_objects.write() {
-                    gc_objects.insert(object_id, wasmtime_ref);
-                }
+            if let Ok(mut gc_objects) = self.gc_objects.write() {
+                gc_objects.insert(object_id, wasmtime_ref);
             }
 
             // Increment allocation count
@@ -607,16 +599,13 @@ impl WasmGcRuntime {
         let result = gc_ops.array_new_async(&type_def, &elements, object_id);
 
         if result.success {
-            if let Some(gc_ref) = result.gc_array {
-                let wasmtime_ref = WasmtimeGcRef {
-                    gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::ArrayRef(Box::new(type_def.clone())),
-                    object_id,
-                };
+            let wasmtime_ref = WasmtimeGcRef {
+                ref_type: GcReferenceType::ArrayRef(Box::new(type_def.clone())),
+                object_id,
+            };
 
-                if let Ok(mut gc_objects) = self.gc_objects.write() {
-                    gc_objects.insert(object_id, wasmtime_ref);
-                }
+            if let Ok(mut gc_objects) = self.gc_objects.write() {
+                gc_objects.insert(object_id, wasmtime_ref);
             }
 
             self.allocation_count.fetch_add(1, Ordering::Relaxed);
@@ -1187,17 +1176,13 @@ impl WasmGcRuntime {
         let result = gc_ops.i31_new(value, object_id);
 
         if result.success {
-            // Store the real GC reference
-            if let Some(gc_ref) = result.cast_result {
-                let wasmtime_ref = WasmtimeGcRef {
-                    gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::I31Ref,
-                    object_id,
-                };
+            let wasmtime_ref = WasmtimeGcRef {
+                ref_type: GcReferenceType::I31Ref,
+                object_id,
+            };
 
-                if let Ok(mut gc_objects) = self.gc_objects.write() {
-                    gc_objects.insert(object_id, wasmtime_ref);
-                }
+            if let Ok(mut gc_objects) = self.gc_objects.write() {
+                gc_objects.insert(object_id, wasmtime_ref);
             }
 
             // Increment allocation count
@@ -1269,15 +1254,12 @@ impl WasmGcRuntime {
         let result = gc_ops.i31_new_unsigned(value, object_id);
 
         if result.success {
-            if let Some(gc_ref) = result.cast_result {
-                let wasmtime_ref = WasmtimeGcRef {
-                    gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::I31Ref,
-                    object_id,
-                };
-                if let Ok(mut gc_objects) = self.gc_objects.write() {
-                    gc_objects.insert(object_id, wasmtime_ref);
-                }
+            let wasmtime_ref = WasmtimeGcRef {
+                ref_type: GcReferenceType::I31Ref,
+                object_id,
+            };
+            if let Ok(mut gc_objects) = self.gc_objects.write() {
+                gc_objects.insert(object_id, wasmtime_ref);
             }
             self.allocation_count.fetch_add(1, Ordering::Relaxed);
             RefOperationResult {
@@ -1346,15 +1328,12 @@ impl WasmGcRuntime {
         let result = gc_ops.i31_wrapping_signed(value, object_id);
 
         if result.success {
-            if let Some(gc_ref) = result.cast_result {
-                let wasmtime_ref = WasmtimeGcRef {
-                    gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::I31Ref,
-                    object_id,
-                };
-                if let Ok(mut gc_objects) = self.gc_objects.write() {
-                    gc_objects.insert(object_id, wasmtime_ref);
-                }
+            let wasmtime_ref = WasmtimeGcRef {
+                ref_type: GcReferenceType::I31Ref,
+                object_id,
+            };
+            if let Ok(mut gc_objects) = self.gc_objects.write() {
+                gc_objects.insert(object_id, wasmtime_ref);
             }
             self.allocation_count.fetch_add(1, Ordering::Relaxed);
             RefOperationResult {
@@ -1423,15 +1402,12 @@ impl WasmGcRuntime {
         let result = gc_ops.i31_wrapping_unsigned(value, object_id);
 
         if result.success {
-            if let Some(gc_ref) = result.cast_result {
-                let wasmtime_ref = WasmtimeGcRef {
-                    gc_ref: Arc::new(gc_ref),
-                    ref_type: GcReferenceType::I31Ref,
-                    object_id,
-                };
-                if let Ok(mut gc_objects) = self.gc_objects.write() {
-                    gc_objects.insert(object_id, wasmtime_ref);
-                }
+            let wasmtime_ref = WasmtimeGcRef {
+                ref_type: GcReferenceType::I31Ref,
+                object_id,
+            };
+            if let Ok(mut gc_objects) = self.gc_objects.write() {
+                gc_objects.insert(object_id, wasmtime_ref);
             }
             self.allocation_count.fetch_add(1, Ordering::Relaxed);
             RefOperationResult {
@@ -1552,6 +1528,31 @@ impl WasmGcRuntime {
                 object_id
             ))),
         }
+    }
+
+    // === Object Lifecycle ===
+
+    /// Release a GC object by ID, removing it from both the metadata map and the
+    /// operations store. This allows the Wasmtime GC to collect the underlying
+    /// reference, preventing native memory leaks in long-running processes.
+    ///
+    /// Returns `true` if the object existed and was released.
+    pub fn release_object(&self, object_id: ObjectId) -> bool {
+        // Remove from metadata map
+        let removed_meta = if let Ok(mut gc_objects) = self.gc_objects.write() {
+            gc_objects.remove(&object_id).is_some()
+        } else {
+            false
+        };
+
+        // Remove from operations store (the actual OwnedRooted reference)
+        let removed_ref = if let Ok(mut gc_ops) = self.gc_operations.lock() {
+            gc_ops.remove_object(object_id)
+        } else {
+            false
+        };
+
+        removed_meta || removed_ref
     }
 
     // === Heap Management ===

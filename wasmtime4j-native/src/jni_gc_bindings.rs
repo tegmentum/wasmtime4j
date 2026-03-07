@@ -65,6 +65,26 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_destroyRunt
     FFI_SUCCESS
 }
 
+/// JNI binding for releasing a single GC object by ID.
+///
+/// Returns 1 if the object was found and released, 0 if not found.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_releaseObjectNative(
+    _env: JNIEnv,
+    _class: JClass,
+    runtime_handle: jlong,
+    object_id: jlong,
+) -> jint {
+    if runtime_handle == 0 {
+        return FFI_ERROR;
+    }
+
+    let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+    let released = runtime.release_object(object_id as u64);
+
+    if released { 1 } else { 0 }
+}
+
 /// JNI binding for registering a struct type
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_registerStructTypeNative(

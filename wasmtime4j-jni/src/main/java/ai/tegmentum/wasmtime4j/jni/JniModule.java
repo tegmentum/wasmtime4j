@@ -52,13 +52,15 @@ public class JniModule extends JniResource implements Module {
 
   @Override
   public String getName() {
-    ensureNotClosed();
+    beginOperation();
     try {
       return nativeGetModuleName(nativeHandle);
     } catch (final Exception e) {
       java.util.logging.Logger.getLogger(JniModule.class.getName())
           .fine("Failed to get module name from native: " + e.getMessage());
       return null;
+    } finally {
+      endOperation();
     }
   }
 
@@ -69,8 +71,7 @@ public class JniModule extends JniResource implements Module {
           "Error details are logged internally only; exception thrown to caller has sanitized"
               + " message")
   public List<ImportType> getImports() {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final List<ImportType> result = nativeGetModuleImports(nativeHandle);
       if (result == null) {
@@ -83,6 +84,8 @@ public class JniModule extends JniResource implements Module {
       java.util.logging.Logger.getLogger(JniModule.class.getName())
           .log(java.util.logging.Level.SEVERE, "nativeGetModuleImports failed", t);
       throw new RuntimeException("Failed to get module imports");
+    } finally {
+      endOperation();
     }
   }
 
@@ -95,17 +98,20 @@ public class JniModule extends JniResource implements Module {
     if (!(store instanceof JniStore)) {
       throw new IllegalArgumentException("store must be a JniStore instance");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final JniStore jniStore = (JniStore) store;
+      final long instanceHandle = nativeInstantiateModule(nativeHandle, jniStore.getNativeHandle());
 
-    final JniStore jniStore = (JniStore) store;
-    final long instanceHandle = nativeInstantiateModule(nativeHandle, jniStore.getNativeHandle());
+      if (instanceHandle == 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to instantiate module - native instantiation returned null");
+      }
 
-    if (instanceHandle == 0) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to instantiate module - native instantiation returned null");
+      return new JniInstance(instanceHandle, this, store);
+    } finally {
+      endOperation();
     }
-
-    return new JniInstance(instanceHandle, this, store);
   }
 
   @Override
@@ -122,35 +128,38 @@ public class JniModule extends JniResource implements Module {
     if (!(store instanceof JniStore)) {
       throw new IllegalArgumentException("store must be a JniStore instance");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final JniStore jniStore = (JniStore) store;
+      final java.util.List<ImportType> moduleImports = getImports();
 
-    final JniStore jniStore = (JniStore) store;
-    final java.util.List<ImportType> moduleImports = getImports();
-
-    if (moduleImports.isEmpty()) {
-      return instantiate(store);
-    }
-
-    final java.util.Map<String, java.util.Map<String, Object>> importData = imports.getImports();
-    final ai.tegmentum.wasmtime4j.Extern[] externs =
-        new ai.tegmentum.wasmtime4j.Extern[moduleImports.size()];
-
-    for (int i = 0; i < moduleImports.size(); i++) {
-      final ImportType imp = moduleImports.get(i);
-      final String modName = imp.getModuleName();
-      final String fieldName = imp.getName();
-
-      final java.util.Map<String, Object> moduleMap = importData.get(modName);
-      if (moduleMap == null || !moduleMap.containsKey(fieldName)) {
-        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-            "Missing import: " + modName + "::" + fieldName);
+      if (moduleImports.isEmpty()) {
+        return instantiate(store);
       }
 
-      final Object value = moduleMap.get(fieldName);
-      externs[i] = wrapAsJniExtern(value, jniStore, imp);
-    }
+      final java.util.Map<String, java.util.Map<String, Object>> importData = imports.getImports();
+      final ai.tegmentum.wasmtime4j.Extern[] externs =
+          new ai.tegmentum.wasmtime4j.Extern[moduleImports.size()];
 
-    return jniStore.createInstance(this, externs);
+      for (int i = 0; i < moduleImports.size(); i++) {
+        final ImportType imp = moduleImports.get(i);
+        final String modName = imp.getModuleName();
+        final String fieldName = imp.getName();
+
+        final java.util.Map<String, Object> moduleMap = importData.get(modName);
+        if (moduleMap == null || !moduleMap.containsKey(fieldName)) {
+          throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+              "Missing import: " + modName + "::" + fieldName);
+        }
+
+        final Object value = moduleMap.get(fieldName);
+        externs[i] = wrapAsJniExtern(value, jniStore, imp);
+      }
+
+      return jniStore.createInstance(this, externs);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -212,8 +221,7 @@ public class JniModule extends JniResource implements Module {
           "Error details are logged internally only; exception thrown to caller has sanitized"
               + " message")
   public List<ExportType> getExports() {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final List<ExportType> result = nativeGetModuleExports(nativeHandle);
       if (result == null) {
@@ -226,6 +234,8 @@ public class JniModule extends JniResource implements Module {
       java.util.logging.Logger.getLogger(JniModule.class.getName())
           .log(java.util.logging.Level.SEVERE, "nativeGetModuleExports failed", t);
       throw new RuntimeException("Failed to get module exports");
+    } finally {
+      endOperation();
     }
   }
 
@@ -234,13 +244,14 @@ public class JniModule extends JniResource implements Module {
     if (name == null) {
       throw new IllegalArgumentException("Export name cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       return nativeHasExport(nativeHandle, name);
     } catch (final Throwable t) {
       // Defensive: Return false on native error instead of crashing JVM
       return false;
+    } finally {
+      endOperation();
     }
   }
 
@@ -252,13 +263,14 @@ public class JniModule extends JniResource implements Module {
     if (fieldName == null) {
       throw new IllegalArgumentException("Field name cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       return nativeHasImport(nativeHandle, moduleName, fieldName);
     } catch (final Throwable t) {
       // Defensive: Return false on native error instead of crashing JVM
       return false;
+    } finally {
+      endOperation();
     }
   }
 
@@ -267,20 +279,22 @@ public class JniModule extends JniResource implements Module {
     if (other == null) {
       throw new IllegalArgumentException("other cannot be null");
     }
-    if (isClosed()) {
-      return false;
-    }
-    if (!(other instanceof JniModule)) {
-      return false;
-    }
-    final JniModule otherModule = (JniModule) other;
-    if (otherModule.isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
     try {
+      if (!(other instanceof JniModule)) {
+        return false;
+      }
+      final JniModule otherModule = (JniModule) other;
+      if (otherModule.isClosed()) {
+        return false;
+      }
       return nativeModuleSame(nativeHandle, otherModule.nativeHandle);
     } catch (final Throwable t) {
       return false;
+    } finally {
+      endOperation();
     }
   }
 
@@ -289,11 +303,13 @@ public class JniModule extends JniResource implements Module {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
     try {
       return (int) nativeGetExportIndex(nativeHandle, name);
     } catch (final Throwable t) {
       return -1;
+    } finally {
+      endOperation();
     }
   }
 
@@ -303,7 +319,7 @@ public class JniModule extends JniResource implements Module {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
     try {
       final long handle = nativeGetModuleExport(nativeHandle, name);
       if (handle == 0) {
@@ -312,6 +328,8 @@ public class JniModule extends JniResource implements Module {
       return java.util.Optional.of(new JniModuleExport(name, handle));
     } catch (final Throwable t) {
       return java.util.Optional.empty();
+    } finally {
+      endOperation();
     }
   }
 
@@ -320,20 +338,23 @@ public class JniModule extends JniResource implements Module {
     if (imports == null) {
       throw new IllegalArgumentException("imports cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final List<ImportType> importTypes = getImports();
 
-    final List<ImportType> importTypes = getImports();
+      for (final ImportType importType : importTypes) {
+        final String moduleName = importType.getModuleName();
+        final String fieldName = importType.getName();
 
-    for (final ImportType importType : importTypes) {
-      final String moduleName = importType.getModuleName();
-      final String fieldName = importType.getName();
-
-      if (!imports.contains(moduleName, fieldName)) {
-        return false;
+        if (!imports.contains(moduleName, fieldName)) {
+          return false;
+        }
       }
-    }
 
-    return true;
+      return true;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -342,35 +363,42 @@ public class JniModule extends JniResource implements Module {
     if (imports == null) {
       throw new IllegalArgumentException("imports cannot be null");
     }
-    ensureNotClosed();
-    return ai.tegmentum.wasmtime4j.util.ModuleValidationSupport.validateImportsDetailed(
-        getImports(), imports);
+    beginOperation();
+    try {
+      return ai.tegmentum.wasmtime4j.util.ModuleValidationSupport.validateImportsDetailed(
+          getImports(), imports);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public byte[] serialize() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    if (isClosed()) {
-      throw new IllegalStateException("Cannot serialize a closed module");
-    }
-
+    beginOperation();
     try {
       return nativeSerializeModule(nativeHandle);
     } catch (final Throwable t) {
       throw new ai.tegmentum.wasmtime4j.exception.WasmException(
           "Failed to serialize module: " + t.getMessage());
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void initializeCopyOnWriteImage() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    nativeInitializeCopyOnWriteImage(nativeHandle);
+    beginOperation();
+    try {
+      nativeInitializeCopyOnWriteImage(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.ImageRange imageRange()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
+    beginOperation();
     try {
       final long[] range = nativeGetModuleImageRange(nativeHandle);
       if (range == null || range.length < 2) {
@@ -383,31 +411,37 @@ public class JniModule extends JniResource implements Module {
     } catch (final Throwable t) {
       throw new ai.tegmentum.wasmtime4j.exception.WasmException(
           "Failed to get module image range: " + t.getMessage());
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.ResourcesRequired resourcesRequired() {
-    ensureNotClosed();
-    final long[] data = nativeGetModuleResourcesRequired(nativeHandle);
-    if (data == null || data.length < 8) {
-      // Fall back to default implementation if native call fails
-      return Module.super.resourcesRequired();
+    beginOperation();
+    try {
+      final long[] data = nativeGetModuleResourcesRequired(nativeHandle);
+      if (data == null || data.length < 8) {
+        // Fall back to default implementation if native call fails
+        return Module.super.resourcesRequired();
+      }
+      return new ai.tegmentum.wasmtime4j.ResourcesRequired(
+          data[0], // minimumMemoryBytes
+          data[1], // maximumMemoryBytes (-1 if unbounded)
+          (int) data[2], // minimumTableElements
+          data[3] > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) data[3], // maximumTableElements
+          (int) data[4], // numMemories
+          (int) data[5], // numTables
+          (int) data[6], // numGlobals
+          (int) data[7]); // numFunctions
+    } finally {
+      endOperation();
     }
-    return new ai.tegmentum.wasmtime4j.ResourcesRequired(
-        data[0], // minimumMemoryBytes
-        data[1], // maximumMemoryBytes (-1 if unbounded)
-        (int) data[2], // minimumTableElements
-        data[3] > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) data[3], // maximumTableElements
-        (int) data[4], // numMemories
-        (int) data[5], // numTables
-        (int) data[6], // numGlobals
-        (int) data[7]); // numFunctions
   }
 
   @Override
   public byte[] text() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
+    beginOperation();
     try {
       final byte[] result = nativeGetModuleText(nativeHandle);
       if (result == null) {
@@ -417,13 +451,15 @@ public class JniModule extends JniResource implements Module {
     } catch (final Throwable t) {
       throw new ai.tegmentum.wasmtime4j.exception.WasmException(
           "Failed to get module text: " + t.getMessage());
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public java.util.List<AddressMapping> addressMap()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
+    beginOperation();
     try {
       final long[] raw = nativeGetModuleAddressMap(nativeHandle);
       if (raw == null) {
@@ -443,6 +479,8 @@ public class JniModule extends JniResource implements Module {
     } catch (final Throwable t) {
       throw new ai.tegmentum.wasmtime4j.exception.WasmException(
           "Failed to get module address map: " + t.getMessage());
+    } finally {
+      endOperation();
     }
   }
 
@@ -631,12 +669,16 @@ public class JniModule extends JniResource implements Module {
 
   @Override
   public Iterable<ai.tegmentum.wasmtime4j.func.FunctionInfo> functions() {
-    ensureNotClosed();
-    final String json = nativeGetAllFunctions(nativeHandle);
-    if (json == null || json.isEmpty() || json.equals("[]")) {
-      return java.util.Collections.emptyList();
+    beginOperation();
+    try {
+      final String json = nativeGetAllFunctions(nativeHandle);
+      if (json == null || json.isEmpty() || json.equals("[]")) {
+        return java.util.Collections.emptyList();
+      }
+      return parseFunctionsJson(json);
+    } finally {
+      endOperation();
     }
-    return parseFunctionsJson(json);
   }
 
   private static java.util.List<ai.tegmentum.wasmtime4j.func.FunctionInfo> parseFunctionsJson(

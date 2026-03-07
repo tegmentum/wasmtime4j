@@ -170,30 +170,34 @@ public final class PanamaComponentEngine implements ComponentEngine {
   @Override
   public Component compileComponent(final byte[] wasmBytes) throws WasmException {
     Objects.requireNonNull(wasmBytes, "wasmBytes cannot be null");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
-      final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, wasmBytes);
+        final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
 
-      final int errorCode =
-          NATIVE_BINDINGS.enhancedComponentLoadFromBytes(
-              enhancedEngineHandle, bytesSegment, wasmBytes.length, componentOut);
+        final int errorCode =
+            NATIVE_BINDINGS.enhancedComponentLoadFromBytes(
+                enhancedEngineHandle, bytesSegment, wasmBytes.length, componentOut);
 
-      if (errorCode != 0) {
-        throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to compile component");
+        if (errorCode != 0) {
+          throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to compile component");
+        }
+
+        final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
+        if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
+          throw new WasmException("Failed to compile component: null component returned");
+        }
+
+        final String componentId = generateComponentId();
+        final PanamaComponentImpl component =
+            new PanamaComponentImpl(componentHandle, componentId, this);
+        loadedComponents.put(componentId, component);
+        return component;
       }
-
-      final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
-      if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
-        throw new WasmException("Failed to compile component: null component returned");
-      }
-
-      final String componentId = generateComponentId();
-      final PanamaComponentImpl component =
-          new PanamaComponentImpl(componentHandle, componentId, this);
-      loadedComponents.put(componentId, component);
-      return component;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -213,40 +217,44 @@ public final class PanamaComponentEngine implements ComponentEngine {
       throws WasmException {
     Objects.requireNonNull(component, "component cannot be null");
     Objects.requireNonNull(store, "store cannot be null");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(component instanceof PanamaComponentImpl)) {
-      throw new IllegalArgumentException("Component must be Panama implementation");
-    }
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be Panama implementation");
-    }
-
-    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
-    final PanamaStore panamaStore = (PanamaStore) store;
-
-    // Allocate memory for the output instance ID
-    try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment instanceIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
-
-      // Call enhanced instantiation which returns instance ID
-      final int errorCode =
-          NATIVE_BINDINGS.enhancedComponentInstantiate(
-              enhancedEngineHandle, panamaComponent.getNativeHandle(), instanceIdOut);
-
-      if (errorCode != 0) {
-        throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to instantiate component");
+      if (!(component instanceof PanamaComponentImpl)) {
+        throw new IllegalArgumentException("Component must be Panama implementation");
+      }
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be Panama implementation");
       }
 
-      // Read the instance ID from the output parameter
-      final long instanceId = instanceIdOut.get(ValueLayout.JAVA_LONG, 0);
+      final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
+      final PanamaStore panamaStore = (PanamaStore) store;
 
-      if (instanceId == 0) {
-        throw new WasmException("Failed to instantiate component: invalid instance ID returned");
+      // Allocate memory for the output instance ID
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment instanceIdOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+
+        // Call enhanced instantiation which returns instance ID
+        final int errorCode =
+            NATIVE_BINDINGS.enhancedComponentInstantiate(
+                enhancedEngineHandle, panamaComponent.getNativeHandle(), instanceIdOut);
+
+        if (errorCode != 0) {
+          throw PanamaErrorMapper.mapNativeError(errorCode, "Failed to instantiate component");
+        }
+
+        // Read the instance ID from the output parameter
+        final long instanceId = instanceIdOut.get(ValueLayout.JAVA_LONG, 0);
+
+        if (instanceId == 0) {
+          throw new WasmException("Failed to instantiate component: invalid instance ID returned");
+        }
+
+        return new PanamaComponentInstance(
+            enhancedEngineHandle, instanceId, panamaComponent, panamaStore);
       }
-
-      return new PanamaComponentInstance(
-          enhancedEngineHandle, instanceId, panamaComponent, panamaStore);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -257,53 +265,57 @@ public final class PanamaComponentEngine implements ComponentEngine {
     Objects.requireNonNull(component, "component cannot be null");
     Objects.requireNonNull(store, "store cannot be null");
     Objects.requireNonNull(imports, "imports cannot be null");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (imports.isEmpty()) {
+      if (imports.isEmpty()) {
+        return createInstance(component, store);
+      }
+
+      if (!(component instanceof PanamaComponentImpl)) {
+        throw new IllegalArgumentException("Component must be Panama implementation");
+      }
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be Panama implementation");
+      }
+
+      final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
+
+      // Validate that all imports are Panama implementations and check their exports
+      final Set<String> availableExports = new HashSet<>();
+      for (final Component importComponent : imports) {
+        if (!(importComponent instanceof PanamaComponentImpl)) {
+          throw new IllegalArgumentException("All import components must be Panama implementation");
+        }
+
+        final PanamaComponentImpl panamaImport = (PanamaComponentImpl) importComponent;
+        if (!panamaImport.isValid()) {
+          throw new WasmException("Import component is not valid: " + panamaImport.getId());
+        }
+
+        availableExports.addAll(panamaImport.getExportedInterfaces());
+      }
+
+      // Check that all required imports can be satisfied
+      final Set<String> requiredImports = panamaComponent.getImportedInterfaces();
+      for (final String required : requiredImports) {
+        if (!availableExports.contains(required)) {
+          throw new WasmException("Unsatisfied import: " + required);
+        }
+      }
+
+      LOGGER.fine(
+          "Validated "
+              + imports.size()
+              + " import components satisfy "
+              + requiredImports.size()
+              + " required imports");
+
+      // Use standard instantiation - the component linker will resolve imports at runtime
       return createInstance(component, store);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    if (!(component instanceof PanamaComponentImpl)) {
-      throw new IllegalArgumentException("Component must be Panama implementation");
-    }
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be Panama implementation");
-    }
-
-    final PanamaComponentImpl panamaComponent = (PanamaComponentImpl) component;
-
-    // Validate that all imports are Panama implementations and check their exports
-    final Set<String> availableExports = new HashSet<>();
-    for (final Component importComponent : imports) {
-      if (!(importComponent instanceof PanamaComponentImpl)) {
-        throw new IllegalArgumentException("All import components must be Panama implementation");
-      }
-
-      final PanamaComponentImpl panamaImport = (PanamaComponentImpl) importComponent;
-      if (!panamaImport.isValid()) {
-        throw new WasmException("Import component is not valid: " + panamaImport.getId());
-      }
-
-      availableExports.addAll(panamaImport.getExportedInterfaces());
-    }
-
-    // Check that all required imports can be satisfied
-    final Set<String> requiredImports = panamaComponent.getImportedInterfaces();
-    for (final String required : requiredImports) {
-      if (!availableExports.contains(required)) {
-        throw new WasmException("Unsatisfied import: " + required);
-      }
-    }
-
-    LOGGER.fine(
-        "Validated "
-            + imports.size()
-            + " import components satisfy "
-            + requiredImports.size()
-            + " required imports");
-
-    // Use standard instantiation - the component linker will resolve imports at runtime
-    return createInstance(component, store);
   }
 
   @Override
@@ -312,7 +324,7 @@ public final class PanamaComponentEngine implements ComponentEngine {
     Objects.requireNonNull(target, "target cannot be null");
 
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
 
       // Get exported and imported interfaces
       final Set<String> sourceExports = source.getExportedInterfaces();
@@ -337,30 +349,36 @@ public final class PanamaComponentEngine implements ComponentEngine {
       LOGGER.warning("Failed to check component compatibility: " + e.getMessage());
       return new WitCompatibilityResult(
           false, "Compatibility check failed: " + e.getMessage(), Set.of(), Set.of());
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public WitSupportInfo getWitSupportInfo() {
-    ensureNotClosed();
-    return new WitSupportInfo(
-        true,
-        "1.0",
-        Set.of(
-            "interface",
-            "world",
-            "resource",
-            "variant",
-            "record",
-            "enum",
-            "flags",
-            "tuple",
-            "option",
-            "result"),
-        List.of(
-            "bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "char",
-            "string"),
-        10);
+    resourceHandle.beginOperation();
+    try {
+      return new WitSupportInfo(
+          true,
+          "1.0",
+          Set.of(
+              "interface",
+              "world",
+              "resource",
+              "variant",
+              "record",
+              "enum",
+              "flags",
+              "tuple",
+              "option",
+              "result"),
+          List.of(
+              "bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "char",
+              "string"),
+          10);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -413,17 +431,17 @@ public final class PanamaComponentEngine implements ComponentEngine {
 
   @Override
   public boolean isAsync() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.enhancedComponentEngineIsAsync(enhancedEngineHandle);
+    try {
+      return NATIVE_BINDINGS.enhancedComponentEngineIsAsync(enhancedEngineHandle);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // Helper methods
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-  }
 
   private String generateComponentId() {
     return "component-" + componentIdCounter.incrementAndGet();
@@ -435,30 +453,35 @@ public final class PanamaComponentEngine implements ComponentEngine {
     if (bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, bytes);
-      final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment bytesSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, bytes);
+        final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
 
-      final int errorCode =
-          NATIVE_BINDINGS.panamaComponentDeserialize(
-              enhancedEngineHandle, bytesSegment, bytes.length, componentOut);
+        final int errorCode =
+            NATIVE_BINDINGS.panamaComponentDeserialize(
+                enhancedEngineHandle, bytesSegment, bytes.length, componentOut);
 
-      if (errorCode != 0) {
-        throw new WasmException("Failed to deserialize component: native error code " + errorCode);
+        if (errorCode != 0) {
+          throw new WasmException(
+              "Failed to deserialize component: native error code " + errorCode);
+        }
+
+        final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
+        if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
+          throw new WasmException("Failed to deserialize component: null component returned");
+        }
+
+        final String componentId = generateComponentId();
+        final PanamaComponentImpl component =
+            new PanamaComponentImpl(componentHandle, componentId, this);
+        loadedComponents.put(componentId, component);
+        return component;
       }
-
-      final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
-      if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
-        throw new WasmException("Failed to deserialize component: null component returned");
-      }
-
-      final String componentId = generateComponentId();
-      final PanamaComponentImpl component =
-          new PanamaComponentImpl(componentHandle, componentId, this);
-      loadedComponents.put(componentId, component);
-      return component;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -468,37 +491,41 @@ public final class PanamaComponentEngine implements ComponentEngine {
     if (path.isEmpty()) {
       throw new IllegalArgumentException("path cannot be empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena tempArena = Arena.ofConfined()) {
-      final byte[] pathBytes = path.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-      final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
-      final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
+      try (Arena tempArena = Arena.ofConfined()) {
+        final byte[] pathBytes = path.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        final MemorySegment pathSegment = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, pathBytes);
+        final MemorySegment componentOut = tempArena.allocate(ValueLayout.ADDRESS);
 
-      final int errorCode =
-          NATIVE_BINDINGS.panamaComponentDeserializeFile(
-              enhancedEngineHandle, pathSegment, pathBytes.length, componentOut);
+        final int errorCode =
+            NATIVE_BINDINGS.panamaComponentDeserializeFile(
+                enhancedEngineHandle, pathSegment, pathBytes.length, componentOut);
 
-      if (errorCode != 0) {
-        throw new WasmException(
-            "Failed to deserialize component from file: "
-                + path
-                + " (error code "
-                + errorCode
-                + ")");
+        if (errorCode != 0) {
+          throw new WasmException(
+              "Failed to deserialize component from file: "
+                  + path
+                  + " (error code "
+                  + errorCode
+                  + ")");
+        }
+
+        final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
+        if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
+          throw new WasmException(
+              "Failed to deserialize component from file: null component returned");
+        }
+
+        final String componentId = generateComponentId();
+        final PanamaComponentImpl component =
+            new PanamaComponentImpl(componentHandle, componentId, this);
+        loadedComponents.put(componentId, component);
+        return component;
       }
-
-      final MemorySegment componentHandle = componentOut.get(ValueLayout.ADDRESS, 0);
-      if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
-        throw new WasmException(
-            "Failed to deserialize component from file: null component returned");
-      }
-
-      final String componentId = generateComponentId();
-      final PanamaComponentImpl component =
-          new PanamaComponentImpl(componentHandle, componentId, this);
-      loadedComponents.put(componentId, component);
-      return component;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -510,18 +537,23 @@ public final class PanamaComponentEngine implements ComponentEngine {
     if (bytes.length == 0) {
       return null;
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined()) {
-      final java.lang.foreign.MemorySegment bytesSegment = tempArena.allocate(bytes.length);
-      bytesSegment.copyFrom(java.lang.foreign.MemorySegment.ofArray(bytes));
-      final int result =
-          ENGINE_BINDINGS.engineDetectPrecompiled(enhancedEngineHandle, bytesSegment, bytes.length);
-      // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
-      if (result < 0) {
-        return null;
+      try (final java.lang.foreign.Arena tempArena = java.lang.foreign.Arena.ofConfined()) {
+        final java.lang.foreign.MemorySegment bytesSegment = tempArena.allocate(bytes.length);
+        bytesSegment.copyFrom(java.lang.foreign.MemorySegment.ofArray(bytes));
+        final int result =
+            ENGINE_BINDINGS.engineDetectPrecompiled(
+                enhancedEngineHandle, bytesSegment, bytes.length);
+        // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
+        if (result < 0) {
+          return null;
+        }
+        return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
       }
-      return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 

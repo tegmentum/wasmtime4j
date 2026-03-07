@@ -91,6 +91,9 @@ pub struct ComponentStoreData {
     /// WASI HTTP context for HTTP request/response support
     #[cfg(feature = "wasi-http")]
     pub wasi_http_ctx: Option<wasmtime_wasi_http::WasiHttpCtx>,
+    /// WASI config variables for wasi:config/runtime support
+    #[cfg(feature = "wasi-config")]
+    pub wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables,
     /// Optional store limits for resource governance
     pub store_limits: Option<wasmtime::StoreLimits>,
     /// Start time for performance tracking
@@ -117,6 +120,8 @@ impl Default for ComponentStoreData {
             wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
             #[cfg(feature = "wasi-http")]
             wasi_http_ctx: None,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
             store_limits: None,
             start_time: Instant::now(),
         }

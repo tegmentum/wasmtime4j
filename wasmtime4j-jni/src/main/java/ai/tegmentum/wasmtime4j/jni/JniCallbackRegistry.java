@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,6 +45,7 @@ public final class JniCallbackRegistry extends AbstractCallbackRegistry {
   private final WeakReference<JniStore> storeRef;
   private final ScheduledExecutorService asyncExecutor;
   private volatile boolean closed = false;
+  private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
 
   /**
    * Creates a new callback registry for the given store.
@@ -94,11 +96,8 @@ public final class JniCallbackRegistry extends AbstractCallbackRegistry {
 
   @Override
   public void close() throws WasmException {
-    if (closed) {
-      return;
-    }
-
-    synchronized (this) {
+    closeLock.writeLock().lock();
+    try {
       if (closed) {
         return;
       }
@@ -135,6 +134,8 @@ public final class JniCallbackRegistry extends AbstractCallbackRegistry {
       } finally {
         closed = true;
       }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 

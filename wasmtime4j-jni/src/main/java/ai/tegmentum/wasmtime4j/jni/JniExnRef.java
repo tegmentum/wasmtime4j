@@ -58,25 +58,28 @@ public final class JniExnRef extends JniResource implements ExnRef {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+      final JniStore jniStore = (JniStore) store;
+      if (jniStore.isClosed()) {
+        throw new WasmException("Store is closed");
+      }
+      final long currentStoreHandle = jniStore.getNativeHandle();
+
+      final long tagHandle = nativeGetTag(getNativeHandle(), currentStoreHandle);
+
+      if (tagHandle == 0) {
+        throw new WasmException("Failed to get tag from exception reference");
+      }
+
+      return new JniTag(tagHandle, currentStoreHandle);
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-    if (jniStore.isClosed()) {
-      throw new WasmException("Store is closed");
-    }
-    final long currentStoreHandle = jniStore.getNativeHandle();
-
-    final long tagHandle = nativeGetTag(getNativeHandle(), currentStoreHandle);
-
-    if (tagHandle == 0) {
-      throw new WasmException("Failed to get tag from exception reference");
-    }
-
-    return new JniTag(tagHandle, currentStoreHandle);
   }
 
   @Override
@@ -87,24 +90,27 @@ public final class JniExnRef extends JniResource implements ExnRef {
     if (index < 0) {
       throw new IllegalArgumentException("index must be non-negative");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+      final JniStore jniStore = (JniStore) store;
+      if (jniStore.isClosed()) {
+        throw new WasmException("Store is closed");
+      }
+
+      final Object[] result = nativeGetField(getNativeHandle(), jniStore.getNativeHandle(), index);
+
+      if (result == null || result.length == 0) {
+        throw new WasmException("Failed to get field " + index + " from exception reference");
+      }
+
+      return (WasmValue) result[0];
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-    if (jniStore.isClosed()) {
-      throw new WasmException("Store is closed");
-    }
-
-    final Object[] result = nativeGetField(getNativeHandle(), jniStore.getNativeHandle(), index);
-
-    if (result == null || result.length == 0) {
-      throw new WasmException("Failed to get field " + index + " from exception reference");
-    }
-
-    return (WasmValue) result[0];
   }
 
   @Override
@@ -112,28 +118,31 @@ public final class JniExnRef extends JniResource implements ExnRef {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+      final JniStore jniStore = (JniStore) store;
+      if (jniStore.isClosed()) {
+        throw new WasmException("Store is closed");
+      }
+
+      final Object[] result = nativeGetFields(getNativeHandle(), jniStore.getNativeHandle());
+
+      if (result == null) {
+        throw new WasmException("Failed to get fields from exception reference");
+      }
+
+      final List<WasmValue> fieldValues = new ArrayList<>(result.length);
+      for (final Object val : result) {
+        fieldValues.add((WasmValue) val);
+      }
+      return Collections.unmodifiableList(fieldValues);
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-    if (jniStore.isClosed()) {
-      throw new WasmException("Store is closed");
-    }
-
-    final Object[] result = nativeGetFields(getNativeHandle(), jniStore.getNativeHandle());
-
-    if (result == null) {
-      throw new WasmException("Failed to get fields from exception reference");
-    }
-
-    final List<WasmValue> fieldValues = new ArrayList<>(result.length);
-    for (final Object val : result) {
-      fieldValues.add((WasmValue) val);
-    }
-    return Collections.unmodifiableList(fieldValues);
   }
 
   @Override
@@ -141,18 +150,25 @@ public final class JniExnRef extends JniResource implements ExnRef {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
-
-    final Tag tag = getTag(store);
-    return new ExnType(tag.getType(store));
+    beginOperation();
+    try {
+      final Tag tag = getTag(store);
+      return new ExnType(tag.getType(store));
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean isValid() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsValid(getNativeHandle(), storeHandle);
+    try {
+      return nativeIsValid(getNativeHandle(), storeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -191,22 +207,25 @@ public final class JniExnRef extends JniResource implements ExnRef {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
-    }
+      final JniStore jniStore = (JniStore) store;
+      if (jniStore.isClosed()) {
+        throw new WasmException("Store is closed");
+      }
 
-    final JniStore jniStore = (JniStore) store;
-    if (jniStore.isClosed()) {
-      throw new WasmException("Store is closed");
+      final long raw = nativeToRaw(getNativeHandle(), jniStore.getNativeHandle());
+      if (raw < 0) {
+        throw new WasmException("Failed to convert ExnRef to raw representation");
+      }
+      return raw;
+    } finally {
+      endOperation();
     }
-
-    final long raw = nativeToRaw(getNativeHandle(), jniStore.getNativeHandle());
-    if (raw < 0) {
-      throw new WasmException("Failed to convert ExnRef to raw representation");
-    }
-    return raw;
   }
 
   @Override
@@ -217,18 +236,21 @@ public final class JniExnRef extends JniResource implements ExnRef {
     if (heapType == null) {
       throw new IllegalArgumentException("heapType cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+      final JniStore jniStore = (JniStore) store;
+      if (jniStore.isClosed()) {
+        throw new WasmException("Store is closed");
+      }
+
+      return nativeMatchesTy(getNativeHandle(), jniStore.getNativeHandle(), heapType.ordinal());
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-    if (jniStore.isClosed()) {
-      throw new WasmException("Store is closed");
-    }
-
-    return nativeMatchesTy(getNativeHandle(), jniStore.getNativeHandle(), heapType.ordinal());
   }
 
   /**

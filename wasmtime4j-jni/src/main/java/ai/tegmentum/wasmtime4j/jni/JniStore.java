@@ -193,8 +193,7 @@ public final class JniStore extends JniResource implements Store {
   @Override
   public void addFuel(final long additionalFuel) throws WasmException {
     Validation.requireNonNegative(additionalFuel, "additionalFuel");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final boolean success = nativeAddFuel(getNativeHandle(), additionalFuel);
       if (!success) {
@@ -207,6 +206,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Unexpected error adding fuel", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -232,11 +233,14 @@ public final class JniStore extends JniResource implements Store {
     if (limiter == null) {
       throw new IllegalArgumentException("ResourceLimiter cannot be null");
     }
-    ensureNotClosed();
-
-    this.resourceLimiter = limiter;
-    nativeSetResourceLimiter(getNativeHandle());
-    LOGGER.fine("Set resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+    beginOperation();
+    try {
+      this.resourceLimiter = limiter;
+      nativeSetResourceLimiter(getNativeHandle());
+      LOGGER.fine("Set resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -244,20 +248,22 @@ public final class JniStore extends JniResource implements Store {
     if (limiter == null) {
       throw new IllegalArgumentException("ResourceLimiterAsync cannot be null");
     }
-    ensureNotClosed();
-
-    // Clear any sync limiter since only one can be active
-    this.resourceLimiter = null;
-    this.resourceLimiterAsync = limiter;
-    nativeSetResourceLimiterAsync(getNativeHandle());
-    LOGGER.fine("Set async resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+    beginOperation();
+    try {
+      // Clear any sync limiter since only one can be active
+      this.resourceLimiter = null;
+      this.resourceLimiterAsync = limiter;
+      nativeSetResourceLimiterAsync(getNativeHandle());
+      LOGGER.fine("Set async resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void setFuel(final long fuel) throws WasmException {
     Validation.requireNonNegative(fuel, "fuel");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final boolean success = nativeSetFuel(getNativeHandle(), fuel);
       if (!success) {
@@ -269,23 +275,26 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Unexpected error setting fuel", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long getFuel() throws WasmException {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       return nativeGetFuelRemaining(getNativeHandle());
     } catch (final Exception e) {
       throw new WasmException("Failed to get remaining fuel", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void setEpochDeadline(final long ticks) throws WasmException {
-    ensureNotClosed();
+    beginOperation();
     try {
       final boolean success = nativeSetEpochDeadline(getNativeHandle(), ticks);
       if (!success) {
@@ -296,14 +305,15 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Unexpected error setting epoch deadline", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long consumeFuel(final long fuel) throws WasmException {
     Validation.requireNonNegative(fuel, "fuel");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long consumed = nativeConsumeFuel(getNativeHandle(), fuel);
       if (consumed < 0) {
@@ -315,13 +325,14 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Unexpected error consuming fuel", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long hostcallFuel() throws WasmException {
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long fuel = nativeGetHostcallFuel(getNativeHandle());
       if (fuel < 0) {
@@ -333,14 +344,15 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Unexpected error getting hostcall fuel", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void setHostcallFuel(final long fuel) throws WasmException {
     Validation.requireNonNegative(fuel, "fuel");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final boolean success = nativeSetHostcallFuel(getNativeHandle(), fuel);
       if (!success) {
@@ -351,6 +363,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Unexpected error setting hostcall fuel", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -361,8 +375,7 @@ public final class JniStore extends JniResource implements Store {
     Objects.requireNonNull(name, "name cannot be null");
     Objects.requireNonNull(functionType, "functionType cannot be null");
     Objects.requireNonNull(implementation, "implementation cannot be null");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       // Create the JNI host function wrapper
       final JniHostFunction hostFunction =
@@ -376,6 +389,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create host function: " + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -386,8 +401,7 @@ public final class JniStore extends JniResource implements Store {
     Objects.requireNonNull(name, "name cannot be null");
     Objects.requireNonNull(functionType, "functionType cannot be null");
     Objects.requireNonNull(implementation, "implementation cannot be null");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final JniHostFunction hostFunction =
           JniHostFunction.createUnchecked(name, functionType, implementation, this);
@@ -403,6 +417,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create unchecked host function: " + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -428,10 +444,14 @@ public final class JniStore extends JniResource implements Store {
     if (wasiCtx == null) {
       throw new WasmException("No WASI context is configured for this store");
     }
-    ensureNotClosed();
-    final int result = nativeReapplyWasiContext(getNativeHandle(), wasiCtx.getNativeHandle());
-    if (result != 0) {
-      throw new WasmException("Failed to re-apply WASI context to store");
+    beginOperation();
+    try {
+      final int result = nativeReapplyWasiContext(getNativeHandle(), wasiCtx.getNativeHandle());
+      if (result != 0) {
+        throw new WasmException("Failed to re-apply WASI context to store");
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -441,46 +461,49 @@ public final class JniStore extends JniResource implements Store {
       throws WasmException {
     Validation.requireNonNull(valueType, "valueType");
     Validation.requireNonNull(initialValue, "initialValue");
-    ensureNotClosed();
-
-    // Validate that the initial value matches the specified type
-    if (initialValue.getType() != valueType) {
-      throw new IllegalArgumentException(
-          "Initial value type "
-              + initialValue.getType()
-              + " does not match global type "
-              + valueType);
-    }
-
+    beginOperation();
     try {
-      // Call native method to create global
-      final long globalHandle =
-          nativeCreateGlobal(
-              getNativeHandle(),
-              valueType.toNativeTypeCode(),
-              isMutable ? 1 : 0,
-              extractValueComponents(initialValue));
-
-      if (globalHandle == 0) {
-        throw new JniException("Native global creation returned null handle");
+      // Validate that the initial value matches the specified type
+      if (initialValue.getType() != valueType) {
+        throw new IllegalArgumentException(
+            "Initial value type "
+                + initialValue.getType()
+                + " does not match global type "
+                + valueType);
       }
 
-      // Create JniGlobal wrapper
-      final JniGlobal global = new JniGlobal(globalHandle, this);
-      LOGGER.fine(
-          "Created global with type "
-              + valueType
-              + ", mutable="
-              + isMutable
-              + ", handle=0x"
-              + Long.toHexString(globalHandle));
-      return global;
+      try {
+        // Call native method to create global
+        final long globalHandle =
+            nativeCreateGlobal(
+                getNativeHandle(),
+                valueType.toNativeTypeCode(),
+                isMutable ? 1 : 0,
+                extractValueComponents(initialValue));
 
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+        if (globalHandle == 0) {
+          throw new JniException("Native global creation returned null handle");
+        }
+
+        // Create JniGlobal wrapper
+        final JniGlobal global = new JniGlobal(globalHandle, this);
+        LOGGER.fine(
+            "Created global with type "
+                + valueType
+                + ", mutable="
+                + isMutable
+                + ", handle=0x"
+                + Long.toHexString(globalHandle));
+        return global;
+
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Failed to create global variable", e);
       }
-      throw new WasmException("Failed to create global variable", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -503,8 +526,7 @@ public final class JniStore extends JniResource implements Store {
       throw new IllegalArgumentException(
           "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long tableHandle =
           nativeCreateTable(
@@ -531,6 +553,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create table", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -557,8 +581,7 @@ public final class JniStore extends JniResource implements Store {
       throw new IllegalArgumentException(
           "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long initRefId = wasmValueToRefHandle(initValue);
       final long tableHandle =
@@ -586,6 +609,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create table with init value", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -602,8 +627,7 @@ public final class JniStore extends JniResource implements Store {
       throw new IllegalArgumentException(
           "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long memoryHandle = nativeCreateMemory(getNativeHandle(), initialPages, maxPages);
 
@@ -626,6 +650,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create memory", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -642,8 +668,7 @@ public final class JniStore extends JniResource implements Store {
       throw new IllegalArgumentException(
           "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long memoryHandle = nativeCreateSharedMemory(getNativeHandle(), initialPages, maxPages);
 
@@ -666,6 +691,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create shared memory", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -673,51 +700,58 @@ public final class JniStore extends JniResource implements Store {
   public ai.tegmentum.wasmtime4j.WasmMemory createMemory(
       final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
     Validation.requireNonNull(memoryType, "memoryType");
-    ensureNotClosed();
-
-    final long minPages = memoryType.getMinimum();
-    final long maxPages = memoryType.getMaximum().orElse(-1L);
-    final int isShared = memoryType.isShared() ? 1 : 0;
-    final int is64 = memoryType.is64Bit() ? 1 : 0;
-
-    if (minPages < 0) {
-      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
-    }
-    if (maxPages != -1 && maxPages < minPages) {
-      throw new IllegalArgumentException(
-          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
-    }
-    if (memoryType.isShared() && maxPages < 1) {
-      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
-    }
-
+    beginOperation();
     try {
-      final long memoryHandle =
-          nativeCreateMemoryWithType(getNativeHandle(), minPages, maxPages, isShared, is64);
+      final long minPages = memoryType.getMinimum();
+      final long maxPages = memoryType.getMaximum().orElse(-1L);
+      final int isShared = memoryType.isShared() ? 1 : 0;
+      final int is64 = memoryType.is64Bit() ? 1 : 0;
 
-      if (memoryHandle == 0) {
-        throw new JniException("Native memory creation with type returned null handle");
+      if (minPages < 0) {
+        throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+      }
+      if (maxPages != -1 && maxPages < minPages) {
+        throw new IllegalArgumentException(
+            "Maximum pages ("
+                + maxPages
+                + ") cannot be less than minimum pages ("
+                + minPages
+                + ")");
+      }
+      if (memoryType.isShared() && maxPages < 1) {
+        throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
       }
 
-      final JniMemory memory = new JniMemory(memoryHandle, this);
-      LOGGER.fine(
-          "Created memory from type: min="
-              + minPages
-              + ", max="
-              + maxPages
-              + ", shared="
-              + memoryType.isShared()
-              + ", 64bit="
-              + memoryType.is64Bit()
-              + ", handle=0x"
-              + Long.toHexString(memoryHandle));
-      return memory;
+      try {
+        final long memoryHandle =
+            nativeCreateMemoryWithType(getNativeHandle(), minPages, maxPages, isShared, is64);
 
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+        if (memoryHandle == 0) {
+          throw new JniException("Native memory creation with type returned null handle");
+        }
+
+        final JniMemory memory = new JniMemory(memoryHandle, this);
+        LOGGER.fine(
+            "Created memory from type: min="
+                + minPages
+                + ", max="
+                + maxPages
+                + ", shared="
+                + memoryType.isShared()
+                + ", 64bit="
+                + memoryType.is64Bit()
+                + ", handle=0x"
+                + Long.toHexString(memoryHandle));
+        return memory;
+
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Failed to create memory from type", e);
       }
-      throw new WasmException("Failed to create memory from type", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -725,69 +759,72 @@ public final class JniStore extends JniResource implements Store {
   public ai.tegmentum.wasmtime4j.WasmTable createTable(
       final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
     Validation.requireNonNull(tableType, "tableType");
-    ensureNotClosed();
-
-    final WasmValueType elementType = tableType.getElementType();
-    final long minSize = tableType.getMinimum();
-    final long maxSize = tableType.getMaximum().orElse(-1L);
-    final boolean is64 = tableType.is64Bit();
-
-    if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
-      throw new IllegalArgumentException(
-          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
-    }
-    if (minSize < 0) {
-      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
-    }
-    if (maxSize != -1 && maxSize < minSize) {
-      throw new IllegalArgumentException(
-          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
-    }
-
+    beginOperation();
     try {
-      final long tableHandle;
-      if (is64) {
-        final int hasMaximum = (maxSize == -1) ? 0 : 1;
-        final long maximumSize = (maxSize == -1) ? 0 : maxSize;
-        tableHandle =
-            nativeCreateTable64(
-                getNativeHandle(),
-                elementType.toNativeTypeCode(),
-                minSize,
-                hasMaximum,
-                maximumSize);
-      } else {
-        tableHandle =
-            nativeCreateTable(
-                getNativeHandle(),
-                elementType.toNativeTypeCode(),
-                (int) minSize,
-                maxSize == -1 ? -1 : (int) maxSize);
+      final WasmValueType elementType = tableType.getElementType();
+      final long minSize = tableType.getMinimum();
+      final long maxSize = tableType.getMaximum().orElse(-1L);
+      final boolean is64 = tableType.is64Bit();
+
+      if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
+        throw new IllegalArgumentException(
+            "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+      }
+      if (minSize < 0) {
+        throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
+      }
+      if (maxSize != -1 && maxSize < minSize) {
+        throw new IllegalArgumentException(
+            "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
       }
 
-      if (tableHandle == 0) {
-        throw new JniException("Native table creation with type returned null handle");
-      }
+      try {
+        final long tableHandle;
+        if (is64) {
+          final int hasMaximum = (maxSize == -1) ? 0 : 1;
+          final long maximumSize = (maxSize == -1) ? 0 : maxSize;
+          tableHandle =
+              nativeCreateTable64(
+                  getNativeHandle(),
+                  elementType.toNativeTypeCode(),
+                  minSize,
+                  hasMaximum,
+                  maximumSize);
+        } else {
+          tableHandle =
+              nativeCreateTable(
+                  getNativeHandle(),
+                  elementType.toNativeTypeCode(),
+                  (int) minSize,
+                  maxSize == -1 ? -1 : (int) maxSize);
+        }
 
-      final JniTable table = new JniTable(tableHandle, this);
-      LOGGER.fine(
-          "Created table from type: elementType="
-              + elementType
-              + ", min="
-              + minSize
-              + ", max="
-              + maxSize
-              + ", 64bit="
-              + is64
-              + ", handle=0x"
-              + Long.toHexString(tableHandle));
-      return table;
+        if (tableHandle == 0) {
+          throw new JniException("Native table creation with type returned null handle");
+        }
 
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+        final JniTable table = new JniTable(tableHandle, this);
+        LOGGER.fine(
+            "Created table from type: elementType="
+                + elementType
+                + ", min="
+                + minSize
+                + ", max="
+                + maxSize
+                + ", 64bit="
+                + is64
+                + ", handle=0x"
+                + Long.toHexString(tableHandle));
+        return table;
+
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Failed to create table from type", e);
       }
-      throw new WasmException("Failed to create table from type", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -798,56 +835,59 @@ public final class JniStore extends JniResource implements Store {
       throws WasmException {
     Validation.requireNonNull(tableType, "tableType");
     Validation.requireNonNull(initValue, "initValue");
-    ensureNotClosed();
-
-    final WasmValueType elementType = tableType.getElementType();
-    final long minSize = tableType.getMinimum();
-    final long maxSize = tableType.getMaximum().orElse(-1L);
-
-    if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
-      throw new IllegalArgumentException(
-          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
-    }
-    if (minSize < 0) {
-      throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
-    }
-    if (maxSize != -1 && maxSize < minSize) {
-      throw new IllegalArgumentException(
-          "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
-    }
-
+    beginOperation();
     try {
-      final long initRefId = wasmValueToRefHandle(initValue);
-      final long tableHandle =
-          nativeCreateTableWithInit(
-              getNativeHandle(),
-              elementType.toNativeTypeCode(),
-              (int) minSize,
-              maxSize == -1 ? -1 : (int) maxSize,
-              initRefId);
+      final WasmValueType elementType = tableType.getElementType();
+      final long minSize = tableType.getMinimum();
+      final long maxSize = tableType.getMaximum().orElse(-1L);
 
-      if (tableHandle == 0) {
-        throw new JniException(
-            "Native table creation with type and init value returned null handle");
+      if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
+        throw new IllegalArgumentException(
+            "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+      }
+      if (minSize < 0) {
+        throw new IllegalArgumentException("Minimum size cannot be negative: " + minSize);
+      }
+      if (maxSize != -1 && maxSize < minSize) {
+        throw new IllegalArgumentException(
+            "Maximum size (" + maxSize + ") cannot be less than minimum size (" + minSize + ")");
       }
 
-      final JniTable table = new JniTable(tableHandle, this);
-      LOGGER.fine(
-          "Created table from type with init value: elementType="
-              + elementType
-              + ", min="
-              + minSize
-              + ", max="
-              + maxSize
-              + ", handle=0x"
-              + Long.toHexString(tableHandle));
-      return table;
+      try {
+        final long initRefId = wasmValueToRefHandle(initValue);
+        final long tableHandle =
+            nativeCreateTableWithInit(
+                getNativeHandle(),
+                elementType.toNativeTypeCode(),
+                (int) minSize,
+                maxSize == -1 ? -1 : (int) maxSize,
+                initRefId);
 
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+        if (tableHandle == 0) {
+          throw new JniException(
+              "Native table creation with type and init value returned null handle");
+        }
+
+        final JniTable table = new JniTable(tableHandle, this);
+        LOGGER.fine(
+            "Created table from type with init value: elementType="
+                + elementType
+                + ", min="
+                + minSize
+                + ", max="
+                + maxSize
+                + ", handle=0x"
+                + Long.toHexString(tableHandle));
+        return table;
+
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Failed to create table from type with init value", e);
       }
-      throw new WasmException("Failed to create table from type with init value", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -871,8 +911,7 @@ public final class JniStore extends JniResource implements Store {
       final HostFunction implementation, final FunctionType functionType) throws WasmException {
     Objects.requireNonNull(implementation, "Host function implementation cannot be null");
     Objects.requireNonNull(functionType, "Function type cannot be null");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       return new JniFunctionReference(implementation, functionType, this);
     } catch (final Exception e) {
@@ -880,6 +919,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create function reference from host function", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -887,8 +928,7 @@ public final class JniStore extends JniResource implements Store {
   public FunctionReference createFunctionReference(final WasmFunction function)
       throws WasmException {
     Objects.requireNonNull(function, "WebAssembly function cannot be null");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       return new JniFunctionReference(function, this);
     } catch (final Exception e) {
@@ -896,6 +936,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create function reference from WebAssembly function", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -914,8 +956,7 @@ public final class JniStore extends JniResource implements Store {
   @Override
   public Instance createInstance(final Module module) throws WasmException {
     Objects.requireNonNull(module, "Module cannot be null");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       if (!(module instanceof JniModule)) {
         throw new IllegalArgumentException("Module must be a JniModule instance for JNI store");
@@ -928,6 +969,8 @@ public final class JniStore extends JniResource implements Store {
         throw e;
       }
       throw new WasmException("Failed to create instance from module", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -936,44 +979,47 @@ public final class JniStore extends JniResource implements Store {
       final Module module, final ai.tegmentum.wasmtime4j.Extern[] imports) throws WasmException {
     Objects.requireNonNull(module, "Module cannot be null");
     Objects.requireNonNull(imports, "Imports cannot be null");
-    ensureNotClosed();
-
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException("Module must be a JniModule instance for JNI store");
-    }
-
-    final JniModule jniModule = (JniModule) module;
-
-    if (imports.length == 0) {
-      return jniModule.instantiate(this);
-    }
-
+    beginOperation();
     try {
-      final long[] externHandles = new long[imports.length];
-      final int[] externTypes = new int[imports.length];
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule instance for JNI store");
+      }
 
-      for (int i = 0; i < imports.length; i++) {
-        final ai.tegmentum.wasmtime4j.Extern ext = imports[i];
-        if (ext == null) {
-          throw new IllegalArgumentException("Import at index " + i + " is null");
+      final JniModule jniModule = (JniModule) module;
+
+      if (imports.length == 0) {
+        return jniModule.instantiate(this);
+      }
+
+      try {
+        final long[] externHandles = new long[imports.length];
+        final int[] externTypes = new int[imports.length];
+
+        for (int i = 0; i < imports.length; i++) {
+          final ai.tegmentum.wasmtime4j.Extern ext = imports[i];
+          if (ext == null) {
+            throw new IllegalArgumentException("Import at index " + i + " is null");
+          }
+          externHandles[i] = extractExternHandle(ext);
+          externTypes[i] = externTypeToNativeCode(ext.getType());
         }
-        externHandles[i] = extractExternHandle(ext);
-        externTypes[i] = externTypeToNativeCode(ext.getType());
+
+        final long instanceHandle =
+            nativeCreateInstanceWithImports(
+                getNativeHandle(), jniModule.getNativeHandle(), externHandles, externTypes);
+
+        if (instanceHandle == 0) {
+          throw new WasmException("Failed to create instance with imports");
+        }
+
+        return new JniInstance(instanceHandle, jniModule, this);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Failed to create instance with imports", e);
       }
-
-      final long instanceHandle =
-          nativeCreateInstanceWithImports(
-              getNativeHandle(), jniModule.getNativeHandle(), externHandles, externTypes);
-
-      if (instanceHandle == 0) {
-        throw new WasmException("Failed to create instance with imports");
-      }
-
-      return new JniInstance(instanceHandle, jniModule, this);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Failed to create instance with imports", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -1342,8 +1388,12 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public void gc() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    nativeGc(nativeHandle);
+    beginOperation();
+    try {
+      nativeGc(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Deprecated
@@ -1362,49 +1412,69 @@ public final class JniStore extends JniResource implements Store {
   @Override
   public ai.tegmentum.wasmtime4j.ExnRef takePendingException()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    final long exnRefHandle = nativeTakePendingException(nativeHandle);
-    if (exnRefHandle == 0) {
-      return null;
+    beginOperation();
+    try {
+      final long exnRefHandle = nativeTakePendingException(nativeHandle);
+      if (exnRefHandle == 0) {
+        return null;
+      }
+      return new JniExnRef(exnRefHandle, nativeHandle);
+    } finally {
+      endOperation();
     }
-    return new JniExnRef(exnRefHandle, nativeHandle);
   }
 
   @Override
   public boolean hasPendingException() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeHasPendingException(nativeHandle);
+    try {
+      return nativeHasPendingException(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void epochDeadlineAsyncYieldAndUpdate(final long deltaTicks)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    if (deltaTicks < 0) {
-      throw new IllegalArgumentException("deltaTicks cannot be negative");
+    beginOperation();
+    try {
+      if (deltaTicks < 0) {
+        throw new IllegalArgumentException("deltaTicks cannot be negative");
+      }
+      nativeEpochDeadlineAsyncYieldAndUpdate(nativeHandle, deltaTicks);
+    } finally {
+      endOperation();
     }
-    nativeEpochDeadlineAsyncYieldAndUpdate(nativeHandle, deltaTicks);
   }
 
   @Override
   public void epochDeadlineTrap() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    nativeEpochDeadlineTrap(nativeHandle);
+    beginOperation();
+    try {
+      nativeEpochDeadlineTrap(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void epochDeadlineCallback(
       final ai.tegmentum.wasmtime4j.Store.EpochDeadlineCallback callback)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    // Store callback reference to prevent GC
-    this.epochDeadlineCallback = callback;
-    if (callback == null) {
-      nativeClearEpochDeadlineCallback(nativeHandle);
-    } else {
-      nativeSetEpochDeadlineCallback(nativeHandle);
+    beginOperation();
+    try {
+      // Store callback reference to prevent GC
+      this.epochDeadlineCallback = callback;
+      if (callback == null) {
+        nativeClearEpochDeadlineCallback(nativeHandle);
+      } else {
+        nativeSetEpochDeadlineCallback(nativeHandle);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -1530,16 +1600,24 @@ public final class JniStore extends JniResource implements Store {
     if (handler == null) {
       throw new NullPointerException("handler cannot be null");
     }
-    ensureNotClosed();
-    this.debugHandler = handler;
-    nativeSetDebugHandler(getNativeHandle());
+    beginOperation();
+    try {
+      this.debugHandler = handler;
+      nativeSetDebugHandler(getNativeHandle());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void clearDebugHandler() {
-    ensureNotClosed();
-    this.debugHandler = null;
-    nativeClearDebugHandler(getNativeHandle());
+    beginOperation();
+    try {
+      this.debugHandler = null;
+      nativeClearDebugHandler(getNativeHandle());
+    } finally {
+      endOperation();
+    }
   }
 
   private native void nativeSetDebugHandler(long storeHandle);
@@ -1569,24 +1647,32 @@ public final class JniStore extends JniResource implements Store {
   @Override
   public void setCallHook(final ai.tegmentum.wasmtime4j.func.CallHookHandler handler)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    this.callHookHandler = handler;
-    if (handler == null) {
-      nativeClearCallHook(nativeHandle);
-    } else {
-      nativeSetCallHook(nativeHandle);
+    beginOperation();
+    try {
+      this.callHookHandler = handler;
+      if (handler == null) {
+        nativeClearCallHook(nativeHandle);
+      } else {
+        nativeSetCallHook(nativeHandle);
+      }
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void setCallHookAsync(final ai.tegmentum.wasmtime4j.Store.AsyncCallHookHandler handler)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    this.asyncCallHookHandler = handler;
-    if (handler == null) {
-      nativeClearCallHookAsync(nativeHandle);
-    } else {
-      nativeSetCallHookAsync(nativeHandle);
+    beginOperation();
+    try {
+      this.asyncCallHookHandler = handler;
+      if (handler == null) {
+        nativeClearCallHookAsync(nativeHandle);
+      } else {
+        nativeSetCallHookAsync(nativeHandle);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -1654,12 +1740,16 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public void setFuelAsyncYieldInterval(final long interval) throws WasmException {
-    ensureNotClosed();
-    if (interval < 0) {
-      throw new IllegalArgumentException("Interval cannot be negative");
+    beginOperation();
+    try {
+      if (interval < 0) {
+        throw new IllegalArgumentException("Interval cannot be negative");
+      }
+      this.fuelAsyncYieldInterval = interval;
+      nativeSetFuelAsyncYieldInterval(nativeHandle, interval);
+    } finally {
+      endOperation();
     }
-    this.fuelAsyncYieldInterval = interval;
-    nativeSetFuelAsyncYieldInterval(nativeHandle, interval);
   }
 
   @Override
@@ -1675,26 +1765,35 @@ public final class JniStore extends JniResource implements Store {
   @Override
   public ai.tegmentum.wasmtime4j.debug.WasmBacktrace captureBacktrace()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    final ai.tegmentum.wasmtime4j.debug.WasmBacktrace result = nativeCaptureBacktrace(nativeHandle);
-    if (result == null) {
-      return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(
-          java.util.Collections.emptyList(), false);
+    beginOperation();
+    try {
+      final ai.tegmentum.wasmtime4j.debug.WasmBacktrace result =
+          nativeCaptureBacktrace(nativeHandle);
+      if (result == null) {
+        return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(
+            java.util.Collections.emptyList(), false);
+      }
+      return result;
+    } finally {
+      endOperation();
     }
-    return result;
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.debug.WasmBacktrace forceCaptureBacktrace()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    final ai.tegmentum.wasmtime4j.debug.WasmBacktrace result =
-        nativeForceCaptureBacktrace(nativeHandle);
-    if (result == null) {
-      return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(
-          java.util.Collections.emptyList(), true);
+    beginOperation();
+    try {
+      final ai.tegmentum.wasmtime4j.debug.WasmBacktrace result =
+          nativeForceCaptureBacktrace(nativeHandle);
+      if (result == null) {
+        return new ai.tegmentum.wasmtime4j.debug.WasmBacktrace(
+            java.util.Collections.emptyList(), true);
+      }
+      return result;
+    } finally {
+      endOperation();
     }
-    return result;
   }
 
   private static native ai.tegmentum.wasmtime4j.debug.WasmBacktrace nativeCaptureBacktrace(
@@ -1707,108 +1806,129 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public boolean isSingleStep() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsSingleStep(getNativeHandle());
+    try {
+      return nativeIsSingleStep(getNativeHandle());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean isAsync() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsAsync(getNativeHandle());
+    try {
+      return nativeIsAsync(getNativeHandle());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public java.util.Optional<java.util.List<ai.tegmentum.wasmtime4j.debug.Breakpoint>>
       breakpoints() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return java.util.Optional.empty();
     }
-    final int count = nativeBreakpointCount(getNativeHandle());
-    if (count < 0) {
-      return java.util.Optional.empty(); // debugging not enabled or error
+    try {
+      final int count = nativeBreakpointCount(getNativeHandle());
+      if (count < 0) {
+        return java.util.Optional.empty(); // debugging not enabled or error
+      }
+      // We can report count but not individual breakpoints without iteration support
+      return java.util.Optional.of(java.util.Collections.emptyList());
+    } finally {
+      endOperation();
     }
-    // We can report count but not individual breakpoints without iteration support
-    return java.util.Optional.of(java.util.Collections.emptyList());
   }
 
   @Override
   public java.util.Optional<ai.tegmentum.wasmtime4j.debug.BreakpointEditor> editBreakpoints() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return java.util.Optional.empty();
     }
-    // Check if debugging is available by trying breakpoint count
-    final int count = nativeBreakpointCount(getNativeHandle());
-    if (count < -1) {
-      return java.util.Optional.empty(); // error
+    try {
+      // Check if debugging is available by trying breakpoint count
+      final int count = nativeBreakpointCount(getNativeHandle());
+      if (count < -1) {
+        return java.util.Optional.empty(); // error
+      }
+      final long storeHandle = getNativeHandle();
+      return java.util.Optional.of(
+          new ai.tegmentum.wasmtime4j.debug.BreakpointEditor() {
+            @Override
+            public ai.tegmentum.wasmtime4j.debug.BreakpointEditor addBreakpoint(
+                final ai.tegmentum.wasmtime4j.Module module, final int pc) {
+              java.util.Objects.requireNonNull(module, "module cannot be null");
+              if (pc < 0) {
+                throw new IllegalArgumentException("pc cannot be negative: " + pc);
+              }
+              final long moduleHandle = ((JniModule) module).getNativeHandle();
+              nativeAddBreakpoint(storeHandle, moduleHandle, pc);
+              return this;
+            }
+
+            @Override
+            public ai.tegmentum.wasmtime4j.debug.BreakpointEditor removeBreakpoint(
+                final ai.tegmentum.wasmtime4j.Module module, final int pc) {
+              java.util.Objects.requireNonNull(module, "module cannot be null");
+              if (pc < 0) {
+                throw new IllegalArgumentException("pc cannot be negative: " + pc);
+              }
+              final long moduleHandle = ((JniModule) module).getNativeHandle();
+              nativeRemoveBreakpoint(storeHandle, moduleHandle, pc);
+              return this;
+            }
+
+            @Override
+            public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(
+                final boolean enabled) {
+              nativeSetSingleStep(storeHandle, enabled);
+              return this;
+            }
+
+            @Override
+            public void apply() {
+              // Breakpoint edits are applied immediately via native calls
+            }
+          });
+    } finally {
+      endOperation();
     }
-    final long storeHandle = getNativeHandle();
-    return java.util.Optional.of(
-        new ai.tegmentum.wasmtime4j.debug.BreakpointEditor() {
-          @Override
-          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor addBreakpoint(
-              final ai.tegmentum.wasmtime4j.Module module, final int pc) {
-            java.util.Objects.requireNonNull(module, "module cannot be null");
-            if (pc < 0) {
-              throw new IllegalArgumentException("pc cannot be negative: " + pc);
-            }
-            final long moduleHandle = ((JniModule) module).getNativeHandle();
-            nativeAddBreakpoint(storeHandle, moduleHandle, pc);
-            return this;
-          }
-
-          @Override
-          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor removeBreakpoint(
-              final ai.tegmentum.wasmtime4j.Module module, final int pc) {
-            java.util.Objects.requireNonNull(module, "module cannot be null");
-            if (pc < 0) {
-              throw new IllegalArgumentException("pc cannot be negative: " + pc);
-            }
-            final long moduleHandle = ((JniModule) module).getNativeHandle();
-            nativeRemoveBreakpoint(storeHandle, moduleHandle, pc);
-            return this;
-          }
-
-          @Override
-          public ai.tegmentum.wasmtime4j.debug.BreakpointEditor singleStep(final boolean enabled) {
-            nativeSetSingleStep(storeHandle, enabled);
-            return this;
-          }
-
-          @Override
-          public void apply() {
-            // Breakpoint edits are applied immediately via native calls
-          }
-        });
   }
 
   @Override
   public java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    final int[] frameData = nativeDebugExitFrames(getNativeHandle());
-    if (frameData == null) {
-      return java.util.Collections.emptyList();
+    beginOperation();
+    try {
+      final int[] frameData = nativeDebugExitFrames(getNativeHandle());
+      if (frameData == null) {
+        return java.util.Collections.emptyList();
+      }
+      final int frameCount = frameData.length / 4;
+      final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
+          new java.util.ArrayList<>(frameCount);
+      for (int i = 0; i < frameCount; i++) {
+        final int base = i * 4;
+        frames.add(
+            new ai.tegmentum.wasmtime4j.debug.FrameHandle(
+                0L, // no native ptr for snapshot approach
+                frameData[base], // functionIndex
+                frameData[base + 1], // pc
+                frameData[base + 2], // numLocals
+                frameData[base + 3], // numStack
+                null, // instance (not available in snapshot)
+                null)); // module (not available in snapshot)
+      }
+      return frames;
+    } finally {
+      endOperation();
     }
-    final int frameCount = frameData.length / 4;
-    final java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> frames =
-        new java.util.ArrayList<>(frameCount);
-    for (int i = 0; i < frameCount; i++) {
-      final int base = i * 4;
-      frames.add(
-          new ai.tegmentum.wasmtime4j.debug.FrameHandle(
-              0L, // no native ptr for snapshot approach
-              frameData[base], // functionIndex
-              frameData[base + 1], // pc
-              frameData[base + 2], // numLocals
-              frameData[base + 3], // numStack
-              null, // instance (not available in snapshot)
-              null)); // module (not available in snapshot)
-    }
-    return frames;
   }
 
   // Debugging native methods
@@ -1835,25 +1955,33 @@ public final class JniStore extends JniResource implements Store {
 
   @Override
   public java.util.concurrent.CompletableFuture<Void> gcAsync() {
-    ensureNotClosed();
-    final java.util.concurrent.CompletableFuture<Long> rawFuture =
-        new java.util.concurrent.CompletableFuture<>();
-    nativeGcAsyncBridge(getNativeHandle(), rawFuture);
-    return rawFuture.thenApply(v -> null);
+    beginOperation();
+    try {
+      final java.util.concurrent.CompletableFuture<Long> rawFuture =
+          new java.util.concurrent.CompletableFuture<>();
+      nativeGcAsyncBridge(getNativeHandle(), rawFuture);
+      return rawFuture.thenApply(v -> null);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public java.util.concurrent.CompletableFuture<Instance> createInstanceAsync(final Module module) {
     Objects.requireNonNull(module, "Module cannot be null");
-    ensureNotClosed();
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException("Module must be a JniModule instance for JNI store");
+    beginOperation();
+    try {
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule instance for JNI store");
+      }
+      final JniModule jniModule = (JniModule) module;
+      final java.util.concurrent.CompletableFuture<Long> rawFuture =
+          new java.util.concurrent.CompletableFuture<>();
+      nativeCreateInstanceAsyncBridge(getNativeHandle(), jniModule.getNativeHandle(), rawFuture);
+      return rawFuture.thenApply(ptr -> new JniInstance(ptr, jniModule, this));
+    } finally {
+      endOperation();
     }
-    final JniModule jniModule = (JniModule) module;
-    final java.util.concurrent.CompletableFuture<Long> rawFuture =
-        new java.util.concurrent.CompletableFuture<>();
-    nativeCreateInstanceAsyncBridge(getNativeHandle(), jniModule.getNativeHandle(), rawFuture);
-    return rawFuture.thenApply(ptr -> new JniInstance(ptr, jniModule, this));
   }
 
   @Override
@@ -1863,25 +1991,33 @@ public final class JniStore extends JniResource implements Store {
   public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmMemory>
       createMemoryAsync(final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) {
     Validation.requireNonNull(memoryType, "memoryType");
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final long minPages = memoryType.getMinimum();
+      final long maxPages = memoryType.getMaximum().orElse(-1L);
+      final int isShared = memoryType.isShared() ? 1 : 0;
+      final int is64 = memoryType.is64Bit() ? 1 : 0;
 
-    final long minPages = memoryType.getMinimum();
-    final long maxPages = memoryType.getMaximum().orElse(-1L);
-    final int isShared = memoryType.isShared() ? 1 : 0;
-    final int is64 = memoryType.is64Bit() ? 1 : 0;
+      if (minPages < 0) {
+        throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+      }
+      if (maxPages != -1 && maxPages < minPages) {
+        throw new IllegalArgumentException(
+            "Maximum pages ("
+                + maxPages
+                + ") cannot be less than minimum pages ("
+                + minPages
+                + ")");
+      }
 
-    if (minPages < 0) {
-      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+      final java.util.concurrent.CompletableFuture<Long> rawFuture =
+          new java.util.concurrent.CompletableFuture<>();
+      nativeCreateMemoryAsyncBridge(
+          getNativeHandle(), minPages, maxPages, isShared, is64, rawFuture);
+      return rawFuture.thenApply(ptr -> new JniMemory(ptr, this));
+    } finally {
+      endOperation();
     }
-    if (maxPages != -1 && maxPages < minPages) {
-      throw new IllegalArgumentException(
-          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
-    }
-
-    final java.util.concurrent.CompletableFuture<Long> rawFuture =
-        new java.util.concurrent.CompletableFuture<>();
-    nativeCreateMemoryAsyncBridge(getNativeHandle(), minPages, maxPages, isShared, is64, rawFuture);
-    return rawFuture.thenApply(ptr -> new JniMemory(ptr, this));
   }
 
   @Override
@@ -1891,24 +2027,27 @@ public final class JniStore extends JniResource implements Store {
   public java.util.concurrent.CompletableFuture<ai.tegmentum.wasmtime4j.WasmTable> createTableAsync(
       final ai.tegmentum.wasmtime4j.type.TableType tableType) {
     Validation.requireNonNull(tableType, "tableType");
-    ensureNotClosed();
+    beginOperation();
+    try {
+      final WasmValueType elementType = tableType.getElementType();
+      final long minSize = tableType.getMinimum();
+      final long maxSize = tableType.getMaximum().orElse(-1L);
 
-    final WasmValueType elementType = tableType.getElementType();
-    final long minSize = tableType.getMinimum();
-    final long maxSize = tableType.getMaximum().orElse(-1L);
+      if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
+        throw new IllegalArgumentException(
+            "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+      }
 
-    if (elementType != WasmValueType.FUNCREF && elementType != WasmValueType.EXTERNREF) {
-      throw new IllegalArgumentException(
-          "Element type must be FUNCREF or EXTERNREF, got: " + elementType);
+      final int elemTypeCode = (elementType == WasmValueType.FUNCREF) ? 0x70 : 0x6F;
+
+      final java.util.concurrent.CompletableFuture<Long> rawFuture =
+          new java.util.concurrent.CompletableFuture<>();
+      nativeCreateTableAsyncBridge(
+          getNativeHandle(), elemTypeCode, (int) minSize, (int) maxSize, rawFuture);
+      return rawFuture.thenApply(ptr -> new JniTable(ptr, this));
+    } finally {
+      endOperation();
     }
-
-    final int elemTypeCode = (elementType == WasmValueType.FUNCREF) ? 0x70 : 0x6F;
-
-    final java.util.concurrent.CompletableFuture<Long> rawFuture =
-        new java.util.concurrent.CompletableFuture<>();
-    nativeCreateTableAsyncBridge(
-        getNativeHandle(), elemTypeCode, (int) minSize, (int) maxSize, rawFuture);
-    return rawFuture.thenApply(ptr -> new JniTable(ptr, this));
   }
 
   // Native async bridge method declarations

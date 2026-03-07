@@ -340,6 +340,223 @@ class NativeResourceHandleTest {
   }
 
   @Nested
+  @DisplayName("beginOperation / endOperation Tests")
+  class BeginEndOperationTests {
+
+    @Test
+    @DisplayName("beginOperation should succeed on open handle")
+    void beginOperationShouldSucceedWhenOpen() {
+      final NativeResourceHandle handle = new NativeResourceHandle("TestResource", () -> {});
+      assertDoesNotThrow(
+          handle::beginOperation, "beginOperation() should not throw on an open handle");
+      handle.endOperation();
+      handle.close();
+    }
+
+    @Test
+    @DisplayName("beginOperation should throw IllegalStateException on closed handle")
+    void beginOperationShouldThrowWhenClosed() {
+      final NativeResourceHandle handle = new NativeResourceHandle("TestResource", () -> {});
+      handle.close();
+
+      final IllegalStateException ex =
+          assertThrows(
+              IllegalStateException.class,
+              handle::beginOperation,
+              "beginOperation() should throw on a closed handle");
+      assertTrue(
+          ex.getMessage().contains("TestResource"),
+          "Exception message should contain resource type, got: " + ex.getMessage());
+      assertTrue(
+          ex.getMessage().contains("closed"),
+          "Exception message should mention 'closed', got: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("endOperation should release lock so close can proceed")
+    void endOperationShouldReleaseLock() {
+      final NativeResourceHandle handle = new NativeResourceHandle("TestResource", () -> {});
+      handle.beginOperation();
+      handle.endOperation();
+
+      assertDoesNotThrow(
+          handle::close, "close() should succeed after endOperation() releases the read lock");
+      assertTrue(handle.isClosed(), "Handle should be closed");
+    }
+
+    @Test
+    @DisplayName("Multiple concurrent beginOperation calls should share read lock")
+    void multipleConcurrentBeginOperationsShouldShareReadLock() throws InterruptedException {
+      final NativeResourceHandle handle = new NativeResourceHandle("TestResource", () -> {});
+      final int threadCount = 8;
+      final CountDownLatch allLocked = new CountDownLatch(threadCount);
+      final CountDownLatch releaseLatch = new CountDownLatch(1);
+      final CountDownLatch doneLatch = new CountDownLatch(threadCount);
+      final AtomicInteger errors = new AtomicInteger(0);
+
+      for (int i = 0; i < threadCount; i++) {
+        new Thread(
+                () -> {
+                  try {
+                    handle.beginOperation();
+                    allLocked.countDown();
+                    releaseLatch.await(5, TimeUnit.SECONDS);
+                  } catch (final Exception e) {
+                    errors.incrementAndGet();
+                  } finally {
+                    handle.endOperation();
+                    doneLatch.countDown();
+                  }
+                })
+            .start();
+      }
+
+      assertTrue(
+          allLocked.await(5, TimeUnit.SECONDS),
+          "All threads should acquire the read lock concurrently");
+      assertEquals(0, errors.get(), "No thread should have errored");
+
+      releaseLatch.countDown();
+      assertTrue(doneLatch.await(5, TimeUnit.SECONDS), "All threads should complete");
+      handle.close();
+    }
+
+    @Test
+    @DisplayName("close should block while beginOperation is held, preventing use-after-free")
+    void closeShouldBlockWhileOperationInFlight() throws InterruptedException {
+      final AtomicBoolean cleanupRan = new AtomicBoolean(false);
+      final NativeResourceHandle handle =
+          new NativeResourceHandle("TestResource", () -> cleanupRan.set(true));
+      final CountDownLatch operationStarted = new CountDownLatch(1);
+      final CountDownLatch closeAttempted = new CountDownLatch(1);
+      final CountDownLatch operationDone = new CountDownLatch(1);
+      final AtomicBoolean closedBeforeOperationEnd = new AtomicBoolean(true);
+
+      // Thread 1: holds beginOperation lock
+      new Thread(
+              () -> {
+                handle.beginOperation();
+                try {
+                  operationStarted.countDown();
+                  closeAttempted.await(5, TimeUnit.SECONDS);
+                  // Give close() thread time to block on write lock
+                  Thread.sleep(100);
+                  closedBeforeOperationEnd.set(handle.isClosed());
+                } catch (final InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                } finally {
+                  handle.endOperation();
+                  operationDone.countDown();
+                }
+              })
+          .start();
+
+      operationStarted.await(5, TimeUnit.SECONDS);
+
+      // Thread 2: attempts close() while operation is in-flight
+      new Thread(
+              () -> {
+                closeAttempted.countDown();
+                handle.close();
+              })
+          .start();
+
+      assertTrue(operationDone.await(5, TimeUnit.SECONDS), "Operation thread should complete");
+
+      assertFalse(
+          closedBeforeOperationEnd.get(),
+          "Resource should NOT be closed while operation read lock is held");
+      assertTrue(handle.isClosed(), "Resource should be closed after operation released the lock");
+      assertTrue(cleanupRan.get(), "Cleanup action should have run after close completed");
+    }
+
+    @Test
+    @DisplayName("beginOperation should be reentrant (read lock reentrancy)")
+    void beginOperationShouldBeReentrant() {
+      final NativeResourceHandle handle = new NativeResourceHandle("TestResource", () -> {});
+      handle.beginOperation();
+      try {
+        // Second call should not deadlock — ReentrantReadWriteLock allows read reentrancy
+        handle.beginOperation();
+        try {
+          assertFalse(handle.isClosed(), "Handle should still be open");
+        } finally {
+          handle.endOperation();
+        }
+      } finally {
+        handle.endOperation();
+      }
+      handle.close();
+    }
+  }
+
+  @Nested
+  @DisplayName("tryBeginOperation Tests")
+  class TryBeginOperationTests {
+
+    @Test
+    @DisplayName("tryBeginOperation should return true on open handle")
+    void shouldReturnTrueWhenOpen() {
+      final NativeResourceHandle handle = new NativeResourceHandle("TestResource", () -> {});
+
+      assertTrue(
+          handle.tryBeginOperation(), "tryBeginOperation() should return true for open handle");
+      handle.endOperation();
+      handle.close();
+    }
+
+    @Test
+    @DisplayName("tryBeginOperation should return false on closed handle without throwing")
+    void shouldReturnFalseWhenClosed() {
+      final NativeResourceHandle handle = new NativeResourceHandle("TestResource", () -> {});
+      handle.close();
+
+      assertFalse(
+          handle.tryBeginOperation(), "tryBeginOperation() should return false for closed handle");
+      // No endOperation() needed when tryBeginOperation returns false
+    }
+
+    @Test
+    @DisplayName("tryBeginOperation should hold lock that blocks close when returning true")
+    void shouldBlockCloseWhenReturningTrue() throws InterruptedException {
+      final NativeResourceHandle handle = new NativeResourceHandle("TestResource", () -> {});
+      final CountDownLatch lockHeld = new CountDownLatch(1);
+      final CountDownLatch closeDone = new CountDownLatch(1);
+      final AtomicBoolean closedBeforeRelease = new AtomicBoolean(true);
+
+      new Thread(
+              () -> {
+                if (handle.tryBeginOperation()) {
+                  try {
+                    lockHeld.countDown();
+                    // Wait for close thread to start attempting close
+                    Thread.sleep(200);
+                    closedBeforeRelease.set(handle.isClosed());
+                  } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                  } finally {
+                    handle.endOperation();
+                  }
+                }
+              })
+          .start();
+
+      lockHeld.await(5, TimeUnit.SECONDS);
+      new Thread(
+              () -> {
+                handle.close();
+                closeDone.countDown();
+              })
+          .start();
+
+      assertTrue(closeDone.await(5, TimeUnit.SECONDS), "Close should complete after lock released");
+      assertFalse(
+          closedBeforeRelease.get(),
+          "Resource should NOT be closed while tryBeginOperation lock is held");
+    }
+  }
+
+  @Nested
   @DisplayName("Integration Tests")
   class IntegrationTests {
 

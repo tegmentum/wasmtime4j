@@ -477,6 +477,21 @@ public interface GcRuntime {
    */
   boolean arrayRefMatchesTy(long objectId, int heapTypeOrdinal) throws GcException;
 
+  // ========== Object Lifecycle ==========
+
+  /**
+   * Releases a GC object by its ID, allowing the underlying native GC to collect it.
+   *
+   * <p>This should be called when the Java side no longer needs a reference to a GC object. Without
+   * explicit release, GC objects persist in native memory for the lifetime of the {@code
+   * GcRuntime}, which can cause memory leaks in long-running processes.
+   *
+   * @param objectId the object ID to release (from {@link GcObject#getObjectId()})
+   * @return {@code true} if the object existed and was released, {@code false} if not found
+   * @since 1.1.0
+   */
+  boolean releaseObject(long objectId);
+
   // ========== Garbage Collection Control ==========
 
   /**

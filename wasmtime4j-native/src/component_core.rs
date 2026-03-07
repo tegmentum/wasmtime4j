@@ -190,6 +190,8 @@ impl EnhancedComponentEngine {
             wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
             #[cfg(feature = "wasi-http")]
             wasi_http_ctx: None,
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
             store_limits: None,
             start_time,
         };
@@ -1051,6 +1053,8 @@ impl EnhancedComponentEngine {
                 wasi_ctx: wasmtime_wasi::WasiCtxBuilder::new().build(),
                 #[cfg(feature = "wasi-http")]
                 wasi_http_ctx: None,
+                #[cfg(feature = "wasi-config")]
+                wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
                 store_limits: None,
                 start_time: Instant::now(),
             };

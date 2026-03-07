@@ -770,6 +770,23 @@ public final class JniGcRuntime implements GcRuntime {
     }
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public boolean releaseObject(final long objectId) {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new IllegalStateException("GC runtime has been disposed");
+      }
+
+      return releaseObjectNative(nativeHandle, objectId) > 0;
+    } finally {
+      lock.readLock().unlock();
+    }
+  }
+
   /**
    * Triggers garbage collection on the native GC heap via JNI.
    *
@@ -1628,6 +1645,8 @@ public final class JniGcRuntime implements GcRuntime {
   private static native boolean refEqNative(long runtimeHandle, long objectId1, long objectId2);
 
   private static native boolean refIsNullNative(long runtimeHandle, long objectId);
+
+  private static native int releaseObjectNative(long runtimeHandle, long objectId);
 
   private static native Object collectGarbageNative(long runtimeHandle);
 

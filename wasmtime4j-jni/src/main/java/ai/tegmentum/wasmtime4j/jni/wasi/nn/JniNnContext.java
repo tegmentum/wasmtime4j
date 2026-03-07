@@ -65,16 +65,19 @@ public final class JniNnContext extends JniResource implements NnContext {
     Objects.requireNonNull(modelData, "modelData cannot be null");
     Objects.requireNonNull(encoding, "encoding cannot be null");
     Objects.requireNonNull(target, "target cannot be null");
-    ensureNotClosed();
-
-    // Wrap single byte array as a 1-element array of arrays
-    final byte[][] parts = new byte[][] {modelData};
-    final long graphHandle =
-        nativeLoadGraph(nativeHandle, parts, encoding.getNativeCode(), target.getNativeCode());
-    if (graphHandle == 0) {
-      throw new NnException("Failed to load graph from model data");
+    beginOperation();
+    try {
+      // Wrap single byte array as a 1-element array of arrays
+      final byte[][] parts = new byte[][] {modelData};
+      final long graphHandle =
+          nativeLoadGraph(nativeHandle, parts, encoding.getNativeCode(), target.getNativeCode());
+      if (graphHandle == 0) {
+        throw new NnException("Failed to load graph from model data");
+      }
+      return new JniNnGraph(graphHandle, encoding, target);
+    } finally {
+      endOperation();
     }
-    return new JniNnGraph(graphHandle, encoding, target);
   }
 
   @Override
@@ -87,15 +90,19 @@ public final class JniNnContext extends JniResource implements NnContext {
     if (modelParts.isEmpty()) {
       throw new IllegalArgumentException("modelParts cannot be empty");
     }
-    ensureNotClosed();
-
-    final byte[][] partsArray = modelParts.toArray(new byte[0][]);
-    final long graphHandle =
-        nativeLoadGraph(nativeHandle, partsArray, encoding.getNativeCode(), target.getNativeCode());
-    if (graphHandle == 0) {
-      throw new NnException("Failed to load graph from model parts");
+    beginOperation();
+    try {
+      final byte[][] partsArray = modelParts.toArray(new byte[0][]);
+      final long graphHandle =
+          nativeLoadGraph(
+              nativeHandle, partsArray, encoding.getNativeCode(), target.getNativeCode());
+      if (graphHandle == 0) {
+        throw new NnException("Failed to load graph from model parts");
+      }
+      return new JniNnGraph(graphHandle, encoding, target);
+    } finally {
+      endOperation();
     }
-    return new JniNnGraph(graphHandle, encoding, target);
   }
 
   @Override
@@ -105,53 +112,63 @@ public final class JniNnContext extends JniResource implements NnContext {
     Objects.requireNonNull(modelPath, "modelPath cannot be null");
     Objects.requireNonNull(encoding, "encoding cannot be null");
     Objects.requireNonNull(target, "target cannot be null");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final byte[] modelData = Files.readAllBytes(modelPath);
       return loadGraph(modelData, encoding, target);
     } catch (IOException e) {
       throw new NnException("Failed to read model file: " + modelPath, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public NnGraph loadGraphByName(final String name) throws NnException {
     Objects.requireNonNull(name, "name cannot be null");
-    ensureNotClosed();
-
-    // WASI-NN doesn't have a native "load by name" API in the host-side backend.
-    // This would require a model registry, which is not part of wasmtime-wasi-nn.
-    throw new NnException(
-        "Loading graphs by name is not supported in the host-side WASI-NN API. "
-            + "Use loadGraph() with model bytes instead.");
+    beginOperation();
+    try {
+      // WASI-NN doesn't have a native "load by name" API in the host-side backend.
+      // This would require a model registry, which is not part of wasmtime-wasi-nn.
+      throw new NnException(
+          "Loading graphs by name is not supported in the host-side WASI-NN API. "
+              + "Use loadGraph() with model bytes instead.");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public Set<NnGraphEncoding> getSupportedEncodings() {
-    ensureNotClosed();
-
-    final int[] codes = nativeSupportedEncodings(nativeHandle);
-    final Set<NnGraphEncoding> encodings = EnumSet.noneOf(NnGraphEncoding.class);
-    if (codes != null) {
-      for (final int code : codes) {
-        try {
-          encodings.add(NnGraphEncoding.fromNativeCode(code));
-        } catch (IllegalArgumentException e) {
-          LOGGER.fine("Unknown encoding code from native: " + code);
+    beginOperation();
+    try {
+      final int[] codes = nativeSupportedEncodings(nativeHandle);
+      final Set<NnGraphEncoding> encodings = EnumSet.noneOf(NnGraphEncoding.class);
+      if (codes != null) {
+        for (final int code : codes) {
+          try {
+            encodings.add(NnGraphEncoding.fromNativeCode(code));
+          } catch (IllegalArgumentException e) {
+            LOGGER.fine("Unknown encoding code from native: " + code);
+          }
         }
       }
+      return encodings;
+    } finally {
+      endOperation();
     }
-    return encodings;
   }
 
   @Override
   public Set<NnExecutionTarget> getSupportedTargets() {
-    ensureNotClosed();
-
-    // WASI-NN API doesn't expose supported targets per-backend.
-    // Return all targets as potentially available; actual availability depends on hardware.
-    return EnumSet.allOf(NnExecutionTarget.class);
+    beginOperation();
+    try {
+      // WASI-NN API doesn't expose supported targets per-backend.
+      // Return all targets as potentially available; actual availability depends on hardware.
+      return EnumSet.allOf(NnExecutionTarget.class);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -169,18 +186,25 @@ public final class JniNnContext extends JniResource implements NnContext {
 
   @Override
   public boolean isAvailable() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
-    return nativeIsAvailable(nativeHandle);
+    try {
+      return nativeIsAvailable(nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public NnImplementationInfo getImplementationInfo() {
-    ensureNotClosed();
-
-    final String infoJson = nativeGetBackendInfo(nativeHandle);
-    return NnImplementationInfo.parseFromJson(infoJson);
+    beginOperation();
+    try {
+      final String infoJson = nativeGetBackendInfo(nativeHandle);
+      return NnImplementationInfo.parseFromJson(infoJson);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override

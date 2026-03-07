@@ -99,6 +99,7 @@ public final class PanamaGcRuntime implements GcRuntime {
   private static final MethodHandle refTest;
   private static final MethodHandle refEq;
   private static final MethodHandle refIsNull;
+  private static final MethodHandle releaseObject;
   private static final MethodHandle collectGarbage;
   private static final MethodHandle getGcStats;
   private static final MethodHandle anyrefToRaw;
@@ -283,6 +284,11 @@ public final class PanamaGcRuntime implements GcRuntime {
           linker.downcallHandle(
               lookup.find("wasmtime4j_gc_ref_is_null").orElseThrow(),
               FunctionDescriptor.of(JAVA_BYTE, JAVA_LONG, JAVA_LONG));
+
+      releaseObject =
+          linker.downcallHandle(
+              lookup.find("wasmtime4j_gc_release_object").orElseThrow(),
+              FunctionDescriptor.of(JAVA_INT, JAVA_LONG, JAVA_LONG));
 
       collectGarbage =
           linker.downcallHandle(
@@ -1147,6 +1153,26 @@ public final class PanamaGcRuntime implements GcRuntime {
       return registerArrayTypeInternal(arrayType);
     } finally {
       lock.writeLock().unlock();
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public boolean releaseObject(final long objectId) {
+    validateNotDisposed();
+
+    lock.readLock().lock();
+    try {
+      if (disposed) {
+        throw new IllegalStateException("GC runtime has been disposed");
+      }
+
+      final int result = (int) releaseObject.invokeExact(nativeHandle, objectId);
+      return result > 0;
+    } catch (Throwable t) {
+      throw new RuntimeException("Failed to release GC object", t);
+    } finally {
+      lock.readLock().unlock();
     }
   }
 

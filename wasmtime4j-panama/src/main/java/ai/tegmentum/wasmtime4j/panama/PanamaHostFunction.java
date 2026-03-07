@@ -231,13 +231,17 @@ public final class PanamaHostFunction implements WasmFunction {
 
   @Override
   public WasmValue[] call(final WasmValue... params) throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Host functions are called FROM WebAssembly, not TO WebAssembly
-    // This method shouldn't be used directly for host functions
-    throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
-        "Host functions are called from WebAssembly, not directly from Java. "
-            + "Use the callback mechanism instead.");
+      // Host functions are called FROM WebAssembly, not TO WebAssembly
+      // This method shouldn't be used directly for host functions
+      throw new ai.tegmentum.wasmtime4j.exception.ValidationException(
+          "Host functions are called from WebAssembly, not directly from Java. "
+              + "Use the callback mechanism instead.");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -293,8 +297,12 @@ public final class PanamaHostFunction implements WasmFunction {
    * @throws IllegalStateException if the host function has been closed
    */
   public MemorySegment getFunctionHandle() {
-    ensureNotClosed();
-    return functionHandle;
+    resourceHandle.beginOperation();
+    try {
+      return functionHandle;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -319,8 +327,12 @@ public final class PanamaHostFunction implements WasmFunction {
    * @throws IllegalStateException if the host function has been closed
    */
   public MemorySegment getUpcallStub() {
-    ensureNotClosed();
-    return upcallStub;
+    resourceHandle.beginOperation();
+    try {
+      return upcallStub;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -1348,15 +1360,6 @@ public final class PanamaHostFunction implements WasmFunction {
   }
 
   /**
-   * Ensures the host function is not closed, throwing an exception if it is.
-   *
-   * @throws IllegalStateException if the host function has been closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-  }
-
-  /**
    * Gets the current caller context for the executing host function.
    *
    * <p>This method is called by PanamaCallerContextProvider (via CallerAwareHostFunction) to access
@@ -1378,12 +1381,16 @@ public final class PanamaHostFunction implements WasmFunction {
 
   @Override
   public String toString() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return "PanamaHostFunction{name='" + functionName + "', closed=true}";
     }
+    try {
 
-    return String.format(
-        "PanamaHostFunction{name='%s', type=%s, id=%d}",
-        functionName, functionType, hostFunctionId);
+      return String.format(
+          "PanamaHostFunction{name='%s', type=%s, id=%d}",
+          functionName, functionType, hostFunctionId);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 }

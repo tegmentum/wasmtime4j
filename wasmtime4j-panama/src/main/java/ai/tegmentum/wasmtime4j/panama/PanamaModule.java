@@ -202,8 +202,12 @@ public final class PanamaModule implements Module {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
-    ensureNotClosed();
-    return new PanamaInstance(this, (PanamaStore) store);
+    resourceHandle.beginOperation();
+    try {
+      return new PanamaInstance(this, (PanamaStore) store);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -217,34 +221,38 @@ public final class PanamaModule implements Module {
     if (!(store instanceof PanamaStore)) {
       throw new IllegalArgumentException("Store must be a PanamaStore instance");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final java.util.List<ImportType> moduleImports = getImports();
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final java.util.List<ImportType> moduleImports = getImports();
 
-    if (moduleImports.isEmpty()) {
-      return instantiate(store);
-    }
-
-    final java.util.Map<String, java.util.Map<String, Object>> importData = imports.getImports();
-    final ai.tegmentum.wasmtime4j.Extern[] externs =
-        new ai.tegmentum.wasmtime4j.Extern[moduleImports.size()];
-
-    for (int i = 0; i < moduleImports.size(); i++) {
-      final ImportType imp = moduleImports.get(i);
-      final String modName = imp.getModuleName();
-      final String fieldName = imp.getName();
-
-      final java.util.Map<String, Object> moduleMap = importData.get(modName);
-      if (moduleMap == null || !moduleMap.containsKey(fieldName)) {
-        throw new WasmException("Missing import: " + modName + "::" + fieldName);
+      if (moduleImports.isEmpty()) {
+        return instantiate(store);
       }
 
-      final Object value = moduleMap.get(fieldName);
-      externs[i] = wrapAsPanamaExtern(value, panamaStore, imp);
-    }
+      final java.util.Map<String, java.util.Map<String, Object>> importData = imports.getImports();
+      final ai.tegmentum.wasmtime4j.Extern[] externs =
+          new ai.tegmentum.wasmtime4j.Extern[moduleImports.size()];
 
-    return panamaStore.createInstance(this, externs);
+      for (int i = 0; i < moduleImports.size(); i++) {
+        final ImportType imp = moduleImports.get(i);
+        final String modName = imp.getModuleName();
+        final String fieldName = imp.getName();
+
+        final java.util.Map<String, Object> moduleMap = importData.get(modName);
+        if (moduleMap == null || !moduleMap.containsKey(fieldName)) {
+          throw new WasmException("Missing import: " + modName + "::" + fieldName);
+        }
+
+        final Object value = moduleMap.get(fieldName);
+        externs[i] = wrapAsPanamaExtern(value, panamaStore, imp);
+      }
+
+      return panamaStore.createInstance(this, externs);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -344,49 +352,57 @@ public final class PanamaModule implements Module {
 
   @Override
   public List<ExportType> getExports() {
-    ensureNotClosed();
-
-    final long exportCount = NATIVE_BINDINGS.moduleExportsLen(nativeModule);
-    if (exportCount == 0) {
-      return java.util.Collections.emptyList();
-    }
-
-    final java.lang.foreign.MemorySegment jsonPtr =
-        NATIVE_BINDINGS.moduleGetExportsJson(nativeModule);
-    if (jsonPtr == null || jsonPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
-      LOGGER.warning("Failed to retrieve module exports");
-      return java.util.Collections.emptyList();
-    }
-
+    resourceHandle.beginOperation();
     try {
-      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
-      return java.util.Collections.unmodifiableList(parseExportsJson(jsonString));
+
+      final long exportCount = NATIVE_BINDINGS.moduleExportsLen(nativeModule);
+      if (exportCount == 0) {
+        return java.util.Collections.emptyList();
+      }
+
+      final java.lang.foreign.MemorySegment jsonPtr =
+          NATIVE_BINDINGS.moduleGetExportsJson(nativeModule);
+      if (jsonPtr == null || jsonPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+        LOGGER.warning("Failed to retrieve module exports");
+        return java.util.Collections.emptyList();
+      }
+
+      try {
+        final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
+        return java.util.Collections.unmodifiableList(parseExportsJson(jsonString));
+      } finally {
+        NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+      }
     } finally {
-      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public List<ImportType> getImports() {
-    ensureNotClosed();
-
-    final long importCount = NATIVE_BINDINGS.moduleImportsLen(nativeModule);
-    if (importCount == 0) {
-      return java.util.Collections.emptyList();
-    }
-
-    final java.lang.foreign.MemorySegment jsonPtr =
-        NATIVE_BINDINGS.moduleGetImportsJson(nativeModule);
-    if (jsonPtr == null || jsonPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
-      LOGGER.warning("Failed to retrieve module imports");
-      return java.util.Collections.emptyList();
-    }
-
+    resourceHandle.beginOperation();
     try {
-      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
-      return java.util.Collections.unmodifiableList(parseImportsJson(jsonString));
+
+      final long importCount = NATIVE_BINDINGS.moduleImportsLen(nativeModule);
+      if (importCount == 0) {
+        return java.util.Collections.emptyList();
+      }
+
+      final java.lang.foreign.MemorySegment jsonPtr =
+          NATIVE_BINDINGS.moduleGetImportsJson(nativeModule);
+      if (jsonPtr == null || jsonPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+        LOGGER.warning("Failed to retrieve module imports");
+        return java.util.Collections.emptyList();
+      }
+
+      try {
+        final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
+        return java.util.Collections.unmodifiableList(parseImportsJson(jsonString));
+      } finally {
+        NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+      }
     } finally {
-      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+      resourceHandle.endOperation();
     }
   }
 
@@ -395,14 +411,18 @@ public final class PanamaModule implements Module {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
-    final List<ExportType> exports = getExports();
-    for (final ExportType export : exports) {
-      if (export.getName().equals(name)) {
-        return true;
+    resourceHandle.beginOperation();
+    try {
+      final List<ExportType> exports = getExports();
+      for (final ExportType export : exports) {
+        if (export.getName().equals(name)) {
+          return true;
+        }
       }
+      return false;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return false;
   }
 
   @Override
@@ -413,14 +433,19 @@ public final class PanamaModule implements Module {
     if (fieldName == null) {
       throw new IllegalArgumentException("Field name cannot be null");
     }
-    ensureNotClosed();
-    final List<ImportType> imports = getImports();
-    for (final ImportType importType : imports) {
-      if (importType.getModuleName().equals(moduleName) && importType.getName().equals(fieldName)) {
-        return true;
+    resourceHandle.beginOperation();
+    try {
+      final List<ImportType> imports = getImports();
+      for (final ImportType importType : imports) {
+        if (importType.getModuleName().equals(moduleName)
+            && importType.getName().equals(fieldName)) {
+          return true;
+        }
       }
+      return false;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return false;
   }
 
   @Override
@@ -428,17 +453,21 @@ public final class PanamaModule implements Module {
     if (other == null) {
       throw new IllegalArgumentException("other cannot be null");
     }
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    if (!(other instanceof PanamaModule)) {
-      return false;
+    try {
+      if (!(other instanceof PanamaModule)) {
+        return false;
+      }
+      final PanamaModule otherModule = (PanamaModule) other;
+      if (otherModule.resourceHandle.isClosed()) {
+        return false;
+      }
+      return NATIVE_BINDINGS.moduleSame(this.nativeModule, otherModule.nativeModule);
+    } finally {
+      resourceHandle.endOperation();
     }
-    final PanamaModule otherModule = (PanamaModule) other;
-    if (otherModule.resourceHandle.isClosed()) {
-      return false;
-    }
-    return NATIVE_BINDINGS.moduleSame(this.nativeModule, otherModule.nativeModule);
   }
 
   @Override
@@ -446,10 +475,14 @@ public final class PanamaModule implements Module {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
-    ensureNotClosed();
-    try (final java.lang.foreign.Arena localArena = java.lang.foreign.Arena.ofConfined()) {
-      final java.lang.foreign.MemorySegment nameSegment = localArena.allocateFrom(name);
-      return NATIVE_BINDINGS.moduleGetExportIndex(nativeModule, nameSegment);
+    resourceHandle.beginOperation();
+    try {
+      try (final java.lang.foreign.Arena localArena = java.lang.foreign.Arena.ofConfined()) {
+        final java.lang.foreign.MemorySegment nameSegment = localArena.allocateFrom(name);
+        return NATIVE_BINDINGS.moduleGetExportIndex(nativeModule, nameSegment);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -459,32 +492,36 @@ public final class PanamaModule implements Module {
     if (name == null) {
       throw new IllegalArgumentException("name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final java.lang.foreign.Arena localArena = java.lang.foreign.Arena.ofConfined()) {
-      final java.lang.foreign.MemorySegment nameSegment = localArena.allocateFrom(name);
-      final java.lang.foreign.MemorySegment outPtr =
-          localArena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
+      try (final java.lang.foreign.Arena localArena = java.lang.foreign.Arena.ofConfined()) {
+        final java.lang.foreign.MemorySegment nameSegment = localArena.allocateFrom(name);
+        final java.lang.foreign.MemorySegment outPtr =
+            localArena.allocate(java.lang.foreign.ValueLayout.ADDRESS);
 
-      final NativeInstanceBindings instanceBindings = NativeInstanceBindings.getInstance();
-      final int result =
-          instanceBindings.panamaModuleGetModuleExport(nativeModule, nameSegment, outPtr);
+        final NativeInstanceBindings instanceBindings = NativeInstanceBindings.getInstance();
+        final int result =
+            instanceBindings.panamaModuleGetModuleExport(nativeModule, nameSegment, outPtr);
 
-      if (result != 0) {
+        if (result != 0) {
+          return java.util.Optional.empty();
+        }
+
+        final java.lang.foreign.MemorySegment moduleExportPtr =
+            outPtr.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
+        if (moduleExportPtr.equals(java.lang.foreign.MemorySegment.NULL)
+            || moduleExportPtr.address() == 0) {
+          return java.util.Optional.empty();
+        }
+
+        return java.util.Optional.of(new PanamaModuleExport(name, moduleExportPtr));
+      } catch (final Exception e) {
+        LOGGER.warning("Error getting module export: " + name + " - " + e.getMessage());
         return java.util.Optional.empty();
       }
-
-      final java.lang.foreign.MemorySegment moduleExportPtr =
-          outPtr.get(java.lang.foreign.ValueLayout.ADDRESS, 0);
-      if (moduleExportPtr.equals(java.lang.foreign.MemorySegment.NULL)
-          || moduleExportPtr.address() == 0) {
-        return java.util.Optional.empty();
-      }
-
-      return java.util.Optional.of(new PanamaModuleExport(name, moduleExportPtr));
-    } catch (final Exception e) {
-      LOGGER.warning("Error getting module export: " + name + " - " + e.getMessage());
-      return java.util.Optional.empty();
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -498,18 +535,22 @@ public final class PanamaModule implements Module {
     if (imports == null) {
       throw new IllegalArgumentException("Imports cannot be null");
     }
-    ensureNotClosed();
-    final List<ImportType> requiredImports = getImports();
-    for (final ImportType requiredImport : requiredImports) {
-      if (!imports.contains(requiredImport.getModuleName(), requiredImport.getName())) {
-        LOGGER.fine(
-            String.format(
-                "Missing required import: %s.%s",
-                requiredImport.getModuleName(), requiredImport.getName()));
-        return false;
+    resourceHandle.beginOperation();
+    try {
+      final List<ImportType> requiredImports = getImports();
+      for (final ImportType requiredImport : requiredImports) {
+        if (!imports.contains(requiredImport.getModuleName(), requiredImport.getName())) {
+          LOGGER.fine(
+              String.format(
+                  "Missing required import: %s.%s",
+                  requiredImport.getModuleName(), requiredImport.getName()));
+          return false;
+        }
       }
+      return true;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return true;
   }
 
   @Override
@@ -518,179 +559,208 @@ public final class PanamaModule implements Module {
     if (imports == null) {
       throw new IllegalArgumentException("imports cannot be null");
     }
-    ensureNotClosed();
-    return ai.tegmentum.wasmtime4j.util.ModuleValidationSupport.validateImportsDetailed(
-        getImports(), imports);
+    resourceHandle.beginOperation();
+    try {
+      return ai.tegmentum.wasmtime4j.util.ModuleValidationSupport.validateImportsDetailed(
+          getImports(), imports);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public String getName() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
     try {
-      final MemorySegment namePtr = NATIVE_BINDINGS.moduleGetName(nativeModule);
-      if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
-        final String name = namePtr.reinterpret(Long.MAX_VALUE).getString(0);
-        NATIVE_BINDINGS.moduleFreeString(namePtr);
-        return name;
+      try {
+        final MemorySegment namePtr = NATIVE_BINDINGS.moduleGetName(nativeModule);
+        if (namePtr != null && !namePtr.equals(MemorySegment.NULL)) {
+          final String name = namePtr.reinterpret(Long.MAX_VALUE).getString(0);
+          NATIVE_BINDINGS.moduleFreeString(namePtr);
+          return name;
+        }
+      } catch (final Exception e) {
+        LOGGER.fine("Failed to get module name from native: " + e.getMessage());
       }
-    } catch (final Exception e) {
-      LOGGER.fine("Failed to get module name from native: " + e.getMessage());
+      return null;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return null;
   }
 
   @Override
   public void initializeCopyOnWriteImage() throws WasmException {
-    ensureNotClosed();
-    final int result = NATIVE_BINDINGS.moduleInitializeCowImage(nativeModule);
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to initialize copy-on-write image");
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_BINDINGS.moduleInitializeCowImage(nativeModule);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to initialize copy-on-write image");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.ImageRange imageRange() throws WasmException {
-    ensureNotClosed();
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment startPtr = localArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment endPtr = localArena.allocate(ValueLayout.JAVA_LONG);
-      final int result = NATIVE_BINDINGS.moduleImageRange(nativeModule, startPtr, endPtr);
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Failed to get module image range");
+    resourceHandle.beginOperation();
+    try {
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment startPtr = localArena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment endPtr = localArena.allocate(ValueLayout.JAVA_LONG);
+        final int result = NATIVE_BINDINGS.moduleImageRange(nativeModule, startPtr, endPtr);
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(result, "Failed to get module image range");
+        }
+        return new ai.tegmentum.wasmtime4j.ImageRange(
+            startPtr.get(ValueLayout.JAVA_LONG, 0), endPtr.get(ValueLayout.JAVA_LONG, 0));
       }
-      return new ai.tegmentum.wasmtime4j.ImageRange(
-          startPtr.get(ValueLayout.JAVA_LONG, 0), endPtr.get(ValueLayout.JAVA_LONG, 0));
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.ResourcesRequired resourcesRequired() {
-    ensureNotClosed();
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment minMemOut = localArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment maxMemOut = localArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment minTabOut = localArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment maxTabOut = localArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment numMemOut = localArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment numTabOut = localArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment numGlobOut = localArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment numFuncOut = localArena.allocate(ValueLayout.JAVA_INT);
+    resourceHandle.beginOperation();
+    try {
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment minMemOut = localArena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment maxMemOut = localArena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment minTabOut = localArena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment maxTabOut = localArena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment numMemOut = localArena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment numTabOut = localArena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment numGlobOut = localArena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment numFuncOut = localArena.allocate(ValueLayout.JAVA_INT);
 
-      final int result =
-          NATIVE_BINDINGS.moduleResourcesRequired(
-              nativeModule,
-              minMemOut,
-              maxMemOut,
-              minTabOut,
-              maxTabOut,
-              numMemOut,
-              numTabOut,
-              numGlobOut,
-              numFuncOut);
+        final int result =
+            NATIVE_BINDINGS.moduleResourcesRequired(
+                nativeModule,
+                minMemOut,
+                maxMemOut,
+                minTabOut,
+                maxTabOut,
+                numMemOut,
+                numTabOut,
+                numGlobOut,
+                numFuncOut);
 
-      if (result != 0) {
-        // Fall back to default implementation on error
-        return Module.super.resourcesRequired();
+        if (result != 0) {
+          // Fall back to default implementation on error
+          return Module.super.resourcesRequired();
+        }
+
+        final long maxTab = maxTabOut.get(ValueLayout.JAVA_LONG, 0);
+        return new ai.tegmentum.wasmtime4j.ResourcesRequired(
+            minMemOut.get(ValueLayout.JAVA_LONG, 0),
+            maxMemOut.get(ValueLayout.JAVA_LONG, 0),
+            (int) minTabOut.get(ValueLayout.JAVA_LONG, 0),
+            maxTab > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxTab,
+            numMemOut.get(ValueLayout.JAVA_INT, 0),
+            numTabOut.get(ValueLayout.JAVA_INT, 0),
+            numGlobOut.get(ValueLayout.JAVA_INT, 0),
+            numFuncOut.get(ValueLayout.JAVA_INT, 0));
       }
-
-      final long maxTab = maxTabOut.get(ValueLayout.JAVA_LONG, 0);
-      return new ai.tegmentum.wasmtime4j.ResourcesRequired(
-          minMemOut.get(ValueLayout.JAVA_LONG, 0),
-          maxMemOut.get(ValueLayout.JAVA_LONG, 0),
-          (int) minTabOut.get(ValueLayout.JAVA_LONG, 0),
-          maxTab > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) maxTab,
-          numMemOut.get(ValueLayout.JAVA_INT, 0),
-          numTabOut.get(ValueLayout.JAVA_INT, 0),
-          numGlobOut.get(ValueLayout.JAVA_INT, 0),
-          numFuncOut.get(ValueLayout.JAVA_INT, 0));
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public byte[] text() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena localArena = Arena.ofConfined()) {
-      final MemorySegment dataPtrPtr = localArena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment lenPtr = localArena.allocate(ValueLayout.JAVA_LONG);
+      try (final Arena localArena = Arena.ofConfined()) {
+        final MemorySegment dataPtrPtr = localArena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment lenPtr = localArena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result = NATIVE_BINDINGS.moduleText(nativeModule, dataPtrPtr, lenPtr);
-      if (result != 0) {
-        throw new WasmException("Failed to get module text");
+        final int result = NATIVE_BINDINGS.moduleText(nativeModule, dataPtrPtr, lenPtr);
+        if (result != 0) {
+          throw new WasmException("Failed to get module text");
+        }
+
+        final long length = lenPtr.get(ValueLayout.JAVA_LONG, 0);
+        final MemorySegment rawDataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (rawDataPtr == null || rawDataPtr.equals(MemorySegment.NULL) || length == 0) {
+          return new byte[0];
+        }
+
+        try {
+          final MemorySegment dataPtr = rawDataPtr.reinterpret(length);
+          final byte[] textBytes = new byte[(int) length];
+          MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, textBytes, 0, (int) length);
+          return textBytes;
+        } finally {
+          NATIVE_BINDINGS.freeByteArray(rawDataPtr, length);
+        }
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Throwable t) {
+        throw new WasmException("Failed to get module text: " + t.getMessage());
       }
-
-      final long length = lenPtr.get(ValueLayout.JAVA_LONG, 0);
-      final MemorySegment rawDataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
-
-      if (rawDataPtr == null || rawDataPtr.equals(MemorySegment.NULL) || length == 0) {
-        return new byte[0];
-      }
-
-      try {
-        final MemorySegment dataPtr = rawDataPtr.reinterpret(length);
-        final byte[] textBytes = new byte[(int) length];
-        MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, textBytes, 0, (int) length);
-        return textBytes;
-      } finally {
-        NATIVE_BINDINGS.freeByteArray(rawDataPtr, length);
-      }
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable t) {
-      throw new WasmException("Failed to get module text: " + t.getMessage());
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public java.util.List<AddressMapping> addressMap() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena localArena = Arena.ofConfined()) {
-      final MemorySegment codeOffsetsOut = localArena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment wasmOffsetsOut = localArena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment countOut = localArena.allocate(ValueLayout.JAVA_LONG);
+      try (final Arena localArena = Arena.ofConfined()) {
+        final MemorySegment codeOffsetsOut = localArena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment wasmOffsetsOut = localArena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment countOut = localArena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result =
-          NATIVE_BINDINGS.moduleAddressMap(nativeModule, codeOffsetsOut, wasmOffsetsOut, countOut);
+        final int result =
+            NATIVE_BINDINGS.moduleAddressMap(
+                nativeModule, codeOffsetsOut, wasmOffsetsOut, countOut);
 
-      if (result == 1) {
-        // Address map not available
-        return Collections.emptyList();
-      }
-      if (result != 0) {
-        throw new WasmException("Failed to get module address map");
-      }
-
-      final long count = countOut.get(ValueLayout.JAVA_LONG, 0);
-      if (count == 0) {
-        return Collections.emptyList();
-      }
-
-      final MemorySegment codeOffsetsPtr = codeOffsetsOut.get(ValueLayout.ADDRESS, 0);
-      final MemorySegment wasmOffsetsPtr = wasmOffsetsOut.get(ValueLayout.ADDRESS, 0);
-
-      try {
-        final MemorySegment codeOffsets = codeOffsetsPtr.reinterpret(count * Long.BYTES);
-        final MemorySegment wasmOffsets = wasmOffsetsPtr.reinterpret(count * Long.BYTES);
-
-        final java.util.List<AddressMapping> mappings = new java.util.ArrayList<>((int) count);
-        for (int i = 0; i < count; i++) {
-          final long codeOffset = codeOffsets.getAtIndex(ValueLayout.JAVA_LONG, i);
-          final long wasmOffsetRaw = wasmOffsets.getAtIndex(ValueLayout.JAVA_LONG, i);
-          final java.util.OptionalInt wasmOffset =
-              wasmOffsetRaw < 0
-                  ? java.util.OptionalInt.empty()
-                  : java.util.OptionalInt.of((int) wasmOffsetRaw);
-          mappings.add(new AddressMapping(codeOffset, wasmOffset));
+        if (result == 1) {
+          // Address map not available
+          return Collections.emptyList();
         }
-        return Collections.unmodifiableList(mappings);
-      } finally {
-        NATIVE_BINDINGS.freeAddressMap(codeOffsetsPtr, wasmOffsetsPtr, count);
+        if (result != 0) {
+          throw new WasmException("Failed to get module address map");
+        }
+
+        final long count = countOut.get(ValueLayout.JAVA_LONG, 0);
+        if (count == 0) {
+          return Collections.emptyList();
+        }
+
+        final MemorySegment codeOffsetsPtr = codeOffsetsOut.get(ValueLayout.ADDRESS, 0);
+        final MemorySegment wasmOffsetsPtr = wasmOffsetsOut.get(ValueLayout.ADDRESS, 0);
+
+        try {
+          final MemorySegment codeOffsets = codeOffsetsPtr.reinterpret(count * Long.BYTES);
+          final MemorySegment wasmOffsets = wasmOffsetsPtr.reinterpret(count * Long.BYTES);
+
+          final java.util.List<AddressMapping> mappings = new java.util.ArrayList<>((int) count);
+          for (int i = 0; i < count; i++) {
+            final long codeOffset = codeOffsets.getAtIndex(ValueLayout.JAVA_LONG, i);
+            final long wasmOffsetRaw = wasmOffsets.getAtIndex(ValueLayout.JAVA_LONG, i);
+            final java.util.OptionalInt wasmOffset =
+                wasmOffsetRaw < 0
+                    ? java.util.OptionalInt.empty()
+                    : java.util.OptionalInt.of((int) wasmOffsetRaw);
+            mappings.add(new AddressMapping(codeOffset, wasmOffset));
+          }
+          return Collections.unmodifiableList(mappings);
+        } finally {
+          NATIVE_BINDINGS.freeAddressMap(codeOffsetsPtr, wasmOffsetsPtr, count);
+        }
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Throwable t) {
+        throw new WasmException("Failed to get module address map: " + t.getMessage());
       }
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable t) {
-      throw new WasmException("Failed to get module address map: " + t.getMessage());
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -701,38 +771,42 @@ public final class PanamaModule implements Module {
 
   @Override
   public byte[] serialize() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena localArena = Arena.ofConfined()) {
-      final MemorySegment dataPtrPtr = localArena.allocate(ValueLayout.ADDRESS);
-      final MemorySegment lenPtr = localArena.allocate(ValueLayout.JAVA_LONG);
+      try (final Arena localArena = Arena.ofConfined()) {
+        final MemorySegment dataPtrPtr = localArena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment lenPtr = localArena.allocate(ValueLayout.JAVA_LONG);
 
-      final int result = NATIVE_BINDINGS.moduleSerialize(nativeModule, dataPtrPtr, lenPtr);
+        final int result = NATIVE_BINDINGS.moduleSerialize(nativeModule, dataPtrPtr, lenPtr);
 
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Failed to serialize module");
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(result, "Failed to serialize module");
+        }
+
+        final long length = lenPtr.get(ValueLayout.JAVA_LONG, 0);
+        final MemorySegment rawDataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (rawDataPtr == null || rawDataPtr.equals(MemorySegment.NULL) || length == 0) {
+          return new byte[0];
+        }
+
+        try {
+          final MemorySegment dataPtr = rawDataPtr.reinterpret(length);
+          final byte[] serialized = new byte[(int) length];
+          MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, serialized, 0, (int) length);
+          LOGGER.fine("Serialized module to " + length + " bytes");
+          return serialized;
+        } finally {
+          NATIVE_BINDINGS.freeByteArray(rawDataPtr, length);
+        }
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Throwable t) {
+        throw new WasmException("Failed to serialize module: " + t.getMessage());
       }
-
-      final long length = lenPtr.get(ValueLayout.JAVA_LONG, 0);
-      final MemorySegment rawDataPtr = dataPtrPtr.get(ValueLayout.ADDRESS, 0);
-
-      if (rawDataPtr == null || rawDataPtr.equals(MemorySegment.NULL) || length == 0) {
-        return new byte[0];
-      }
-
-      try {
-        final MemorySegment dataPtr = rawDataPtr.reinterpret(length);
-        final byte[] serialized = new byte[(int) length];
-        MemorySegment.copy(dataPtr, ValueLayout.JAVA_BYTE, 0, serialized, 0, (int) length);
-        LOGGER.fine("Serialized module to " + length + " bytes");
-        return serialized;
-      } finally {
-        NATIVE_BINDINGS.freeByteArray(rawDataPtr, length);
-      }
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable t) {
-      throw new WasmException("Failed to serialize module: " + t.getMessage());
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -938,22 +1012,26 @@ public final class PanamaModule implements Module {
 
   @Override
   public Iterable<ai.tegmentum.wasmtime4j.func.FunctionInfo> functions() {
-    ensureNotClosed();
-
-    final java.lang.foreign.MemorySegment jsonPtr =
-        NATIVE_BINDINGS.moduleGetAllFunctions(nativeModule);
-    if (jsonPtr == null || jsonPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
-      return java.util.Collections.emptyList();
-    }
-
+    resourceHandle.beginOperation();
     try {
-      final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
-      if (jsonString == null || jsonString.isEmpty() || jsonString.equals("[]")) {
+
+      final java.lang.foreign.MemorySegment jsonPtr =
+          NATIVE_BINDINGS.moduleGetAllFunctions(nativeModule);
+      if (jsonPtr == null || jsonPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
         return java.util.Collections.emptyList();
       }
-      return parseFunctionsJson(jsonString);
+
+      try {
+        final String jsonString = jsonPtr.reinterpret(Long.MAX_VALUE).getString(0);
+        if (jsonString == null || jsonString.isEmpty() || jsonString.equals("[]")) {
+          return java.util.Collections.emptyList();
+        }
+        return parseFunctionsJson(jsonString);
+      } finally {
+        NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+      }
     } finally {
-      NATIVE_BINDINGS.moduleFreeString(jsonPtr);
+      resourceHandle.endOperation();
     }
   }
 
@@ -1071,14 +1149,5 @@ public final class PanamaModule implements Module {
       default:
         return ai.tegmentum.wasmtime4j.type.ValType.i32();
     }
-  }
-
-  /**
-   * Ensures the module is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

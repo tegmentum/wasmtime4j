@@ -201,6 +201,14 @@ JNIEXPORT jboolean JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_refIsNu
 
 /*
  * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
+ * Method:    releaseObjectNative
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniGcRuntime_releaseObjectNative
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniGcRuntime
  * Method:    collectGarbageNative
  * Signature: (J)Ljava/lang/Object;
  */

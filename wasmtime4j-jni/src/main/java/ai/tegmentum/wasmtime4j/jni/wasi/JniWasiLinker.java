@@ -57,7 +57,9 @@ public final class JniWasiLinker implements WasiLinker {
   private final JniLinker<Object> linker;
   private final JniEngine engine;
   private final WasiConfig initialConfig;
-  private boolean closed;
+  private volatile boolean closed;
+  private final java.util.concurrent.locks.ReadWriteLock closeLock =
+      new java.util.concurrent.locks.ReentrantReadWriteLock();
 
   // Accumulated configuration
   private final Map<Path, DirectoryMapping> directoryMappings;
@@ -104,155 +106,202 @@ public final class JniWasiLinker implements WasiLinker {
   @Override
   public void allowDirectoryAccess(final Path hostPath, final String guestPath)
       throws WasmException {
-    ensureNotClosed();
     if (hostPath == null) {
       throw new IllegalArgumentException("Host path cannot be null");
     }
     if (guestPath == null) {
       throw new IllegalArgumentException("Guest path cannot be null");
     }
-
-    directoryMappings.put(hostPath, new DirectoryMapping(guestPath));
-    LOGGER.fine("Added directory mapping: " + hostPath + " -> " + guestPath);
+    beginOperation();
+    try {
+      directoryMappings.put(hostPath, new DirectoryMapping(guestPath));
+      LOGGER.fine("Added directory mapping: " + hostPath + " -> " + guestPath);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void setEnvironmentVariable(final String name, final String value) {
-    ensureNotClosed();
     if (name == null) {
       throw new IllegalArgumentException("Environment variable name cannot be null");
     }
-
-    environmentVariables.put(name, value);
-    LOGGER.fine("Set environment variable: " + name);
+    beginOperation();
+    try {
+      environmentVariables.put(name, value);
+      LOGGER.fine("Set environment variable: " + name);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void setEnvironmentVariables(final Map<String, String> environment) {
-    ensureNotClosed();
     if (environment == null) {
       throw new IllegalArgumentException("Environment map cannot be null");
     }
-
-    environmentVariables.putAll(environment);
-    LOGGER.fine("Added " + environment.size() + " environment variables");
+    beginOperation();
+    try {
+      environmentVariables.putAll(environment);
+      LOGGER.fine("Added " + environment.size() + " environment variables");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void inheritEnvironment() throws WasmException {
-    ensureNotClosed();
-    inheritAllEnvironment = true;
-    LOGGER.fine("Enabled full environment inheritance");
+    beginOperation();
+    try {
+      inheritAllEnvironment = true;
+      LOGGER.fine("Enabled full environment inheritance");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void inheritEnvironmentVariables(final List<String> variableNames) throws WasmException {
-    ensureNotClosed();
     if (variableNames == null) {
       throw new IllegalArgumentException("Variable names list cannot be null");
     }
-
-    inheritedEnvironmentVariables = new ArrayList<>(variableNames);
-    LOGGER.fine("Set " + variableNames.size() + " environment variables to inherit");
+    beginOperation();
+    try {
+      inheritedEnvironmentVariables = new ArrayList<>(variableNames);
+      LOGGER.fine("Set " + variableNames.size() + " environment variables to inherit");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void setArguments(final List<String> args) {
-    ensureNotClosed();
     if (args == null) {
       throw new IllegalArgumentException("Arguments list cannot be null");
     }
-
-    arguments.clear();
-    arguments.addAll(args);
-    LOGGER.fine("Set " + args.size() + " command line arguments");
+    beginOperation();
+    try {
+      arguments.clear();
+      arguments.addAll(args);
+      LOGGER.fine("Set " + args.size() + " command line arguments");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void configureStdin(final WasiStdioConfig config) throws WasmException {
-    ensureNotClosed();
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
-
-    stdinConfig = config;
-    LOGGER.fine("Configured stdin: " + config.getType());
+    beginOperation();
+    try {
+      stdinConfig = config;
+      LOGGER.fine("Configured stdin: " + config.getType());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void configureStdout(final WasiStdioConfig config) throws WasmException {
-    ensureNotClosed();
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
-
-    stdoutConfig = config;
-    LOGGER.fine("Configured stdout: " + config.getType());
+    beginOperation();
+    try {
+      stdoutConfig = config;
+      LOGGER.fine("Configured stdout: " + config.getType());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void configureStderr(final WasiStdioConfig config) throws WasmException {
-    ensureNotClosed();
     if (config == null) {
       throw new IllegalArgumentException("Config cannot be null");
     }
-
-    stderrConfig = config;
-    LOGGER.fine("Configured stderr: " + config.getType());
+    beginOperation();
+    try {
+      stderrConfig = config;
+      LOGGER.fine("Configured stderr: " + config.getType());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void enableNetworkAccess() throws WasmException {
-    ensureNotClosed();
-    networkEnabled = true;
-    LOGGER.fine("Enabled network access");
+    beginOperation();
+    try {
+      networkEnabled = true;
+      LOGGER.fine("Enabled network access");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void disableNetworkAccess() {
-    ensureNotClosed();
-    networkEnabled = false;
-    LOGGER.fine("Disabled network access");
+    beginOperation();
+    try {
+      networkEnabled = false;
+      LOGGER.fine("Disabled network access");
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void setMaxFileSize(final Long maxSizeBytes) {
-    ensureNotClosed();
-    maxFileSize = maxSizeBytes;
-    LOGGER.fine("Set max file size: " + maxSizeBytes);
+    beginOperation();
+    try {
+      maxFileSize = maxSizeBytes;
+      LOGGER.fine("Set max file size: " + maxSizeBytes);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void setMaxOpenFiles(final Integer max) {
-    ensureNotClosed();
-    maxOpenFiles = max;
-    LOGGER.fine("Set max open files: " + max);
+    beginOperation();
+    try {
+      maxOpenFiles = max;
+      LOGGER.fine("Set max open files: " + max);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public Instance instantiate(final Store store, final Module module) throws WasmException {
-    ensureNotClosed();
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
+    beginOperation();
+    try {
+      // Build WASI context from accumulated configuration
+      final WasiContext context = buildWasiContext();
 
-    // Build WASI context from accumulated configuration
-    final WasiContext context = buildWasiContext();
+      // Add WASI to linker with the configured context
+      // Note: We use raw type cast here because JniWasiLinker wraps a generic linker
+      // but addWasiToLinker expects Linker<WasiContext>. This is safe because the linker
+      // is only used for WASI module instantiation within this class.
+      final JniWasmRuntime runtime = new JniWasmRuntime();
+      @SuppressWarnings("unchecked")
+      final Linker<WasiContext> wasiLinker = (Linker<WasiContext>) (Linker<?>) linker;
+      runtime.addWasiToLinker(wasiLinker, context);
 
-    // Add WASI to linker with the configured context
-    // Note: We use raw type cast here because JniWasiLinker wraps a generic linker
-    // but addWasiToLinker expects Linker<WasiContext>. This is safe because the linker
-    // is only used for WASI module instantiation within this class.
-    final JniWasmRuntime runtime = new JniWasmRuntime();
-    @SuppressWarnings("unchecked")
-    final Linker<WasiContext> wasiLinker = (Linker<WasiContext>) (Linker<?>) linker;
-    runtime.addWasiToLinker(wasiLinker, context);
-
-    // Instantiate with the configured linker
-    return linker.instantiate(store, module);
+      // Instantiate with the configured linker
+      return linker.instantiate(store, module);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -424,8 +473,12 @@ public final class JniWasiLinker implements WasiLinker {
 
   @Override
   public Linker<?> getLinker() {
-    ensureNotClosed();
-    return linker;
+    beginOperation();
+    try {
+      return linker;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -445,17 +498,28 @@ public final class JniWasiLinker implements WasiLinker {
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-      linker.close();
-      LOGGER.fine("Closed JniWasiLinker");
+    closeLock.writeLock().lock();
+    try {
+      if (!closed) {
+        closed = true;
+        linker.close();
+        LOGGER.fine("Closed JniWasiLinker");
+      }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 
-  private void ensureNotClosed() {
+  private void beginOperation() {
+    closeLock.readLock().lock();
     if (closed) {
+      closeLock.readLock().unlock();
       throw new IllegalStateException("WASI linker has been closed");
     }
+  }
+
+  private void endOperation() {
+    closeLock.readLock().unlock();
   }
 
   /** Internal class to hold directory mapping configuration. */

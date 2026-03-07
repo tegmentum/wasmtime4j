@@ -48,6 +48,8 @@ public final class JniInstancePre implements InstancePre {
   private final Engine engine;
   private final Instant creationTime;
   private final AtomicBoolean closed = new AtomicBoolean(false);
+  private final java.util.concurrent.locks.ReadWriteLock closeLock =
+      new java.util.concurrent.locks.ReentrantReadWriteLock();
 
   /**
    * Creates a new JniInstancePre with the given native handle.
@@ -71,20 +73,23 @@ public final class JniInstancePre implements InstancePre {
   @Override
   public Instance instantiate(final Store store) throws WasmException {
     Objects.requireNonNull(store, "store cannot be null");
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance for JNI InstancePre");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance for JNI InstancePre");
+      final JniStore jniStore = (JniStore) store;
+      final long instanceHandle = nativeInstantiate(nativeHandle, jniStore.getNativeHandle());
+
+      if (instanceHandle == 0) {
+        throw new WasmException("Failed to instantiate from InstancePre");
+      }
+
+      return new JniInstance(instanceHandle, module, store);
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-    final long instanceHandle = nativeInstantiate(nativeHandle, jniStore.getNativeHandle());
-
-    if (instanceHandle == 0) {
-      throw new WasmException("Failed to instantiate from InstancePre");
-    }
-
-    return new JniInstance(instanceHandle, module, store);
   }
 
   @Override
@@ -92,28 +97,27 @@ public final class JniInstancePre implements InstancePre {
     Objects.requireNonNull(store, "store cannot be null");
     return CompletableFuture.supplyAsync(
         () -> {
+          beginOperation();
           try {
-            ensureNotClosed();
-          } catch (final WasmException e) {
-            throw new java.util.concurrent.CompletionException(e);
+            if (!(store instanceof JniStore)) {
+              throw new java.util.concurrent.CompletionException(
+                  new IllegalArgumentException(
+                      "Store must be a JniStore instance for JNI InstancePre"));
+            }
+
+            final JniStore jniStore = (JniStore) store;
+            final long instanceHandle =
+                nativeInstantiateAsync(nativeHandle, jniStore.getNativeHandle());
+
+            if (instanceHandle == 0) {
+              throw new java.util.concurrent.CompletionException(
+                  new WasmException("Failed to async instantiate from InstancePre"));
+            }
+
+            return new JniInstance(instanceHandle, module, store);
+          } finally {
+            endOperation();
           }
-
-          if (!(store instanceof JniStore)) {
-            throw new java.util.concurrent.CompletionException(
-                new IllegalArgumentException(
-                    "Store must be a JniStore instance for JNI InstancePre"));
-          }
-
-          final JniStore jniStore = (JniStore) store;
-          final long instanceHandle =
-              nativeInstantiateAsync(nativeHandle, jniStore.getNativeHandle());
-
-          if (instanceHandle == 0) {
-            throw new java.util.concurrent.CompletionException(
-                new WasmException("Failed to async instantiate from InstancePre"));
-          }
-
-          return new JniInstance(instanceHandle, module, store);
         });
   }
 
@@ -121,12 +125,15 @@ public final class JniInstancePre implements InstancePre {
   public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
     Objects.requireNonNull(store, "store cannot be null");
     Objects.requireNonNull(imports, "imports cannot be null");
-    ensureNotClosed();
-
-    // For now, InstancePre doesn't support additional imports - it uses what was defined
-    // in the linker at pre-instantiation time. Just call the regular instantiate.
-    LOGGER.fine("instantiate with ImportMap called - imports are resolved at pre-instantiation");
-    return instantiate(store);
+    beginOperation();
+    try {
+      // For now, InstancePre doesn't support additional imports - it uses what was defined
+      // in the linker at pre-instantiation time. Just call the regular instantiate.
+      LOGGER.fine("instantiate with ImportMap called - imports are resolved at pre-instantiation");
+      return instantiate(store);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -175,9 +182,14 @@ public final class JniInstancePre implements InstancePre {
 
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      nativeDestroy(nativeHandle);
-      LOGGER.fine("Closed JniInstancePre with handle: " + nativeHandle);
+    closeLock.writeLock().lock();
+    try {
+      if (closed.compareAndSet(false, true)) {
+        nativeDestroy(nativeHandle);
+        LOGGER.fine("Closed JniInstancePre with handle: " + nativeHandle);
+      }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 
@@ -190,10 +202,16 @@ public final class JniInstancePre implements InstancePre {
     return nativeHandle;
   }
 
-  private void ensureNotClosed() throws WasmException {
+  private void beginOperation() {
+    closeLock.readLock().lock();
     if (closed.get()) {
-      throw new WasmException("InstancePre has been closed");
+      closeLock.readLock().unlock();
+      throw new IllegalStateException("InstancePre has been closed");
     }
+  }
+
+  private void endOperation() {
+    closeLock.readLock().unlock();
   }
 
   @Override

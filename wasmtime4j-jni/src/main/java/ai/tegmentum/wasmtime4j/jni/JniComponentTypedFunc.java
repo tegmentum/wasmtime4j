@@ -21,6 +21,7 @@ import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
 /**
@@ -39,6 +40,7 @@ public final class JniComponentTypedFunc implements ComponentTypedFunc {
   private final JniComponentFunc function;
   private final String signature;
   private volatile boolean closed = false;
+  private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
 
   /**
    * Creates a new typed component function wrapper.
@@ -56,186 +58,290 @@ public final class JniComponentTypedFunc implements ComponentTypedFunc {
 
   @Override
   public void callVoidToVoid() throws WasmException {
-    ensureNotClosed();
-    function.call();
+    beginOperation();
+    try {
+      function.call();
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void callS32ToVoid(final int param) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.s32(param));
+    beginOperation();
+    try {
+      function.call(ComponentVal.s32(param));
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void callS32S32ToVoid(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
+    beginOperation();
+    try {
+      function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void callS64ToVoid(final long param) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.s64(param));
+    beginOperation();
+    try {
+      function.call(ComponentVal.s64(param));
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void callS64S64ToVoid(final long param1, final long param2) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.s64(param1), ComponentVal.s64(param2));
+    beginOperation();
+    try {
+      function.call(ComponentVal.s64(param1), ComponentVal.s64(param2));
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void callStringToVoid(final String param) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.string(param));
+    beginOperation();
+    try {
+      function.call(ComponentVal.string(param));
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public int callS32ToS32(final int param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call(ComponentVal.s32(param));
-    return extractS32Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call(ComponentVal.s32(param));
+      return extractS32Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public int callS32S32ToS32(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
-    return extractS32Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
+      return extractS32Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public int callS32S32S32ToS32(final int param1, final int param2, final int param3)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.s32(param1), ComponentVal.s32(param2), ComponentVal.s32(param3));
-    return extractS32Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(
+              ComponentVal.s32(param1), ComponentVal.s32(param2), ComponentVal.s32(param3));
+      return extractS32Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public int callS64ToS32(final long param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call(ComponentVal.s64(param));
-    return extractS32Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call(ComponentVal.s64(param));
+      return extractS32Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long callS64ToS64(final long param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call(ComponentVal.s64(param));
-    return extractS64Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call(ComponentVal.s64(param));
+      return extractS64Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long callS64S64ToS64(final long param1, final long param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.s64(param1), ComponentVal.s64(param2));
-    return extractS64Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(ComponentVal.s64(param1), ComponentVal.s64(param2));
+      return extractS64Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long callS64S64S64ToS64(final long param1, final long param2, final long param3)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.s64(param1), ComponentVal.s64(param2), ComponentVal.s64(param3));
-    return extractS64Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(
+              ComponentVal.s64(param1), ComponentVal.s64(param2), ComponentVal.s64(param3));
+      return extractS64Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long callS32S32ToS64(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
-    return extractS64Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
+      return extractS64Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public float callF32ToF32(final float param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call(ComponentVal.f32(param));
-    return extractF32Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call(ComponentVal.f32(param));
+      return extractF32Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public float callF32F32ToF32(final float param1, final float param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.f32(param1), ComponentVal.f32(param2));
-    return extractF32Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(ComponentVal.f32(param1), ComponentVal.f32(param2));
+      return extractF32Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public float callF32F32F32ToF32(final float param1, final float param2, final float param3)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.f32(param1), ComponentVal.f32(param2), ComponentVal.f32(param3));
-    return extractF32Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(
+              ComponentVal.f32(param1), ComponentVal.f32(param2), ComponentVal.f32(param3));
+      return extractF32Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public double callF64ToF64(final double param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call(ComponentVal.f64(param));
-    return extractF64Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call(ComponentVal.f64(param));
+      return extractF64Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public double callF64F64ToF64(final double param1, final double param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.f64(param1), ComponentVal.f64(param2));
-    return extractF64Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(ComponentVal.f64(param1), ComponentVal.f64(param2));
+      return extractF64Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public double callF64F64F64ToF64(final double param1, final double param2, final double param3)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.f64(param1), ComponentVal.f64(param2), ComponentVal.f64(param3));
-    return extractF64Result(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(
+              ComponentVal.f64(param1), ComponentVal.f64(param2), ComponentVal.f64(param3));
+      return extractF64Result(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public String callVoidToString() throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call();
-    return extractStringResult(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call();
+      return extractStringResult(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public String callStringToString(final String param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call(ComponentVal.string(param));
-    return extractStringResult(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call(ComponentVal.string(param));
+      return extractStringResult(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public String callStringStringToString(final String param1, final String param2)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result =
-        function.call(ComponentVal.string(param1), ComponentVal.string(param2));
-    return extractStringResult(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result =
+          function.call(ComponentVal.string(param1), ComponentVal.string(param2));
+      return extractStringResult(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean callVoidToBool() throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call();
-    return extractBoolResult(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call();
+      return extractBoolResult(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean callBoolToBool(final boolean param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> result = function.call(ComponentVal.bool(param));
-    return extractBoolResult(result);
+    beginOperation();
+    try {
+      final List<ComponentVal> result = function.call(ComponentVal.bool(param));
+      return extractBoolResult(result);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -250,24 +356,27 @@ public final class JniComponentTypedFunc implements ComponentTypedFunc {
 
   @Override
   public void close() {
-    if (!closed) {
-      closed = true;
-      LOGGER.fine("Closed JniComponentTypedFunc with signature: " + signature);
+    closeLock.writeLock().lock();
+    try {
+      if (!closed) {
+        closed = true;
+        LOGGER.fine("Closed JniComponentTypedFunc with signature: " + signature);
+      }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 
-  /**
-   * Ensures this typed function has not been closed.
-   *
-   * @throws WasmException if the function has been closed
-   */
-  private void ensureNotClosed() throws WasmException {
+  private void beginOperation() {
+    closeLock.readLock().lock();
     if (closed) {
-      throw new WasmException("ComponentTypedFunc has been closed");
+      closeLock.readLock().unlock();
+      throw new IllegalStateException("ComponentTypedFunc has been closed");
     }
-    if (!function.isValid()) {
-      throw new WasmException("Underlying component function is no longer valid");
-    }
+  }
+
+  private void endOperation() {
+    closeLock.readLock().unlock();
   }
 
   /**

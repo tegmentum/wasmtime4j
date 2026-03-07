@@ -73,13 +73,16 @@ public final class JniNnGraph extends JniResource implements NnGraph {
 
   @Override
   public NnGraphExecutionContext createExecutionContext() throws NnException {
-    ensureNotClosed();
-
-    final long execHandle = nativeCreateExecCtx(nativeHandle);
-    if (execHandle == 0) {
-      throw new NnException("Failed to create execution context");
+    beginOperation();
+    try {
+      final long execHandle = nativeCreateExecCtx(nativeHandle);
+      if (execHandle == 0) {
+        throw new NnException("Failed to create execution context");
+      }
+      return new JniNnGraphExecutionContext(execHandle, this);
+    } finally {
+      endOperation();
     }
-    return new JniNnGraphExecutionContext(execHandle, this);
   }
 
   @Override

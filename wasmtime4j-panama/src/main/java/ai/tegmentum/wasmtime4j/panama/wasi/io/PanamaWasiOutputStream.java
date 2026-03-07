@@ -236,11 +236,10 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
   @Override
   public long checkWrite() throws WasmException {
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outCapacity = arena.allocate(ValueLayout.JAVA_LONG);
 
@@ -261,6 +260,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error checking write capacity: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -270,11 +271,10 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw new IllegalArgumentException("Contents cannot be null");
     }
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment buffer = arena.allocateFrom(ValueLayout.JAVA_BYTE, contents);
 
@@ -291,6 +291,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error writing to output stream: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -300,11 +302,10 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw new IllegalArgumentException("Contents cannot be null");
     }
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment buffer = arena.allocateFrom(ValueLayout.JAVA_BYTE, contents);
 
@@ -323,17 +324,18 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error performing blocking write and flush: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void flush() throws WasmException {
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try {
       final int result = (int) FLUSH_HANDLE.invoke(contextHandle, nativeHandle);
 
@@ -345,17 +347,18 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error flushing output stream: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void blockingFlush() throws WasmException {
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try {
       final int result = (int) BLOCKING_FLUSH_HANDLE.invoke(contextHandle, nativeHandle);
 
@@ -367,6 +370,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error performing blocking flush: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -374,11 +379,10 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
   public void writeZeroes(final long length) throws WasmException {
     Validation.requireNonNegative(length, "length");
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try {
       final int result = (int) WRITE_ZEROES_HANDLE.invoke(contextHandle, nativeHandle, length);
 
@@ -390,6 +394,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error writing zeroes: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -397,11 +403,10 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
   public void blockingWriteZeroesAndFlush(final long length) throws WasmException {
     Validation.requireNonNegative(length, "length");
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try {
       final int result =
           (int) BLOCKING_WRITE_ZEROES_AND_FLUSH_HANDLE.invoke(contextHandle, nativeHandle, length);
@@ -415,6 +420,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     } catch (final Throwable e) {
       throw new WasmException(
           "Error performing blocking write zeroes and flush: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -425,44 +432,48 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     }
     Validation.requireNonNegative(length, "length");
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
-    // Get the native handle from the source stream
-    if (!(source instanceof PanamaWasiInputStream)) {
-      throw new IllegalArgumentException(
-          "Source stream must be a PanamaWasiInputStream, got: " + source.getClass().getName());
-    }
-    final MemorySegment sourceHandle;
     try {
-      sourceHandle = ((PanamaWasiInputStream) source).getNativeHandle();
-    } catch (final IllegalStateException e) {
-      throw new WasmException("Source stream is closed: " + e.getMessage(), e);
-    }
-
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment outSpliced = arena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result =
-          (int) SPLICE_HANDLE.invoke(contextHandle, nativeHandle, sourceHandle, length, outSpliced);
-
-      if (result != 0) {
-        throw new WasmException("Failed to splice streams");
+      // Get the native handle from the source stream
+      if (!(source instanceof PanamaWasiInputStream)) {
+        throw new IllegalArgumentException(
+            "Source stream must be a PanamaWasiInputStream, got: " + source.getClass().getName());
+      }
+      final MemorySegment sourceHandle;
+      try {
+        sourceHandle = ((PanamaWasiInputStream) source).getNativeHandle();
+      } catch (final IllegalStateException e) {
+        throw new WasmException("Source stream is closed: " + e.getMessage(), e);
       }
 
-      final long spliced = outSpliced.get(ValueLayout.JAVA_LONG, 0);
-      if (spliced < 0) {
-        throw new WasmException("Invalid spliced count: " + spliced);
+      try (final Arena arena = Arena.ofConfined()) {
+        final MemorySegment outSpliced = arena.allocate(ValueLayout.JAVA_LONG);
+
+        final int result =
+            (int)
+                SPLICE_HANDLE.invoke(contextHandle, nativeHandle, sourceHandle, length, outSpliced);
+
+        if (result != 0) {
+          throw new WasmException("Failed to splice streams");
+        }
+
+        final long spliced = outSpliced.get(ValueLayout.JAVA_LONG, 0);
+        if (spliced < 0) {
+          throw new WasmException("Invalid spliced count: " + spliced);
+        }
+
+        return spliced;
+
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Throwable e) {
+        throw new WasmException("Error splicing streams: " + e.getMessage(), e);
       }
-
-      return spliced;
-
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw new WasmException("Error splicing streams: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -473,57 +484,59 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     }
     Validation.requireNonNegative(length, "length");
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
-    // Get the native handle from the source stream
-    if (!(source instanceof PanamaWasiInputStream)) {
-      throw new IllegalArgumentException(
-          "Source stream must be a PanamaWasiInputStream, got: " + source.getClass().getName());
-    }
-    final MemorySegment sourceHandle;
     try {
-      sourceHandle = ((PanamaWasiInputStream) source).getNativeHandle();
-    } catch (final IllegalStateException e) {
-      throw new WasmException("Source stream is closed: " + e.getMessage(), e);
-    }
-
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment outSpliced = arena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result =
-          (int)
-              BLOCKING_SPLICE_HANDLE.invoke(
-                  contextHandle, nativeHandle, sourceHandle, length, outSpliced);
-
-      if (result != 0) {
-        throw new WasmException("Failed to perform blocking splice");
+      // Get the native handle from the source stream
+      if (!(source instanceof PanamaWasiInputStream)) {
+        throw new IllegalArgumentException(
+            "Source stream must be a PanamaWasiInputStream, got: " + source.getClass().getName());
+      }
+      final MemorySegment sourceHandle;
+      try {
+        sourceHandle = ((PanamaWasiInputStream) source).getNativeHandle();
+      } catch (final IllegalStateException e) {
+        throw new WasmException("Source stream is closed: " + e.getMessage(), e);
       }
 
-      final long spliced = outSpliced.get(ValueLayout.JAVA_LONG, 0);
-      if (spliced < 0) {
-        throw new WasmException("Invalid spliced count: " + spliced);
+      try (final Arena arena = Arena.ofConfined()) {
+        final MemorySegment outSpliced = arena.allocate(ValueLayout.JAVA_LONG);
+
+        final int result =
+            (int)
+                BLOCKING_SPLICE_HANDLE.invoke(
+                    contextHandle, nativeHandle, sourceHandle, length, outSpliced);
+
+        if (result != 0) {
+          throw new WasmException("Failed to perform blocking splice");
+        }
+
+        final long spliced = outSpliced.get(ValueLayout.JAVA_LONG, 0);
+        if (spliced < 0) {
+          throw new WasmException("Invalid spliced count: " + spliced);
+        }
+
+        return spliced;
+
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Throwable e) {
+        throw new WasmException("Error performing blocking splice: " + e.getMessage(), e);
       }
-
-      return spliced;
-
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Throwable e) {
-      throw new WasmException("Error performing blocking splice: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public WasiPollable subscribe() throws WasmException {
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-
     try {
       final MemorySegment pollableHandle =
           (MemorySegment) SUBSCRIBE_HANDLE.invoke(contextHandle, nativeHandle);
@@ -538,6 +551,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error creating pollable: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -576,77 +591,80 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw new IllegalArgumentException("Operation cannot be null or empty");
     }
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
+    try {
+      switch (operation) {
+        case "check-write":
+          return checkWrite();
 
-    switch (operation) {
-      case "check-write":
-        return checkWrite();
+        case "write":
+          if (parameters.length < 1 || !(parameters[0] instanceof byte[])) {
+            throw new IllegalArgumentException("write requires a byte[] parameter");
+          }
+          write((byte[]) parameters[0]);
+          return null;
 
-      case "write":
-        if (parameters.length < 1 || !(parameters[0] instanceof byte[])) {
-          throw new IllegalArgumentException("write requires a byte[] parameter");
-        }
-        write((byte[]) parameters[0]);
-        return null;
+        case "blocking-write-and-flush":
+          if (parameters.length < 1 || !(parameters[0] instanceof byte[])) {
+            throw new IllegalArgumentException(
+                "blocking-write-and-flush requires a byte[] parameter");
+          }
+          blockingWriteAndFlush((byte[]) parameters[0]);
+          return null;
 
-      case "blocking-write-and-flush":
-        if (parameters.length < 1 || !(parameters[0] instanceof byte[])) {
-          throw new IllegalArgumentException(
-              "blocking-write-and-flush requires a byte[] parameter");
-        }
-        blockingWriteAndFlush((byte[]) parameters[0]);
-        return null;
+        case "flush":
+          flush();
+          return null;
 
-      case "flush":
-        flush();
-        return null;
+        case "blocking-flush":
+          blockingFlush();
+          return null;
 
-      case "blocking-flush":
-        blockingFlush();
-        return null;
+        case "write-zeroes":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("write-zeroes requires a length parameter");
+          }
+          writeZeroes(((Number) parameters[0]).longValue());
+          return null;
 
-      case "write-zeroes":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("write-zeroes requires a length parameter");
-        }
-        writeZeroes(((Number) parameters[0]).longValue());
-        return null;
+        case "blocking-write-zeroes-and-flush":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException(
+                "blocking-write-zeroes-and-flush requires a length parameter");
+          }
+          blockingWriteZeroesAndFlush(((Number) parameters[0]).longValue());
+          return null;
 
-      case "blocking-write-zeroes-and-flush":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException(
-              "blocking-write-zeroes-and-flush requires a length parameter");
-        }
-        blockingWriteZeroesAndFlush(((Number) parameters[0]).longValue());
-        return null;
+        case "splice":
+          if (parameters.length < 2
+              || !(parameters[0] instanceof WasiInputStream)
+              || !(parameters[1] instanceof Number)) {
+            throw new IllegalArgumentException(
+                "splice requires a WasiInputStream and length parameter");
+          }
+          return splice((WasiInputStream) parameters[0], ((Number) parameters[1]).longValue());
 
-      case "splice":
-        if (parameters.length < 2
-            || !(parameters[0] instanceof WasiInputStream)
-            || !(parameters[1] instanceof Number)) {
-          throw new IllegalArgumentException(
-              "splice requires a WasiInputStream and length parameter");
-        }
-        return splice((WasiInputStream) parameters[0], ((Number) parameters[1]).longValue());
+        case "blocking-splice":
+          if (parameters.length < 2
+              || !(parameters[0] instanceof WasiInputStream)
+              || !(parameters[1] instanceof Number)) {
+            throw new IllegalArgumentException(
+                "blocking-splice requires a WasiInputStream and length parameter");
+          }
+          return blockingSplice(
+              (WasiInputStream) parameters[0], ((Number) parameters[1]).longValue());
 
-      case "blocking-splice":
-        if (parameters.length < 2
-            || !(parameters[0] instanceof WasiInputStream)
-            || !(parameters[1] instanceof Number)) {
-          throw new IllegalArgumentException(
-              "blocking-splice requires a WasiInputStream and length parameter");
-        }
-        return blockingSplice(
-            (WasiInputStream) parameters[0], ((Number) parameters[1]).longValue());
+        case "subscribe":
+          return subscribe();
 
-      case "subscribe":
-        return subscribe();
-
-      default:
-        throw new WasmException("Unknown operation: " + operation);
+        default:
+          throw new WasmException("Unknown operation: " + operation);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -664,8 +682,12 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
    * @return the native memory segment
    */
   public MemorySegment getNativeHandle() {
-    ensureNotClosed();
-    return nativeHandle;
+    resourceHandle.beginOperation();
+    try {
+      return nativeHandle;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -680,9 +702,5 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
   @Override
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

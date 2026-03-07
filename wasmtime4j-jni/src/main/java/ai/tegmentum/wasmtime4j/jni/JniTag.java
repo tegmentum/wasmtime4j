@@ -52,42 +52,45 @@ public final class JniTag extends JniResource implements Tag {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+      final JniStore jniStore = (JniStore) store;
+      if (jniStore.isClosed()) {
+        throw new WasmException("Store is closed");
+      }
+      final long currentStoreHandle = jniStore.getNativeHandle();
+
+      // Validate store matches
+      if (currentStoreHandle != storeHandle) {
+        LOGGER.warning("Tag accessed with different store than it was created with");
+      }
+
+      final int[] paramTypes = nativeGetParamTypes(getNativeHandle(), currentStoreHandle);
+      final int[] returnTypes = nativeGetReturnTypes(getNativeHandle(), currentStoreHandle);
+
+      // Convert native type codes to Java types
+      final ai.tegmentum.wasmtime4j.WasmValueType[] params =
+          new ai.tegmentum.wasmtime4j.WasmValueType[paramTypes.length];
+      for (int i = 0; i < paramTypes.length; i++) {
+        params[i] = ai.tegmentum.wasmtime4j.WasmValueType.fromNativeTypeCode(paramTypes[i]);
+      }
+
+      final ai.tegmentum.wasmtime4j.WasmValueType[] returns =
+          new ai.tegmentum.wasmtime4j.WasmValueType[returnTypes.length];
+      for (int i = 0; i < returnTypes.length; i++) {
+        returns[i] = ai.tegmentum.wasmtime4j.WasmValueType.fromNativeTypeCode(returnTypes[i]);
+      }
+
+      final ai.tegmentum.wasmtime4j.type.FunctionType funcType =
+          new ai.tegmentum.wasmtime4j.type.FunctionType(params, returns);
+      return TagType.create(funcType);
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-    if (jniStore.isClosed()) {
-      throw new WasmException("Store is closed");
-    }
-    final long currentStoreHandle = jniStore.getNativeHandle();
-
-    // Validate store matches
-    if (currentStoreHandle != storeHandle) {
-      LOGGER.warning("Tag accessed with different store than it was created with");
-    }
-
-    final int[] paramTypes = nativeGetParamTypes(getNativeHandle(), currentStoreHandle);
-    final int[] returnTypes = nativeGetReturnTypes(getNativeHandle(), currentStoreHandle);
-
-    // Convert native type codes to Java types
-    final ai.tegmentum.wasmtime4j.WasmValueType[] params =
-        new ai.tegmentum.wasmtime4j.WasmValueType[paramTypes.length];
-    for (int i = 0; i < paramTypes.length; i++) {
-      params[i] = ai.tegmentum.wasmtime4j.WasmValueType.fromNativeTypeCode(paramTypes[i]);
-    }
-
-    final ai.tegmentum.wasmtime4j.WasmValueType[] returns =
-        new ai.tegmentum.wasmtime4j.WasmValueType[returnTypes.length];
-    for (int i = 0; i < returnTypes.length; i++) {
-      returns[i] = ai.tegmentum.wasmtime4j.WasmValueType.fromNativeTypeCode(returnTypes[i]);
-    }
-
-    final ai.tegmentum.wasmtime4j.type.FunctionType funcType =
-        new ai.tegmentum.wasmtime4j.type.FunctionType(params, returns);
-    return TagType.create(funcType);
   }
 
   @Override
@@ -98,18 +101,21 @@ public final class JniTag extends JniResource implements Tag {
     if (!(other instanceof JniTag)) {
       return false;
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+      final JniStore jniStore = (JniStore) store;
+      if (jniStore.isClosed()) {
+        throw new WasmException("Store is closed");
+      }
+      return nativeEquals(
+          getNativeHandle(), ((JniTag) other).getNativeHandle(), jniStore.getNativeHandle());
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-    if (jniStore.isClosed()) {
-      throw new WasmException("Store is closed");
-    }
-    return nativeEquals(
-        getNativeHandle(), ((JniTag) other).getNativeHandle(), jniStore.getNativeHandle());
   }
 
   /**

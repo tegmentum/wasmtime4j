@@ -86,29 +86,33 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
 
   @Override
   public ComponentInstance instantiate() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
 
-      final int errorCode =
-          NATIVE_BINDINGS.componentInstancePreInstantiate(nativePreHandle, instanceOutPtr);
+        final int errorCode =
+            NATIVE_BINDINGS.componentInstancePreInstantiate(nativePreHandle, instanceOutPtr);
 
-      if (errorCode != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            errorCode, "Failed to instantiate from ComponentInstancePre");
+        if (errorCode != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              errorCode, "Failed to instantiate from ComponentInstancePre");
+        }
+
+        final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException(
+              "Failed to instantiate from ComponentInstancePre: null instance returned");
+        }
+
+        LOGGER.fine("Successfully instantiated component from ComponentInstancePre");
+
+        return new PanamaComponentInstance(instancePtr, component, null, this);
       }
-
-      final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
-
-      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException(
-            "Failed to instantiate from ComponentInstancePre: null instance returned");
-      }
-
-      LOGGER.fine("Successfully instantiated component from ComponentInstancePre");
-
-      return new PanamaComponentInstance(instancePtr, component, null, this);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -117,34 +121,39 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
     if (config == null) {
       throw new IllegalArgumentException("config must not be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment instanceOutPtr = tempArena.allocate(ValueLayout.ADDRESS);
 
-      final int errorCode =
-          NATIVE_BINDINGS.componentInstancePreInstantiateWithConfig(
-              nativePreHandle,
-              config.getFuelLimit(),
-              config.getEpochDeadline(),
-              config.getMaxMemoryBytes(),
-              instanceOutPtr);
+        final int errorCode =
+            NATIVE_BINDINGS.componentInstancePreInstantiateWithConfig(
+                nativePreHandle,
+                config.getFuelLimit(),
+                config.getEpochDeadline(),
+                config.getMaxMemoryBytes(),
+                instanceOutPtr);
 
-      if (errorCode != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            errorCode, "Failed to instantiate from ComponentInstancePre with config");
+        if (errorCode != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              errorCode, "Failed to instantiate from ComponentInstancePre with config");
+        }
+
+        final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
+
+        if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+          throw new WasmException(
+              "Failed to instantiate from ComponentInstancePre with config: null instance"
+                  + " returned");
+        }
+
+        LOGGER.fine("Successfully instantiated component from ComponentInstancePre with config");
+
+        return new PanamaComponentInstance(instancePtr, component, null, this);
       }
-
-      final MemorySegment instancePtr = instanceOutPtr.get(ValueLayout.ADDRESS, 0);
-
-      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
-        throw new WasmException(
-            "Failed to instantiate from ComponentInstancePre with config: null instance returned");
-      }
-
-      LOGGER.fine("Successfully instantiated component from ComponentInstancePre with config");
-
-      return new PanamaComponentInstance(instancePtr, component, null, this);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -160,34 +169,50 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
 
   @Override
   public boolean isValid() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.componentInstancePreIsValid(nativePreHandle) == 1;
+    try {
+      return NATIVE_BINDINGS.componentInstancePreIsValid(nativePreHandle) == 1;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long getInstanceCount() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return 0;
     }
-    return NATIVE_BINDINGS.componentInstancePreInstanceCount(nativePreHandle);
+    try {
+      return NATIVE_BINDINGS.componentInstancePreInstanceCount(nativePreHandle);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long getPreparationTimeNs() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return 0;
     }
-    return NATIVE_BINDINGS.componentInstancePrePreparationTimeNs(nativePreHandle);
+    try {
+      return NATIVE_BINDINGS.componentInstancePrePreparationTimeNs(nativePreHandle);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long getAverageInstantiationTimeNs() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return 0;
     }
-    return NATIVE_BINDINGS.componentInstancePreAvgInstantiationTimeNs(nativePreHandle);
+    try {
+      return NATIVE_BINDINGS.componentInstancePreAvgInstantiationTimeNs(nativePreHandle);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -202,9 +227,5 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
    */
   public MemorySegment getNativeHandle() {
     return nativePreHandle;
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

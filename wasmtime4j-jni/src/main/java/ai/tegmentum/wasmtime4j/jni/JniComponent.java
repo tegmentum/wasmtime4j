@@ -532,19 +532,23 @@ public final class JniComponent {
      */
     public JniComponentHandle loadComponentFromBytes(final byte[] wasmBytes) throws WasmException {
       Validation.requireNonEmpty(wasmBytes, "wasmBytes");
-      ensureNotClosed();
-
-      final byte[] wasmBytesCopy = Validation.defensiveCopy(wasmBytes);
-
+      beginOperation();
       try {
-        final long componentHandle = nativeLoadComponentFromBytes(getNativeHandle(), wasmBytesCopy);
-        Validation.requireValidHandle(componentHandle, "componentHandle");
-        return new JniComponentHandle(componentHandle);
-      } catch (final Exception e) {
-        if (e instanceof JniException) {
-          throw new WasmException(e.getMessage(), e);
+        final byte[] wasmBytesCopy = Validation.defensiveCopy(wasmBytes);
+
+        try {
+          final long componentHandle =
+              nativeLoadComponentFromBytes(getNativeHandle(), wasmBytesCopy);
+          Validation.requireValidHandle(componentHandle, "componentHandle");
+          return new JniComponentHandle(componentHandle);
+        } catch (final Exception e) {
+          if (e instanceof JniException) {
+            throw new WasmException(e.getMessage(), e);
+          }
+          throw new WasmException("Failed to load component from bytes", e);
         }
-        throw new WasmException("Failed to load component from bytes", e);
+      } finally {
+        endOperation();
       }
     }
 
@@ -562,22 +566,26 @@ public final class JniComponent {
     public JniComponentInstanceHandle instantiateComponent(final JniComponentHandle component)
         throws WasmException {
       Validation.requireNonNull(component, "component");
-      ensureNotClosed();
-      if (component.isClosed()) {
-        throw new JniResourceException("Component has been closed");
-      }
-
+      beginOperation();
       try {
-        final long engineHandle = getNativeHandle();
-        final long instanceId =
-            nativeInstantiateComponent(engineHandle, component.getNativeHandle());
-        Validation.requireValidHandle(instanceId, "instanceId");
-        return new JniComponentInstanceHandle(engineHandle, instanceId);
-      } catch (final Exception e) {
-        if (e instanceof JniException) {
-          throw new WasmException(e.getMessage(), e);
+        if (component.isClosed()) {
+          throw new JniResourceException("Component has been closed");
         }
-        throw new WasmException("Failed to instantiate component", e);
+
+        try {
+          final long engineHandle = getNativeHandle();
+          final long instanceId =
+              nativeInstantiateComponent(engineHandle, component.getNativeHandle());
+          Validation.requireValidHandle(instanceId, "instanceId");
+          return new JniComponentInstanceHandle(engineHandle, instanceId);
+        } catch (final Exception e) {
+          if (e instanceof JniException) {
+            throw new WasmException(e.getMessage(), e);
+          }
+          throw new WasmException("Failed to instantiate component", e);
+        }
+      } finally {
+        endOperation();
       }
     }
 
@@ -589,12 +597,13 @@ public final class JniComponent {
      * @throws JniException if operation fails
      */
     public int getActiveInstancesCount() throws JniException {
-      ensureNotClosed();
-
+      beginOperation();
       try {
         return nativeGetActiveInstancesCount(getNativeHandle());
       } catch (final Exception e) {
         throw new JniException("Failed to get active instances count", e);
+      } finally {
+        endOperation();
       }
     }
 
@@ -609,12 +618,13 @@ public final class JniComponent {
      * @throws JniException if operation fails
      */
     public int cleanupInstances() throws JniException {
-      ensureNotClosed();
-
+      beginOperation();
       try {
         return nativeCleanupInstances(getNativeHandle());
       } catch (final Exception e) {
         throw new JniException("Failed to cleanup instances", e);
+      } finally {
+        endOperation();
       }
     }
 
@@ -663,12 +673,13 @@ public final class JniComponent {
      * @throws WasmException if operation fails
      */
     public long getSize() throws WasmException {
-      ensureNotClosed();
-
+      beginOperation();
       try {
         return nativeGetComponentSize(getNativeHandle());
       } catch (final Exception e) {
         throw new WasmException("Failed to get component size", e);
+      } finally {
+        endOperation();
       }
     }
 
@@ -682,12 +693,13 @@ public final class JniComponent {
      */
     public boolean exportsInterface(final String interfaceName) throws WasmException {
       Validation.requireNonEmpty(interfaceName, "interfaceName");
-      ensureNotClosed();
-
+      beginOperation();
       try {
         return nativeExportsInterface(getNativeHandle(), interfaceName);
       } catch (final Exception e) {
         throw new WasmException("Failed to check exported interface", e);
+      } finally {
+        endOperation();
       }
     }
 
@@ -701,12 +713,13 @@ public final class JniComponent {
      */
     public boolean importsInterface(final String interfaceName) throws WasmException {
       Validation.requireNonEmpty(interfaceName, "interfaceName");
-      ensureNotClosed();
-
+      beginOperation();
       try {
         return nativeImportsInterface(getNativeHandle(), interfaceName);
       } catch (final Exception e) {
         throw new WasmException("Failed to check imported interface", e);
+      } finally {
+        endOperation();
       }
     }
 

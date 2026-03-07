@@ -112,6 +112,13 @@ impl WasmtimeGcOperations {
         })
     }
 
+    /// Remove a GC object by ID, allowing the GC to collect it.
+    ///
+    /// Returns `true` if the object existed and was removed.
+    pub fn remove_object(&mut self, object_id: ObjectId) -> bool {
+        self.gc_objects.remove(&object_id).is_some()
+    }
+
     /// Generate a unique internal object ID for GC references
     fn next_object_id(&self) -> ObjectId {
         self.next_internal_object_id

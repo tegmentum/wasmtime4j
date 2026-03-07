@@ -187,7 +187,7 @@ public final class JniWastRunnerTest {
 
     // Should throw WastExecutionException
     assertThrows(
-        JniWastRunner.WastExecutionException.class,
+        ai.tegmentum.wasmtime4j.wast.WastRunner.WastExecutionException.class,
         () -> {
           JniWastRunner.executeWastStringOrThrow("fail.wast", wastContent);
         },

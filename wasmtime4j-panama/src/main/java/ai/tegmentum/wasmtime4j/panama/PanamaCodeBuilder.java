@@ -64,9 +64,13 @@ final class PanamaCodeBuilder implements CodeBuilder {
     if (bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be empty");
     }
-    resourceHandle.ensureNotClosed();
-    NATIVE_BINDINGS.codeBuilderWasmBinary(nativeHandle, bytes);
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.codeBuilderWasmBinary(nativeHandle, bytes);
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -77,9 +81,13 @@ final class PanamaCodeBuilder implements CodeBuilder {
     if (bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be empty");
     }
-    resourceHandle.ensureNotClosed();
-    NATIVE_BINDINGS.codeBuilderWasmBinaryOrText(nativeHandle, bytes);
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.codeBuilderWasmBinaryOrText(nativeHandle, bytes);
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -90,9 +98,13 @@ final class PanamaCodeBuilder implements CodeBuilder {
     if (bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be empty");
     }
-    resourceHandle.ensureNotClosed();
-    NATIVE_BINDINGS.codeBuilderDwarfPackage(nativeHandle, bytes);
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.codeBuilderDwarfPackage(nativeHandle, bytes);
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -100,9 +112,13 @@ final class PanamaCodeBuilder implements CodeBuilder {
     if (hint == null) {
       throw new IllegalArgumentException("hint cannot be null");
     }
-    resourceHandle.ensureNotClosed();
-    NATIVE_BINDINGS.codeBuilderHint(nativeHandle, hint.ordinal());
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.codeBuilderHint(nativeHandle, hint.ordinal());
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -113,9 +129,13 @@ final class PanamaCodeBuilder implements CodeBuilder {
     if (bytes == null || bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be null or empty");
     }
-    resourceHandle.ensureNotClosed();
-    NATIVE_BINDINGS.codeBuilderCompileTimeBuiltinsBinary(nativeHandle, name, bytes);
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.codeBuilderCompileTimeBuiltinsBinary(nativeHandle, name, bytes);
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -126,9 +146,13 @@ final class PanamaCodeBuilder implements CodeBuilder {
     if (bytes == null || bytes.length == 0) {
       throw new IllegalArgumentException("bytes cannot be null or empty");
     }
-    resourceHandle.ensureNotClosed();
-    NATIVE_BINDINGS.codeBuilderCompileTimeBuiltinsBinaryOrText(nativeHandle, name, bytes);
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.codeBuilderCompileTimeBuiltinsBinaryOrText(nativeHandle, name, bytes);
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -136,41 +160,62 @@ final class PanamaCodeBuilder implements CodeBuilder {
     if (importName == null || importName.isEmpty()) {
       throw new IllegalArgumentException("importName cannot be null or empty");
     }
-    resourceHandle.ensureNotClosed();
-    NATIVE_BINDINGS.codeBuilderExposeUnsafeIntrinsics(nativeHandle, importName);
-    return this;
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.codeBuilderExposeUnsafeIntrinsics(nativeHandle, importName);
+      return this;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public Module compileModule() throws WasmException {
-    resourceHandle.ensureNotClosed();
-    final MemorySegment moduleHandle = NATIVE_BINDINGS.codeBuilderCompileModule(nativeHandle);
-    if (moduleHandle == null || moduleHandle.equals(MemorySegment.NULL)) {
-      throw new WasmException("Failed to compile module via CodeBuilder");
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment moduleHandle = NATIVE_BINDINGS.codeBuilderCompileModule(nativeHandle);
+      if (moduleHandle == null || moduleHandle.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to compile module via CodeBuilder");
+      }
+      return new PanamaModule(moduleHandle);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return new PanamaModule(moduleHandle);
   }
 
   @Override
   public byte[] compileModuleSerialized() throws WasmException {
-    resourceHandle.ensureNotClosed();
-    return NATIVE_BINDINGS.codeBuilderCompileModuleSerialized(nativeHandle);
+    resourceHandle.beginOperation();
+    try {
+      return NATIVE_BINDINGS.codeBuilderCompileModuleSerialized(nativeHandle);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long compileComponent() throws WasmException {
-    resourceHandle.ensureNotClosed();
-    final MemorySegment componentHandle = NATIVE_BINDINGS.codeBuilderCompileComponent(nativeHandle);
-    if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
-      throw new WasmException("Failed to compile component via CodeBuilder");
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment componentHandle =
+          NATIVE_BINDINGS.codeBuilderCompileComponent(nativeHandle);
+      if (componentHandle == null || componentHandle.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to compile component via CodeBuilder");
+      }
+      return componentHandle.address();
+    } finally {
+      resourceHandle.endOperation();
     }
-    return componentHandle.address();
   }
 
   @Override
   public byte[] compileComponentSerialized() throws WasmException {
-    resourceHandle.ensureNotClosed();
-    return NATIVE_BINDINGS.codeBuilderCompileComponentSerialized(nativeHandle);
+    resourceHandle.beginOperation();
+    try {
+      return NATIVE_BINDINGS.codeBuilderCompileComponentSerialized(nativeHandle);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override

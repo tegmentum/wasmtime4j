@@ -76,19 +76,22 @@ public final class JniNnGraphExecutionContext extends JniResource
         throw new IllegalArgumentException("Input tensor at index " + i + " cannot be null");
       }
     }
-    ensureNotClosed();
-
-    // Set each input tensor
-    for (int i = 0; i < inputs.size(); i++) {
-      final NnTensor tensor = inputs.get(i);
-      if (tensor.isNamed()) {
-        setInput(tensor.getName(), tensor);
-      } else {
-        setInput(i, tensor);
+    beginOperation();
+    try {
+      // Set each input tensor
+      for (int i = 0; i < inputs.size(); i++) {
+        final NnTensor tensor = inputs.get(i);
+        if (tensor.isNamed()) {
+          setInput(tensor.getName(), tensor);
+        } else {
+          setInput(i, tensor);
+        }
       }
-    }
 
-    return computeNoInputs();
+      return computeNoInputs();
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -102,13 +105,16 @@ public final class JniNnGraphExecutionContext extends JniResource
         throw new IllegalArgumentException("Input tensor at index " + i + " cannot be null");
       }
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      for (int i = 0; i < inputs.length; i++) {
+        setInput(i, inputs[i]);
+      }
 
-    for (int i = 0; i < inputs.length; i++) {
-      setInput(i, inputs[i]);
+      return computeNoInputs();
+    } finally {
+      endOperation();
     }
-
-    return computeNoInputs();
   }
 
   @Override
@@ -117,52 +123,61 @@ public final class JniNnGraphExecutionContext extends JniResource
     if (index < 0) {
       throw new IndexOutOfBoundsException("Input index cannot be negative: " + index);
     }
-    ensureNotClosed();
-
-    nativeSetInputByIndex(
-        nativeHandle,
-        index,
-        tensor.getDimensions(),
-        tensor.getType().getNativeCode(),
-        tensor.getData());
+    beginOperation();
+    try {
+      nativeSetInputByIndex(
+          nativeHandle,
+          index,
+          tensor.getDimensions(),
+          tensor.getType().getNativeCode(),
+          tensor.getData());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void setInput(final String name, final NnTensor tensor) throws NnException {
     Objects.requireNonNull(name, "name cannot be null");
     Objects.requireNonNull(tensor, "tensor cannot be null");
-    ensureNotClosed();
-
-    nativeSetInputByName(
-        nativeHandle,
-        name,
-        tensor.getDimensions(),
-        tensor.getType().getNativeCode(),
-        tensor.getData());
+    beginOperation();
+    try {
+      nativeSetInputByName(
+          nativeHandle,
+          name,
+          tensor.getDimensions(),
+          tensor.getType().getNativeCode(),
+          tensor.getData());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public List<NnTensor> computeNoInputs() throws NnException {
-    ensureNotClosed();
+    beginOperation();
+    try {
+      // Run inference
+      nativeCompute(nativeHandle);
 
-    // Run inference
-    nativeCompute(nativeHandle);
-
-    // Probe outputs starting from index 0 until we get a null/error
-    final List<NnTensor> outputs = new ArrayList<>();
-    for (int i = 0; i < 1024; i++) {
-      try {
-        final byte[] serialized = nativeGetOutputByIndex(nativeHandle, i);
-        if (serialized == null) {
+      // Probe outputs starting from index 0 until we get a null/error
+      final List<NnTensor> outputs = new ArrayList<>();
+      for (int i = 0; i < 1024; i++) {
+        try {
+          final byte[] serialized = nativeGetOutputByIndex(nativeHandle, i);
+          if (serialized == null) {
+            break;
+          }
+          outputs.add(NnTensor.deserializeFromNative(null, serialized));
+        } catch (NnException e) {
+          // No more outputs available
           break;
         }
-        outputs.add(NnTensor.deserializeFromNative(null, serialized));
-      } catch (NnException e) {
-        // No more outputs available
-        break;
       }
+      return outputs;
+    } finally {
+      endOperation();
     }
-    return outputs;
   }
 
   @Override
@@ -170,25 +185,31 @@ public final class JniNnGraphExecutionContext extends JniResource
     if (index < 0) {
       throw new IndexOutOfBoundsException("Output index cannot be negative: " + index);
     }
-    ensureNotClosed();
-
-    final byte[] serialized = nativeGetOutputByIndex(nativeHandle, index);
-    if (serialized == null) {
-      throw new NnException("Failed to get output tensor at index " + index);
+    beginOperation();
+    try {
+      final byte[] serialized = nativeGetOutputByIndex(nativeHandle, index);
+      if (serialized == null) {
+        throw new NnException("Failed to get output tensor at index " + index);
+      }
+      return NnTensor.deserializeFromNative(null, serialized);
+    } finally {
+      endOperation();
     }
-    return NnTensor.deserializeFromNative(null, serialized);
   }
 
   @Override
   public NnTensor getOutput(final String name) throws NnException {
     Objects.requireNonNull(name, "name cannot be null");
-    ensureNotClosed();
-
-    final byte[] serialized = nativeGetOutputByName(nativeHandle, name);
-    if (serialized == null) {
-      throw new NnException("Failed to get output tensor with name: " + name);
+    beginOperation();
+    try {
+      final byte[] serialized = nativeGetOutputByName(nativeHandle, name);
+      if (serialized == null) {
+        throw new NnException("Failed to get output tensor with name: " + name);
+      }
+      return NnTensor.deserializeFromNative(name, serialized);
+    } finally {
+      endOperation();
     }
-    return NnTensor.deserializeFromNative(name, serialized);
   }
 
   @Override

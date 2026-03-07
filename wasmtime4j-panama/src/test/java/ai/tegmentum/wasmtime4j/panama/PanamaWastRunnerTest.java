@@ -178,7 +178,7 @@ public final class PanamaWastRunnerTest {
 
     // Should throw WastExecutionException
     assertThrows(
-        PanamaWastRunner.WastExecutionException.class,
+        ai.tegmentum.wasmtime4j.wast.WastRunner.WastExecutionException.class,
         () -> {
           PanamaWastRunner.executeWastStringOrThrow("fail.wast", wastContent);
         },

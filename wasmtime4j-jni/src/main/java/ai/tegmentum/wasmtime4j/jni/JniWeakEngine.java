@@ -46,15 +46,19 @@ final class JniWeakEngine extends JniResource implements WeakEngine {
 
   @Override
   public Optional<Engine> upgrade() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return Optional.empty();
     }
-    final long enginePtr = nativeUpgrade(nativeHandle);
-    if (enginePtr == 0) {
-      return Optional.empty();
+    try {
+      final long enginePtr = nativeUpgrade(nativeHandle);
+      if (enginePtr == 0) {
+        return Optional.empty();
+      }
+      return Optional.of(
+          new JniEngine(enginePtr, sourceEngine.getRuntime(), sourceEngine.getConfig()));
+    } finally {
+      endOperation();
     }
-    return Optional.of(
-        new JniEngine(enginePtr, sourceEngine.getRuntime(), sourceEngine.getConfig()));
   }
 
   @Override

@@ -84,26 +84,30 @@ public final class PanamaInstancePre implements InstancePre {
   @Override
   public Instance instantiate(final Store store) throws WasmException {
     Objects.requireNonNull(store, "store cannot be null");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException(
-          "Store must be a PanamaStore instance for Panama InstancePre");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException(
+            "Store must be a PanamaStore instance for Panama InstancePre");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final MemorySegment instancePtr =
+          NATIVE_BINDINGS.instancePreInstantiate(nativeInstancePre, panamaStore.getNativeStore());
+
+      if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to instantiate from InstancePre");
+      }
+
+      if (!(module instanceof PanamaModule)) {
+        throw new WasmException("Module must be a PanamaModule for Panama InstancePre");
+      }
+
+      return new PanamaInstance(instancePtr, (PanamaModule) module, panamaStore);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final MemorySegment instancePtr =
-        NATIVE_BINDINGS.instancePreInstantiate(nativeInstancePre, panamaStore.getNativeStore());
-
-    if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
-      throw new WasmException("Failed to instantiate from InstancePre");
-    }
-
-    if (!(module instanceof PanamaModule)) {
-      throw new WasmException("Module must be a PanamaModule for Panama InstancePre");
-    }
-
-    return new PanamaInstance(instancePtr, (PanamaModule) module, panamaStore);
   }
 
   @Override
@@ -111,30 +115,34 @@ public final class PanamaInstancePre implements InstancePre {
     Objects.requireNonNull(store, "store cannot be null");
     return CompletableFuture.supplyAsync(
         () -> {
-          ensureNotClosed();
+          resourceHandle.beginOperation();
+          try {
 
-          if (!(store instanceof PanamaStore)) {
-            throw new java.util.concurrent.CompletionException(
-                new IllegalArgumentException(
-                    "Store must be a PanamaStore instance for Panama InstancePre"));
+            if (!(store instanceof PanamaStore)) {
+              throw new java.util.concurrent.CompletionException(
+                  new IllegalArgumentException(
+                      "Store must be a PanamaStore instance for Panama InstancePre"));
+            }
+
+            final PanamaStore panamaStore = (PanamaStore) store;
+            final MemorySegment instancePtr =
+                NATIVE_BINDINGS.instancePreInstantiateAsync(
+                    nativeInstancePre, panamaStore.getNativeStore());
+
+            if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
+              throw new java.util.concurrent.CompletionException(
+                  new WasmException("Failed to async instantiate from InstancePre"));
+            }
+
+            if (!(module instanceof PanamaModule)) {
+              throw new java.util.concurrent.CompletionException(
+                  new WasmException("Module must be a PanamaModule for Panama InstancePre"));
+            }
+
+            return new PanamaInstance(instancePtr, (PanamaModule) module, panamaStore);
+          } finally {
+            resourceHandle.endOperation();
           }
-
-          final PanamaStore panamaStore = (PanamaStore) store;
-          final MemorySegment instancePtr =
-              NATIVE_BINDINGS.instancePreInstantiateAsync(
-                  nativeInstancePre, panamaStore.getNativeStore());
-
-          if (instancePtr == null || instancePtr.equals(MemorySegment.NULL)) {
-            throw new java.util.concurrent.CompletionException(
-                new WasmException("Failed to async instantiate from InstancePre"));
-          }
-
-          if (!(module instanceof PanamaModule)) {
-            throw new java.util.concurrent.CompletionException(
-                new WasmException("Module must be a PanamaModule for Panama InstancePre"));
-          }
-
-          return new PanamaInstance(instancePtr, (PanamaModule) module, panamaStore);
         });
   }
 
@@ -142,12 +150,16 @@ public final class PanamaInstancePre implements InstancePre {
   public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
     Objects.requireNonNull(store, "store cannot be null");
     Objects.requireNonNull(imports, "imports cannot be null");
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // For now, InstancePre doesn't support additional imports - it uses what was defined
-    // in the linker at pre-instantiation time. Just call the regular instantiate.
-    LOGGER.fine("instantiate with ImportMap called - imports are resolved at pre-instantiation");
-    return instantiate(store);
+      // For now, InstancePre doesn't support additional imports - it uses what was defined
+      // in the linker at pre-instantiation time. Just call the regular instantiate.
+      LOGGER.fine("instantiate with ImportMap called - imports are resolved at pre-instantiation");
+      return instantiate(store);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -162,38 +174,50 @@ public final class PanamaInstancePre implements InstancePre {
 
   @Override
   public boolean isValid() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.instancePreIsValid(nativeInstancePre) != 0;
+    try {
+      return NATIVE_BINDINGS.instancePreIsValid(nativeInstancePre) != 0;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long getInstanceCount() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return 0;
     }
-    return NATIVE_BINDINGS.instancePreGetInstanceCount(nativeInstancePre);
+    try {
+      return NATIVE_BINDINGS.instancePreGetInstanceCount(nativeInstancePre);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public PreInstantiationStatistics getStatistics() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return PreInstantiationStatistics.builder().build();
     }
+    try {
 
-    final long preparationTimeNs =
-        NATIVE_BINDINGS.instancePreGetPreparationTimeNs(nativeInstancePre);
-    final long avgInstantiationTimeNs =
-        NATIVE_BINDINGS.instancePreGetAvgInstantiationTimeNs(nativeInstancePre);
-    final long instanceCount = NATIVE_BINDINGS.instancePreGetInstanceCount(nativeInstancePre);
+      final long preparationTimeNs =
+          NATIVE_BINDINGS.instancePreGetPreparationTimeNs(nativeInstancePre);
+      final long avgInstantiationTimeNs =
+          NATIVE_BINDINGS.instancePreGetAvgInstantiationTimeNs(nativeInstancePre);
+      final long instanceCount = NATIVE_BINDINGS.instancePreGetInstanceCount(nativeInstancePre);
 
-    return PreInstantiationStatistics.builder()
-        .creationTime(creationTime)
-        .preparationTime(Duration.ofNanos(preparationTimeNs))
-        .instancesCreated(instanceCount)
-        .averageInstantiationTime(Duration.ofNanos(avgInstantiationTimeNs))
-        .build();
+      return PreInstantiationStatistics.builder()
+          .creationTime(creationTime)
+          .preparationTime(Duration.ofNanos(preparationTimeNs))
+          .instancesCreated(instanceCount)
+          .averageInstantiationTime(Duration.ofNanos(avgInstantiationTimeNs))
+          .build();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -208,10 +232,6 @@ public final class PanamaInstancePre implements InstancePre {
    */
   public MemorySegment getNativeInstancePre() {
     return nativeInstancePre;
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 
   @Override

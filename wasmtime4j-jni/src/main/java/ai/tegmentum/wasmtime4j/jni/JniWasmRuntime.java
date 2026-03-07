@@ -250,8 +250,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new IllegalArgumentException("Execution timeout cannot be negative");
     }
 
-    validateRuntimeState();
-
+    beginOperation();
     try {
       if (!(engine instanceof JniEngine)) {
         throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
@@ -287,6 +286,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
         throw (WasmException) e;
       }
       throw new WasmException("Unexpected error creating store with resource limits", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -294,10 +295,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public Tag createTag(final Store store, final TagType tagType) throws WasmException {
     Validation.requireNonNull(store, "store");
     Validation.requireNonNull(tagType, "tagType");
-    if (!isValid()) {
-      throw new IllegalStateException("JNI runtime is not valid or has been closed");
-    }
-
+    beginOperation();
     try {
       if (!(store instanceof JniStore)) {
         throw new IllegalArgumentException("Store must be a JniStore instance for JNI runtime");
@@ -335,6 +333,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
         throw (WasmException) e;
       }
       throw new WasmException("Unexpected error creating tag", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -348,10 +348,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public ai.tegmentum.wasmtime4j.gc.GcRuntime createGcRuntime(final Engine engine)
       throws WasmException {
     Validation.requireNonNull(engine, "engine");
-    if (!isValid()) {
-      throw new IllegalStateException("JNI runtime is not valid or has been closed");
-    }
-
+    beginOperation();
     try {
       if (!(engine instanceof JniEngine)) {
         throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
@@ -366,32 +363,36 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       return gcRuntime;
     } catch (final Exception e) {
       throw new WasmException("Unexpected error creating GC runtime", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.gc.GcRuntime getGcRuntime() throws WasmException {
-    if (!isValid()) {
-      throw new IllegalStateException("JNI runtime is not valid or has been closed");
-    }
+    beginOperation();
+    try {
 
-    // Double-checked locking for lazy initialization
-    if (defaultGcRuntime == null) {
-      synchronized (gcRuntimeLock) {
-        if (defaultGcRuntime == null) {
-          try {
-            // Create a default engine for the GC runtime — store it so we can close it later
-            final Engine engine = createEngine();
-            gcRuntimeEngine = engine;
-            defaultGcRuntime = createGcRuntime(engine);
-            LOGGER.fine("Created default GC runtime with lazy initialization");
-          } catch (final Exception e) {
-            throw new WasmException("Failed to create default GC runtime", e);
+      // Double-checked locking for lazy initialization
+      if (defaultGcRuntime == null) {
+        synchronized (gcRuntimeLock) {
+          if (defaultGcRuntime == null) {
+            try {
+              // Create a default engine for the GC runtime — store it so we can close it later
+              final Engine engine = createEngine();
+              gcRuntimeEngine = engine;
+              defaultGcRuntime = createGcRuntime(engine);
+              LOGGER.fine("Created default GC runtime with lazy initialization");
+            } catch (final Exception e) {
+              throw new WasmException("Failed to create default GC runtime", e);
+            }
           }
         }
       }
+      return defaultGcRuntime;
+    } finally {
+      endOperation();
     }
-    return defaultGcRuntime;
   }
 
   @Override
@@ -407,8 +408,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
     }
 
-    validateRuntimeState();
-
+    beginOperation();
     try {
       final JniEngine jniEngine = (JniEngine) engine;
       final Module module = jniEngine.compileWat(watText);
@@ -422,6 +422,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw e;
     } catch (final Exception e) {
       throw new WasmException("Unexpected error compiling WAT module", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -692,8 +694,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new IllegalArgumentException("Component engine config cannot be null");
     }
 
-    validateRuntimeState();
-
+    beginOperation();
     try {
       final JniComponentEngine componentEngine = new JniComponentEngine(config);
 
@@ -706,6 +707,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw e;
     } catch (final Exception e) {
       throw new WasmException("Unexpected error creating component engine", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -750,13 +753,16 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
   @Override
   public ai.tegmentum.wasmtime4j.wasi.WasiContext createWasiContext() throws WasmException {
-    validateRuntimeState();
-
-    final long wasiHandle = nativeCreateWasiContext(nativeHandle);
-    if (wasiHandle == 0) {
-      throw new WasmException("Failed to create WASI context");
+    beginOperation();
+    try {
+      final long wasiHandle = nativeCreateWasiContext(nativeHandle);
+      if (wasiHandle == 0) {
+        throw new WasmException("Failed to create WASI context");
+      }
+      return new ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl(wasiHandle);
+    } finally {
+      endOperation();
     }
-    return new ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl(wasiHandle);
   }
 
   @Override
@@ -764,14 +770,17 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");
     }
-    validateRuntimeState();
-
-    final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
-    final long linkerHandle = nativeCreateLinker(nativeHandle, engineHandle);
-    if (linkerHandle == 0) {
-      throw new WasmException("Failed to create linker");
+    beginOperation();
+    try {
+      final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+      final long linkerHandle = nativeCreateLinker(nativeHandle, engineHandle);
+      if (linkerHandle == 0) {
+        throw new WasmException("Failed to create linker");
+      }
+      return new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle, engine);
+    } finally {
+      endOperation();
     }
-    return new ai.tegmentum.wasmtime4j.jni.JniLinker<>(linkerHandle, engine);
   }
 
   @Override
@@ -782,8 +791,7 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new IllegalArgumentException("Engine cannot be null");
     }
 
-    validateRuntimeState();
-
+    beginOperation();
     try {
       final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
       final long linkerHandle =
@@ -810,6 +818,8 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw e;
     } catch (final Exception e) {
       throw new WasmException("Unexpected error creating linker with configuration", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -819,14 +829,17 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     if (engine == null) {
       throw new IllegalArgumentException("Engine cannot be null");
     }
-    validateRuntimeState();
-
-    final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
-    final long linkerHandle = nativeCreateComponentLinker(nativeHandle, engineHandle);
-    if (linkerHandle == 0) {
-      throw new WasmException("Failed to create component linker");
+    beginOperation();
+    try {
+      final long engineHandle = ((ai.tegmentum.wasmtime4j.jni.JniEngine) engine).getNativeHandle();
+      final long linkerHandle = nativeCreateComponentLinker(nativeHandle, engineHandle);
+      if (linkerHandle == 0) {
+        throw new WasmException("Failed to create component linker");
+      }
+      return new ai.tegmentum.wasmtime4j.jni.JniComponentLinker<>(linkerHandle, engine);
+    } finally {
+      endOperation();
     }
-    return new ai.tegmentum.wasmtime4j.jni.JniComponentLinker<>(linkerHandle, engine);
   }
 
   @Override
@@ -840,24 +853,27 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     if (context == null) {
       throw new IllegalArgumentException("WasiContext cannot be null");
     }
-    validateRuntimeState();
+    beginOperation();
+    try {
+      final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
+      final long linkerHandle = jniLinker.getNativeHandle();
+      final long contextHandle =
+          ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
 
-    final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
-    final long linkerHandle = jniLinker.getNativeHandle();
-    final long contextHandle =
-        ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
+      final int result = nativeAddWasiToLinker(nativeHandle, linkerHandle, contextHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI imports to linker");
+      }
 
-    final int result = nativeAddWasiToLinker(nativeHandle, linkerHandle, contextHandle);
-    if (result != 0) {
-      throw new WasmException("Failed to add WASI imports to linker");
-    }
+      // Track WASI context on the linker for store association during instantiation
+      jniLinker.setWasiContext((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context);
 
-    // Track WASI context on the linker for store association during instantiation
-    jniLinker.setWasiContext((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context);
-
-    // Track WASI imports for hasImport() checks
-    for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P1_IMPORTS) {
-      jniLinker.addImport(entry[0], entry[1]);
+      // Track WASI imports for hasImport() checks
+      for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P1_IMPORTS) {
+        jniLinker.addImport(entry[0], entry[1]);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -872,24 +888,27 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     if (context == null) {
       throw new IllegalArgumentException("WasiContext cannot be null");
     }
-    validateRuntimeState();
+    beginOperation();
+    try {
+      final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
+      final long linkerHandle = jniLinker.getNativeHandle();
+      final long contextHandle =
+          ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
 
-    final JniLinker<?> jniLinker = (ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker;
-    final long linkerHandle = jniLinker.getNativeHandle();
-    final long contextHandle =
-        ((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context).getNativeHandle();
+      final int result = nativeAddWasiPreview2ToLinker(nativeHandle, linkerHandle, contextHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add WASI Preview 2 imports to linker");
+      }
 
-    final int result = nativeAddWasiPreview2ToLinker(nativeHandle, linkerHandle, contextHandle);
-    if (result != 0) {
-      throw new WasmException("Failed to add WASI Preview 2 imports to linker");
-    }
+      // Track WASI context on the linker for store association during instantiation
+      jniLinker.setWasiContext((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context);
 
-    // Track WASI context on the linker for store association during instantiation
-    jniLinker.setWasiContext((ai.tegmentum.wasmtime4j.jni.JniWasiContextImpl) context);
-
-    // Track WASI Preview 2 imports for hasImport() checks
-    for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P2_IMPORTS) {
-      jniLinker.addImport(entry[0], entry[1]);
+      // Track WASI Preview 2 imports for hasImport() checks
+      for (final String[] entry : ai.tegmentum.wasmtime4j.wasi.WasiLinkerUtils.WASI_P2_IMPORTS) {
+        jniLinker.addImport(entry[0], entry[1]);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -899,23 +918,27 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
     if (linker == null) {
       throw new IllegalArgumentException("Linker cannot be null");
     }
-    validateRuntimeState();
+    beginOperation();
+    try {
+      final long linkerHandle =
+          ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
 
-    final long linkerHandle = ((ai.tegmentum.wasmtime4j.jni.JniLinker<?>) linker).getNativeHandle();
-
-    final int result = nativeAddComponentModelToLinker(nativeHandle, linkerHandle);
-    if (result != 0) {
-      throw new WasmException("Failed to add Component Model imports to linker");
+      final int result = nativeAddComponentModelToLinker(nativeHandle, linkerHandle);
+      if (result != 0) {
+        throw new WasmException("Failed to add Component Model imports to linker");
+      }
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public boolean supportsComponentModel() {
+    beginOperation();
     try {
-      validateRuntimeState();
       return nativeSupportsComponentModel(nativeHandle);
-    } catch (WasmException e) {
-      return false;
+    } finally {
+      endOperation();
     }
   }
 
@@ -935,44 +958,60 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   @Override
   public ExnRef createExnRef(final Store store, final Tag tag, final WasmValue[] fields)
       throws WasmException {
-    validateRuntimeState();
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
+      return JniExnRef.createExnRef((JniStore) store, tag, fields);
+    } finally {
+      endOperation();
     }
-    return JniExnRef.createExnRef((JniStore) store, tag, fields);
   }
 
   @Override
   public ExnRef exnRefFromRaw(final Store store, final long raw) throws WasmException {
-    validateRuntimeState();
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
+      return JniExnRef.fromRawExnRef((JniStore) store, raw);
+    } finally {
+      endOperation();
     }
-    return JniExnRef.fromRawExnRef((JniStore) store, raw);
   }
 
   @Override
   public long externRefToRaw(final Store store, final long externRefId) throws WasmException {
-    validateRuntimeState();
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
+      final long storeHandle = ((JniStore) store).getNativeHandle();
+      final long result = nativeExternRefToRaw(storeHandle, externRefId);
+      if (result == -1L) {
+        throw new WasmException("Failed to convert ExternRef to raw");
+      }
+      return result;
+    } finally {
+      endOperation();
     }
-    final long storeHandle = ((JniStore) store).getNativeHandle();
-    final long result = nativeExternRefToRaw(storeHandle, externRefId);
-    if (result == -1L) {
-      throw new WasmException("Failed to convert ExternRef to raw");
-    }
-    return result;
   }
 
   @Override
   public long externRefFromRaw(final Store store, final long raw) throws WasmException {
-    validateRuntimeState();
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance");
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance");
+      }
+      final long storeHandle = ((JniStore) store).getNativeHandle();
+      return nativeExternRefFromRaw(storeHandle, raw);
+    } finally {
+      endOperation();
     }
-    final long storeHandle = ((JniStore) store).getNativeHandle();
-    return nativeExternRefFromRaw(storeHandle, raw);
   }
 
   // ===== UTILITY METHODS =====

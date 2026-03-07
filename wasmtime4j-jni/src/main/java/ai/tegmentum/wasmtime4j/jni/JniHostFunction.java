@@ -557,12 +557,16 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
 
   @Override
   public String toString() {
-    if (isClosed()) {
+    if (!tryBeginOperation()) {
       return "JniHostFunction{name='" + functionName + "', closed=true}";
     }
 
-    return String.format(
-        "JniHostFunction{name='%s', type=%s, id=%d, handle=0x%x}",
-        functionName, functionType, hostFunctionId, getNativeHandle());
+    try {
+      return String.format(
+          "JniHostFunction{name='%s', type=%s, id=%d, handle=0x%x}",
+          functionName, functionType, hostFunctionId, getNativeHandle());
+    } finally {
+      endOperation();
+    }
   }
 }

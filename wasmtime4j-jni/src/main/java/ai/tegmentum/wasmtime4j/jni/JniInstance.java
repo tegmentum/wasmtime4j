@@ -90,27 +90,30 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public Optional<WasmFunction> getFunction(final String name) {
     Validation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalStateException("Store must be a JniStore instance");
-    }
-
+    beginOperation();
     try {
-      final JniStore jniStore = (JniStore) store;
-      final long functionHandle =
-          nativeGetFunction(getNativeHandle(), jniStore.getNativeHandle(), name);
-      if (functionHandle == 0) {
-        return Optional.empty();
+      if (!(store instanceof JniStore)) {
+        throw new IllegalStateException("Store must be a JniStore instance");
       }
-      // Get module handle for thread-local execution
-      final long moduleHandle =
-          (module instanceof JniModule) ? ((JniModule) module).getNativeHandle() : 0;
-      return Optional.of(new JniFunction(functionHandle, name, moduleHandle, jniStore));
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error getting function: " + name, e);
+
+      try {
+        final JniStore jniStore = (JniStore) store;
+        final long functionHandle =
+            nativeGetFunction(getNativeHandle(), jniStore.getNativeHandle(), name);
+        if (functionHandle == 0) {
+          return Optional.empty();
+        }
+        // Get module handle for thread-local execution
+        final long moduleHandle =
+            (module instanceof JniModule) ? ((JniModule) module).getNativeHandle() : 0;
+        return Optional.of(new JniFunction(functionHandle, name, moduleHandle, jniStore));
+      } catch (final RuntimeException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new RuntimeException("Unexpected error getting function: " + name, e);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -125,8 +128,7 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public Optional<WasmMemory> getMemory(final String name) {
     Validation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long memoryHandle =
           nativeGetMemory(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
@@ -140,6 +142,8 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting memory: " + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -154,8 +158,7 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public Optional<WasmTable> getTable(final String name) {
     Validation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long tableHandle =
           nativeGetTable(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
@@ -167,6 +170,8 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table: " + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -181,8 +186,7 @@ public final class JniInstance extends JniResource implements Instance {
   @Override
   public Optional<WasmGlobal> getGlobal(final String name) {
     Validation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long globalHandle =
           nativeGetGlobal(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
@@ -194,14 +198,15 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting global: " + name, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<Tag> getTag(final String name) {
     Validation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long tagHandle =
           nativeGetTag(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
@@ -213,14 +218,15 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting tag: " + name, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<WasmMemory> getSharedMemory(final String name) {
     Validation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final long memoryHandle =
           nativeGetSharedMemory(getNativeHandle(), ((JniStore) store).getNativeHandle(), name);
@@ -234,12 +240,14 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting shared memory: " + name, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<WasmFunction> debugFunction(final int functionIndex) {
-    ensureNotClosed();
+    beginOperation();
     try {
       final JniStore jniStore = (JniStore) store;
       final long functionHandle =
@@ -254,12 +262,14 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in debugFunction: " + functionIndex, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<WasmGlobal> debugGlobal(final int globalIndex) {
-    ensureNotClosed();
+    beginOperation();
     try {
       final long globalHandle =
           nativeDebugGlobal(getNativeHandle(), ((JniStore) store).getNativeHandle(), globalIndex);
@@ -271,12 +281,14 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in debugGlobal: " + globalIndex, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<WasmMemory> debugMemory(final int memoryIndex) {
-    ensureNotClosed();
+    beginOperation();
     try {
       final long memoryHandle =
           nativeDebugMemory(getNativeHandle(), ((JniStore) store).getNativeHandle(), memoryIndex);
@@ -290,12 +302,14 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in debugMemory: " + memoryIndex, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<WasmMemory> debugSharedMemory(final int memoryIndex) {
-    ensureNotClosed();
+    beginOperation();
     try {
       final long memoryHandle =
           nativeDebugSharedMemory(
@@ -310,12 +324,14 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in debugSharedMemory: " + memoryIndex, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<WasmTable> debugTable(final int tableIndex) {
-    ensureNotClosed();
+    beginOperation();
     try {
       final long tableHandle =
           nativeDebugTable(getNativeHandle(), ((JniStore) store).getNativeHandle(), tableIndex);
@@ -327,12 +343,14 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in debugTable: " + tableIndex, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<Tag> debugTag(final int tagIndex) {
-    ensureNotClosed();
+    beginOperation();
     try {
       final long tagHandle =
           nativeDebugTag(getNativeHandle(), ((JniStore) store).getNativeHandle(), tagIndex);
@@ -344,6 +362,8 @@ public final class JniInstance extends JniResource implements Instance {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error in debugTag: " + tagIndex, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -357,57 +377,61 @@ public final class JniInstance extends JniResource implements Instance {
    */
   public boolean hasExport(final String name) {
     Validation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
+    beginOperation();
     try {
       return nativeHasExport(getNativeHandle(), name);
     } catch (final Exception e) {
       LOGGER.warning("Error checking export existence: " + e.getMessage());
       return false;
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Optional<Extern> getExport(final String name) {
     Validation.requireNonBlank(name, "name");
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalStateException("Store must be a JniStore instance");
-    }
-
+    beginOperation();
     try {
-      final JniStore jniStore = (JniStore) store;
-      final long storeHandle = jniStore.getNativeHandle();
-
-      // Try function
-      final long funcHandle = nativeGetFunction(getNativeHandle(), storeHandle, name);
-      if (funcHandle != 0) {
-        return Optional.of(new JniExternFunc(funcHandle, jniStore));
+      if (!(store instanceof JniStore)) {
+        throw new IllegalStateException("Store must be a JniStore instance");
       }
 
-      // Try memory
-      final long memHandle = nativeGetMemory(getNativeHandle(), storeHandle, name);
-      if (memHandle != 0) {
-        return Optional.of(new JniExternMemory(memHandle, jniStore));
-      }
+      try {
+        final JniStore jniStore = (JniStore) store;
+        final long storeHandle = jniStore.getNativeHandle();
 
-      // Try table
-      final long tableHandle = nativeGetTable(getNativeHandle(), storeHandle, name);
-      if (tableHandle != 0) {
-        return Optional.of(new JniExternTable(tableHandle, jniStore));
-      }
+        // Try function
+        final long funcHandle = nativeGetFunction(getNativeHandle(), storeHandle, name);
+        if (funcHandle != 0) {
+          return Optional.of(new JniExternFunc(funcHandle, jniStore));
+        }
 
-      // Try global
-      final long globalHandle = nativeGetGlobal(getNativeHandle(), storeHandle, name);
-      if (globalHandle != 0) {
-        return Optional.of(new JniExternGlobal(globalHandle, jniStore));
-      }
+        // Try memory
+        final long memHandle = nativeGetMemory(getNativeHandle(), storeHandle, name);
+        if (memHandle != 0) {
+          return Optional.of(new JniExternMemory(memHandle, jniStore));
+        }
 
-      return Optional.empty();
-    } catch (final Exception e) {
-      LOGGER.warning("Error getting export: " + name + " - " + e.getMessage());
-      return Optional.empty();
+        // Try table
+        final long tableHandle = nativeGetTable(getNativeHandle(), storeHandle, name);
+        if (tableHandle != 0) {
+          return Optional.of(new JniExternTable(tableHandle, jniStore));
+        }
+
+        // Try global
+        final long globalHandle = nativeGetGlobal(getNativeHandle(), storeHandle, name);
+        if (globalHandle != 0) {
+          return Optional.of(new JniExternGlobal(globalHandle, jniStore));
+        }
+
+        return Optional.empty();
+      } catch (final Exception e) {
+        LOGGER.warning("Error getting export: " + name + " - " + e.getMessage());
+        return Optional.empty();
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -422,29 +446,32 @@ public final class JniInstance extends JniResource implements Instance {
     if (moduleExport == null) {
       throw new IllegalArgumentException("ModuleExport cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalStateException("Store must be a JniStore instance");
-    }
-
-    final JniStore jniStore = (JniStore) store;
-    final long storeHandle = jniStore.getNativeHandle();
-    final int[] outType = new int[1];
-
+    beginOperation();
     try {
-      final long externHandle =
-          nativeGetModuleExport(
-              getNativeHandle(), storeHandle, moduleExport.nativeHandle(), outType);
-
-      if (externHandle == 0) {
-        return Optional.empty();
+      if (!(store instanceof JniStore)) {
+        throw new IllegalStateException("Store must be a JniStore instance");
       }
 
-      return Optional.of(createExternFromNative(externHandle, outType[0], jniStore));
-    } catch (final Exception e) {
-      LOGGER.warning("Error getting module export: " + e.getMessage());
-      return Optional.empty();
+      final JniStore jniStore = (JniStore) store;
+      final long storeHandle = jniStore.getNativeHandle();
+      final int[] outType = new int[1];
+
+      try {
+        final long externHandle =
+            nativeGetModuleExport(
+                getNativeHandle(), storeHandle, moduleExport.nativeHandle(), outType);
+
+        if (externHandle == 0) {
+          return Optional.empty();
+        }
+
+        return Optional.of(createExternFromNative(externHandle, outType[0], jniStore));
+      } catch (final Exception e) {
+        LOGGER.warning("Error getting module export: " + e.getMessage());
+        return Optional.empty();
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -507,20 +534,32 @@ public final class JniInstance extends JniResource implements Instance {
 
   @Override
   public String[] getExportNames() {
-    ensureNotClosed();
-    return nativeGetExportNames(getNativeHandle());
+    beginOperation();
+    try {
+      return nativeGetExportNames(getNativeHandle());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public Module getModule() {
-    ensureNotClosed();
-    return module;
+    beginOperation();
+    try {
+      return module;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public Store getStore() {
-    ensureNotClosed();
-    return store;
+    beginOperation();
+    try {
+      return store;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -533,38 +572,41 @@ public final class JniInstance extends JniResource implements Instance {
       throws WasmException {
     Validation.requireNonBlank(functionName, "functionName");
     Validation.requireNonNull(params, "params");
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalStateException("Store must be a JniStore instance");
-    }
-
-    final JniStore jniStore = (JniStore) store;
-
-    // Pass WasmValue array directly to preserve type information
-    // Native code now returns WasmValue[] directly, preserving type information
-    final Object[] nativeResults =
-        nativeCallFunction(getNativeHandle(), jniStore.getNativeHandle(), functionName, params);
-
-    if (nativeResults == null) {
-      return new WasmValue[0];
-    }
-
-    // Cast to WasmValue[] - native code returns WasmValue objects directly
-    final WasmValue[] results = new WasmValue[nativeResults.length];
-    for (int i = 0; i < nativeResults.length; i++) {
-      if (nativeResults[i] instanceof WasmValue) {
-        results[i] = (WasmValue) nativeResults[i];
-      } else if (nativeResults[i] == null) {
-        // Null represents null externref or funcref - shouldn't happen with new approach
-        results[i] = WasmValue.externref(null);
-      } else {
-        throw new WasmException(
-            "Unexpected return type: " + nativeResults[i].getClass() + " at index " + i);
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalStateException("Store must be a JniStore instance");
       }
-    }
 
-    return results;
+      final JniStore jniStore = (JniStore) store;
+
+      // Pass WasmValue array directly to preserve type information
+      // Native code now returns WasmValue[] directly, preserving type information
+      final Object[] nativeResults =
+          nativeCallFunction(getNativeHandle(), jniStore.getNativeHandle(), functionName, params);
+
+      if (nativeResults == null) {
+        return new WasmValue[0];
+      }
+
+      // Cast to WasmValue[] - native code returns WasmValue objects directly
+      final WasmValue[] results = new WasmValue[nativeResults.length];
+      for (int i = 0; i < nativeResults.length; i++) {
+        if (nativeResults[i] instanceof WasmValue) {
+          results[i] = (WasmValue) nativeResults[i];
+        } else if (nativeResults[i] == null) {
+          // Null represents null externref or funcref - shouldn't happen with new approach
+          results[i] = WasmValue.externref(null);
+        } else {
+          throw new WasmException(
+              "Unexpected return type: " + nativeResults[i].getClass() + " at index " + i);
+        }
+      }
+
+      return results;
+    } finally {
+      endOperation();
+    }
   }
 
   // Native method declarations

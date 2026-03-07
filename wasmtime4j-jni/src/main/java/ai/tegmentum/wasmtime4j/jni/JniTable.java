@@ -81,8 +81,12 @@ public final class JniTable extends JniResource implements WasmTable {
    *
    * @throws IllegalStateException if this table or its store has been closed
    */
-  private void ensureUsable() {
-    ensureNotClosed();
+  /**
+   * Checks that the store is still open. Must be called while the operation lock is held.
+   *
+   * @throws JniResourceException if the store has been closed
+   */
+  private void checkStoreOpen() {
     if (store.isClosed()) {
       throw new JniResourceException("Store is closed");
     }
@@ -96,8 +100,9 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the size cannot be retrieved
    */
   public int getSize() {
-    ensureUsable();
+    beginOperation();
     try {
+      checkStoreOpen();
       final long tableHandle = getNativeHandle();
       final long storeHandle = store.getNativeHandle();
       final int size = nativeGetSize(tableHandle, storeHandle);
@@ -106,6 +111,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table size", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -117,13 +124,16 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the max size cannot be retrieved
    */
   public int getMaxSize() {
-    ensureUsable();
+    beginOperation();
     try {
+      checkStoreOpen();
       return nativeGetMaxSize(getNativeHandle(), store.getNativeHandle());
     } catch (final JniResourceException | IllegalStateException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table max size", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -135,8 +145,9 @@ public final class JniTable extends JniResource implements WasmTable {
    * @throws RuntimeException if the type cannot be retrieved
    */
   public WasmValueType getElementType() {
-    ensureUsable();
+    beginOperation();
     try {
+      checkStoreOpen();
       final String typeString = nativeGetElementType(getNativeHandle(), store.getNativeHandle());
       if (typeString == null) {
         throw new IllegalStateException("Native returned null element type for table");
@@ -178,6 +189,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table element type", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -188,8 +201,9 @@ public final class JniTable extends JniResource implements WasmTable {
 
   @Override
   public ai.tegmentum.wasmtime4j.type.TableType getTableType() {
-    ensureUsable();
+    beginOperation();
     try {
+      checkStoreOpen();
       final long[] typeInfo = nativeGetTableTypeInfo(getNativeHandle(), store.getNativeHandle());
       if (typeInfo.length < 3) {
         throw new IllegalStateException("Invalid table type info from native");
@@ -202,6 +216,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table type", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -217,12 +233,11 @@ public final class JniTable extends JniResource implements WasmTable {
    */
   public Object get(final int index) {
     Validation.requireNonNegative(index, "index");
-    ensureUsable();
-
-    final long handle = getNativeHandle();
-    validateIndex(index);
-
+    beginOperation();
     try {
+      checkStoreOpen();
+      final long handle = getNativeHandle();
+      validateIndex(index);
       return nativeGet(handle, store.getNativeHandle(), index);
     } catch (final JniResourceException
         | IllegalStateException
@@ -231,6 +246,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting table element", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -246,12 +263,11 @@ public final class JniTable extends JniResource implements WasmTable {
    */
   public void set(final int index, final Object value) {
     Validation.requireNonNegative(index, "index");
-    ensureUsable();
-
-    final long handle = getNativeHandle();
-    validateIndex(index);
-
+    beginOperation();
     try {
+      checkStoreOpen();
+      final long handle = getNativeHandle();
+      validateIndex(index);
       final boolean success = nativeSet(handle, store.getNativeHandle(), index, value);
       if (!success) {
         throw new RuntimeException("Failed to set table element");
@@ -263,6 +279,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error setting table element", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -278,9 +296,9 @@ public final class JniTable extends JniResource implements WasmTable {
    */
   public int grow(final int delta, final Object init) {
     Validation.requireNonNegative(delta, "delta");
-    ensureUsable();
-
+    beginOperation();
     try {
+      checkStoreOpen();
       final long tableHandle = getNativeHandle();
       final long storeHandle = store.getNativeHandle();
       final long initValue = objectToRefHandle(init);
@@ -289,6 +307,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error growing table", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -306,16 +326,14 @@ public final class JniTable extends JniResource implements WasmTable {
   public void fill(final int start, final int count, final Object value) {
     Validation.requireNonNegative(start, "start");
     Validation.requireNonNegative(count, "count");
-    ensureUsable();
-
-    final long handle = getNativeHandle();
-    validateRange(start, count);
-
+    beginOperation();
     try {
-      final long tableHandle = handle;
+      checkStoreOpen();
+      final long handle = getNativeHandle();
+      validateRange(start, count);
       final long storeHandle = store.getNativeHandle();
       final long valueHandle = objectToRefHandle(value);
-      final int result = nativeTableFill(tableHandle, storeHandle, start, valueHandle, count);
+      final int result = nativeTableFill(handle, storeHandle, start, valueHandle, count);
       if (result != 0) {
         throw new RuntimeException("Failed to fill table range");
       }
@@ -326,6 +344,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error filling table", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -344,13 +364,12 @@ public final class JniTable extends JniResource implements WasmTable {
     Validation.requireNonNegative(dst, "dst");
     Validation.requireNonNegative(src, "src");
     Validation.requireNonNegative(count, "count");
-    ensureUsable();
-
-    final long handle = getNativeHandle();
-    validateRange(dst, count);
-    validateRange(src, count);
-
+    beginOperation();
     try {
+      checkStoreOpen();
+      final long handle = getNativeHandle();
+      validateRange(dst, count);
+      validateRange(src, count);
       final boolean success = nativeCopy(handle, store.getNativeHandle(), dst, src, count);
       if (!success) {
         throw new RuntimeException("Failed to copy table elements");
@@ -362,6 +381,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error copying table elements", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -382,7 +403,6 @@ public final class JniTable extends JniResource implements WasmTable {
     Validation.requireNonNegative(dst, "dst");
     Validation.requireNonNegative(srcIndex, "srcIndex");
     Validation.requireNonNegative(count, "count");
-    ensureUsable();
 
     // Same-table copy delegates to self-copy to avoid mutex self-deadlock in native code
     if (src == this) {
@@ -390,44 +410,47 @@ public final class JniTable extends JniResource implements WasmTable {
       return;
     }
 
-    if (count == 0) {
-      return;
-    }
-
-    if (!(src instanceof JniTable)) {
-      throw new IllegalArgumentException(
-          "Source table must be JniTable instance for cross-table copy");
-    }
-
-    final JniTable srcTable = (JniTable) src;
-    final long dstHandle = getNativeHandle(); // This validates not closed
-    final long srcHandle = srcTable.getNativeHandle(); // This validates source not closed
-
-    // Validate destination range
-    validateRange(dst, count);
-
-    // Validate source range
-    final int srcTableSize = srcTable.getSize();
-    if ((long) srcIndex + count > srcTableSize) {
-      throw new IndexOutOfBoundsException(
-          "Source range ["
-              + srcIndex
-              + ", "
-              + ((long) srcIndex + count)
-              + ") exceeds source table size "
-              + srcTableSize);
-    }
-
-    // Validate type compatibility
-    if (!getElementType().equals(srcTable.getElementType())) {
-      throw new IllegalArgumentException(
-          "Table element types must match: this="
-              + getElementType()
-              + ", src="
-              + srcTable.getElementType());
-    }
-
+    beginOperation();
     try {
+      checkStoreOpen();
+
+      if (count == 0) {
+        return;
+      }
+
+      if (!(src instanceof JniTable)) {
+        throw new IllegalArgumentException(
+            "Source table must be JniTable instance for cross-table copy");
+      }
+
+      final JniTable srcTable = (JniTable) src;
+      final long dstHandle = getNativeHandle();
+      final long srcHandle = srcTable.getNativeHandle();
+
+      // Validate destination range
+      validateRange(dst, count);
+
+      // Validate source range
+      final int srcTableSize = srcTable.getSize();
+      if ((long) srcIndex + count > srcTableSize) {
+        throw new IndexOutOfBoundsException(
+            "Source range ["
+                + srcIndex
+                + ", "
+                + ((long) srcIndex + count)
+                + ") exceeds source table size "
+                + srcTableSize);
+      }
+
+      // Validate type compatibility
+      if (!getElementType().equals(srcTable.getElementType())) {
+        throw new IllegalArgumentException(
+            "Table element types must match: this="
+                + getElementType()
+                + ", src="
+                + srcTable.getElementType());
+      }
+
       final boolean success =
           nativeCopyFromTable(dstHandle, store.getNativeHandle(), dst, srcHandle, srcIndex, count);
       if (!success) {
@@ -440,6 +463,8 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error copying from source table", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -639,12 +664,17 @@ public final class JniTable extends JniResource implements WasmTable {
     if (segmentIndex < 0) {
       throw new IllegalArgumentException("Element segment index cannot be negative");
     }
-    ensureUsable();
-    if (instanceHandle == 0) {
-      throw new IllegalStateException(
-          "Cannot drop element segment: table not associated with an instance");
+    beginOperation();
+    try {
+      checkStoreOpen();
+      if (instanceHandle == 0) {
+        throw new IllegalStateException(
+            "Cannot drop element segment: table not associated with an instance");
+      }
+      nativeElemDrop(instanceHandle, segmentIndex);
+    } finally {
+      endOperation();
     }
-    nativeElemDrop(instanceHandle, segmentIndex);
   }
 
   @Override
@@ -662,18 +692,23 @@ public final class JniTable extends JniResource implements WasmTable {
     if (length < 0) {
       throw new IllegalArgumentException("Length cannot be negative");
     }
-    ensureUsable();
-    if (instanceHandle == 0) {
-      throw new IllegalStateException("Cannot init table: table not associated with an instance");
+    beginOperation();
+    try {
+      checkStoreOpen();
+      if (instanceHandle == 0) {
+        throw new IllegalStateException("Cannot init table: table not associated with an instance");
+      }
+      nativeTableInit(
+          getNativeHandle(),
+          store.getNativeHandle(),
+          instanceHandle,
+          destOffset,
+          srcOffset,
+          length,
+          elementSegmentIndex);
+    } finally {
+      endOperation();
     }
-    nativeTableInit(
-        getNativeHandle(),
-        store.getNativeHandle(),
-        instanceHandle,
-        destOffset,
-        srcOffset,
-        length,
-        elementSegmentIndex);
   }
 
   /**
@@ -689,9 +724,9 @@ public final class JniTable extends JniResource implements WasmTable {
   public int growAsync(final int elements, final Object initValue)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
     Validation.requireNonNegative(elements, "elements");
-    ensureUsable();
-
+    beginOperation();
     try {
+      checkStoreOpen();
       final long tableHandle = getNativeHandle();
       final long storeHandle = store.getNativeHandle();
       final long initRef = objectToRefHandle(initValue);
@@ -700,19 +735,26 @@ public final class JniTable extends JniResource implements WasmTable {
       throw e;
     } catch (final Exception e) {
       throw new ai.tegmentum.wasmtime4j.exception.WasmException("Async table growth failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public boolean supports64BitAddressing() {
-    if (store.isClosed()) {
+    if (!tryBeginOperation()) {
       return false;
     }
     try {
+      if (store.isClosed()) {
+        return false;
+      }
       return nativeSupports64BitAddressing(getNativeHandle(), store.getNativeHandle());
     } catch (final Exception e) {
       LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
       return false;
+    } finally {
+      endOperation();
     }
   }
 

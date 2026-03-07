@@ -83,9 +83,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws JniResourceException if this memory or its store has been closed
    */
   private void ensureUsable() {
-    ensureNotClosed();
-    if (store != null && store.isClosed()) {
-      throw new JniResourceException("Store is closed");
+    beginOperation();
+    try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+    } finally {
+      endOperation();
     }
   }
 

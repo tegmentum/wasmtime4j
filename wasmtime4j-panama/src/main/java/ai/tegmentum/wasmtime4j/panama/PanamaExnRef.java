@@ -75,21 +75,25 @@ public final class PanamaExnRef implements ExnRef {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final MemorySegment tagPtr =
+          NATIVE_BINDINGS.exnRefGetTag(nativeHandle, panamaStore.getNativeStore());
+
+      if (tagPtr == null || tagPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to get tag from exception reference");
+      }
+
+      return new PanamaTag(tagPtr, panamaStore.getNativeStore());
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final MemorySegment tagPtr =
-        NATIVE_BINDINGS.exnRefGetTag(nativeHandle, panamaStore.getNativeStore());
-
-    if (tagPtr == null || tagPtr.equals(MemorySegment.NULL)) {
-      throw new WasmException("Failed to get tag from exception reference");
-    }
-
-    return new PanamaTag(tagPtr, panamaStore.getNativeStore());
   }
 
   @Override
@@ -100,38 +104,42 @@ public final class PanamaExnRef implements ExnRef {
     if (index < 0) {
       throw new IllegalArgumentException("index must be non-negative");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    try (Arena arena = Arena.ofConfined()) {
-      final MemorySegment outType = arena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment outValueI64 = arena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment outValueF64 = arena.allocate(ValueLayout.JAVA_DOUBLE);
-      final MemorySegment outValueV128 = arena.allocate(16);
-
-      final int result =
-          NATIVE_BINDINGS.exnRefGetField(
-              nativeHandle,
-              panamaStore.getNativeStore(),
-              index,
-              outType,
-              outValueI64,
-              outValueF64,
-              outValueV128);
-
-      if (result != 0) {
-        throw new WasmException("Failed to get field " + index + " from exception reference");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
       }
 
-      return decodeFieldValue(
-          outType.get(ValueLayout.JAVA_INT, 0),
-          outValueI64.get(ValueLayout.JAVA_LONG, 0),
-          outValueF64.get(ValueLayout.JAVA_DOUBLE, 0),
-          outValueV128);
+      final PanamaStore panamaStore = (PanamaStore) store;
+      try (Arena arena = Arena.ofConfined()) {
+        final MemorySegment outType = arena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment outValueI64 = arena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment outValueF64 = arena.allocate(ValueLayout.JAVA_DOUBLE);
+        final MemorySegment outValueV128 = arena.allocate(16);
+
+        final int result =
+            NATIVE_BINDINGS.exnRefGetField(
+                nativeHandle,
+                panamaStore.getNativeStore(),
+                index,
+                outType,
+                outValueI64,
+                outValueF64,
+                outValueV128);
+
+        if (result != 0) {
+          throw new WasmException("Failed to get field " + index + " from exception reference");
+        }
+
+        return decodeFieldValue(
+            outType.get(ValueLayout.JAVA_INT, 0),
+            outValueI64.get(ValueLayout.JAVA_LONG, 0),
+            outValueF64.get(ValueLayout.JAVA_DOUBLE, 0),
+            outValueV128);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -140,24 +148,29 @@ public final class PanamaExnRef implements ExnRef {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final int count =
+          NATIVE_BINDINGS.exnRefFieldCount(nativeHandle, panamaStore.getNativeStore());
+
+      if (count < 0) {
+        throw new WasmException("Failed to get field count from exception reference");
+      }
+
+      final List<WasmValue> fieldValues = new ArrayList<>(count);
+      for (int i = 0; i < count; i++) {
+        fieldValues.add(field(store, i));
+      }
+      return Collections.unmodifiableList(fieldValues);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final int count = NATIVE_BINDINGS.exnRefFieldCount(nativeHandle, panamaStore.getNativeStore());
-
-    if (count < 0) {
-      throw new WasmException("Failed to get field count from exception reference");
-    }
-
-    final List<WasmValue> fieldValues = new ArrayList<>(count);
-    for (int i = 0; i < count; i++) {
-      fieldValues.add(field(store, i));
-    }
-    return Collections.unmodifiableList(fieldValues);
   }
 
   @Override
@@ -165,10 +178,14 @@ public final class PanamaExnRef implements ExnRef {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final Tag tag = getTag(store);
-    return new ExnType(tag.getType(store));
+      final Tag tag = getTag(store);
+      return new ExnType(tag.getType(store));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -187,10 +204,14 @@ public final class PanamaExnRef implements ExnRef {
 
   @Override
   public boolean isValid() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.exnRefIsValid(nativeHandle, storeHandle) != 0;
+    try {
+      return NATIVE_BINDINGS.exnRefIsValid(nativeHandle, storeHandle) != 0;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -198,18 +219,22 @@ public final class PanamaExnRef implements ExnRef {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
-    }
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
 
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final long raw = NATIVE_BINDINGS.exnRefToRaw(nativeHandle, panamaStore.getNativeStore());
-    if (raw < 0) {
-      throw new WasmException("Failed to convert ExnRef to raw representation");
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final long raw = NATIVE_BINDINGS.exnRefToRaw(nativeHandle, panamaStore.getNativeStore());
+      if (raw < 0) {
+        throw new WasmException("Failed to convert ExnRef to raw representation");
+      }
+      return raw;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return raw;
   }
 
   @Override
@@ -220,20 +245,24 @@ public final class PanamaExnRef implements ExnRef {
     if (heapType == null) {
       throw new IllegalArgumentException("heapType cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
-    }
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
 
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final int result =
-        NATIVE_BINDINGS.exnRefMatchesTy(
-            nativeHandle, panamaStore.getNativeStore(), heapType.ordinal());
-    if (result < 0) {
-      throw new WasmException("Failed to check ExnRef type match");
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final int result =
+          NATIVE_BINDINGS.exnRefMatchesTy(
+              nativeHandle, panamaStore.getNativeStore(), heapType.ordinal());
+      if (result < 0) {
+        throw new WasmException("Failed to check ExnRef type match");
+      }
+      return result == 1;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return result == 1;
   }
 
   /**
@@ -325,10 +354,6 @@ public final class PanamaExnRef implements ExnRef {
   /** Closes this exception reference and releases native resources. */
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 
   private static WasmValue decodeFieldValue(

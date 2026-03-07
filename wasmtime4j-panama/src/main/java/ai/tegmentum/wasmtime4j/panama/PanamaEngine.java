@@ -176,8 +176,12 @@ public final class PanamaEngine implements Engine {
 
   @Override
   public Store createStore() throws WasmException {
-    ensureNotClosed();
-    return new PanamaStore(this);
+    resourceHandle.beginOperation();
+    try {
+      return new PanamaStore(this);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -187,8 +191,12 @@ public final class PanamaEngine implements Engine {
    * @throws WasmException if allocation fails
    */
   Store tryCreateStore() throws WasmException {
-    ensureNotClosed();
-    return PanamaStore.tryCreate(this);
+    resourceHandle.beginOperation();
+    try {
+      return PanamaStore.tryCreate(this);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -208,8 +216,12 @@ public final class PanamaEngine implements Engine {
     if (wasmBytes == null || wasmBytes.length == 0) {
       throw new IllegalArgumentException("WASM bytes cannot be null or empty");
     }
-    ensureNotClosed();
-    return new PanamaModule(this, wasmBytes);
+    resourceHandle.beginOperation();
+    try {
+      return new PanamaModule(this, wasmBytes);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -221,37 +233,41 @@ public final class PanamaEngine implements Engine {
     if (dwarfPackage == null || dwarfPackage.length == 0) {
       throw new IllegalArgumentException("DWARF package cannot be null or empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment wasmSegment = tempArena.allocate(wasmBytes.length);
-      wasmSegment.copyFrom(MemorySegment.ofArray(wasmBytes));
+      try (Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment wasmSegment = tempArena.allocate(wasmBytes.length);
+        wasmSegment.copyFrom(MemorySegment.ofArray(wasmBytes));
 
-      final MemorySegment dwarfSegment = tempArena.allocate(dwarfPackage.length);
-      dwarfSegment.copyFrom(MemorySegment.ofArray(dwarfPackage));
+        final MemorySegment dwarfSegment = tempArena.allocate(dwarfPackage.length);
+        dwarfSegment.copyFrom(MemorySegment.ofArray(dwarfPackage));
 
-      final MemorySegment modulePtr = tempArena.allocate(ValueLayout.ADDRESS);
+        final MemorySegment modulePtr = tempArena.allocate(ValueLayout.ADDRESS);
 
-      final int result =
-          NATIVE_BINDINGS.moduleCompileWithDwarf(
-              nativeEngine,
-              wasmSegment,
-              wasmBytes.length,
-              dwarfSegment,
-              dwarfPackage.length,
-              modulePtr);
+        final int result =
+            NATIVE_BINDINGS.moduleCompileWithDwarf(
+                nativeEngine,
+                wasmSegment,
+                wasmBytes.length,
+                dwarfSegment,
+                dwarfPackage.length,
+                modulePtr);
 
-      if (result != 0) {
-        final String nativeError = PanamaErrorMapper.retrieveNativeErrorMessage();
-        if (nativeError != null && !nativeError.isEmpty()) {
-          throw new WasmException("Failed to compile module with DWARF: " + nativeError);
+        if (result != 0) {
+          final String nativeError = PanamaErrorMapper.retrieveNativeErrorMessage();
+          if (nativeError != null && !nativeError.isEmpty()) {
+            throw new WasmException("Failed to compile module with DWARF: " + nativeError);
+          }
+          throw PanamaErrorMapper.mapNativeError(
+              result, "Failed to compile module with DWARF package");
         }
-        throw PanamaErrorMapper.mapNativeError(
-            result, "Failed to compile module with DWARF package");
-      }
 
-      final MemorySegment nativeModule = modulePtr.get(ValueLayout.ADDRESS, 0);
-      return new PanamaModule(this, nativeModule);
+        final MemorySegment nativeModule = modulePtr.get(ValueLayout.ADDRESS, 0);
+        return new PanamaModule(this, nativeModule);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -263,33 +279,37 @@ public final class PanamaEngine implements Engine {
     if (wat.isEmpty()) {
       throw new IllegalArgumentException("wat cannot be empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Allocate C string for WAT text
-    final MemorySegment watSegment = arena.allocateFrom(wat);
+      // Allocate C string for WAT text
+      final MemorySegment watSegment = arena.allocateFrom(wat);
 
-    // Allocate pointer for output module
-    final MemorySegment modulePtr = arena.allocate(ValueLayout.ADDRESS);
+      // Allocate pointer for output module
+      final MemorySegment modulePtr = arena.allocate(ValueLayout.ADDRESS);
 
-    // Call native function
-    final int result = NATIVE_BINDINGS.moduleCompileWat(nativeEngine, watSegment, modulePtr);
+      // Call native function
+      final int result = NATIVE_BINDINGS.moduleCompileWat(nativeEngine, watSegment, modulePtr);
 
-    if (result != 0) {
-      final String nativeError = PanamaErrorMapper.retrieveNativeErrorMessage();
-      if (nativeError != null && !nativeError.isEmpty()) {
-        throw new WasmException("Failed to compile WAT: " + nativeError);
+      if (result != 0) {
+        final String nativeError = PanamaErrorMapper.retrieveNativeErrorMessage();
+        if (nativeError != null && !nativeError.isEmpty()) {
+          throw new WasmException("Failed to compile WAT: " + nativeError);
+        }
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to compile WAT");
       }
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to compile WAT");
+
+      // Get the module pointer
+      final MemorySegment nativeModulePtr = modulePtr.get(ValueLayout.ADDRESS, 0);
+
+      if (nativeModulePtr == null || nativeModulePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Native WAT compilation returned null module pointer");
+      }
+
+      return new PanamaModule(this, nativeModulePtr);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Get the module pointer
-    final MemorySegment nativeModulePtr = modulePtr.get(ValueLayout.ADDRESS, 0);
-
-    if (nativeModulePtr == null || nativeModulePtr.equals(MemorySegment.NULL)) {
-      throw new WasmException("Native WAT compilation returned null module pointer");
-    }
-
-    return new PanamaModule(this, nativeModulePtr);
   }
 
   @Override
@@ -300,15 +320,23 @@ public final class PanamaEngine implements Engine {
     if (wasmBytes.length == 0) {
       throw new IllegalArgumentException("wasmBytes cannot be empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    return NATIVE_BINDINGS.enginePrecompileModule(nativeEngine, wasmBytes);
+      return NATIVE_BINDINGS.enginePrecompileModule(nativeEngine, wasmBytes);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.CodeBuilder codeBuilder() throws WasmException {
-    ensureNotClosed();
-    return new PanamaCodeBuilder(nativeEngine);
+    resourceHandle.beginOperation();
+    try {
+      return new PanamaCodeBuilder(nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -319,21 +347,29 @@ public final class PanamaEngine implements Engine {
     if (wasmBytes.length == 0) {
       throw new IllegalArgumentException("wasmBytes cannot be empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    return NATIVE_BINDINGS.enginePrecompileComponent(nativeEngine, wasmBytes);
+      return NATIVE_BINDINGS.enginePrecompileComponent(nativeEngine, wasmBytes);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.pool.PoolStatistics getPoolingAllocatorMetrics() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return null;
     }
-    final long[] metrics = NATIVE_BINDINGS.enginePoolingAllocatorMetrics(nativeEngine);
-    if (metrics == null) {
-      return null;
+    try {
+      final long[] metrics = NATIVE_BINDINGS.enginePoolingAllocatorMetrics(nativeEngine);
+      if (metrics == null) {
+        return null;
+      }
+      return new ai.tegmentum.wasmtime4j.panama.pool.PanamaPoolStatistics(metrics);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return new ai.tegmentum.wasmtime4j.panama.pool.PanamaPoolStatistics(metrics);
   }
 
   @Override
@@ -341,17 +377,21 @@ public final class PanamaEngine implements Engine {
     if (stream == null) {
       throw new IllegalArgumentException("stream cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Read entire stream into byte array
-    // Wasmtime requires complete bytecode before compilation
-    final byte[] wasmBytes = StreamUtils.readAllBytes(stream);
+      // Read entire stream into byte array
+      // Wasmtime requires complete bytecode before compilation
+      final byte[] wasmBytes = StreamUtils.readAllBytes(stream);
 
-    if (wasmBytes.length == 0) {
-      throw new WasmException("Stream contained no data");
+      if (wasmBytes.length == 0) {
+        throw new WasmException("Stream contained no data");
+      }
+
+      return compileModule(wasmBytes);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    return compileModule(wasmBytes);
   }
 
   @Override
@@ -359,34 +399,39 @@ public final class PanamaEngine implements Engine {
     if (path == null) {
       throw new IllegalArgumentException("path cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Allocate C string for file path
-    final MemorySegment pathSegment = arena.allocateFrom(path.toString());
+      // Allocate C string for file path
+      final MemorySegment pathSegment = arena.allocateFrom(path.toString());
 
-    // Allocate pointer for output module
-    final MemorySegment modulePtr = arena.allocate(ValueLayout.ADDRESS);
+      // Allocate pointer for output module
+      final MemorySegment modulePtr = arena.allocate(ValueLayout.ADDRESS);
 
-    // Call native function
-    final int result = NATIVE_BINDINGS.moduleCompileFromFile(nativeEngine, pathSegment, modulePtr);
+      // Call native function
+      final int result =
+          NATIVE_BINDINGS.moduleCompileFromFile(nativeEngine, pathSegment, modulePtr);
 
-    if (result != 0) {
-      final String nativeError =
-          ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
-      if (nativeError != null && !nativeError.isEmpty()) {
-        throw new WasmException("Failed to compile module from file: " + nativeError);
+      if (result != 0) {
+        final String nativeError =
+            ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper.retrieveNativeErrorMessage();
+        if (nativeError != null && !nativeError.isEmpty()) {
+          throw new WasmException("Failed to compile module from file: " + nativeError);
+        }
+        throw new WasmException("Failed to compile module from file: " + path);
       }
-      throw new WasmException("Failed to compile module from file: " + path);
+
+      // Get the module pointer
+      final MemorySegment nativeModulePtr = modulePtr.get(ValueLayout.ADDRESS, 0);
+
+      if (nativeModulePtr == null || nativeModulePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Native file compilation returned null module pointer");
+      }
+
+      return new PanamaModule(this, nativeModulePtr);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Get the module pointer
-    final MemorySegment nativeModulePtr = modulePtr.get(ValueLayout.ADDRESS, 0);
-
-    if (nativeModulePtr == null || nativeModulePtr.equals(MemorySegment.NULL)) {
-      throw new WasmException("Native file compilation returned null module pointer");
-    }
-
-    return new PanamaModule(this, nativeModulePtr);
   }
 
   @Override
@@ -404,8 +449,12 @@ public final class PanamaEngine implements Engine {
     if (feature == null) {
       return false;
     }
-    ensureNotClosed();
-    return NATIVE_BINDINGS.engineSupportsFeature(nativeEngine, feature.name());
+    resourceHandle.beginOperation();
+    try {
+      return NATIVE_BINDINGS.engineSupportsFeature(nativeEngine, feature.name());
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -418,42 +467,66 @@ public final class PanamaEngine implements Engine {
 
   @Override
   public long getStackSizeLimit() {
-    ensureNotClosed();
-    final long limit = NATIVE_BINDINGS.engineStackSizeLimit(nativeEngine);
-    return limit == -1 ? 0 : limit;
+    resourceHandle.beginOperation();
+    try {
+      final long limit = NATIVE_BINDINGS.engineStackSizeLimit(nativeEngine);
+      return limit == -1 ? 0 : limit;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public boolean isFuelEnabled() {
-    ensureNotClosed();
-    return NATIVE_BINDINGS.engineFuelEnabled(nativeEngine);
+    resourceHandle.beginOperation();
+    try {
+      return NATIVE_BINDINGS.engineFuelEnabled(nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public boolean isEpochInterruptionEnabled() {
-    ensureNotClosed();
-    return NATIVE_BINDINGS.engineEpochInterruptionEnabled(nativeEngine);
+    resourceHandle.beginOperation();
+    try {
+      return NATIVE_BINDINGS.engineEpochInterruptionEnabled(nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public boolean isCoredumpOnTrapEnabled() {
-    ensureNotClosed();
-    return NATIVE_BINDINGS.engineCoredumpOnTrapEnabled(nativeEngine);
+    resourceHandle.beginOperation();
+    try {
+      return NATIVE_BINDINGS.engineCoredumpOnTrapEnabled(nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void incrementEpoch() {
-    ensureNotClosed();
-    NATIVE_BINDINGS.engineIncrementEpoch(nativeEngine);
+    resourceHandle.beginOperation();
+    try {
+      NATIVE_BINDINGS.engineIncrementEpoch(nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void unloadProcessHandlers() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    int result = NATIVE_BINDINGS.engineUnloadProcessHandlers(nativeEngine);
-    if (result != 0) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Failed to unload process handlers: other references to this engine may still exist");
+    resourceHandle.beginOperation();
+    try {
+      int result = NATIVE_BINDINGS.engineUnloadProcessHandlers(nativeEngine);
+      if (result != 0) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Failed to unload process handlers: other references to this engine may still exist");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -469,8 +542,12 @@ public final class PanamaEngine implements Engine {
    * @throws IllegalStateException if the engine has been closed
    */
   public MemorySegment getNativeEngine() {
-    resourceHandle.ensureNotClosed();
-    return nativeEngine;
+    resourceHandle.beginOperation();
+    try {
+      return nativeEngine;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -482,37 +559,36 @@ public final class PanamaEngine implements Engine {
     return System.identityHashCode(this);
   }
 
-  /**
-   * Ensures the engine is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-  }
-
   @Override
   public boolean isPulley() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
     try {
-      return NATIVE_BINDINGS.engineIsPulley(nativeEngine);
-    } catch (final Exception e) {
-      return false;
+      try {
+        return NATIVE_BINDINGS.engineIsPulley(nativeEngine);
+      } catch (final Exception e) {
+        return false;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public byte[] precompileCompatibilityHash() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return new byte[0];
     }
     try {
-      final byte[] hash = NATIVE_BINDINGS.enginePrecompileCompatibilityHash(nativeEngine);
-      return hash != null ? hash : new byte[0];
-    } catch (final Exception e) {
-      return new byte[0];
+      try {
+        final byte[] hash = NATIVE_BINDINGS.enginePrecompileCompatibilityHash(nativeEngine);
+        return hash != null ? hash : new byte[0];
+      } catch (final Exception e) {
+        return new byte[0];
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -524,18 +600,22 @@ public final class PanamaEngine implements Engine {
     if (bytes.length == 0) {
       return null;
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
-      final java.lang.foreign.MemorySegment bytesSegment = arena.allocate(bytes.length);
-      bytesSegment.copyFrom(java.lang.foreign.MemorySegment.ofArray(bytes));
-      final int result =
-          NATIVE_BINDINGS.engineDetectPrecompiled(nativeEngine, bytesSegment, bytes.length);
-      // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
-      if (result < 0) {
-        return null;
+      try (final java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
+        final java.lang.foreign.MemorySegment bytesSegment = arena.allocate(bytes.length);
+        bytesSegment.copyFrom(java.lang.foreign.MemorySegment.ofArray(bytes));
+        final int result =
+            NATIVE_BINDINGS.engineDetectPrecompiled(nativeEngine, bytesSegment, bytes.length);
+        // -1 means not precompiled, 0 = MODULE, 1 = COMPONENT
+        if (result < 0) {
+          return null;
+        }
+        return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
       }
-      return ai.tegmentum.wasmtime4j.Precompiled.fromValue(result);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -544,42 +624,58 @@ public final class PanamaEngine implements Engine {
     if (other == null) {
       throw new IllegalArgumentException("other cannot be null");
     }
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    if (!(other instanceof PanamaEngine)) {
-      return false;
+    try {
+      if (!(other instanceof PanamaEngine)) {
+        return false;
+      }
+      final PanamaEngine otherEngine = (PanamaEngine) other;
+      if (otherEngine.nativeEngine == null
+          || otherEngine.nativeEngine.equals(java.lang.foreign.MemorySegment.NULL)) {
+        return false;
+      }
+      return NATIVE_BINDINGS.engineSame(this.nativeEngine, otherEngine.nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
     }
-    final PanamaEngine otherEngine = (PanamaEngine) other;
-    if (otherEngine.nativeEngine == null
-        || otherEngine.nativeEngine.equals(java.lang.foreign.MemorySegment.NULL)) {
-      return false;
-    }
-    return NATIVE_BINDINGS.engineSame(this.nativeEngine, otherEngine.nativeEngine);
   }
 
   @Override
   public boolean isAsync() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.engineIsAsync(nativeEngine);
+    try {
+      return NATIVE_BINDINGS.engineIsAsync(nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public boolean isRecording() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.engineIsRecording(nativeEngine);
+    try {
+      return NATIVE_BINDINGS.engineIsRecording(nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public boolean isReplaying() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NATIVE_BINDINGS.engineIsReplaying(nativeEngine);
+    try {
+      return NATIVE_BINDINGS.engineIsReplaying(nativeEngine);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -595,14 +691,18 @@ public final class PanamaEngine implements Engine {
       throw new IllegalArgumentException(
           "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final MemorySegment memoryPtr =
-        NATIVE_BINDINGS.engineCreateSharedMemory(nativeEngine, initialPages, maxPages);
-    if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
-      throw new WasmException("Failed to create shared memory");
+      final MemorySegment memoryPtr =
+          NATIVE_BINDINGS.engineCreateSharedMemory(nativeEngine, initialPages, maxPages);
+      if (memoryPtr == null || memoryPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to create shared memory");
+      }
+      return new PanamaMemory(memoryPtr);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return new PanamaMemory(memoryPtr);
   }
 
   @Override
@@ -620,9 +720,13 @@ public final class PanamaEngine implements Engine {
     if (modules == null || modules.isEmpty()) {
       throw new IllegalArgumentException("modules cannot be null or empty");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    return new PanamaGuestProfiler(nativeEngine, moduleName, interval.toNanos(), modules);
+      return new PanamaGuestProfiler(nativeEngine, moduleName, interval.toNanos(), modules);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -644,30 +748,38 @@ public final class PanamaEngine implements Engine {
     if (!(component instanceof PanamaComponentImpl)) {
       throw new IllegalArgumentException("Component must be a Panama component");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final java.lang.foreign.MemorySegment componentPtr =
-        ((PanamaComponentImpl) component).getNativeHandle();
-    if (componentPtr == null || componentPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException(
-          "Component has invalid native handle");
+      final java.lang.foreign.MemorySegment componentPtr =
+          ((PanamaComponentImpl) component).getNativeHandle();
+      if (componentPtr == null || componentPtr.equals(java.lang.foreign.MemorySegment.NULL)) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException(
+            "Component has invalid native handle");
+      }
+
+      return new PanamaGuestProfiler(
+          nativeEngine,
+          componentName,
+          interval.toNanos(),
+          componentPtr,
+          extraModules != null ? extraModules : java.util.Collections.emptyMap());
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    return new PanamaGuestProfiler(
-        nativeEngine,
-        componentName,
-        interval.toNanos(),
-        componentPtr,
-        extraModules != null ? extraModules : java.util.Collections.emptyMap());
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.WeakEngine weak() {
-    ensureNotClosed();
-    final MemorySegment weakPtr = NATIVE_BINDINGS.engineCreateWeak(nativeEngine);
-    if (weakPtr == null || weakPtr.equals(MemorySegment.NULL)) {
-      throw new IllegalStateException("Failed to create weak engine reference");
+    resourceHandle.beginOperation();
+    try {
+      final MemorySegment weakPtr = NATIVE_BINDINGS.engineCreateWeak(nativeEngine);
+      if (weakPtr == null || weakPtr.equals(MemorySegment.NULL)) {
+        throw new IllegalStateException("Failed to create weak engine reference");
+      }
+      return new PanamaWeakEngine(weakPtr, this);
+    } finally {
+      resourceHandle.endOperation();
     }
-    return new PanamaWeakEngine(weakPtr, this);
   }
 }

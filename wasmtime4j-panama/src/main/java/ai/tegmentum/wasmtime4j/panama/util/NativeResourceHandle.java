@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.panama.util;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import java.lang.ref.Cleaner;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
 /**
@@ -51,6 +52,13 @@ public final class NativeResourceHandle implements AutoCloseable {
   private final String resourceType;
   private final CleanupAction closeAction;
   private final Cleaner.Cleanable cleanable;
+
+  /**
+   * Read-write lock protecting against use-after-free race conditions. Operations acquire the read
+   * lock (shared, non-exclusive), while {@link #close()} acquires the write lock (exclusive). This
+   * prevents the native handle from being freed while operations are in-flight.
+   */
+  private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
 
   /**
    * Functional interface for resource cleanup operations.
@@ -135,12 +143,57 @@ public final class NativeResourceHandle implements AutoCloseable {
   /**
    * Ensures the resource is not closed.
    *
+   * <p><b>Warning:</b> This method does NOT acquire the close lock. For thread-safe operation
+   * guarding, use {@link #beginOperation()} / {@link #endOperation()} instead to prevent
+   * use-after-free race conditions with concurrent {@link #close()} calls.
+   *
    * @throws IllegalStateException if the resource has been closed
    */
   public void ensureNotClosed() {
     if (closed.get()) {
       throw new IllegalStateException(resourceType + " has been closed");
     }
+  }
+
+  /**
+   * Begins a guarded operation by acquiring the read lock and verifying the resource is not closed.
+   *
+   * <p>Every call to {@code beginOperation()} <b>must</b> be paired with {@link #endOperation()} in
+   * a {@code finally} block.
+   *
+   * @throws IllegalStateException if the resource has been closed
+   */
+  public void beginOperation() {
+    closeLock.readLock().lock();
+    if (closed.get()) {
+      closeLock.readLock().unlock();
+      throw new IllegalStateException(resourceType + " has been closed");
+    }
+  }
+
+  /**
+   * Ends a guarded operation by releasing the read lock.
+   *
+   * <p>Must be called in a {@code finally} block after {@link #beginOperation()}.
+   */
+  public void endOperation() {
+    closeLock.readLock().unlock();
+  }
+
+  /**
+   * Attempts to begin a guarded operation. Returns {@code false} if the resource is closed, without
+   * throwing. If this returns {@code true}, the caller <b>must</b> call {@link #endOperation()} in
+   * a {@code finally} block.
+   *
+   * @return {@code true} if the operation can proceed (lock acquired), {@code false} if closed
+   */
+  public boolean tryBeginOperation() {
+    closeLock.readLock().lock();
+    if (closed.get()) {
+      closeLock.readLock().unlock();
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -154,21 +207,27 @@ public final class NativeResourceHandle implements AutoCloseable {
 
   /**
    * Closes the resource. Thread-safe and idempotent — only the first call executes the cleanup
-   * action. Subsequent calls are no-ops.
+   * action. Subsequent calls are no-ops. Acquires the write lock to ensure no in-flight operations
+   * are using the native handle when it is freed.
    */
   @Override
   public void close() {
-    if (closed.compareAndSet(false, true)) {
-      try {
-        closeAction.cleanup();
-        LOGGER.fine("Closed " + resourceType);
-      } catch (final Exception e) {
-        LOGGER.warning("Error closing " + resourceType + ": " + e.getMessage());
-      } finally {
-        if (cleanable != null) {
-          cleanable.clean();
+    closeLock.writeLock().lock();
+    try {
+      if (closed.compareAndSet(false, true)) {
+        try {
+          closeAction.cleanup();
+          LOGGER.fine("Closed " + resourceType);
+        } catch (final Exception e) {
+          LOGGER.warning("Error closing " + resourceType + ": " + e.getMessage());
+        } finally {
+          if (cleanable != null) {
+            cleanable.clean();
+          }
         }
       }
+    } finally {
+      closeLock.writeLock().unlock();
     }
   }
 }

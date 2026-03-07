@@ -137,11 +137,10 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
   @Override
   public void block() throws WasmException {
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
-
     try {
       final int result = (int) BLOCK_HANDLE.invoke(contextHandle, nativeHandle);
 
@@ -155,17 +154,18 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error blocking on pollable: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public boolean ready() throws WasmException {
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
-
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outReady = arena.allocate(ValueLayout.JAVA_INT);
 
@@ -183,6 +183,8 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
       throw e;
     } catch (final Throwable e) {
       throw new WasmException("Error checking pollable readiness: " + e.getMessage(), e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -211,21 +213,24 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
       throw new IllegalArgumentException("Operation cannot be null or empty");
     }
     try {
-      ensureNotClosed();
+      resourceHandle.beginOperation();
     } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
+    try {
+      switch (operation) {
+        case "block":
+          block();
+          return null;
 
-    switch (operation) {
-      case "block":
-        block();
-        return null;
+        case "ready":
+          return ready();
 
-      case "ready":
-        return ready();
-
-      default:
-        throw new WasmException("Unknown operation: " + operation);
+        default:
+          throw new WasmException("Unknown operation: " + operation);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -243,8 +248,12 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
    * @return the native memory segment
    */
   public MemorySegment getNativeHandle() {
-    ensureNotClosed();
-    return nativeHandle;
+    resourceHandle.beginOperation();
+    try {
+      return nativeHandle;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -259,9 +268,5 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
   @Override
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

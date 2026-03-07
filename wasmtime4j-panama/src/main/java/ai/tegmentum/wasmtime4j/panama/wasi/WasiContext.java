@@ -131,8 +131,12 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context is closed
    */
   public MemorySegment getNativeHandle() {
-    ensureNotClosed();
-    return nativeHandle;
+    resourceHandle.beginOperation();
+    try {
+      return nativeHandle;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -144,8 +148,12 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context is closed
    */
   public String getEnvironmentVariable(final String name) {
-    ensureNotClosed();
-    return contextData.getEnvironmentVariable(name);
+    resourceHandle.beginOperation();
+    try {
+      return contextData.getEnvironmentVariable(name);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -155,8 +163,12 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context is closed
    */
   public Map<String, String> getEnvironment() {
-    ensureNotClosed();
-    return contextData.getEnvironment();
+    resourceHandle.beginOperation();
+    try {
+      return contextData.getEnvironment();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -166,8 +178,12 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context is closed
    */
   public String[] getArguments() {
-    ensureNotClosed();
-    return contextData.getArguments();
+    resourceHandle.beginOperation();
+    try {
+      return contextData.getArguments();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -177,8 +193,12 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context is closed
    */
   public Map<String, Path> getPreopenedDirectories() {
-    ensureNotClosed();
-    return contextData.getPreopenedDirectories();
+    resourceHandle.beginOperation();
+    try {
+      return contextData.getPreopenedDirectories();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -188,8 +208,12 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context is closed
    */
   public Path getWorkingDirectory() {
-    ensureNotClosed();
-    return contextData.getWorkingDirectory();
+    resourceHandle.beginOperation();
+    try {
+      return contextData.getWorkingDirectory();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -204,8 +228,12 @@ public final class WasiContext implements AutoCloseable {
    * @throws IllegalStateException if the context is closed
    */
   public Path validatePath(final String path) {
-    ensureNotClosed();
-    return contextData.validatePath(path);
+    resourceHandle.beginOperation();
+    try {
+      return contextData.validatePath(path);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -242,10 +270,6 @@ public final class WasiContext implements AutoCloseable {
    *
    * @throws IllegalStateException if the context has been closed
    */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-  }
-
   /**
    * Native method to close the WASI context.
    *

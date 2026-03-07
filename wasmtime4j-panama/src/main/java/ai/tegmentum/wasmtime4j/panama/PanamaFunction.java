@@ -72,9 +72,13 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
     if (params == null) {
       throw new IllegalArgumentException("Parameters cannot be null");
     }
-    ensureNotClosed();
-    // Delegate to the instance's callFunction method
-    return instance.callFunction(name, params);
+    resourceHandle.beginOperation();
+    try {
+      // Delegate to the instance's callFunction method
+      return instance.callFunction(name, params);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -123,57 +127,76 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
 
   @Override
   public void callVoid() throws WasmException {
-    ensureNotClosed();
-    instance.callVoidFast(name);
+    resourceHandle.beginOperation();
+    try {
+      instance.callVoidFast(name);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public int callI32ToI32(final int arg) throws WasmException {
-    ensureNotClosed();
-    return instance.callI32ToI32Fast(name, arg);
+    resourceHandle.beginOperation();
+    try {
+      return instance.callI32ToI32Fast(name, arg);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public int callI32I32ToI32(final int arg1, final int arg2) throws WasmException {
-    ensureNotClosed();
-    return instance.callI32I32ToI32Fast(name, arg1, arg2);
+    resourceHandle.beginOperation();
+    try {
+      return instance.callI32I32ToI32Fast(name, arg1, arg2);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long callI64ToI64(final long arg) throws WasmException {
-    ensureNotClosed();
-    return instance.callI64ToI64Fast(name, arg);
+    resourceHandle.beginOperation();
+    try {
+      return instance.callI64ToI64Fast(name, arg);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public double callF64ToF64(final double arg) throws WasmException {
-    ensureNotClosed();
-    return instance.callF64ToF64Fast(name, arg);
+    resourceHandle.beginOperation();
+    try {
+      return instance.callF64ToF64Fast(name, arg);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public int callToI32() throws WasmException {
-    ensureNotClosed();
-    return instance.callToI32Fast(name);
+    resourceHandle.beginOperation();
+    try {
+      return instance.callToI32Fast(name);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long toRawFuncRef() throws ai.tegmentum.wasmtime4j.exception.WasmException {
-    ensureNotClosed();
-    return instance.funcToRaw(name);
+    resourceHandle.beginOperation();
+    try {
+      return instance.funcToRaw(name);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /** Closes the function and releases resources. */
   public void close() {
     resourceHandle.close();
-  }
-
-  /**
-   * Ensures the function is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

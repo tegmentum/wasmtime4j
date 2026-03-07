@@ -120,217 +120,321 @@ public final class PanamaComponentTypedFunc implements ComponentTypedFunc {
 
   @Override
   public void callVoidToVoid() throws WasmException {
-    ensureNotClosed();
-    function.call();
+    resourceHandle.beginOperation();
+    try {
+      function.call();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void callS32ToVoid(final int param) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.s32(param));
+    resourceHandle.beginOperation();
+    try {
+      function.call(ComponentVal.s32(param));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void callS32S32ToVoid(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
+    resourceHandle.beginOperation();
+    try {
+      function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void callS64ToVoid(final long param) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.s64(param));
+    resourceHandle.beginOperation();
+    try {
+      function.call(ComponentVal.s64(param));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void callS64S64ToVoid(final long param1, final long param2) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.s64(param1), ComponentVal.s64(param2));
+    resourceHandle.beginOperation();
+    try {
+      function.call(ComponentVal.s64(param1), ComponentVal.s64(param2));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public void callStringToVoid(final String param) throws WasmException {
-    ensureNotClosed();
-    function.call(ComponentVal.string(param));
+    resourceHandle.beginOperation();
+    try {
+      function.call(ComponentVal.string(param));
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // ========== s32 return signatures ==========
 
   @Override
   public int callS32ToS32(final int param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call(ComponentVal.s32(param));
-    validateSingleResult(results);
-    return results.get(0).asS32();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call(ComponentVal.s32(param));
+      validateSingleResult(results);
+      return results.get(0).asS32();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public int callS32S32ToS32(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
-    validateSingleResult(results);
-    return results.get(0).asS32();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
+      validateSingleResult(results);
+      return results.get(0).asS32();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public int callS32S32S32ToS32(final int param1, final int param2, final int param3)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.s32(param1), ComponentVal.s32(param2), ComponentVal.s32(param3));
-    validateSingleResult(results);
-    return results.get(0).asS32();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(
+              ComponentVal.s32(param1), ComponentVal.s32(param2), ComponentVal.s32(param3));
+      validateSingleResult(results);
+      return results.get(0).asS32();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public int callS64ToS32(final long param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call(ComponentVal.s64(param));
-    validateSingleResult(results);
-    return results.get(0).asS32();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call(ComponentVal.s64(param));
+      validateSingleResult(results);
+      return results.get(0).asS32();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // ========== s64 return signatures ==========
 
   @Override
   public long callS64ToS64(final long param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call(ComponentVal.s64(param));
-    validateSingleResult(results);
-    return results.get(0).asS64();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call(ComponentVal.s64(param));
+      validateSingleResult(results);
+      return results.get(0).asS64();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long callS64S64ToS64(final long param1, final long param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.s64(param1), ComponentVal.s64(param2));
-    validateSingleResult(results);
-    return results.get(0).asS64();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(ComponentVal.s64(param1), ComponentVal.s64(param2));
+      validateSingleResult(results);
+      return results.get(0).asS64();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long callS64S64S64ToS64(final long param1, final long param2, final long param3)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.s64(param1), ComponentVal.s64(param2), ComponentVal.s64(param3));
-    validateSingleResult(results);
-    return results.get(0).asS64();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(
+              ComponentVal.s64(param1), ComponentVal.s64(param2), ComponentVal.s64(param3));
+      validateSingleResult(results);
+      return results.get(0).asS64();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public long callS32S32ToS64(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
-    validateSingleResult(results);
-    return results.get(0).asS64();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(ComponentVal.s32(param1), ComponentVal.s32(param2));
+      validateSingleResult(results);
+      return results.get(0).asS64();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // ========== f32 return signatures ==========
 
   @Override
   public float callF32ToF32(final float param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call(ComponentVal.f32(param));
-    validateSingleResult(results);
-    return results.get(0).asF32();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call(ComponentVal.f32(param));
+      validateSingleResult(results);
+      return results.get(0).asF32();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public float callF32F32ToF32(final float param1, final float param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.f32(param1), ComponentVal.f32(param2));
-    validateSingleResult(results);
-    return results.get(0).asF32();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(ComponentVal.f32(param1), ComponentVal.f32(param2));
+      validateSingleResult(results);
+      return results.get(0).asF32();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public float callF32F32F32ToF32(final float param1, final float param2, final float param3)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.f32(param1), ComponentVal.f32(param2), ComponentVal.f32(param3));
-    validateSingleResult(results);
-    return results.get(0).asF32();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(
+              ComponentVal.f32(param1), ComponentVal.f32(param2), ComponentVal.f32(param3));
+      validateSingleResult(results);
+      return results.get(0).asF32();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // ========== f64 return signatures ==========
 
   @Override
   public double callF64ToF64(final double param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call(ComponentVal.f64(param));
-    validateSingleResult(results);
-    return results.get(0).asF64();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call(ComponentVal.f64(param));
+      validateSingleResult(results);
+      return results.get(0).asF64();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public double callF64F64ToF64(final double param1, final double param2) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.f64(param1), ComponentVal.f64(param2));
-    validateSingleResult(results);
-    return results.get(0).asF64();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(ComponentVal.f64(param1), ComponentVal.f64(param2));
+      validateSingleResult(results);
+      return results.get(0).asF64();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public double callF64F64F64ToF64(final double param1, final double param2, final double param3)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.f64(param1), ComponentVal.f64(param2), ComponentVal.f64(param3));
-    validateSingleResult(results);
-    return results.get(0).asF64();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(
+              ComponentVal.f64(param1), ComponentVal.f64(param2), ComponentVal.f64(param3));
+      validateSingleResult(results);
+      return results.get(0).asF64();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // ========== string return signatures ==========
 
   @Override
   public String callVoidToString() throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call();
-    validateSingleResult(results);
-    return results.get(0).asString();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call();
+      validateSingleResult(results);
+      return results.get(0).asString();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public String callStringToString(final String param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call(ComponentVal.string(param));
-    validateSingleResult(results);
-    return results.get(0).asString();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call(ComponentVal.string(param));
+      validateSingleResult(results);
+      return results.get(0).asString();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public String callStringStringToString(final String param1, final String param2)
       throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results =
-        function.call(ComponentVal.string(param1), ComponentVal.string(param2));
-    validateSingleResult(results);
-    return results.get(0).asString();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results =
+          function.call(ComponentVal.string(param1), ComponentVal.string(param2));
+      validateSingleResult(results);
+      return results.get(0).asString();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // ========== bool signatures ==========
 
   @Override
   public boolean callVoidToBool() throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call();
-    validateSingleResult(results);
-    return results.get(0).asBool();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call();
+      validateSingleResult(results);
+      return results.get(0).asBool();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public boolean callBoolToBool(final boolean param) throws WasmException {
-    ensureNotClosed();
-    final List<ComponentVal> results = function.call(ComponentVal.bool(param));
-    validateSingleResult(results);
-    return results.get(0).asBool();
+    resourceHandle.beginOperation();
+    try {
+      final List<ComponentVal> results = function.call(ComponentVal.bool(param));
+      validateSingleResult(results);
+      return results.get(0).asBool();
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   // ========== Metadata and lifecycle ==========
@@ -368,10 +472,6 @@ public final class PanamaComponentTypedFunc implements ComponentTypedFunc {
    *
    * @throws IllegalStateException if closed
    */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-  }
-
   @Override
   public String toString() {
     return "PanamaComponentTypedFunc{signature='"

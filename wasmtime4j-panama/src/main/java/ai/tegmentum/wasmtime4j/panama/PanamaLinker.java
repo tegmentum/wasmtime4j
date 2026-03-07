@@ -149,73 +149,79 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
-
-    // Convert FunctionType to native representation
-    final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
-    final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
-
-    // Register callback and get ID
-    final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
-
+    resourceHandle.beginOperation();
     try {
-      // Create upcall stub for the callback function
-      final MemorySegment callbackStub = createCallbackStub();
 
-      // Allocate native memory for strings and arrays
-      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-      final MemorySegment namePtr = arena.allocateFrom(name);
+      // Convert FunctionType to native representation
+      final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
+      final int[] returnTypes =
+          TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
-      // Allocate and copy parameter types
-      final MemorySegment paramTypesPtr = arena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
-      for (int i = 0; i < paramTypes.length; i++) {
-        paramTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i]);
+      // Register callback and get ID
+      final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
+
+      try {
+        // Create upcall stub for the callback function
+        final MemorySegment callbackStub = createCallbackStub();
+
+        // Allocate native memory for strings and arrays
+        final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+        final MemorySegment namePtr = arena.allocateFrom(name);
+
+        // Allocate and copy parameter types
+        final MemorySegment paramTypesPtr = arena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
+        for (int i = 0; i < paramTypes.length; i++) {
+          paramTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i]);
+        }
+
+        // Allocate and copy return types
+        final MemorySegment returnTypesPtr =
+            arena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
+        for (int i = 0; i < returnTypes.length; i++) {
+          returnTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, returnTypes[i]);
+        }
+
+        // Call native function to define host function
+        final int result =
+            NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineHostFunction(
+                nativeLinker,
+                moduleNamePtr,
+                namePtr,
+                paramTypesPtr,
+                paramTypes.length,
+                returnTypesPtr,
+                returnTypes.length,
+                callbackStub,
+                callbackId);
+
+        if (result != 0) {
+          throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
+        }
+
+        addImportWithMetadata(
+            moduleName,
+            name,
+            ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
+            functionType.toString());
+
+        LOGGER.fine(
+            "Defined host function: "
+                + moduleName
+                + "::"
+                + name
+                + " (callback ID: "
+                + callbackId
+                + ")");
+      } catch (final Exception e) {
+        // Unregister callback on failure
+        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining host function: " + moduleName + "::" + name, e);
       }
-
-      // Allocate and copy return types
-      final MemorySegment returnTypesPtr = arena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
-      for (int i = 0; i < returnTypes.length; i++) {
-        returnTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, returnTypes[i]);
-      }
-
-      // Call native function to define host function
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineHostFunction(
-              nativeLinker,
-              moduleNamePtr,
-              namePtr,
-              paramTypesPtr,
-              paramTypes.length,
-              returnTypesPtr,
-              returnTypes.length,
-              callbackStub,
-              callbackId);
-
-      if (result != 0) {
-        throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
-      }
-
-      addImportWithMetadata(
-          moduleName,
-          name,
-          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
-          functionType.toString());
-
-      LOGGER.fine(
-          "Defined host function: "
-              + moduleName
-              + "::"
-              + name
-              + " (callback ID: "
-              + callbackId
-              + ")");
-    } catch (final Exception e) {
-      // Unregister callback on failure
-      HOST_FUNCTION_CALLBACKS.remove(callbackId);
-      if (e instanceof WasmException) {
-        throw e;
-      }
-      throw new WasmException("Error defining host function: " + moduleName + "::" + name, e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -235,60 +241,64 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (memory == null) {
       throw new IllegalArgumentException("Memory cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Ensure we have Panama implementations
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
+      // Ensure we have Panama implementations
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
+      }
+      if (!(memory instanceof PanamaMemory)) {
+        throw new IllegalArgumentException("Memory must be a PanamaMemory");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final PanamaMemory panamaMemory = (PanamaMemory) memory;
+
+      // Allocate C strings for module name and memory name
+      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+      final MemorySegment namePtr = arena.allocateFrom(name);
+
+      final int result;
+
+      // For instance-exported memories, use panamaLinkerDefineMemoryFromInstance to avoid
+      // store mismatch issues. This keeps memory extraction and definition in the same
+      // native call, ensuring consistent store context.
+      if (panamaMemory.isInstanceExported()) {
+        final PanamaInstance owningInstance = panamaMemory.getOwningInstance();
+        final String exportName = panamaMemory.getExportName();
+        // Get the instance's store - this is the store that created the instance and is needed
+        // to extract shared memory from it. The linker's store (panamaStore) may be different
+        // (e.g., a thread's store when defining shared memory across threads).
+        final PanamaStore instanceStore = (PanamaStore) owningInstance.getStore();
+        final MemorySegment exportNamePtr = arena.allocateFrom(exportName);
+
+        // Use the instance's store to extract the memory, not the linker's store
+        result =
+            NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineMemoryFromInstance(
+                nativeLinker,
+                instanceStore.getNativeStore(),
+                moduleNamePtr,
+                namePtr,
+                owningInstance.getNativeInstance(),
+                exportNamePtr);
+      } else {
+        // For store-created memories, use the standard path with the memory pointer
+        final MemorySegment memoryPtr = panamaMemory.getNativeMemory();
+        result =
+            NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineMemory(
+                nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, memoryPtr);
+      }
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to define memory: " + moduleName + "::" + name);
+      }
+
+      LOGGER.fine("Defined memory: " + moduleName + "::" + name);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (!(memory instanceof PanamaMemory)) {
-      throw new IllegalArgumentException("Memory must be a PanamaMemory");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final PanamaMemory panamaMemory = (PanamaMemory) memory;
-
-    // Allocate C strings for module name and memory name
-    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-    final MemorySegment namePtr = arena.allocateFrom(name);
-
-    final int result;
-
-    // For instance-exported memories, use panamaLinkerDefineMemoryFromInstance to avoid
-    // store mismatch issues. This keeps memory extraction and definition in the same
-    // native call, ensuring consistent store context.
-    if (panamaMemory.isInstanceExported()) {
-      final PanamaInstance owningInstance = panamaMemory.getOwningInstance();
-      final String exportName = panamaMemory.getExportName();
-      // Get the instance's store - this is the store that created the instance and is needed
-      // to extract shared memory from it. The linker's store (panamaStore) may be different
-      // (e.g., a thread's store when defining shared memory across threads).
-      final PanamaStore instanceStore = (PanamaStore) owningInstance.getStore();
-      final MemorySegment exportNamePtr = arena.allocateFrom(exportName);
-
-      // Use the instance's store to extract the memory, not the linker's store
-      result =
-          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineMemoryFromInstance(
-              nativeLinker,
-              instanceStore.getNativeStore(),
-              moduleNamePtr,
-              namePtr,
-              owningInstance.getNativeInstance(),
-              exportNamePtr);
-    } else {
-      // For store-created memories, use the standard path with the memory pointer
-      final MemorySegment memoryPtr = panamaMemory.getNativeMemory();
-      result =
-          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineMemory(
-              nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, memoryPtr);
-    }
-
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result, "Failed to define memory: " + moduleName + "::" + name);
-    }
-
-    LOGGER.fine("Defined memory: " + moduleName + "::" + name);
   }
 
   @Override
@@ -307,38 +317,42 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (table == null) {
       throw new IllegalArgumentException("Table cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Ensure we have Panama implementations
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
+      // Ensure we have Panama implementations
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
+      }
+      if (!(table instanceof PanamaTable)) {
+        throw new IllegalArgumentException("Table must be a PanamaTable");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final PanamaTable panamaTable = (PanamaTable) table;
+
+      // Allocate C strings for module name and table name
+      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+      final MemorySegment namePtr = arena.allocateFrom(name);
+
+      // Call native function to define table
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineTable(
+              nativeLinker,
+              panamaStore.getNativeStore(),
+              moduleNamePtr,
+              namePtr,
+              panamaTable.getNativeTable());
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to define table: " + moduleName + "::" + name);
+      }
+
+      LOGGER.fine("Defined table: " + moduleName + "::" + name);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (!(table instanceof PanamaTable)) {
-      throw new IllegalArgumentException("Table must be a PanamaTable");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final PanamaTable panamaTable = (PanamaTable) table;
-
-    // Allocate C strings for module name and table name
-    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-    final MemorySegment namePtr = arena.allocateFrom(name);
-
-    // Call native function to define table
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineTable(
-            nativeLinker,
-            panamaStore.getNativeStore(),
-            moduleNamePtr,
-            namePtr,
-            panamaTable.getNativeTable());
-
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result, "Failed to define table: " + moduleName + "::" + name);
-    }
-
-    LOGGER.fine("Defined table: " + moduleName + "::" + name);
   }
 
   @Override
@@ -357,47 +371,51 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (global == null) {
       throw new IllegalArgumentException("Global cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Ensure we have Panama implementations
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
+      // Ensure we have Panama implementations
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+
+      // Get the native global pointer based on the global type
+      final MemorySegment globalPtr;
+      if (global instanceof PanamaGlobal) {
+        globalPtr = ((PanamaGlobal) global).getNativeGlobal();
+      } else if (global instanceof PanamaInstanceGlobal) {
+        globalPtr = ((PanamaInstanceGlobal) global).getGlobalPointer();
+      } else {
+        throw new IllegalArgumentException(
+            "Global must be a PanamaGlobal or PanamaInstanceGlobal, got: "
+                + global.getClass().getName());
+      }
+
+      if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
+        throw new WasmException(
+            "Failed to get native global pointer for: " + moduleName + "::" + name);
+      }
+
+      // Allocate C strings for module name and global name
+      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+      final MemorySegment namePtr = arena.allocateFrom(name);
+
+      // Call native function to define global
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineGlobal(
+              nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, globalPtr);
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to define global: " + moduleName + "::" + name);
+      }
+
+      LOGGER.fine("Defined global: " + moduleName + "::" + name);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-
-    // Get the native global pointer based on the global type
-    final MemorySegment globalPtr;
-    if (global instanceof PanamaGlobal) {
-      globalPtr = ((PanamaGlobal) global).getNativeGlobal();
-    } else if (global instanceof PanamaInstanceGlobal) {
-      globalPtr = ((PanamaInstanceGlobal) global).getGlobalPointer();
-    } else {
-      throw new IllegalArgumentException(
-          "Global must be a PanamaGlobal or PanamaInstanceGlobal, got: "
-              + global.getClass().getName());
-    }
-
-    if (globalPtr == null || globalPtr.equals(MemorySegment.NULL)) {
-      throw new WasmException(
-          "Failed to get native global pointer for: " + moduleName + "::" + name);
-    }
-
-    // Allocate C strings for module name and global name
-    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-    final MemorySegment namePtr = arena.allocateFrom(name);
-
-    // Call native function to define global
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineGlobal(
-            nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr, globalPtr);
-
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result, "Failed to define global: " + moduleName + "::" + name);
-    }
-
-    LOGGER.fine("Defined global: " + moduleName + "::" + name);
   }
 
   @Override
@@ -412,35 +430,39 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (instance == null) {
       throw new IllegalArgumentException("Instance cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Ensure we have Panama implementation
-    if (!(instance instanceof PanamaInstance)) {
-      throw new IllegalArgumentException("Instance must be a PanamaInstance");
+      // Ensure we have Panama implementation
+      if (!(instance instanceof PanamaInstance)) {
+        throw new IllegalArgumentException("Instance must be a PanamaInstance");
+      }
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
+      }
+
+      final PanamaInstance panamaInstance = (PanamaInstance) instance;
+      final PanamaStore panamaStore = (PanamaStore) store;
+
+      // Allocate C string for module name
+      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+
+      // Call native function to define instance
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineInstance(
+              nativeLinker,
+              panamaStore.getNativeStore(),
+              moduleNamePtr,
+              panamaInstance.getNativeInstance());
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to define instance: " + moduleName);
+      }
+
+      LOGGER.fine("Defined instance: " + moduleName);
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
-    }
-
-    final PanamaInstance panamaInstance = (PanamaInstance) instance;
-    final PanamaStore panamaStore = (PanamaStore) store;
-
-    // Allocate C string for module name
-    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-
-    // Call native function to define instance
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineInstance(
-            nativeLinker,
-            panamaStore.getNativeStore(),
-            moduleNamePtr,
-            panamaInstance.getNativeInstance());
-
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to define instance: " + moduleName);
-    }
-
-    LOGGER.fine("Defined instance: " + moduleName);
   }
 
   @Override
@@ -459,34 +481,38 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (toName == null) {
       throw new IllegalArgumentException("To name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Allocate C strings
-    final MemorySegment fromModulePtr = arena.allocateFrom(fromModule);
-    final MemorySegment fromNamePtr = arena.allocateFrom(fromName);
-    final MemorySegment toModulePtr = arena.allocateFrom(toModule);
-    final MemorySegment toNamePtr = arena.allocateFrom(toName);
+      // Allocate C strings
+      final MemorySegment fromModulePtr = arena.allocateFrom(fromModule);
+      final MemorySegment fromNamePtr = arena.allocateFrom(fromName);
+      final MemorySegment toModulePtr = arena.allocateFrom(toModule);
+      final MemorySegment toNamePtr = arena.allocateFrom(toName);
 
-    // Call native function to create alias
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.panamaLinkerAlias(
-            nativeLinker, fromModulePtr, fromNamePtr, toModulePtr, toNamePtr);
+      // Call native function to create alias
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerAlias(
+              nativeLinker, fromModulePtr, fromNamePtr, toModulePtr, toNamePtr);
 
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result,
-          "Failed to create alias from "
-              + fromModule
-              + "::"
-              + fromName
-              + " to "
-              + toModule
-              + "::"
-              + toName);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result,
+            "Failed to create alias from "
+                + fromModule
+                + "::"
+                + fromName
+                + " to "
+                + toModule
+                + "::"
+                + toName);
+      }
+
+      LOGGER.fine(
+          "Created alias from " + fromModule + "::" + fromName + " to " + toModule + "::" + toName);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    LOGGER.fine(
-        "Created alias from " + fromModule + "::" + fromName + " to " + toModule + "::" + toName);
   }
 
   @Override
@@ -497,20 +523,24 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (asModule == null) {
       throw new IllegalArgumentException("Alias module name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final MemorySegment modulePtr = arena.allocateFrom(module);
-    final MemorySegment asModulePtr = arena.allocateFrom(asModule);
+      final MemorySegment modulePtr = arena.allocateFrom(module);
+      final MemorySegment asModulePtr = arena.allocateFrom(asModule);
 
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.panamaLinkerAliasModule(nativeLinker, modulePtr, asModulePtr);
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerAliasModule(nativeLinker, modulePtr, asModulePtr);
 
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result, "Failed to alias module '" + module + "' as '" + asModule + "'");
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to alias module '" + module + "' as '" + asModule + "'");
+      }
+
+      LOGGER.fine("Aliased module '" + module + "' as '" + asModule + "'");
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    LOGGER.fine("Aliased module '" + module + "' as '" + asModule + "'");
   }
 
   @Override
@@ -521,49 +551,54 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Ensure we have Panama implementations
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
-    }
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final PanamaModule panamaModule = (PanamaModule) module;
-
-    // If we have a WASI context, attach it to the store before instantiation
-    if (wasiContext != null) {
-      final int hasWasi = NATIVE_STORE_BINDINGS.storeHasWasiContext(panamaStore.getNativeStore());
-      if (hasWasi == 0) {
-        // Store doesn't have WASI context yet, attach it
-        final int result =
-            NATIVE_STORE_BINDINGS.storeSetWasiContext(
-                panamaStore.getNativeStore(), wasiContext.getNativeContext());
-        if (result != 0) {
-          throw PanamaErrorMapper.mapNativeError(result, "Failed to attach WASI context to store");
-        }
-        panamaStore.setTrackedWasiContext(wasiContext);
-        LOGGER.fine("Attached WASI context to store before instantiation");
+      // Ensure we have Panama implementations
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
       }
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final PanamaModule panamaModule = (PanamaModule) module;
+
+      // If we have a WASI context, attach it to the store before instantiation
+      if (wasiContext != null) {
+        final int hasWasi = NATIVE_STORE_BINDINGS.storeHasWasiContext(panamaStore.getNativeStore());
+        if (hasWasi == 0) {
+          // Store doesn't have WASI context yet, attach it
+          final int result =
+              NATIVE_STORE_BINDINGS.storeSetWasiContext(
+                  panamaStore.getNativeStore(), wasiContext.getNativeContext());
+          if (result != 0) {
+            throw PanamaErrorMapper.mapNativeError(
+                result, "Failed to attach WASI context to store");
+          }
+          panamaStore.setTrackedWasiContext(wasiContext);
+          LOGGER.fine("Attached WASI context to store before instantiation");
+        }
+      }
+
+      // Call native function to instantiate module using linker
+      final MemorySegment instancePtr =
+          NATIVE_INSTANCE_BINDINGS.panamaLinkerInstantiate(
+              nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
+
+      if (instancePtr == null || instancePtr.address() == 0) {
+        // Retrieve detailed error message from native side
+        final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+        throw new WasmException(
+            errorMsg != null ? errorMsg : "Failed to instantiate module via linker");
+      }
+
+      // Wrap the native instance pointer
+      return new PanamaInstance(instancePtr, panamaModule, panamaStore);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Call native function to instantiate module using linker
-    final MemorySegment instancePtr =
-        NATIVE_INSTANCE_BINDINGS.panamaLinkerInstantiate(
-            nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
-
-    if (instancePtr == null || instancePtr.address() == 0) {
-      // Retrieve detailed error message from native side
-      final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
-      throw new WasmException(
-          errorMsg != null ? errorMsg : "Failed to instantiate module via linker");
-    }
-
-    // Wrap the native instance pointer
-    return new PanamaInstance(instancePtr, panamaModule, panamaStore);
   }
 
   @Override
@@ -578,29 +613,33 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Ensure we have Panama implementations
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
+      // Ensure we have Panama implementations
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
+      }
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final PanamaModule panamaModule = (PanamaModule) module;
+
+      // Instantiate the module using the linker
+      final Instance instance = instantiate(store, module);
+
+      // Define the instance in the linker under the specified module name
+      // This allows other modules to import from this instance
+      defineInstance(store, moduleName, instance);
+
+      LOGGER.fine("Instantiated and registered module: " + moduleName);
+
+      return instance;
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final PanamaModule panamaModule = (PanamaModule) module;
-
-    // Instantiate the module using the linker
-    final Instance instance = instantiate(store, module);
-
-    // Define the instance in the linker under the specified module name
-    // This allows other modules to import from this instance
-    defineInstance(store, moduleName, instance);
-
-    LOGGER.fine("Instantiated and registered module: " + moduleName);
-
-    return instance;
   }
 
   @Override
@@ -609,46 +648,55 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule for Panama linker");
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule for Panama linker");
+      }
+
+      final PanamaModule panamaModule = (PanamaModule) module;
+
+      // Call native function to create InstancePre
+      final MemorySegment instancePrePtr =
+          NATIVE_INSTANCE_BINDINGS.linkerInstantiatePre(
+              nativeLinker, panamaModule.getNativeModule());
+
+      if (instancePrePtr == null || instancePrePtr.equals(MemorySegment.NULL)) {
+        throw new WasmException("Failed to create InstancePre for module");
+      }
+
+      LOGGER.fine("Created InstancePre for module");
+
+      return new PanamaInstancePre(instancePrePtr, module, engine);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaModule panamaModule = (PanamaModule) module;
-
-    // Call native function to create InstancePre
-    final MemorySegment instancePrePtr =
-        NATIVE_INSTANCE_BINDINGS.linkerInstantiatePre(nativeLinker, panamaModule.getNativeModule());
-
-    if (instancePrePtr == null || instancePrePtr.equals(MemorySegment.NULL)) {
-      throw new WasmException("Failed to create InstancePre for module");
-    }
-
-    LOGGER.fine("Created InstancePre for module");
-
-    return new PanamaInstancePre(instancePrePtr, module, engine);
   }
 
   @Override
   public void enableWasi() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Check if WASI is already enabled - skip if so to avoid duplicate definition errors
-    if (wasiEnabled) {
-      LOGGER.fine("WASI already enabled for linker, skipping");
-      return;
+      // Check if WASI is already enabled - skip if so to avoid duplicate definition errors
+      if (wasiEnabled) {
+        LOGGER.fine("WASI already enabled for linker, skipping");
+        return;
+      }
+
+      // Add WASI Preview 1 imports to the linker
+      final int result = NATIVE_INSTANCE_BINDINGS.linkerAddWasi(nativeLinker);
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI");
+      }
+
+      wasiEnabled = true;
+      LOGGER.fine("Enabled WASI for linker");
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    // Add WASI Preview 1 imports to the linker
-    final int result = NATIVE_INSTANCE_BINDINGS.linkerAddWasi(nativeLinker);
-
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI");
-    }
-
-    wasiEnabled = true;
-    LOGGER.fine("Enabled WASI for linker");
   }
 
   /**
@@ -692,20 +740,32 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public boolean hasImport(final String moduleName, final String name) {
-    ensureNotClosed();
-    return ai.tegmentum.wasmtime4j.util.LinkerSupport.hasImport(imports, moduleName, name);
+    resourceHandle.beginOperation();
+    try {
+      return ai.tegmentum.wasmtime4j.util.LinkerSupport.hasImport(imports, moduleName, name);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public ImportValidation validateImports(final Module... modules) {
-    ensureNotClosed();
-    return ai.tegmentum.wasmtime4j.util.LinkerSupport.validateImports(imports, modules);
+    resourceHandle.beginOperation();
+    try {
+      return ai.tegmentum.wasmtime4j.util.LinkerSupport.validateImports(imports, modules);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public List<ImportInfo> getImportRegistry() {
-    ensureNotClosed();
-    return new ArrayList<>(importRegistry.values());
+    resourceHandle.beginOperation();
+    try {
+      return new ArrayList<>(importRegistry.values());
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -832,15 +892,6 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
   }
 
   /**
-   * Ensures the linker is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
-  }
-
-  /**
    * Registers a host function callback.
    *
    * @param moduleName the module name
@@ -951,25 +1002,34 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
 
   @Override
   public ai.tegmentum.wasmtime4j.Linker<T> allowShadowing(final boolean allow) {
-    ensureNotClosed();
-    final int result = NATIVE_INSTANCE_BINDINGS.linkerAllowShadowing(nativeLinker, allow ? 1 : 0);
-    if (result != 0) {
-      LOGGER.warning(
-          "Failed to set allow shadowing: " + PanamaErrorMapper.getErrorDescription(result));
+    resourceHandle.beginOperation();
+    try {
+      final int result = NATIVE_INSTANCE_BINDINGS.linkerAllowShadowing(nativeLinker, allow ? 1 : 0);
+      if (result != 0) {
+        LOGGER.warning(
+            "Failed to set allow shadowing: " + PanamaErrorMapper.getErrorDescription(result));
+      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.Linker<T> allowUnknownExports(final boolean allow) {
-    ensureNotClosed();
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.linkerAllowUnknownExports(nativeLinker, allow ? 1 : 0);
-    if (result != 0) {
-      LOGGER.warning(
-          "Failed to set allow unknown exports: " + PanamaErrorMapper.getErrorDescription(result));
+    resourceHandle.beginOperation();
+    try {
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.linkerAllowUnknownExports(nativeLinker, allow ? 1 : 0);
+      if (result != 0) {
+        LOGGER.warning(
+            "Failed to set allow unknown exports: "
+                + PanamaErrorMapper.getErrorDescription(result));
+      }
+      return this;
+    } finally {
+      resourceHandle.endOperation();
     }
-    return this;
   }
 
   @Override
@@ -981,27 +1041,31 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
+      }
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final PanamaModule panamaModule = (PanamaModule) module;
+
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.linkerDefineUnknownImportsAsTraps(
+              nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to define unknown imports as traps");
+      }
+
+      LOGGER.fine("Defined unknown imports as traps");
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final PanamaModule panamaModule = (PanamaModule) module;
-
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.linkerDefineUnknownImportsAsTraps(
-            nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
-
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(result, "Failed to define unknown imports as traps");
-    }
-
-    LOGGER.fine("Defined unknown imports as traps");
   }
 
   @Override
@@ -1013,28 +1077,32 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
+      }
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final PanamaModule panamaModule = (PanamaModule) module;
+
+      final int result =
+          NATIVE_INSTANCE_BINDINGS.linkerDefineUnknownImportsAsDefaultValues(
+              nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
+
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(
+            result, "Failed to define unknown imports as default values");
+      }
+
+      LOGGER.fine("Defined unknown imports as default values");
+    } finally {
+      resourceHandle.endOperation();
     }
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final PanamaModule panamaModule = (PanamaModule) module;
-
-    final int result =
-        NATIVE_INSTANCE_BINDINGS.linkerDefineUnknownImportsAsDefaultValues(
-            nativeLinker, panamaStore.getNativeStore(), panamaModule.getNativeModule());
-
-    if (result != 0) {
-      throw PanamaErrorMapper.mapNativeError(
-          result, "Failed to define unknown imports as default values");
-    }
-
-    LOGGER.fine("Defined unknown imports as default values");
   }
 
   @Override
@@ -1060,73 +1128,83 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
-
-    // Convert FunctionType to native representation
-    final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
-    final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
-
-    // Register callback and get ID
-    final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
-
+    resourceHandle.beginOperation();
     try {
-      // Create upcall stub for the callback function
-      final MemorySegment callbackStub = createCallbackStub();
 
-      // Allocate native memory for strings and arrays
-      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-      final MemorySegment namePtr = arena.allocateFrom(name);
+      // Convert FunctionType to native representation
+      final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
+      final int[] returnTypes =
+          TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
-      // Allocate and copy parameter types
-      final MemorySegment paramTypesPtr = arena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
-      for (int i = 0; i < paramTypes.length; i++) {
-        paramTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i]);
-      }
+      // Register callback and get ID
+      final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
 
-      // Allocate and copy return types
-      final MemorySegment returnTypesPtr = arena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
-      for (int i = 0; i < returnTypes.length; i++) {
-        returnTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, returnTypes[i]);
-      }
+      try {
+        // Create upcall stub for the callback function
+        final MemorySegment callbackStub = createCallbackStub();
 
-      // Call native function to define unchecked host function
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineHostFunctionUnchecked(
-              nativeLinker,
-              moduleNamePtr,
-              namePtr,
-              paramTypesPtr,
-              paramTypes.length,
-              returnTypesPtr,
-              returnTypes.length,
-              callbackStub,
-              callbackId);
+        // Allocate native memory for strings and arrays
+        final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+        final MemorySegment namePtr = arena.allocateFrom(name);
 
-      if (result != 0) {
+        // Allocate and copy parameter types
+        final MemorySegment paramTypesPtr = arena.allocate(ValueLayout.JAVA_INT, paramTypes.length);
+        for (int i = 0; i < paramTypes.length; i++) {
+          paramTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, paramTypes[i]);
+        }
+
+        // Allocate and copy return types
+        final MemorySegment returnTypesPtr =
+            arena.allocate(ValueLayout.JAVA_INT, returnTypes.length);
+        for (int i = 0; i < returnTypes.length; i++) {
+          returnTypesPtr.setAtIndex(ValueLayout.JAVA_INT, i, returnTypes[i]);
+        }
+
+        // Call native function to define unchecked host function
+        final int result =
+            NATIVE_INSTANCE_BINDINGS.panamaLinkerDefineHostFunctionUnchecked(
+                nativeLinker,
+                moduleNamePtr,
+                namePtr,
+                paramTypesPtr,
+                paramTypes.length,
+                returnTypesPtr,
+                returnTypes.length,
+                callbackStub,
+                callbackId);
+
+        if (result != 0) {
+          throw new WasmException(
+              "Failed to define unchecked host function: " + moduleName + "::" + name);
+        }
+
+        addImportWithMetadata(
+            moduleName,
+            name,
+            ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
+            functionType.toString());
+
+        LOGGER.fine("Defined unchecked function: " + moduleName + "::" + name);
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
         throw new WasmException(
-            "Failed to define unchecked host function: " + moduleName + "::" + name);
+            "Failed to define unchecked host function: " + moduleName + "::" + name, e);
       }
-
-      addImportWithMetadata(
-          moduleName,
-          name,
-          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
-          functionType.toString());
-
-      LOGGER.fine("Defined unchecked function: " + moduleName + "::" + name);
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException(
-          "Failed to define unchecked host function: " + moduleName + "::" + name, e);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public Iterable<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> iter() {
-    ensureNotClosed();
-    return ai.tegmentum.wasmtime4j.util.LinkerSupport.iterDefinitions(importRegistry);
+    resourceHandle.beginOperation();
+    try {
+      return ai.tegmentum.wasmtime4j.util.LinkerSupport.iterDefinitions(importRegistry);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -1135,54 +1213,61 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final int nameBufferSize = 1024;
-
-    try (java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
-      final java.lang.foreign.MemorySegment outCount =
-          arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
-
-      final int iterResult =
-          NATIVE_INSTANCE_BINDINGS.linkerIter(nativeLinker, panamaStore.getNativeStore(), outCount);
-
-      if (iterResult != 0) {
-        throw new WasmException("Failed to iterate linker definitions");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
       }
 
-      final int count = outCount.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
-      final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
-          new java.util.ArrayList<>(count);
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final int nameBufferSize = 1024;
 
-      for (int i = 0; i < count; i++) {
-        final java.lang.foreign.MemorySegment moduleNameBuf = arena.allocate(nameBufferSize);
-        final java.lang.foreign.MemorySegment itemNameBuf = arena.allocate(nameBufferSize);
-        final java.lang.foreign.MemorySegment outTypeCode =
+      try (java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofConfined()) {
+        final java.lang.foreign.MemorySegment outCount =
             arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
 
-        final int getResult =
-            NATIVE_INSTANCE_BINDINGS.linkerIterGet(
-                i, moduleNameBuf, nameBufferSize, itemNameBuf, nameBufferSize, outTypeCode);
+        final int iterResult =
+            NATIVE_INSTANCE_BINDINGS.linkerIter(
+                nativeLinker, panamaStore.getNativeStore(), outCount);
 
-        if (getResult != 0) {
-          throw new WasmException("Failed to get linker definition at index " + i);
+        if (iterResult != 0) {
+          throw new WasmException("Failed to iterate linker definitions");
         }
 
-        final String moduleName = moduleNameBuf.getString(0);
-        final String itemName = itemNameBuf.getString(0);
-        final int typeCode = outTypeCode.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+        final int count = outCount.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+        final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
+            new java.util.ArrayList<>(count);
 
-        definitions.add(
-            new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
-                moduleName, itemName, ai.tegmentum.wasmtime4j.type.ExternType.fromCode(typeCode)));
+        for (int i = 0; i < count; i++) {
+          final java.lang.foreign.MemorySegment moduleNameBuf = arena.allocate(nameBufferSize);
+          final java.lang.foreign.MemorySegment itemNameBuf = arena.allocate(nameBufferSize);
+          final java.lang.foreign.MemorySegment outTypeCode =
+              arena.allocate(java.lang.foreign.ValueLayout.JAVA_INT);
+
+          final int getResult =
+              NATIVE_INSTANCE_BINDINGS.linkerIterGet(
+                  i, moduleNameBuf, nameBufferSize, itemNameBuf, nameBufferSize, outTypeCode);
+
+          if (getResult != 0) {
+            throw new WasmException("Failed to get linker definition at index " + i);
+          }
+
+          final String moduleName = moduleNameBuf.getString(0);
+          final String itemName = itemNameBuf.getString(0);
+          final int typeCode = outTypeCode.get(java.lang.foreign.ValueLayout.JAVA_INT, 0);
+
+          definitions.add(
+              new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
+                  moduleName,
+                  itemName,
+                  ai.tegmentum.wasmtime4j.type.ExternType.fromCode(typeCode)));
+        }
+
+        return java.util.Collections.unmodifiableList(definitions);
       }
-
-      return java.util.Collections.unmodifiableList(definitions);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1198,41 +1283,45 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
-    }
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
+      }
 
-    final PanamaStore panamaStore = (PanamaStore) store;
+      final PanamaStore panamaStore = (PanamaStore) store;
 
-    // Allocate C strings for module name and item name
-    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-    final MemorySegment namePtr = arena.allocateFrom(name);
+      // Allocate C strings for module name and item name
+      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+      final MemorySegment namePtr = arena.allocateFrom(name);
 
-    // Call native function to get the extern
-    final MemorySegment externPtr =
-        NATIVE_INSTANCE_BINDINGS.linkerGetByImport(
-            nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr);
+      // Call native function to get the extern
+      final MemorySegment externPtr =
+          NATIVE_INSTANCE_BINDINGS.linkerGetByImport(
+              nativeLinker, panamaStore.getNativeStore(), moduleNamePtr, namePtr);
 
-    if (externPtr == null || externPtr.equals(MemorySegment.NULL)) {
-      return null;
-    }
-
-    // Determine extern type and wrap appropriately
-    final int externTypeCode = NATIVE_INSTANCE_BINDINGS.externGetType(externPtr);
-    switch (externTypeCode) {
-      case 0: // FUNC
-        return new PanamaExternFunc(externPtr, panamaStore);
-      case 1: // TABLE
-        return new PanamaExternTable(externPtr, panamaStore);
-      case 2: // MEMORY
-        return new PanamaExternMemory(externPtr, panamaStore);
-      case 3: // GLOBAL
-        return new PanamaExternGlobal(externPtr, panamaStore);
-      default:
-        LOGGER.warning("Unknown extern type code: " + externTypeCode);
+      if (externPtr == null || externPtr.equals(MemorySegment.NULL)) {
         return null;
+      }
+
+      // Determine extern type and wrap appropriately
+      final int externTypeCode = NATIVE_INSTANCE_BINDINGS.externGetType(externPtr);
+      switch (externTypeCode) {
+        case 0: // FUNC
+          return new PanamaExternFunc(externPtr, panamaStore);
+        case 1: // TABLE
+          return new PanamaExternTable(externPtr, panamaStore);
+        case 2: // MEMORY
+          return new PanamaExternMemory(externPtr, panamaStore);
+        case 3: // GLOBAL
+          return new PanamaExternGlobal(externPtr, panamaStore);
+        default:
+          LOGGER.warning("Unknown extern type code: " + externTypeCode);
+          return null;
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1248,32 +1337,36 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (extern == null) {
       throw new IllegalArgumentException("Extern cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final MemorySegment storePtr = panamaStore.getNativeStore();
-
-    // Use empty string for module name since this is a top-level name definition
-    final MemorySegment moduleNamePtr = arena.allocateFrom("");
-    final MemorySegment namePtr = arena.allocateFrom(name);
-
+    resourceHandle.beginOperation();
     try {
-      final int result = defineExternByType(extern, storePtr, moduleNamePtr, namePtr);
 
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Failed to define name: " + name);
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
       }
 
-      addImportWithMetadata("", name, getExternImportKind(extern), extern.toString());
-      LOGGER.fine("Defined name: " + name);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Error defining name: " + name, e);
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final MemorySegment storePtr = panamaStore.getNativeStore();
+
+      // Use empty string for module name since this is a top-level name definition
+      final MemorySegment moduleNamePtr = arena.allocateFrom("");
+      final MemorySegment namePtr = arena.allocateFrom(name);
+
+      try {
+        final int result = defineExternByType(extern, storePtr, moduleNamePtr, namePtr);
+
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(result, "Failed to define name: " + name);
+        }
+
+        addImportWithMetadata("", name, getExternImportKind(extern), extern.toString());
+        LOGGER.fine("Defined name: " + name);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Error defining name: " + name, e);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1293,31 +1386,35 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (extern == null) {
       throw new IllegalArgumentException("Extern cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final MemorySegment storePtr = panamaStore.getNativeStore();
-    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-    final MemorySegment namePtr = arena.allocateFrom(name);
-
+    resourceHandle.beginOperation();
     try {
-      final int result = defineExternByType(extern, storePtr, moduleNamePtr, namePtr);
 
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(
-            result, "Failed to define: " + moduleName + "::" + name);
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
       }
 
-      addImportWithMetadata(moduleName, name, getExternImportKind(extern), extern.toString());
-      LOGGER.fine("Defined: " + moduleName + "::" + name);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Error defining: " + moduleName + "::" + name, e);
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final MemorySegment storePtr = panamaStore.getNativeStore();
+      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+      final MemorySegment namePtr = arena.allocateFrom(name);
+
+      try {
+        final int result = defineExternByType(extern, storePtr, moduleNamePtr, namePtr);
+
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(
+              result, "Failed to define: " + moduleName + "::" + name);
+        }
+
+        addImportWithMetadata(moduleName, name, getExternImportKind(extern), extern.toString());
+        LOGGER.fine("Defined: " + moduleName + "::" + name);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Error defining: " + moduleName + "::" + name, e);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1333,35 +1430,39 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
-    }
-    if (!(module instanceof PanamaModule)) {
-      throw new IllegalArgumentException("Module must be a PanamaModule for Panama linker");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final PanamaModule panamaModule = (PanamaModule) module;
-    final MemorySegment storePtr = panamaStore.getNativeStore();
-    final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
-    final MemorySegment modulePtr = panamaModule.getNativeModule();
-
+    resourceHandle.beginOperation();
     try {
-      final int result =
-          NATIVE_INSTANCE_BINDINGS.panamaLinkerModule(
-              nativeLinker, storePtr, moduleNamePtr, modulePtr);
 
-      if (result != 0) {
-        throw PanamaErrorMapper.mapNativeError(result, "Failed to define module: " + moduleName);
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore for Panama linker");
+      }
+      if (!(module instanceof PanamaModule)) {
+        throw new IllegalArgumentException("Module must be a PanamaModule for Panama linker");
       }
 
-      LOGGER.fine("Defined module: " + moduleName);
-    } catch (final WasmException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new WasmException("Error defining module: " + moduleName, e);
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final PanamaModule panamaModule = (PanamaModule) module;
+      final MemorySegment storePtr = panamaStore.getNativeStore();
+      final MemorySegment moduleNamePtr = arena.allocateFrom(moduleName);
+      final MemorySegment modulePtr = panamaModule.getNativeModule();
+
+      try {
+        final int result =
+            NATIVE_INSTANCE_BINDINGS.panamaLinkerModule(
+                nativeLinker, storePtr, moduleNamePtr, modulePtr);
+
+        if (result != 0) {
+          throw PanamaErrorMapper.mapNativeError(result, "Failed to define module: " + moduleName);
+        }
+
+        LOGGER.fine("Defined module: " + moduleName);
+      } catch (final WasmException e) {
+        throw e;
+      } catch (final Exception e) {
+        throw new WasmException("Error defining module: " + moduleName, e);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -1414,27 +1515,31 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore");
-    }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment nameSegment = tempArena.allocateFrom(moduleName);
-      final MemorySegment funcHandle =
-          NATIVE_INSTANCE_BINDINGS.linkerGetDefault(
-              nativeLinker, panamaStore.getNativeStore(), nameSegment);
-
-      if (funcHandle == null
-          || funcHandle.equals(MemorySegment.NULL)
-          || funcHandle.address() == 0) {
-        return null;
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore");
       }
 
-      return new PanamaCallerFunction(funcHandle, panamaStore, moduleName);
+      final PanamaStore panamaStore = (PanamaStore) store;
+
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment nameSegment = tempArena.allocateFrom(moduleName);
+        final MemorySegment funcHandle =
+            NATIVE_INSTANCE_BINDINGS.linkerGetDefault(
+                nativeLinker, panamaStore.getNativeStore(), nameSegment);
+
+        if (funcHandle == null
+            || funcHandle.equals(MemorySegment.NULL)
+            || funcHandle.address() == 0) {
+          return null;
+        }
+
+        return new PanamaCallerFunction(funcHandle, panamaStore, moduleName);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 

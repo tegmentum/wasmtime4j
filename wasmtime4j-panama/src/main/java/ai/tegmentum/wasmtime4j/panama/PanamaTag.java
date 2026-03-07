@@ -69,37 +69,42 @@ public final class PanamaTag implements Tag {
     if (store == null) {
       throw new IllegalArgumentException("store cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      final MemorySegment currentStoreHandle = panamaStore.getNativeStore();
+
+      // Validate store matches
+      if (!currentStoreHandle.equals(storeHandle)) {
+        LOGGER.warning("Tag accessed with different store than it was created with");
+      }
+
+      final int[] paramTypeCodes =
+          NATIVE_BINDINGS.tagGetParamTypes(nativeHandle, currentStoreHandle);
+      final int[] returnTypeCodes =
+          NATIVE_BINDINGS.tagGetReturnTypes(nativeHandle, currentStoreHandle);
+
+      // Convert native type codes to Java types
+      final WasmValueType[] params = new WasmValueType[paramTypeCodes.length];
+      for (int i = 0; i < paramTypeCodes.length; i++) {
+        params[i] = WasmValueType.fromNativeTypeCode(paramTypeCodes[i]);
+      }
+
+      final WasmValueType[] returns = new WasmValueType[returnTypeCodes.length];
+      for (int i = 0; i < returnTypeCodes.length; i++) {
+        returns[i] = WasmValueType.fromNativeTypeCode(returnTypeCodes[i]);
+      }
+
+      final FunctionType funcType = new FunctionType(params, returns);
+      return TagType.create(funcType);
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    final MemorySegment currentStoreHandle = panamaStore.getNativeStore();
-
-    // Validate store matches
-    if (!currentStoreHandle.equals(storeHandle)) {
-      LOGGER.warning("Tag accessed with different store than it was created with");
-    }
-
-    final int[] paramTypeCodes = NATIVE_BINDINGS.tagGetParamTypes(nativeHandle, currentStoreHandle);
-    final int[] returnTypeCodes =
-        NATIVE_BINDINGS.tagGetReturnTypes(nativeHandle, currentStoreHandle);
-
-    // Convert native type codes to Java types
-    final WasmValueType[] params = new WasmValueType[paramTypeCodes.length];
-    for (int i = 0; i < paramTypeCodes.length; i++) {
-      params[i] = WasmValueType.fromNativeTypeCode(paramTypeCodes[i]);
-    }
-
-    final WasmValueType[] returns = new WasmValueType[returnTypeCodes.length];
-    for (int i = 0; i < returnTypeCodes.length; i++) {
-      returns[i] = WasmValueType.fromNativeTypeCode(returnTypeCodes[i]);
-    }
-
-    final FunctionType funcType = new FunctionType(params, returns);
-    return TagType.create(funcType);
   }
 
   @Override
@@ -110,16 +115,20 @@ public final class PanamaTag implements Tag {
     if (!(other instanceof PanamaTag)) {
       return false;
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    if (!(store instanceof PanamaStore)) {
-      throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      if (!(store instanceof PanamaStore)) {
+        throw new IllegalArgumentException("Store must be a PanamaStore instance");
+      }
+
+      final PanamaStore panamaStore = (PanamaStore) store;
+      return NATIVE_BINDINGS.tagEquals(
+              nativeHandle, ((PanamaTag) other).nativeHandle, panamaStore.getNativeStore())
+          != 0;
+    } finally {
+      resourceHandle.endOperation();
     }
-
-    final PanamaStore panamaStore = (PanamaStore) store;
-    return NATIVE_BINDINGS.tagEquals(
-            nativeHandle, ((PanamaTag) other).nativeHandle, panamaStore.getNativeStore())
-        != 0;
   }
 
   @Override
@@ -139,9 +148,5 @@ public final class PanamaTag implements Tag {
   /** Closes this tag and releases native resources. */
   public void close() {
     resourceHandle.close();
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

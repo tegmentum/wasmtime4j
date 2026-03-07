@@ -108,34 +108,38 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
-
-    // Convert FunctionType to native representation
-    final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
-    final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
-
-    // Create a callback wrapper that will be invoked from native code
-    final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
-
+    beginOperation();
     try {
-      final boolean success =
-          nativeDefineHostFunction(
-              nativeHandle, moduleName, name, paramTypes, returnTypes, callbackId);
+      // Convert FunctionType to native representation
+      final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
+      final int[] returnTypes =
+          TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
-      if (!success) {
-        throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
-      }
+      // Create a callback wrapper that will be invoked from native code
+      final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
 
-      addImportWithMetadata(
-          moduleName,
-          name,
-          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
-          functionType.toString());
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      try {
+        final boolean success =
+            nativeDefineHostFunction(
+                nativeHandle, moduleName, name, paramTypes, returnTypes, callbackId);
+
+        if (!success) {
+          throw new WasmException("Failed to define host function: " + moduleName + "::" + name);
+        }
+
+        addImportWithMetadata(
+            moduleName,
+            name,
+            ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
+            functionType.toString());
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining host function: " + moduleName + "::" + name, e);
       }
-      throw new WasmException("Error defining host function: " + moduleName + "::" + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -155,34 +159,37 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (memory == null) {
       throw new IllegalArgumentException("Memory cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(memory instanceof JniMemory)) {
-      throw new IllegalArgumentException("Memory must be a JniMemory instance for JNI linker");
-    }
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
-    }
-
-    final JniMemory jniMemory = (JniMemory) memory;
-    final JniStore jniStore = (JniStore) store;
-    final long memoryHandle = jniMemory.getNativeHandle();
-    final long storeHandle = jniStore.getNativeHandle();
-
+    beginOperation();
     try {
-      final boolean success =
-          nativeDefineMemory(nativeHandle, storeHandle, moduleName, name, memoryHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define memory: " + moduleName + "::" + name);
+      if (!(memory instanceof JniMemory)) {
+        throw new IllegalArgumentException("Memory must be a JniMemory instance for JNI linker");
+      }
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
       }
 
-      addImport(moduleName, name);
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      final JniMemory jniMemory = (JniMemory) memory;
+      final JniStore jniStore = (JniStore) store;
+      final long memoryHandle = jniMemory.getNativeHandle();
+      final long storeHandle = jniStore.getNativeHandle();
+
+      try {
+        final boolean success =
+            nativeDefineMemory(nativeHandle, storeHandle, moduleName, name, memoryHandle);
+
+        if (!success) {
+          throw new WasmException("Failed to define memory: " + moduleName + "::" + name);
+        }
+
+        addImport(moduleName, name);
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining memory: " + moduleName + "::" + name, e);
       }
-      throw new WasmException("Error defining memory: " + moduleName + "::" + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -202,34 +209,37 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (table == null) {
       throw new IllegalArgumentException("Table cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(table instanceof JniTable)) {
-      throw new IllegalArgumentException("Table must be a JniTable instance for JNI linker");
-    }
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
-    }
-
-    final JniTable jniTable = (JniTable) table;
-    final JniStore jniStore = (JniStore) store;
-    final long tableHandle = jniTable.getNativeHandle();
-    final long storeHandle = jniStore.getNativeHandle();
-
+    beginOperation();
     try {
-      final boolean success =
-          nativeDefineTable(nativeHandle, storeHandle, moduleName, name, tableHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define table: " + moduleName + "::" + name);
+      if (!(table instanceof JniTable)) {
+        throw new IllegalArgumentException("Table must be a JniTable instance for JNI linker");
+      }
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
       }
 
-      addImport(moduleName, name);
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      final JniTable jniTable = (JniTable) table;
+      final JniStore jniStore = (JniStore) store;
+      final long tableHandle = jniTable.getNativeHandle();
+      final long storeHandle = jniStore.getNativeHandle();
+
+      try {
+        final boolean success =
+            nativeDefineTable(nativeHandle, storeHandle, moduleName, name, tableHandle);
+
+        if (!success) {
+          throw new WasmException("Failed to define table: " + moduleName + "::" + name);
+        }
+
+        addImport(moduleName, name);
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining table: " + moduleName + "::" + name, e);
       }
-      throw new WasmException("Error defining table: " + moduleName + "::" + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -249,34 +259,37 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (global == null) {
       throw new IllegalArgumentException("Global cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(global instanceof JniGlobal)) {
-      throw new IllegalArgumentException("Global must be a JniGlobal instance for JNI linker");
-    }
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
-    }
-
-    final JniGlobal jniGlobal = (JniGlobal) global;
-    final JniStore jniStore = (JniStore) store;
-    final long globalHandle = jniGlobal.getNativeHandle();
-    final long storeHandle = jniStore.getNativeHandle();
-
+    beginOperation();
     try {
-      final boolean success =
-          nativeDefineGlobal(nativeHandle, storeHandle, moduleName, name, globalHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define global: " + moduleName + "::" + name);
+      if (!(global instanceof JniGlobal)) {
+        throw new IllegalArgumentException("Global must be a JniGlobal instance for JNI linker");
+      }
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore instance for JNI linker");
       }
 
-      addImport(moduleName, name);
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      final JniGlobal jniGlobal = (JniGlobal) global;
+      final JniStore jniStore = (JniStore) store;
+      final long globalHandle = jniGlobal.getNativeHandle();
+      final long storeHandle = jniStore.getNativeHandle();
+
+      try {
+        final boolean success =
+            nativeDefineGlobal(nativeHandle, storeHandle, moduleName, name, globalHandle);
+
+        if (!success) {
+          throw new WasmException("Failed to define global: " + moduleName + "::" + name);
+        }
+
+        addImport(moduleName, name);
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining global: " + moduleName + "::" + name, e);
       }
-      throw new WasmException("Error defining global: " + moduleName + "::" + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -292,56 +305,62 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (instance == null) {
       throw new IllegalArgumentException("Instance cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(instance instanceof JniInstance)) {
-      throw new IllegalArgumentException("Instance must be a JniInstance for JNI linker");
-    }
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
-    }
-
-    final JniInstance jniInstance = (JniInstance) instance;
-    final long instanceHandle = jniInstance.getNativeHandle();
-
-    final JniStore jniStore = (JniStore) store;
-    final long storeHandle = jniStore.getNativeHandle();
-
+    beginOperation();
     try {
-      final boolean success =
-          nativeDefineInstance(nativeHandle, storeHandle, moduleName, instanceHandle);
-
-      if (!success) {
-        throw new WasmException("Failed to define instance: " + moduleName);
+      if (!(instance instanceof JniInstance)) {
+        throw new IllegalArgumentException("Instance must be a JniInstance for JNI linker");
+      }
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
       }
 
-      addImport(moduleName, "*");
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      final JniInstance jniInstance = (JniInstance) instance;
+      final long instanceHandle = jniInstance.getNativeHandle();
+
+      final JniStore jniStore = (JniStore) store;
+      final long storeHandle = jniStore.getNativeHandle();
+
+      try {
+        final boolean success =
+            nativeDefineInstance(nativeHandle, storeHandle, moduleName, instanceHandle);
+
+        if (!success) {
+          throw new WasmException("Failed to define instance: " + moduleName);
+        }
+
+        addImport(moduleName, "*");
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining instance: " + moduleName, e);
       }
-      throw new WasmException("Error defining instance: " + moduleName, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void enableWasi() throws WasmException {
-    ensureNotClosed();
-
-    // Check if WASI is already enabled - skip if so to avoid duplicate definition errors
-    if (wasiEnabled) {
-      LOGGER.fine("WASI already enabled for linker, skipping");
-      return;
-    }
-
+    beginOperation();
     try {
-      nativeEnableWasi(nativeHandle);
-      wasiEnabled = true;
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      // Check if WASI is already enabled - skip if so to avoid duplicate definition errors
+      if (wasiEnabled) {
+        LOGGER.fine("WASI already enabled for linker, skipping");
+        return;
       }
-      throw new WasmException("Failed to enable WASI", e);
+
+      try {
+        nativeEnableWasi(nativeHandle);
+        wasiEnabled = true;
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Failed to enable WASI", e);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -349,27 +368,31 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   public void alias(
       final String fromModule, final String fromName, final String toModule, final String toName)
       throws WasmException {
-    ensureNotClosed();
-    if (fromModule == null || fromModule.isEmpty()) {
-      throw new IllegalArgumentException("fromModule cannot be null or empty");
-    }
-    if (fromName == null || fromName.isEmpty()) {
-      throw new IllegalArgumentException("fromName cannot be null or empty");
-    }
-    if (toModule == null || toModule.isEmpty()) {
-      throw new IllegalArgumentException("toModule cannot be null or empty");
-    }
-    if (toName == null || toName.isEmpty()) {
-      throw new IllegalArgumentException("toName cannot be null or empty");
-    }
-
+    beginOperation();
     try {
-      nativeAlias(nativeHandle, fromModule, fromName, toModule, toName);
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      if (fromModule == null || fromModule.isEmpty()) {
+        throw new IllegalArgumentException("fromModule cannot be null or empty");
       }
-      throw new WasmException("Failed to create alias", e);
+      if (fromName == null || fromName.isEmpty()) {
+        throw new IllegalArgumentException("fromName cannot be null or empty");
+      }
+      if (toModule == null || toModule.isEmpty()) {
+        throw new IllegalArgumentException("toModule cannot be null or empty");
+      }
+      if (toName == null || toName.isEmpty()) {
+        throw new IllegalArgumentException("toName cannot be null or empty");
+      }
+
+      try {
+        nativeAlias(nativeHandle, fromModule, fromName, toModule, toName);
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Failed to create alias", e);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -381,8 +404,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (asModule == null) {
       throw new IllegalArgumentException("Alias module name cannot be null");
     }
-    ensureNotClosed();
-
+    beginOperation();
     try {
       final boolean success = nativeAliasModule(nativeHandle, module, asModule);
       if (!success) {
@@ -393,26 +415,40 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
         throw e;
       }
       throw new WasmException("Error aliasing module: " + module, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public java.util.List<ai.tegmentum.wasmtime4j.validation.ImportInfo> getImportRegistry() {
-    ensureNotClosed();
-    return new java.util.ArrayList<>(importRegistry.values());
+    beginOperation();
+    try {
+      return new java.util.ArrayList<>(importRegistry.values());
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public ai.tegmentum.wasmtime4j.validation.ImportValidation validateImports(
       final Module... modules) {
-    ensureNotClosed();
-    return ai.tegmentum.wasmtime4j.util.LinkerSupport.validateImports(imports, modules);
+    beginOperation();
+    try {
+      return ai.tegmentum.wasmtime4j.util.LinkerSupport.validateImports(imports, modules);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public boolean hasImport(final String moduleName, final String name) {
-    ensureNotClosed();
-    return ai.tegmentum.wasmtime4j.util.LinkerSupport.hasImport(imports, moduleName, name);
+    beginOperation();
+    try {
+      return ai.tegmentum.wasmtime4j.util.LinkerSupport.hasImport(imports, moduleName, name);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -455,37 +491,41 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
-    }
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
-    }
-
-    final JniStore jniStore = (JniStore) store;
-    final JniModule jniModule = (JniModule) module;
-
-    // Track WASI context on the store if set
-    if (wasiContext != null) {
-      jniStore.setTrackedWasiContext(wasiContext);
-    }
-
+    beginOperation();
     try {
-      final long instanceHandle =
-          nativeInstantiate(nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
-
-      if (instanceHandle == 0) {
-        throw new WasmException("Failed to instantiate module");
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+      }
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
       }
 
-      return new JniInstance(instanceHandle, jniModule, jniStore);
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      final JniStore jniStore = (JniStore) store;
+      final JniModule jniModule = (JniModule) module;
+
+      // Track WASI context on the store if set
+      if (wasiContext != null) {
+        jniStore.setTrackedWasiContext(wasiContext);
       }
-      throw new WasmException("Error instantiating module", e);
+
+      try {
+        final long instanceHandle =
+            nativeInstantiate(
+                nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
+
+        if (instanceHandle == 0) {
+          throw new WasmException("Failed to instantiate module");
+        }
+
+        return new JniInstance(instanceHandle, jniModule, jniStore);
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error instantiating module", e);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -501,43 +541,46 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
-    }
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
-    }
-
-    final JniStore jniStore = (JniStore) store;
-    final JniModule jniModule = (JniModule) module;
-
-    // Track WASI context on the store if set
-    if (wasiContext != null) {
-      jniStore.setTrackedWasiContext(wasiContext);
-    }
-
+    beginOperation();
     try {
-      final long instanceHandle =
-          nativeInstantiateNamed(
-              nativeHandle, jniStore.getNativeHandle(), moduleName, jniModule.getNativeHandle());
-
-      if (instanceHandle == 0) {
-        throw new WasmException("Failed to instantiate named module: " + moduleName);
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+      }
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
       }
 
-      final JniInstance instance = new JniInstance(instanceHandle, jniModule, jniStore);
+      final JniStore jniStore = (JniStore) store;
+      final JniModule jniModule = (JniModule) module;
 
-      // Note: The instance is already defined in the linker by nativeInstantiateNamed,
-      // so we don't need to call defineInstance here.
-
-      return instance;
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      // Track WASI context on the store if set
+      if (wasiContext != null) {
+        jniStore.setTrackedWasiContext(wasiContext);
       }
-      throw new WasmException("Error instantiating named module: " + moduleName, e);
+
+      try {
+        final long instanceHandle =
+            nativeInstantiateNamed(
+                nativeHandle, jniStore.getNativeHandle(), moduleName, jniModule.getNativeHandle());
+
+        if (instanceHandle == 0) {
+          throw new WasmException("Failed to instantiate named module: " + moduleName);
+        }
+
+        final JniInstance instance = new JniInstance(instanceHandle, jniModule, jniStore);
+
+        // Note: The instance is already defined in the linker by nativeInstantiateNamed,
+        // so we don't need to call defineInstance here.
+
+        return instance;
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error instantiating named module: " + moduleName, e);
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -547,28 +590,31 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
-    }
-
-    final JniModule jniModule = (JniModule) module;
-
+    beginOperation();
     try {
-      final long instancePreHandle =
-          nativeInstantiatePre(nativeHandle, jniModule.getNativeHandle());
-
-      if (instancePreHandle == 0) {
-        throw new WasmException("Failed to create InstancePre for module");
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
       }
 
-      return new JniInstancePre(instancePreHandle, module, engine);
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      final JniModule jniModule = (JniModule) module;
+
+      try {
+        final long instancePreHandle =
+            nativeInstantiatePre(nativeHandle, jniModule.getNativeHandle());
+
+        if (instancePreHandle == 0) {
+          throw new WasmException("Failed to create InstancePre for module");
+        }
+
+        return new JniInstancePre(instancePreHandle, module, engine);
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error creating InstancePre", e);
       }
-      throw new WasmException("Error creating InstancePre", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -697,16 +743,24 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
 
   @Override
   public Linker<T> allowShadowing(final boolean allow) {
-    ensureNotClosed();
-    nativeAllowShadowing(nativeHandle, allow);
-    return this;
+    beginOperation();
+    try {
+      nativeAllowShadowing(nativeHandle, allow);
+      return this;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public Linker<T> allowUnknownExports(final boolean allow) {
-    ensureNotClosed();
-    nativeAllowUnknownExports(nativeHandle, allow);
-    return this;
+    beginOperation();
+    try {
+      nativeAllowUnknownExports(nativeHandle, allow);
+      return this;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -718,23 +772,26 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore");
+      }
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore");
-    }
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException("Module must be a JniModule");
-    }
+      final JniStore jniStore = (JniStore) store;
+      final JniModule jniModule = (JniModule) module;
 
-    final JniStore jniStore = (JniStore) store;
-    final JniModule jniModule = (JniModule) module;
-
-    final boolean success =
-        nativeDefineUnknownImportsAsTraps(
-            nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
-    if (!success) {
-      throw new WasmException("Failed to define unknown imports as traps");
+      final boolean success =
+          nativeDefineUnknownImportsAsTraps(
+              nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
+      if (!success) {
+        throw new WasmException("Failed to define unknown imports as traps");
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -747,23 +804,26 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore");
+      }
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore");
-    }
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException("Module must be a JniModule");
-    }
+      final JniStore jniStore = (JniStore) store;
+      final JniModule jniModule = (JniModule) module;
 
-    final JniStore jniStore = (JniStore) store;
-    final JniModule jniModule = (JniModule) module;
-
-    final boolean success =
-        nativeDefineUnknownImportsAsDefaultValues(
-            nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
-    if (!success) {
-      throw new WasmException("Failed to define unknown imports as default values");
+      final boolean success =
+          nativeDefineUnknownImportsAsDefaultValues(
+              nativeHandle, jniStore.getNativeHandle(), jniModule.getNativeHandle());
+      if (!success) {
+        throw new WasmException("Failed to define unknown imports as default values");
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -790,43 +850,51 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (implementation == null) {
       throw new IllegalArgumentException("Implementation cannot be null");
     }
-    ensureNotClosed();
-
-    // Convert FunctionType to native representation
-    final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
-    final int[] returnTypes = TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
-
-    // Register callback and get ID
-    final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
-
+    beginOperation();
     try {
-      final boolean success =
-          nativeDefineHostFunctionUnchecked(
-              nativeHandle, moduleName, name, paramTypes, returnTypes, callbackId);
+      // Convert FunctionType to native representation
+      final int[] paramTypes = TypeConversionUtilities.toNativeTypes(functionType.getParamTypes());
+      final int[] returnTypes =
+          TypeConversionUtilities.toNativeTypes(functionType.getReturnTypes());
 
-      if (!success) {
+      // Register callback and get ID
+      final long callbackId = registerHostFunctionCallback(moduleName, name, implementation);
+
+      try {
+        final boolean success =
+            nativeDefineHostFunctionUnchecked(
+                nativeHandle, moduleName, name, paramTypes, returnTypes, callbackId);
+
+        if (!success) {
+          throw new WasmException(
+              "Failed to define unchecked host function: " + moduleName + "::" + name);
+        }
+
+        addImportWithMetadata(
+            moduleName,
+            name,
+            ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
+            functionType.toString());
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
         throw new WasmException(
-            "Failed to define unchecked host function: " + moduleName + "::" + name);
+            "Failed to define unchecked host function: " + moduleName + "::" + name, e);
       }
-
-      addImportWithMetadata(
-          moduleName,
-          name,
-          ai.tegmentum.wasmtime4j.validation.ImportInfo.ImportKind.FUNCTION,
-          functionType.toString());
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw (WasmException) e;
-      }
-      throw new WasmException(
-          "Failed to define unchecked host function: " + moduleName + "::" + name, e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public Iterable<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> iter() {
-    ensureNotClosed();
-    return ai.tegmentum.wasmtime4j.util.LinkerSupport.iterDefinitions(importRegistry);
+    beginOperation();
+    try {
+      return ai.tegmentum.wasmtime4j.util.LinkerSupport.iterDefinitions(importRegistry);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -836,30 +904,33 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (store == null) {
       throw new IllegalArgumentException("Store cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore");
+      final JniStore jniStore = (JniStore) store;
+      final String[] result = nativeLinkerIter(nativeHandle, jniStore.getNativeHandle());
+
+      if (result == null) {
+        throw new ai.tegmentum.wasmtime4j.exception.WasmException("Failed to iterate linker");
+      }
+
+      final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
+          new java.util.ArrayList<>(result.length / 3);
+      for (int i = 0; i < result.length; i += 3) {
+        final String moduleName = result[i];
+        final String itemName = result[i + 1];
+        final int typeCode = Integer.parseInt(result[i + 2]);
+        definitions.add(
+            new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
+                moduleName, itemName, ai.tegmentum.wasmtime4j.type.ExternType.fromCode(typeCode)));
+      }
+      return java.util.Collections.unmodifiableList(definitions);
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-    final String[] result = nativeLinkerIter(nativeHandle, jniStore.getNativeHandle());
-
-    if (result == null) {
-      throw new ai.tegmentum.wasmtime4j.exception.WasmException("Failed to iterate linker");
-    }
-
-    final java.util.List<ai.tegmentum.wasmtime4j.Linker.LinkerDefinition> definitions =
-        new java.util.ArrayList<>(result.length / 3);
-    for (int i = 0; i < result.length; i += 3) {
-      final String moduleName = result[i];
-      final String itemName = result[i + 1];
-      final int typeCode = Integer.parseInt(result[i + 2]);
-      definitions.add(
-          new ai.tegmentum.wasmtime4j.Linker.LinkerDefinition(
-              moduleName, itemName, ai.tegmentum.wasmtime4j.type.ExternType.fromCode(typeCode)));
-    }
-    return java.util.Collections.unmodifiableList(definitions);
   }
 
   @Override
@@ -874,34 +945,37 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (name == null) {
       throw new IllegalArgumentException("Name cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore");
-    }
+      final JniStore jniStore = (JniStore) store;
 
-    final JniStore jniStore = (JniStore) store;
+      final long externHandle =
+          nativeGetByImport(nativeHandle, jniStore.getNativeHandle(), moduleName, name);
 
-    final long externHandle =
-        nativeGetByImport(nativeHandle, jniStore.getNativeHandle(), moduleName, name);
-
-    if (externHandle == 0) {
-      return null;
-    }
-
-    final int externTypeCode = nativeGetExternType(externHandle);
-    switch (externTypeCode) {
-      case 0: // FUNC
-        return new JniExternFunc(externHandle, jniStore);
-      case 1: // TABLE
-        return new JniExternTable(externHandle, jniStore);
-      case 2: // MEMORY
-        return new JniExternMemory(externHandle, jniStore);
-      case 3: // GLOBAL
-        return new JniExternGlobal(externHandle, jniStore);
-      default:
-        LOGGER.warning("Unknown extern type code: " + externTypeCode);
+      if (externHandle == 0) {
         return null;
+      }
+
+      final int externTypeCode = nativeGetExternType(externHandle);
+      switch (externTypeCode) {
+        case 0: // FUNC
+          return new JniExternFunc(externHandle, jniStore);
+        case 1: // TABLE
+          return new JniExternTable(externHandle, jniStore);
+        case 2: // MEMORY
+          return new JniExternMemory(externHandle, jniStore);
+        case 3: // GLOBAL
+          return new JniExternGlobal(externHandle, jniStore);
+        default:
+          LOGGER.warning("Unknown extern type code: " + externTypeCode);
+          return null;
+      }
+    } finally {
+      endOperation();
     }
   }
 
@@ -917,33 +991,36 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (extern == null) {
       throw new IllegalArgumentException("Extern cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
-    }
-
-    final JniStore jniStore = (JniStore) store;
-
+    beginOperation();
     try {
-      // Get the native handle from the extern
-      final long externHandle = getExternNativeHandle(extern);
-      final int externTypeCode = getExternTypeCode(extern);
-
-      final boolean success =
-          nativeDefineName(
-              nativeHandle, jniStore.getNativeHandle(), name, externHandle, externTypeCode);
-
-      if (!success) {
-        throw new WasmException("Failed to define name: " + name);
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
       }
 
-      addImportWithMetadata("", name, getExternImportKind(extern), extern.toString());
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      final JniStore jniStore = (JniStore) store;
+
+      try {
+        // Get the native handle from the extern
+        final long externHandle = getExternNativeHandle(extern);
+        final int externTypeCode = getExternTypeCode(extern);
+
+        final boolean success =
+            nativeDefineName(
+                nativeHandle, jniStore.getNativeHandle(), name, externHandle, externTypeCode);
+
+        if (!success) {
+          throw new WasmException("Failed to define name: " + name);
+        }
+
+        addImportWithMetadata("", name, getExternImportKind(extern), extern.toString());
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining name: " + name, e);
       }
-      throw new WasmException("Error defining name: " + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -963,37 +1040,40 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (extern == null) {
       throw new IllegalArgumentException("Extern cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
-    }
-
-    final JniStore jniStore = (JniStore) store;
-
+    beginOperation();
     try {
-      final long externHandle = getExternNativeHandle(extern);
-      final int externTypeCode = getExternTypeCode(extern);
-
-      final boolean success =
-          nativeDefine(
-              nativeHandle,
-              jniStore.getNativeHandle(),
-              moduleName,
-              name,
-              externHandle,
-              externTypeCode);
-
-      if (!success) {
-        throw new WasmException("Failed to define: " + moduleName + "::" + name);
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
       }
 
-      addImportWithMetadata(moduleName, name, getExternImportKind(extern), extern.toString());
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
+      final JniStore jniStore = (JniStore) store;
+
+      try {
+        final long externHandle = getExternNativeHandle(extern);
+        final int externTypeCode = getExternTypeCode(extern);
+
+        final boolean success =
+            nativeDefine(
+                nativeHandle,
+                jniStore.getNativeHandle(),
+                moduleName,
+                name,
+                externHandle,
+                externTypeCode);
+
+        if (!success) {
+          throw new WasmException("Failed to define: " + moduleName + "::" + name);
+        }
+
+        addImportWithMetadata(moduleName, name, getExternImportKind(extern), extern.toString());
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining: " + moduleName + "::" + name, e);
       }
-      throw new WasmException("Error defining: " + moduleName + "::" + name, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -1009,31 +1089,34 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (module == null) {
       throw new IllegalArgumentException("Module cannot be null");
     }
-    ensureNotClosed();
-
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
-    }
-    if (!(module instanceof JniModule)) {
-      throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
-    }
-
-    final JniStore jniStore = (JniStore) store;
-    final JniModule jniModule = (JniModule) module;
-
+    beginOperation();
     try {
-      final boolean success =
-          nativeModule(
-              nativeHandle, jniStore.getNativeHandle(), moduleName, jniModule.getNativeHandle());
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore for JNI linker");
+      }
+      if (!(module instanceof JniModule)) {
+        throw new IllegalArgumentException("Module must be a JniModule for JNI linker");
+      }
 
-      if (!success) {
-        throw new WasmException("Failed to define module: " + moduleName);
+      final JniStore jniStore = (JniStore) store;
+      final JniModule jniModule = (JniModule) module;
+
+      try {
+        final boolean success =
+            nativeModule(
+                nativeHandle, jniStore.getNativeHandle(), moduleName, jniModule.getNativeHandle());
+
+        if (!success) {
+          throw new WasmException("Failed to define module: " + moduleName);
+        }
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Error defining module: " + moduleName, e);
       }
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
-      }
-      throw new WasmException("Error defining module: " + moduleName, e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -1104,21 +1187,25 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (moduleName == null) {
       throw new IllegalArgumentException("Module name cannot be null");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      if (!(store instanceof JniStore)) {
+        throw new IllegalArgumentException("Store must be a JniStore");
+      }
 
-    if (!(store instanceof JniStore)) {
-      throw new IllegalArgumentException("Store must be a JniStore");
+      final JniStore jniStore = (JniStore) store;
+
+      final long funcHandle =
+          nativeGetDefault(nativeHandle, jniStore.getNativeHandle(), moduleName);
+
+      if (funcHandle == 0) {
+        return null;
+      }
+
+      return new JniFunction(funcHandle, moduleName, 0, jniStore);
+    } finally {
+      endOperation();
     }
-
-    final JniStore jniStore = (JniStore) store;
-
-    final long funcHandle = nativeGetDefault(nativeHandle, jniStore.getNativeHandle(), moduleName);
-
-    if (funcHandle == 0) {
-      return null;
-    }
-
-    return new JniFunction(funcHandle, moduleName, 0, jniStore);
   }
 
   /** Wrapper for host function callbacks. */

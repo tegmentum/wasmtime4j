@@ -64,7 +64,7 @@ libc.workspace = true
 tempfile.workspace = true
 
 [features]
-default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "async", "profiling", "rr"]
+default = ["jni-bindings", "panama-ffi", "component-model", "wasi", "wasi-http", "wasi-config", "async", "profiling", "rr"]
 
 # JNI bindings for Java 8-22
 jni-bindings = ["jni"]

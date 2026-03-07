@@ -92,6 +92,23 @@ pub extern "C" fn wasmtime4j_gc_destroy_runtime(runtime_handle: i64) -> i32 {
     })
 }
 
+/// Panama FFI function for releasing a single GC object by ID.
+///
+/// Returns 1 if the object was found and released, 0 if not found, -1 on error.
+#[no_mangle]
+pub extern "C" fn wasmtime4j_gc_release_object(runtime_handle: i64, object_id: i64) -> i32 {
+    ffi_boundary_i32!({
+        if runtime_handle == 0 {
+            return Ok(FFI_ERROR);
+        }
+
+        let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
+        let released = runtime.release_object(object_id as u64);
+
+        Ok(if released { 1 } else { 0 })
+    })
+}
+
 /// Panama FFI function for registering a struct type
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_register_struct_type(

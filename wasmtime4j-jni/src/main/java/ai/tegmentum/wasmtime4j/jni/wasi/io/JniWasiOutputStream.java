@@ -73,8 +73,12 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
 
   @Override
   public long checkWrite() throws WasmException {
-    ensureNotClosed();
-    return nativeCheckWrite(contextHandle, nativeHandle);
+    beginOperation();
+    try {
+      return nativeCheckWrite(contextHandle, nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -82,9 +86,13 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
     if (contents == null) {
       throw new IllegalArgumentException("Contents cannot be null");
     }
-    ensureNotClosed();
-    nativeWrite(contextHandle, nativeHandle, contents);
-    lastAccessedAt = java.time.Instant.now();
+    beginOperation();
+    try {
+      nativeWrite(contextHandle, nativeHandle, contents);
+      lastAccessedAt = java.time.Instant.now();
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -92,35 +100,55 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
     if (contents == null) {
       throw new IllegalArgumentException("Contents cannot be null");
     }
-    ensureNotClosed();
-    nativeBlockingWriteAndFlush(contextHandle, nativeHandle, contents);
-    lastAccessedAt = java.time.Instant.now();
+    beginOperation();
+    try {
+      nativeBlockingWriteAndFlush(contextHandle, nativeHandle, contents);
+      lastAccessedAt = java.time.Instant.now();
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void flush() throws WasmException {
-    ensureNotClosed();
-    nativeFlush(contextHandle, nativeHandle);
+    beginOperation();
+    try {
+      nativeFlush(contextHandle, nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void blockingFlush() throws WasmException {
-    ensureNotClosed();
-    nativeBlockingFlush(contextHandle, nativeHandle);
+    beginOperation();
+    try {
+      nativeBlockingFlush(contextHandle, nativeHandle);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void writeZeroes(final long length) throws WasmException {
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
-    nativeWriteZeroes(contextHandle, nativeHandle, length);
+    beginOperation();
+    try {
+      nativeWriteZeroes(contextHandle, nativeHandle, length);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public void blockingWriteZeroesAndFlush(final long length) throws WasmException {
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
-    nativeBlockingWriteZeroesAndFlush(contextHandle, nativeHandle, length);
+    beginOperation();
+    try {
+      nativeBlockingWriteZeroesAndFlush(contextHandle, nativeHandle, length);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -129,15 +157,18 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
       throw new IllegalArgumentException("Source stream cannot be null");
     }
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
-
-    // Get the native handle from the source stream
-    if (!(source instanceof JniWasiInputStream)) {
-      throw new IllegalArgumentException(
-          "Source stream must be a JniWasiInputStream, got: " + source.getClass().getName());
+    beginOperation();
+    try {
+      // Get the native handle from the source stream
+      if (!(source instanceof JniWasiInputStream)) {
+        throw new IllegalArgumentException(
+            "Source stream must be a JniWasiInputStream, got: " + source.getClass().getName());
+      }
+      final long sourceHandle = ((JniWasiInputStream) source).getNativeHandle();
+      return nativeSplice(contextHandle, nativeHandle, sourceHandle, length);
+    } finally {
+      endOperation();
     }
-    final long sourceHandle = ((JniWasiInputStream) source).getNativeHandle();
-    return nativeSplice(contextHandle, nativeHandle, sourceHandle, length);
   }
 
   @Override
@@ -146,26 +177,32 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
       throw new IllegalArgumentException("Source stream cannot be null");
     }
     Validation.requireNonNegative(length, "length");
-    ensureNotClosed();
-
-    // Get the native handle from the source stream
-    if (!(source instanceof JniWasiInputStream)) {
-      throw new IllegalArgumentException(
-          "Source stream must be a JniWasiInputStream, got: " + source.getClass().getName());
+    beginOperation();
+    try {
+      // Get the native handle from the source stream
+      if (!(source instanceof JniWasiInputStream)) {
+        throw new IllegalArgumentException(
+            "Source stream must be a JniWasiInputStream, got: " + source.getClass().getName());
+      }
+      final long sourceHandle = ((JniWasiInputStream) source).getNativeHandle();
+      return nativeBlockingSplice(contextHandle, nativeHandle, sourceHandle, length);
+    } finally {
+      endOperation();
     }
-    final long sourceHandle = ((JniWasiInputStream) source).getNativeHandle();
-    return nativeBlockingSplice(contextHandle, nativeHandle, sourceHandle, length);
   }
 
   @Override
   public WasiPollable subscribe() throws WasmException {
-    ensureNotClosed();
-
-    final long pollableHandle = nativeSubscribe(contextHandle, nativeHandle);
-    if (pollableHandle == 0) {
-      throw new WasmException("Failed to create pollable for output stream");
+    beginOperation();
+    try {
+      final long pollableHandle = nativeSubscribe(contextHandle, nativeHandle);
+      if (pollableHandle == 0) {
+        throw new WasmException("Failed to create pollable for output stream");
+      }
+      return new JniWasiPollable(contextHandle, pollableHandle);
+    } finally {
+      endOperation();
     }
-    return new JniWasiPollable(contextHandle, pollableHandle);
   }
 
   public long getId() {
@@ -210,74 +247,77 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");
     }
-    ensureNotClosed();
+    beginOperation();
+    try {
+      switch (operation) {
+        case "check-write":
+          return checkWrite();
 
-    switch (operation) {
-      case "check-write":
-        return checkWrite();
+        case "write":
+          if (parameters.length < 1 || !(parameters[0] instanceof byte[])) {
+            throw new IllegalArgumentException("write requires a byte[] parameter");
+          }
+          write((byte[]) parameters[0]);
+          return null;
 
-      case "write":
-        if (parameters.length < 1 || !(parameters[0] instanceof byte[])) {
-          throw new IllegalArgumentException("write requires a byte[] parameter");
-        }
-        write((byte[]) parameters[0]);
-        return null;
+        case "blocking-write-and-flush":
+          if (parameters.length < 1 || !(parameters[0] instanceof byte[])) {
+            throw new IllegalArgumentException(
+                "blocking-write-and-flush requires a byte[] parameter");
+          }
+          blockingWriteAndFlush((byte[]) parameters[0]);
+          return null;
 
-      case "blocking-write-and-flush":
-        if (parameters.length < 1 || !(parameters[0] instanceof byte[])) {
-          throw new IllegalArgumentException(
-              "blocking-write-and-flush requires a byte[] parameter");
-        }
-        blockingWriteAndFlush((byte[]) parameters[0]);
-        return null;
+        case "flush":
+          flush();
+          return null;
 
-      case "flush":
-        flush();
-        return null;
+        case "blocking-flush":
+          blockingFlush();
+          return null;
 
-      case "blocking-flush":
-        blockingFlush();
-        return null;
+        case "write-zeroes":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException("write-zeroes requires a length parameter");
+          }
+          writeZeroes(((Number) parameters[0]).longValue());
+          return null;
 
-      case "write-zeroes":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException("write-zeroes requires a length parameter");
-        }
-        writeZeroes(((Number) parameters[0]).longValue());
-        return null;
+        case "blocking-write-zeroes-and-flush":
+          if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
+            throw new IllegalArgumentException(
+                "blocking-write-zeroes-and-flush requires a length parameter");
+          }
+          blockingWriteZeroesAndFlush(((Number) parameters[0]).longValue());
+          return null;
 
-      case "blocking-write-zeroes-and-flush":
-        if (parameters.length < 1 || !(parameters[0] instanceof Number)) {
-          throw new IllegalArgumentException(
-              "blocking-write-zeroes-and-flush requires a length parameter");
-        }
-        blockingWriteZeroesAndFlush(((Number) parameters[0]).longValue());
-        return null;
+        case "splice":
+          if (parameters.length < 2
+              || !(parameters[0] instanceof WasiInputStream)
+              || !(parameters[1] instanceof Number)) {
+            throw new IllegalArgumentException(
+                "splice requires a WasiInputStream and length parameter");
+          }
+          return splice((WasiInputStream) parameters[0], ((Number) parameters[1]).longValue());
 
-      case "splice":
-        if (parameters.length < 2
-            || !(parameters[0] instanceof WasiInputStream)
-            || !(parameters[1] instanceof Number)) {
-          throw new IllegalArgumentException(
-              "splice requires a WasiInputStream and length parameter");
-        }
-        return splice((WasiInputStream) parameters[0], ((Number) parameters[1]).longValue());
+        case "blocking-splice":
+          if (parameters.length < 2
+              || !(parameters[0] instanceof WasiInputStream)
+              || !(parameters[1] instanceof Number)) {
+            throw new IllegalArgumentException(
+                "blocking-splice requires a WasiInputStream and length parameter");
+          }
+          return blockingSplice(
+              (WasiInputStream) parameters[0], ((Number) parameters[1]).longValue());
 
-      case "blocking-splice":
-        if (parameters.length < 2
-            || !(parameters[0] instanceof WasiInputStream)
-            || !(parameters[1] instanceof Number)) {
-          throw new IllegalArgumentException(
-              "blocking-splice requires a WasiInputStream and length parameter");
-        }
-        return blockingSplice(
-            (WasiInputStream) parameters[0], ((Number) parameters[1]).longValue());
+        case "subscribe":
+          return subscribe();
 
-      case "subscribe":
-        return subscribe();
-
-      default:
-        throw new WasmException("Unknown operation: " + operation);
+        default:
+          throw new WasmException("Unknown operation: " + operation);
+      }
+    } finally {
+      endOperation();
     }
   }
 

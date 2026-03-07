@@ -213,92 +213,96 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
   @Override
   public WasmValue get() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (final Arena tempArena = Arena.ofConfined()) {
-      final MemorySegment i32Value = tempArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment i64Value = tempArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment f32Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-      final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-      final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
-      final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
-      final MemorySegment v128Bytes = tempArena.allocate(16);
+      try (final Arena tempArena = Arena.ofConfined()) {
+        final MemorySegment i32Value = tempArena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment i64Value = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment f32Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+        final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
+        final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
+        final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final MemorySegment v128Bytes = tempArena.allocate(16);
 
-      final int result =
-          NATIVE_BINDINGS.panamaGlobalGet(
-              nativeGlobal,
-              store.getNativeStore(),
-              i32Value,
-              i64Value,
-              f32Value,
-              f64Value,
-              refIdPresent,
-              refId,
-              v128Bytes);
+        final int result =
+            NATIVE_BINDINGS.panamaGlobalGet(
+                nativeGlobal,
+                store.getNativeStore(),
+                i32Value,
+                i64Value,
+                f32Value,
+                f64Value,
+                refIdPresent,
+                refId,
+                v128Bytes);
 
-      if (result != 0) {
-        throw new RuntimeException(
-            "Failed to get global value: " + PanamaErrorMapper.getErrorDescription(result));
+        if (result != 0) {
+          throw new RuntimeException(
+              "Failed to get global value: " + PanamaErrorMapper.getErrorDescription(result));
+        }
+
+        // Convert based on type
+        switch (type) {
+          case I32:
+            return WasmValue.i32(i32Value.get(ValueLayout.JAVA_INT, 0));
+          case I64:
+            return WasmValue.i64(i64Value.get(ValueLayout.JAVA_LONG, 0));
+          case F32:
+            return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
+          case F64:
+            return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
+          case V128:
+            final byte[] bytes = new byte[16];
+            MemorySegment.copy(v128Bytes, ValueLayout.JAVA_BYTE, 0, bytes, 0, 16);
+            return WasmValue.v128(bytes);
+          case FUNCREF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.funcref(null);
+          case EXTERNREF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.externref(null);
+          case ANYREF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.anyref(refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.nullAnyRef();
+          case EQREF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.eqref(refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.nullEqRef();
+          case I31REF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.i31ref((int) refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.nullI31Ref();
+          case STRUCTREF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.structref(refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.nullStructRef();
+          case ARRAYREF:
+            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.arrayref(refId.get(ValueLayout.JAVA_LONG, 0));
+            }
+            return WasmValue.nullArrayRef();
+          case NULLREF:
+            return WasmValue.nullRef();
+          case NULLFUNCREF:
+            return WasmValue.nullNullFuncRef();
+          case NULLEXTERNREF:
+            return WasmValue.nullNullExternRef();
+          default:
+            throw new WasmTypeException("Unsupported global type: " + type);
+        }
       }
-
-      // Convert based on type
-      switch (type) {
-        case I32:
-          return WasmValue.i32(i32Value.get(ValueLayout.JAVA_INT, 0));
-        case I64:
-          return WasmValue.i64(i64Value.get(ValueLayout.JAVA_LONG, 0));
-        case F32:
-          return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
-        case F64:
-          return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
-        case V128:
-          final byte[] bytes = new byte[16];
-          MemorySegment.copy(v128Bytes, ValueLayout.JAVA_BYTE, 0, bytes, 0, 16);
-          return WasmValue.v128(bytes);
-        case FUNCREF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.funcref(null);
-        case EXTERNREF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.externref(null);
-        case ANYREF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.anyref(refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.nullAnyRef();
-        case EQREF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.eqref(refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.nullEqRef();
-        case I31REF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.i31ref((int) refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.nullI31Ref();
-        case STRUCTREF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.structref(refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.nullStructRef();
-        case ARRAYREF:
-          if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-            return WasmValue.arrayref(refId.get(ValueLayout.JAVA_LONG, 0));
-          }
-          return WasmValue.nullArrayRef();
-        case NULLREF:
-          return WasmValue.nullRef();
-        case NULLFUNCREF:
-          return WasmValue.nullNullFuncRef();
-        case NULLEXTERNREF:
-          return WasmValue.nullNullExternRef();
-        default:
-          throw new WasmTypeException("Unsupported global type: " + type);
-      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -310,19 +314,24 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     if (!mutable) {
       throw new UnsupportedOperationException("Cannot set value of immutable global");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Validate type matches
-    if (value.getType() != type) {
-      throw new WasmTypeException(
-          "Type mismatch: cannot set " + value.getType() + " value on " + type + " global");
-    }
+      // Validate type matches
+      if (value.getType() != type) {
+        throw new WasmTypeException(
+            "Type mismatch: cannot set " + value.getType() + " value on " + type + " global");
+      }
 
-    final int result = NATIVE_BINDINGS.panamaGlobalSet(nativeGlobal, store.getNativeStore(), value);
+      final int result =
+          NATIVE_BINDINGS.panamaGlobalSet(nativeGlobal, store.getNativeStore(), value);
 
-    if (result != 0) {
-      throw new RuntimeException(
-          "Failed to set global value: " + PanamaErrorMapper.getErrorDescription(result));
+      if (result != 0) {
+        throw new RuntimeException(
+            "Failed to set global value: " + PanamaErrorMapper.getErrorDescription(result));
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -338,25 +347,29 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
 
   @Override
   public ai.tegmentum.wasmtime4j.type.GlobalType getGlobalType() {
-    ensureNotClosed();
-    final WasmValueType valueType = getType();
-    final boolean mutableFlag = isMutable();
-    return new ai.tegmentum.wasmtime4j.type.GlobalType() {
-      @Override
-      public WasmValueType getValueType() {
-        return valueType;
-      }
+    resourceHandle.beginOperation();
+    try {
+      final WasmValueType valueType = getType();
+      final boolean mutableFlag = isMutable();
+      return new ai.tegmentum.wasmtime4j.type.GlobalType() {
+        @Override
+        public WasmValueType getValueType() {
+          return valueType;
+        }
 
-      @Override
-      public boolean isMutable() {
-        return mutableFlag;
-      }
+        @Override
+        public boolean isMutable() {
+          return mutableFlag;
+        }
 
-      @Override
-      public ai.tegmentum.wasmtime4j.type.WasmTypeKind getKind() {
-        return ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL;
-      }
-    };
+        @Override
+        public ai.tegmentum.wasmtime4j.type.WasmTypeKind getKind() {
+          return ai.tegmentum.wasmtime4j.type.WasmTypeKind.GLOBAL;
+        }
+      };
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   /**
@@ -450,14 +463,5 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
         LOGGER.warning("Unknown type code: " + typeCode);
         return WasmValueType.I32; // Default fallback
     }
-  }
-
-  /**
-   * Ensures the global is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }

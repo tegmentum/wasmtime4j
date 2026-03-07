@@ -73,10 +73,14 @@ public final class PanamaNnContext implements NnContext {
     Objects.requireNonNull(modelData, "modelData cannot be null");
     Objects.requireNonNull(encoding, "encoding cannot be null");
     Objects.requireNonNull(target, "target cannot be null");
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final byte[][] parts = new byte[][] {modelData};
-    return loadGraphInternal(parts, encoding, target);
+      final byte[][] parts = new byte[][] {modelData};
+      return loadGraphInternal(parts, encoding, target);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -89,10 +93,14 @@ public final class PanamaNnContext implements NnContext {
     if (modelParts.isEmpty()) {
       throw new IllegalArgumentException("modelParts cannot be empty");
     }
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final byte[][] partsArray = modelParts.toArray(new byte[0][]);
-    return loadGraphInternal(partsArray, encoding, target);
+      final byte[][] partsArray = modelParts.toArray(new byte[0][]);
+      return loadGraphInternal(partsArray, encoding, target);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -118,27 +126,35 @@ public final class PanamaNnContext implements NnContext {
 
   @Override
   public Set<NnGraphEncoding> getSupportedEncodings() {
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
-    try (Arena arena = Arena.ofConfined()) {
-      final int[] codes = bindings.nnContextSupportedEncodings(arena, nativePtr);
-      final Set<NnGraphEncoding> encodings = EnumSet.noneOf(NnGraphEncoding.class);
-      for (final int code : codes) {
-        try {
-          encodings.add(NnGraphEncoding.fromNativeCode(code));
-        } catch (IllegalArgumentException e) {
-          LOGGER.fine("Unknown encoding code from native: " + code);
+      final NativeWasiNnBindings bindings = NativeWasiNnBindings.getInstance();
+      try (Arena arena = Arena.ofConfined()) {
+        final int[] codes = bindings.nnContextSupportedEncodings(arena, nativePtr);
+        final Set<NnGraphEncoding> encodings = EnumSet.noneOf(NnGraphEncoding.class);
+        for (final int code : codes) {
+          try {
+            encodings.add(NnGraphEncoding.fromNativeCode(code));
+          } catch (IllegalArgumentException e) {
+            LOGGER.fine("Unknown encoding code from native: " + code);
+          }
         }
+        return encodings;
       }
-      return encodings;
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public Set<NnExecutionTarget> getSupportedTargets() {
-    resourceHandle.ensureNotClosed();
-    return EnumSet.allOf(NnExecutionTarget.class);
+    resourceHandle.beginOperation();
+    try {
+      return EnumSet.allOf(NnExecutionTarget.class);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -155,18 +171,26 @@ public final class PanamaNnContext implements NnContext {
 
   @Override
   public boolean isAvailable() {
-    if (resourceHandle.isClosed()) {
+    if (!resourceHandle.tryBeginOperation()) {
       return false;
     }
-    return NativeWasiNnBindings.getInstance().nnContextIsAvailable(nativePtr) != 0;
+    try {
+      return NativeWasiNnBindings.getInstance().nnContextIsAvailable(nativePtr) != 0;
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
   public NnImplementationInfo getImplementationInfo() {
-    resourceHandle.ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final String json = NativeWasiNnBindings.getInstance().nnContextGetBackendInfo(nativePtr);
-    return NnImplementationInfo.parseFromJson(json);
+      final String json = NativeWasiNnBindings.getInstance().nnContextGetBackendInfo(nativePtr);
+      return NnImplementationInfo.parseFromJson(json);
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override

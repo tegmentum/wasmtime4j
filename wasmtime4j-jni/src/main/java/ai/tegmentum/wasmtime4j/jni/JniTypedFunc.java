@@ -164,8 +164,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callVoidToVoid() throws WasmException {
-    ensureNotClosed();
-    nativeCallVoidToVoid(getNativeHandle(), store.getNativeHandle());
+    beginOperation();
+    try {
+      nativeCallVoidToVoid(getNativeHandle(), store.getNativeHandle());
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -175,8 +179,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callI32ToVoid(final int param) throws WasmException {
-    ensureNotClosed();
-    nativeCallI32ToVoid(getNativeHandle(), store.getNativeHandle(), param);
+    beginOperation();
+    try {
+      nativeCallI32ToVoid(getNativeHandle(), store.getNativeHandle(), param);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -187,8 +195,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callI32I32ToVoid(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    nativeCallI32I32ToVoid(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      nativeCallI32I32ToVoid(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -198,8 +210,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callI64ToVoid(final long param) throws WasmException {
-    ensureNotClosed();
-    nativeCallI64ToVoid(getNativeHandle(), store.getNativeHandle(), param);
+    beginOperation();
+    try {
+      nativeCallI64ToVoid(getNativeHandle(), store.getNativeHandle(), param);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -210,8 +226,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callI64I64ToVoid(final long param1, final long param2) throws WasmException {
-    ensureNotClosed();
-    nativeCallI64I64ToVoid(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      nativeCallI64I64ToVoid(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -222,8 +242,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public int callI32ToI32(final int param) throws WasmException {
-    ensureNotClosed();
-    return nativeCallI32ToI32(getNativeHandle(), store.getNativeHandle(), param);
+    beginOperation();
+    try {
+      return nativeCallI32ToI32(getNativeHandle(), store.getNativeHandle(), param);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -235,8 +259,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public int callI32I32ToI32(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    return nativeCallI32I32ToI32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      return nativeCallI32I32ToI32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -247,8 +275,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public long callI64ToI64(final long param) throws WasmException {
-    ensureNotClosed();
-    return nativeCallI64ToI64(getNativeHandle(), store.getNativeHandle(), param);
+    beginOperation();
+    try {
+      return nativeCallI64ToI64(getNativeHandle(), store.getNativeHandle(), param);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -260,8 +292,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public long callI64I64ToI64(final long param1, final long param2) throws WasmException {
-    ensureNotClosed();
-    return nativeCallI64I64ToI64(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      return nativeCallI64I64ToI64(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -272,8 +308,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public float callF32ToF32(final float param) throws WasmException {
-    ensureNotClosed();
-    return nativeCallF32ToF32(getNativeHandle(), store.getNativeHandle(), param);
+    beginOperation();
+    try {
+      return nativeCallF32ToF32(getNativeHandle(), store.getNativeHandle(), param);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -284,8 +324,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public double callF64ToF64(final double param) throws WasmException {
-    ensureNotClosed();
-    return nativeCallF64ToF64(getNativeHandle(), store.getNativeHandle(), param);
+    beginOperation();
+    try {
+      return nativeCallF64ToF64(getNativeHandle(), store.getNativeHandle(), param);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -297,8 +341,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public float callF32F32ToF32(final float param1, final float param2) throws WasmException {
-    ensureNotClosed();
-    return nativeCallF32F32ToF32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      return nativeCallF32F32ToF32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -310,8 +358,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public double callF64F64ToF64(final double param1, final double param2) throws WasmException {
-    ensureNotClosed();
-    return nativeCallF64F64ToF64(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      return nativeCallF64F64ToF64(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -325,9 +377,13 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    */
   public int callI32I32I32ToI32(final int param1, final int param2, final int param3)
       throws WasmException {
-    ensureNotClosed();
-    return nativeCallI32I32I32ToI32(
-        getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+    beginOperation();
+    try {
+      return nativeCallI32I32I32ToI32(
+          getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -341,9 +397,13 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    */
   public long callI64I64I64ToI64(final long param1, final long param2, final long param3)
       throws WasmException {
-    ensureNotClosed();
-    return nativeCallI64I64I64ToI64(
-        getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+    beginOperation();
+    try {
+      return nativeCallI64I64I64ToI64(
+          getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -357,9 +417,13 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    */
   public float callF32F32F32ToF32(final float param1, final float param2, final float param3)
       throws WasmException {
-    ensureNotClosed();
-    return nativeCallF32F32F32ToF32(
-        getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+    beginOperation();
+    try {
+      return nativeCallF32F32F32ToF32(
+          getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -373,9 +437,13 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    */
   public double callF64F64F64ToF64(final double param1, final double param2, final double param3)
       throws WasmException {
-    ensureNotClosed();
-    return nativeCallF64F64F64ToF64(
-        getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+    beginOperation();
+    try {
+      return nativeCallF64F64F64ToF64(
+          getNativeHandle(), store.getNativeHandle(), param1, param2, param3);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -387,8 +455,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public long callI32I32ToI64(final int param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    return nativeCallI32I32ToI64(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      return nativeCallI32I32ToI64(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -399,8 +471,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public int callI64ToI32(final long param) throws WasmException {
-    ensureNotClosed();
-    return nativeCallI64ToI32(getNativeHandle(), store.getNativeHandle(), param);
+    beginOperation();
+    try {
+      return nativeCallI64ToI32(getNativeHandle(), store.getNativeHandle(), param);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -412,8 +488,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public float callI32F32ToF32(final int param1, final float param2) throws WasmException {
-    ensureNotClosed();
-    return nativeCallI32F32ToF32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      return nativeCallI32F32ToF32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   /**
@@ -425,8 +505,12 @@ public final class JniTypedFunc extends JniResource implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public float callF32I32ToF32(final float param1, final int param2) throws WasmException {
-    ensureNotClosed();
-    return nativeCallF32I32ToF32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    beginOperation();
+    try {
+      return nativeCallF32I32ToF32(getNativeHandle(), store.getNativeHandle(), param1, param2);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override

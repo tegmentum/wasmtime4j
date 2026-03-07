@@ -72,9 +72,13 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws JniResourceException if this global or its store has been closed
    */
   private void ensureUsable() {
-    ensureNotClosed();
-    if (store.isClosed()) {
-      throw new JniResourceException("Store is closed");
+    beginOperation();
+    try {
+      if (store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+    } finally {
+      endOperation();
     }
   }
 

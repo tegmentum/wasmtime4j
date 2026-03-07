@@ -124,102 +124,130 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
 
   @Override
   public long allocateInstance() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena localArena = Arena.ofConfined()) {
-      final MemorySegment instanceIdOut = localArena.allocate(ValueLayout.JAVA_LONG);
+      try (Arena localArena = Arena.ofConfined()) {
+        final MemorySegment instanceIdOut = localArena.allocate(ValueLayout.JAVA_LONG);
 
-      final boolean success =
-          NATIVE_BINDINGS.poolingAllocatorAllocateInstance(nativeAllocator, instanceIdOut);
+        final boolean success =
+            NATIVE_BINDINGS.poolingAllocatorAllocateInstance(nativeAllocator, instanceIdOut);
 
-      if (!success) {
-        throw new WasmException("Failed to allocate instance from pool");
+        if (!success) {
+          throw new WasmException("Failed to allocate instance from pool");
+        }
+
+        return instanceIdOut.get(ValueLayout.JAVA_LONG, 0);
       }
-
-      return instanceIdOut.get(ValueLayout.JAVA_LONG, 0);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void reuseInstance(final long instanceId) throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final boolean success =
-        NATIVE_BINDINGS.poolingAllocatorReuseInstance(nativeAllocator, instanceId);
+      final boolean success =
+          NATIVE_BINDINGS.poolingAllocatorReuseInstance(nativeAllocator, instanceId);
 
-    if (!success) {
-      throw new WasmException("Failed to reuse instance: " + instanceId);
+      if (!success) {
+        throw new WasmException("Failed to reuse instance: " + instanceId);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void releaseInstance(final long instanceId) throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final boolean success =
-        NATIVE_BINDINGS.poolingAllocatorReleaseInstance(nativeAllocator, instanceId);
+      final boolean success =
+          NATIVE_BINDINGS.poolingAllocatorReleaseInstance(nativeAllocator, instanceId);
 
-    if (!success) {
-      throw new WasmException("Failed to release instance: " + instanceId);
+      if (!success) {
+        throw new WasmException("Failed to release instance: " + instanceId);
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public PoolStatistics getStatistics() {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    try (Arena localArena = Arena.ofConfined()) {
-      // Allocate space for 12 i64 values (12 * 8 = 96 bytes)
-      final MemorySegment statsOut = localArena.allocate(ValueLayout.JAVA_LONG, 12);
+      try (Arena localArena = Arena.ofConfined()) {
+        // Allocate space for 12 i64 values (12 * 8 = 96 bytes)
+        final MemorySegment statsOut = localArena.allocate(ValueLayout.JAVA_LONG, 12);
 
-      final boolean success =
-          NATIVE_BINDINGS.poolingAllocatorGetStatistics(nativeAllocator, statsOut);
+        final boolean success =
+            NATIVE_BINDINGS.poolingAllocatorGetStatistics(nativeAllocator, statsOut);
 
-      if (!success) {
-        LOGGER.warning("Failed to get pool statistics, returning empty statistics");
-        return new PanamaPoolStatistics();
+        if (!success) {
+          LOGGER.warning("Failed to get pool statistics, returning empty statistics");
+          return new PanamaPoolStatistics();
+        }
+
+        // Read the 12 metrics values
+        final long[] metrics = new long[12];
+        for (int i = 0; i < 12; i++) {
+          metrics[i] = statsOut.getAtIndex(ValueLayout.JAVA_LONG, i);
+        }
+
+        return new PanamaPoolStatistics(metrics);
       }
-
-      // Read the 12 metrics values
-      final long[] metrics = new long[12];
-      for (int i = 0; i < 12; i++) {
-        metrics[i] = statsOut.getAtIndex(ValueLayout.JAVA_LONG, i);
-      }
-
-      return new PanamaPoolStatistics(metrics);
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void resetStatistics() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final boolean success = NATIVE_BINDINGS.poolingAllocatorResetStatistics(nativeAllocator);
+      final boolean success = NATIVE_BINDINGS.poolingAllocatorResetStatistics(nativeAllocator);
 
-    if (!success) {
-      throw new WasmException("Failed to reset pool statistics");
+      if (!success) {
+        throw new WasmException("Failed to reset pool statistics");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void warmPools() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final boolean success = NATIVE_BINDINGS.poolingAllocatorWarmPools(nativeAllocator);
+      final boolean success = NATIVE_BINDINGS.poolingAllocatorWarmPools(nativeAllocator);
 
-    if (!success) {
-      throw new WasmException("Failed to warm pools");
+      if (!success) {
+        throw new WasmException("Failed to warm pools");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
   @Override
   public void performMaintenance() throws WasmException {
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    final boolean success = NATIVE_BINDINGS.poolingAllocatorPerformMaintenance(nativeAllocator);
+      final boolean success = NATIVE_BINDINGS.poolingAllocatorPerformMaintenance(nativeAllocator);
 
-    if (!success) {
-      throw new WasmException("Failed to perform pool maintenance");
+      if (!success) {
+        throw new WasmException("Failed to perform pool maintenance");
+      }
+    } finally {
+      resourceHandle.endOperation();
     }
   }
 
@@ -228,14 +256,18 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
     if (engineConfig == null) {
       throw new IllegalArgumentException("engineConfig cannot be null");
     }
-    ensureNotClosed();
+    resourceHandle.beginOperation();
+    try {
 
-    // Set pooling allocator configuration on the engine config
-    engineConfig.setPoolingAllocatorEnabled(true);
-    engineConfig.setInstancePoolSize(config.getInstancePoolSize());
-    engineConfig.setMaxMemoryPerInstance(config.getMaxMemoryPerInstance());
+      // Set pooling allocator configuration on the engine config
+      engineConfig.setPoolingAllocatorEnabled(true);
+      engineConfig.setInstancePoolSize(config.getInstancePoolSize());
+      engineConfig.setMaxMemoryPerInstance(config.getMaxMemoryPerInstance());
 
-    LOGGER.fine("Configured engine to use pooling allocator");
+      LOGGER.fine("Configured engine to use pooling allocator");
+    } finally {
+      resourceHandle.endOperation();
+    }
   }
 
   @Override
@@ -262,9 +294,5 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
    */
   public MemorySegment getNativeAllocator() {
     return nativeAllocator;
-  }
-
-  private void ensureNotClosed() {
-    resourceHandle.ensureNotClosed();
   }
 }
