@@ -8,8 +8,9 @@
 
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
+use std::panic::AssertUnwindSafe;
 
-use crate::ffi_boundary_i32;
+use crate::error::ffi_utils::ffi_try_code;
 use crate::wast_runner::{execute_wast_buffer, execute_wast_file};
 
 /// Execute a WAST file from disk and return results as JSON.
@@ -26,7 +27,7 @@ pub extern "C" fn wasmtime4j_panama_wast_execute_file(
     file_path: *const c_char,
     result_json: *mut *mut c_char,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if file_path.is_null() || result_json.is_null() {
             return Err(crate::error::WasmtimeError::invalid_parameter(
                 "file_path and result_json must not be null",
@@ -62,8 +63,8 @@ pub extern "C" fn wasmtime4j_panama_wast_execute_file(
             *result_json = c_json.into_raw();
         }
 
-        Ok(0)
-    })
+        Ok(())
+    }))
 }
 
 /// Execute WAST content from a byte buffer and return results as JSON.
@@ -84,7 +85,7 @@ pub extern "C" fn wasmtime4j_panama_wast_execute_buffer(
     content_len: usize,
     result_json: *mut *mut c_char,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if filename.is_null() || content.is_null() || result_json.is_null() {
             return Err(crate::error::WasmtimeError::invalid_parameter(
                 "filename, content, and result_json must not be null",
@@ -128,8 +129,8 @@ pub extern "C" fn wasmtime4j_panama_wast_execute_buffer(
             *result_json = c_json.into_raw();
         }
 
-        Ok(0)
-    })
+        Ok(())
+    }))
 }
 
 /// Free a JSON result string allocated by the WAST execution functions.

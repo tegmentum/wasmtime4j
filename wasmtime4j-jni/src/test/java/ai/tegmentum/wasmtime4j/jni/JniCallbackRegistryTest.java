@@ -112,8 +112,7 @@ class JniCallbackRegistryTest {
     @DisplayName("New registry should have no callback for any name")
     void newRegistryShouldHaveNoCallbacks() {
       assertFalse(
-          registry.hasCallback("nonexistent"),
-          "New registry should not have any callbacks");
+          registry.hasCallback("nonexistent"), "New registry should not have any callbacks");
     }
 
     @Test
@@ -157,8 +156,7 @@ class JniCallbackRegistryTest {
 
       WasmException e =
           assertThrows(
-              WasmException.class,
-              () -> registry.registerCallback("test", null, funcType));
+              WasmException.class, () -> registry.registerCallback("test", null, funcType));
       assertTrue(
           e.getMessage().contains("Callback cannot be null"),
           "Expected message to contain: Callback cannot be null");
@@ -169,8 +167,7 @@ class JniCallbackRegistryTest {
     void registerWithNullFunctionTypeShouldThrow() {
       WasmException e =
           assertThrows(
-              WasmException.class,
-              () -> registry.registerCallback("test", params -> params, null));
+              WasmException.class, () -> registry.registerCallback("test", params -> params, null));
       assertTrue(
           e.getMessage().contains("Function type cannot be null"),
           "Expected message to contain: Function type cannot be null");
@@ -210,8 +207,7 @@ class JniCallbackRegistryTest {
 
       WasmException e =
           assertThrows(
-              WasmException.class,
-              () -> registry.registerAsyncCallback("test", null, funcType));
+              WasmException.class, () -> registry.registerAsyncCallback("test", null, funcType));
       assertTrue(
           e.getMessage().contains("Callback cannot be null"),
           "Expected message to contain: Callback cannot be null");
@@ -298,11 +294,8 @@ class JniCallbackRegistryTest {
           assertThrows(
               IllegalStateException.class,
               () ->
-                  registry.registerCallback(
-                      "test", params -> params, createSimpleFunctionType()));
-      assertTrue(
-          e.getMessage().contains("closed"),
-          "Expected message to contain: closed");
+                  registry.registerCallback("test", params -> params, createSimpleFunctionType()));
+      assertTrue(e.getMessage().contains("closed"), "Expected message to contain: closed");
     }
 
     @Test
@@ -317,9 +310,7 @@ class JniCallbackRegistryTest {
                       "test",
                       params -> java.util.concurrent.CompletableFuture.completedFuture(params),
                       createSimpleFunctionType()));
-      assertTrue(
-          e.getMessage().contains("closed"),
-          "Expected message to contain: closed");
+      assertTrue(e.getMessage().contains("closed"), "Expected message to contain: closed");
     }
 
     @Test
@@ -328,8 +319,7 @@ class JniCallbackRegistryTest {
       registry.close();
       // hasCallback and getCallbackCount do not call ensureNotClosed
       assertFalse(
-          registry.hasCallback("test"),
-          "hasCallback should return false on closed empty registry");
+          registry.hasCallback("test"), "hasCallback should return false on closed empty registry");
     }
 
     @Test

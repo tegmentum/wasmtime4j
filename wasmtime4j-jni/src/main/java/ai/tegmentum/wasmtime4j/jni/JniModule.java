@@ -714,8 +714,8 @@ public class JniModule extends JniResource implements Module {
     final java.util.List<ai.tegmentum.wasmtime4j.type.ValType> returns =
         new java.util.ArrayList<>();
 
-    // Parse key-value pairs
-    final String[] pairs = obj.split(",(?=\\s*\")");
+    // Parse key-value pairs (bracket-aware split to avoid splitting inside arrays)
+    final java.util.List<String> pairs = splitTopLevelPairs(obj);
     for (final String pair : pairs) {
       final int colonPos = pair.indexOf(':');
       if (colonPos < 0) {
@@ -756,6 +756,27 @@ public class JniModule extends JniResource implements Module {
             returns.toArray(new ai.tegmentum.wasmtime4j.type.ValType[0]));
     return new ai.tegmentum.wasmtime4j.func.FunctionInfo(
         index, name, funcType, isImport, isExported);
+  }
+
+  private static java.util.List<String> splitTopLevelPairs(final String obj) {
+    final java.util.List<String> pairs = new java.util.ArrayList<>();
+    int depth = 0;
+    int start = 0;
+    for (int i = 0; i < obj.length(); i++) {
+      final char ch = obj.charAt(i);
+      if (ch == '[') {
+        depth++;
+      } else if (ch == ']') {
+        depth--;
+      } else if (ch == ',' && depth == 0) {
+        pairs.add(obj.substring(start, i));
+        start = i + 1;
+      }
+    }
+    if (start < obj.length()) {
+      pairs.add(obj.substring(start));
+    }
+    return pairs;
   }
 
   private static void parseValTypes(

@@ -36,8 +36,6 @@
         <junit.version>5.10.4</junit.version>
         <junit.platform.version>1.10.4</junit.platform.version>
         <jmh.version>1.37</jmh.version>
-        <slf4j.version>2.0.9</slf4j.version>
-        <logback.version>1.4.11</logback.version>
         <mockito.version>5.15.2</mockito.version>
         <bytebuddy.version>1.18.4</bytebuddy.version>
 
@@ -682,13 +680,10 @@
                             <outputFormat>XML</outputFormat>
                         </outputFormats>
                         <timestampedReports>false</timestampedReports>
-                        <!-- Mutation score thresholds (start at baseline, increase over time) -->
-                        <!-- Current baseline: 45% mutation score, 64% coverage -->
+                        <!-- Mutation score thresholds -->
                         <mutationThreshold>45</mutationThreshold>
                         <coverageThreshold>60</coverageThreshold>
-                        <!-- Fail build if thresholds not met (disabled by default) -->
                         <failWhenNoMutations>false</failWhenNoMutations>
-                        <!-- Verbose output for debugging -->
                         <verbose>false</verbose>
                     </configuration>
                 </plugin>
@@ -1147,8 +1142,7 @@
         </profile>
 
         <!-- Profile for mutation testing (nightly/on-demand) -->
-        <!-- Usage: ./mvnw test -P mutation-tests -->
-        <!-- Usage with specific module: ./mvnw test -P mutation-tests -pl wasmtime4j -->
+        <!-- Usage: ./mvnw test -P mutation-tests -pl wasmtime4j -->
         <profile>
             <id>mutation-tests</id>
             <build>
@@ -1245,7 +1239,6 @@
                             <!-- Strict thresholds -->
                             <mutationThreshold>70</mutationThreshold>
                             <coverageThreshold>80</coverageThreshold>
-                            <!-- Fail if thresholds not met -->
                             <failWhenNoMutations>true</failWhenNoMutations>
                             <!-- Longer timeouts for comprehensive testing -->
                             <timeoutConstant>15000</timeoutConstant>
@@ -1277,7 +1270,6 @@
                         <artifactId>pitest-maven</artifactId>
                         <configuration>
                             <targetClasses>
-                                <!-- JNI implementation packages -->
                                 <param>ai.tegmentum.wasmtime4j.jni.*</param>
                                 <param>ai.tegmentum.wasmtime4j.jni.util.*</param>
                                 <param>ai.tegmentum.wasmtime4j.jni.exception.*</param>
@@ -1314,7 +1306,6 @@
                         <artifactId>pitest-maven</artifactId>
                         <configuration>
                             <targetClasses>
-                                <!-- Panama implementation packages -->
                                 <param>ai.tegmentum.wasmtime4j.panama.*</param>
                                 <param>ai.tegmentum.wasmtime4j.panama.util.*</param>
                                 <param>ai.tegmentum.wasmtime4j.panama.exception.*</param>
@@ -1343,6 +1334,7 @@
                 </plugins>
             </build>
         </profile>
+
     </profiles>
 
     <licenses>

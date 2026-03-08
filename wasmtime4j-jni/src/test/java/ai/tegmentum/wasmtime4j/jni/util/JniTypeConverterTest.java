@@ -52,9 +52,9 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.typeToString(null));
 
-    assertTrue(exception.getMessage().contains("type"),
-        "Expected message to contain: type");
-    assertTrue(exception.getMessage().contains("must not be null"),
+    assertTrue(exception.getMessage().contains("type"), "Expected message to contain: type");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
   }
 
@@ -83,9 +83,10 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.stringToType(null));
 
-    assertTrue(exception.getMessage().contains("typeString"),
-        "Expected message to contain: typeString");
-    assertTrue(exception.getMessage().contains("must not be null"),
+    assertTrue(
+        exception.getMessage().contains("typeString"), "Expected message to contain: typeString");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
   }
 
@@ -175,9 +176,9 @@ class JniTypeConverterTest {
         assertThrows(
             IllegalArgumentException.class, () -> JniTypeConverter.wasmValueToNativeParam(null));
 
-    assertTrue(exception.getMessage().contains("value"),
-        "Expected message to contain: value");
-    assertTrue(exception.getMessage().contains("must not be null"),
+    assertTrue(exception.getMessage().contains("value"), "Expected message to contain: value");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
   }
 
@@ -199,9 +200,9 @@ class JniTypeConverterTest {
         assertThrows(
             IllegalArgumentException.class, () -> JniTypeConverter.wasmValuesToNativeParams(null));
 
-    assertTrue(exception.getMessage().contains("values"),
-        "Expected message to contain: values");
-    assertTrue(exception.getMessage().contains("must not be null"),
+    assertTrue(exception.getMessage().contains("values"), "Expected message to contain: values");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
   }
 
@@ -311,9 +312,11 @@ class JniTypeConverterTest {
             IllegalArgumentException.class,
             () -> JniTypeConverter.nativeResultToWasmValue(42, null));
 
-    assertTrue(exception.getMessage().contains("expectedType"),
+    assertTrue(
+        exception.getMessage().contains("expectedType"),
         "Expected message to contain: expectedType");
-    assertTrue(exception.getMessage().contains("must not be null"),
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
   }
 
@@ -384,7 +387,9 @@ class JniTypeConverterTest {
             () -> JniTypeConverter.validateParameterTypes(params, expectedTypes));
 
     assertTrue(
-        exception.getMessage().contains("Parameter type mismatch at index 1: got I32, expected F64"),
+        exception
+            .getMessage()
+            .contains("Parameter type mismatch at index 1: got I32, expected F64"),
         "Expected message to contain: Parameter type mismatch at index 1: got I32, expected F64");
   }
 
@@ -460,9 +465,9 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.typesToStrings(null));
 
-    assertTrue(exception.getMessage().contains("types"),
-        "Expected message to contain: types");
-    assertTrue(exception.getMessage().contains("must not be null"),
+    assertTrue(exception.getMessage().contains("types"), "Expected message to contain: types");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
   }
 
@@ -484,8 +489,7 @@ class JniTypeConverterTest {
     final WasmValueType[] types = JniTypeConverter.stringsToTypes(strings);
 
     assertArrayEquals(
-        new WasmValueType[] {WasmValueType.I32, WasmValueType.V128, WasmValueType.FUNCREF},
-        types);
+        new WasmValueType[] {WasmValueType.I32, WasmValueType.V128, WasmValueType.FUNCREF}, types);
   }
 
   @Test
@@ -493,9 +497,10 @@ class JniTypeConverterTest {
     final IllegalArgumentException exception =
         assertThrows(IllegalArgumentException.class, () -> JniTypeConverter.stringsToTypes(null));
 
-    assertTrue(exception.getMessage().contains("typeStrings"),
-        "Expected message to contain: typeStrings");
-    assertTrue(exception.getMessage().contains("must not be null"),
+    assertTrue(
+        exception.getMessage().contains("typeStrings"), "Expected message to contain: typeStrings");
+    assertTrue(
+        exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
   }
 

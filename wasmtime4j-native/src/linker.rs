@@ -600,6 +600,12 @@ impl Linker {
             });
         }
 
+        // Guard against double invocation — WASI imports can only be added once
+        if self.metadata.wasi_enabled {
+            log::debug!("WASI already enabled on this linker, skipping");
+            return Ok(());
+        }
+
         let mut linker = self.inner.lock().map_err(|e| WasmtimeError::Runtime {
             message: format!("Failed to lock linker: {}", e),
             backtrace: None,

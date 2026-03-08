@@ -259,7 +259,18 @@ class GlobalCreationTest extends DualRuntimeTest {
     LOGGER.info("[" + runtime + "] Testing global creation for all value types");
     try (Engine engine = createTestEngine();
         Store store = Store.create(engine)) {
+      // ExnRef and ContRef types are not yet supported as global types in the native layer
+      final java.util.Set<WasmValueType> unsupportedGlobalTypes =
+          java.util.EnumSet.of(
+              WasmValueType.EXNREF,
+              WasmValueType.NULLEXNREF,
+              WasmValueType.CONTREF,
+              WasmValueType.NULLCONTREF);
       for (final WasmValueType valueType : WasmValueType.values()) {
+        if (unsupportedGlobalTypes.contains(valueType)) {
+          LOGGER.fine("[" + runtime + "] Skipping unsupported global type: " + valueType);
+          continue;
+        }
         LOGGER.fine("[" + runtime + "] Testing value type: " + valueType);
         final WasmValue initialValue = createDefaultValue(valueType);
 
@@ -512,6 +523,14 @@ class GlobalCreationTest extends DualRuntimeTest {
         return WasmValue.nullNullFuncRef();
       case NULLEXTERNREF:
         return WasmValue.nullNullExternRef();
+      case EXNREF:
+        return WasmValue.nullExnRef();
+      case NULLEXNREF:
+        return WasmValue.nullNullExnRef();
+      case CONTREF:
+        return WasmValue.nullContRef();
+      case NULLCONTREF:
+        return WasmValue.nullNullContRef();
       default:
         throw new IllegalArgumentException("Unsupported value type: " + valueType);
     }

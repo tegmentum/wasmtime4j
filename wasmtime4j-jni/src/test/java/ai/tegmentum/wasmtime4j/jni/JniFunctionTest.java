@@ -75,9 +75,7 @@ class JniFunctionTest {
             IllegalArgumentException.class,
             () -> new JniFunction(VALID_HANDLE, null, VALID_MODULE_HANDLE, MOCK_STORE));
 
-    assertTrue(
-        exception.getMessage().contains("name"),
-        "Expected message to contain: name");
+    assertTrue(exception.getMessage().contains("name"), "Expected message to contain: name");
     assertTrue(
         exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
@@ -90,9 +88,7 @@ class JniFunctionTest {
             IllegalArgumentException.class,
             () -> new JniFunction(VALID_HANDLE, FUNCTION_NAME, VALID_MODULE_HANDLE, null));
 
-    assertTrue(
-        exception.getMessage().contains("store"),
-        "Expected message to contain: store");
+    assertTrue(exception.getMessage().contains("store"), "Expected message to contain: store");
     assertTrue(
         exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
@@ -121,8 +117,7 @@ class JniFunctionTest {
         assertThrows(IllegalArgumentException.class, () -> function.call((WasmValue[]) null));
 
     assertTrue(
-        exception.getMessage().contains("parameters"),
-        "Expected message to contain: parameters");
+        exception.getMessage().contains("parameters"), "Expected message to contain: parameters");
     assertTrue(
         exception.getMessage().contains("must not be null"),
         "Expected message to contain: must not be null");
@@ -159,9 +154,7 @@ class JniFunctionTest {
     assertTrue(
         toString.contains("handle=0x" + Long.toHexString(VALID_HANDLE)),
         "Expected string to contain: handle=0x" + Long.toHexString(VALID_HANDLE));
-    assertTrue(
-        toString.contains("closed=false"),
-        "Expected string to contain: closed=false");
+    assertTrue(toString.contains("closed=false"), "Expected string to contain: closed=false");
 
     // Note: Testing toString() after close() requires native methods
     // Integration tests will verify toString() behavior after close()

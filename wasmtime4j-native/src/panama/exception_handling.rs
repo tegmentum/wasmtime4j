@@ -30,22 +30,17 @@ pub extern "C" fn wasmtime4j_panama_tag_create(
 
     let store = unsafe { &*(store_ptr as *const crate::store::Store) };
 
-    // Convert param type codes to ValTypes
+    // Convert param type codes to ValTypes using shared conversion
     let params: Vec<ValType> = if param_count > 0 && !param_types.is_null() {
         let param_slice = unsafe { std::slice::from_raw_parts(param_types, param_count as usize) };
-        param_slice
-            .iter()
-            .filter_map(|&code| match code {
-                0 => Some(ValType::I32),
-                1 => Some(ValType::I64),
-                2 => Some(ValType::F32),
-                3 => Some(ValType::F64),
-                4 => Some(ValType::V128),
-                5 => Some(ValType::FUNCREF),
-                6 => Some(ValType::EXTERNREF),
-                _ => None,
-            })
-            .collect()
+        let mut converted = Vec::with_capacity(param_slice.len());
+        for &code in param_slice {
+            match crate::ffi_common::valtype_conversion::int_to_valtype(code) {
+                Ok(vt) => converted.push(vt),
+                Err(_) => return std::ptr::null_mut(),
+            }
+        }
+        converted
     } else {
         Vec::new()
     };

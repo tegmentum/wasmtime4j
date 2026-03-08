@@ -438,8 +438,7 @@ class ResourceLimitEnforcementTest extends DualRuntimeTest {
 
           // Run with large number of iterations - should run out of fuel
           final TrapException fuelTrap =
-              assertThrows(
-                  TrapException.class, () -> consumerFunc.call(WasmValue.i32(10000)));
+              assertThrows(TrapException.class, () -> consumerFunc.call(WasmValue.i32(10000)));
           LOGGER.info("Fuel exhausted trap: " + fuelTrap.getMessage());
         } finally {
           module.close();

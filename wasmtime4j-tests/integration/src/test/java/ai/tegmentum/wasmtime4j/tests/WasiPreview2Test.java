@@ -219,7 +219,7 @@ public class WasiPreview2Test extends DualRuntimeTest {
     Linker<WasiContext> linker = WasiLinkerUtils.createFullLinker(engine, context);
     assertNotNull(linker, "Full linker should be created");
 
-    // Verify all imports are present
+    // Verify WASI Preview 2 imports are present
     assertTrue(
         WasiLinkerUtils.hasWasiPreview2Imports(linker),
         "Full linker should have WASI Preview 2 imports");
@@ -242,7 +242,10 @@ public class WasiPreview2Test extends DualRuntimeTest {
 
     Linker<WasiContext> linker = Linker.create(engine);
 
-    // Verify imports were added
+    // Add WASI Preview 2 imports to the linker
+    WasiLinkerUtils.addPreview2ToLinker(linker, context);
+
+    // Verify WASI Preview 2 imports were added
     assertTrue(
         WasiLinkerUtils.hasWasiPreview2Imports(linker),
         "Linker should have WASI Preview 2 imports after adding");

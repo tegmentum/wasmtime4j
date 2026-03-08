@@ -297,6 +297,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGlobal_nativeGetValue
                 match *ref_type.heap_type() {
                     HeapType::Func | HeapType::ConcreteFunc(_) => "funcref",
                     HeapType::Extern => "externref",
+                    HeapType::Any => "anyref",
+                    HeapType::Eq => "eqref",
+                    HeapType::I31 => "i31ref",
+                    HeapType::Struct | HeapType::ConcreteStruct(_) => "structref",
+                    HeapType::Array | HeapType::ConcreteArray(_) => "arrayref",
+                    HeapType::None => "nullref",
+                    HeapType::NoFunc => "nullfuncref",
+                    HeapType::NoExtern => "nullexternref",
+                    HeapType::Exn => "exnref",
+                    HeapType::NoExn => "nullexnref",
+                    HeapType::Cont | HeapType::ConcreteCont(_) => "contref",
+                    HeapType::NoCont => "nullcontref",
                     _ => "anyref",
                 }
             }

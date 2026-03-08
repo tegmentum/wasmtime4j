@@ -381,7 +381,8 @@ class PanamaTableTest {
       final PanamaInstance instance = createTableTestInstance();
       final PanamaTable table = (PanamaTable) getTable(instance);
       table.close();
-      assertFalse(table.supports64BitAddressing(), "Closed table should not support 64-bit addressing");
+      assertFalse(
+          table.supports64BitAddressing(), "Closed table should not support 64-bit addressing");
     }
   }
 }

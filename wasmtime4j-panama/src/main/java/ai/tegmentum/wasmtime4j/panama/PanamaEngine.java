@@ -333,7 +333,7 @@ public final class PanamaEngine implements Engine {
   public ai.tegmentum.wasmtime4j.CodeBuilder codeBuilder() throws WasmException {
     resourceHandle.beginOperation();
     try {
-      return new PanamaCodeBuilder(nativeEngine);
+      return new PanamaCodeBuilder(nativeEngine, this);
     } finally {
       resourceHandle.endOperation();
     }
@@ -366,7 +366,7 @@ public final class PanamaEngine implements Engine {
       if (metrics == null) {
         return null;
       }
-      return new ai.tegmentum.wasmtime4j.panama.pool.PanamaPoolStatistics(metrics);
+      return new ai.tegmentum.wasmtime4j.pool.DefaultPoolStatistics(metrics);
     } finally {
       resourceHandle.endOperation();
     }
@@ -377,21 +377,16 @@ public final class PanamaEngine implements Engine {
     if (stream == null) {
       throw new IllegalArgumentException("stream cannot be null");
     }
-    resourceHandle.beginOperation();
-    try {
 
-      // Read entire stream into byte array
-      // Wasmtime requires complete bytecode before compilation
-      final byte[] wasmBytes = StreamUtils.readAllBytes(stream);
+    // Read entire stream into byte array outside the lock
+    // Wasmtime requires complete bytecode before compilation
+    final byte[] wasmBytes = StreamUtils.readAllBytes(stream);
 
-      if (wasmBytes.length == 0) {
-        throw new WasmException("Stream contained no data");
-      }
-
-      return compileModule(wasmBytes);
-    } finally {
-      resourceHandle.endOperation();
+    if (wasmBytes.length == 0) {
+      throw new WasmException("Stream contained no data");
     }
+
+    return compileModule(wasmBytes);
   }
 
   @Override

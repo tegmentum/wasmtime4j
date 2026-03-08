@@ -32,6 +32,7 @@ final class PanamaCodeBuilder implements CodeBuilder {
   private static final NativeEngineBindings NATIVE_BINDINGS = NativeEngineBindings.getInstance();
 
   private final MemorySegment engineHandle;
+  private final PanamaEngine engine;
   private MemorySegment nativeHandle;
   private final NativeResourceHandle resourceHandle;
 
@@ -39,10 +40,13 @@ final class PanamaCodeBuilder implements CodeBuilder {
    * Creates a new Panama code builder for the given engine.
    *
    * @param engineHandle the native engine handle
+   * @param engine the engine reference for modules created by this builder
    * @throws WasmException if the native code builder cannot be created
    */
-  PanamaCodeBuilder(final MemorySegment engineHandle) throws WasmException {
+  PanamaCodeBuilder(final MemorySegment engineHandle, final PanamaEngine engine)
+      throws WasmException {
     this.engineHandle = engineHandle;
+    this.engine = engine;
     this.nativeHandle = NATIVE_BINDINGS.codeBuilderCreate(engineHandle);
     if (this.nativeHandle == null || this.nativeHandle.equals(MemorySegment.NULL)) {
       throw new WasmException("Failed to create native CodeBuilder");
@@ -177,7 +181,7 @@ final class PanamaCodeBuilder implements CodeBuilder {
       if (moduleHandle == null || moduleHandle.equals(MemorySegment.NULL)) {
         throw new WasmException("Failed to compile module via CodeBuilder");
       }
-      return new PanamaModule(moduleHandle);
+      return new PanamaModule(engine, moduleHandle);
     } finally {
       resourceHandle.endOperation();
     }

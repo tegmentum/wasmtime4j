@@ -55,7 +55,8 @@ class CustomCreatorConfigTest extends DualRuntimeTest {
         (type, minBytes, maxBytes, reservedBytes, guardBytes) -> new StubLinearMemory(minBytes);
 
     final EngineConfig config = Engine.builder().withHostMemory(creator);
-    assertSame(creator, config.getMemoryCreator(), "getMemoryCreator should return the set creator");
+    assertSame(
+        creator, config.getMemoryCreator(), "getMemoryCreator should return the set creator");
   }
 
   @ParameterizedTest

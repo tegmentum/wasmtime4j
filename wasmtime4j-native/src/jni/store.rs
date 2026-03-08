@@ -803,6 +803,14 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateGlo
             4 => wasmtime::ValType::V128,
             5 => wasmtime::ValType::FUNCREF,
             6 => wasmtime::ValType::EXTERNREF,
+            7 => wasmtime::ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Any)),
+            8 => wasmtime::ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Eq)),
+            9 => wasmtime::ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::I31)),
+            10 => wasmtime::ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Struct)),
+            11 => wasmtime::ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::Array)),
+            12 => wasmtime::ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::None)),
+            13 => wasmtime::ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoFunc)),
+            14 => wasmtime::ValType::Ref(wasmtime::RefType::new(true, wasmtime::HeapType::NoExtern)),
             _ => {
                 return Err(crate::error::WasmtimeError::InvalidParameter {
                     message: format!("Invalid value type code: {}", value_type),
@@ -1864,16 +1872,133 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetResour
 // Call Hook JNI Functions
 // ============================================================================
 
+// Static storage for JNI call hook callbacks
+static JNI_CALL_HOOK_CALLBACKS: std::sync::OnceLock<
+    std::sync::Mutex<std::collections::HashMap<i64, JniCallHookContext>>,
+> = std::sync::OnceLock::new();
+
+struct JniCallHookContext {
+    jvm: std::sync::Arc<jni::JavaVM>,
+    jni_store_global: jni::objects::GlobalRef,
+}
+
+fn get_jni_call_hook_callbacks(
+) -> &'static std::sync::Mutex<std::collections::HashMap<i64, JniCallHookContext>> {
+    JNI_CALL_HOOK_CALLBACKS
+        .get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+}
+
+fn register_jni_call_hook(
+    callback_id: i64,
+    jvm: std::sync::Arc<jni::JavaVM>,
+    jni_store_global: jni::objects::GlobalRef,
+) {
+    let mut callbacks = get_jni_call_hook_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks.insert(
+        callback_id,
+        JniCallHookContext {
+            jvm,
+            jni_store_global,
+        },
+    );
+}
+
+pub(crate) fn unregister_jni_call_hook(callback_id: i64) {
+    let mut callbacks = get_jni_call_hook_callbacks()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    callbacks.remove(&callback_id);
+}
+
+/// Dispatch function for JNI call hook callbacks.
+fn jni_call_hook_dispatch(callback_id: i64, hook_type: i32) -> i32 {
+    let (jvm, store_raw) = {
+        let callbacks = match get_jni_call_hook_callbacks().lock() {
+            Ok(cb) => cb,
+            Err(_) => return 0,
+        };
+        match callbacks.get(&callback_id) {
+            Some(ctx) => (
+                ctx.jvm.clone(),
+                ctx.jni_store_global.as_obj().as_raw() as usize,
+            ),
+            None => return 0,
+        }
+    };
+
+    let result = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            let store_obj = unsafe {
+                jni::objects::JObject::from_raw(store_raw as jni::sys::jobject)
+            };
+            match env.call_method(
+                &store_obj,
+                "onCallHook",
+                "(I)V",
+                &[jni::objects::JValueGen::Int(hook_type)],
+            ) {
+                Ok(_) => {
+                    // Check if the Java method threw an exception (e.g., TrapException)
+                    if env.exception_check().unwrap_or(false) {
+                        env.exception_clear().ok();
+                        1 // Signal trap to Wasmtime
+                    } else {
+                        0 // OK
+                    }
+                }
+                Err(_) => {
+                    env.exception_clear().ok();
+                    1 // Signal trap
+                }
+            }
+        }
+        Err(_) => 0,
+    };
+    result
+}
+
+/// Trampoline function for call hook callbacks from Wasmtime into JNI.
+extern "C" fn jni_call_hook_trampoline(callback_id: i64, hook_type: i32) -> i32 {
+    jni_call_hook_dispatch(callback_id, hook_type)
+}
+
 /// Set a call hook on the store
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetCallHook(
     mut env: JNIEnv,
-    _class: JClass,
+    obj: JObject,
     store_ptr: jlong,
 ) {
+    // Extract JVM and global ref before the closure to avoid borrow conflicts
+    let jvm = match env.get_java_vm() {
+        Ok(jvm) => std::sync::Arc::new(jvm),
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to get JavaVM for call hook: {}", e),
+            );
+            return;
+        }
+    };
+    let global_ref = match env.new_global_ref(&obj) {
+        Ok(r) => r,
+        Err(e) => {
+            let _ = env.throw_new(
+                "java/lang/RuntimeException",
+                format!("Failed to create global ref for call hook: {}", e),
+            );
+            return;
+        }
+    };
+
     let _ = jni_utils::jni_try_void(&mut env, || {
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
-        core::set_call_hook(store)?;
+        let callback_id = store_ptr;
+
+        register_jni_call_hook(callback_id, jvm, global_ref);
+        core::set_call_hook_with_fn(store, jni_call_hook_trampoline, callback_id)?;
         Ok(())
     });
 }
@@ -1887,6 +2012,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCall
 ) {
     let _ = jni_utils::jni_try_void(&mut env, || {
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        unregister_jni_call_hook(store_ptr);
         core::clear_call_hook(store)?;
         Ok(())
     });
@@ -1897,10 +2023,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCall
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetCallHookAsync(
     env: JNIEnv,
-    _class: JClass,
+    obj: JObject,
     store_ptr: jlong,
 ) {
-    Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetCallHook(env, _class, store_ptr);
+    Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeSetCallHook(env, obj, store_ptr);
 }
 
 /// Clear the async call hook from the store

@@ -159,7 +159,10 @@ impl CodeBuilderState {
 
         let metadata = match ModuleMetadata::extract(&module, wasm_bytes.len(), binary_wasm.as_ref()) {
             Ok(m) => m,
-            Err(_) => ModuleMetadata::empty(),
+            Err(e) => {
+                log::warn!("Failed to extract module metadata in CodeBuilder: {}", e);
+                ModuleMetadata::empty()
+            }
         };
 
         Ok(Box::new(Module::from_wasmtime_module(

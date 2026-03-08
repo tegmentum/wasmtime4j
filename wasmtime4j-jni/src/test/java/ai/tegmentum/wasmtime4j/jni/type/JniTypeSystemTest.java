@@ -80,12 +80,8 @@ class JniTypeSystemTest {
 
       final JniFuncType funcType = new JniFuncType(params, results);
 
-      assertEquals(
-          List.of(WasmValueType.I32, WasmValueType.F32),
-          funcType.getParams());
-      assertEquals(
-          List.of(WasmValueType.I64),
-          funcType.getResults());
+      assertEquals(Arrays.asList(WasmValueType.I32, WasmValueType.F32), funcType.getParams());
+      assertEquals(Collections.singletonList(WasmValueType.I64), funcType.getResults());
     }
 
     @Test
@@ -268,7 +264,7 @@ class JniTypeSystemTest {
       final JniMemoryType memoryType = new JniMemoryType(1, null, false, false);
 
       assertEquals(1, memoryType.getMinimum());
-      assertTrue(memoryType.getMaximum().isEmpty());
+      assertTrue(!memoryType.getMaximum().isPresent());
       assertFalse(memoryType.is64Bit());
       assertFalse(memoryType.isShared());
       assertEquals(WasmTypeKind.MEMORY, memoryType.getKind());
@@ -378,7 +374,7 @@ class JniTypeSystemTest {
 
       assertEquals(WasmValueType.FUNCREF, tableType.getElementType());
       assertEquals(1, tableType.getMinimum());
-      assertTrue(tableType.getMaximum().isEmpty());
+      assertTrue(!tableType.getMaximum().isPresent());
       assertEquals(WasmTypeKind.TABLE, tableType.getKind());
     }
 

@@ -33,6 +33,7 @@ final class JniCodeBuilder implements CodeBuilder {
 
   private long nativeHandle;
   private final long engineHandle;
+  private final ai.tegmentum.wasmtime4j.Engine engine;
   private volatile boolean closed;
   private final ReentrantReadWriteLock closeLock = new ReentrantReadWriteLock();
 
@@ -49,10 +50,13 @@ final class JniCodeBuilder implements CodeBuilder {
    * Creates a new JNI code builder for the given engine.
    *
    * @param engineHandle the native engine handle
+   * @param engine the engine reference for modules created by this builder
    * @throws WasmException if the native code builder cannot be created
    */
-  JniCodeBuilder(final long engineHandle) throws WasmException {
+  JniCodeBuilder(final long engineHandle, final ai.tegmentum.wasmtime4j.Engine engine)
+      throws WasmException {
     this.engineHandle = engineHandle;
+    this.engine = engine;
     this.nativeHandle = nativeCreate(engineHandle);
     if (this.nativeHandle == 0) {
       throw new WasmException("Failed to create native CodeBuilder");
@@ -189,7 +193,7 @@ final class JniCodeBuilder implements CodeBuilder {
       if (moduleHandle == 0) {
         throw new WasmException("Failed to compile module via CodeBuilder");
       }
-      return new JniModule(moduleHandle, null);
+      return new JniModule(moduleHandle, engine);
     } finally {
       endOperation();
     }

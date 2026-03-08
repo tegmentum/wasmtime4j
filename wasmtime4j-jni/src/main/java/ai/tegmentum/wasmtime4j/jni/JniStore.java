@@ -1373,6 +1373,18 @@ public final class JniStore extends JniResource implements Store {
         break;
       case FUNCREF:
       case EXTERNREF:
+      case ANYREF:
+      case EQREF:
+      case I31REF:
+      case STRUCTREF:
+      case ARRAYREF:
+      case NULLREF:
+      case NULLFUNCREF:
+      case NULLEXTERNREF:
+      case EXNREF:
+      case NULLEXNREF:
+      case CONTREF:
+      case NULLCONTREF:
         components[0] = 0;
         components[1] = 0L;
         components[2] = 0.0f;

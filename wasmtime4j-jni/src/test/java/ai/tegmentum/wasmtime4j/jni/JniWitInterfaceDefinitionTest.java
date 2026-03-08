@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -52,7 +53,7 @@ class JniWitInterfaceDefinitionTest {
 
       final List<String> funcNames = def.getFunctionNames();
       assertEquals(
-          List.of("greet-func", "add-func"),
+          Arrays.asList("greet-func", "add-func"),
           funcNames,
           "Each export should produce a function name with -func suffix");
     }
@@ -66,7 +67,7 @@ class JniWitInterfaceDefinitionTest {
 
       final List<String> typeNames = def.getTypeNames();
       assertEquals(
-          List.of("greet-type", "add-type"),
+          Arrays.asList("greet-type", "add-type"),
           typeNames,
           "Each export should produce a type name with -type suffix");
     }
@@ -99,30 +100,30 @@ class JniWitInterfaceDefinitionTest {
   class NullSafeConstruction {
 
     @Test
-    @DisplayName("null name should default to 'unknown'")
-    void nullNameShouldDefaultToUnknown() {
+    @DisplayName("null name should default to empty string")
+    void nullNameShouldDefaultToEmpty() {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition(null, null, null, null, null);
 
-      assertEquals("unknown", def.getName());
+      assertEquals("", def.getName());
     }
 
     @Test
-    @DisplayName("null version should default to '1.0.0'")
-    void nullVersionShouldDefaultToOneZeroZero() {
+    @DisplayName("null version should default to '0.0.0'")
+    void nullVersionShouldDefaultToZeroZeroZero() {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition(null, null, null, null, null);
 
-      assertEquals("1.0.0", def.getVersion());
+      assertEquals("0.0.0", def.getVersion());
     }
 
     @Test
-    @DisplayName("null packageName should default to 'unknown'")
-    void nullPackageNameShouldDefaultToUnknown() {
+    @DisplayName("null packageName should default to empty string")
+    void nullPackageNameShouldDefaultToEmpty() {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition(null, null, null, null, null);
 
-      assertEquals("unknown", def.getPackageName());
+      assertEquals("", def.getPackageName());
     }
 
     @Test
@@ -150,9 +151,10 @@ class JniWitInterfaceDefinitionTest {
       final JniWitInterfaceDefinition def =
           new JniWitInterfaceDefinition("iface", "1.0.0", "pkg", null, imports);
 
-      assertEquals(
-          Set.of("wasi:io/streams", "wasi:http/types"),
-          new HashSet<>(def.getDependencies()));
+      final Set<String> expected = new HashSet<>();
+      expected.add("wasi:io/streams");
+      expected.add("wasi:http/types");
+      assertEquals(expected, new HashSet<>(def.getDependencies()));
       assertEquals(2, def.getDependencies().size());
     }
 
@@ -229,15 +231,15 @@ class JniWitInterfaceDefinitionTest {
     }
 
     @Test
-    @DisplayName("different packages should be incompatible")
-    void differentPackagesShouldBeIncompatible() {
+    @DisplayName("different names should be incompatible")
+    void differentNamesShouldBeIncompatible() {
       final JniWitInterfaceDefinition def1 =
-          new JniWitInterfaceDefinition("iface", "1.0.0", "pkg-a", null, null);
+          new JniWitInterfaceDefinition("iface-a", "1.0.0", "pkg", null, null);
       final JniWitInterfaceDefinition def2 =
-          new JniWitInterfaceDefinition("iface", "1.0.0", "pkg-b", null, null);
+          new JniWitInterfaceDefinition("iface-b", "1.0.0", "pkg", null, null);
 
       final WitCompatibilityResult result = def1.isCompatibleWith(def2);
-      assertFalse(result.isCompatible(), "Different packages should be incompatible");
+      assertFalse(result.isCompatible(), "Different names should be incompatible");
     }
 
     @Test
@@ -284,9 +286,7 @@ class JniWitInterfaceDefinitionTest {
       assertTrue(
           witText.contains("type hello-type = string;"),
           "Expected WIT text to contain: type hello-type = string;");
-      assertTrue(
-          witText.endsWith("}\n"),
-          "Expected WIT text to end with: }\\n");
+      assertTrue(witText.endsWith("}\n"), "Expected WIT text to end with: }\\n");
     }
 
     @Test

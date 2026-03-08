@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.jni.pool;
 import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.nativelib.NativeLibraryLoader;
+import ai.tegmentum.wasmtime4j.pool.DefaultPoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocator;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig;
@@ -145,10 +146,10 @@ public final class JniPoolingAllocator implements PoolingAllocator {
       final long[] stats = nativeGetStatistics(nativeHandle);
       if (stats == null || stats.length < 12) {
         LOGGER.warning("Failed to get pool statistics, returning empty statistics");
-        return new JniPoolStatistics();
+        return new DefaultPoolStatistics();
       }
 
-      return new JniPoolStatistics(stats);
+      return new DefaultPoolStatistics(stats);
     } finally {
       endOperation();
     }

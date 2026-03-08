@@ -19,6 +19,7 @@ import ai.tegmentum.wasmtime4j.config.EngineConfig;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.panama.NativeExecutionBindings;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.pool.DefaultPoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolStatistics;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocator;
 import ai.tegmentum.wasmtime4j.pool.PoolingAllocatorConfig;
@@ -190,7 +191,7 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
 
         if (!success) {
           LOGGER.warning("Failed to get pool statistics, returning empty statistics");
-          return new PanamaPoolStatistics();
+          return new DefaultPoolStatistics();
         }
 
         // Read the 12 metrics values
@@ -199,7 +200,7 @@ public final class PanamaPoolingAllocator implements PoolingAllocator {
           metrics[i] = statsOut.getAtIndex(ValueLayout.JAVA_LONG, i);
         }
 
-        return new PanamaPoolStatistics(metrics);
+        return new DefaultPoolStatistics(metrics);
       }
     } finally {
       resourceHandle.endOperation();

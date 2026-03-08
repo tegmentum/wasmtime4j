@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.DefaultWasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.DefaultWasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
@@ -37,14 +39,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for {@link PanamaWasiConfig}.
+ * Integration tests for {@link DefaultWasiConfig}.
  *
  * <p>These tests exercise actual method calls to improve JaCoCo coverage.
  */
-@DisplayName("PanamaWasiConfig Integration Tests")
-class PanamaWasiConfigTest {
+@DisplayName("DefaultWasiConfig Integration Tests")
+class DefaultWasiConfigTest {
 
-  private static final Logger LOGGER = Logger.getLogger(PanamaWasiConfigTest.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(DefaultWasiConfigTest.class.getName());
 
   @Nested
   @DisplayName("Default Value Tests")
@@ -55,7 +57,7 @@ class PanamaWasiConfigTest {
     void shouldHaveEmptyCollectionsByDefault() {
       LOGGER.info("Testing default collection values");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().build();
 
       assertTrue(config.getEnvironment().isEmpty(), "Environment should be empty by default");
       assertTrue(config.getArguments().isEmpty(), "Arguments should be empty by default");
@@ -71,14 +73,14 @@ class PanamaWasiConfigTest {
     void shouldHaveCorrectDefaultBooleanValues() {
       LOGGER.info("Testing default boolean values");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().build();
 
       assertFalse(config.isValidationEnabled(), "Validation should be disabled by default");
       assertFalse(config.isStrictModeEnabled(), "Strict mode should be disabled by default");
 
       // Check Panama-specific method
-      if (config instanceof PanamaWasiConfig) {
-        final PanamaWasiConfig panamaConfig = (PanamaWasiConfig) config;
+      if (config instanceof DefaultWasiConfig) {
+        final DefaultWasiConfig panamaConfig = (DefaultWasiConfig) config;
         assertFalse(
             panamaConfig.isInheritEnvironment(), "Inherit environment should be false by default");
         assertFalse(
@@ -94,7 +96,7 @@ class PanamaWasiConfigTest {
     void shouldHaveEmptyOptionalsByDefault() {
       LOGGER.info("Testing default optional values");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().build();
 
       assertFalse(
           config.getWorkingDirectory().isPresent(), "Working directory should be empty by default");
@@ -109,7 +111,7 @@ class PanamaWasiConfigTest {
     void shouldHaveDefaultWasiVersion() {
       LOGGER.info("Testing default WASI version");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().build();
 
       assertEquals(
           WasiVersion.PREVIEW_1, config.getWasiVersion(), "Default version should be PREVIEW_1");
@@ -128,7 +130,7 @@ class PanamaWasiConfigTest {
       LOGGER.info("Testing getEnvironment");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withEnvironment("PATH", "/usr/bin")
               .withEnvironment("HOME", "/home/user")
               .build();
@@ -147,7 +149,7 @@ class PanamaWasiConfigTest {
       LOGGER.info("Testing environment immutability");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder().withEnvironment("KEY", "value").build();
+          new DefaultWasiConfigBuilder().withEnvironment("KEY", "value").build();
 
       final Map<String, String> env = config.getEnvironment();
       try {
@@ -169,7 +171,7 @@ class PanamaWasiConfigTest {
       LOGGER.info("Testing getArguments");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder().withArgument("--config").withArgument("file.conf").build();
+          new DefaultWasiConfigBuilder().withArgument("--config").withArgument("file.conf").build();
 
       final List<String> args = config.getArguments();
       assertEquals(2, args.size(), "Should have 2 arguments");
@@ -190,7 +192,7 @@ class PanamaWasiConfigTest {
       LOGGER.info("Testing getPreopenDirectories");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withPreopenDirectory("/", Path.of("/home/user"))
               .withPreopenDirectory("/tmp", Path.of("/tmp"))
               .build();
@@ -208,7 +210,8 @@ class PanamaWasiConfigTest {
     void shouldReturnWorkingDirectory() {
       LOGGER.info("Testing getWorkingDirectory");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withWorkingDirectory("/work").build();
+      final WasiConfig config =
+          new DefaultWasiConfigBuilder().withWorkingDirectory("/work").build();
 
       final Optional<String> workDir = config.getWorkingDirectory();
       assertTrue(workDir.isPresent(), "Working directory should be present");
@@ -228,7 +231,8 @@ class PanamaWasiConfigTest {
       LOGGER.info("Testing getExecutionTimeout");
 
       final Duration timeout = Duration.ofSeconds(30);
-      final WasiConfig config = new PanamaWasiConfigBuilder().withExecutionTimeout(timeout).build();
+      final WasiConfig config =
+          new DefaultWasiConfigBuilder().withExecutionTimeout(timeout).build();
 
       final Optional<Duration> result = config.getExecutionTimeout();
       assertTrue(result.isPresent(), "Execution timeout should be present");
@@ -248,14 +252,14 @@ class PanamaWasiConfigTest {
       LOGGER.info("Testing async operation settings");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withAsyncOperations(true)
               .withMaxAsyncOperations(10)
               .withAsyncOperationTimeout(Duration.ofSeconds(5))
               .build();
 
-      if (config instanceof PanamaWasiConfig) {
-        final PanamaWasiConfig panamaConfig = (PanamaWasiConfig) config;
+      if (config instanceof DefaultWasiConfig) {
+        final DefaultWasiConfig panamaConfig = (DefaultWasiConfig) config;
         assertTrue(panamaConfig.isAsyncOperationsEnabled(), "Async operations should be enabled");
         assertEquals(10, panamaConfig.getMaxAsyncOperations().get(), "Max async should be 10");
         assertEquals(
@@ -278,7 +282,7 @@ class PanamaWasiConfigTest {
       LOGGER.info("Testing getWasiVersion");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder().withWasiVersion(WasiVersion.PREVIEW_2).build();
+          new DefaultWasiConfigBuilder().withWasiVersion(WasiVersion.PREVIEW_2).build();
 
       assertEquals(WasiVersion.PREVIEW_2, config.getWasiVersion(), "Should be PREVIEW_2");
 
@@ -295,10 +299,11 @@ class PanamaWasiConfigTest {
     void shouldReturnValidationEnabledStatus() {
       LOGGER.info("Testing isValidationEnabled");
 
-      final WasiConfig configEnabled = new PanamaWasiConfigBuilder().withValidation(true).build();
+      final WasiConfig configEnabled = new DefaultWasiConfigBuilder().withValidation(true).build();
       assertTrue(configEnabled.isValidationEnabled(), "Validation should be enabled");
 
-      final WasiConfig configDisabled = new PanamaWasiConfigBuilder().withValidation(false).build();
+      final WasiConfig configDisabled =
+          new DefaultWasiConfigBuilder().withValidation(false).build();
       assertFalse(configDisabled.isValidationEnabled(), "Validation should be disabled");
 
       LOGGER.info("Validation mode tests passed");
@@ -309,10 +314,11 @@ class PanamaWasiConfigTest {
     void shouldReturnStrictModeStatus() {
       LOGGER.info("Testing isStrictModeEnabled");
 
-      final WasiConfig configEnabled = new PanamaWasiConfigBuilder().withStrictMode(true).build();
+      final WasiConfig configEnabled = new DefaultWasiConfigBuilder().withStrictMode(true).build();
       assertTrue(configEnabled.isStrictModeEnabled(), "Strict mode should be enabled");
 
-      final WasiConfig configDisabled = new PanamaWasiConfigBuilder().withStrictMode(false).build();
+      final WasiConfig configDisabled =
+          new DefaultWasiConfigBuilder().withStrictMode(false).build();
       assertFalse(configDisabled.isStrictModeEnabled(), "Strict mode should be disabled");
 
       LOGGER.info("Strict mode tests passed");
@@ -333,7 +339,7 @@ class PanamaWasiConfigTest {
       LOGGER.info("Testing toBuilder");
 
       final WasiConfig original =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withEnvironment("KEY", "value")
               .withArgument("--test")
               .withWorkingDirectory("/work")
@@ -366,18 +372,18 @@ class PanamaWasiConfigTest {
     void shouldHandleToBuilderWithInheritEnvironment() {
       LOGGER.info("Testing toBuilder with inherit environment");
 
-      final WasiConfig original = new PanamaWasiConfigBuilder().inheritEnvironment().build();
+      final WasiConfig original = new DefaultWasiConfigBuilder().inheritEnvironment().build();
 
-      if (original instanceof PanamaWasiConfig) {
+      if (original instanceof DefaultWasiConfig) {
         assertTrue(
-            ((PanamaWasiConfig) original).isInheritEnvironment(),
+            ((DefaultWasiConfig) original).isInheritEnvironment(),
             "Inherit environment should be true");
       }
 
       final WasiConfig rebuilt = original.toBuilder().build();
-      if (rebuilt instanceof PanamaWasiConfig) {
+      if (rebuilt instanceof DefaultWasiConfig) {
         assertTrue(
-            ((PanamaWasiConfig) rebuilt).isInheritEnvironment(),
+            ((DefaultWasiConfig) rebuilt).isInheritEnvironment(),
             "Inherit environment should be preserved");
       }
 
@@ -394,7 +400,7 @@ class PanamaWasiConfigTest {
     void shouldValidateSuccessfully() {
       LOGGER.info("Testing validate succeeds on valid config");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().build();
       config.validate();
 
       LOGGER.info("validate completed successfully on valid config");
@@ -415,7 +421,7 @@ class PanamaWasiConfigTest {
       env.put("HOME", "/home/user");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withEnvironment(env)
               .withArguments(Arrays.asList("arg1", "arg2", "arg3"))
               .withPreopenDirectory("/", Path.of("/"))
@@ -440,8 +446,8 @@ class PanamaWasiConfigTest {
       assertTrue(config.isValidationEnabled());
       assertTrue(config.isStrictModeEnabled());
 
-      if (config instanceof PanamaWasiConfig) {
-        final PanamaWasiConfig panamaConfig = (PanamaWasiConfig) config;
+      if (config instanceof DefaultWasiConfig) {
+        final DefaultWasiConfig panamaConfig = (DefaultWasiConfig) config;
         assertTrue(panamaConfig.isAsyncOperationsEnabled());
         assertEquals(100, panamaConfig.getMaxAsyncOperations().get());
         assertEquals(Duration.ofSeconds(30), panamaConfig.getAsyncOperationTimeout().get());

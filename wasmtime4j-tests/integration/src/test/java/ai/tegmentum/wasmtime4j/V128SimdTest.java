@@ -181,9 +181,7 @@ class V128SimdTest extends DualRuntimeTest {
       assertEquals(1, results.length);
       assertTrue(results[0].isV128());
       assertArrayEquals(
-          input.asV128(),
-          results[0].asV128(),
-          "Round-trip of high/low v128 should preserve bytes");
+          input.asV128(), results[0].asV128(), "Round-trip of high/low v128 should preserve bytes");
 
       module.close();
     }

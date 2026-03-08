@@ -17,53 +17,22 @@ use crate::gc_heap::ObjectId;
 use crate::gc_types::{
     ArrayTypeDefinition, FieldDefinition, FieldType, GcReferenceType, GcValue, StructTypeDefinition,
 };
-use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
-use crate::{ffi_boundary_i32, ffi_boundary_result};
+use std::panic::AssertUnwindSafe;
+use crate::error::ffi_utils::ffi_try_code;
+use crate::ffi_boundary_result;
 
 /// Converts a heap type code integer to a Wasmtime HeapType.
 ///
-/// This is shared between Panama and JNI bindings for AnyRef.matchesTy.
+/// Delegates to the canonical implementation in ffi_common::heap_type_conversion.
 pub fn heap_type_from_code(code: i32) -> Option<wasmtime::HeapType> {
-    match code {
-        0 => Some(wasmtime::HeapType::Any),
-        1 => Some(wasmtime::HeapType::Eq),
-        2 => Some(wasmtime::HeapType::I31),
-        3 => Some(wasmtime::HeapType::Struct),
-        4 => Some(wasmtime::HeapType::Array),
-        5 => Some(wasmtime::HeapType::Func),
-        6 => Some(wasmtime::HeapType::NoFunc),
-        7 => Some(wasmtime::HeapType::Extern),
-        8 => Some(wasmtime::HeapType::NoExtern),
-        9 => Some(wasmtime::HeapType::Exn),
-        10 => Some(wasmtime::HeapType::NoExn),
-        11 => Some(wasmtime::HeapType::Cont),
-        12 => Some(wasmtime::HeapType::NoCont),
-        13 => Some(wasmtime::HeapType::None),
-        _ => Option::None,
-    }
+    crate::ffi_common::heap_type_conversion::heap_type_from_code(code)
 }
 
 /// Converts a Wasmtime HeapType to an integer code matching the Java HeapType ordinal.
 ///
-/// This is shared between Panama and JNI bindings for EqRef.ty().
+/// Delegates to the canonical implementation in ffi_common::heap_type_conversion.
 pub fn heap_type_to_code(heap_type: &wasmtime::HeapType) -> i32 {
-    match heap_type {
-        wasmtime::HeapType::Any => 0,
-        wasmtime::HeapType::Eq => 1,
-        wasmtime::HeapType::I31 => 2,
-        wasmtime::HeapType::Struct => 3,
-        wasmtime::HeapType::Array => 4,
-        wasmtime::HeapType::Func => 5,
-        wasmtime::HeapType::NoFunc => 6,
-        wasmtime::HeapType::Extern => 7,
-        wasmtime::HeapType::NoExtern => 8,
-        wasmtime::HeapType::Exn => 9,
-        wasmtime::HeapType::NoExn => 10,
-        wasmtime::HeapType::Cont => 11,
-        wasmtime::HeapType::NoCont => 12,
-        wasmtime::HeapType::None => 13,
-        _ => 14, // CONCRETE or unknown
-    }
+    crate::ffi_common::heap_type_conversion::heap_type_to_code(heap_type)
 }
 
 /// Panama FFI function for creating a GC runtime
@@ -79,17 +48,19 @@ pub extern "C" fn wasmtime4j_gc_create_runtime(engine_handle: i64) -> i64 {
 /// Panama FFI function for destroying a GC runtime
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_destroy_runtime(runtime_handle: i64) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
-            return Ok(FFI_ERROR);
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
         }
 
         unsafe {
             let _ = Box::from_raw(runtime_handle as *mut WasmGcRuntime);
         }
 
-        Ok(FFI_SUCCESS)
-    })
+        Ok(())
+    }))
 }
 
 /// Panama FFI function for releasing a single GC object by ID.
@@ -97,16 +68,18 @@ pub extern "C" fn wasmtime4j_gc_destroy_runtime(runtime_handle: i64) -> i32 {
 /// Returns 1 if the object was found and released, 0 if not found, -1 on error.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_release_object(runtime_handle: i64, object_id: i64) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
-            return Ok(FFI_ERROR);
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Invalid runtime handle".to_string(),
+            });
         }
 
         let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
-        let released = runtime.release_object(object_id as u64);
+        let _released = runtime.release_object(object_id as u64);
 
-        Ok(if released { 1 } else { 0 })
-    })
+        Ok(())
+    }))
 }
 
 /// Panama FFI function for registering a struct type
@@ -191,15 +164,15 @@ pub extern "C" fn wasmtime4j_gc_struct_get(
     result_type: *mut i32,
     v128_out: *mut u8,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         let (value, value_type) =
             struct_get_internal(runtime_handle, object_id, field_index, v128_out)?;
         unsafe {
             *result_value = value;
             *result_type = value_type;
         }
-        Ok(FFI_SUCCESS)
-    })
+        Ok(())
+    }))
 }
 
 /// Panama FFI function for setting a struct field
@@ -212,7 +185,7 @@ pub extern "C" fn wasmtime4j_gc_struct_set(
     value_type: i32,
     v128_ptr: *const u8,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         struct_set_internal(
             runtime_handle,
             object_id,
@@ -221,8 +194,8 @@ pub extern "C" fn wasmtime4j_gc_struct_set(
             value_type,
             v128_ptr,
         )?;
-        Ok(FFI_SUCCESS)
-    })
+        Ok(())
+    }))
 }
 
 /// Panama FFI function for creating an array instance
@@ -262,15 +235,15 @@ pub extern "C" fn wasmtime4j_gc_array_get(
     result_type: *mut i32,
     v128_out: *mut u8,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         let (value, value_type) =
             array_get_internal(runtime_handle, object_id, element_index, v128_out)?;
         unsafe {
             *result_value = value;
             *result_type = value_type;
         }
-        Ok(FFI_SUCCESS)
-    })
+        Ok(())
+    }))
 }
 
 /// Panama FFI function for setting an array element
@@ -283,7 +256,7 @@ pub extern "C" fn wasmtime4j_gc_array_set(
     value_type: i32,
     v128_ptr: *const u8,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         array_set_internal(
             runtime_handle,
             object_id,
@@ -292,8 +265,8 @@ pub extern "C" fn wasmtime4j_gc_array_set(
             value_type,
             v128_ptr,
         )?;
-        Ok(FFI_SUCCESS)
-    })
+        Ok(())
+    }))
 }
 
 /// Panama FFI function for getting array length
@@ -404,29 +377,29 @@ pub extern "C" fn wasmtime4j_gc_collect_garbage(
     runtime_handle: i64,
     stats_ptr: *mut GcStatsFFI,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         let stats = collect_garbage_internal(runtime_handle)?;
         if !stats_ptr.is_null() {
             unsafe {
                 *stats_ptr = stats;
             }
         }
-        Ok(FFI_SUCCESS)
-    })
+        Ok(())
+    }))
 }
 
 /// Panama FFI function for getting GC stats
 #[no_mangle]
 pub extern "C" fn wasmtime4j_gc_get_stats(runtime_handle: i64, stats_ptr: *mut GcStatsFFI) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         let stats = get_gc_stats_internal(runtime_handle)?;
         if !stats_ptr.is_null() {
             unsafe {
                 *stats_ptr = stats;
             }
         }
-        Ok(FFI_SUCCESS)
-    })
+        Ok(())
+    }))
 }
 
 /// FFI-compatible GC statistics structure
@@ -1368,7 +1341,7 @@ pub extern "C" fn wasmtime4j_gc_array_copy(
     src_index: i32,
     length: i32,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Invalid runtime handle".to_string(),
@@ -1386,13 +1359,13 @@ pub extern "C" fn wasmtime4j_gc_array_copy(
         );
 
         if result.success {
-            Ok(FFI_SUCCESS)
+            Ok(())
         } else {
             Err(WasmtimeError::InvalidParameter {
                 message: result.error.unwrap_or_default(),
             })
         }
-    })
+    }))
 }
 
 /// Panama FFI function for filling array elements with a value
@@ -1416,7 +1389,7 @@ pub extern "C" fn wasmtime4j_gc_array_fill(
     value_type: i32,
     length: i32,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Invalid runtime handle".to_string(),
@@ -1453,13 +1426,13 @@ pub extern "C" fn wasmtime4j_gc_array_fill(
         );
 
         if result.success {
-            Ok(FFI_SUCCESS)
+            Ok(())
         } else {
             Err(WasmtimeError::InvalidParameter {
                 message: result.error.unwrap_or_default(),
             })
         }
-    })
+    }))
 }
 
 fn get_gc_stats_internal(runtime_handle: i64) -> WasmtimeResult<GcStatsFFI> {
@@ -1533,7 +1506,7 @@ pub extern "C" fn wasmtime4j_gc_anyref_matches_ty(
     object_id: u64,
     heap_type_code: i32,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Invalid runtime handle".to_string(),
@@ -1550,9 +1523,9 @@ pub extern "C" fn wasmtime4j_gc_anyref_matches_ty(
         };
 
         let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
-        let matches = runtime.anyref_matches_ty(object_id, &heap_type)?;
-        Ok(if matches { 1 } else { 0 })
-    })
+        let _matches = runtime.anyref_matches_ty(object_id, &heap_type)?;
+        Ok(())
+    }))
 }
 
 /// Panama FFI: Convert an AnyRef to an ExternRef (extern.convert_any).
@@ -1602,16 +1575,16 @@ pub extern "C" fn wasmtime4j_gc_eqref_ty(
     runtime_handle: i64,
     object_id: u64,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Invalid runtime handle".to_string(),
             });
         }
         let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
-        let code = runtime.eqref_ty(object_id)?;
-        Ok(code)
-    })
+        let _code = runtime.eqref_ty(object_id)?;
+        Ok(())
+    }))
 }
 
 /// Panama FFI: Check if an EqRef matches a given heap type code.
@@ -1622,7 +1595,7 @@ pub extern "C" fn wasmtime4j_gc_eqref_matches_ty(
     object_id: u64,
     heap_type_code: i32,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Invalid runtime handle".to_string(),
@@ -1639,9 +1612,9 @@ pub extern "C" fn wasmtime4j_gc_eqref_matches_ty(
         };
 
         let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
-        let matches = runtime.eqref_matches_ty(object_id, &heap_type)?;
-        Ok(if matches { 1 } else { 0 })
-    })
+        let _matches = runtime.eqref_matches_ty(object_id, &heap_type)?;
+        Ok(())
+    }))
 }
 
 /// Panama FFI: Check if a StructRef matches a given heap type code.
@@ -1652,7 +1625,7 @@ pub extern "C" fn wasmtime4j_gc_structref_matches_ty(
     object_id: u64,
     heap_type_code: i32,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Invalid runtime handle".to_string(),
@@ -1669,9 +1642,9 @@ pub extern "C" fn wasmtime4j_gc_structref_matches_ty(
         };
 
         let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
-        let matches = runtime.structref_matches_ty(object_id, &heap_type)?;
-        Ok(if matches { 1 } else { 0 })
-    })
+        let _matches = runtime.structref_matches_ty(object_id, &heap_type)?;
+        Ok(())
+    }))
 }
 
 /// Panama FFI: Check if an ArrayRef matches a given heap type code.
@@ -1682,7 +1655,7 @@ pub extern "C" fn wasmtime4j_gc_arrayref_matches_ty(
     object_id: u64,
     heap_type_code: i32,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if runtime_handle == 0 {
             return Err(WasmtimeError::InvalidParameter {
                 message: "Invalid runtime handle".to_string(),
@@ -1699,9 +1672,9 @@ pub extern "C" fn wasmtime4j_gc_arrayref_matches_ty(
         };
 
         let runtime = unsafe { &*(runtime_handle as *const WasmGcRuntime) };
-        let matches = runtime.arrayref_matches_ty(object_id, &heap_type)?;
-        Ok(if matches { 1 } else { 0 })
-    })
+        let _matches = runtime.arrayref_matches_ty(object_id, &heap_type)?;
+        Ok(())
+    }))
 }
 
 // ==================== Async GC Creation ====================

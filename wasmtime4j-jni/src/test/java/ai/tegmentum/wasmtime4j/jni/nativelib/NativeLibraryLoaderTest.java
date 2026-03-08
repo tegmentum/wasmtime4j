@@ -16,6 +16,7 @@
 package ai.tegmentum.wasmtime4j.jni.nativelib;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,46 +33,28 @@ class NativeLibraryLoaderTest {
 
     assertNotNull(resourcePath);
     assertTrue(
-        resourcePath.startsWith("/natives/"),
-        "Expected resource path to start with: /natives/");
+        resourcePath.startsWith("/natives/"), "Expected resource path to start with: /natives/");
     assertTrue(
-        resourcePath.contains("wasmtime4j"),
-        "Expected resource path to contain: wasmtime4j");
+        resourcePath.contains("wasmtime4j"), "Expected resource path to contain: wasmtime4j");
 
     // Should contain platform and architecture
     if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-      assertTrue(
-          resourcePath.contains("darwin"),
-          "Expected resource path to contain: darwin");
-      assertTrue(
-          resourcePath.endsWith(".dylib"),
-          "Expected resource path to end with: .dylib");
+      assertTrue(resourcePath.contains("darwin"), "Expected resource path to contain: darwin");
+      assertTrue(resourcePath.endsWith(".dylib"), "Expected resource path to end with: .dylib");
     } else if (System.getProperty("os.name").toLowerCase().contains("linux")) {
-      assertTrue(
-          resourcePath.contains("linux"),
-          "Expected resource path to contain: linux");
-      assertTrue(
-          resourcePath.endsWith(".so"),
-          "Expected resource path to end with: .so");
+      assertTrue(resourcePath.contains("linux"), "Expected resource path to contain: linux");
+      assertTrue(resourcePath.endsWith(".so"), "Expected resource path to end with: .so");
     } else if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-      assertTrue(
-          resourcePath.contains("windows"),
-          "Expected resource path to contain: windows");
-      assertTrue(
-          resourcePath.endsWith(".dll"),
-          "Expected resource path to end with: .dll");
+      assertTrue(resourcePath.contains("windows"), "Expected resource path to contain: windows");
+      assertTrue(resourcePath.endsWith(".dll"), "Expected resource path to end with: .dll");
     }
 
     // Should contain architecture
     final String arch = System.getProperty("os.arch").toLowerCase();
     if (arch.equals("amd64") || arch.equals("x86_64")) {
-      assertTrue(
-          resourcePath.contains("x86_64"),
-          "Expected resource path to contain: x86_64");
+      assertTrue(resourcePath.contains("x86_64"), "Expected resource path to contain: x86_64");
     } else if (arch.equals("aarch64") || arch.equals("arm64")) {
-      assertTrue(
-          resourcePath.contains("aarch64"),
-          "Expected resource path to contain: aarch64");
+      assertTrue(resourcePath.contains("aarch64"), "Expected resource path to contain: aarch64");
     }
   }
 
@@ -80,29 +63,18 @@ class NativeLibraryLoaderTest {
     final String platformInfo = NativeLibraryLoader.getPlatformInfo();
 
     assertNotNull(platformInfo);
+    assertTrue(platformInfo.contains("Platform:"), "Expected platform info to contain: Platform:");
     assertTrue(
-        platformInfo.contains("Platform:"),
-        "Expected platform info to contain: Platform:");
-    assertTrue(
-        platformInfo.contains("Library path:"),
-        "Expected platform info to contain: Library path:");
-    assertTrue(
-        platformInfo.contains("Loaded:"),
-        "Expected platform info to contain: Loaded:");
+        platformInfo.contains("Library path:"), "Expected platform info to contain: Library path:");
+    assertTrue(platformInfo.contains("Loaded:"), "Expected platform info to contain: Loaded:");
 
     // Should contain current platform info
     if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-      assertTrue(
-          platformInfo.contains("darwin"),
-          "Expected platform info to contain: darwin");
+      assertTrue(platformInfo.contains("darwin"), "Expected platform info to contain: darwin");
     } else if (System.getProperty("os.name").toLowerCase().contains("linux")) {
-      assertTrue(
-          platformInfo.contains("linux"),
-          "Expected platform info to contain: linux");
+      assertTrue(platformInfo.contains("linux"), "Expected platform info to contain: linux");
     } else if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-      assertTrue(
-          platformInfo.contains("windows"),
-          "Expected platform info to contain: windows");
+      assertTrue(platformInfo.contains("windows"), "Expected platform info to contain: windows");
     }
   }
 
@@ -154,17 +126,15 @@ class NativeLibraryLoaderTest {
     // Should follow expected format: /natives/{os}-{arch}/wasmtime4j{extension}
     final String[] parts = resourcePath.split("/");
     assertTrue(
-        parts.length >= 3,
-        "Expected resource path to have at least 3 parts, got: " + parts.length);
+        parts.length >= 3, "Expected resource path to have at least 3 parts, got: " + parts.length);
     assertEquals("natives", parts[1]);
 
     // Last part should be the library file
     final String libraryFile = parts[parts.length - 1];
+    assertTrue(libraryFile.contains("wasmtime4j"), "Expected library file to contain: wasmtime4j");
     assertTrue(
-        libraryFile.contains("wasmtime4j"),
-        "Expected library file to contain: wasmtime4j");
-    assertTrue(
-        libraryFile.contains(".so") || libraryFile.contains(".dll")
+        libraryFile.contains(".so")
+            || libraryFile.contains(".dll")
             || libraryFile.contains(".dylib"),
         "Expected library file to contain one of: .so, .dll, .dylib");
 
@@ -176,9 +146,7 @@ class NativeLibraryLoaderTest {
           "Expected Windows library to start with: wasmtime4j");
     } else {
       // Unix-like: libwasmtime4j.so/.dylib (with lib prefix)
-      assertTrue(
-          libraryFile.startsWith("lib"),
-          "Expected Unix library to start with: lib");
+      assertTrue(libraryFile.startsWith("lib"), "Expected Unix library to start with: lib");
     }
   }
 

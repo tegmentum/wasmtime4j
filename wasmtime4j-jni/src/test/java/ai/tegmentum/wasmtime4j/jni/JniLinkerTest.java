@@ -432,9 +432,7 @@ class JniLinkerTest {
             IllegalStateException.class,
             () -> linker.defineHostFunction("env", "func", testFunctionType, testImplementation));
 
-    assertTrue(
-        exception.getMessage().contains("closed"),
-        "Expected message to contain: closed");
+    assertTrue(exception.getMessage().contains("closed"), "Expected message to contain: closed");
   }
 
   @Test
@@ -445,9 +443,7 @@ class JniLinkerTest {
     final IllegalStateException exception =
         assertThrows(IllegalStateException.class, () -> linker.instantiate(testStore, module));
 
-    assertTrue(
-        exception.getMessage().contains("closed"),
-        "Expected message to contain: closed");
+    assertTrue(exception.getMessage().contains("closed"), "Expected message to contain: closed");
     module.markClosedForTesting();
   }
 }

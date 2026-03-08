@@ -64,9 +64,7 @@ class JniMemorySupports64BitTest {
     try {
       final boolean result = memory.supports64BitAddressing();
 
-      assertFalse(
-          result,
-          "supports64BitAddressing should return false when native call fails");
+      assertFalse(result, "supports64BitAddressing should return false when native call fails");
 
       final String capturedLog = logHandler.getCapturedOutput();
       assertTrue(

@@ -53,13 +53,14 @@ class GcPackageTest {
       LOGGER.info("Running: " + testInfo.getDisplayName());
 
       final GcReferenceType[] types = GcReferenceType.values();
-      assertEquals(8, types.length, "Should have 8 reference types");
+      assertEquals(9, types.length, "Should have 9 reference types");
 
       assertNotNull(GcReferenceType.valueOf("ANY_REF"));
       assertNotNull(GcReferenceType.valueOf("EQ_REF"));
       assertNotNull(GcReferenceType.valueOf("I31_REF"));
       assertNotNull(GcReferenceType.valueOf("STRUCT_REF"));
       assertNotNull(GcReferenceType.valueOf("ARRAY_REF"));
+      assertNotNull(GcReferenceType.valueOf("EXN_REF"));
       assertNotNull(GcReferenceType.valueOf("NULL_REF"));
       assertNotNull(GcReferenceType.valueOf("NULL_FUNC_REF"));
       assertNotNull(GcReferenceType.valueOf("NULL_EXTERN_REF"));

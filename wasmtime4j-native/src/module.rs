@@ -913,9 +913,121 @@ impl ModuleMetadata {
     ) -> WasmtimeResult<Self> {
         let mut imports = Vec::new();
         let mut exports = Vec::new();
-        let globals = Vec::new();
-        let memories = Vec::new();
-        let tables = Vec::new();
+        let mut globals = Vec::new();
+        let mut memories = Vec::new();
+        let mut tables = Vec::new();
+
+        // Extract globals, memories, and tables from wasm bytes using wasmparser
+        {
+            use wasmparser::{Parser, Payload};
+            let mut num_imported_globals: usize = 0;
+            let mut num_imported_memories: usize = 0;
+            let mut num_imported_tables: usize = 0;
+
+            for payload in Parser::new(0).parse_all(wasm_bytes) {
+                let payload = payload.map_err(|e| WasmtimeError::Compilation {
+                    message: format!("Failed to parse WASM for metadata extraction: {}", e),
+                })?;
+
+                match payload {
+                    Payload::ImportSection(reader) => {
+                        for import in reader.into_imports() {
+                            let import = import.map_err(|e| WasmtimeError::Compilation {
+                                message: format!("Failed to parse import section: {}", e),
+                            })?;
+                            match import.ty {
+                                wasmparser::TypeRef::Global(global_type) => {
+                                    globals.push(GlobalInfo {
+                                        index: num_imported_globals,
+                                        name: Some(import.name.to_string()),
+                                        value_type: wasmparser_val_type_to_module_type(
+                                            &global_type.content_type,
+                                        )
+                                        .unwrap_or(ModuleValueType::I32),
+                                        mutable: global_type.mutable,
+                                    });
+                                    num_imported_globals += 1;
+                                }
+                                wasmparser::TypeRef::Memory(memory_type) => {
+                                    memories.push(MemoryInfo {
+                                        index: num_imported_memories,
+                                        name: Some(import.name.to_string()),
+                                        initial_pages: memory_type.initial,
+                                        maximum_pages: memory_type.maximum,
+                                        shared: memory_type.shared,
+                                        is_64: memory_type.memory64,
+                                    });
+                                    num_imported_memories += 1;
+                                }
+                                wasmparser::TypeRef::Table(table_type) => {
+                                    tables.push(TableInfo {
+                                        index: num_imported_tables,
+                                        name: Some(import.name.to_string()),
+                                        element_type: wasmparser_val_type_to_module_type(
+                                            &wasmparser::ValType::Ref(table_type.element_type),
+                                        )
+                                        .unwrap_or(ModuleValueType::FuncRef),
+                                        initial_elements: table_type.initial as u32,
+                                        maximum_elements: table_type.maximum.map(|m| m as u32),
+                                    });
+                                    num_imported_tables += 1;
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    Payload::GlobalSection(reader) => {
+                        for (i, global) in reader.into_iter().enumerate() {
+                            let global = global.map_err(|e| WasmtimeError::Compilation {
+                                message: format!("Failed to parse global section: {}", e),
+                            })?;
+                            globals.push(GlobalInfo {
+                                index: num_imported_globals + i,
+                                name: None,
+                                value_type: wasmparser_val_type_to_module_type(
+                                    &global.ty.content_type,
+                                )
+                                .unwrap_or(ModuleValueType::I32),
+                                mutable: global.ty.mutable,
+                            });
+                        }
+                    }
+                    Payload::MemorySection(reader) => {
+                        for (i, memory) in reader.into_iter().enumerate() {
+                            let memory = memory.map_err(|e| WasmtimeError::Compilation {
+                                message: format!("Failed to parse memory section: {}", e),
+                            })?;
+                            memories.push(MemoryInfo {
+                                index: num_imported_memories + i,
+                                name: None,
+                                initial_pages: memory.initial,
+                                maximum_pages: memory.maximum,
+                                shared: memory.shared,
+                                is_64: memory.memory64,
+                            });
+                        }
+                    }
+                    Payload::TableSection(reader) => {
+                        for (i, table) in reader.into_iter().enumerate() {
+                            let table = table.map_err(|e| WasmtimeError::Compilation {
+                                message: format!("Failed to parse table section: {}", e),
+                            })?;
+                            tables.push(TableInfo {
+                                index: num_imported_tables + i,
+                                name: None,
+                                element_type: wasmparser_val_type_to_module_type(
+                                    &wasmparser::ValType::Ref(table.ty.element_type),
+                                )
+                                .unwrap_or(ModuleValueType::FuncRef),
+                                initial_elements: table.ty.initial as u32,
+                                maximum_elements: table.ty.maximum.map(|m| m as u32),
+                            });
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
 
         // Extract imports
         for import in module.imports() {

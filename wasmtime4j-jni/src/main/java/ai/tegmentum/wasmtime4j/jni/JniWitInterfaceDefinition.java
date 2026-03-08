@@ -15,11 +15,9 @@
  */
 package ai.tegmentum.wasmtime4j.jni;
 
-import ai.tegmentum.wasmtime4j.wit.WitCompatibilityResult;
-import ai.tegmentum.wasmtime4j.wit.WitInterfaceDefinition;
+import ai.tegmentum.wasmtime4j.wit.AbstractWitInterfaceDefinition;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,27 +27,18 @@ import java.util.Set;
  * <p>This class provides a concrete implementation of the WitInterfaceDefinition interface for use
  * with JNI-based component operations.
  *
+ * <p>Function and type names are derived synthetically from export metadata by appending {@code
+ * -func} and {@code -type} suffixes respectively. These are approximations, not actual WIT
+ * introspection data, because wasmtime's C/Rust API does not expose WIT-level metadata directly.
+ * The synthetic names are suitable for informational display but should not be used for dispatch or
+ * name-based matching.
+ *
  * @since 1.0.0
  */
-public final class JniWitInterfaceDefinition implements WitInterfaceDefinition {
-
-  private final String name;
-  private final String version;
-  private final String packageName;
-  private final List<String> functionNames;
-  private final List<String> typeNames;
-  private final Set<String> dependencies;
-  private final List<String> importNames;
-  private final List<String> exportNames;
+public final class JniWitInterfaceDefinition extends AbstractWitInterfaceDefinition {
 
   /**
    * Creates a new JNI WIT interface definition.
-   *
-   * <p>Function and type names are derived synthetically from export metadata by appending {@code
-   * -func} and {@code -type} suffixes respectively. These are approximations, not actual WIT
-   * introspection data, because wasmtime's C/Rust API does not expose WIT-level metadata directly.
-   * The synthetic names are suitable for informational display but should not be used for dispatch
-   * or name-based matching.
    *
    * @param name the interface name
    * @param version the interface version
@@ -63,128 +52,53 @@ public final class JniWitInterfaceDefinition implements WitInterfaceDefinition {
       final String packageName,
       final Set<String> exportNames,
       final Set<String> importNames) {
-    this.name = name != null ? name : "unknown";
-    this.version = version != null ? version : "1.0.0";
-    this.packageName = packageName != null ? packageName : "unknown";
-    this.exportNames = new ArrayList<>(exportNames != null ? exportNames : Collections.emptySet());
-    this.importNames = new ArrayList<>(importNames != null ? importNames : Collections.emptySet());
+    super(
+        name,
+        version,
+        packageName,
+        buildFunctionNames(exportNames),
+        buildTypeNames(exportNames),
+        importNames != null ? importNames : Collections.emptySet(),
+        new ArrayList<>(importNames != null ? importNames : Collections.emptySet()),
+        new ArrayList<>(exportNames != null ? exportNames : Collections.emptySet()));
+  }
 
-    // Generate basic function and type names from exports/imports
-    this.functionNames = new ArrayList<>();
-    this.typeNames = new ArrayList<>();
-    this.dependencies = new HashSet<>();
-
-    // Add placeholder functions based on exports
-    for (final String export : this.exportNames) {
-      this.functionNames.add(export + "-func");
-      this.typeNames.add(export + "-type");
+  private static List<String> buildFunctionNames(final Set<String> exportNames) {
+    if (exportNames == null || exportNames.isEmpty()) {
+      return Collections.emptyList();
     }
-
-    // Add dependencies based on imports
-    for (final String import_ : this.importNames) {
-      this.dependencies.add(import_);
+    final List<String> names = new ArrayList<>();
+    for (final String export : exportNames) {
+      names.add(export + "-func");
     }
+    return names;
   }
 
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public String getVersion() {
-    return version;
-  }
-
-  @Override
-  public String getPackageName() {
-    return packageName;
-  }
-
-  @Override
-  public List<String> getFunctionNames() {
-    return Collections.unmodifiableList(functionNames);
-  }
-
-  @Override
-  public List<String> getTypeNames() {
-    return Collections.unmodifiableList(typeNames);
-  }
-
-  @Override
-  public Set<String> getDependencies() {
-    return Collections.unmodifiableSet(dependencies);
-  }
-
-  @Override
-  public WitCompatibilityResult isCompatibleWith(final WitInterfaceDefinition other) {
-    if (other == null) {
-      return WitCompatibilityResult.incompatible("Other interface is null", Collections.emptySet());
+  private static List<String> buildTypeNames(final Set<String> exportNames) {
+    if (exportNames == null || exportNames.isEmpty()) {
+      return Collections.emptyList();
     }
-
-    // Basic compatibility check - same package and compatible version
-    final boolean samePackage = this.packageName.equals(other.getPackageName());
-    final boolean compatibleVersion = this.version.equals(other.getVersion());
-
-    if (samePackage && compatibleVersion) {
-      return WitCompatibilityResult.compatible("Interfaces are compatible", this.dependencies);
-    } else {
-      final Set<String> unsatisfied = new HashSet<>();
-      if (!samePackage) {
-        unsatisfied.add("package-mismatch");
-      }
-      if (!compatibleVersion) {
-        unsatisfied.add("version-mismatch");
-      }
-      return WitCompatibilityResult.incompatible("Interfaces are not compatible", unsatisfied);
+    final List<String> names = new ArrayList<>();
+    for (final String export : exportNames) {
+      names.add(export + "-type");
     }
+    return names;
   }
 
   @Override
   public String getWitText() {
     final StringBuilder wit = new StringBuilder();
-    wit.append("interface ").append(name).append(" {\n");
+    wit.append("interface ").append(getName()).append(" {\n");
 
-    for (final String func : functionNames) {
+    for (final String func : getFunctionNames()) {
       wit.append("  ").append(func).append("() -> ();\n");
     }
 
-    for (final String type : typeNames) {
+    for (final String type : getTypeNames()) {
       wit.append("  type ").append(type).append(" = string;\n");
     }
 
     wit.append("}\n");
     return wit.toString();
-  }
-
-  @Override
-  public List<String> getImportNames() {
-    return Collections.unmodifiableList(importNames);
-  }
-
-  @Override
-  public List<String> getExportNames() {
-    return Collections.unmodifiableList(exportNames);
-  }
-
-  @Override
-  public String toString() {
-    return "JniWitInterfaceDefinition{"
-        + "name='"
-        + name
-        + '\''
-        + ", version='"
-        + version
-        + '\''
-        + ", packageName='"
-        + packageName
-        + '\''
-        + ", functionCount="
-        + functionNames.size()
-        + ", typeCount="
-        + typeNames.size()
-        + ", dependencyCount="
-        + dependencies.size()
-        + '}';
   }
 }

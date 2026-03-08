@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ai.tegmentum.wasmtime4j.wasi.DefaultWasiConfig;
+import ai.tegmentum.wasmtime4j.wasi.DefaultWasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfig;
 import ai.tegmentum.wasmtime4j.wasi.WasiConfigBuilder;
 import ai.tegmentum.wasmtime4j.wasi.WasiVersion;
@@ -38,15 +40,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration tests for {@link PanamaWasiConfigBuilder}.
+ * Integration tests for {@link DefaultWasiConfigBuilder}.
  *
  * <p>These tests exercise actual method calls to improve JaCoCo coverage.
  */
-@DisplayName("PanamaWasiConfigBuilder Integration Tests")
-class PanamaWasiConfigBuilderTest {
+@DisplayName("DefaultWasiConfigBuilder Integration Tests")
+class DefaultWasiConfigBuilderTest {
 
   private static final Logger LOGGER =
-      Logger.getLogger(PanamaWasiConfigBuilderTest.class.getName());
+      Logger.getLogger(DefaultWasiConfigBuilderTest.class.getName());
 
   @Nested
   @DisplayName("Constructor Tests")
@@ -57,7 +59,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldCreateBuilderWithDefaultConstructor() {
       LOGGER.info("Testing default constructor");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
       assertNotNull(builder, "Builder should be created");
 
       final WasiConfig config = builder.build();
@@ -78,7 +80,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldAddSingleEnvironmentVariable() {
       LOGGER.info("Testing withEnvironment(name, value)");
 
-      final WasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final WasiConfigBuilder builder = new DefaultWasiConfigBuilder();
       final WasiConfigBuilder result = builder.withEnvironment("PATH", "/usr/bin");
 
       assertNotNull(result, "Should return builder for chaining");
@@ -96,7 +98,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withEnvironment(name, value) multiple times");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withEnvironment("PATH", "/usr/bin")
               .withEnvironment("HOME", "/home/user")
               .withEnvironment("USER", "testuser")
@@ -115,7 +117,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullEnvironmentName() {
       LOGGER.info("Testing withEnvironment with null name");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       final IllegalArgumentException exception =
           assertThrows(
@@ -139,7 +141,7 @@ class PanamaWasiConfigBuilderTest {
       env.put("KEY1", "value1");
       env.put("KEY2", "value2");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withEnvironment(env).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withEnvironment(env).build();
 
       assertEquals(2, config.getEnvironment().size());
       assertEquals("value1", config.getEnvironment().get("KEY1"));
@@ -153,7 +155,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullEnvironmentMap() {
       LOGGER.info("Testing withEnvironment with null map");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -169,7 +171,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withoutEnvironment");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withEnvironment("KEY1", "value1")
               .withEnvironment("KEY2", "value2")
               .withoutEnvironment("KEY1")
@@ -187,7 +189,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullEnvironmentNameForRemoval() {
       LOGGER.info("Testing withoutEnvironment with null name");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -202,7 +204,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnEmptyEnvironmentNameForRemoval() {
       LOGGER.info("Testing withoutEnvironment with empty name");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -218,7 +220,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing clearEnvironment");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withEnvironment("KEY1", "value1")
               .withEnvironment("KEY2", "value2")
               .clearEnvironment()
@@ -239,7 +241,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldAddSingleArgument() {
       LOGGER.info("Testing withArgument");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withArgument("--config").build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withArgument("--config").build();
 
       assertEquals(1, config.getArguments().size());
       assertEquals("--config", config.getArguments().get(0));
@@ -253,7 +255,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withArgument multiple times");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withArgument("--config")
               .withArgument("file.conf")
               .withArgument("--verbose")
@@ -272,7 +274,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullArgument() {
       LOGGER.info("Testing withArgument with null");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -290,7 +292,7 @@ class PanamaWasiConfigBuilderTest {
       final List<String> args = Arrays.asList("arg1", "arg2", "arg3");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder().withArgument("old-arg").withArguments(args).build();
+          new DefaultWasiConfigBuilder().withArgument("old-arg").withArguments(args).build();
 
       assertEquals(3, config.getArguments().size());
       assertEquals("arg1", config.getArguments().get(0));
@@ -305,7 +307,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullArgumentsList() {
       LOGGER.info("Testing withArguments with null list");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -321,7 +323,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing clearArguments");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withArgument("arg1")
               .withArgument("arg2")
               .clearArguments()
@@ -343,7 +345,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withPreopenDirectory");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder().withPreopenDirectory("/guest", Path.of("/host")).build();
+          new DefaultWasiConfigBuilder().withPreopenDirectory("/guest", Path.of("/host")).build();
 
       assertEquals(1, config.getPreopenDirectories().size());
       assertEquals(Path.of("/host"), config.getPreopenDirectories().get("/guest"));
@@ -356,7 +358,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullGuestPath() {
       LOGGER.info("Testing withPreopenDirectory with null guest path");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -371,7 +373,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnEmptyGuestPath() {
       LOGGER.info("Testing withPreopenDirectory with empty guest path");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -386,7 +388,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullHostPath() {
       LOGGER.info("Testing withPreopenDirectory with null host path");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -405,7 +407,7 @@ class PanamaWasiConfigBuilderTest {
       dirs.put("/", Path.of("/root"));
       dirs.put("/tmp", Path.of("/tmp"));
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withPreopenDirectories(dirs).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withPreopenDirectories(dirs).build();
 
       assertEquals(2, config.getPreopenDirectories().size());
       assertEquals(Path.of("/root"), config.getPreopenDirectories().get("/"));
@@ -419,7 +421,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullDirectoriesMap() {
       LOGGER.info("Testing withPreopenDirectories with null map");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -435,7 +437,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withoutPreopenDirectory");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withPreopenDirectory("/", Path.of("/root"))
               .withPreopenDirectory("/tmp", Path.of("/tmp"))
               .withoutPreopenDirectory("/")
@@ -453,7 +455,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullPathForRemoval() {
       LOGGER.info("Testing withoutPreopenDirectory with null");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -468,7 +470,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnEmptyPathForRemoval() {
       LOGGER.info("Testing withoutPreopenDirectory with empty");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -484,7 +486,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing clearPreopenDirectories");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withPreopenDirectory("/", Path.of("/root"))
               .withPreopenDirectory("/tmp", Path.of("/tmp"))
               .clearPreopenDirectories()
@@ -505,7 +507,8 @@ class PanamaWasiConfigBuilderTest {
     void shouldSetWorkingDirectory() {
       LOGGER.info("Testing withWorkingDirectory");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withWorkingDirectory("/work").build();
+      final WasiConfig config =
+          new DefaultWasiConfigBuilder().withWorkingDirectory("/work").build();
 
       assertTrue(config.getWorkingDirectory().isPresent());
       assertEquals("/work", config.getWorkingDirectory().get());
@@ -518,7 +521,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullWorkingDirectory() {
       LOGGER.info("Testing withWorkingDirectory with null");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -533,7 +536,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnEmptyWorkingDirectory() {
       LOGGER.info("Testing withWorkingDirectory with empty");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -549,7 +552,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withoutWorkingDirectory");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withWorkingDirectory("/work")
               .withoutWorkingDirectory()
               .build();
@@ -569,11 +572,11 @@ class PanamaWasiConfigBuilderTest {
     void shouldEnableInheritEnvironment() {
       LOGGER.info("Testing inheritEnvironment");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().inheritEnvironment().build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().inheritEnvironment().build();
 
-      if (config instanceof PanamaWasiConfig) {
+      if (config instanceof DefaultWasiConfig) {
         assertTrue(
-            ((PanamaWasiConfig) config).isInheritEnvironment(),
+            ((DefaultWasiConfig) config).isInheritEnvironment(),
             "Inherit environment should be enabled");
       }
 
@@ -591,7 +594,8 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withExecutionTimeout");
 
       final Duration timeout = Duration.ofSeconds(30);
-      final WasiConfig config = new PanamaWasiConfigBuilder().withExecutionTimeout(timeout).build();
+      final WasiConfig config =
+          new DefaultWasiConfigBuilder().withExecutionTimeout(timeout).build();
 
       assertTrue(config.getExecutionTimeout().isPresent());
       assertEquals(timeout, config.getExecutionTimeout().get());
@@ -604,7 +608,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullTimeout() {
       LOGGER.info("Testing withExecutionTimeout with null");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -619,7 +623,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNegativeTimeout() {
       LOGGER.info("Testing withExecutionTimeout with negative value");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -635,7 +639,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withoutExecutionTimeout");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withExecutionTimeout(Duration.ofSeconds(30))
               .withoutExecutionTimeout()
               .build();
@@ -655,7 +659,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldEnableValidation() {
       LOGGER.info("Testing withValidation(true)");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withValidation(true).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withValidation(true).build();
 
       assertTrue(config.isValidationEnabled(), "Validation should be enabled");
 
@@ -667,7 +671,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldDisableValidation() {
       LOGGER.info("Testing withValidation(false)");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withValidation(false).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withValidation(false).build();
 
       assertFalse(config.isValidationEnabled(), "Validation should be disabled");
 
@@ -679,7 +683,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldEnableStrictMode() {
       LOGGER.info("Testing withStrictMode(true)");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withStrictMode(true).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withStrictMode(true).build();
 
       assertTrue(config.isStrictModeEnabled(), "Strict mode should be enabled");
 
@@ -691,7 +695,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldDisableStrictMode() {
       LOGGER.info("Testing withStrictMode(false)");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withStrictMode(false).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withStrictMode(false).build();
 
       assertFalse(config.isStrictModeEnabled(), "Strict mode should be disabled");
 
@@ -709,7 +713,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withWasiVersion(PREVIEW_1)");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder().withWasiVersion(WasiVersion.PREVIEW_1).build();
+          new DefaultWasiConfigBuilder().withWasiVersion(WasiVersion.PREVIEW_1).build();
 
       assertEquals(WasiVersion.PREVIEW_1, config.getWasiVersion());
 
@@ -722,7 +726,7 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withWasiVersion(PREVIEW_2)");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder().withWasiVersion(WasiVersion.PREVIEW_2).build();
+          new DefaultWasiConfigBuilder().withWasiVersion(WasiVersion.PREVIEW_2).build();
 
       assertEquals(WasiVersion.PREVIEW_2, config.getWasiVersion());
 
@@ -734,7 +738,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullWasiVersion() {
       LOGGER.info("Testing withWasiVersion with null");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -754,11 +758,11 @@ class PanamaWasiConfigBuilderTest {
     void shouldEnableAsyncOperations() {
       LOGGER.info("Testing withAsyncOperations(true)");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withAsyncOperations(true).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withAsyncOperations(true).build();
 
-      if (config instanceof PanamaWasiConfig) {
+      if (config instanceof DefaultWasiConfig) {
         assertTrue(
-            ((PanamaWasiConfig) config).isAsyncOperationsEnabled(),
+            ((DefaultWasiConfig) config).isAsyncOperationsEnabled(),
             "Async operations should be enabled");
       }
 
@@ -770,11 +774,11 @@ class PanamaWasiConfigBuilderTest {
     void shouldDisableAsyncOperations() {
       LOGGER.info("Testing withAsyncOperations(false)");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withAsyncOperations(false).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withAsyncOperations(false).build();
 
-      if (config instanceof PanamaWasiConfig) {
+      if (config instanceof DefaultWasiConfig) {
         assertFalse(
-            ((PanamaWasiConfig) config).isAsyncOperationsEnabled(),
+            ((DefaultWasiConfig) config).isAsyncOperationsEnabled(),
             "Async operations should be disabled");
       }
 
@@ -786,10 +790,10 @@ class PanamaWasiConfigBuilderTest {
     void shouldSetMaxAsyncOperations() {
       LOGGER.info("Testing withMaxAsyncOperations");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().withMaxAsyncOperations(50).build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().withMaxAsyncOperations(50).build();
 
-      if (config instanceof PanamaWasiConfig) {
-        assertEquals(50, ((PanamaWasiConfig) config).getMaxAsyncOperations().get());
+      if (config instanceof DefaultWasiConfig) {
+        assertEquals(50, ((DefaultWasiConfig) config).getMaxAsyncOperations().get());
       }
 
       LOGGER.info("Max async operations set");
@@ -800,7 +804,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNonPositiveMaxAsyncOperations() {
       LOGGER.info("Testing withMaxAsyncOperations with non-positive value");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -821,14 +825,14 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withoutMaxAsyncOperations");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withMaxAsyncOperations(50)
               .withoutMaxAsyncOperations()
               .build();
 
-      if (config instanceof PanamaWasiConfig) {
+      if (config instanceof DefaultWasiConfig) {
         assertFalse(
-            ((PanamaWasiConfig) config).getMaxAsyncOperations().isPresent(),
+            ((DefaultWasiConfig) config).getMaxAsyncOperations().isPresent(),
             "Max async operations should be empty");
       }
 
@@ -842,10 +846,10 @@ class PanamaWasiConfigBuilderTest {
 
       final Duration timeout = Duration.ofSeconds(10);
       final WasiConfig config =
-          new PanamaWasiConfigBuilder().withAsyncOperationTimeout(timeout).build();
+          new DefaultWasiConfigBuilder().withAsyncOperationTimeout(timeout).build();
 
-      if (config instanceof PanamaWasiConfig) {
-        assertEquals(timeout, ((PanamaWasiConfig) config).getAsyncOperationTimeout().get());
+      if (config instanceof DefaultWasiConfig) {
+        assertEquals(timeout, ((DefaultWasiConfig) config).getAsyncOperationTimeout().get());
       }
 
       LOGGER.info("Async operation timeout set");
@@ -856,7 +860,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNullAsyncOperationTimeout() {
       LOGGER.info("Testing withAsyncOperationTimeout with null");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -871,7 +875,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldThrowOnNegativeAsyncOperationTimeout() {
       LOGGER.info("Testing withAsyncOperationTimeout with negative value");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       assertThrows(
           IllegalArgumentException.class,
@@ -887,14 +891,14 @@ class PanamaWasiConfigBuilderTest {
       LOGGER.info("Testing withoutAsyncOperationTimeout");
 
       final WasiConfig config =
-          new PanamaWasiConfigBuilder()
+          new DefaultWasiConfigBuilder()
               .withAsyncOperationTimeout(Duration.ofSeconds(10))
               .withoutAsyncOperationTimeout()
               .build();
 
-      if (config instanceof PanamaWasiConfig) {
+      if (config instanceof DefaultWasiConfig) {
         assertFalse(
-            ((PanamaWasiConfig) config).getAsyncOperationTimeout().isPresent(),
+            ((DefaultWasiConfig) config).getAsyncOperationTimeout().isPresent(),
             "Async operation timeout should be empty");
       }
 
@@ -911,7 +915,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldValidateSuccessfully() {
       LOGGER.info("Testing validate");
 
-      final PanamaWasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder builder = new DefaultWasiConfigBuilder();
       assertDoesNotThrow(builder::validate, "Validation should not throw");
 
       LOGGER.info("Validation passed");
@@ -922,10 +926,10 @@ class PanamaWasiConfigBuilderTest {
     void shouldBuildConfig() {
       LOGGER.info("Testing build");
 
-      final WasiConfig config = new PanamaWasiConfigBuilder().build();
+      final WasiConfig config = new DefaultWasiConfigBuilder().build();
 
       assertNotNull(config, "Config should be created");
-      assertTrue(config instanceof PanamaWasiConfig, "Should be PanamaWasiConfig");
+      assertTrue(config instanceof DefaultWasiConfig, "Should be DefaultWasiConfig");
 
       LOGGER.info("Config built successfully");
     }
@@ -935,7 +939,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldBuildFullyConfiguredInstance() {
       LOGGER.info("Testing build with all settings");
 
-      final PanamaWasiConfigBuilder panamaBuilder = new PanamaWasiConfigBuilder();
+      final DefaultWasiConfigBuilder panamaBuilder = new DefaultWasiConfigBuilder();
       panamaBuilder
           .withEnvironment("PATH", "/usr/bin")
           .withArgument("--test")
@@ -962,8 +966,8 @@ class PanamaWasiConfigBuilderTest {
       assertTrue(config.isStrictModeEnabled());
       assertEquals(WasiVersion.PREVIEW_2, config.getWasiVersion());
 
-      if (config instanceof PanamaWasiConfig) {
-        final PanamaWasiConfig panamaConfig = (PanamaWasiConfig) config;
+      if (config instanceof DefaultWasiConfig) {
+        final DefaultWasiConfig panamaConfig = (DefaultWasiConfig) config;
         assertTrue(panamaConfig.isInheritEnvironment());
         assertTrue(panamaConfig.isAsyncOperationsEnabled());
         assertEquals(100, panamaConfig.getMaxAsyncOperations().get());
@@ -983,7 +987,7 @@ class PanamaWasiConfigBuilderTest {
     void shouldSupportMethodChainingForAllMethods() {
       LOGGER.info("Testing method chaining");
 
-      final WasiConfigBuilder builder = new PanamaWasiConfigBuilder();
+      final WasiConfigBuilder builder = new DefaultWasiConfigBuilder();
 
       // All withXxx methods should return the builder for chaining
       final WasiConfigBuilder result =

@@ -747,18 +747,21 @@ impl WasiHttpContext {
         false
     }
 
-    /// Check if a host matches a pattern (supports wildcard at start)
+    /// Check if a host matches a pattern (supports wildcard at start).
+    /// Per RFC 4343, DNS name comparisons are case-insensitive.
     fn host_matches_pattern(&self, host: &str, pattern: &str) -> bool {
-        if pattern.starts_with("*.") {
+        let host_lower = host.to_ascii_lowercase();
+        let pattern_lower = pattern.to_ascii_lowercase();
+        if pattern_lower.starts_with("*.") {
             // Wildcard pattern like "*.example.com"
-            let suffix = &pattern[1..]; // ".example.com"
-            host.ends_with(suffix) || host == &pattern[2..]
-        } else if pattern == "*" {
+            let suffix = &pattern_lower[1..]; // ".example.com"
+            host_lower.ends_with(suffix) || host_lower == pattern_lower[2..]
+        } else if pattern_lower == "*" {
             // Match all
             true
         } else {
             // Exact match
-            host == pattern
+            host_lower == pattern_lower
         }
     }
 }

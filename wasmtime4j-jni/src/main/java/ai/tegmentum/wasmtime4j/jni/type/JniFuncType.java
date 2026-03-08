@@ -16,12 +16,9 @@
 package ai.tegmentum.wasmtime4j.jni.type;
 
 import ai.tegmentum.wasmtime4j.WasmValueType;
-import ai.tegmentum.wasmtime4j.type.FuncType;
-import ai.tegmentum.wasmtime4j.type.WasmTypeKind;
+import ai.tegmentum.wasmtime4j.type.AbstractFuncType;
 import ai.tegmentum.wasmtime4j.util.Validation;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -33,12 +30,9 @@ import java.util.logging.Logger;
  *
  * @since 1.0.0
  */
-public final class JniFuncType implements FuncType {
+public final class JniFuncType extends AbstractFuncType {
 
   private static final Logger LOGGER = Logger.getLogger(JniFuncType.class.getName());
-
-  private final List<WasmValueType> params;
-  private final List<WasmValueType> results;
 
   /**
    * Creates a new JniFuncType instance.
@@ -47,24 +41,7 @@ public final class JniFuncType implements FuncType {
    * @param results the result types
    */
   public JniFuncType(final List<WasmValueType> params, final List<WasmValueType> results) {
-    Validation.requireNonNull(params, "params");
-    Validation.requireNonNull(results, "results");
-
-    // Validate that all parameter and result types are non-null
-    for (int i = 0; i < params.size(); i++) {
-      if (params.get(i) == null) {
-        throw new IllegalArgumentException("Parameter type at index " + i + " is null");
-      }
-    }
-    for (int i = 0; i < results.size(); i++) {
-      if (results.get(i) == null) {
-        throw new IllegalArgumentException("Result type at index " + i + " is null");
-      }
-    }
-
-    this.params = Collections.unmodifiableList(new ArrayList<>(params));
-    this.results = Collections.unmodifiableList(new ArrayList<>(results));
-
+    super(params, results);
     LOGGER.fine(String.format("Created JniFuncType: params=%s, results=%s", params, results));
   }
 
@@ -118,44 +95,6 @@ public final class JniFuncType implements FuncType {
     }
 
     return new JniFuncType(params, results);
-  }
-
-  @Override
-  public List<WasmValueType> getParams() {
-    return params;
-  }
-
-  @Override
-  public List<WasmValueType> getResults() {
-    return results;
-  }
-
-  @Override
-  public WasmTypeKind getKind() {
-    return WasmTypeKind.FUNCTION;
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (!(obj instanceof FuncType)) {
-      return false;
-    }
-
-    final FuncType other = (FuncType) obj;
-    return params.equals(other.getParams()) && results.equals(other.getResults());
-  }
-
-  @Override
-  public int hashCode() {
-    return java.util.Objects.hash(params, results);
-  }
-
-  @Override
-  public String toString() {
-    return String.format("FuncType{params=%s, results=%s}", params, results);
   }
 
   /**

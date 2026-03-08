@@ -12,9 +12,11 @@
 //! eliminating code duplication between Panama FFI, JNI, and Preview 2 implementations.
 
 use std::os::raw::{c_long, c_void};
+use std::panic::AssertUnwindSafe;
 use std::slice;
 
-use crate::{ffi_boundary_i32, ffi_boundary_ptr};
+use crate::error::ffi_utils::ffi_try_code;
+use crate::ffi_boundary_ptr;
 
 use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::wasi::WasiContext;
@@ -212,38 +214,38 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_read(
     out_buffer: *mut u8,
     out_length: *mut c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
             || stream_handle.is_null()
             || out_buffer.is_null()
             || out_length.is_null()
             || length < 0
         {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, stream_handle, out_buffer, and out_length must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match read_from_stream(context, stream_id, length as usize, false) {
-            Ok(data) => {
-                let copy_len = data.len().min(length as usize);
-                unsafe {
-                    std::ptr::copy_nonoverlapping(data.as_ptr(), out_buffer, copy_len);
-                    *out_length = copy_len as c_long;
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        let data = read_from_stream(context, stream_id, length as usize, false)?;
+        let copy_len = data.len().min(length as usize);
+        unsafe {
+            std::ptr::copy_nonoverlapping(data.as_ptr(), out_buffer, copy_len);
+            *out_length = copy_len as c_long;
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Read data from a WASI input stream (blocking)
@@ -265,38 +267,38 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_blocking_read(
     out_buffer: *mut u8,
     out_length: *mut c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
             || stream_handle.is_null()
             || out_buffer.is_null()
             || out_length.is_null()
             || length < 0
         {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, stream_handle, out_buffer, and out_length must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match read_from_stream(context, stream_id, length as usize, true) {
-            Ok(data) => {
-                let copy_len = data.len().min(length as usize);
-                unsafe {
-                    std::ptr::copy_nonoverlapping(data.as_ptr(), out_buffer, copy_len);
-                    *out_length = copy_len as c_long;
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        let data = read_from_stream(context, stream_id, length as usize, true)?;
+        let copy_len = data.len().min(length as usize);
+        unsafe {
+            std::ptr::copy_nonoverlapping(data.as_ptr(), out_buffer, copy_len);
+            *out_length = copy_len as c_long;
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Skip bytes in a WASI input stream
@@ -316,35 +318,35 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_skip(
     length: c_long,
     out_skipped: *mut c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
             || stream_handle.is_null()
             || out_skipped.is_null()
             || length < 0
         {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, stream_handle, and out_skipped must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match skip_in_stream(context, stream_id, length as u64, false) {
-            Ok(skipped) => {
-                unsafe {
-                    *out_skipped = skipped as c_long;
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        let skipped = skip_in_stream(context, stream_id, length as u64, false)?;
+        unsafe {
+            *out_skipped = skipped as c_long;
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Create a pollable for a WASI input stream
@@ -395,26 +397,28 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_close(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and stream_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match close_stream(context, stream_id) {
-            Ok(()) => Ok(0),
-            Err(_) => Ok(-1),
-        }
-    })
+        close_stream(context, stream_id)?;
+        Ok(())
+    }))
 }
 
 /// Check how many bytes can be written to a WASI output stream
@@ -432,31 +436,31 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_check_write(
     stream_handle: *mut c_void,
     out_capacity: *mut c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || out_capacity.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, stream_handle, and out_capacity must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match check_write_capacity(context, stream_id) {
-            Ok(capacity) => {
-                unsafe {
-                    *out_capacity = capacity as c_long;
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        let capacity = check_write_capacity(context, stream_id)?;
+        unsafe {
+            *out_capacity = capacity as c_long;
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Write data to a WASI output stream (non-blocking)
@@ -476,15 +480,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_write(
     buffer: *const u8,
     length: c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || buffer.is_null() || length < 0 {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, stream_handle, and buffer must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -492,11 +500,9 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_write(
         let stream_id = stream_handle as u64;
         let data = unsafe { slice::from_raw_parts(buffer, length as usize) };
 
-        match write_to_stream(context, stream_id, data, false) {
-            Ok(()) => Ok(0),
-            Err(_) => Ok(-1),
-        }
-    })
+        write_to_stream(context, stream_id, data, false)?;
+        Ok(())
+    }))
 }
 
 /// Write data and flush a WASI output stream (blocking)
@@ -516,15 +522,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_write_and_flush(
     buffer: *const u8,
     length: c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || buffer.is_null() || length < 0 {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, stream_handle, and buffer must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -532,14 +542,10 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_write_and_flush(
         let stream_id = stream_handle as u64;
         let data = unsafe { slice::from_raw_parts(buffer, length as usize) };
 
-        match write_to_stream(context, stream_id, data, true) {
-            Ok(()) => match flush_stream(context, stream_id, true) {
-                Ok(()) => Ok(0),
-                Err(_) => Ok(-1),
-            },
-            Err(_) => Ok(-1),
-        }
-    })
+        write_to_stream(context, stream_id, data, true)?;
+        flush_stream(context, stream_id, true)?;
+        Ok(())
+    }))
 }
 
 /// Flush a WASI output stream (non-blocking)
@@ -555,26 +561,28 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_flush(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and stream_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match flush_stream(context, stream_id, false) {
-            Ok(()) => Ok(0),
-            Err(_) => Ok(-1),
-        }
-    })
+        flush_stream(context, stream_id, false)?;
+        Ok(())
+    }))
 }
 
 /// Flush a WASI output stream (blocking)
@@ -590,26 +598,28 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_flush(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and stream_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match flush_stream(context, stream_id, true) {
-            Ok(()) => Ok(0),
-            Err(_) => Ok(-1),
-        }
-    })
+        flush_stream(context, stream_id, true)?;
+        Ok(())
+    }))
 }
 
 /// Write zero bytes to a WASI output stream
@@ -627,26 +637,28 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_write_zeroes(
     stream_handle: *mut c_void,
     length: c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || length < 0 {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and stream_handle must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match write_zeroes_to_stream(context, stream_id, length as u64, false) {
-            Ok(()) => Ok(0),
-            Err(_) => Ok(-1),
-        }
-    })
+        write_zeroes_to_stream(context, stream_id, length as u64, false)?;
+        Ok(())
+    }))
 }
 
 /// Write zero bytes and flush a WASI output stream (blocking)
@@ -664,29 +676,29 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_write_zeroes_and
     stream_handle: *mut c_void,
     length: c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || length < 0 {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and stream_handle must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match write_zeroes_to_stream(context, stream_id, length as u64, true) {
-            Ok(()) => match flush_stream(context, stream_id, true) {
-                Ok(()) => Ok(0),
-                Err(_) => Ok(-1),
-            },
-            Err(_) => Ok(-1),
-        }
-    })
+        write_zeroes_to_stream(context, stream_id, length as u64, true)?;
+        flush_stream(context, stream_id, true)?;
+        Ok(())
+    }))
 }
 
 /// Splice data from input stream to output stream
@@ -708,20 +720,24 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_splice(
     length: c_long,
     out_spliced: *mut c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
             || output_stream_handle.is_null()
             || input_stream_handle.is_null()
             || out_spliced.is_null()
             || length < 0
         {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, output_stream_handle, input_stream_handle, and out_spliced must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -729,22 +745,18 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_splice(
         let dest_stream_id = output_stream_handle as u64;
         let source_stream_id = input_stream_handle as u64;
 
-        match splice_streams(
+        let spliced = splice_streams(
             context,
             dest_stream_id,
             source_stream_id,
             length as u64,
             false,
-        ) {
-            Ok(spliced) => {
-                unsafe {
-                    *out_spliced = spliced as c_long;
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        )?;
+        unsafe {
+            *out_spliced = spliced as c_long;
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Splice data from input stream to output stream (blocking)
@@ -766,20 +778,24 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_splice(
     length: c_long,
     out_spliced: *mut c_long,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
             || output_stream_handle.is_null()
             || input_stream_handle.is_null()
             || out_spliced.is_null()
             || length < 0
         {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, output_stream_handle, input_stream_handle, and out_spliced must not be null, and length must not be negative",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -787,22 +803,18 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_splice(
         let dest_stream_id = output_stream_handle as u64;
         let source_stream_id = input_stream_handle as u64;
 
-        match splice_streams(
+        let spliced = splice_streams(
             context,
             dest_stream_id,
             source_stream_id,
             length as u64,
             true,
-        ) {
-            Ok(spliced) => {
-                unsafe {
-                    *out_spliced = spliced as c_long;
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        )?;
+        unsafe {
+            *out_spliced = spliced as c_long;
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Create a pollable for a WASI output stream
@@ -853,26 +865,28 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_close(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and stream_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let stream_id = stream_handle as u64;
 
-        match close_stream(context, stream_id) {
-            Ok(()) => Ok(0),
-            Err(_) => Ok(-1),
-        }
-    })
+        close_stream(context, stream_id)?;
+        Ok(())
+    }))
 }
 
 /// Block until a WASI pollable is ready
@@ -888,25 +902,27 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_block(
     context_handle: *mut c_void,
     pollable_handle: *mut c_void,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || pollable_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and pollable_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
         let pollable_id = pollable_handle as u64;
 
-        match block_on_pollable(context, pollable_id, None) {
-            Ok(()) => Ok(0),
-            Err(_) => Ok(-1),
-        }
-    })
+        block_on_pollable(context, pollable_id, None)?;
+        Ok(())
+    }))
 }
 
 /// Check if a WASI pollable is ready (non-blocking)
@@ -924,30 +940,30 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_ready(
     pollable_handle: *mut c_void,
     out_ready: *mut i32,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || pollable_handle.is_null() || out_ready.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, pollable_handle, and out_ready must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
         let pollable_id = pollable_handle as u64;
 
-        match check_pollable_ready(context, pollable_id) {
-            Ok(ready) => {
-                unsafe {
-                    *out_ready = if ready { 1 } else { 0 };
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        let ready = check_pollable_ready(context, pollable_id)?;
+        unsafe {
+            *out_ready = if ready { 1 } else { 0 };
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Close a WASI pollable
@@ -963,23 +979,25 @@ pub extern "C" fn wasmtime4j_panama_wasi_pollable_close(
     context_handle: *mut c_void,
     pollable_handle: *mut c_void,
 ) -> i32 {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || pollable_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and pollable_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
         let pollable_id = pollable_handle as u64;
 
-        match close_pollable(context, pollable_id) {
-            Ok(()) => Ok(0),
-            Err(_) => Ok(-1),
-        }
-    })
+        close_pollable(context, pollable_id)?;
+        Ok(())
+    }))
 }

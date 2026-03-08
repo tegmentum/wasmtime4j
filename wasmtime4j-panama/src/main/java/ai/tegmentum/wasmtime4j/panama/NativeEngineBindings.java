@@ -380,6 +380,12 @@ public final class NativeEngineBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // module_ptr
 
     addFunctionBinding(
+        "wasmtime4j_panama_module_get_all_functions",
+        FunctionDescriptor.of(
+            ValueLayout.ADDRESS, // return JSON string pointer
+            ValueLayout.ADDRESS)); // module_ptr
+
+    addFunctionBinding(
         "wasmtime4j_panama_module_free_string",
         FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)); // string_ptr
 

@@ -581,7 +581,10 @@ public class StoreApiDualRuntimeTest extends DualRuntimeTest {
       setRuntime(runtime);
       LOGGER.info("[" + runtime + "] Testing set and get fuel async yield interval");
 
-      try (Engine engine = Engine.create();
+      final ai.tegmentum.wasmtime4j.config.EngineConfig config =
+          new ai.tegmentum.wasmtime4j.config.EngineConfig();
+      config.consumeFuel(true);
+      try (Engine engine = Engine.create(config);
           Store store = Store.create(engine)) {
 
         store.setFuelAsyncYieldInterval(1000);

@@ -341,7 +341,7 @@ public class JniEngine extends JniResource implements Engine {
   public ai.tegmentum.wasmtime4j.CodeBuilder codeBuilder() throws WasmException {
     beginOperation();
     try {
-      return new JniCodeBuilder(nativeHandle);
+      return new JniCodeBuilder(nativeHandle, this);
     } finally {
       endOperation();
     }
@@ -377,7 +377,7 @@ public class JniEngine extends JniResource implements Engine {
       if (metrics == null) {
         return null;
       }
-      return new ai.tegmentum.wasmtime4j.jni.pool.JniPoolStatistics(metrics);
+      return new ai.tegmentum.wasmtime4j.pool.DefaultPoolStatistics(metrics);
     } finally {
       endOperation();
     }

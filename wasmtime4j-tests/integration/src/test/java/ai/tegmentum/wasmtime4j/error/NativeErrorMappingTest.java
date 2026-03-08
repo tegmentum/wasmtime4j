@@ -308,7 +308,8 @@ class NativeErrorMappingTest extends DualRuntimeTest {
 
         assertNotNull(trapFunc);
 
-        final TrapException trapException = assertThrows(TrapException.class, () -> trapFunc.call());
+        final TrapException trapException =
+            assertThrows(TrapException.class, () -> trapFunc.call());
         LOGGER.info("Trap exception: " + trapException.getMessage());
         LOGGER.info("Trap type: " + trapException.getTrapType());
         assertFalse(trapException.getMessage().isEmpty(), "Expected non-empty trap message");

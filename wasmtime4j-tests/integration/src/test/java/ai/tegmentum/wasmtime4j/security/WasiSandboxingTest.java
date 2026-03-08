@@ -227,8 +227,8 @@ class WasiSandboxingTest extends DualRuntimeTest {
               .build();
 
       assertEquals(3, config.getArguments().size());
-      assertEquals(java.util.List.of("--config", "/app/config.json", "--verbose"),
-          config.getArguments());
+      assertEquals(
+          java.util.List.of("--config", "/app/config.json", "--verbose"), config.getArguments());
 
       LOGGER.info("Arguments sandboxed: " + config.getArguments());
     }

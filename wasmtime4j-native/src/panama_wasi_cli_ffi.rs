@@ -10,7 +10,10 @@ use std::ffi::CString;
 use std::os::raw::{c_char, c_int, c_void};
 use std::ptr;
 
-use crate::ffi_boundary_i32;
+use std::panic::AssertUnwindSafe;
+
+use crate::error::ffi_utils::ffi_try_code;
+use crate::error::WasmtimeError;
 use crate::wasi::WasiContext;
 
 /// Get all environment variables
@@ -31,15 +34,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_all(
     out_env_vars: *mut *mut c_char,
     out_env_vars_len: *mut c_int,
 ) -> c_int {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || out_env_vars.is_null() || out_env_vars_len.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, out_env_vars, and out_env_vars_len must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -60,18 +67,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_all(
                 .join(",")
         );
 
-        match CString::new(json_array) {
-            Ok(c_str) => {
-                let len = c_str.as_bytes().len() as c_int;
-                unsafe {
-                    *out_env_vars = c_str.into_raw();
-                    *out_env_vars_len = len;
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        let c_str = CString::new(json_array).map_err(|e| {
+            WasmtimeError::invalid_parameter(format!(
+                "Failed to create C string from environment variables: {}",
+                e
+            ))
+        })?;
+        let len = c_str.as_bytes().len() as c_int;
+        unsafe {
+            *out_env_vars = c_str.into_raw();
+            *out_env_vars_len = len;
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Get a specific environment variable
@@ -96,54 +104,60 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get(
     out_value: *mut *mut c_char,
     out_value_len: *mut c_int,
 ) -> c_int {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
             || name.is_null()
             || out_value.is_null()
             || out_value_len.is_null()
         {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, name, out_value, and out_value_len must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
         let name_str = unsafe {
             let slice = std::slice::from_raw_parts(name as *const u8, name_len as usize);
-            match std::str::from_utf8(slice) {
-                Ok(s) => s,
-                Err(_) => return Ok(-1),
-            }
+            std::str::from_utf8(slice).map_err(|e| {
+                WasmtimeError::invalid_parameter(format!("Invalid UTF-8 in name: {}", e))
+            })?
         };
 
         let env_map = &context.environment;
 
         match env_map.get(name_str) {
-            Some(value) => match CString::new(value.as_str()) {
-                Ok(c_str) => {
-                    let len = c_str.as_bytes().len() as c_int;
-                    unsafe {
-                        *out_value = c_str.into_raw();
-                        *out_value_len = len;
-                    }
-                    Ok(0)
+            Some(value) => {
+                let c_str = CString::new(value.as_str()).map_err(|e| {
+                    WasmtimeError::invalid_parameter(format!(
+                        "Failed to create C string from environment variable value: {}",
+                        e
+                    ))
+                })?;
+                let len = c_str.as_bytes().len() as c_int;
+                unsafe {
+                    *out_value = c_str.into_raw();
+                    *out_value_len = len;
                 }
-                Err(_) => Ok(-1),
-            },
+                Ok(())
+            }
             None => {
                 unsafe {
                     *out_value = ptr::null_mut();
                     *out_value_len = 0;
                 }
-                Ok(1)
+                Ok(())
             }
         }
-    })
+    }))
 }
 
 /// Get command-line arguments
@@ -164,15 +178,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_arguments(
     out_args: *mut *mut c_char,
     out_args_len: *mut c_int,
 ) -> c_int {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || out_args.is_null() || out_args_len.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, out_args, and out_args_len must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -187,18 +205,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_arguments(
                 .join(",")
         );
 
-        match CString::new(json_array) {
-            Ok(c_str) => {
-                let len = c_str.as_bytes().len() as c_int;
-                unsafe {
-                    *out_args = c_str.into_raw();
-                    *out_args_len = len;
-                }
-                Ok(0)
-            }
-            Err(_) => Ok(-1),
+        let c_str = CString::new(json_array).map_err(|e| {
+            WasmtimeError::invalid_parameter(format!(
+                "Failed to create C string from arguments: {}",
+                e
+            ))
+        })?;
+        let len = c_str.as_bytes().len() as c_int;
+        unsafe {
+            *out_args = c_str.into_raw();
+            *out_args_len = len;
         }
-    })
+        Ok(())
+    }))
 }
 
 /// Get initial working directory
@@ -219,45 +238,51 @@ pub extern "C" fn wasmtime4j_panama_wasi_environment_get_initial_cwd(
     out_cwd: *mut *mut c_char,
     out_cwd_len: *mut c_int,
 ) -> c_int {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || out_cwd.is_null() || out_cwd_len.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle, out_cwd, and out_cwd_len must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
 
-        let cwd = match context.initial_cwd.read() {
-            Ok(cwd) => cwd,
-            Err(_) => return Ok(-1),
-        };
+        let cwd = context.initial_cwd.read().map_err(|e| {
+            WasmtimeError::invalid_parameter(format!("Failed to read initial_cwd lock: {}", e))
+        })?;
 
         match cwd.as_ref() {
-            Some(path) => match CString::new(path.as_str()) {
-                Ok(c_str) => {
-                    let len = c_str.as_bytes().len() as c_int;
-                    unsafe {
-                        *out_cwd = c_str.into_raw();
-                        *out_cwd_len = len;
-                    }
-                    Ok(0)
+            Some(path) => {
+                let c_str = CString::new(path.as_str()).map_err(|e| {
+                    WasmtimeError::invalid_parameter(format!(
+                        "Failed to create C string from initial cwd: {}",
+                        e
+                    ))
+                })?;
+                let len = c_str.as_bytes().len() as c_int;
+                unsafe {
+                    *out_cwd = c_str.into_raw();
+                    *out_cwd_len = len;
                 }
-                Err(_) => Ok(-1),
-            },
+                Ok(())
+            }
             None => {
                 unsafe {
                     *out_cwd = ptr::null_mut();
                     *out_cwd_len = 0;
                 }
-                Ok(1)
+                Ok(())
             }
         }
-    })
+    }))
 }
 
 /// Get stdin stream
@@ -273,15 +298,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stdin(
     context_handle: *mut c_void,
     out_stream_handle: *mut *mut c_void,
 ) -> c_int {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || out_stream_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and out_stream_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -291,14 +320,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stdin(
                 Some(handle) => handle as usize,
                 None => 1usize,
             },
-            Err(_) => return Ok(-1),
+            Err(e) => {
+                return Err(WasmtimeError::invalid_parameter(format!(
+                    "Failed to read stdin_handle lock: {}",
+                    e
+                )))
+            }
         };
 
         unsafe {
             *out_stream_handle = stdin_handle as *mut c_void;
         }
-        Ok(0)
-    })
+        Ok(())
+    }))
 }
 
 /// Get stdout stream
@@ -314,15 +348,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stdout(
     context_handle: *mut c_void,
     out_stream_handle: *mut *mut c_void,
 ) -> c_int {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || out_stream_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and out_stream_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -332,14 +370,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stdout(
                 Some(handle) => handle as usize,
                 None => 2usize,
             },
-            Err(_) => return Ok(-1),
+            Err(e) => {
+                return Err(WasmtimeError::invalid_parameter(format!(
+                    "Failed to read stdout_handle lock: {}",
+                    e
+                )))
+            }
         };
 
         unsafe {
             *out_stream_handle = stdout_handle as *mut c_void;
         }
-        Ok(0)
-    })
+        Ok(())
+    }))
 }
 
 /// Get stderr stream
@@ -355,15 +398,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stderr(
     context_handle: *mut c_void,
     out_stream_handle: *mut *mut c_void,
 ) -> c_int {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || out_stream_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle and out_stream_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -373,14 +420,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_stdio_get_stderr(
                 Some(handle) => handle as usize,
                 None => 3usize,
             },
-            Err(_) => return Ok(-1),
+            Err(e) => {
+                return Err(WasmtimeError::invalid_parameter(format!(
+                    "Failed to read stderr_handle lock: {}",
+                    e
+                )))
+            }
         };
 
         unsafe {
             *out_stream_handle = stderr_handle as *mut c_void;
         }
-        Ok(0)
-    })
+        Ok(())
+    }))
 }
 
 /// Exit the program with a status code
@@ -396,15 +448,19 @@ pub extern "C" fn wasmtime4j_panama_wasi_exit(
     context_handle: *mut c_void,
     status_code: c_int,
 ) -> c_int {
-    ffi_boundary_i32!({
+    ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() {
-            return Ok(-1);
+            return Err(WasmtimeError::invalid_parameter(
+                "context_handle must not be null",
+            ));
         }
 
         let context = unsafe {
             let ptr = context_handle as *const WasiContext;
             if ptr.is_null() {
-                return Ok(-1);
+                return Err(WasmtimeError::invalid_parameter(
+                    "context_handle must not be null",
+                ));
             }
             &*ptr
         };
@@ -412,9 +468,12 @@ pub extern "C" fn wasmtime4j_panama_wasi_exit(
         match context.exit_code.write() {
             Ok(mut exit_code_opt) => {
                 *exit_code_opt = Some(status_code);
-                Ok(status_code)
+                Ok(())
             }
-            Err(_) => Ok(-1),
+            Err(e) => Err(WasmtimeError::invalid_parameter(format!(
+                "Failed to write exit_code lock: {}",
+                e
+            ))),
         }
-    })
+    }))
 }

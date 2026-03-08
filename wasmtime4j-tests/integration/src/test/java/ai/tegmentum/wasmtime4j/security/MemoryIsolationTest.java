@@ -260,8 +260,7 @@ class MemoryIsolationTest extends DualRuntimeTest {
         // Invalid read beyond memory bounds - should trap
         final TrapException readTrap =
             assertThrows(
-                TrapException.class,
-                () -> readFunc.call(WasmValue.i32((int) memorySize + 1000)));
+                TrapException.class, () -> readFunc.call(WasmValue.i32((int) memorySize + 1000)));
         LOGGER.info("Out of bounds read trap: " + readTrap.getMessage());
       } finally {
         module.close();
@@ -296,8 +295,7 @@ class MemoryIsolationTest extends DualRuntimeTest {
         final TrapException writeTrap =
             assertThrows(
                 TrapException.class,
-                () ->
-                    writeFunc.call(WasmValue.i32((int) memorySize + 1000), WasmValue.i32(42)));
+                () -> writeFunc.call(WasmValue.i32((int) memorySize + 1000), WasmValue.i32(42)));
         LOGGER.info("Out of bounds write trap: " + writeTrap.getMessage());
       } finally {
         module.close();

@@ -145,28 +145,36 @@ public abstract class WitTypeKind {
    *
    * @return the size in bytes, or empty for composite types
    */
-  public abstract Optional<Integer> getSizeBytes();
+  public Optional<Integer> getSizeBytes() {
+    return Optional.empty();
+  }
 
   /**
    * Checks if this is a primitive type kind.
    *
    * @return true if primitive, false otherwise
    */
-  public abstract boolean isPrimitive();
+  public boolean isPrimitive() {
+    return false;
+  }
 
   /**
    * Checks if this is a composite type kind.
    *
    * @return true if composite, false otherwise
    */
-  public abstract boolean isComposite();
+  public boolean isComposite() {
+    return true;
+  }
 
   /**
    * Checks if this is a resource type kind.
    *
    * @return true if resource, false otherwise
    */
-  public abstract boolean isResource();
+  public boolean isResource() {
+    return false;
+  }
 
   /**
    * Gets the type category for validation and marshalling.
@@ -298,11 +306,6 @@ public abstract class WitTypeKind {
     }
 
     @Override
-    public boolean isResource() {
-      return false;
-    }
-
-    @Override
     public WitTypeCategory getCategory() {
       return WitTypeCategory.PRIMITIVE;
     }
@@ -349,26 +352,6 @@ public abstract class WitTypeKind {
       }
       final RecordTypeKind otherRecord = (RecordTypeKind) other;
       return fields.equals(otherRecord.fields);
-    }
-
-    @Override
-    public Optional<Integer> getSizeBytes() {
-      return Optional.empty(); // Variable size composite type
-    }
-
-    @Override
-    public boolean isPrimitive() {
-      return false;
-    }
-
-    @Override
-    public boolean isComposite() {
-      return true;
-    }
-
-    @Override
-    public boolean isResource() {
-      return false;
     }
 
     @Override
@@ -422,26 +405,6 @@ public abstract class WitTypeKind {
       }
       final VariantTypeKind otherVariant = (VariantTypeKind) other;
       return cases.equals(otherVariant.cases);
-    }
-
-    @Override
-    public Optional<Integer> getSizeBytes() {
-      return Optional.empty(); // Variable size composite type
-    }
-
-    @Override
-    public boolean isPrimitive() {
-      return false;
-    }
-
-    @Override
-    public boolean isComposite() {
-      return true;
-    }
-
-    @Override
-    public boolean isResource() {
-      return false;
     }
 
     @Override
@@ -500,21 +463,6 @@ public abstract class WitTypeKind {
     @Override
     public Optional<Integer> getSizeBytes() {
       return Optional.of(4); // Enum typically represented as u32
-    }
-
-    @Override
-    public boolean isPrimitive() {
-      return false;
-    }
-
-    @Override
-    public boolean isComposite() {
-      return true;
-    }
-
-    @Override
-    public boolean isResource() {
-      return false;
     }
 
     @Override
@@ -587,21 +535,6 @@ public abstract class WitTypeKind {
     }
 
     @Override
-    public boolean isPrimitive() {
-      return false;
-    }
-
-    @Override
-    public boolean isComposite() {
-      return true;
-    }
-
-    @Override
-    public boolean isResource() {
-      return false;
-    }
-
-    @Override
     public WitTypeCategory getCategory() {
       return WitTypeCategory.FLAGS;
     }
@@ -647,26 +580,6 @@ public abstract class WitTypeKind {
       }
       final ListTypeKind otherList = (ListTypeKind) other;
       return elementType.isCompatibleWith(otherList.elementType);
-    }
-
-    @Override
-    public Optional<Integer> getSizeBytes() {
-      return Optional.empty(); // Variable size
-    }
-
-    @Override
-    public boolean isPrimitive() {
-      return false;
-    }
-
-    @Override
-    public boolean isComposite() {
-      return true;
-    }
-
-    @Override
-    public boolean isResource() {
-      return false;
     }
 
     @Override
@@ -723,26 +636,6 @@ public abstract class WitTypeKind {
     }
 
     @Override
-    public Optional<Integer> getSizeBytes() {
-      return Optional.empty(); // Variable size based on inner type
-    }
-
-    @Override
-    public boolean isPrimitive() {
-      return false;
-    }
-
-    @Override
-    public boolean isComposite() {
-      return true;
-    }
-
-    @Override
-    public boolean isResource() {
-      return false;
-    }
-
-    @Override
     public WitTypeCategory getCategory() {
       return WitTypeCategory.OPTION;
     }
@@ -792,26 +685,6 @@ public abstract class WitTypeKind {
       final ResultTypeKind otherResult = (ResultTypeKind) other;
       return Objects.equals(okType, otherResult.okType)
           && Objects.equals(errorType, otherResult.errorType);
-    }
-
-    @Override
-    public Optional<Integer> getSizeBytes() {
-      return Optional.empty(); // Variable size based on inner types
-    }
-
-    @Override
-    public boolean isPrimitive() {
-      return false;
-    }
-
-    @Override
-    public boolean isComposite() {
-      return true;
-    }
-
-    @Override
-    public boolean isResource() {
-      return false;
     }
 
     @Override
@@ -878,26 +751,6 @@ public abstract class WitTypeKind {
     }
 
     @Override
-    public Optional<Integer> getSizeBytes() {
-      return Optional.empty(); // Variable size based on element types
-    }
-
-    @Override
-    public boolean isPrimitive() {
-      return false;
-    }
-
-    @Override
-    public boolean isComposite() {
-      return true;
-    }
-
-    @Override
-    public boolean isResource() {
-      return false;
-    }
-
-    @Override
     public WitTypeCategory getCategory() {
       return WitTypeCategory.TUPLE;
     }
@@ -953,11 +806,6 @@ public abstract class WitTypeKind {
     @Override
     public Optional<Integer> getSizeBytes() {
       return Optional.of(4); // Resource handle is typically a u32
-    }
-
-    @Override
-    public boolean isPrimitive() {
-      return false;
     }
 
     @Override

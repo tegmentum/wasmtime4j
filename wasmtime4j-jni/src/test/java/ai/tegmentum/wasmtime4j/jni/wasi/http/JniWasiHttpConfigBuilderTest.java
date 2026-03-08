@@ -52,18 +52,14 @@ class JniWasiHttpConfigBuilderTest {
     @DisplayName("New builder should produce config with empty allowed hosts")
     void newBuilderShouldHaveEmptyAllowedHosts() {
       final WasiHttpConfig config = new JniWasiHttpConfigBuilder().build();
-      assertTrue(
-          config.getAllowedHosts().isEmpty(),
-          "Default config should have no allowed hosts");
+      assertTrue(config.getAllowedHosts().isEmpty(), "Default config should have no allowed hosts");
     }
 
     @Test
     @DisplayName("New builder should produce config with empty blocked hosts")
     void newBuilderShouldHaveEmptyBlockedHosts() {
       final WasiHttpConfig config = new JniWasiHttpConfigBuilder().build();
-      assertTrue(
-          config.getBlockedHosts().isEmpty(),
-          "Default config should have no blocked hosts");
+      assertTrue(config.getBlockedHosts().isEmpty(), "Default config should have no blocked hosts");
     }
 
     @Test
@@ -71,8 +67,7 @@ class JniWasiHttpConfigBuilderTest {
     void newBuilderShouldHaveEmptyAllowedMethods() {
       final WasiHttpConfig config = new JniWasiHttpConfigBuilder().build();
       assertTrue(
-          config.getAllowedMethods().isEmpty(),
-          "Default config should have no allowed methods");
+          config.getAllowedMethods().isEmpty(), "Default config should have no allowed methods");
     }
 
     @Test
@@ -82,12 +77,9 @@ class JniWasiHttpConfigBuilderTest {
 
       assertFalse(config.isHttpsRequired(), "httpsRequired default should be false");
       assertTrue(
-          config.isCertificateValidationEnabled(),
-          "certificateValidation default should be true");
+          config.isCertificateValidationEnabled(), "certificateValidation default should be true");
       assertTrue(config.isHttp2Enabled(), "http2 default should be true");
-      assertTrue(
-          config.isConnectionPoolingEnabled(),
-          "connectionPooling default should be true");
+      assertTrue(config.isConnectionPoolingEnabled(), "connectionPooling default should be true");
       assertTrue(config.isFollowRedirects(), "followRedirects default should be true");
     }
   }
@@ -102,8 +94,7 @@ class JniWasiHttpConfigBuilderTest {
       final JniWasiHttpConfigBuilder builder = new JniWasiHttpConfigBuilder();
       IllegalArgumentException e =
           assertThrows(IllegalArgumentException.class, () -> builder.allowHost(null));
-      assertTrue(e.getMessage().contains("null"),
-          "Expected message to contain: null");
+      assertTrue(e.getMessage().contains("null"), "Expected message to contain: null");
     }
 
     @Test
@@ -112,8 +103,7 @@ class JniWasiHttpConfigBuilderTest {
       final JniWasiHttpConfigBuilder builder = new JniWasiHttpConfigBuilder();
       IllegalArgumentException e =
           assertThrows(IllegalArgumentException.class, () -> builder.allowHost(""));
-      assertTrue(e.getMessage().contains("empty"),
-          "Expected message to contain: empty");
+      assertTrue(e.getMessage().contains("empty"), "Expected message to contain: empty");
     }
 
     @Test
@@ -155,8 +145,7 @@ class JniWasiHttpConfigBuilderTest {
       final JniWasiHttpConfigBuilder builder = new JniWasiHttpConfigBuilder();
       IllegalArgumentException e =
           assertThrows(IllegalArgumentException.class, () -> builder.withMaxConnections(0));
-      assertTrue(e.getMessage().contains("positive"),
-          "Expected message to contain: positive");
+      assertTrue(e.getMessage().contains("positive"), "Expected message to contain: positive");
     }
 
     @Test
@@ -172,8 +161,7 @@ class JniWasiHttpConfigBuilderTest {
       final JniWasiHttpConfigBuilder builder = new JniWasiHttpConfigBuilder();
       IllegalArgumentException e =
           assertThrows(IllegalArgumentException.class, () -> builder.withMaxRequestBodySize(0));
-      assertTrue(e.getMessage().contains("positive"),
-          "Expected message to contain: positive");
+      assertTrue(e.getMessage().contains("positive"), "Expected message to contain: positive");
     }
 
     @Test
@@ -182,8 +170,7 @@ class JniWasiHttpConfigBuilderTest {
       final JniWasiHttpConfigBuilder builder = new JniWasiHttpConfigBuilder();
       IllegalArgumentException e =
           assertThrows(IllegalArgumentException.class, () -> builder.withMaxRedirects(-1));
-      assertTrue(e.getMessage().contains("negative"),
-          "Expected message to contain: negative");
+      assertTrue(e.getMessage().contains("negative"), "Expected message to contain: negative");
     }
 
     @Test
@@ -194,8 +181,7 @@ class JniWasiHttpConfigBuilderTest {
           assertThrows(
               IllegalArgumentException.class,
               () -> builder.withConnectTimeout(Duration.ofSeconds(-1)));
-      assertTrue(e.getMessage().contains("negative"),
-          "Expected message to contain: negative");
+      assertTrue(e.getMessage().contains("negative"), "Expected message to contain: negative");
     }
 
     @Test
@@ -203,10 +189,8 @@ class JniWasiHttpConfigBuilderTest {
     void maxConnectionsPerHostZeroShouldThrow() {
       final JniWasiHttpConfigBuilder builder = new JniWasiHttpConfigBuilder();
       IllegalArgumentException e =
-          assertThrows(
-              IllegalArgumentException.class, () -> builder.withMaxConnectionsPerHost(0));
-      assertTrue(e.getMessage().contains("positive"),
-          "Expected message to contain: positive");
+          assertThrows(IllegalArgumentException.class, () -> builder.withMaxConnectionsPerHost(0));
+      assertTrue(e.getMessage().contains("positive"), "Expected message to contain: positive");
     }
 
     @Test
@@ -214,10 +198,8 @@ class JniWasiHttpConfigBuilderTest {
     void maxResponseBodySizeNegativeShouldThrow() {
       final JniWasiHttpConfigBuilder builder = new JniWasiHttpConfigBuilder();
       IllegalArgumentException e =
-          assertThrows(
-              IllegalArgumentException.class, () -> builder.withMaxResponseBodySize(-1));
-      assertTrue(e.getMessage().contains("positive"),
-          "Expected message to contain: positive");
+          assertThrows(IllegalArgumentException.class, () -> builder.withMaxResponseBodySize(-1));
+      assertTrue(e.getMessage().contains("positive"), "Expected message to contain: positive");
     }
   }
 
@@ -291,9 +273,7 @@ class JniWasiHttpConfigBuilderTest {
     @DisplayName("allowAllHosts() should add wildcard")
     void allowAllHostsShouldAddWildcard() {
       final WasiHttpConfig config = new JniWasiHttpConfigBuilder().allowAllHosts().build();
-      assertTrue(
-          config.getAllowedHosts().contains("*"),
-          "Expected allowed hosts to contain: *");
+      assertTrue(config.getAllowedHosts().contains("*"), "Expected allowed hosts to contain: *");
     }
 
     @Test
@@ -302,9 +282,7 @@ class JniWasiHttpConfigBuilderTest {
       final WasiHttpConfig config =
           new JniWasiHttpConfigBuilder().allowAllHosts().blockHost("internal.com").build();
 
-      assertTrue(
-          config.getAllowedHosts().contains("*"),
-          "Expected allowed hosts to contain: *");
+      assertTrue(config.getAllowedHosts().contains("*"), "Expected allowed hosts to contain: *");
       assertTrue(
           config.getBlockedHosts().contains("internal.com"),
           "Expected blocked hosts to contain: internal.com");
@@ -320,16 +298,11 @@ class JniWasiHttpConfigBuilderTest {
               .build();
 
       final List<String> methods = config.getAllowedMethods();
-      assertEquals(2, methods.size(),
-          "Second call to allowMethods should replace, not append");
-      assertTrue(methods.contains("HEAD"),
-          "Expected methods to contain: HEAD");
-      assertTrue(methods.contains("OPTIONS"),
-          "Expected methods to contain: OPTIONS");
-      assertFalse(methods.contains("GET"),
-          "Expected methods not to contain: GET");
-      assertFalse(methods.contains("POST"),
-          "Expected methods not to contain: POST");
+      assertEquals(2, methods.size(), "Second call to allowMethods should replace, not append");
+      assertTrue(methods.contains("HEAD"), "Expected methods to contain: HEAD");
+      assertTrue(methods.contains("OPTIONS"), "Expected methods to contain: OPTIONS");
+      assertFalse(methods.contains("GET"), "Expected methods not to contain: GET");
+      assertFalse(methods.contains("POST"), "Expected methods not to contain: POST");
     }
 
     @Test
@@ -341,14 +314,14 @@ class JniWasiHttpConfigBuilderTest {
               .build();
 
       assertEquals(2, config.getAllowedHosts().size());
-      assertTrue(config.getAllowedHosts().contains("valid.com"),
-          "Expected hosts to contain: valid.com");
-      assertTrue(config.getAllowedHosts().contains("another.com"),
+      assertTrue(
+          config.getAllowedHosts().contains("valid.com"), "Expected hosts to contain: valid.com");
+      assertTrue(
+          config.getAllowedHosts().contains("another.com"),
           "Expected hosts to contain: another.com");
-      assertFalse(config.getAllowedHosts().contains(""),
-          "Expected hosts not to contain empty string");
-      assertFalse(config.getAllowedHosts().contains(null),
-          "Expected hosts not to contain null");
+      assertFalse(
+          config.getAllowedHosts().contains(""), "Expected hosts not to contain empty string");
+      assertFalse(config.getAllowedHosts().contains(null), "Expected hosts not to contain null");
     }
 
     @Test

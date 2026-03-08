@@ -18,10 +18,6 @@ package ai.tegmentum.wasmtime4j.panama;
 import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
 import ai.tegmentum.wasmtime4j.wast.WastDirectiveResult;
 import ai.tegmentum.wasmtime4j.wast.WastExecutionResult;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.MemorySegment;
@@ -66,8 +62,6 @@ import java.util.logging.Logger;
 public final class PanamaWastRunner {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaWastRunner.class.getName());
-
-  private static final Gson GSON = new Gson();
 
   // Native function descriptors
   // wasmtime4j_panama_wast_execute_file(file_path: *const c_char, result_json: *mut *mut c_char)
@@ -307,35 +301,24 @@ public final class PanamaWastRunner {
    * @param json the JSON string from the native WAST execution
    * @return the parsed WastExecutionResult
    */
+  @SuppressWarnings("checkstyle:CyclomaticComplexity")
   private static WastExecutionResult parseJsonResult(final String json) {
-    final JsonObject root = GSON.fromJson(json, JsonObject.class);
-
-    final String filePath = root.has("file_path") ? root.get("file_path").getAsString() : "";
-    final int totalDirectives =
-        root.has("total_directives") ? root.get("total_directives").getAsInt() : 0;
-    final int passedDirectives =
-        root.has("passed_directives") ? root.get("passed_directives").getAsInt() : 0;
-    final int failedDirectives =
-        root.has("failed_directives") ? root.get("failed_directives").getAsInt() : 0;
-    final String executionError =
-        root.has("execution_error") && !root.get("execution_error").isJsonNull()
-            ? root.get("execution_error").getAsString()
-            : null;
+    final String filePath = extractStringField(json, "file_path", "");
+    final int totalDirectives = extractIntField(json, "total_directives", 0);
+    final int passedDirectives = extractIntField(json, "passed_directives", 0);
+    final int failedDirectives = extractIntField(json, "failed_directives", 0);
+    final String executionError = extractNullableStringField(json, "execution_error");
 
     WastDirectiveResult[] directiveResults = new WastDirectiveResult[0];
-    if (root.has("directive_results")) {
-      final JsonArray directivesArray = root.getAsJsonArray("directive_results");
-      directiveResults = new WastDirectiveResult[directivesArray.size()];
-      for (int i = 0; i < directivesArray.size(); i++) {
-        final JsonElement element = directivesArray.get(i);
-        final JsonObject directive = element.getAsJsonObject();
-        final int lineNumber =
-            directive.has("line_number") ? directive.get("line_number").getAsInt() : 0;
-        final boolean passed = directive.has("passed") && directive.get("passed").getAsBoolean();
-        final String errorMessage =
-            directive.has("error_message") && !directive.get("error_message").isJsonNull()
-                ? directive.get("error_message").getAsString()
-                : null;
+    final String directivesArrayStr = extractArrayField(json, "directive_results");
+    if (directivesArrayStr != null && !directivesArrayStr.equals("[]")) {
+      final java.util.List<String> directives = splitJsonObjects(directivesArrayStr);
+      directiveResults = new WastDirectiveResult[directives.size()];
+      for (int i = 0; i < directives.size(); i++) {
+        final String directive = directives.get(i);
+        final int lineNumber = extractIntField(directive, "line_number", 0);
+        final boolean passed = extractBooleanField(directive, "passed");
+        final String errorMessage = extractNullableStringField(directive, "error_message");
         directiveResults[i] = new WastDirectiveResult(lineNumber, passed, errorMessage);
       }
     }
@@ -347,6 +330,126 @@ public final class PanamaWastRunner {
         failedDirectives,
         executionError,
         directiveResults);
+  }
+
+  private static String extractStringField(
+      final String json, final String key, final String defaultValue) {
+    final String result = extractNullableStringField(json, key);
+    return result != null ? result : defaultValue;
+  }
+
+  private static String extractNullableStringField(final String json, final String key) {
+    final String search = "\"" + key + "\":";
+    final int idx = json.indexOf(search);
+    if (idx < 0) {
+      return null;
+    }
+    int pos = idx + search.length();
+    while (pos < json.length() && json.charAt(pos) == ' ') {
+      pos++;
+    }
+    if (pos >= json.length()) {
+      return null;
+    }
+    // Check for null
+    if (json.startsWith("null", pos)) {
+      return null;
+    }
+    if (json.charAt(pos) != '"') {
+      return null;
+    }
+    pos++; // skip opening quote
+    final StringBuilder sb = new StringBuilder();
+    while (pos < json.length() && json.charAt(pos) != '"') {
+      if (json.charAt(pos) == '\\' && pos + 1 < json.length()) {
+        pos++;
+        sb.append(json.charAt(pos));
+      } else {
+        sb.append(json.charAt(pos));
+      }
+      pos++;
+    }
+    return sb.toString();
+  }
+
+  private static int extractIntField(final String json, final String key, final int defaultValue) {
+    final String search = "\"" + key + "\":";
+    final int idx = json.indexOf(search);
+    if (idx < 0) {
+      return defaultValue;
+    }
+    int pos = idx + search.length();
+    while (pos < json.length() && json.charAt(pos) == ' ') {
+      pos++;
+    }
+    final int start = pos;
+    while (pos < json.length() && (Character.isDigit(json.charAt(pos)) || json.charAt(pos) == '-')) {
+      pos++;
+    }
+    if (start == pos) {
+      return defaultValue;
+    }
+    return Integer.parseInt(json.substring(start, pos));
+  }
+
+  private static boolean extractBooleanField(final String json, final String key) {
+    final String search = "\"" + key + "\":";
+    final int idx = json.indexOf(search);
+    if (idx < 0) {
+      return false;
+    }
+    int pos = idx + search.length();
+    while (pos < json.length() && json.charAt(pos) == ' ') {
+      pos++;
+    }
+    return json.startsWith("true", pos);
+  }
+
+  private static String extractArrayField(final String json, final String key) {
+    final String search = "\"" + key + "\":";
+    final int idx = json.indexOf(search);
+    if (idx < 0) {
+      return null;
+    }
+    final int bracketStart = json.indexOf('[', idx + search.length());
+    if (bracketStart < 0) {
+      return null;
+    }
+    int depth = 0;
+    for (int i = bracketStart; i < json.length(); i++) {
+      if (json.charAt(i) == '[') {
+        depth++;
+      } else if (json.charAt(i) == ']') {
+        depth--;
+        if (depth == 0) {
+          return json.substring(bracketStart, i + 1);
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Splits a JSON array into its top-level object elements. */
+  private static java.util.List<String> splitJsonObjects(final String arrayStr) {
+    final java.util.List<String> result = new java.util.ArrayList<>();
+    int depth = 0;
+    int start = -1;
+    for (int i = 0; i < arrayStr.length(); i++) {
+      final char ch = arrayStr.charAt(i);
+      if (ch == '{') {
+        if (depth == 0) {
+          start = i;
+        }
+        depth++;
+      } else if (ch == '}') {
+        depth--;
+        if (depth == 0 && start >= 0) {
+          result.add(arrayStr.substring(start, i + 1));
+          start = -1;
+        }
+      }
+    }
+    return result;
   }
 
   /**

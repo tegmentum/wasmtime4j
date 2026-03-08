@@ -39,8 +39,7 @@ class PanamaTypedFuncTest {
     @DisplayName("constructor should reject null function")
     void constructorShouldRejectNullFunction() {
       final IllegalArgumentException ex =
-          assertThrows(
-              IllegalArgumentException.class, () -> new PanamaTypedFunc(null, "ii->i"));
+          assertThrows(IllegalArgumentException.class, () -> new PanamaTypedFunc(null, "ii->i"));
       assertTrue(
           ex.getMessage().contains("Function cannot be null"),
           "Expected message to contain 'Function cannot be null': " + ex.getMessage());

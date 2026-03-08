@@ -115,7 +115,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public long sizeInBytes() {
     ensureUsable();
     try {
-      return nativeGetSize(getNativeHandle());
+      return nativeGetSize(getNativeHandle(), store.getNativeHandle());
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error getting memory size", e);
     }
@@ -129,7 +129,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws RuntimeException if the size cannot be retrieved
    */
   public int size() {
-    return (int) (sizeInBytes() / 65536); // 64KB per page
+    final int ps = pageSize();
+    return ps > 0 ? (int) (sizeInBytes() / ps) : 0;
   }
 
   /**
@@ -661,7 +662,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @param memoryHandle the native memory handle
    * @return the memory size in bytes
    */
-  private static native long nativeGetSize(long memoryHandle);
+  private static native long nativeGetSize(long memoryHandle, long storeHandle);
 
   /**
    * Grows a memory by the specified number of pages.

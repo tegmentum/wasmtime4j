@@ -7,135 +7,51 @@ use jni::JNIEnv;
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 use crate::memory::core;
 
-/// Get memory size in bytes (JNI version) with comprehensive validation
+/// Get memory size in bytes (JNI version) - queries live Wasmtime store
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
     mut env: JNIEnv,
     _class: JClass,
     memory_ptr: jlong,
+    store_ptr: jlong,
 ) -> jlong {
     jni_utils::jni_try_with_default(&mut env, -1, || {
-        // Comprehensive parameter validation with detailed error context
         if memory_ptr == 0 {
-            log::error!("JNI Memory.nativeGetSize: null memory handle provided");
             return Err(WasmtimeError::InvalidParameter {
-                message: "Memory handle cannot be null. Ensure memory is properly initialized before calling size operations.".to_string(),
+                message: "Memory handle cannot be null.".to_string(),
+            });
+        }
+        if store_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Store handle cannot be null.".to_string(),
             });
         }
 
-        // Check for obviously invalid pointers (basic sanity check)
-        if memory_ptr < 0x1000 || memory_ptr == -1 {
-            log::error!(
-                "JNI Memory.nativeGetSize: invalid memory handle 0x{:x}",
-                memory_ptr
-            );
-            return Err(WasmtimeError::InvalidParameter {
-                message: format!(
-                    "Invalid memory handle (0x{:x}): Handle appears to be corrupted or uninitialized. Expected a valid native pointer.",
-                    memory_ptr
-                ),
-            });
-        }
-
-        // Validate memory handle with detailed error context
-        unsafe {
-            core::validate_memory_handle(memory_ptr as *const std::os::raw::c_void)
-                .map_err(|e| {
-                    log::error!("Memory handle validation failed for handle 0x{:x}: {}", memory_ptr, e);
-                    match e {
-                        WasmtimeError::InvalidParameter { message } if message.contains("not registered") => {
-                            WasmtimeError::Memory {
-                                message: format!(
-                                    "Memory handle (0x{:x}) is not registered or has been freed. \
-                                     This typically indicates use-after-free or double-free. \
-                                     Ensure memory lifetime is properly managed.",
-                                    memory_ptr
-                                ),
-                            }
-                        },
-                        WasmtimeError::InvalidParameter { message } if message.contains("corrupted") => {
-                            WasmtimeError::Memory {
-                                message: format!(
-                                    "Memory handle (0x{:x}) is corrupted (invalid magic number). \
-                                     This indicates memory corruption or buffer overflow. \
-                                     Check for memory safety violations.",
-                                    memory_ptr
-                                ),
-                            }
-                        },
-                        WasmtimeError::InvalidParameter { message } if message.contains("destroyed") => {
-                            WasmtimeError::Memory {
-                                message: format!(
-                                    "Memory handle (0x{:x}) has been destroyed (use-after-free detected). \
-                                     Avoid accessing memory after calling close() or destroy().",
-                                    memory_ptr
-                                ),
-                            }
-                        },
-                        _ => {
-                            WasmtimeError::Memory {
-                                message: format!(
-                                    "Memory handle validation failed (0x{:x}): {}. \
-                                     Verify that memory was created properly and has not been freed.",
-                                    memory_ptr, e
-                                ),
-                            }
-                        }
-                    }
-                })?
-        };
-
-        // Get memory reference for metadata access
         let memory = unsafe {
             core::get_memory_ref(memory_ptr as *const std::os::raw::c_void).map_err(|e| {
-                log::error!(
-                    "Failed to get memory reference for handle 0x{:x}: {}",
-                    memory_ptr,
-                    e
-                );
                 WasmtimeError::Memory {
                     message: format!(
-                        "Unable to access memory (handle: 0x{:x}): {}. \
-                             Memory may be in an invalid state.",
+                        "Unable to access memory (handle: 0x{:x}): {}",
                         memory_ptr, e
                     ),
                 }
             })?
         };
 
-        // Get metadata with error handling
-        let metadata = memory.get_metadata().map_err(|e| {
-            log::error!(
-                "Failed to get memory metadata for handle 0x{:x}: {}",
-                memory_ptr,
-                e
-            );
-            WasmtimeError::Memory {
-                message: format!(
-                    "Unable to retrieve memory metadata (handle: 0x{:x}): {}. \
-                         Memory statistics may be corrupted.",
-                    memory_ptr, e
-                ),
-            }
-        })?;
-
-        // Calculate size with overflow protection
-        let pages = metadata.current_pages;
-        let size_bytes = pages.checked_mul(65536)
-            .ok_or_else(|| {
-                log::error!("Memory size overflow: {} pages exceeds maximum addressable size", pages);
+        let store = unsafe {
+            core::get_store_ref(store_ptr as *const std::os::raw::c_void).map_err(|e| {
                 WasmtimeError::Memory {
                     message: format!(
-                        "Memory size calculation overflow: {} pages would exceed maximum addressable memory. \
-                         This indicates corrupted memory metadata.",
-                        pages
+                        "Unable to access store (handle: 0x{:x}): {}",
+                        store_ptr, e
                     ),
                 }
-            })?;
+            })?
+        };
 
-        // Check that size fits in jlong (i64)
-        if size_bytes > i64::MAX as u64 {
-            log::error!("Memory size {} exceeds maximum jlong value", size_bytes);
+        let size_bytes = core::get_memory_size(memory, store)?;
+
+        if size_bytes > i64::MAX as usize {
             return Err(WasmtimeError::Memory {
                 message: format!(
                     "Memory size ({} bytes) exceeds maximum representable value for Java long. \
@@ -146,9 +62,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniMemory_nativeGetSize(
         }
 
         log::debug!(
-            "Memory size retrieved: {} bytes ({} pages) for handle 0x{:x}",
+            "Memory size retrieved: {} bytes for handle 0x{:x}",
             size_bytes,
-            pages,
             memory_ptr
         );
 

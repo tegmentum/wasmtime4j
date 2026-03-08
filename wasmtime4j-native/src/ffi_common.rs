@@ -1904,3 +1904,57 @@ pub mod memory_utils {
         unsafe { Ok(std::slice::from_raw_parts(ptr, len)) }
     }
 }
+
+/// HeapType conversion utilities shared between JNI and Panama implementations.
+///
+/// These functions provide the canonical mapping between integer heap type codes
+/// (matching Java HeapType enum ordinals) and wasmtime::HeapType.
+pub mod heap_type_conversion {
+    use wasmtime::HeapType;
+
+    /// Converts a heap type code integer to a Wasmtime HeapType.
+    ///
+    /// This is shared between Panama and JNI bindings for AnyRef.matchesTy.
+    pub fn heap_type_from_code(code: i32) -> Option<HeapType> {
+        match code {
+            0 => Some(HeapType::Any),
+            1 => Some(HeapType::Eq),
+            2 => Some(HeapType::I31),
+            3 => Some(HeapType::Struct),
+            4 => Some(HeapType::Array),
+            5 => Some(HeapType::Func),
+            6 => Some(HeapType::NoFunc),
+            7 => Some(HeapType::Extern),
+            8 => Some(HeapType::NoExtern),
+            9 => Some(HeapType::Exn),
+            10 => Some(HeapType::NoExn),
+            11 => Some(HeapType::Cont),
+            12 => Some(HeapType::NoCont),
+            13 => Some(HeapType::None),
+            _ => Option::None,
+        }
+    }
+
+    /// Converts a Wasmtime HeapType to an integer code matching the Java HeapType ordinal.
+    ///
+    /// This is shared between Panama and JNI bindings for EqRef.ty().
+    pub fn heap_type_to_code(heap_type: &HeapType) -> i32 {
+        match heap_type {
+            HeapType::Any => 0,
+            HeapType::Eq => 1,
+            HeapType::I31 => 2,
+            HeapType::Struct => 3,
+            HeapType::Array => 4,
+            HeapType::Func => 5,
+            HeapType::NoFunc => 6,
+            HeapType::Extern => 7,
+            HeapType::NoExtern => 8,
+            HeapType::Exn => 9,
+            HeapType::NoExn => 10,
+            HeapType::Cont => 11,
+            HeapType::NoCont => 12,
+            HeapType::None => 13,
+            _ => 14, // CONCRETE or unknown
+        }
+    }
+}

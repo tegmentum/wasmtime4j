@@ -262,13 +262,13 @@ public class ExceptionHandlingTest extends DualRuntimeTest {
 
     @ParameterizedTest
     @ArgumentsSource(RuntimeProvider.class)
-    @DisplayName("ExnRef should have exactly 3 methods")
-    void exnRefShouldHaveExactlyThreeMethods(final RuntimeType runtime, final TestInfo testInfo) {
+    @DisplayName("ExnRef should have exactly 10 methods")
+    void exnRefShouldHaveExactlyTenMethods(final RuntimeType runtime, final TestInfo testInfo) {
       setRuntime(runtime);
       LOGGER.info("Testing: " + testInfo.getDisplayName());
       assertEquals(
-          3, ExnRef.class.getDeclaredMethods().length, "ExnRef should have exactly 3 methods");
-      LOGGER.info("ExnRef correctly has 3 declared methods");
+          10, ExnRef.class.getDeclaredMethods().length, "ExnRef should have exactly 10 methods");
+      LOGGER.info("ExnRef correctly has 10 declared methods");
     }
   }
 

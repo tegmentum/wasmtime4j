@@ -72,7 +72,8 @@ class WeakEngineTest extends DualRuntimeTest {
       assertFalse(weak.isValid(), "WeakEngine should be invalid after close");
 
       final Optional<Engine> upgraded = weak.upgrade();
-      assertTrue(upgraded.isEmpty(), "upgrade() should return empty after weak reference is closed");
+      assertTrue(
+          upgraded.isEmpty(), "upgrade() should return empty after weak reference is closed");
     }
   }
 
@@ -99,7 +100,8 @@ class WeakEngineTest extends DualRuntimeTest {
       assertTrue(weak2.isValid(), "Second weak should still be valid");
 
       final Optional<Engine> stillUpgraded = weak2.upgrade();
-      assertTrue(stillUpgraded.isPresent(), "Second weak should still upgrade after first is closed");
+      assertTrue(
+          stillUpgraded.isPresent(), "Second weak should still upgrade after first is closed");
 
       weak2.close();
     }

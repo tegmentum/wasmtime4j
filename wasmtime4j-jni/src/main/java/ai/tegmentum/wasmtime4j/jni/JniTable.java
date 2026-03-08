@@ -306,7 +306,8 @@ public final class JniTable extends JniResource implements WasmTable {
     } catch (final JniResourceException | IllegalStateException | IllegalArgumentException e) {
       throw e;
     } catch (final Exception e) {
-      throw new RuntimeException("Unexpected error growing table", e);
+      // Growth failure (e.g., max exceeded) returns -1 per WasmTable contract
+      return -1;
     } finally {
       endOperation();
     }

@@ -842,162 +842,108 @@ public final class PanamaModule implements Module {
    * @param jsonString JSON string from native code
    * @return list of ImportType objects
    */
+  @SuppressFBWarnings(value = "IMPROPER_UNICODE", justification = "JSON keys are ASCII-only")
   private List<ImportType> parseImportsJson(final String jsonString) {
-    final com.google.gson.Gson gson = new com.google.gson.Gson();
-    final com.google.gson.JsonArray jsonArray =
-        gson.fromJson(jsonString, com.google.gson.JsonArray.class);
-
     final List<ImportType> imports = new java.util.ArrayList<>();
-
-    for (final com.google.gson.JsonElement element : jsonArray) {
-      final com.google.gson.JsonObject importObj = element.getAsJsonObject();
-      final String moduleName = importObj.get("module").getAsString();
-      final String fieldName = importObj.get("name").getAsString();
-      final com.google.gson.JsonObject importTypeObj = importObj.getAsJsonObject("import_type");
-
-      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseTypeJson(importTypeObj);
+    // Parse top-level JSON array of import objects
+    final java.util.List<String> objects = splitJsonArray(jsonString);
+    for (final String objStr : objects) {
+      final String moduleName = extractJsonStringValue(objStr, "module");
+      final String fieldName = extractJsonStringValue(objStr, "name");
+      final String importTypeStr = extractJsonObjectValue(objStr, "import_type");
+      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseTypeJson(importTypeStr);
       imports.add(new ImportType(moduleName, fieldName, wasmType));
     }
-
     return imports;
   }
 
-  /**
-   * Parses JSON string containing module exports.
-   *
-   * @param jsonString JSON string from native code
-   * @return list of ExportType objects
-   */
+  @SuppressFBWarnings(value = "IMPROPER_UNICODE", justification = "JSON keys are ASCII-only")
   private List<ExportType> parseExportsJson(final String jsonString) {
-    final com.google.gson.Gson gson = new com.google.gson.Gson();
-    final com.google.gson.JsonArray jsonArray =
-        gson.fromJson(jsonString, com.google.gson.JsonArray.class);
-
     final List<ExportType> exports = new java.util.ArrayList<>();
-
-    for (final com.google.gson.JsonElement element : jsonArray) {
-      final com.google.gson.JsonObject exportObj = element.getAsJsonObject();
-      final String name = exportObj.get("name").getAsString();
-      final com.google.gson.JsonObject exportTypeObj = exportObj.getAsJsonObject("export_type");
-
-      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseTypeJson(exportTypeObj);
+    final java.util.List<String> objects = splitJsonArray(jsonString);
+    for (final String objStr : objects) {
+      final String name = extractJsonStringValue(objStr, "name");
+      final String exportTypeStr = extractJsonObjectValue(objStr, "export_type");
+      final ai.tegmentum.wasmtime4j.type.WasmType wasmType = parseTypeJson(exportTypeStr);
       exports.add(new ExportType(name, wasmType));
     }
-
     return exports;
   }
 
-  /**
-   * Parses a type JSON object (import or export) to WasmType.
-   *
-   * @param typeObj JSON object containing type information
-   * @return WasmType instance
-   */
-  private ai.tegmentum.wasmtime4j.type.WasmType parseTypeJson(
-      final com.google.gson.JsonObject typeObj) {
-    final String typeKind = typeObj.keySet().iterator().next();
-
-    return switch (typeKind) {
-      case "Function" -> parseFunctionType(typeObj.getAsJsonObject("Function"));
-      case "Global" -> parseGlobalType(typeObj.getAsJsonArray("Global"));
-      case "Memory" -> parseMemoryType(typeObj.getAsJsonArray("Memory"));
-      case "Table" -> parseTableType(typeObj.getAsJsonArray("Table"));
-      default -> throw new IllegalArgumentException("Unknown type kind: " + typeKind);
-    };
+  private ai.tegmentum.wasmtime4j.type.WasmType parseTypeJson(final String typeStr) {
+    if (typeStr.contains("\"Function\"")) {
+      final String funcObj = extractJsonObjectValue(typeStr, "Function");
+      return parseFunctionType(funcObj);
+    } else if (typeStr.contains("\"Global\"")) {
+      final String globalArr = extractJsonArrayValue(typeStr, "Global");
+      return parseGlobalType(globalArr);
+    } else if (typeStr.contains("\"Memory\"")) {
+      final String memArr = extractJsonArrayValue(typeStr, "Memory");
+      return parseMemoryType(memArr);
+    } else if (typeStr.contains("\"Table\"")) {
+      final String tableArr = extractJsonArrayValue(typeStr, "Table");
+      return parseTableType(tableArr);
+    }
+    throw new IllegalArgumentException("Unknown type in: " + typeStr);
   }
 
-  /**
-   * Parses function type JSON.
-   *
-   * @param funcObj JSON object with params and returns arrays
-   * @return FuncType instance
-   */
-  private ai.tegmentum.wasmtime4j.type.FuncType parseFunctionType(
-      final com.google.gson.JsonObject funcObj) {
-    final com.google.gson.JsonArray paramsArray = funcObj.getAsJsonArray("params");
-    final com.google.gson.JsonArray returnsArray = funcObj.getAsJsonArray("returns");
-
-    final List<ai.tegmentum.wasmtime4j.WasmValueType> params = parseValueTypeArray(paramsArray);
-    final List<ai.tegmentum.wasmtime4j.WasmValueType> results = parseValueTypeArray(returnsArray);
-
+  private ai.tegmentum.wasmtime4j.type.FuncType parseFunctionType(final String funcObj) {
+    final String paramsArr = extractJsonArrayValue(funcObj, "params");
+    final String returnsArr = extractJsonArrayValue(funcObj, "returns");
+    final List<ai.tegmentum.wasmtime4j.WasmValueType> params = parseWasmValueTypeArray(paramsArr);
+    final List<ai.tegmentum.wasmtime4j.WasmValueType> results =
+        parseWasmValueTypeArray(returnsArr);
     return ai.tegmentum.wasmtime4j.panama.type.PanamaFuncType.of(params, results);
   }
 
-  /**
-   * Parses global type JSON.
-   *
-   * @param globalArray JSON array [valueType, isMutable]
-   * @return GlobalType instance
-   */
-  private ai.tegmentum.wasmtime4j.type.GlobalType parseGlobalType(
-      final com.google.gson.JsonArray globalArray) {
-    final String valueTypeStr = globalArray.get(0).getAsString();
-    final boolean isMutable = globalArray.get(1).getAsBoolean();
-
-    final ai.tegmentum.wasmtime4j.WasmValueType valueType = parseValueType(valueTypeStr);
-
+  private ai.tegmentum.wasmtime4j.type.GlobalType parseGlobalType(final String globalArr) {
+    final java.util.List<String> elements = splitJsonArrayElements(globalArr);
+    final String valueTypeStr = elements.get(0).trim().replace("\"", "");
+    final boolean isMutable = Boolean.parseBoolean(elements.get(1).trim());
+    final ai.tegmentum.wasmtime4j.WasmValueType valueType = parseWasmValueType(valueTypeStr);
     return ai.tegmentum.wasmtime4j.panama.type.PanamaGlobalType.of(valueType, isMutable);
   }
 
-  /**
-   * Parses memory type JSON.
-   *
-   * @param memoryArray JSON array [min, max(optional), is64, isShared, pageSizeLog2]
-   * @return MemoryType instance
-   */
-  private ai.tegmentum.wasmtime4j.type.MemoryType parseMemoryType(
-      final com.google.gson.JsonArray memoryArray) {
-    final long minimum = memoryArray.get(0).getAsLong();
-    final com.google.gson.JsonElement maxElement = memoryArray.get(1);
-    final Long maximum = maxElement.isJsonNull() ? null : maxElement.getAsLong();
-    final boolean is64Bit = memoryArray.get(2).getAsBoolean();
-    final boolean isShared = memoryArray.get(3).getAsBoolean();
-    final int pageSizeLog2 = memoryArray.size() > 4 ? memoryArray.get(4).getAsInt() : 16;
-
+  private ai.tegmentum.wasmtime4j.type.MemoryType parseMemoryType(final String memArr) {
+    final java.util.List<String> elements = splitJsonArrayElements(memArr);
+    final long minimum = Long.parseLong(elements.get(0).trim());
+    final String maxStr = elements.get(1).trim();
+    final Long maximum = "null".equals(maxStr) ? null : Long.parseLong(maxStr);
+    final boolean is64Bit = Boolean.parseBoolean(elements.get(2).trim());
+    final boolean isShared = Boolean.parseBoolean(elements.get(3).trim());
+    final int pageSizeLog2 = elements.size() > 4 ? Integer.parseInt(elements.get(4).trim()) : 16;
     return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
         minimum, maximum, is64Bit, isShared, pageSizeLog2);
   }
 
-  /**
-   * Parses table type JSON.
-   *
-   * @param tableArray JSON array [elementType, min, max(optional)]
-   * @return TableType instance
-   */
-  private ai.tegmentum.wasmtime4j.type.TableType parseTableType(
-      final com.google.gson.JsonArray tableArray) {
-    final String elementTypeStr = tableArray.get(0).getAsString();
-    final long minimum = tableArray.get(1).getAsLong();
-    final com.google.gson.JsonElement maxElement = tableArray.get(2);
-    final Long maximum = maxElement.isJsonNull() ? null : maxElement.getAsLong();
-
-    final ai.tegmentum.wasmtime4j.WasmValueType elementType = parseValueType(elementTypeStr);
-
-    return ai.tegmentum.wasmtime4j.panama.type.PanamaTableType.of(elementType, minimum, maximum);
+  private ai.tegmentum.wasmtime4j.type.TableType parseTableType(final String tableArr) {
+    final java.util.List<String> elements = splitJsonArrayElements(tableArr);
+    final String elementTypeStr = elements.get(0).trim().replace("\"", "");
+    final long min = Long.parseLong(elements.get(1).trim());
+    final String maxStr = elements.get(2).trim();
+    final Long max = "null".equals(maxStr) ? null : Long.parseLong(maxStr);
+    final ai.tegmentum.wasmtime4j.WasmValueType elementType = parseWasmValueType(elementTypeStr);
+    return ai.tegmentum.wasmtime4j.panama.type.PanamaTableType.of(elementType, min, max);
   }
 
-  /**
-   * Parses array of value types.
-   *
-   * @param array JSON array of value type strings
-   * @return list of WasmValueType
-   */
-  private List<ai.tegmentum.wasmtime4j.WasmValueType> parseValueTypeArray(
-      final com.google.gson.JsonArray array) {
+  private List<ai.tegmentum.wasmtime4j.WasmValueType> parseWasmValueTypeArray(
+      final String arrayStr) {
     final List<ai.tegmentum.wasmtime4j.WasmValueType> types = new java.util.ArrayList<>();
-    for (final com.google.gson.JsonElement element : array) {
-      types.add(parseValueType(element.getAsString()));
+    final String trimmed = arrayStr.trim();
+    if (trimmed.equals("[]")) {
+      return types;
+    }
+    final String inner = trimmed.substring(1, trimmed.length() - 1).trim();
+    if (inner.isEmpty()) {
+      return types;
+    }
+    for (final String element : inner.split(",")) {
+      types.add(parseWasmValueType(element.trim().replace("\"", "")));
     }
     return types;
   }
 
-  /**
-   * Parses value type string to enum.
-   *
-   * @param typeStr value type string from Rust (e.g., "I32", "FuncRef")
-   * @return WasmValueType enum value
-   */
-  private ai.tegmentum.wasmtime4j.WasmValueType parseValueType(final String typeStr) {
+  private ai.tegmentum.wasmtime4j.WasmValueType parseWasmValueType(final String typeStr) {
     return switch (typeStr) {
       case "I32" -> ai.tegmentum.wasmtime4j.WasmValueType.I32;
       case "I64" -> ai.tegmentum.wasmtime4j.WasmValueType.I64;
@@ -1008,6 +954,133 @@ public final class PanamaModule implements Module {
       case "ExternRef" -> ai.tegmentum.wasmtime4j.WasmValueType.EXTERNREF;
       default -> throw new IllegalArgumentException("Unknown value type: " + typeStr);
     };
+  }
+
+  /**
+   * Splits a JSON array string into its top-level object elements. Handles nested braces.
+   * Input: [{...},{...}] Output: list of "{...}" strings.
+   */
+  private static java.util.List<String> splitJsonArray(final String json) {
+    final java.util.List<String> result = new java.util.ArrayList<>();
+    int depth = 0;
+    int start = -1;
+    for (int i = 0; i < json.length(); i++) {
+      final char ch = json.charAt(i);
+      if (ch == '{') {
+        if (depth == 0) {
+          start = i;
+        }
+        depth++;
+      } else if (ch == '}') {
+        depth--;
+        if (depth == 0 && start >= 0) {
+          result.add(json.substring(start, i + 1));
+          start = -1;
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Splits a JSON array string into its top-level elements (primitives, strings, arrays, objects).
+   * Input: [1, "str", null, true] Output: list of element strings.
+   */
+  private static java.util.List<String> splitJsonArrayElements(final String arrayStr) {
+    final String trimmed = arrayStr.trim();
+    final String inner = trimmed.substring(1, trimmed.length() - 1);
+    final java.util.List<String> elements = new java.util.ArrayList<>();
+    int depth = 0;
+    int start = 0;
+    for (int i = 0; i < inner.length(); i++) {
+      final char ch = inner.charAt(i);
+      if (ch == '[' || ch == '{') {
+        depth++;
+      } else if (ch == ']' || ch == '}') {
+        depth--;
+      } else if (ch == ',' && depth == 0) {
+        elements.add(inner.substring(start, i));
+        start = i + 1;
+      }
+    }
+    if (start < inner.length()) {
+      elements.add(inner.substring(start));
+    }
+    return elements;
+  }
+
+  /** Extracts a string value for a given key from a JSON object string. */
+  @SuppressFBWarnings(value = "IMPROPER_UNICODE", justification = "JSON keys are ASCII-only")
+  private static String extractJsonStringValue(final String json, final String key) {
+    final String search = "\"" + key + "\":";
+    final int keyIdx = json.indexOf(search);
+    if (keyIdx < 0) {
+      return null;
+    }
+    final int valueStart = keyIdx + search.length();
+    // Skip whitespace
+    int pos = valueStart;
+    while (pos < json.length() && json.charAt(pos) == ' ') {
+      pos++;
+    }
+    if (pos >= json.length() || json.charAt(pos) != '"') {
+      return null;
+    }
+    pos++; // skip opening quote
+    final int end = json.indexOf('"', pos);
+    return json.substring(pos, end);
+  }
+
+  /** Extracts a nested JSON object value for a given key from a JSON object string. */
+  @SuppressFBWarnings(value = "IMPROPER_UNICODE", justification = "JSON keys are ASCII-only")
+  private static String extractJsonObjectValue(final String json, final String key) {
+    final String search = "\"" + key + "\":";
+    final int keyIdx = json.indexOf(search);
+    if (keyIdx < 0) {
+      return null;
+    }
+    final int braceStart = json.indexOf('{', keyIdx + search.length());
+    if (braceStart < 0) {
+      return null;
+    }
+    int depth = 0;
+    for (int i = braceStart; i < json.length(); i++) {
+      if (json.charAt(i) == '{') {
+        depth++;
+      } else if (json.charAt(i) == '}') {
+        depth--;
+        if (depth == 0) {
+          return json.substring(braceStart, i + 1);
+        }
+      }
+    }
+    return null;
+  }
+
+  /** Extracts a JSON array value for a given key from a JSON object string. */
+  @SuppressFBWarnings(value = "IMPROPER_UNICODE", justification = "JSON keys are ASCII-only")
+  private static String extractJsonArrayValue(final String json, final String key) {
+    final String search = "\"" + key + "\":";
+    final int keyIdx = json.indexOf(search);
+    if (keyIdx < 0) {
+      return "[]";
+    }
+    final int bracketStart = json.indexOf('[', keyIdx + search.length());
+    if (bracketStart < 0) {
+      return "[]";
+    }
+    int depth = 0;
+    for (int i = bracketStart; i < json.length(); i++) {
+      if (json.charAt(i) == '[') {
+        depth++;
+      } else if (json.charAt(i) == ']') {
+        depth--;
+        if (depth == 0) {
+          return json.substring(bracketStart, i + 1);
+        }
+      }
+    }
+    return "[]";
   }
 
   @Override
@@ -1068,7 +1141,7 @@ public final class PanamaModule implements Module {
     final java.util.List<ai.tegmentum.wasmtime4j.type.ValType> returns =
         new java.util.ArrayList<>();
 
-    final String[] pairs = obj.split(",(?=\\s*\")");
+    final java.util.List<String> pairs = splitTopLevelPairs(obj);
     for (final String pair : pairs) {
       final int colonPos = pair.indexOf(':');
       if (colonPos < 0) {
@@ -1109,6 +1182,27 @@ public final class PanamaModule implements Module {
             returns.toArray(new ai.tegmentum.wasmtime4j.type.ValType[0]));
     return new ai.tegmentum.wasmtime4j.func.FunctionInfo(
         index, name, funcType, isImport, isExported);
+  }
+
+  private static java.util.List<String> splitTopLevelPairs(final String obj) {
+    final java.util.List<String> pairs = new java.util.ArrayList<>();
+    int depth = 0;
+    int start = 0;
+    for (int i = 0; i < obj.length(); i++) {
+      final char ch = obj.charAt(i);
+      if (ch == '[') {
+        depth++;
+      } else if (ch == ']') {
+        depth--;
+      } else if (ch == ',' && depth == 0) {
+        pairs.add(obj.substring(start, i));
+        start = i + 1;
+      }
+    }
+    if (start < obj.length()) {
+      pairs.add(obj.substring(start));
+    }
+    return pairs;
   }
 
   private static void parseValTypes(

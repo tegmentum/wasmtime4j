@@ -96,10 +96,10 @@ class JniResourceTest {
     void zeroHandleShouldBeRejected() {
       IllegalArgumentException e =
           assertThrows(IllegalArgumentException.class, () -> new TestJniResource(0L));
-      assertTrue(e.getMessage().contains("nativeHandle"),
-          "Expected message to contain: nativeHandle");
-      assertTrue(e.getMessage().contains("null pointer"),
-          "Expected message to contain: null pointer");
+      assertTrue(
+          e.getMessage().contains("nativeHandle"), "Expected message to contain: nativeHandle");
+      assertTrue(
+          e.getMessage().contains("null pointer"), "Expected message to contain: null pointer");
     }
 
     @Test
@@ -107,10 +107,10 @@ class JniResourceTest {
     void negativeHandleShouldBeRejected() {
       IllegalArgumentException e =
           assertThrows(IllegalArgumentException.class, () -> new TestJniResource(-1L));
-      assertTrue(e.getMessage().contains("nativeHandle"),
-          "Expected message to contain: nativeHandle");
-      assertTrue(e.getMessage().contains("negative value"),
-          "Expected message to contain: negative value");
+      assertTrue(
+          e.getMessage().contains("nativeHandle"), "Expected message to contain: nativeHandle");
+      assertTrue(
+          e.getMessage().contains("negative value"), "Expected message to contain: negative value");
     }
 
     @Test
@@ -132,8 +132,7 @@ class JniResourceTest {
     void closeShouldCallDoCloseOnce() {
       final TestJniResource resource = new TestJniResource(VALID_HANDLE);
       resource.close();
-      assertEquals(1, resource.getCloseCount(),
-          "doClose() should be called exactly once");
+      assertEquals(1, resource.getCloseCount(), "doClose() should be called exactly once");
     }
 
     @Test
@@ -152,7 +151,9 @@ class JniResourceTest {
       resource.close();
       resource.close();
       resource.close();
-      assertEquals(1, resource.getCloseCount(),
+      assertEquals(
+          1,
+          resource.getCloseCount(),
           "doClose() should still be called exactly once after multiple close() calls");
     }
 
@@ -162,8 +163,7 @@ class JniResourceTest {
       final TestJniResource resource = new TestJniResource(VALID_HANDLE);
       resource.setCloseException(new RuntimeException("Simulated cleanup failure"));
 
-      assertDoesNotThrow(resource::close,
-          "close() should not propagate exceptions from doClose()");
+      assertDoesNotThrow(resource::close, "close() should not propagate exceptions from doClose()");
       assertTrue(resource.isClosed());
     }
 
@@ -173,8 +173,8 @@ class JniResourceTest {
       final TestJniResource resource = new TestJniResource(VALID_HANDLE);
       resource.markClosedForTesting();
       assertTrue(resource.isClosed());
-      assertEquals(0, resource.getCloseCount(),
-          "doClose() should not be called by markClosedForTesting()");
+      assertEquals(
+          0, resource.getCloseCount(), "doClose() should not be called by markClosedForTesting()");
     }
   }
 
@@ -190,11 +190,11 @@ class JniResourceTest {
 
       IllegalStateException e =
           assertThrows(IllegalStateException.class, resource::getNativeHandle);
-      assertTrue(e.getMessage().contains("TestResource"),
-          "Expected message to contain: TestResource");
-      assertTrue(e.getMessage().contains("closed"),
-          "Expected message to contain: closed");
-      assertTrue(e.getMessage().contains(String.format("0x%x", VALID_HANDLE)),
+      assertTrue(
+          e.getMessage().contains("TestResource"), "Expected message to contain: TestResource");
+      assertTrue(e.getMessage().contains("closed"), "Expected message to contain: closed");
+      assertTrue(
+          e.getMessage().contains(String.format("0x%x", VALID_HANDLE)),
           "Expected message to contain: 0x" + Long.toHexString(VALID_HANDLE));
     }
 
@@ -206,10 +206,9 @@ class JniResourceTest {
 
       IllegalStateException e =
           assertThrows(IllegalStateException.class, resource::ensureNotClosed);
-      assertTrue(e.getMessage().contains("TestResource"),
-          "Expected message to contain: TestResource");
-      assertTrue(e.getMessage().contains("closed"),
-          "Expected message to contain: closed");
+      assertTrue(
+          e.getMessage().contains("TestResource"), "Expected message to contain: TestResource");
+      assertTrue(e.getMessage().contains("closed"), "Expected message to contain: closed");
     }
 
     @Test
@@ -217,8 +216,8 @@ class JniResourceTest {
     void ensureNotClosedShouldNotThrowWhenOpen() {
       final TestJniResource resource = new TestJniResource(VALID_HANDLE);
 
-      assertDoesNotThrow(resource::ensureNotClosed,
-          "ensureNotClosed() should not throw for an open resource");
+      assertDoesNotThrow(
+          resource::ensureNotClosed, "ensureNotClosed() should not throw for an open resource");
 
       resource.markClosedForTesting();
     }
@@ -252,9 +251,11 @@ class JniResourceTest {
       }
 
       startLatch.countDown();
-      assertTrue(doneLatch.await(10, TimeUnit.SECONDS),
-          "All threads should complete within timeout");
-      assertEquals(1, resource.getCloseCount(),
+      assertTrue(
+          doneLatch.await(10, TimeUnit.SECONDS), "All threads should complete within timeout");
+      assertEquals(
+          1,
+          resource.getCloseCount(),
           "doClose() should be called exactly once despite concurrent close()");
       assertTrue(resource.isClosed());
     }
@@ -316,8 +317,8 @@ class JniResourceTest {
     @DisplayName("beginOperation should succeed on open resource")
     void beginOperationShouldSucceedWhenOpen() {
       final TestJniResource resource = new TestJniResource(VALID_HANDLE);
-      assertDoesNotThrow(resource::exposedBeginOperation,
-          "beginOperation() should not throw on an open resource");
+      assertDoesNotThrow(
+          resource::exposedBeginOperation, "beginOperation() should not throw on an open resource");
       resource.exposedEndOperation();
       resource.close();
     }
@@ -330,11 +331,11 @@ class JniResourceTest {
 
       IllegalStateException e =
           assertThrows(IllegalStateException.class, resource::exposedBeginOperation);
-      assertTrue(e.getMessage().contains("TestResource"),
-          "Expected message to contain: TestResource");
-      assertTrue(e.getMessage().contains("closed"),
-          "Expected message to contain: closed");
-      assertTrue(e.getMessage().contains(String.format("0x%x", VALID_HANDLE)),
+      assertTrue(
+          e.getMessage().contains("TestResource"), "Expected message to contain: TestResource");
+      assertTrue(e.getMessage().contains("closed"), "Expected message to contain: closed");
+      assertTrue(
+          e.getMessage().contains(String.format("0x%x", VALID_HANDLE)),
           "Expected message to contain: 0x" + Long.toHexString(VALID_HANDLE));
     }
 
@@ -345,8 +346,8 @@ class JniResourceTest {
       resource.exposedBeginOperation();
       resource.exposedEndOperation();
 
-      assertDoesNotThrow(resource::close,
-          "close() should succeed after endOperation() releases the read lock");
+      assertDoesNotThrow(
+          resource::close, "close() should succeed after endOperation() releases the read lock");
       assertTrue(resource.isClosed());
     }
 
@@ -377,7 +378,8 @@ class JniResourceTest {
             .start();
       }
 
-      assertTrue(allLocked.await(5, TimeUnit.SECONDS),
+      assertTrue(
+          allLocked.await(5, TimeUnit.SECONDS),
           "All threads should acquire the read lock concurrently");
       assertEquals(0, errors.get(), "No thread should have errored");
 
@@ -424,13 +426,13 @@ class JniResourceTest {
               })
           .start();
 
-      assertTrue(operationDone.await(5, TimeUnit.SECONDS),
-          "Operation thread should complete");
+      assertTrue(operationDone.await(5, TimeUnit.SECONDS), "Operation thread should complete");
 
-      assertFalse(closedBeforeOperationEnd.get(),
+      assertFalse(
+          closedBeforeOperationEnd.get(),
           "Resource should NOT be closed while operation read lock is held");
-      assertTrue(resource.isClosed(),
-          "Resource should be closed after operation released the lock");
+      assertTrue(
+          resource.isClosed(), "Resource should be closed after operation released the lock");
     }
 
     @Test
@@ -515,7 +517,8 @@ class JniResourceTest {
           .start();
 
       assertTrue(closeDone.await(5, TimeUnit.SECONDS));
-      assertFalse(closedBeforeRelease.get(),
+      assertFalse(
+          closedBeforeRelease.get(),
           "Resource should NOT be closed while tryBeginOperation lock is held");
     }
   }
@@ -530,17 +533,15 @@ class JniResourceTest {
       final TestJniResource resource = new TestJniResource(VALID_HANDLE);
       final String str = resource.toString();
 
-      assertTrue(str.contains("TestResource"),
-          "Expected string to contain: TestResource");
-      assertTrue(str.contains(String.format("0x%x", VALID_HANDLE)),
+      assertTrue(str.contains("TestResource"), "Expected string to contain: TestResource");
+      assertTrue(
+          str.contains(String.format("0x%x", VALID_HANDLE)),
           "Expected string to contain: 0x" + Long.toHexString(VALID_HANDLE));
-      assertTrue(str.contains("closed=false"),
-          "Expected string to contain: closed=false");
+      assertTrue(str.contains("closed=false"), "Expected string to contain: closed=false");
 
       resource.close();
       final String closedStr = resource.toString();
-      assertTrue(closedStr.contains("closed=true"),
-          "Expected string to contain: closed=true");
+      assertTrue(closedStr.contains("closed=true"), "Expected string to contain: closed=true");
     }
   }
 }
