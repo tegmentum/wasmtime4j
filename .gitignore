@@ -11,6 +11,9 @@ buildNumber.properties
 # Note: .mvn/wrapper/maven-wrapper.jar should be committed
 .mvn/wrapper/MavenWrapperDownloader.java
 
+# Claude Code
+.claude/
+
 # IDE files
 .idea/
 *.iml
