@@ -305,7 +305,9 @@ where
     let result = std::panic::catch_unwind(operation);
     match result {
         Ok(Ok(value)) => {
-            clear_last_error();
+            // Skip clear_last_error() on success path for performance.
+            // Java side gates error retrieval on the return code, so stale
+            // errors from a previous failed call are never misattributed.
             (ErrorCode::Success, value)
         }
         Ok(Err(error)) => {
@@ -338,7 +340,6 @@ where
     let result = std::panic::catch_unwind(operation);
     match result {
         Ok(Ok(boxed)) => {
-            clear_last_error();
             Box::into_raw(boxed) as *mut c_void
         }
         Ok(Err(error)) => {
@@ -378,7 +379,6 @@ where
     let result = std::panic::catch_unwind(operation);
     match result {
         Ok(Ok(())) => {
-            clear_last_error();
             ErrorCode::Success as i32
         }
         Ok(Err(error)) => {
@@ -705,7 +705,6 @@ macro_rules! ffi_boundary_result {
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| $body));
         match result {
             Ok(Ok(value)) => {
-                $crate::error::ffi_utils::clear_last_error();
                 value
             }
             Ok(Err(error)) => {

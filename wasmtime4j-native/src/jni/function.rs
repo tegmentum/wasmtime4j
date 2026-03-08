@@ -1,7 +1,7 @@
 //! JNI bindings for Function operations
 
 use jni::objects::{JClass, JObject, JObjectArray};
-use jni::sys::{jint, jlong, jlongArray, jobject, jobjectArray};
+use jni::sys::{jdouble, jint, jlong, jlongArray, jobject, jobjectArray};
 use jni::JNIEnv;
 
 use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
@@ -953,5 +953,292 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_type_JniFuncType_nativeG
             jni_utils::throw_panic_as_exception(&mut env, panic_info);
             std::ptr::null_mut()
         }
+    }
+}
+
+// =============================================================================
+// Typed Fast-Path JNI Native Methods
+//
+// These accept and return primitives directly, eliminating all Object array
+// marshalling, boxing, and per-parameter JNI boundary crossings. Each call
+// requires exactly 1 JNI crossing and 0 heap allocations.
+// =============================================================================
+
+/// Helper: resolve FunctionHandle and Store from JNI handles, call a typed closure.
+unsafe fn typed_call_impl<F, R>(
+    env: &mut JNIEnv,
+    function_ptr: jlong,
+    store_handle: jlong,
+    default: R,
+    f: F,
+) -> R
+where
+    F: FnOnce(&Func, &mut wasmtime::Store<crate::store::StoreData>) -> WasmtimeResult<R>
+        + std::panic::UnwindSafe,
+    R: Copy,
+{
+    if function_ptr == 0 || store_handle == 0 {
+        jni_utils::throw_jni_exception(
+            env,
+            &WasmtimeError::invalid_parameter("function_ptr and store_handle cannot be null"),
+        );
+        return default;
+    }
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| -> WasmtimeResult<R> {
+        let func_handle = &*(function_ptr as *const FunctionHandle);
+        let func = func_handle.get_func();
+        let store =
+            crate::store::core::get_store_mut(store_handle as *mut std::os::raw::c_void)?;
+        let mut store_lock = store.try_lock_store()?;
+        f(func, &mut *store_lock)
+    }));
+
+    match result {
+        Ok(Ok(val)) => val,
+        Ok(Err(error)) => {
+            jni_utils::throw_jni_exception(env, &error);
+            default
+        }
+        Err(panic_info) => {
+            jni_utils::throw_panic_as_exception(env, panic_info);
+            default
+        }
+    }
+}
+
+/// () -> void
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall_1V(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+) {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, (), |func, store| {
+            let typed = func
+                .typed::<(), ()>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for ()->void: {}", e),
+                })?;
+            typed
+                .call(store, ())
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        });
+    }
+}
+
+/// () -> i32
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall_1I(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+) -> jint {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, 0, |func, store| {
+            let typed = func
+                .typed::<(), i32>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for ()->i32: {}", e),
+                })?;
+            typed
+                .call(store, ())
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        })
+    }
+}
+
+/// (i32) -> i32
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallI_1I(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+    arg0: jint,
+) -> jint {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, 0, |func, store| {
+            let typed = func
+                .typed::<i32, i32>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for i32->i32: {}", e),
+                })?;
+            typed
+                .call(store, arg0)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        })
+    }
+}
+
+/// (i32, i32) -> i32
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII_1I(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+    arg0: jint,
+    arg1: jint,
+) -> jint {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, 0, |func, store| {
+            let typed = func
+                .typed::<(i32, i32), i32>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for (i32,i32)->i32: {}", e),
+                })?;
+            typed
+                .call(store, (arg0, arg1))
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        })
+    }
+}
+
+/// (i32) -> void
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallI_1V(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+    arg0: jint,
+) {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, (), |func, store| {
+            let typed = func
+                .typed::<i32, ()>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for i32->void: {}", e),
+                })?;
+            typed
+                .call(store, arg0)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        });
+    }
+}
+
+/// (i32, i32) -> void
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII_1V(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+    arg0: jint,
+    arg1: jint,
+) {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, (), |func, store| {
+            let typed = func
+                .typed::<(i32, i32), ()>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for (i32,i32)->void: {}", e),
+                })?;
+            typed
+                .call(store, (arg0, arg1))
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        });
+    }
+}
+
+/// (i64) -> i64
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallJ_1J(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+    arg0: jlong,
+) -> jlong {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, 0, |func, store| {
+            let typed = func
+                .typed::<i64, i64>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for i64->i64: {}", e),
+                })?;
+            typed
+                .call(store, arg0)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        })
+    }
+}
+
+/// (f64) -> f64
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallD_1D(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+    arg0: jdouble,
+) -> jdouble {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, 0.0, |func, store| {
+            let typed = func
+                .typed::<f64, f64>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for f64->f64: {}", e),
+                })?;
+            typed
+                .call(store, arg0)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        })
+    }
+}
+
+/// (i32, i32, i32) -> i32
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallIII_1I(
+    mut env: JNIEnv,
+    _class: JClass,
+    function_ptr: jlong,
+    store_handle: jlong,
+    arg0: jint,
+    arg1: jint,
+    arg2: jint,
+) -> jint {
+    unsafe {
+        typed_call_impl(&mut env, function_ptr, store_handle, 0, |func, store| {
+            let typed = func
+                .typed::<(i32, i32, i32), i32>(&*store)
+                .map_err(|e| WasmtimeError::Function {
+                    message: format!("Type mismatch for (i32,i32,i32)->i32: {}", e),
+                })?;
+            typed
+                .call(store, (arg0, arg1, arg2))
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("{}", e),
+                    backtrace: None,
+                })
+        })
     }
 }

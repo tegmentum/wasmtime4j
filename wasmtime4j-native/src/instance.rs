@@ -63,6 +63,8 @@ pub struct Instance {
     element_segment_manager: Arc<ElementSegmentManager>,
     /// Data segment manager for memory.init() support
     data_segment_manager: Arc<DataSegmentManager>,
+    /// Cache of resolved export Func handles to avoid repeated export lookups
+    func_cache: std::sync::Mutex<HashMap<String, Func>>,
 }
 
 /// Lifecycle state of a WebAssembly instance
@@ -513,6 +515,7 @@ impl Instance {
             exports_map,
             element_segment_manager,
             data_segment_manager,
+            func_cache: std::sync::Mutex::new(HashMap::new()),
         })
     }
 
@@ -591,6 +594,7 @@ impl Instance {
             exports_map,
             element_segment_manager,
             data_segment_manager,
+            func_cache: std::sync::Mutex::new(HashMap::new()),
         })
     }
 
@@ -879,14 +883,17 @@ impl Instance {
 
         // Save parameters for conversion after we have store context
         // (needed for externref/funcref which require Store to create)
-        let params_to_convert = params.to_vec();
+        let params_to_convert = params;
 
-        // Get function and execute with timing
-        let start_time = Instant::now();
         let instance = self.inner.lock();
 
-        // Get fuel before execution for tracking
+        // Only track fuel/timing when fuel is enabled (avoids Instant::now() syscall on hot path)
         let fuel_before = store.fuel_remaining().ok().flatten();
+        let start_time = if fuel_before.is_some() {
+            Some(Instant::now())
+        } else {
+            None
+        };
 
         // CRITICAL: Use direct Store access with ReentrantMutex
         // This allows same-thread reentrant access needed by Wasmtime during function execution
@@ -921,7 +928,7 @@ impl Instance {
 
                 // Convert parameters WITH store context for externref/funcref
                 let mut wasm_params = Vec::with_capacity(params_to_convert.len());
-                for param in &params_to_convert {
+                for param in params_to_convert.iter() {
                     match param {
                         WasmValue::I32(v) => wasm_params.push(Val::I32(*v)),
                         WasmValue::I64(v) => wasm_params.push(Val::I64(*v)),
@@ -979,55 +986,27 @@ impl Instance {
                     results.push(default_val);
                 }
 
-                // Note: We always use synchronous Func::call() rather than call_async()
-                // because Wasmtime's fiber-based async (call_async uses on_fiber) is
-                // incompatible with JVM threads. The JVM's stack overflow detection
-                // throws StackOverflowError when fibers switch the stack pointer
-                // outside the JVM's known thread stack bounds.
-                if wasm_params.is_empty() && results.len() == 1 {
-                    // Try using typed function for no-param i32 return case
-                    if let Val::I32(_) = results[0] {
-                        match func.typed::<(), i32>(&*store_guard) {
-                            Ok(typed_func) => match typed_func.call(&mut *store_guard, ()) {
-                                Ok(result) => Ok(vec![Val::I32(result)]),
-                                Err(e) => Err(WasmtimeError::Runtime {
-                                    message: extract_error_chain(&e),
-                                    backtrace: None,
-                                }),
-                            },
-                            Err(_e) => {
-                                // Fall through to untyped call
-                                match func.call(&mut *store_guard, &wasm_params, &mut results) {
-                                    Ok(_) => Ok(results),
-                                    Err(e) => Err(WasmtimeError::Runtime {
-                                        message: extract_error_chain(&e),
-                                        backtrace: None,
-                                    }),
-                                }
-                            }
-                        }
-                    } else {
+                // Try typed fast-path for common signatures to skip runtime type
+                // checking inside func.call(). Falls through to untyped path on
+                // any mismatch.
+                let typed_result = Self::try_typed_call(
+                    &func,
+                    &mut *store_guard,
+                    &wasm_params,
+                    &results,
+                );
+
+                match typed_result {
+                    Some(Ok(vals)) => Ok(vals),
+                    Some(Err(e)) => Err(e),
+                    None => {
+                        // Untyped fallback
                         match func.call(&mut *store_guard, &wasm_params, &mut results) {
                             Ok(_) => Ok(results),
                             Err(e) => Err(WasmtimeError::Runtime {
                                 message: extract_error_chain(&e),
                                 backtrace: None,
                             }),
-                        }
-                    }
-                } else {
-                    match func.call(&mut *store_guard, &wasm_params, &mut results) {
-                        Ok(_) => Ok(results),
-                        Err(e) => {
-                            // Extract the full error chain to capture host function error messages
-                            // The root cause of a trap is often the host function error which contains
-                            // the actual error message we want to propagate (e.g., "test-panic")
-                            let error_message = extract_error_chain(&e);
-
-                            Err(WasmtimeError::Runtime {
-                                message: error_message,
-                                backtrace: None,
-                            })
                         }
                     }
                 }
@@ -1078,7 +1057,9 @@ impl Instance {
         // Drop store_guard now that we're done with it
         drop(store_guard);
 
-        let execution_time_ns = start_time.elapsed().as_nanos() as u64;
+        let execution_time_ns = start_time
+            .map(|t| t.elapsed().as_nanos() as u64)
+            .unwrap_or(0);
 
         // Get fuel after execution for tracking
         let fuel_after = store.fuel_remaining().ok().flatten();
@@ -1101,6 +1082,102 @@ impl Instance {
         })
     }
 
+    /// Attempt a typed Wasmtime call for common signatures.
+    ///
+    /// Returns `Some(Ok(results))` on typed-call success, `Some(Err(..))` on typed-call
+    /// failure (trap), or `None` if the signature doesn't match a known typed pattern
+    /// (caller should fall through to untyped `func.call()`).
+    fn try_typed_call(
+        func: &Func,
+        store: &mut wasmtime::Store<StoreData>,
+        params: &[Val],
+        results: &[Val],
+    ) -> Option<WasmtimeResult<Vec<Val>>> {
+        let map_err = |e: wasmtime::Error| -> WasmtimeError {
+            WasmtimeError::Runtime {
+                message: extract_error_chain(&e),
+                backtrace: None,
+            }
+        };
+
+        match (params.len(), results.len()) {
+            (0, 0) => {
+                // () -> ()
+                if let Ok(typed) = func.typed::<(), ()>(&*store) {
+                    return Some(
+                        typed.call(store, ()).map(|_| Vec::new()).map_err(map_err),
+                    );
+                }
+            }
+            (0, 1) => match results[0] {
+                Val::I32(_) => {
+                    if let Ok(typed) = func.typed::<(), i32>(&*store) {
+                        return Some(
+                            typed
+                                .call(store, ())
+                                .map(|r| vec![Val::I32(r)])
+                                .map_err(map_err),
+                        );
+                    }
+                }
+                _ => {}
+            },
+            (1, 1) => match (&params[0], &results[0]) {
+                (Val::I32(v), Val::I32(_)) => {
+                    let v = *v;
+                    if let Ok(typed) = func.typed::<i32, i32>(&*store) {
+                        return Some(
+                            typed
+                                .call(store, v)
+                                .map(|r| vec![Val::I32(r)])
+                                .map_err(map_err),
+                        );
+                    }
+                }
+                (Val::I64(v), Val::I64(_)) => {
+                    let v = *v;
+                    if let Ok(typed) = func.typed::<i64, i64>(&*store) {
+                        return Some(
+                            typed
+                                .call(store, v)
+                                .map(|r| vec![Val::I64(r)])
+                                .map_err(map_err),
+                        );
+                    }
+                }
+                (Val::F64(v), Val::F64(_)) => {
+                    let v = f64::from_bits(*v);
+                    if let Ok(typed) = func.typed::<f64, f64>(&*store) {
+                        return Some(
+                            typed
+                                .call(store, v)
+                                .map(|r| vec![Val::F64(r.to_bits())])
+                                .map_err(map_err),
+                        );
+                    }
+                }
+                _ => {}
+            },
+            (2, 1) => match (&params[0], &params[1], &results[0]) {
+                (Val::I32(a), Val::I32(b), Val::I32(_)) => {
+                    let (a, b) = (*a, *b);
+                    if let Ok(typed) = func.typed::<(i32, i32), i32>(&*store) {
+                        return Some(
+                            typed
+                                .call(store, (a, b))
+                                .map(|r| vec![Val::I32(r)])
+                                .map_err(map_err),
+                        );
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        }
+
+        None // No typed match — caller should use untyped path
+    }
+
     /// Get exported function by name (for direct Wasmtime usage)
     pub fn get_func(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Func>> {
         let instance = self.inner.lock();
@@ -1110,6 +1187,30 @@ impl Instance {
         match export {
             Some(Extern::Func(func)) => Ok(Some(func)),
             _ => Ok(None),
+        }
+    }
+
+    /// Get exported function by name with caching.
+    ///
+    /// On first call for a given name, resolves the export and caches the Func handle.
+    /// Subsequent calls return the cached handle without scanning exports.
+    pub fn get_func_cached(&self, store: &mut Store, name: &str) -> WasmtimeResult<Option<Func>> {
+        // Fast path: check cache first
+        if let Ok(cache) = self.func_cache.lock() {
+            if let Some(func) = cache.get(name) {
+                return Ok(Some(*func));
+            }
+        }
+
+        // Slow path: resolve and cache
+        let func = self.get_func(store, name)?;
+        if let Some(f) = func {
+            if let Ok(mut cache) = self.func_cache.lock() {
+                cache.insert(name.to_string(), f);
+            }
+            Ok(Some(f))
+        } else {
+            Ok(None)
         }
     }
 

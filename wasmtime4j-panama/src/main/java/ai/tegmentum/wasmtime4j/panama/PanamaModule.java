@@ -891,8 +891,7 @@ public final class PanamaModule implements Module {
     final String paramsArr = extractJsonArrayValue(funcObj, "params");
     final String returnsArr = extractJsonArrayValue(funcObj, "returns");
     final List<ai.tegmentum.wasmtime4j.WasmValueType> params = parseWasmValueTypeArray(paramsArr);
-    final List<ai.tegmentum.wasmtime4j.WasmValueType> results =
-        parseWasmValueTypeArray(returnsArr);
+    final List<ai.tegmentum.wasmtime4j.WasmValueType> results = parseWasmValueTypeArray(returnsArr);
     return ai.tegmentum.wasmtime4j.panama.type.PanamaFuncType.of(params, results);
   }
 
@@ -957,8 +956,8 @@ public final class PanamaModule implements Module {
   }
 
   /**
-   * Splits a JSON array string into its top-level object elements. Handles nested braces.
-   * Input: [{...},{...}] Output: list of "{...}" strings.
+   * Splits a JSON array string into its top-level object elements. Handles nested braces. Input:
+   * [{...},{...}] Output: list of "{...}" strings.
    */
   private static java.util.List<String> splitJsonArray(final String json) {
     final java.util.List<String> result = new java.util.ArrayList<>();

@@ -71,6 +71,78 @@ JNIEXPORT jobjectArray JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nati
 JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeFuncMatchesTy
   (JNIEnv *, jclass, jlong, jlong, jintArray, jintArray);
 
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCall_V
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall_1V
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCall_I
+ * Signature: (JJ)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall_1I
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCallI_I
+ * Signature: (JJI)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallI_1I
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCallII_I
+ * Signature: (JJII)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII_1I
+  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCallI_V
+ * Signature: (JJI)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallI_1V
+  (JNIEnv *, jclass, jlong, jlong, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCallII_V
+ * Signature: (JJII)V
+ */
+JNIEXPORT void JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII_1V
+  (JNIEnv *, jclass, jlong, jlong, jint, jint);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCallJ_J
+ * Signature: (JJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallJ_1J
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCallD_D
+ * Signature: (JJD)D
+ */
+JNIEXPORT jdouble JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallD_1D
+  (JNIEnv *, jclass, jlong, jlong, jdouble);
+
+/*
+ * Class:     ai_tegmentum_wasmtime4j_jni_JniFunction
+ * Method:    nativeCallIII_I
+ * Signature: (JJIII)I
+ */
+JNIEXPORT jint JNICALL Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallIII_1I
+  (JNIEnv *, jclass, jlong, jlong, jint, jint, jint);
+
 #ifdef __cplusplus
 }
 #endif

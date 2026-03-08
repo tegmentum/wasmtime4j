@@ -383,7 +383,8 @@ public final class PanamaWastRunner {
       pos++;
     }
     final int start = pos;
-    while (pos < json.length() && (Character.isDigit(json.charAt(pos)) || json.charAt(pos) == '-')) {
+    while (pos < json.length()
+        && (Character.isDigit(json.charAt(pos)) || json.charAt(pos) == '-')) {
       pos++;
     }
     if (start == pos) {

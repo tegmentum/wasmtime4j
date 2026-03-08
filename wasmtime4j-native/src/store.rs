@@ -9,7 +9,6 @@ use crate::error::{WasmtimeError, WasmtimeResult};
 use crate::hostfunc::{HostFunction, HostFunctionCallback};
 use crate::interop::ReentrantLock;
 use crate::module::Module;
-use std::sync::LazyLock;
 use std::ffi::CString;
 use std::future::Future;
 use std::sync::{Arc, Mutex};
@@ -28,8 +27,8 @@ use wasmtime_wasi_http::WasiHttpCtx;
 #[cfg(feature = "wasi-nn")]
 use wasmtime_wasi_nn::witx::WasiNnCtx;
 
-/// Store ID counter for unique identification
-static STORE_ID_COUNTER: LazyLock<Mutex<u64>> = LazyLock::new(|| Mutex::new(1));
+/// Store ID counter for unique identification (atomic for lock-free increment)
+static STORE_ID_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
 
 /// Thread-safe wrapper around Wasmtime store with resource management
 ///
@@ -1549,15 +1548,8 @@ impl StoreBuilder {
         // especially when using shared memory features.
         let _compile_guard = engine.acquire_compile_lock();
 
-        // Generate unique store ID
-        let store_id = {
-            let mut counter = STORE_ID_COUNTER.lock().map_err(|e| WasmtimeError::Store {
-                message: format!("Failed to acquire store ID counter: {}", e),
-            })?;
-            let id = *counter;
-            *counter += 1;
-            id
-        };
+        // Generate unique store ID (lock-free)
+        let store_id = STORE_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let resource_limits = self.resource_limits.clone();
         let mut store_data = StoreData::new(store_id, self.resource_limits);
@@ -1601,14 +1593,7 @@ impl StoreBuilder {
 
         let _compile_guard = engine.acquire_compile_lock();
 
-        let store_id = {
-            let mut counter = STORE_ID_COUNTER.lock().map_err(|e| WasmtimeError::Store {
-                message: format!("Failed to acquire store ID counter: {}", e),
-            })?;
-            let id = *counter;
-            *counter += 1;
-            id
-        };
+        let store_id = STORE_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let resource_limits = self.resource_limits.clone();
         let mut store_data = StoreData::new(store_id, self.resource_limits);
@@ -1673,15 +1658,8 @@ impl StoreBuilder {
         // especially when using shared memory features.
         let _compile_guard = module.engine().acquire_compile_lock();
 
-        // Generate unique store ID
-        let store_id = {
-            let mut counter = STORE_ID_COUNTER.lock().map_err(|e| WasmtimeError::Store {
-                message: format!("Failed to acquire store ID counter: {}", e),
-            })?;
-            let id = *counter;
-            *counter += 1;
-            id
-        };
+        // Generate unique store ID (lock-free)
+        let store_id = STORE_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let resource_limits = self.resource_limits.clone();
         let mut store_data = StoreData::new(store_id, self.resource_limits);

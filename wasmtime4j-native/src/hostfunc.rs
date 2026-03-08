@@ -306,15 +306,18 @@ impl HostFunction {
         Ok(host_func)
     }
 
-    /// Create a Wasmtime Func for this host function
-    pub fn create_wasmtime_func(
-        &self,
+    /// Create a Wasmtime Func for this host function.
+    ///
+    /// Captures the `Arc<HostFunction>` directly in the closure to avoid
+    /// a global registry mutex lookup on every invocation.
+    pub fn create_wasmtime_func_with_arc(
+        host_function: Arc<HostFunction>,
         store: &mut wasmtime::Store<StoreData>,
     ) -> WasmtimeResult<Func> {
-        let host_func_id = self.id;
-        let func_type = self.func_type.clone();
-        let requires_caller = self.requires_caller_context;
-        let usage = self.caller_context_usage;
+        let host_func_id = host_function.id;
+        let func_type = host_function.func_type.clone();
+        let requires_caller = host_function.requires_caller_context;
+        let usage = host_function.caller_context_usage;
 
         let func = Func::new(store, func_type, move |mut caller, params, results| {
             log::debug!(
@@ -324,25 +327,6 @@ impl HostFunction {
 
             // Get the store_id from the caller's StoreData for store affinity validation
             let store_id = caller.data().store_id;
-
-            // Look up the host function in the registry
-            let host_function = {
-                let registry = get_host_function_registry().lock().map_err(|e| {
-                    log::error!("[HOSTFUNC] Failed to lock registry: {}", e);
-                    wasmtime::Error::msg(format!("Failed to lock host function registry: {}", e))
-                })?;
-
-                registry.get(&host_func_id).cloned().ok_or_else(|| {
-                    log::error!(
-                        "[HOSTFUNC] Host function not found in registry: {}",
-                        host_func_id
-                    );
-                    wasmtime::Error::msg(format!(
-                        "Host function not found in registry: {}",
-                        host_func_id
-                    ))
-                })?
-            };
 
             log::debug!(
                 "[HOSTFUNC] Found host function, name={}",
@@ -390,6 +374,31 @@ impl HostFunction {
         Ok(func)
     }
 
+    /// Create a Wasmtime Func for this host function (convenience wrapper).
+    ///
+    /// Looks up self in the registry to get an `Arc<HostFunction>`, then delegates
+    /// to `create_wasmtime_func_with_arc` which captures the Arc directly in the closure.
+    pub fn create_wasmtime_func(
+        &self,
+        store: &mut wasmtime::Store<StoreData>,
+    ) -> WasmtimeResult<Func> {
+        let host_function = {
+            let registry = get_host_function_registry().lock().map_err(|e| {
+                WasmtimeError::Runtime {
+                    message: format!("Failed to lock host function registry: {}", e),
+                    backtrace: None,
+                }
+            })?;
+            registry.get(&self.id).cloned().ok_or_else(|| {
+                WasmtimeError::Runtime {
+                    message: format!("Host function not found in registry: {}", self.id),
+                    backtrace: None,
+                }
+            })?
+        };
+        Self::create_wasmtime_func_with_arc(host_function, store)
+    }
+
     /// Create an unchecked Wasmtime Func for this host function.
     ///
     /// Uses `Func::new_unchecked()` which bypasses per-call type validation for
@@ -398,12 +407,11 @@ impl HostFunction {
     /// # Safety
     ///
     /// The function type must accurately describe the parameters and results.
-    pub fn create_wasmtime_func_unchecked(
-        &self,
+    pub fn create_wasmtime_func_unchecked_with_arc(
+        host_function: Arc<HostFunction>,
         store: &mut wasmtime::Store<StoreData>,
     ) -> WasmtimeResult<Func> {
-        let host_func_id = self.id;
-        let func_type = self.func_type.clone();
+        let func_type = host_function.func_type.clone();
 
         // Capture param/result types for ValRaw marshaling
         let param_types: Vec<ValType> = func_type.params().collect();
@@ -412,22 +420,6 @@ impl HostFunction {
         let func = unsafe {
             Func::new_unchecked(store, func_type, move |mut caller, args_and_results| {
                 let store_id = caller.data().store_id;
-
-                // Look up the host function in the registry
-                let host_function = {
-                    let registry = get_host_function_registry().lock().map_err(|e| {
-                        wasmtime::Error::msg(format!(
-                            "Failed to lock host function registry: {}",
-                            e
-                        ))
-                    })?;
-                    registry.get(&host_func_id).cloned().ok_or_else(|| {
-                        wasmtime::Error::msg(format!(
-                            "Host function not found in registry: {}",
-                            host_func_id
-                        ))
-                    })?
-                };
 
                 // Read params from ValRaw BEFORE writing results (they share the buffer)
                 let (wasm_params, temp_ids) =
@@ -456,42 +448,49 @@ impl HostFunction {
         Ok(func)
     }
 
-    /// Create an async Wasmtime Func for this host function
-    #[cfg(feature = "async")]
-    pub fn create_wasmtime_func_async(
+    /// Create an unchecked Wasmtime Func (convenience wrapper).
+    pub fn create_wasmtime_func_unchecked(
         &self,
+        store: &mut wasmtime::Store<StoreData>,
+    ) -> WasmtimeResult<Func> {
+        let host_function = {
+            let registry = get_host_function_registry().lock().map_err(|e| {
+                WasmtimeError::Runtime {
+                    message: format!("Failed to lock host function registry: {}", e),
+                    backtrace: None,
+                }
+            })?;
+            registry.get(&self.id).cloned().ok_or_else(|| {
+                WasmtimeError::Runtime {
+                    message: format!("Host function not found in registry: {}", self.id),
+                    backtrace: None,
+                }
+            })?
+        };
+        Self::create_wasmtime_func_unchecked_with_arc(host_function, store)
+    }
+
+    /// Create an async Wasmtime Func for this host function
+    /// Create an async Wasmtime Func, capturing `Arc<HostFunction>` directly.
+    #[cfg(feature = "async")]
+    pub fn create_wasmtime_func_async_with_arc(
+        host_function: Arc<HostFunction>,
         store: &mut wasmtime::Store<StoreData>,
     ) -> WasmtimeResult<Func> {
         use std::future::Future;
 
-        let host_func_id = self.id;
-        let func_type = self.func_type.clone();
-        let requires_caller = self.requires_caller_context;
-        let usage = self.caller_context_usage;
+        let host_func_id = host_function.id;
+        let func_type = host_function.func_type.clone();
+        let requires_caller = host_function.requires_caller_context;
+        let usage = host_function.caller_context_usage;
 
         let func = Func::new_async(
             store,
             func_type,
             move |mut caller, params: &[Val], results: &mut [Val]| {
+                let host_function = Arc::clone(&host_function);
                 Box::new(async move {
                     let store_id = caller.data().store_id;
-
-                    // Look up the host function in the registry
-                    let host_function = {
-                        let registry = get_host_function_registry().lock().map_err(|e| {
-                            wasmtime::Error::msg(format!(
-                                "Failed to lock host function registry: {}",
-                                e
-                            ))
-                        })?;
-
-                        registry.get(&host_func_id).cloned().ok_or_else(|| {
-                            wasmtime::Error::msg(format!(
-                                "Host function not found in registry: {}",
-                                host_func_id
-                            ))
-                        })?
-                    };
 
                     // Marshal params (immutable borrow of caller)
                     let (wasm_params, temp_funcref_ids, temp_gc_ref_ids) =
@@ -525,6 +524,29 @@ impl HostFunction {
         );
 
         Ok(func)
+    }
+
+    /// Create an async Wasmtime Func (convenience wrapper).
+    #[cfg(feature = "async")]
+    pub fn create_wasmtime_func_async(
+        &self,
+        store: &mut wasmtime::Store<StoreData>,
+    ) -> WasmtimeResult<Func> {
+        let host_function = {
+            let registry = get_host_function_registry().lock().map_err(|e| {
+                WasmtimeError::Runtime {
+                    message: format!("Failed to lock host function registry: {}", e),
+                    backtrace: None,
+                }
+            })?;
+            registry.get(&self.id).cloned().ok_or_else(|| {
+                WasmtimeError::Runtime {
+                    message: format!("Host function not found in registry: {}", self.id),
+                    backtrace: None,
+                }
+            })?
+        };
+        Self::create_wasmtime_func_async_with_arc(host_function, store)
     }
 
     /// Get optimization information for this host function

@@ -76,6 +76,26 @@ public final class JniFunction extends JniResource
   /** Cached function type for performance optimization. */
   private volatile FunctionType cachedFunctionType;
 
+  /** Whether parameter types have been validated at least once for the cached signature. */
+  private volatile boolean typeValidated;
+
+  /** Cached fast-path signature for typed native calls. */
+  private volatile FastPath fastPath;
+
+  /** Enum of supported typed fast-path signatures. */
+  private enum FastPath {
+    VOID,
+    TO_I32,
+    I_I,
+    II_I,
+    I_V,
+    II_V,
+    J_J,
+    D_D,
+    III_I,
+    GENERIC
+  }
+
   /**
    * Creates a new JNI function with the given native handle, name, module handle, and store
    * context.
@@ -185,13 +205,23 @@ public final class JniFunction extends JniResource
   @Override
   public WasmValue[] call(final WasmValue... params) throws WasmException {
     Validation.requireNonNull(params, "parameters");
-    ensureUsable();
 
+    // Hold the read lock across the entire call to prevent use-after-free
+    // from concurrent close() between the check and the native call.
+    beginOperation();
     try {
+      if (store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+
       final FunctionType functionType = getFunctionType();
 
-      // Validate parameter types
-      JniTypeConverter.validateParameterTypes(params, functionType.getParamTypes());
+      // Skip per-call type validation after first successful call with matching param count.
+      // The function signature doesn't change, so re-validation is redundant.
+      if (!typeValidated || params.length != functionType.getParamTypes().length) {
+        JniTypeConverter.validateParameterTypes(params, functionType.getParamTypes());
+        typeValidated = true;
+      }
 
       // Marshal parameters
       final Object[] nativeParams = JniTypeConverter.wasmValuesToNativeParams(params);
@@ -212,6 +242,8 @@ public final class JniFunction extends JniResource
       throw new WasmException("Native function call failed for '" + name + "'", e);
     } catch (final Exception e) {
       throw new WasmException("Unexpected error calling function '" + name + "'", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -411,6 +443,176 @@ public final class JniFunction extends JniResource
     // The Store will clean up all its Functions when it is destroyed.
   }
 
+  // =============================================================================
+  // Typed Fast-Path Overrides
+  // =============================================================================
+
+  /**
+   * Resolves the fast-path enum for the current function type. Called lazily on first fast-path
+   * invocation.
+   */
+  private FastPath resolveFastPath() {
+    FastPath fp = this.fastPath;
+    if (fp != null) {
+      return fp;
+    }
+    final FunctionType type = getFunctionType();
+    final WasmValueType[] params = type.getParamTypes();
+    final WasmValueType[] results = type.getReturnTypes();
+    fp = classifySignature(params, results);
+    this.fastPath = fp;
+    return fp;
+  }
+
+  @SuppressWarnings("checkstyle:CyclomaticComplexity")
+  private static FastPath classifySignature(
+      final WasmValueType[] params, final WasmValueType[] results) {
+    final int pc = params.length;
+    final int rc = results.length;
+
+    if (pc == 0 && rc == 0) {
+      return FastPath.VOID;
+    }
+    if (pc == 0 && rc == 1 && results[0] == WasmValueType.I32) {
+      return FastPath.TO_I32;
+    }
+    if (pc == 1 && params[0] == WasmValueType.I32) {
+      if (rc == 1 && results[0] == WasmValueType.I32) {
+        return FastPath.I_I;
+      }
+      if (rc == 0) {
+        return FastPath.I_V;
+      }
+    }
+    if (pc == 2 && params[0] == WasmValueType.I32 && params[1] == WasmValueType.I32) {
+      if (rc == 1 && results[0] == WasmValueType.I32) {
+        return FastPath.II_I;
+      }
+      if (rc == 0) {
+        return FastPath.II_V;
+      }
+    }
+    if (pc == 3
+        && params[0] == WasmValueType.I32
+        && params[1] == WasmValueType.I32
+        && params[2] == WasmValueType.I32
+        && rc == 1
+        && results[0] == WasmValueType.I32) {
+      return FastPath.III_I;
+    }
+    if (pc == 1 && params[0] == WasmValueType.I64 && rc == 1 && results[0] == WasmValueType.I64) {
+      return FastPath.J_J;
+    }
+    if (pc == 1 && params[0] == WasmValueType.F64 && rc == 1 && results[0] == WasmValueType.F64) {
+      return FastPath.D_D;
+    }
+    return FastPath.GENERIC;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public void callVoid() throws WasmException {
+    beginOperation();
+    try {
+      if (store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      if (resolveFastPath() == FastPath.VOID) {
+        nativeCall_V(getNativeHandle(), store.getNativeHandle());
+        return;
+      }
+      // Fall back to default implementation
+      WasmFunction.super.callVoid();
+    } finally {
+      endOperation();
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public int callToI32() throws WasmException {
+    beginOperation();
+    try {
+      if (store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      if (resolveFastPath() == FastPath.TO_I32) {
+        return nativeCall_I(getNativeHandle(), store.getNativeHandle());
+      }
+      return WasmFunction.super.callToI32();
+    } finally {
+      endOperation();
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public int callI32ToI32(final int arg) throws WasmException {
+    beginOperation();
+    try {
+      if (store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      if (resolveFastPath() == FastPath.I_I) {
+        return nativeCallI_I(getNativeHandle(), store.getNativeHandle(), arg);
+      }
+      return WasmFunction.super.callI32ToI32(arg);
+    } finally {
+      endOperation();
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public int callI32I32ToI32(final int arg1, final int arg2) throws WasmException {
+    beginOperation();
+    try {
+      if (store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      if (resolveFastPath() == FastPath.II_I) {
+        return nativeCallII_I(getNativeHandle(), store.getNativeHandle(), arg1, arg2);
+      }
+      return WasmFunction.super.callI32I32ToI32(arg1, arg2);
+    } finally {
+      endOperation();
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public long callI64ToI64(final long arg) throws WasmException {
+    beginOperation();
+    try {
+      if (store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      if (resolveFastPath() == FastPath.J_J) {
+        return nativeCallJ_J(getNativeHandle(), store.getNativeHandle(), arg);
+      }
+      return WasmFunction.super.callI64ToI64(arg);
+    } finally {
+      endOperation();
+    }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public double callF64ToF64(final double arg) throws WasmException {
+    beginOperation();
+    try {
+      if (store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      if (resolveFastPath() == FastPath.D_D) {
+        return nativeCallD_D(getNativeHandle(), store.getNativeHandle(), arg);
+      }
+      return WasmFunction.super.callF64ToF64(arg);
+    } finally {
+      endOperation();
+    }
+  }
+
   // Native method declarations
 
   /**
@@ -494,4 +696,36 @@ public final class JniFunction extends JniResource
    */
   private static native int nativeFuncMatchesTy(
       long functionHandle, long storeHandle, int[] paramTypeCodes, int[] resultTypeCodes);
+
+  // Typed fast-path native methods — 1 JNI crossing, 0 heap allocations
+
+  /** () -> void. */
+  private static native void nativeCall_V(long functionHandle, long storeHandle);
+
+  /** () -> i32. */
+  private static native int nativeCall_I(long functionHandle, long storeHandle);
+
+  /** (i32) -> i32. */
+  private static native int nativeCallI_I(long functionHandle, long storeHandle, int arg0);
+
+  /** (i32, i32) -> i32. */
+  private static native int nativeCallII_I(
+      long functionHandle, long storeHandle, int arg0, int arg1);
+
+  /** (i32) -> void. */
+  private static native void nativeCallI_V(long functionHandle, long storeHandle, int arg0);
+
+  /** (i32, i32) -> void. */
+  private static native void nativeCallII_V(
+      long functionHandle, long storeHandle, int arg0, int arg1);
+
+  /** (i64) -> i64. */
+  private static native long nativeCallJ_J(long functionHandle, long storeHandle, long arg0);
+
+  /** (f64) -> f64. */
+  private static native double nativeCallD_D(long functionHandle, long storeHandle, double arg0);
+
+  /** (i32, i32, i32) -> i32. */
+  private static native int nativeCallIII_I(
+      long functionHandle, long storeHandle, int arg0, int arg1, int arg2);
 }

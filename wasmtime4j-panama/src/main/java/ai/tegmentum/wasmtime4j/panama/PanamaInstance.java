@@ -1240,45 +1240,29 @@ public final class PanamaInstance implements Instance {
     }
     resourceHandle.beginOperation();
     try {
-
-      // Get or create cached function name segment
       final MemorySegment functionNameSegment =
           functionNameCache.computeIfAbsent(
               functionName,
               name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-      // Get thread-local call context
       final CallContext ctx = CALL_CONTEXT.get();
-      final MemorySegment params = ctx.getParamsBuffer(2);
 
-      // Direct primitive writes - no WasmValue objects created
-      // Tag 0 = I32, value at offset+4
-      params.set(ValueLayout.JAVA_INT, 0, 0); // Tag: I32
-      params.set(ValueLayout.JAVA_INT, 4, arg1); // Value 1
-      params.set(ValueLayout.JAVA_INT, 20, 0); // Tag: I32
-      params.set(ValueLayout.JAVA_INT, 24, arg2); // Value 2
-
-      final long resultCount =
-          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
+      final int rc =
+          NATIVE_INSTANCE_BINDINGS.instanceCallI32I32ToI32(
               nativeInstance,
               store.getNativeStore(),
               functionNameSegment,
-              params,
-              2,
-              ctx.resultsBuffer,
-              1);
+              arg1,
+              arg2,
+              ctx.resultsBuffer);
 
-      if (resultCount < 0) {
+      if (rc < 0) {
         final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
         throw new WasmException(
             errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
       }
-      if (resultCount != 1) {
-        throw new WasmException("Expected 1 result, got " + resultCount);
-      }
 
-      // Direct primitive read - no WasmValue creation
-      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 0);
     } finally {
       resourceHandle.endOperation();
     }
@@ -1299,38 +1283,24 @@ public final class PanamaInstance implements Instance {
     }
     resourceHandle.beginOperation();
     try {
-
       final MemorySegment functionNameSegment =
           functionNameCache.computeIfAbsent(
               functionName,
               name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
       final CallContext ctx = CALL_CONTEXT.get();
-      final MemorySegment params = ctx.getParamsBuffer(1);
 
-      params.set(ValueLayout.JAVA_INT, 0, 0); // Tag: I32
-      params.set(ValueLayout.JAVA_INT, 4, arg); // Value
+      final int rc =
+          NATIVE_INSTANCE_BINDINGS.instanceCallI32ToI32(
+              nativeInstance, store.getNativeStore(), functionNameSegment, arg, ctx.resultsBuffer);
 
-      final long resultCount =
-          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-              nativeInstance,
-              store.getNativeStore(),
-              functionNameSegment,
-              params,
-              1,
-              ctx.resultsBuffer,
-              1);
-
-      if (resultCount < 0) {
+      if (rc < 0) {
         final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
         throw new WasmException(
             errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
       }
-      if (resultCount != 1) {
-        throw new WasmException("Expected 1 result, got " + resultCount);
-      }
 
-      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 0);
     } finally {
       resourceHandle.endOperation();
     }
@@ -1350,7 +1320,6 @@ public final class PanamaInstance implements Instance {
     }
     resourceHandle.beginOperation();
     try {
-
       final MemorySegment functionNameSegment =
           functionNameCache.computeIfAbsent(
               functionName,
@@ -1358,26 +1327,17 @@ public final class PanamaInstance implements Instance {
 
       final CallContext ctx = CALL_CONTEXT.get();
 
-      final long resultCount =
-          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-              nativeInstance,
-              store.getNativeStore(),
-              functionNameSegment,
-              MemorySegment.NULL,
-              0,
-              ctx.resultsBuffer,
-              1);
+      final int rc =
+          NATIVE_INSTANCE_BINDINGS.instanceCallToI32(
+              nativeInstance, store.getNativeStore(), functionNameSegment, ctx.resultsBuffer);
 
-      if (resultCount < 0) {
+      if (rc < 0) {
         final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
         throw new WasmException(
             errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
       }
-      if (resultCount != 1) {
-        throw new WasmException("Expected 1 result, got " + resultCount);
-      }
 
-      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 4);
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_INT, 0);
     } finally {
       resourceHandle.endOperation();
     }
@@ -1396,25 +1356,16 @@ public final class PanamaInstance implements Instance {
     }
     resourceHandle.beginOperation();
     try {
-
       final MemorySegment functionNameSegment =
           functionNameCache.computeIfAbsent(
               functionName,
               name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
-      final CallContext ctx = CALL_CONTEXT.get();
+      final int rc =
+          NATIVE_INSTANCE_BINDINGS.instanceCallVoid(
+              nativeInstance, store.getNativeStore(), functionNameSegment);
 
-      final long resultCount =
-          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-              nativeInstance,
-              store.getNativeStore(),
-              functionNameSegment,
-              MemorySegment.NULL,
-              0,
-              ctx.resultsBuffer,
-              0);
-
-      if (resultCount < 0) {
+      if (rc < 0) {
         final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
         throw new WasmException(
             errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
@@ -1439,38 +1390,24 @@ public final class PanamaInstance implements Instance {
     }
     resourceHandle.beginOperation();
     try {
-
       final MemorySegment functionNameSegment =
           functionNameCache.computeIfAbsent(
               functionName,
               name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
       final CallContext ctx = CALL_CONTEXT.get();
-      final MemorySegment params = ctx.getParamsBuffer(1);
 
-      params.set(ValueLayout.JAVA_INT, 0, 1); // Tag: I64
-      params.set(ValueLayout.JAVA_LONG_UNALIGNED, 4, arg); // Value
+      final int rc =
+          NATIVE_INSTANCE_BINDINGS.instanceCallI64ToI64(
+              nativeInstance, store.getNativeStore(), functionNameSegment, arg, ctx.resultsBuffer);
 
-      final long resultCount =
-          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-              nativeInstance,
-              store.getNativeStore(),
-              functionNameSegment,
-              params,
-              1,
-              ctx.resultsBuffer,
-              1);
-
-      if (resultCount < 0) {
+      if (rc < 0) {
         final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
         throw new WasmException(
             errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
       }
-      if (resultCount != 1) {
-        throw new WasmException("Expected 1 result, got " + resultCount);
-      }
 
-      return ctx.resultsBuffer.get(ValueLayout.JAVA_LONG_UNALIGNED, 4);
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_LONG, 0);
     } finally {
       resourceHandle.endOperation();
     }
@@ -1491,38 +1428,24 @@ public final class PanamaInstance implements Instance {
     }
     resourceHandle.beginOperation();
     try {
-
       final MemorySegment functionNameSegment =
           functionNameCache.computeIfAbsent(
               functionName,
               name -> getCallArena().allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8));
 
       final CallContext ctx = CALL_CONTEXT.get();
-      final MemorySegment params = ctx.getParamsBuffer(1);
 
-      params.set(ValueLayout.JAVA_INT, 0, 3); // Tag: F64
-      params.set(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4, arg); // Value
+      final int rc =
+          NATIVE_INSTANCE_BINDINGS.instanceCallF64ToF64(
+              nativeInstance, store.getNativeStore(), functionNameSegment, arg, ctx.resultsBuffer);
 
-      final long resultCount =
-          NATIVE_INSTANCE_BINDINGS.instanceCallFunctionFast(
-              nativeInstance,
-              store.getNativeStore(),
-              functionNameSegment,
-              params,
-              1,
-              ctx.resultsBuffer,
-              1);
-
-      if (resultCount < 0) {
+      if (rc < 0) {
         final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
         throw new WasmException(
             errorMsg != null ? errorMsg : "Failed to call function: " + functionName);
       }
-      if (resultCount != 1) {
-        throw new WasmException("Expected 1 result, got " + resultCount);
-      }
 
-      return ctx.resultsBuffer.get(ValueLayout.JAVA_DOUBLE_UNALIGNED, 4);
+      return ctx.resultsBuffer.get(ValueLayout.JAVA_DOUBLE, 0);
     } finally {
       resourceHandle.endOperation();
     }

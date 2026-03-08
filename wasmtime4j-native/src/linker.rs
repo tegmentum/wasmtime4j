@@ -56,8 +56,8 @@ pub struct HostFunctionDefinition {
     pub function_name: String,
     /// Function type signature
     pub function_type: FuncType,
-    /// Host function implementation
-    pub host_function: HostFunction,
+    /// Host function implementation (Arc for zero-cost capture in closures)
+    pub host_function: Arc<HostFunction>,
     /// Timestamp when defined
     pub defined_at: Instant,
     /// Whether to use Func::new_unchecked (bypasses per-call type validation)
@@ -409,7 +409,7 @@ impl Linker {
             module_name: module_name.to_string(),
             function_name: function_name.to_string(),
             function_type: function_type.clone(),
-            host_function,
+            host_function: Arc::new(host_function),
             defined_at: Instant::now(),
             unchecked,
         };
@@ -480,11 +480,15 @@ impl Linker {
                 definition.unchecked
             );
             let wasmtime_func = if definition.unchecked {
-                definition
-                    .host_function
-                    .create_wasmtime_func_unchecked(store)?
+                HostFunction::create_wasmtime_func_unchecked_with_arc(
+                    Arc::clone(&definition.host_function),
+                    store,
+                )?
             } else {
-                definition.host_function.create_wasmtime_func(store)?
+                HostFunction::create_wasmtime_func_with_arc(
+                    Arc::clone(&definition.host_function),
+                    store,
+                )?
             };
             created_funcs.push((
                 definition.module_name.clone(),

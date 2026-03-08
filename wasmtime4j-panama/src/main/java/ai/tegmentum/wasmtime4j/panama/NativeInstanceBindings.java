@@ -49,6 +49,14 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   // Signature: (ADDRESS, ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS, JAVA_LONG) -> JAVA_LONG
   private volatile MethodHandle mhInstanceCallFunction;
 
+  // Typed fast-path MethodHandles - bypass WasmValue tagged union entirely
+  private volatile MethodHandle mhCallVoid; // (ADDRESS, ADDRESS, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle mhCallI32ToI32; // (ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle mhCallI32I32ToI32; // (ADDRESS,ADDRESS,ADDRESS,INT,INT,ADDRESS) -> INT
+  private volatile MethodHandle mhCallI64ToI64; // (ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle mhCallF64ToF64; // (ADDRESS, ADDRESS, ADDRESS, JAVA_DOUBLE, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle mhCallToI32; // (ADDRESS, ADDRESS, ADDRESS, ADDRESS) -> JAVA_INT
+
   private NativeInstanceBindings() {
     super();
     initializeBindings();
@@ -77,6 +85,26 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     FunctionBinding callBinding = getFunctionBinding("wasmtime4j_instance_call_function");
     if (callBinding != null) {
       this.mhInstanceCallFunction = callBinding.getMethodHandle().orElse(null);
+    }
+
+    initializeTypedCallHandles();
+  }
+
+  /** Initializes MethodHandles for typed fast-path call exports. */
+  private void initializeTypedCallHandles() {
+    initTypedHandle("wasmtime4j_instance_call_void", h -> this.mhCallVoid = h);
+    initTypedHandle("wasmtime4j_instance_call_i32_to_i32", h -> this.mhCallI32ToI32 = h);
+    initTypedHandle("wasmtime4j_instance_call_i32i32_to_i32", h -> this.mhCallI32I32ToI32 = h);
+    initTypedHandle("wasmtime4j_instance_call_i64_to_i64", h -> this.mhCallI64ToI64 = h);
+    initTypedHandle("wasmtime4j_instance_call_f64_to_f64", h -> this.mhCallF64ToF64 = h);
+    initTypedHandle("wasmtime4j_instance_call_to_i32", h -> this.mhCallToI32 = h);
+  }
+
+  private void initTypedHandle(
+      final String name, final java.util.function.Consumer<MethodHandle> setter) {
+    FunctionBinding binding = getFunctionBinding(name);
+    if (binding != null) {
+      setter.accept(binding.getMethodHandle().orElse(null));
     }
   }
 
@@ -245,6 +273,204 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
               instancePtr, storePtr, functionName, paramsPtr, paramCount, resultsPtr, maxResults);
     } catch (Throwable t) {
       throw new RuntimeException("Native instanceCallFunction failed", t);
+    }
+  }
+
+  // =============================================================================
+  // Typed Fast-Path Exports (bypass WasmValue tagged union)
+  // =============================================================================
+
+  /**
+   * Typed fast-path: call a function with signature () -> void.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName null-terminated function name
+   * @return 0 on success, -1 on error
+   */
+  public int instanceCallVoid(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName) {
+    final MethodHandle mh = mhCallVoid;
+    if (mh == null) {
+      return callNativeFunction(
+          "wasmtime4j_instance_call_void", Integer.class, instancePtr, storePtr, functionName);
+    }
+    try {
+      return (int) mh.invokeExact(instancePtr, storePtr, functionName);
+    } catch (Throwable t) {
+      throw new RuntimeException("Native instanceCallVoid failed", t);
+    }
+  }
+
+  /**
+   * Typed fast-path: call a function with signature (i32) -> i32.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName null-terminated function name
+   * @param arg the i32 argument
+   * @param resultPtr pointer to write the i32 result
+   * @return 0 on success, -1 on error
+   */
+  public int instanceCallI32ToI32(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final int arg,
+      final MemorySegment resultPtr) {
+    final MethodHandle mh = mhCallI32ToI32;
+    if (mh == null) {
+      return callNativeFunction(
+          "wasmtime4j_instance_call_i32_to_i32",
+          Integer.class,
+          instancePtr,
+          storePtr,
+          functionName,
+          arg,
+          resultPtr);
+    }
+    try {
+      return (int) mh.invokeExact(instancePtr, storePtr, functionName, arg, resultPtr);
+    } catch (Throwable t) {
+      throw new RuntimeException("Native instanceCallI32ToI32 failed", t);
+    }
+  }
+
+  /**
+   * Typed fast-path: call a function with signature (i32, i32) -> i32.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName null-terminated function name
+   * @param arg1 first i32 argument
+   * @param arg2 second i32 argument
+   * @param resultPtr pointer to write the i32 result
+   * @return 0 on success, -1 on error
+   */
+  public int instanceCallI32I32ToI32(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final int arg1,
+      final int arg2,
+      final MemorySegment resultPtr) {
+    final MethodHandle mh = mhCallI32I32ToI32;
+    if (mh == null) {
+      return callNativeFunction(
+          "wasmtime4j_instance_call_i32i32_to_i32",
+          Integer.class,
+          instancePtr,
+          storePtr,
+          functionName,
+          arg1,
+          arg2,
+          resultPtr);
+    }
+    try {
+      return (int) mh.invokeExact(instancePtr, storePtr, functionName, arg1, arg2, resultPtr);
+    } catch (Throwable t) {
+      throw new RuntimeException("Native instanceCallI32I32ToI32 failed", t);
+    }
+  }
+
+  /**
+   * Typed fast-path: call a function with signature (i64) -> i64.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName null-terminated function name
+   * @param arg the i64 argument
+   * @param resultPtr pointer to write the i64 result
+   * @return 0 on success, -1 on error
+   */
+  public int instanceCallI64ToI64(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final long arg,
+      final MemorySegment resultPtr) {
+    final MethodHandle mh = mhCallI64ToI64;
+    if (mh == null) {
+      return callNativeFunction(
+          "wasmtime4j_instance_call_i64_to_i64",
+          Integer.class,
+          instancePtr,
+          storePtr,
+          functionName,
+          arg,
+          resultPtr);
+    }
+    try {
+      return (int) mh.invokeExact(instancePtr, storePtr, functionName, arg, resultPtr);
+    } catch (Throwable t) {
+      throw new RuntimeException("Native instanceCallI64ToI64 failed", t);
+    }
+  }
+
+  /**
+   * Typed fast-path: call a function with signature (f64) -> f64.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName null-terminated function name
+   * @param arg the f64 argument
+   * @param resultPtr pointer to write the f64 result
+   * @return 0 on success, -1 on error
+   */
+  public int instanceCallF64ToF64(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final double arg,
+      final MemorySegment resultPtr) {
+    final MethodHandle mh = mhCallF64ToF64;
+    if (mh == null) {
+      return callNativeFunction(
+          "wasmtime4j_instance_call_f64_to_f64",
+          Integer.class,
+          instancePtr,
+          storePtr,
+          functionName,
+          arg,
+          resultPtr);
+    }
+    try {
+      return (int) mh.invokeExact(instancePtr, storePtr, functionName, arg, resultPtr);
+    } catch (Throwable t) {
+      throw new RuntimeException("Native instanceCallF64ToF64 failed", t);
+    }
+  }
+
+  /**
+   * Typed fast-path: call a function with signature () -> i32.
+   *
+   * @param instancePtr pointer to the instance
+   * @param storePtr pointer to the store
+   * @param functionName null-terminated function name
+   * @param resultPtr pointer to write the i32 result
+   * @return 0 on success, -1 on error
+   */
+  public int instanceCallToI32(
+      final MemorySegment instancePtr,
+      final MemorySegment storePtr,
+      final MemorySegment functionName,
+      final MemorySegment resultPtr) {
+    final MethodHandle mh = mhCallToI32;
+    if (mh == null) {
+      return callNativeFunction(
+          "wasmtime4j_instance_call_to_i32",
+          Integer.class,
+          instancePtr,
+          storePtr,
+          functionName,
+          resultPtr);
+    }
+    try {
+      return (int) mh.invokeExact(instancePtr, storePtr, functionName, resultPtr);
+    } catch (Throwable t) {
+      throw new RuntimeException("Native instanceCallToI32 failed", t);
     }
   }
 
@@ -1819,6 +2045,62 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG,
             ValueLayout.ADDRESS,
             ValueLayout.JAVA_LONG));
+
+    // Typed fast-path exports - bypass WasmValue tagged union entirely
+    addFunctionBinding(
+        "wasmtime4j_instance_call_void",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_call_i32_to_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_call_i32i32_to_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_INT,
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_call_i64_to_i64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_LONG,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_call_f64_to_f64",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.JAVA_DOUBLE,
+            ValueLayout.ADDRESS));
+
+    addFunctionBinding(
+        "wasmtime4j_instance_call_to_i32",
+        FunctionDescriptor.of(
+            ValueLayout.JAVA_INT,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS,
+            ValueLayout.ADDRESS));
 
     addFunctionBinding(
         "wasmtime4j_instance_get_memory_by_name",
