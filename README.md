@@ -124,14 +124,18 @@ store.setWasiConfig(wasiConfig);
 
 ```
 wasmtime4j/
-├── wasmtime4j/               # Public API interfaces and factory
-├── wasmtime4j-native/        # Shared native Rust library (JNI + Panama exports)
-├── wasmtime4j-jni/           # JNI implementation (Java 8+)
-├── wasmtime4j-panama/        # Panama FFI implementation (Java 23+)
-├── wasmtime4j-native-loader/ # Platform-specific native library loader
+├── wasmtime4j/               # Public API interfaces and factory (users depend on this)
+├── wasmtime4j-native/        # Shared Rust library with JNI + Panama C exports
+├── wasmtime4j-jni/           # JNI runtime implementation (Java 8+)
+├── wasmtime4j-panama/        # Panama FFI runtime implementation (Java 23+)
+├── wasmtime4j-native-loader/ # Cross-platform native library extraction and loading
 ├── wasmtime4j-tests/         # Integration tests and WebAssembly test suites
-└── wasmtime4j-benchmarks/    # JMH performance benchmarks
+└── wasmtime4j-benchmarks/    # JMH benchmarks for JNI vs Panama comparison
 ```
+
+The native library is built from Rust source in `wasmtime4j-native/` and bundled into a
+single JAR containing binaries for all supported platforms. At runtime, `wasmtime4j-native-loader`
+detects the platform and extracts the correct library.
 
 ## Building from Source
 
@@ -157,9 +161,19 @@ Requires Java 23+, Rust (stable), and Maven 3.6+.
 |----------|-------------|-----|--------|
 | Linux    | x86_64      | Yes | Yes    |
 | Linux    | ARM64       | Yes | Yes    |
-| macOS    | x86_64      | Yes | Yes    |
 | macOS    | ARM64       | Yes | Yes    |
 | Windows  | x86_64      | Yes | Yes    |
+
+Additional platforms can be added on request.
+
+## Benchmarks
+
+```bash
+# Run JNI vs Panama comparison benchmarks
+java --enable-native-access=ALL-UNNAMED \
+  -jar wasmtime4j-benchmarks/target/wasmtime4j-benchmarks.jar \
+  -f 1 -wi 2 -i 3 ".*PanamaVsJniBenchmark.*"
+```
 
 ## Contributing
 
