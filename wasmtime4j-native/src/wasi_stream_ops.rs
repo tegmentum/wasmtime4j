@@ -263,7 +263,12 @@ pub fn splice_streams_generic<C: WasiStreamContext>(
 
     // Get source stream mutably and drain data
     let data: Vec<u8> = {
-        let source = streams.get_mut(&(source_stream_id as u32)).unwrap();
+        let source =
+            streams
+                .get_mut(&(source_stream_id as u32))
+                .ok_or_else(|| WasmtimeError::InvalidParameter {
+                    message: format!("Source stream {} not found", source_stream_id),
+                })?;
         source.buffer_mut().drain(..read_len).collect()
     };
 

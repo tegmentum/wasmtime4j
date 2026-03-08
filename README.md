@@ -1,44 +1,37 @@
-# Wasmtime4j - Java Bindings for Wasmtime WebAssembly Runtime
+# Wasmtime4j
 
-[![Build Status](https://github.com/wasmtime4j/wasmtime4j/actions/workflows/ci.yml/badge.svg)](https://github.com/wasmtime4j/wasmtime4j/actions)
+[![Build Status](https://github.com/tegmentum/wasmtime4j/actions/workflows/ci.yml/badge.svg)](https://github.com/tegmentum/wasmtime4j/actions)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/ai.tegmentum/wasmtime4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/ai.tegmentum/wasmtime4j)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-Wasmtime4j provides unified Java bindings for the [Wasmtime](https://wasmtime.dev/) WebAssembly runtime, offering both JNI and Panama Foreign Function Interface implementations with automatic runtime selection based on Java version.
+Java bindings for the [Wasmtime](https://wasmtime.dev/) WebAssembly runtime. Provides both JNI and Panama Foreign Function Interface implementations with automatic runtime selection based on Java version.
 
-## Key Features
+Built against **Wasmtime 42.0.1**.
 
-- **Dual Implementation Strategy**: JNI for Java 8-22, Panama FFI for Java 23+
-- **Automatic Runtime Selection**: Detects Java version and chooses optimal implementation
-- **Unified API**: Single interface across different runtime implementations
-- **Cross-Platform Support**: Linux, Windows, macOS (x86_64 and ARM64)
-- **Production Ready**: Comprehensive error handling, resource management, and defensive programming
-- **Latest Wasmtime**: Built against Wasmtime 41.0.3 for cutting-edge WebAssembly support
+## Features
+
+- **Dual runtime**: JNI for Java 8-22, Panama FFI for Java 23+ (auto-detected)
+- **Full Wasmtime API**: Engine, Module, Instance, Store, Linker, host functions, memory, tables, globals
+- **Component Model**: First-class support for the WebAssembly Component Model
+- **WASI**: WASI Preview 1 and Preview 2 support
+- **Typed function calls**: Zero-boxing fast paths for common signatures (`i32 -> i32`, `(i32, i32) -> i32`, etc.)
+- **Cross-platform**: Linux, macOS, Windows on x86_64 and ARM64
+- **Resource safety**: All resources implement `AutoCloseable` with defensive lifecycle management
 
 ## Quick Start
 
-### Prerequisites
-
-- **Java 8+** (JNI implementation)
-- **Java 23+** (Panama FFI implementation - recommended for best performance)
-- **Rust toolchain** (for building from source)
-
-### Installation
-
-Add Wasmtime4j to your Maven project:
+Add the dependency:
 
 ```xml
 <dependency>
     <groupId>ai.tegmentum</groupId>
     <artifactId>wasmtime4j</artifactId>
-    <version>41.0.3-1.0.0</version>
+    <version>42.0.1-1.0.0</version>
 </dependency>
 ```
 
-Or for Gradle:
-
 ```gradle
-implementation 'ai.tegmentum:wasmtime4j:41.0.3-1.0.0'
+implementation 'ai.tegmentum:wasmtime4j:42.0.1-1.0.0'
 ```
 
 ### Basic Usage
@@ -47,206 +40,76 @@ implementation 'ai.tegmentum:wasmtime4j:41.0.3-1.0.0'
 import ai.tegmentum.wasmtime4j.*;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 
-public class HelloWasm {
-    public static void main(String[] args) throws Exception {
-        // Create a runtime with automatic implementation selection
-        try (WasmRuntime runtime = WasmRuntimeFactory.create()) {
-
-            // Create an engine with default configuration
-            try (Engine engine = runtime.createEngine()) {
-
-                // Load WebAssembly bytecode (example: simple add function)
-                byte[] wasmBytes = loadWasmFromFile("example.wasm");
-
-                // Compile the module
-                try (Module module = engine.compileModule(wasmBytes)) {
-
-                    // Create a store for execution context
-                    try (Store store = engine.createStore()) {
-
-                        // Instantiate the module
-                        try (Instance instance = module.instantiate(store)) {
-
-                            // Get and call an exported function
-                            Optional<WasmFunction> addFunc = instance.getFunction("add");
-                            if (addFunc.isPresent()) {
-                                WasmValue[] result = addFunc.get().call(
-                                    WasmValue.i32(5),
-                                    WasmValue.i32(3)
-                                );
-                                System.out.println("Result: " + result[0].asInt()); // Outputs: 8
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static byte[] loadWasmFromFile(String path) {
-        // Implementation to load WASM file...
-        return new byte[0];
-    }
-}
-```
-
-### Runtime Selection
-
-Wasmtime4j automatically selects the best available implementation:
-
-```java
-// Automatic selection (recommended)
-WasmRuntime runtime = WasmRuntimeFactory.create();
-
-// Manual selection
-WasmRuntime jniRuntime = WasmRuntimeFactory.createJni();
-WasmRuntime panamaRuntime = WasmRuntimeFactory.createPanama(); // Java 23+ only
-
-// Check runtime information
-RuntimeInfo info = runtime.getRuntimeInfo();
-System.out.println("Using: " + info.getRuntimeType()); // JNI or PANAMA
-System.out.println("Wasmtime version: " + info.getWasmtimeVersion());
-```
-
-## Project Structure
-
-```
-wasmtime4j/
-├── wasmtime4j/               # Public API interfaces and factory
-├── wasmtime4j-jni/           # JNI implementation (Java 8+)
-├── wasmtime4j-panama/        # Panama FFI implementation (Java 23+)
-├── wasmtime4j-native/        # Shared native Rust library
-├── wasmtime4j-benchmarks/    # Performance benchmarks
-└── wasmtime4j-tests/         # Integration tests and WebAssembly test suites
-```
-
-## Building from Source
-
-### Prerequisites
-
-- Java 8+ (for JNI) or Java 23+ (for Panama)
-- Rust toolchain (latest stable)
-- Maven 3.6+
-
-### Build Commands
-
-```bash
-# Clean build
-./mvnw clean compile
-
-# Run tests (simplified JUnit testing framework - 75%+ faster execution)
-./mvnw test
-
-# Package artifacts
-./mvnw clean package
-
-# Install to local repository
-./mvnw clean install
-
-# Run quality checks
-./mvnw checkstyle:check spotless:check
-
-# Auto-format code
-./mvnw spotless:apply
-```
-
-### Cross-Platform Build
-
-The build process automatically cross-compiles native libraries for all supported platforms:
-
-```bash
-# Build for all platforms (requires cross-compilation setup)
-./mvnw clean package -Pcross-compile
-
-# Build for current platform only
-./mvnw clean package
-```
-
-## Configuration
-
-### Engine Configuration
-
-```java
-// Create engine with custom configuration
-EngineConfig config = new EngineConfig()
-    .optimizationLevel(OptimizationLevel.SPEED)
-    .debugInfo(true)
-    .consumeFuel(true)
-    .parallelCompilation(true);
-
-Engine engine = runtime.createEngine(config);
-```
-
-### Built-in Configurations
-
-```java
-// Default configuration (optimized for speed)
-Engine speedEngine = runtime.createEngine(new EngineConfig());
-
-// Optimized for size
-Engine sizeEngine = runtime.createEngine(EngineConfig.forSize());
-
-// Optimized for debugging
-Engine debugEngine = runtime.createEngine(EngineConfig.forDebug());
-```
-
-## Performance
-
-Wasmtime4j includes comprehensive benchmarks comparing JNI and Panama implementations:
-
-```bash
-# Run all benchmarks
-./mvnw exec:java -pl wasmtime4j-benchmarks
-
-# Run specific benchmarks
-java -jar wasmtime4j-benchmarks/target/benchmarks.jar RuntimeInitializationBenchmark
-```
-
-### Performance Characteristics
-
-- **Panama FFI**: Lower overhead for function calls, better with Java 23+
-- **JNI**: Broader compatibility, mature implementation, good performance on older Java versions
-- **Automatic Selection**: Chooses Panama on Java 23+ for optimal performance
-
-## Memory Management
-
-Wasmtime4j uses defensive programming to prevent native resource leaks:
-
-```java
-// All resources implement AutoCloseable for try-with-resources
 try (WasmRuntime runtime = WasmRuntimeFactory.create();
      Engine engine = runtime.createEngine();
      Module module = engine.compileModule(wasmBytes);
      Store store = engine.createStore();
      Instance instance = module.instantiate(store)) {
 
-    // Resources automatically cleaned up when leaving scope
+    WasmFunction add = instance.getFunction("add").orElseThrow();
 
-} // All native resources properly released here
-```
+    // Generic call with WasmValue boxing
+    WasmValue[] result = add.call(WasmValue.i32(5), WasmValue.i32(3));
+    System.out.println(result[0].asInt()); // 8
 
-## Error Handling
-
-Wasmtime4j provides structured exception handling:
-
-```java
-try {
-    Module module = engine.compileModule(invalidWasm);
-} catch (CompilationException e) {
-    System.err.println("Compilation failed: " + e.getMessage());
-} catch (ValidationException e) {
-    System.err.println("Module validation failed: " + e.getMessage());
-} catch (WasmException e) {
-    System.err.println("WebAssembly error: " + e.getMessage());
+    // Typed fast-path call (zero boxing overhead)
+    int sum = add.callI32I32ToI32(5, 3); // 8
 }
 ```
 
-## Advanced Features
-
-### WASI Support
+### Runtime Selection
 
 ```java
-// Create WASI context (when available)
+// Automatic (recommended) - picks Panama on Java 23+, JNI otherwise
+WasmRuntime runtime = WasmRuntimeFactory.create();
+
+// Manual override
+WasmRuntime jni = WasmRuntimeFactory.createJni();
+WasmRuntime panama = WasmRuntimeFactory.createPanama(); // Java 23+ only
+
+// Override via system property
+// -Dwasmtime4j.runtime=jni
+```
+
+## Host Functions
+
+```java
+Linker linker = runtime.createLinker(engine);
+
+linker.defineFunction("env", "log", new FunctionType(
+    new WasmValueType[]{WasmValueType.I32}, new WasmValueType[]{}),
+    (caller, args) -> {
+        System.out.println("WASM says: " + args[0].asInt());
+        return new WasmValue[0];
+    });
+
+Instance instance = linker.instantiate(store, module);
+```
+
+## Memory Access
+
+```java
+WasmMemory memory = instance.getMemory("memory").orElseThrow();
+
+byte[] data = memory.read(0, 1024);
+memory.write(0, "Hello, WASM!".getBytes());
+memory.grow(1); // Grow by 1 page (64KB)
+```
+
+## Engine Configuration
+
+```java
+EngineConfig config = new EngineConfig()
+    .optimizationLevel(OptimizationLevel.SPEED)
+    .consumeFuel(true)
+    .parallelCompilation(true);
+
+Engine engine = runtime.createEngine(config);
+```
+
+## WASI
+
+```java
 WasiConfig wasiConfig = new WasiConfig()
     .inheritEnv()
     .inheritStdin()
@@ -254,162 +117,70 @@ WasiConfig wasiConfig = new WasiConfig()
     .inheritStderr();
 
 Store store = engine.createStore();
-// Configure WASI imports...
+store.setWasiConfig(wasiConfig);
 ```
 
-### Host Functions
+## Project Structure
 
-```java
-// Define host function to call from WebAssembly
-HostFunction logFunction = (args) -> {
-    System.out.println("WASM says: " + args[0].asInt());
-    return new WasmValue[0];
-};
-
-// Add to import map
-ImportMap imports = ImportMap.empty()
-    .addFunction("env", "log", logFunction);
-
-Instance instance = module.instantiate(store, imports);
+```
+wasmtime4j/
+├── wasmtime4j/               # Public API interfaces and factory
+├── wasmtime4j-native/        # Shared native Rust library (JNI + Panama exports)
+├── wasmtime4j-jni/           # JNI implementation (Java 8+)
+├── wasmtime4j-panama/        # Panama FFI implementation (Java 23+)
+├── wasmtime4j-native-loader/ # Platform-specific native library loader
+├── wasmtime4j-tests/         # Integration tests and WebAssembly test suites
+└── wasmtime4j-benchmarks/    # JMH performance benchmarks
 ```
 
-### Memory Access
+## Building from Source
 
-```java
-// Get exported memory
-Optional<WasmMemory> memory = instance.getMemory("memory");
-if (memory.isPresent()) {
-    WasmMemory mem = memory.get();
+Requires Java 23+, Rust (stable), and Maven 3.6+.
 
-    // Read/write memory
-    byte[] data = mem.read(0, 1024);
-    mem.write(0, "Hello, WASM!".getBytes());
+```bash
+# Build
+./mvnw clean compile
 
-    // Memory growth
-    mem.grow(1); // Grow by 1 page (64KB)
-}
+# Test
+./mvnw test
+
+# Package
+./mvnw clean package
+
+# Code style
+./mvnw spotless:apply
 ```
 
 ## Platform Support
 
-| Platform | Architecture | JNI Support | Panama Support |
-|----------|-------------|-------------|----------------|
-| Linux    | x86_64      | ✅          | ✅             |
-| Linux    | ARM64       | ✅          | ✅             |
-| Windows  | x86_64      | ✅          | ✅             |
-| macOS    | x86_64      | ✅          | ✅             |
-| macOS    | ARM64       | ✅          | ✅             |
-
-## Testing Framework
-
-Wasmtime4j uses a simplified, high-performance testing approach:
-
-### Test Architecture
-- **Simple JUnit Tests**: Direct JUnit 5 tests without complex wrappers or analytics
-- **Fast Execution**: 75%+ faster than traditional BI-integrated test frameworks
-- **Standard Reporting**: Compatible with Maven Surefire and standard CI/CD pipelines
-- **Comprehensive Coverage**: All WebAssembly operations and edge cases covered
-
-### Running Tests
-```bash
-# Run all tests (fast execution)
-./mvnw test
-
-# Run specific test class
-./mvnw test -Dtest=WasmRuntimeTest
-
-# Run tests with verbose output for debugging
-./mvnw test -Dtest.verbose=true
-```
-
-### Test Categories
-- **Unit Tests**: Core WebAssembly functionality testing
-- **Integration Tests**: Cross-module compatibility validation
-- **Performance Tests**: Runtime performance validation
-- **WASI Tests**: WebAssembly System Interface compatibility
-
-### Developer Benefits
-- **Fast Feedback**: Quick test execution for rapid development cycles
-- **Simple Debugging**: Clear, direct test output without analytics overhead
-- **Standard Tools**: Works with all standard Java development tools
-- **Maintainable**: Easy to understand and modify test cases
+| Platform | Architecture | JNI | Panama |
+|----------|-------------|-----|--------|
+| Linux    | x86_64      | Yes | Yes    |
+| Linux    | ARM64       | Yes | Yes    |
+| macOS    | x86_64      | Yes | Yes    |
+| macOS    | ARM64       | Yes | Yes    |
+| Windows  | x86_64      | Yes | Yes    |
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Development Setup
-
-1. Clone the repository
-2. Install prerequisites (Java, Rust, Maven)
-3. Run tests: `./mvnw test`
-4. Make changes and ensure tests pass
-5. Submit a pull request
-
-### Code Style
-
-The project follows the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html):
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
-# Check code style
-./mvnw checkstyle:check
-
-# Auto-format
-./mvnw spotless:apply
+# Development workflow
+git clone https://github.com/tegmentum/wasmtime4j.git
+cd wasmtime4j
+./mvnw test
+# Make changes, ensure tests pass
+# Submit a pull request
 ```
 
-## Troubleshooting
-
-### Common Issues
-
-**Native library loading fails:**
-```bash
-# Ensure native library is in classpath or system path
-java -Djava.library.path=/path/to/natives -jar your-app.jar
-```
-
-**Java version compatibility:**
-```bash
-# Check Java version
-java -version
-
-# For Java 23+ with Panama
-java --enable-preview --add-modules jdk.incubator.foreign -jar your-app.jar
-```
-
-**Build fails on cross-compilation:**
-```bash
-# Install Rust cross-compilation targets
-rustup target add x86_64-pc-windows-gnu
-rustup target add aarch64-apple-darwin
-```
-
-### Getting Help
-
-- 📖 [Wiki](https://github.com/wasmtime4j/wasmtime4j/wiki)
-- 🐛 [Issues](https://github.com/wasmtime4j/wasmtime4j/issues)
-- 💬 [Discussions](https://github.com/wasmtime4j/wasmtime4j/discussions)
-- 📧 [Mailing List](mailto:wasmtime4j@tegmentum.ai)
+The project follows the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html). Run `./mvnw spotless:apply` to auto-format.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- [Wasmtime](https://wasmtime.dev/) - The WebAssembly runtime that powers this project
-- [Bytecode Alliance](https://bytecodealliance.org/) - For their excellent WebAssembly ecosystem
-- The Java and Rust communities for their invaluable tools and libraries
-
-## Roadmap
-
-- [ ] WASI Preview 2 support
-- [ ] WebAssembly GC support
-- [ ] Advanced debugging features
-- [ ] Performance optimizations
-- [ ] Extended platform support
-- [ ] Integration with popular Java frameworks
-
----
-
-**Built with ❤️ for the Java and WebAssembly communities**
+- [Wasmtime](https://wasmtime.dev/) and the [Bytecode Alliance](https://bytecodealliance.org/) for the WebAssembly runtime
+- The Java and Rust communities

@@ -92,8 +92,8 @@ pub fn execute_wast_file(file_path: &str) -> wasmtime::Result<WastExecutionResul
         use_shared_memory: false,
         suppress_prints: true,
     }) {
-        // Log but continue - spectest is optional for many tests
-        eprintln!("Warning: Could not register spectest infrastructure: {}", e);
+        // Spectest is optional for many tests - continue without it
+        log::warn!("Could not register spectest infrastructure: {}", e);
     }
 
     // Execute the WAST file
@@ -170,8 +170,8 @@ pub fn execute_wast_buffer(
         use_shared_memory: false,
         suppress_prints: true,
     }) {
-        // Log but continue - spectest is optional for many tests
-        eprintln!("Warning: Could not register spectest infrastructure: {}", e);
+        // Spectest is optional for many tests - continue without it
+        log::warn!("Could not register spectest infrastructure: {}", e);
     }
 
     // Execute the WAST buffer using run_wast

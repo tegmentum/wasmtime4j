@@ -721,8 +721,7 @@ pub mod jni_wasi {
         })() {
             Ok(result) => result,
             Err(e) => {
-                // Log the error and return -1
-                eprintln!("Error in nativeSetStdinBytes: {:?}", e);
+                jni_utils::throw_jni_exception(&mut env, &e);
                 -1
             }
         }
