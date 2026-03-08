@@ -47,12 +47,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Bindgen module -->
-        <dependency>
-            <groupId>ai.tegmentum</groupId>
-            <artifactId>wasmtime4j-bindgen</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

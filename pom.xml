@@ -113,7 +113,6 @@
         <module>wasmtime4j-panama</module>
         <module>wasmtime4j-tests</module>
         <module>wasmtime4j-benchmarks</module>
-        <module>wasmtime4j-bindgen</module>
         <module>wasmtime4j-coverage-report</module>
     </modules>
 
