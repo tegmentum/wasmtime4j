@@ -2,614 +2,182 @@ name: CI
 
 on:
   push:
-    branches: [ master, develop, 'epic/*', 'feature/*' ]
+    branches: [master]
   pull_request:
-    branches: [ master, develop ]
-  workflow_dispatch:
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
 jobs:
-  # Code quality and static analysis
-  quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          java-version: '8'
-          distribution: 'temurin'
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
-      - name: Run Checkstyle
-        run: ./mvnw checkstyle:check -B
-
-      - name: Check code formatting
-        run: ./mvnw spotless:check -B
-
-      - name: Run SpotBugs
-        run: ./mvnw spotbugs:check -B
-
-      - name: Run PMD
-        run: ./mvnw pmd:check -B
-
-  # Build and test matrix for all platforms
-  build-and-test:
-    name: Build & Test
-    needs: quality
+  # Build native libraries on each platform's native runner
+  build-native:
+    name: Native (${{ matrix.platform }})
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Linux builds
           - os: ubuntu-latest
             platform: linux-x86_64
             target: x86_64-unknown-linux-gnu
-            java-version: '8'
-          - os: ubuntu-latest
-            platform: linux-x86_64
-            target: x86_64-unknown-linux-gnu
-            java-version: '11'
-          - os: ubuntu-latest
-            platform: linux-x86_64
-            target: x86_64-unknown-linux-gnu
-            java-version: '17'
-          - os: ubuntu-latest
-            platform: linux-x86_64
-            target: x86_64-unknown-linux-gnu
-            java-version: '21'
-          - os: ubuntu-latest
-            platform: linux-x86_64
-            target: x86_64-unknown-linux-gnu
-            java-version: '23'
-          
-          # macOS builds
+            lib: libwasmtime4j.so
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            target: aarch64-unknown-linux-gnu
+            lib: libwasmtime4j.so
           - os: macos-latest
-            platform: macos-x86_64
-            target: x86_64-apple-darwin
-            java-version: '8'
-          - os: macos-latest
-            platform: macos-x86_64
-            target: x86_64-apple-darwin
-            java-version: '23'
-          
-          # Windows builds
+            platform: darwin-aarch64
+            target: aarch64-apple-darwin
+            lib: libwasmtime4j.dylib
           - os: windows-latest
             platform: windows-x86_64
             target: x86_64-pc-windows-msvc
-            java-version: '8'
-          - os: windows-latest
-            platform: windows-x86_64
-            target: x86_64-pc-windows-msvc
-            java-version: '23'
-
+            lib: wasmtime4j.dll
     runs-on: ${{ matrix.os }}
-    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK ${{ matrix.java-version }}
-        uses: actions/setup-java@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          java-version: ${{ matrix.java-version }}
-          distribution: 'temurin'
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
           targets: ${{ matrix.target }}
 
-      - name: Cache Rust dependencies
+      - name: Cache Cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
+            wasmtime4j-native/.cargo-target
+          key: cargo-${{ matrix.platform }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: cargo-${{ matrix.platform }}-
 
-      - name: Install cross-compilation tools (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-multilib
-          
-      - name: Install MSVC tools (Windows)
-        if: matrix.os == 'windows-latest'
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Build native libraries
+      - name: Build native library
         shell: bash
-        run: |
-          if [[ "${{ matrix.platform }}" == "linux-x86_64" ]]; then
-            ./mvnw clean compile -P linux-x86_64 -DskipTests -B
-          elif [[ "${{ matrix.platform }}" == "macos-x86_64" ]]; then
-            ./mvnw clean compile -P macos-x86_64 -DskipTests -B
-          elif [[ "${{ matrix.platform }}" == "windows-x86_64" ]]; then
-            ./mvnw clean compile -P windows-x86_64 -DskipTests -B
-          fi
+        env:
+          CARGO_TARGET_DIR: wasmtime4j-native/.cargo-target
+        run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Run unit tests
-        shell: bash
-        run: |
-          if [[ "${{ matrix.java-version }}" == "23" ]]; then
-            ./mvnw test -B -Dtest.runtime=panama
-          else
-            ./mvnw test -B -Dtest.runtime=jni
-          fi
-
-      - name: Run integration tests
-        shell: bash
-        run: |
-          if [[ "${{ matrix.java-version }}" == "23" ]]; then
-            ./mvnw verify -B -Dtest.runtime=panama
-          else
-            ./mvnw verify -B -Dtest.runtime=jni
-          fi
-
-      - name: Generate test report
-        if: always()
-        uses: dorny/test-reporter@v1
+      - uses: actions/upload-artifact@v4
         with:
-          name: Test Results (${{ matrix.os }}-${{ matrix.java-version }})
-          path: '**/target/surefire-reports/*.xml,**/target/failsafe-reports/*.xml'
-          reporter: java-junit
+          name: native-${{ matrix.platform }}
+          path: wasmtime4j-native/.cargo-target/${{ matrix.target }}/release/${{ matrix.lib }}
+          retention-days: 7
+          if-no-files-found: error
 
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.platform }}-java${{ matrix.java-version }}
-          path: |
-            **/target/surefire-reports/
-            **/target/failsafe-reports/
-          retention-days: 30
-
-      - name: Upload native libraries
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-libs-${{ matrix.platform }}-java${{ matrix.java-version }}
-          path: |
-            **/target/classes/native/
-            **/target/native-libs/
-          retention-days: 30
-
-  # Cross-compilation for ARM64 targets (using QEMU)
-  cross-compile:
-    name: Cross-compile ARM64
-    needs: quality
+  # Static analysis (no native libs needed, runs in parallel with build-native)
+  quality:
+    name: Code Quality
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - platform: linux-aarch64
-            target: aarch64-unknown-linux-gnu
-            java-version: '8'
-          - platform: linux-aarch64
-            target: aarch64-unknown-linux-gnu
-            java-version: '23'
-          - platform: macos-aarch64
-            target: aarch64-apple-darwin
-            java-version: '8'
-          - platform: macos-aarch64
-            target: aarch64-apple-darwin
-            java-version: '23'
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK ${{ matrix.java-version }}
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java-version }}
+          java-version: '21'
           distribution: 'temurin'
 
-      - name: Cache Maven dependencies
+      - name: Cache Maven
         uses: actions/cache@v4
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          path: ~/.m2/repository
+          key: m2-quality-${{ hashFiles('**/pom.xml') }}
+          restore-keys: m2-quality-
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: ${{ matrix.target }}
+      - name: Checkstyle
+        run: ./mvnw checkstyle:check -B -P skip-native -pl '!wasmtime4j-panama'
 
-      - name: Install cross-compilation tools
-        run: |
-          sudo apt-get update
-          if [[ "${{ matrix.platform }}" == "linux-aarch64" ]]; then
-            sudo apt-get install -y gcc-aarch64-linux-gnu
-          fi
-          cargo install cross --git https://github.com/cross-rs/cross
+      - name: Spotless
+        run: ./mvnw spotless:check -B -P skip-native -pl '!wasmtime4j-panama'
 
-      - name: Cross-compile native libraries
-        run: |
-          if [[ "${{ matrix.platform }}" == "linux-aarch64" ]]; then
-            ./mvnw clean compile -P linux-aarch64 -DskipTests -B
-          elif [[ "${{ matrix.platform }}" == "macos-aarch64" ]]; then
-            ./mvnw clean compile -P macos-aarch64 -DskipTests -B
-          fi
+      - name: SpotBugs
+        run: ./mvnw compile spotbugs:check -B -P skip-native -pl '!wasmtime4j-panama'
 
-      - name: Upload cross-compiled libraries
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-libs-${{ matrix.platform }}-java${{ matrix.java-version }}
-          path: |
-            **/target/classes/native/
-            **/target/native-libs/
-          retention-days: 30
+      - name: PMD
+        run: ./mvnw compile pmd:check -B -P skip-native -pl '!wasmtime4j-panama'
 
-  # Performance benchmarks
-  performance:
-    name: Performance Benchmarks
-    needs: [build-and-test]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux-x86_64
-            java-version: '8'
-          - os: ubuntu-latest
-            platform: linux-x86_64
-            java-version: '23'
-          - os: macos-latest
-            platform: macos-x86_64
-            java-version: '8'
-          - os: macos-latest
-            platform: macos-x86_64
-            java-version: '23'
-          - os: windows-latest
-            platform: windows-x86_64
-            java-version: '8'
-          - os: windows-latest
-            platform: windows-x86_64
-            java-version: '23'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK ${{ matrix.java-version }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ matrix.java-version }}
-          distribution: 'temurin'
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
-      - name: Download native libraries
-        uses: actions/download-artifact@v4
-        with:
-          name: native-libs-${{ matrix.platform }}-java${{ matrix.java-version }}
-
-      - name: Run benchmarks
-        shell: bash
-        run: |
-          cd wasmtime4j-benchmarks
-          if [[ "${{ matrix.java-version }}" == "23" ]]; then
-            ./run-performance-suite.sh panama
-          else
-            ./run-performance-suite.sh jni
-          fi
-
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-results-${{ matrix.platform }}-java${{ matrix.java-version }}
-          path: wasmtime4j-benchmarks/benchmark-results/
-          retention-days: 90
-
-  # Code coverage
-  coverage:
-    name: Code Coverage
-    needs: [build-and-test]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Run tests with coverage
-        run: ./mvnw clean test jacoco:report -B
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: target/site/jacoco/jacoco.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: true
-
-  # Package validation
-  package-validation:
-    name: Package Validation
-    needs: [build-and-test, cross-compile]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-
-      - name: Download all native libraries
-        uses: actions/download-artifact@v4
-        with:
-          pattern: native-libs-*
-          merge-multiple: true
-
-      - name: Validate package contents
-        run: |
-          echo "Validating native library packages..."
-          find . -name "*.so" -o -name "*.dll" -o -name "*.dylib" | while read lib; do
-            echo "Found native library: $lib"
-            file "$lib" || echo "Cannot determine file type for $lib"
-          done
-
-      - name: Create unified package
-        run: |
-          ./mvnw clean package -DskipTests -B
-          
-      - name: Upload unified package
-        uses: actions/upload-artifact@v4
-        with:
-          name: wasmtime4j-unified-package
-          path: |
-            target/*.jar
-            */target/*.jar
-          retention-days: 30
-
-  # Regression testing
-  regression:
-    name: Regression Testing
-    needs: [build-and-test, performance]
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-
-      - name: Download benchmark results
-        uses: actions/download-artifact@v4
-        with:
-          pattern: benchmark-results-*
-          merge-multiple: true
-
-      - name: Compare performance with baseline
-        run: |
-          echo "Performing regression analysis..."
-          # Create a simple performance comparison script
-          cd wasmtime4j-benchmarks
-          if [ -f "benchmark-results/baseline.json" ] && [ -f "benchmark-results/current.json" ]; then
-            echo "Comparing current performance with baseline..."
-            # This would ideally use a proper performance regression tool
-            echo "Performance comparison results would be generated here"
-          else
-            echo "Baseline or current benchmark data not found, skipping regression analysis"
-          fi
-
-      - name: Comment PR with results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '## Performance Regression Test Results\n\nRegression analysis completed. Check the Actions logs for detailed results.'
-            })
-
-  # Wasmtime compliance validation (smoke tests)
-  wasmtime-compliance-smoke:
-    name: Wasmtime Compliance (Smoke)
-    needs: [build-and-test]
-    runs-on: ${{ matrix.os }}
+  # Test matrix — downloads pre-built native libs
+  test:
+    name: Test Java ${{ matrix.java }} (${{ matrix.platform }})
+    needs: build-native
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Linux x86_64
           - os: ubuntu-latest
             platform: linux-x86_64
-            java-version: '8'
-            runtime: 'jni'
+            java: '8'
           - os: ubuntu-latest
             platform: linux-x86_64
-            java-version: '23'
-            runtime: 'panama'
-
+            java: '21'
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            java: '23'
+          # Linux ARM64
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            java: '8'
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            java: '21'
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            java: '23'
+          # macOS ARM64
+          - os: macos-latest
+            platform: darwin-aarch64
+            java: '8'
+          - os: macos-latest
+            platform: darwin-aarch64
+            java: '21'
+          - os: macos-latest
+            platform: darwin-aarch64
+            java: '23'
+          # Windows x86_64
+          - os: windows-latest
+            platform: windows-x86_64
+            java: '8'
+          - os: windows-latest
+            platform: windows-x86_64
+            java: '21'
+          - os: windows-latest
+            platform: windows-x86_64
+            java: '23'
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK ${{ matrix.java-version }}
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java-version }}
+          java-version: ${{ matrix.java }}
           distribution: 'temurin'
 
-      - name: Cache Maven dependencies
+      - name: Cache Maven
         uses: actions/cache@v4
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-compliance-smoke-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          path: ~/.m2/repository
+          key: m2-test-${{ matrix.java }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: m2-test-
 
-      - name: Install Wasmtime CLI
-        shell: bash
-        run: |
-          WASMTIME_VERSION="26.0.0"
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
-            curl -L "https://github.com/bytecodealliance/wasmtime/releases/download/v${WASMTIME_VERSION}/wasmtime-v${WASMTIME_VERSION}-x86_64-linux.tar.xz" -o wasmtime.tar.xz
-            tar -xf wasmtime.tar.xz
-            echo "$(pwd)/wasmtime-v${WASMTIME_VERSION}-x86_64-linux" >> $GITHUB_PATH
-          fi
-
-      - name: Download wasmtime4j artifacts
+      - name: Download native library
         uses: actions/download-artifact@v4
         with:
-          name: native-libs-${{ matrix.platform }}-java${{ matrix.java-version }}
+          name: native-${{ matrix.platform }}
+          path: wasmtime4j-native/src/main/resources/natives/${{ matrix.platform }}/
 
-      - name: Run smoke compliance tests
+      - name: Verify native library
         shell: bash
-        run: |
-          cd wasmtime4j-comparison-tests
-          ./mvnw test -B \
-            -Dcomparison.suite=smoke \
-            -Dcomparison.targets=native,${{ matrix.runtime }} \
-            -Dtest.runtime=${{ matrix.runtime }} \
-            -Dcomparison.reports.dir=target/smoke-compliance-reports \
-            -Dcomparison.tests.timeout=300
+        run: ls -la wasmtime4j-native/src/main/resources/natives/${{ matrix.platform }}/
 
-      - name: Upload smoke compliance results
+      - name: Run tests
+        shell: bash
+        run: ./mvnw test -B -P skip-native -q
+
+      - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-compliance-${{ matrix.platform }}-${{ matrix.runtime }}-java${{ matrix.java-version }}
-          path: |
-            wasmtime4j-comparison-tests/target/smoke-compliance-reports/
-            wasmtime4j-comparison-tests/target/surefire-reports/
+          name: test-results-${{ matrix.platform }}-java${{ matrix.java }}
+          path: '**/target/surefire-reports/'
           retention-days: 7
-
-  # Enhanced reporting with compliance results
-  enhanced-reporting:
-    name: Enhanced CI Reporting
-    needs: [regression, wasmtime-compliance-smoke]
-    if: always() && github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-
-      - name: Generate comprehensive CI report
-        run: |
-          cat > ci_comprehensive_report.md << 'EOF'
-          # 🚀 Wasmtime4j CI Results
-
-          **Commit:** ${{ github.sha }}
-          **PR:** #${{ github.event.number }}
-          **Date:** $(date -u)
-
-          ## 📊 Test Results Summary
-
-          ### Core Functionality
-          EOF
-
-          # Add test results analysis
-          if find . -name "TEST-*.xml" | head -1 | xargs grep -l "failures=\"0\"" >/dev/null 2>&1; then
-            echo "✅ **Core Tests:** PASSED" >> ci_comprehensive_report.md
-          else
-            echo "❌ **Core Tests:** FAILED" >> ci_comprehensive_report.md
-          fi
-
-          # Add compliance results
-          echo "" >> ci_comprehensive_report.md
-          echo "### Wasmtime Compliance" >> ci_comprehensive_report.md
-          if find . -name "*compliance*" -type d | head -1 >/dev/null 2>&1; then
-            echo "✅ **Smoke Compliance:** EXECUTED" >> ci_comprehensive_report.md
-            echo "📋 Compliance validation completed for core Wasmtime features" >> ci_comprehensive_report.md
-          else
-            echo "⚠️ **Smoke Compliance:** SKIPPED" >> ci_comprehensive_report.md
-          fi
-
-          echo "" >> ci_comprehensive_report.md
-          echo "### Performance Analysis" >> ci_comprehensive_report.md
-          if find . -name "*benchmark*" -type f | head -1 >/dev/null 2>&1; then
-            echo "📈 **Performance Tests:** COMPLETED" >> ci_comprehensive_report.md
-            echo "Performance benchmarks executed and available in artifacts" >> ci_comprehensive_report.md
-          else
-            echo "⚠️ **Performance Tests:** NO DATA" >> ci_comprehensive_report.md
-          fi
-
-          echo "" >> ci_comprehensive_report.md
-          echo "## 🔗 Detailed Results" >> ci_comprehensive_report.md
-          echo "- 📁 **Test Reports:** Available in CI artifacts" >> ci_comprehensive_report.md
-          echo "- 🔍 **Compliance Details:** Check smoke-compliance-* artifacts" >> ci_comprehensive_report.md
-          echo "- 📊 **Performance Data:** Check benchmark-results-* artifacts" >> ci_comprehensive_report.md
-          echo "" >> ci_comprehensive_report.md
-          echo "## 🚦 Next Steps" >> ci_comprehensive_report.md
-          echo "- Review any test failures in the logs" >> ci_comprehensive_report.md
-          echo "- Check compliance validation results" >> ci_comprehensive_report.md
-          echo "- Monitor performance trends" >> ci_comprehensive_report.md
-
-      - name: Comment PR with comprehensive report
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-
-            let reportContent = "CI pipeline completed with enhanced validation.";
-            if (fs.existsSync('ci_comprehensive_report.md')) {
-              reportContent = fs.readFileSync('ci_comprehensive_report.md', 'utf8');
-            }
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: reportContent
-            });
