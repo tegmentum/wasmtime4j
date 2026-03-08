@@ -512,7 +512,7 @@ public final class PanamaStore implements Store {
     }
 
     this.engine = engine;
-    this.arena = Arena.ofConfined();
+    this.arena = Arena.ofShared();
 
     // Create native store via Panama FFI
     this.nativeStore = NATIVE_BINDINGS.storeCreate(engine.getNativeEngine());
@@ -551,7 +551,7 @@ public final class PanamaStore implements Store {
     }
 
     this.engine = engine;
-    this.arena = Arena.ofConfined();
+    this.arena = Arena.ofShared();
 
     // Create native store via Panama FFI with limits
     final MemorySegment storePtr = arena.allocate(ValueLayout.ADDRESS);
@@ -611,7 +611,7 @@ public final class PanamaStore implements Store {
     }
 
     this.engine = engine;
-    this.arena = Arena.ofConfined();
+    this.arena = Arena.ofShared();
 
     // Create native store via Panama FFI with resource limits
     final MemorySegment storePtr = arena.allocate(ValueLayout.ADDRESS);

@@ -121,6 +121,7 @@ public final class PanamaLinker<T> implements ai.tegmentum.wasmtime4j.Linker<T> 
             },
             this,
             () -> {
+              waitForInFlightCallbacks();
               if (linkerHandle != null && !linkerHandle.equals(MemorySegment.NULL)) {
                 NATIVE_INSTANCE_BINDINGS.panamaLinkerDestroy(linkerHandle);
               }
