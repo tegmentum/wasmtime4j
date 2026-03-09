@@ -596,14 +596,14 @@ public final class PanamaWasiContext implements WasiContext {
 
         if (dataPtr.equals(MemorySegment.NULL) || length == 0) {
           if (!dataPtr.equals(MemorySegment.NULL)) {
-            NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+            NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr, length);
           }
           return java.util.Collections.emptyMap();
         }
 
         final MemorySegment sizedPtr = dataPtr.reinterpret(length);
         final byte[] bytes = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
-        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr, length);
 
         final String data = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
         final java.util.Map<String, String> env = new java.util.LinkedHashMap<>();
@@ -641,14 +641,14 @@ public final class PanamaWasiContext implements WasiContext {
 
         if (dataPtr.equals(MemorySegment.NULL) || length == 0) {
           if (!dataPtr.equals(MemorySegment.NULL)) {
-            NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+            NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr, length);
           }
           return java.util.Collections.emptyList();
         }
 
         final MemorySegment sizedPtr = dataPtr.reinterpret(length);
         final byte[] bytes = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
-        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr, length);
 
         final String data = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
         final java.util.List<String> args = new java.util.ArrayList<>();
@@ -699,7 +699,7 @@ public final class PanamaWasiContext implements WasiContext {
 
         final long length = lengthOut.get(ValueLayout.JAVA_LONG, 0);
         if (length == 0) {
-          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr, length);
           return new byte[0];
         }
 
@@ -708,7 +708,7 @@ public final class PanamaWasiContext implements WasiContext {
         final byte[] data = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
 
         // Free the native buffer
-        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr, length);
 
         return data;
       }
@@ -735,7 +735,7 @@ public final class PanamaWasiContext implements WasiContext {
 
         final long length = lengthOut.get(ValueLayout.JAVA_LONG, 0);
         if (length == 0) {
-          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+          NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr, length);
           return new byte[0];
         }
 
@@ -744,7 +744,7 @@ public final class PanamaWasiContext implements WasiContext {
         final byte[] data = sizedPtr.toArray(ValueLayout.JAVA_BYTE);
 
         // Free the native buffer
-        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr);
+        NATIVE_BINDINGS.wasiFreeCaptureBuffer(dataPtr, length);
 
         return data;
       }

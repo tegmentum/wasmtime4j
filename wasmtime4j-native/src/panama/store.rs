@@ -7,7 +7,7 @@
 use crate::error::ffi_utils;
 use crate::store::core;
 use crate::WasmtimeResult;
-use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_void};
 use wasmtime::{FuncType, ValType};
 
 /// Create a new WebAssembly store with default configuration (Panama FFI version)
@@ -35,9 +35,9 @@ pub extern "C" fn wasmtime4j_panama_store_create(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_create_with_config(
     engine_ptr: *mut c_void,
-    fuel_limit: c_ulong,             // 0 = no limit
-    memory_limit_bytes: c_ulong,     // 0 = no limit
-    execution_timeout_secs: c_ulong, // 0 = no timeout
+    fuel_limit: u64,             // 0 = no limit
+    memory_limit_bytes: u64,     // 0 = no limit
+    execution_timeout_secs: u64, // 0 = no timeout
     max_instances: c_uint,           // 0 = no limit
     max_table_elements: c_uint,      // 0 = no limit
     max_tables: c_uint,              // 0 = no limit
@@ -76,10 +76,10 @@ pub extern "C" fn wasmtime4j_panama_store_create_with_config(
 
 /// Add fuel to the store for execution limiting (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_store_add_fuel(store_ptr: *mut c_void, fuel: c_ulong) -> c_int {
+pub extern "C" fn wasmtime4j_panama_store_add_fuel(store_ptr: *mut c_void, fuel: u64) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
-        core::add_fuel(store, fuel as u64)?;
+        core::add_fuel(store, fuel)?;
         Ok(())
     })
 }
@@ -88,13 +88,13 @@ pub extern "C" fn wasmtime4j_panama_store_add_fuel(store_ptr: *mut c_void, fuel:
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_get_fuel_remaining(
     store_ptr: *mut c_void,
-    fuel_ptr: *mut c_ulong,
+    fuel_ptr: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
         let fuel = core::get_fuel_remaining(store)?;
         unsafe {
-            *fuel_ptr = fuel as c_ulong;
+            *fuel_ptr = fuel;
         }
         Ok(())
     })
@@ -104,14 +104,14 @@ pub extern "C" fn wasmtime4j_panama_store_get_fuel_remaining(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_consume_fuel(
     store_ptr: *mut c_void,
-    fuel_to_consume: c_ulong,
-    fuel_consumed_ptr: *mut c_ulong,
+    fuel_to_consume: u64,
+    fuel_consumed_ptr: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
-        let actual_consumed = core::consume_fuel(store, fuel_to_consume as u64)?;
+        let actual_consumed = core::consume_fuel(store, fuel_to_consume)?;
         unsafe {
-            *fuel_consumed_ptr = actual_consumed as c_ulong;
+            *fuel_consumed_ptr = actual_consumed;
         }
         Ok(())
     })
@@ -121,11 +121,11 @@ pub extern "C" fn wasmtime4j_panama_store_consume_fuel(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_set_epoch_deadline(
     store_ptr: *mut c_void,
-    ticks: c_ulong,
+    ticks: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
-        core::set_epoch_deadline(store, ticks as u64);
+        core::set_epoch_deadline(store, ticks);
         Ok(())
     })
 }
@@ -260,11 +260,11 @@ pub extern "C" fn wasmtime4j_panama_store_clear_debug_handler(store_ptr: *mut c_
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_epoch_deadline_async_yield_and_update(
     store_ptr: *mut c_void,
-    delta: c_ulong,
+    delta: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
-        core::epoch_deadline_async_yield_and_update(store, delta as u64)?;
+        core::epoch_deadline_async_yield_and_update(store, delta)?;
         Ok(())
     })
 }
@@ -293,9 +293,9 @@ pub extern "C" fn wasmtime4j_panama_store_validate(store_ptr: *mut c_void) -> c_
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_get_execution_stats(
     store_ptr: *mut c_void,
-    execution_count_ptr: *mut c_ulong,
-    total_execution_time_us_ptr: *mut c_ulong,
-    fuel_consumed_ptr: *mut c_ulong,
+    execution_count_ptr: *mut u64,
+    total_execution_time_us_ptr: *mut u64,
+    fuel_consumed_ptr: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
@@ -303,7 +303,7 @@ pub extern "C" fn wasmtime4j_panama_store_get_execution_stats(
 
         unsafe {
             *execution_count_ptr = stats.execution_count;
-            *total_execution_time_us_ptr = stats.total_execution_time.as_micros() as c_ulong;
+            *total_execution_time_us_ptr = stats.total_execution_time.as_micros() as u64;
             *fuel_consumed_ptr = stats.fuel_consumed;
         }
 
@@ -319,9 +319,9 @@ pub extern "C" fn wasmtime4j_panama_store_get_execution_stats(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_get_memory_usage(
     store_ptr: *mut c_void,
-    total_bytes_ptr: *mut c_ulong,
-    used_bytes_ptr: *mut c_ulong,
-    instance_count_ptr: *mut c_ulong,
+    total_bytes_ptr: *mut u64,
+    used_bytes_ptr: *mut u64,
+    instance_count_ptr: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
@@ -330,7 +330,7 @@ pub extern "C" fn wasmtime4j_panama_store_get_memory_usage(
         unsafe {
             *total_bytes_ptr = 0;
             *used_bytes_ptr = 0;
-            *instance_count_ptr = usage.execution_count as c_ulong;
+            *instance_count_ptr = usage.execution_count as u64;
         }
 
         Ok(())
@@ -341,21 +341,21 @@ pub extern "C" fn wasmtime4j_panama_store_get_memory_usage(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_get_metadata(
     store_ptr: *mut c_void,
-    fuel_limit_ptr: *mut c_ulong,
-    memory_limit_bytes_ptr: *mut c_ulong,
-    execution_timeout_secs_ptr: *mut c_ulong,
-    instance_count_ptr: *mut c_ulong,
+    fuel_limit_ptr: *mut u64,
+    memory_limit_bytes_ptr: *mut u64,
+    execution_timeout_secs_ptr: *mut u64,
+    instance_count_ptr: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
         let metadata = core::get_store_metadata(store);
 
         unsafe {
-            *fuel_limit_ptr = metadata.fuel_limit.unwrap_or(0) as c_ulong;
-            *memory_limit_bytes_ptr = metadata.memory_limit_bytes.unwrap_or(0) as c_ulong;
+            *fuel_limit_ptr = metadata.fuel_limit.unwrap_or(0);
+            *memory_limit_bytes_ptr = metadata.memory_limit_bytes.unwrap_or(0) as u64;
             *execution_timeout_secs_ptr =
-                metadata.execution_timeout.map(|d| d.as_secs()).unwrap_or(0) as c_ulong;
-            *instance_count_ptr = metadata.instance_count as c_ulong;
+                metadata.execution_timeout.map(|d| d.as_secs()).unwrap_or(0);
+            *instance_count_ptr = metadata.instance_count as u64;
         }
 
         Ok(())
@@ -401,7 +401,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
     param_count: c_uint,
     return_types: *const c_int,
     return_count: c_uint,
-    func_ref_id_out: *mut c_ulong,
+    func_ref_id_out: *mut u64,
 ) -> c_int {
     use crate::hostfunc::HostFunctionCallback;
     use crate::instance::WasmValue;
@@ -571,7 +571,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function_unchecked(
     param_count: c_uint,
     return_types: *const c_int,
     return_count: c_uint,
-    func_ref_id_out: *mut c_ulong,
+    func_ref_id_out: *mut u64,
 ) -> c_int {
     use crate::hostfunc::HostFunctionCallback;
     use crate::instance::WasmValue;
@@ -703,7 +703,7 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function_unchecked(
 
 /// Destroy a host function and unregister it from the reference registry (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_destroy_host_function(func_ref_id: c_ulong) -> c_int {
+pub extern "C" fn wasmtime4j_panama_destroy_host_function(func_ref_id: u64) -> c_int {
     ffi_utils::ffi_try_code(|| {
         if func_ref_id != 0 {
             match crate::table::core::remove_function_reference(func_ref_id) {
@@ -825,10 +825,10 @@ pub extern "C" fn wasmtime4j_panama_store_gc(store_ptr: *mut c_void) -> c_int {
 
 /// Set fuel for a WebAssembly store (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_store_set_fuel(store_ptr: *mut c_void, fuel: c_ulong) -> c_int {
+pub extern "C" fn wasmtime4j_panama_store_set_fuel(store_ptr: *mut c_void, fuel: u64) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
-        crate::store::core::set_fuel(store, fuel as u64)?;
+        crate::store::core::set_fuel(store, fuel)?;
         Ok(())
     })
 }
@@ -837,11 +837,11 @@ pub extern "C" fn wasmtime4j_panama_store_set_fuel(store_ptr: *mut c_void, fuel:
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_set_fuel_async_yield_interval(
     store_ptr: *mut c_void,
-    interval: c_ulong,
+    interval: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
-        crate::store::core::set_fuel_async_yield_interval(store, interval as u64)?;
+        crate::store::core::set_fuel_async_yield_interval(store, interval)?;
         Ok(())
     })
 }
@@ -871,13 +871,13 @@ pub extern "C" fn wasmtime4j_panama_store_try_create(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_get_hostcall_fuel(
     store_ptr: *mut c_void,
-    fuel_ptr: *mut c_ulong,
+    fuel_ptr: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
         let fuel = core::get_hostcall_fuel(store)?;
         unsafe {
-            *fuel_ptr = fuel as c_ulong;
+            *fuel_ptr = fuel as u64;
         }
         Ok(())
     })
@@ -887,7 +887,7 @@ pub extern "C" fn wasmtime4j_panama_store_get_hostcall_fuel(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_set_hostcall_fuel(
     store_ptr: *mut c_void,
-    fuel: c_ulong,
+    fuel: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { core::get_store_ref(store_ptr)? };
@@ -990,7 +990,7 @@ fn serialize_backtrace(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_store_get_fuel(
     store_ptr: *mut c_void,
-    fuel_out: *mut c_ulong,
+    fuel_out: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let store = unsafe { crate::store::core::get_store_ref(store_ptr)? };
@@ -1004,7 +1004,7 @@ pub extern "C" fn wasmtime4j_panama_store_get_fuel(
         let remaining_fuel = crate::store::core::get_fuel_remaining(store)?;
 
         unsafe {
-            *fuel_out = remaining_fuel as c_ulong;
+            *fuel_out = remaining_fuel;
         }
 
         Ok(())

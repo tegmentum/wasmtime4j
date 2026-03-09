@@ -7,14 +7,14 @@
 use crate::caller::core;
 use crate::error::ffi_utils;
 use crate::store::StoreData;
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_void};
 use wasmtime::Caller as WasmtimeCaller;
 
 /// Get fuel remaining in the caller if fuel metering is enabled (Panama FFI version)
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_caller_get_fuel_remaining(
     caller_ptr: *mut c_void,
-    fuel_out: *mut c_ulong,
+    fuel_out: *mut u64,
 ) -> c_int {
     if caller_ptr.is_null() || fuel_out.is_null() {
         return -1; // Error: null pointer
@@ -38,7 +38,7 @@ pub extern "C" fn wasmtime4j_panama_caller_get_fuel_remaining(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_caller_add_fuel(
     caller_ptr: *mut c_void,
-    fuel: c_ulong,
+    fuel: u64,
 ) -> c_int {
     if caller_ptr.is_null() {
         return -1; // Error: null pointer
@@ -55,7 +55,7 @@ pub extern "C" fn wasmtime4j_panama_caller_add_fuel(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_caller_set_fuel(
     caller_ptr: *mut c_void,
-    fuel: c_ulong,
+    fuel: u64,
 ) -> c_int {
     if caller_ptr.is_null() {
         return -1; // Error: null pointer
@@ -72,7 +72,7 @@ pub extern "C" fn wasmtime4j_panama_caller_set_fuel(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_caller_set_epoch_deadline(
     caller_ptr: *mut c_void,
-    deadline: c_ulong,
+    deadline: u64,
 ) -> c_int {
     if caller_ptr.is_null() {
         return -1; // Error: null pointer
@@ -104,7 +104,7 @@ pub extern "C" fn wasmtime4j_panama_caller_has_epoch_deadline(caller_ptr: *mut c
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_caller_set_fuel_async_yield_interval(
     caller_ptr: *mut c_void,
-    interval: c_ulong,
+    interval: u64,
 ) -> c_int {
     if caller_ptr.is_null() {
         return -1; // Error: null pointer

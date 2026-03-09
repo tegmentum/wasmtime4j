@@ -11,7 +11,7 @@
 //! Stream operations now use the unified `wasi_stream_ops` trait-based abstraction,
 //! eliminating code duplication between Panama FFI, JNI, and Preview 2 implementations.
 
-use std::os::raw::{c_long, c_void};
+use std::os::raw::c_void;
 use std::panic::AssertUnwindSafe;
 use std::slice;
 
@@ -210,9 +210,9 @@ fn close_pollable(context: &WasiContext, pollable_id: u64) -> WasmtimeResult<()>
 pub extern "C" fn wasmtime4j_panama_wasi_input_stream_read(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
-    length: c_long,
+    length: i64,
     out_buffer: *mut u8,
-    out_length: *mut c_long,
+    out_length: *mut i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
@@ -242,7 +242,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_read(
         let copy_len = data.len().min(length as usize);
         unsafe {
             std::ptr::copy_nonoverlapping(data.as_ptr(), out_buffer, copy_len);
-            *out_length = copy_len as c_long;
+            *out_length = copy_len as i64;
         }
         Ok(())
     }))
@@ -263,9 +263,9 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_read(
 pub extern "C" fn wasmtime4j_panama_wasi_input_stream_blocking_read(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
-    length: c_long,
+    length: i64,
     out_buffer: *mut u8,
-    out_length: *mut c_long,
+    out_length: *mut i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
@@ -295,7 +295,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_blocking_read(
         let copy_len = data.len().min(length as usize);
         unsafe {
             std::ptr::copy_nonoverlapping(data.as_ptr(), out_buffer, copy_len);
-            *out_length = copy_len as c_long;
+            *out_length = copy_len as i64;
         }
         Ok(())
     }))
@@ -315,8 +315,8 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_blocking_read(
 pub extern "C" fn wasmtime4j_panama_wasi_input_stream_skip(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
-    length: c_long,
-    out_skipped: *mut c_long,
+    length: i64,
+    out_skipped: *mut i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
@@ -343,7 +343,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_skip(
 
         let skipped = skip_in_stream(context, stream_id, length as u64, false)?;
         unsafe {
-            *out_skipped = skipped as c_long;
+            *out_skipped = skipped as i64;
         }
         Ok(())
     }))
@@ -434,7 +434,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_input_stream_close(
 pub extern "C" fn wasmtime4j_panama_wasi_output_stream_check_write(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
-    out_capacity: *mut c_long,
+    out_capacity: *mut i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || out_capacity.is_null() {
@@ -457,7 +457,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_check_write(
 
         let capacity = check_write_capacity(context, stream_id)?;
         unsafe {
-            *out_capacity = capacity as c_long;
+            *out_capacity = capacity as i64;
         }
         Ok(())
     }))
@@ -478,7 +478,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_write(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
     buffer: *const u8,
-    length: c_long,
+    length: i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || buffer.is_null() || length < 0 {
@@ -520,7 +520,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_write_and_flush(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
     buffer: *const u8,
-    length: c_long,
+    length: i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || buffer.is_null() || length < 0 {
@@ -635,7 +635,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_flush(
 pub extern "C" fn wasmtime4j_panama_wasi_output_stream_write_zeroes(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
-    length: c_long,
+    length: i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || length < 0 {
@@ -674,7 +674,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_write_zeroes(
 pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_write_zeroes_and_flush(
     context_handle: *mut c_void,
     stream_handle: *mut c_void,
-    length: c_long,
+    length: i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null() || stream_handle.is_null() || length < 0 {
@@ -717,8 +717,8 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_splice(
     context_handle: *mut c_void,
     output_stream_handle: *mut c_void,
     input_stream_handle: *mut c_void,
-    length: c_long,
-    out_spliced: *mut c_long,
+    length: i64,
+    out_spliced: *mut i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
@@ -753,7 +753,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_splice(
             false,
         )?;
         unsafe {
-            *out_spliced = spliced as c_long;
+            *out_spliced = spliced as i64;
         }
         Ok(())
     }))
@@ -775,8 +775,8 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_splice(
     context_handle: *mut c_void,
     output_stream_handle: *mut c_void,
     input_stream_handle: *mut c_void,
-    length: c_long,
-    out_spliced: *mut c_long,
+    length: i64,
+    out_spliced: *mut i64,
 ) -> i32 {
     ffi_try_code(AssertUnwindSafe(|| {
         if context_handle.is_null()
@@ -811,7 +811,7 @@ pub extern "C" fn wasmtime4j_panama_wasi_output_stream_blocking_splice(
             true,
         )?;
         unsafe {
-            *out_spliced = spliced as c_long;
+            *out_spliced = spliced as i64;
         }
         Ok(())
     }))

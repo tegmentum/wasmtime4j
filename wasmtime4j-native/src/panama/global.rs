@@ -6,7 +6,7 @@
 use crate::error::ffi_utils;
 use crate::global::core;
 use crate::store::Store;
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_void};
 use wasmtime::Mutability;
 
 /// Create a new WebAssembly global variable (Panama FFI version)
@@ -16,11 +16,11 @@ pub extern "C" fn wasmtime4j_panama_global_create(
     value_type: c_int,
     mutability: c_int,
     i32_value: c_int,
-    i64_value: c_ulong,
+    i64_value: u64,
     f32_value: f64, // Use f64 for F32 to avoid precision loss in FFI
     f64_value: f64,
     ref_id_present: c_int,
-    ref_id: c_ulong,
+    ref_id: u64,
     v128_bytes_ptr: *const u8, // Pointer to 16-byte V128 value (can be null)
     name_ptr: *const c_char,
     global_ptr: *mut *mut c_void,
@@ -89,11 +89,11 @@ pub extern "C" fn wasmtime4j_panama_global_get(
     global_ptr: *mut c_void,
     store_ptr: *mut c_void,
     i32_value: *mut c_int,
-    i64_value: *mut c_ulong,
+    i64_value: *mut u64,
     f32_value: *mut f64,
     f64_value: *mut f64,
     ref_id_present: *mut c_int,
-    ref_id: *mut c_ulong,
+    ref_id: *mut u64,
     v128_bytes_ptr: *mut u8, // Output pointer for 16-byte V128 value (can be null)
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
@@ -114,7 +114,7 @@ pub extern "C" fn wasmtime4j_panama_global_get(
                 *i32_value = i32_val;
             }
             if !i64_value.is_null() {
-                *i64_value = i64_val as c_ulong;
+                *i64_value = i64_val as u64;
             }
             if !f32_value.is_null() {
                 *f32_value = f32_val as f64;
@@ -146,11 +146,11 @@ pub extern "C" fn wasmtime4j_panama_global_set(
     store_ptr: *mut c_void,
     value_type: c_int,
     i32_value: c_int,
-    i64_value: c_ulong,
+    i64_value: u64,
     f32_value: f64,
     f64_value: f64,
     ref_id_present: c_int,
-    ref_id: c_ulong,
+    ref_id: u64,
     v128_bytes_ptr: *const u8, // Pointer to 16-byte V128 value (can be null)
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {

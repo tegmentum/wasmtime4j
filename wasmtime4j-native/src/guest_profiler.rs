@@ -9,7 +9,7 @@
 //! in the Firefox Processed Profile Format (JSON), viewable at
 //! <https://profiler.firefox.com/>.
 
-use std::ffi::{c_char, c_int, c_long, c_ulong, c_void, CStr};
+use std::ffi::{c_char, c_int, c_void, CStr};
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -41,7 +41,7 @@ struct ProfilerBox {
 pub unsafe extern "C" fn wasmtime4j_guest_profiler_new(
     engine_ptr: *const c_void,
     module_name: *const c_char,
-    interval_nanos: c_long,
+    interval_nanos: i64,
     module_ptrs: *const *const c_void,
     module_names: *const *const c_char,
     module_count: c_int,
@@ -106,7 +106,7 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_new(
 pub unsafe extern "C" fn wasmtime4j_guest_profiler_new_single(
     engine_ptr: *const c_void,
     module_name: *const c_char,
-    interval_nanos: c_long,
+    interval_nanos: i64,
     module_ptr: *const c_void,
 ) -> *mut c_void {
     if engine_ptr.is_null() || module_name.is_null() || module_ptr.is_null() {
@@ -162,7 +162,7 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_new_single(
 pub unsafe extern "C" fn wasmtime4j_guest_profiler_new_component(
     engine_ptr: *const c_void,
     component_name: *const c_char,
-    interval_nanos: c_long,
+    interval_nanos: i64,
     component_ptr: *const c_void,
     extra_module_ptrs: *const *const c_void,
     extra_module_names: *const *const c_char,
@@ -235,7 +235,7 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_new_component(
 pub unsafe extern "C" fn wasmtime4j_guest_profiler_sample(
     profiler_ptr: *mut c_void,
     store_ptr: *mut c_void,
-    delta_nanos: c_long,
+    delta_nanos: i64,
 ) -> c_int {
     if profiler_ptr.is_null() || store_ptr.is_null() {
         return -1;
@@ -333,7 +333,7 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_call_hook(
 pub unsafe extern "C" fn wasmtime4j_guest_profiler_finish(
     profiler_ptr: *mut c_void,
     data_out: *mut *mut u8,
-    len_out: *mut c_ulong,
+    len_out: *mut u64,
 ) -> c_int {
     if profiler_ptr.is_null() || data_out.is_null() || len_out.is_null() {
         return -1;
@@ -358,7 +358,7 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_finish(
             let ptr = buffer.as_mut_ptr();
             std::mem::forget(buffer); // Caller owns the memory now
             *data_out = ptr;
-            *len_out = len as c_ulong;
+            *len_out = len as u64;
             0
         }
         Err(e) => {
@@ -374,7 +374,7 @@ pub unsafe extern "C" fn wasmtime4j_guest_profiler_finish(
 /// `data` must be a pointer previously returned by `finish`, and `len` must
 /// match the length returned.
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_guest_profiler_free_data(data: *mut u8, len: c_ulong) {
+pub unsafe extern "C" fn wasmtime4j_guest_profiler_free_data(data: *mut u8, len: u64) {
     if !data.is_null() && len > 0 {
         let _ = Vec::from_raw_parts(data, len as usize, len as usize);
     }

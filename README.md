@@ -29,11 +29,6 @@ Add the dependency:
     <version>42.0.1-1.0.0</version>
 </dependency>
 ```
-
-```gradle
-implementation 'ai.tegmentum:wasmtime4j:42.0.1-1.0.0'
-```
-
 ### Basic Usage
 
 ```java

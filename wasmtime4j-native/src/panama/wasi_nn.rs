@@ -54,13 +54,13 @@ pub extern "C" fn wasmtime4j_nn_context_create() -> *mut c_void {
 
 /// Returns 1 if any backends are available, 0 otherwise.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_nn_context_is_available(ctx_ptr: *const c_void) -> c_int {
+pub extern "C" fn wasmtime4j_nn_context_is_available(_ctx_ptr: *const c_void) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if ctx_ptr.is_null() {
+        if _ctx_ptr.is_null() {
             return 0;
         }
-        let ctx = unsafe { &*(ctx_ptr as *const NnContext) };
+        let ctx = unsafe { &*(_ctx_ptr as *const NnContext) };
         if ctx.is_available() { 1 } else { 0 }
     }
     #[cfg(not(feature = "wasi-nn"))]
@@ -73,26 +73,26 @@ pub extern "C" fn wasmtime4j_nn_context_is_available(ctx_ptr: *const c_void) -> 
 /// Returns FFI_SUCCESS or FFI_ERROR.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_context_supported_encodings(
-    ctx_ptr: *const c_void,
-    out_buf: *mut c_int,
-    out_buf_capacity: c_int,
-    out_count: *mut c_int,
+    _ctx_ptr: *const c_void,
+    _out_buf: *mut c_int,
+    _out_buf_capacity: c_int,
+    _out_count: *mut c_int,
 ) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if ctx_ptr.is_null() || out_count.is_null() {
+        if _ctx_ptr.is_null() || _out_count.is_null() {
             return FFI_ERROR;
         }
-        let ctx = unsafe { &*(ctx_ptr as *const NnContext) };
+        let ctx = unsafe { &*(_ctx_ptr as *const NnContext) };
         let codes = ctx.supported_encoding_codes();
         unsafe {
-            *out_count = codes.len() as c_int;
+            *_out_count = codes.len() as c_int;
         }
-        if !out_buf.is_null() {
-            let copy_len = std::cmp::min(codes.len(), out_buf_capacity as usize);
+        if !_out_buf.is_null() {
+            let copy_len = std::cmp::min(codes.len(), _out_buf_capacity as usize);
             for i in 0..copy_len {
                 unsafe {
-                    *out_buf.add(i) = codes[i] as c_int;
+                    *_out_buf.add(i) = codes[i] as c_int;
                 }
             }
         }
@@ -100,8 +100,8 @@ pub extern "C" fn wasmtime4j_nn_context_supported_encodings(
     }
     #[cfg(not(feature = "wasi-nn"))]
     {
-        if !out_count.is_null() {
-            unsafe { *out_count = 0; }
+        if !_out_count.is_null() {
+            unsafe { *_out_count = 0; }
         }
         FFI_SUCCESS
     }
@@ -114,46 +114,46 @@ pub extern "C" fn wasmtime4j_nn_context_supported_encodings(
 /// Returns graph pointer or null on error.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_context_load_graph(
-    ctx_ptr: *mut c_void,
-    parts_ptrs: *const *const u8,
-    parts_lens: *const c_int,
-    num_parts: c_int,
-    encoding_code: c_int,
-    target_code: c_int,
-    error_buf: *mut c_char,
-    error_buf_len: c_int,
+    _ctx_ptr: *mut c_void,
+    _parts_ptrs: *const *const u8,
+    _parts_lens: *const c_int,
+    _num_parts: c_int,
+    _encoding_code: c_int,
+    _target_code: c_int,
+    _error_buf: *mut c_char,
+    _error_buf_len: c_int,
 ) -> *mut c_void {
     #[cfg(feature = "wasi-nn")]
     {
-        if ctx_ptr.is_null() || parts_ptrs.is_null() || parts_lens.is_null() || num_parts <= 0 {
-            write_error(error_buf, error_buf_len, "Invalid arguments");
+        if _ctx_ptr.is_null() || _parts_ptrs.is_null() || _parts_lens.is_null() || _num_parts <= 0 {
+            write_error(_error_buf, _error_buf_len, "Invalid arguments");
             return ptr::null_mut();
         }
-        let ctx = unsafe { &mut *(ctx_ptr as *mut NnContext) };
+        let ctx = unsafe { &mut *(_ctx_ptr as *mut NnContext) };
 
-        let encoding = match crate::wasi_nn::graph_encoding_from_java(encoding_code) {
+        let encoding = match crate::wasi_nn::graph_encoding_from_java(_encoding_code) {
             Ok(e) => e,
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 return ptr::null_mut();
             }
         };
-        let target = match crate::wasi_nn::execution_target_from_java(target_code) {
+        let target = match crate::wasi_nn::execution_target_from_java(_target_code) {
             Ok(t) => t,
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 return ptr::null_mut();
             }
         };
 
         // Build slices from raw pointers
-        let mut part_slices: Vec<&[u8]> = Vec::with_capacity(num_parts as usize);
-        for i in 0..num_parts as usize {
+        let mut part_slices: Vec<&[u8]> = Vec::with_capacity(_num_parts as usize);
+        for i in 0.._num_parts as usize {
             unsafe {
-                let ptr = *parts_ptrs.add(i);
-                let len = *parts_lens.add(i) as usize;
+                let ptr = *_parts_ptrs.add(i);
+                let len = *_parts_lens.add(i) as usize;
                 if ptr.is_null() {
-                    write_error(error_buf, error_buf_len, &format!("Part {} pointer is null", i));
+                    write_error(_error_buf, _error_buf_len, &format!("Part {} pointer is null", i));
                     return ptr::null_mut();
                 }
                 part_slices.push(std::slice::from_raw_parts(ptr, len));
@@ -166,14 +166,14 @@ pub extern "C" fn wasmtime4j_nn_context_load_graph(
                 Box::into_raw(boxed) as *mut c_void
             }
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 ptr::null_mut()
             }
         }
     }
     #[cfg(not(feature = "wasi-nn"))]
     {
-        write_error(error_buf, error_buf_len, "wasi-nn feature not enabled");
+        write_error(_error_buf, _error_buf_len, "wasi-nn feature not enabled");
         ptr::null_mut()
     }
 }
@@ -182,14 +182,14 @@ pub extern "C" fn wasmtime4j_nn_context_load_graph(
 /// Returns a pointer to a heap-allocated CString. Caller must free with wasmtime4j_nn_free_string.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_context_get_backend_info(
-    ctx_ptr: *const c_void,
+    _ctx_ptr: *const c_void,
 ) -> *mut c_char {
     #[cfg(feature = "wasi-nn")]
     {
-        if ctx_ptr.is_null() {
+        if _ctx_ptr.is_null() {
             return ptr::null_mut();
         }
-        let ctx = unsafe { &*(ctx_ptr as *const NnContext) };
+        let ctx = unsafe { &*(_ctx_ptr as *const NnContext) };
         let names = ctx.backend_names();
         let default = ctx.default_backend_name().unwrap_or_default();
         let json = format!(
@@ -225,11 +225,11 @@ pub extern "C" fn wasmtime4j_nn_free_string(ptr: *mut c_char) {
 
 /// Closes and frees an NnContext.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_nn_context_close(ctx_ptr: *mut c_void) {
+pub extern "C" fn wasmtime4j_nn_context_close(_ctx_ptr: *mut c_void) {
     #[cfg(feature = "wasi-nn")]
     {
-        if !ctx_ptr.is_null() {
-            let _ = unsafe { Box::from_raw(ctx_ptr as *mut NnContext) };
+        if !_ctx_ptr.is_null() {
+            let _ = unsafe { Box::from_raw(_ctx_ptr as *mut NnContext) };
         }
     }
 }
@@ -240,13 +240,13 @@ pub extern "C" fn wasmtime4j_nn_context_close(ctx_ptr: *mut c_void) {
 
 /// Gets the graph encoding code.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_nn_graph_get_encoding(graph_ptr: *const c_void) -> c_int {
+pub extern "C" fn wasmtime4j_nn_graph_get_encoding(_graph_ptr: *const c_void) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if graph_ptr.is_null() {
+        if _graph_ptr.is_null() {
             return -1;
         }
-        let graph = unsafe { &*(graph_ptr as *const NnGraph) };
+        let graph = unsafe { &*(_graph_ptr as *const NnGraph) };
         graph.encoding_code()
     }
     #[cfg(not(feature = "wasi-nn"))]
@@ -257,13 +257,13 @@ pub extern "C" fn wasmtime4j_nn_graph_get_encoding(graph_ptr: *const c_void) -> 
 
 /// Gets the execution target code.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_nn_graph_get_target(graph_ptr: *const c_void) -> c_int {
+pub extern "C" fn wasmtime4j_nn_graph_get_target(_graph_ptr: *const c_void) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if graph_ptr.is_null() {
+        if _graph_ptr.is_null() {
             return -1;
         }
-        let graph = unsafe { &*(graph_ptr as *const NnGraph) };
+        let graph = unsafe { &*(_graph_ptr as *const NnGraph) };
         graph.target_code()
     }
     #[cfg(not(feature = "wasi-nn"))]
@@ -276,42 +276,42 @@ pub extern "C" fn wasmtime4j_nn_graph_get_target(graph_ptr: *const c_void) -> c_
 /// Returns exec context pointer or null on error.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_graph_create_exec_ctx(
-    graph_ptr: *const c_void,
-    error_buf: *mut c_char,
-    error_buf_len: c_int,
+    _graph_ptr: *const c_void,
+    _error_buf: *mut c_char,
+    _error_buf_len: c_int,
 ) -> *mut c_void {
     #[cfg(feature = "wasi-nn")]
     {
-        if graph_ptr.is_null() {
-            write_error(error_buf, error_buf_len, "Graph pointer is null");
+        if _graph_ptr.is_null() {
+            write_error(_error_buf, _error_buf_len, "Graph pointer is null");
             return ptr::null_mut();
         }
-        let graph = unsafe { &*(graph_ptr as *const NnGraph) };
+        let graph = unsafe { &*(_graph_ptr as *const NnGraph) };
         match graph.create_execution_context() {
             Ok(exec) => {
                 let boxed = Box::new(exec);
                 Box::into_raw(boxed) as *mut c_void
             }
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 ptr::null_mut()
             }
         }
     }
     #[cfg(not(feature = "wasi-nn"))]
     {
-        write_error(error_buf, error_buf_len, "wasi-nn feature not enabled");
+        write_error(_error_buf, _error_buf_len, "wasi-nn feature not enabled");
         ptr::null_mut()
     }
 }
 
 /// Closes and frees an NnGraph.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_nn_graph_close(graph_ptr: *mut c_void) {
+pub extern "C" fn wasmtime4j_nn_graph_close(_graph_ptr: *mut c_void) {
     #[cfg(feature = "wasi-nn")]
     {
-        if !graph_ptr.is_null() {
-            let _ = unsafe { Box::from_raw(graph_ptr as *mut NnGraph) };
+        if !_graph_ptr.is_null() {
+            let _ = unsafe { Box::from_raw(_graph_ptr as *mut NnGraph) };
         }
     }
 }
@@ -323,47 +323,47 @@ pub extern "C" fn wasmtime4j_nn_graph_close(graph_ptr: *mut c_void) {
 /// Sets an input tensor by index.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_exec_set_input_by_index(
-    exec_ptr: *mut c_void,
-    index: c_int,
-    dims: *const c_int,
-    num_dims: c_int,
-    tensor_type: c_int,
-    data: *const u8,
-    data_len: c_int,
-    error_buf: *mut c_char,
-    error_buf_len: c_int,
+    _exec_ptr: *mut c_void,
+    _index: c_int,
+    _dims: *const c_int,
+    _num_dims: c_int,
+    _tensor_type: c_int,
+    _data: *const u8,
+    _data_len: c_int,
+    _error_buf: *mut c_char,
+    _error_buf_len: c_int,
 ) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if exec_ptr.is_null() || dims.is_null() || data.is_null() {
-            write_error(error_buf, error_buf_len, "Invalid arguments");
+        if _exec_ptr.is_null() || _dims.is_null() || _data.is_null() {
+            write_error(_error_buf, _error_buf_len, "Invalid arguments");
             return FFI_ERROR;
         }
-        let exec = unsafe { &mut *(exec_ptr as *mut NnExecCtx) };
+        let exec = unsafe { &mut *(_exec_ptr as *mut NnExecCtx) };
 
-        let ty = match crate::wasi_nn::tensor_type_from_java(tensor_type) {
+        let ty = match crate::wasi_nn::tensor_type_from_java(_tensor_type) {
             Ok(t) => t,
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 return FFI_ERROR;
             }
         };
 
-        let dims_slice = unsafe { std::slice::from_raw_parts(dims, num_dims as usize) };
+        let dims_slice = unsafe { std::slice::from_raw_parts(_dims, _num_dims as usize) };
         let dims_u32: Vec<u32> = dims_slice.iter().map(|&d| d as u32).collect();
-        let data_slice = unsafe { std::slice::from_raw_parts(data, data_len as usize) };
+        let data_slice = unsafe { std::slice::from_raw_parts(_data, _data_len as usize) };
 
-        match exec.set_input_by_index(index as u32, &dims_u32, ty, data_slice) {
+        match exec.set_input_by_index(_index as u32, &dims_u32, ty, data_slice) {
             Ok(()) => FFI_SUCCESS,
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 FFI_ERROR
             }
         }
     }
     #[cfg(not(feature = "wasi-nn"))]
     {
-        write_error(error_buf, error_buf_len, "wasi-nn feature not enabled");
+        write_error(_error_buf, _error_buf_len, "wasi-nn feature not enabled");
         FFI_ERROR
     }
 }
@@ -371,57 +371,57 @@ pub extern "C" fn wasmtime4j_nn_exec_set_input_by_index(
 /// Sets an input tensor by name.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_exec_set_input_by_name(
-    exec_ptr: *mut c_void,
-    name: *const c_char,
-    dims: *const c_int,
-    num_dims: c_int,
-    tensor_type: c_int,
-    data: *const u8,
-    data_len: c_int,
-    error_buf: *mut c_char,
-    error_buf_len: c_int,
+    _exec_ptr: *mut c_void,
+    _name: *const c_char,
+    _dims: *const c_int,
+    _num_dims: c_int,
+    _tensor_type: c_int,
+    _data: *const u8,
+    _data_len: c_int,
+    _error_buf: *mut c_char,
+    _error_buf_len: c_int,
 ) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if exec_ptr.is_null() || name.is_null() || dims.is_null() || data.is_null() {
-            write_error(error_buf, error_buf_len, "Invalid arguments");
+        if _exec_ptr.is_null() || _name.is_null() || _dims.is_null() || _data.is_null() {
+            write_error(_error_buf, _error_buf_len, "Invalid arguments");
             return FFI_ERROR;
         }
-        let exec = unsafe { &mut *(exec_ptr as *mut NnExecCtx) };
+        let exec = unsafe { &mut *(_exec_ptr as *mut NnExecCtx) };
 
         let name_str = unsafe {
-            match CStr::from_ptr(name).to_str() {
+            match CStr::from_ptr(_name).to_str() {
                 Ok(s) => s,
                 Err(e) => {
-                    write_error(error_buf, error_buf_len, &format!("Invalid UTF-8 name: {}", e));
+                    write_error(_error_buf, _error_buf_len, &format!("Invalid UTF-8 name: {}", e));
                     return FFI_ERROR;
                 }
             }
         };
 
-        let ty = match crate::wasi_nn::tensor_type_from_java(tensor_type) {
+        let ty = match crate::wasi_nn::tensor_type_from_java(_tensor_type) {
             Ok(t) => t,
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 return FFI_ERROR;
             }
         };
 
-        let dims_slice = unsafe { std::slice::from_raw_parts(dims, num_dims as usize) };
+        let dims_slice = unsafe { std::slice::from_raw_parts(_dims, _num_dims as usize) };
         let dims_u32: Vec<u32> = dims_slice.iter().map(|&d| d as u32).collect();
-        let data_slice = unsafe { std::slice::from_raw_parts(data, data_len as usize) };
+        let data_slice = unsafe { std::slice::from_raw_parts(_data, _data_len as usize) };
 
         match exec.set_input_by_name(name_str, &dims_u32, ty, data_slice) {
             Ok(()) => FFI_SUCCESS,
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 FFI_ERROR
             }
         }
     }
     #[cfg(not(feature = "wasi-nn"))]
     {
-        write_error(error_buf, error_buf_len, "wasi-nn feature not enabled");
+        write_error(_error_buf, _error_buf_len, "wasi-nn feature not enabled");
         FFI_ERROR
     }
 }
@@ -429,28 +429,28 @@ pub extern "C" fn wasmtime4j_nn_exec_set_input_by_name(
 /// Runs inference.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_exec_compute(
-    exec_ptr: *mut c_void,
-    error_buf: *mut c_char,
-    error_buf_len: c_int,
+    _exec_ptr: *mut c_void,
+    _error_buf: *mut c_char,
+    _error_buf_len: c_int,
 ) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if exec_ptr.is_null() {
-            write_error(error_buf, error_buf_len, "Execution context pointer is null");
+        if _exec_ptr.is_null() {
+            write_error(_error_buf, _error_buf_len, "Execution context pointer is null");
             return FFI_ERROR;
         }
-        let exec = unsafe { &mut *(exec_ptr as *mut NnExecCtx) };
+        let exec = unsafe { &mut *(_exec_ptr as *mut NnExecCtx) };
         match exec.compute() {
             Ok(()) => FFI_SUCCESS,
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 FFI_ERROR
             }
         }
     }
     #[cfg(not(feature = "wasi-nn"))]
     {
-        write_error(error_buf, error_buf_len, "wasi-nn feature not enabled");
+        write_error(_error_buf, _error_buf_len, "wasi-nn feature not enabled");
         FFI_ERROR
     }
 }
@@ -460,40 +460,40 @@ pub extern "C" fn wasmtime4j_nn_exec_compute(
 /// Caller must free the allocated buffer with wasmtime4j_nn_free_buffer.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_exec_get_output_by_index(
-    exec_ptr: *mut c_void,
-    index: c_int,
-    out_data: *mut *mut u8,
-    out_data_len: *mut c_int,
-    error_buf: *mut c_char,
-    error_buf_len: c_int,
+    _exec_ptr: *mut c_void,
+    _index: c_int,
+    _out_data: *mut *mut u8,
+    _out_data_len: *mut c_int,
+    _error_buf: *mut c_char,
+    _error_buf_len: c_int,
 ) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if exec_ptr.is_null() || out_data.is_null() || out_data_len.is_null() {
-            write_error(error_buf, error_buf_len, "Invalid arguments");
+        if _exec_ptr.is_null() || _out_data.is_null() || _out_data_len.is_null() {
+            write_error(_error_buf, _error_buf_len, "Invalid arguments");
             return FFI_ERROR;
         }
-        let exec = unsafe { &mut *(exec_ptr as *mut NnExecCtx) };
-        match exec.get_output_by_index(index as u32) {
+        let exec = unsafe { &mut *(_exec_ptr as *mut NnExecCtx) };
+        match exec.get_output_by_index(_index as u32) {
             Ok(serialized) => {
                 let len = serialized.len();
                 let boxed = serialized.into_boxed_slice();
                 let ptr = Box::into_raw(boxed) as *mut u8;
                 unsafe {
-                    *out_data = ptr;
-                    *out_data_len = len as c_int;
+                    *_out_data = ptr;
+                    *_out_data_len = len as c_int;
                 }
                 FFI_SUCCESS
             }
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 FFI_ERROR
             }
         }
     }
     #[cfg(not(feature = "wasi-nn"))]
     {
-        write_error(error_buf, error_buf_len, "wasi-nn feature not enabled");
+        write_error(_error_buf, _error_buf_len, "wasi-nn feature not enabled");
         FFI_ERROR
     }
 }
@@ -501,27 +501,27 @@ pub extern "C" fn wasmtime4j_nn_exec_get_output_by_index(
 /// Gets an output tensor by name as serialized bytes.
 #[no_mangle]
 pub extern "C" fn wasmtime4j_nn_exec_get_output_by_name(
-    exec_ptr: *mut c_void,
-    name: *const c_char,
-    out_data: *mut *mut u8,
-    out_data_len: *mut c_int,
-    error_buf: *mut c_char,
-    error_buf_len: c_int,
+    _exec_ptr: *mut c_void,
+    _name: *const c_char,
+    _out_data: *mut *mut u8,
+    _out_data_len: *mut c_int,
+    _error_buf: *mut c_char,
+    _error_buf_len: c_int,
 ) -> c_int {
     #[cfg(feature = "wasi-nn")]
     {
-        if exec_ptr.is_null() || name.is_null() || out_data.is_null() || out_data_len.is_null() {
-            write_error(error_buf, error_buf_len, "Invalid arguments");
+        if _exec_ptr.is_null() || _name.is_null() || _out_data.is_null() || _out_data_len.is_null() {
+            write_error(_error_buf, _error_buf_len, "Invalid arguments");
             return FFI_ERROR;
         }
-        let exec = unsafe { &mut *(exec_ptr as *mut NnExecCtx) };
+        let exec = unsafe { &mut *(_exec_ptr as *mut NnExecCtx) };
         let name_str = unsafe {
-            match CStr::from_ptr(name).to_str() {
+            match CStr::from_ptr(_name).to_str() {
                 Ok(s) => s,
                 Err(e) => {
                     write_error(
-                        error_buf,
-                        error_buf_len,
+                        _error_buf,
+                        _error_buf_len,
                         &format!("Invalid UTF-8 name: {}", e),
                     );
                     return FFI_ERROR;
@@ -534,20 +534,20 @@ pub extern "C" fn wasmtime4j_nn_exec_get_output_by_name(
                 let boxed = serialized.into_boxed_slice();
                 let ptr = Box::into_raw(boxed) as *mut u8;
                 unsafe {
-                    *out_data = ptr;
-                    *out_data_len = len as c_int;
+                    *_out_data = ptr;
+                    *_out_data_len = len as c_int;
                 }
                 FFI_SUCCESS
             }
             Err(msg) => {
-                write_error(error_buf, error_buf_len, &msg);
+                write_error(_error_buf, _error_buf_len, &msg);
                 FFI_ERROR
             }
         }
     }
     #[cfg(not(feature = "wasi-nn"))]
     {
-        write_error(error_buf, error_buf_len, "wasi-nn feature not enabled");
+        write_error(_error_buf, _error_buf_len, "wasi-nn feature not enabled");
         FFI_ERROR
     }
 }
@@ -565,11 +565,11 @@ pub extern "C" fn wasmtime4j_nn_free_buffer(ptr: *mut u8, len: c_int) {
 
 /// Closes and frees an NnExecCtx.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_nn_exec_close(exec_ptr: *mut c_void) {
+pub extern "C" fn wasmtime4j_nn_exec_close(_exec_ptr: *mut c_void) {
     #[cfg(feature = "wasi-nn")]
     {
-        if !exec_ptr.is_null() {
-            let _ = unsafe { Box::from_raw(exec_ptr as *mut NnExecCtx) };
+        if !_exec_ptr.is_null() {
+            let _ = unsafe { Box::from_raw(_exec_ptr as *mut NnExecCtx) };
         }
     }
 }

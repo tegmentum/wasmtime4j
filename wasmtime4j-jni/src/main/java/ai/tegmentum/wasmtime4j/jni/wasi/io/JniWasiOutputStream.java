@@ -229,6 +229,11 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
     return java.util.Optional.ofNullable(lastAccessedAt);
   }
 
+  /**
+   * Returns the list of WASI output-stream operations supported by this stream.
+   *
+   * @return an unmodifiable list of operation names
+   */
   public java.util.List<String> getAvailableOperations() {
     return java.util.Arrays.asList(
         "check-write",
@@ -243,6 +248,15 @@ public final class JniWasiOutputStream extends JniResource implements WasiOutput
         "subscribe");
   }
 
+  /**
+   * Invokes a named WASI output-stream operation with the given parameters.
+   *
+   * @param operation the operation name to invoke
+   * @param parameters the operation-specific parameters
+   * @return the result of the operation, or {@code null} for void operations
+   * @throws WasmException if the operation fails
+   * @throws IllegalArgumentException if the operation is null, empty, or unknown
+   */
   public Object invoke(final String operation, final Object... parameters) throws WasmException {
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");

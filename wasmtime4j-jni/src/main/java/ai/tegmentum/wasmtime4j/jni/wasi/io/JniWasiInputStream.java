@@ -169,6 +169,15 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
     return java.util.Arrays.asList("read", "blocking-read", "skip", "blocking-skip", "subscribe");
   }
 
+  /**
+   * Invokes a named WASI input-stream operation with the given parameters.
+   *
+   * @param operation the operation name to invoke
+   * @param parameters the operation-specific parameters
+   * @return the result of the operation, or {@code null} for void operations
+   * @throws WasmException if the operation fails
+   * @throws IllegalArgumentException if the operation is null, empty, or unknown
+   */
   public Object invoke(final String operation, final Object... parameters) throws WasmException {
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");

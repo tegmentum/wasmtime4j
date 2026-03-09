@@ -18,7 +18,7 @@ pub mod jni_wasi {
     use crate::error::jni_utils;
     use crate::wasi;
     use std::ffi::CString;
-    use std::os::raw::c_void;
+    use std::os::raw::{c_char, c_void};
 
     /// Create a new WASI context with specified configuration (JNI version)
     #[no_mangle]
@@ -1136,7 +1136,7 @@ pub mod jni_wasi {
                 wasi::wasmtime4j_wasi_context_preopen_dir(
                     context_handle as *mut c_void,
                     dir_cstr.as_ptr(),
-                    b".\0".as_ptr() as *const i8,
+                    b".\0".as_ptr() as *const c_char,
                 )
             };
             Ok(result)
@@ -1258,19 +1258,19 @@ pub mod jni_wasi {
                 if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
                     // Free the native buffer
                     unsafe {
-                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr, len);
                     }
                     byte_array.into_raw()
                 } else {
                     unsafe {
-                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr, len);
                     }
                     std::ptr::null_mut()
                 }
             }
             Err(_) => {
                 unsafe {
-                    wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                    wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr, len);
                 }
                 std::ptr::null_mut()
             }
@@ -1309,19 +1309,19 @@ pub mod jni_wasi {
                 if env.set_byte_array_region(&byte_array, 0, &data_i8).is_ok() {
                     // Free the native buffer
                     unsafe {
-                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr, len);
                     }
                     byte_array.into_raw()
                 } else {
                     unsafe {
-                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                        wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr, len);
                     }
                     std::ptr::null_mut()
                 }
             }
             Err(_) => {
                 unsafe {
-                    wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr);
+                    wasi::wasmtime4j_wasi_free_capture_buffer(data_ptr, len);
                 }
                 std::ptr::null_mut()
             }
@@ -1377,7 +1377,7 @@ pub mod jni_wasi {
 
         if result != 0 || out_ptr.is_null() || out_len == 0 {
             if !out_ptr.is_null() {
-                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr); }
+                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr, out_len); }
             }
             // Return empty string
             match env.new_string("") {
@@ -1387,7 +1387,7 @@ pub mod jni_wasi {
         } else {
             let data_slice = unsafe { std::slice::from_raw_parts(out_ptr, out_len) };
             let string = String::from_utf8_lossy(data_slice).into_owned();
-            unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr); }
+            unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr, out_len); }
 
             match env.new_string(&string) {
                 Ok(s) => s.into_raw(),
@@ -1419,7 +1419,7 @@ pub mod jni_wasi {
 
         if result != 0 || out_ptr.is_null() || out_len == 0 {
             if !out_ptr.is_null() {
-                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr); }
+                unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr, out_len); }
             }
             // Return empty string
             match env.new_string("") {
@@ -1429,7 +1429,7 @@ pub mod jni_wasi {
         } else {
             let data_slice = unsafe { std::slice::from_raw_parts(out_ptr, out_len) };
             let string = String::from_utf8_lossy(data_slice).into_owned();
-            unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr); }
+            unsafe { wasi::wasmtime4j_wasi_free_capture_buffer(out_ptr, out_len); }
 
             match env.new_string(&string) {
                 Ok(s) => s.into_raw(),

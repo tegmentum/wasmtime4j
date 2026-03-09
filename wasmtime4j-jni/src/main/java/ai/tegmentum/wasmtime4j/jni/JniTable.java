@@ -77,11 +77,6 @@ public final class JniTable extends JniResource implements WasmTable {
   }
 
   /**
-   * Ensures this table and its owning store are still usable.
-   *
-   * @throws IllegalStateException if this table or its store has been closed
-   */
-  /**
    * Checks that the store is still open. Must be called while the operation lock is held.
    *
    * @throws JniResourceException if the store has been closed

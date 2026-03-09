@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int, c_long, c_void};
+use std::os::raw::{c_char, c_int, c_void};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 
@@ -255,9 +255,9 @@ pub unsafe extern "C" fn wasmtime4j_exception_tag_create(
     handler_ptr: *mut c_void,
     name_ptr: *const c_char,
     param_types_ptr: *const u8,
-    param_count: c_long,
-) -> c_long {
-    ffi_boundary_result!(0i64 as c_long, {
+    param_count: i64,
+) -> i64 {
+    ffi_boundary_result!(0i64, {
         if handler_ptr.is_null() {
             return Ok(0);
         }
@@ -282,7 +282,7 @@ pub unsafe extern "C" fn wasmtime4j_exception_tag_create(
         }
 
         match handler.create_tag(name, parameter_types) {
-            Some(handle) => Ok(handle as c_long),
+            Some(handle) => Ok(handle as i64),
             None => Ok(0),
         }
     })
@@ -303,7 +303,7 @@ pub unsafe extern "C" fn wasmtime4j_exception_tag_create(
 #[no_mangle]
 pub unsafe extern "C" fn wasmtime4j_exception_capture_stack_trace(
     handler_ptr: *mut c_void,
-    tag_handle: c_long,
+    tag_handle: i64,
 ) -> *mut c_char {
     ffi_boundary_ptr!({
         if handler_ptr.is_null() {

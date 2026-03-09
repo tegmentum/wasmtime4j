@@ -615,147 +615,6 @@ public final class JniStore extends JniResource implements Store {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
-      throws WasmException {
-    if (initialPages < 0) {
-      throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
-    }
-    if (maxPages < -1) {
-      throw new IllegalArgumentException("Max pages must be -1 (unlimited) or >= 0: " + maxPages);
-    }
-    if (maxPages != -1 && maxPages < initialPages) {
-      throw new IllegalArgumentException(
-          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
-    }
-    beginOperation();
-    try {
-      final long memoryHandle = nativeCreateMemory(getNativeHandle(), initialPages, maxPages);
-
-      if (memoryHandle == 0) {
-        throw new JniException("Native memory creation returned null handle");
-      }
-
-      final JniMemory memory = new JniMemory(memoryHandle, this);
-      LOGGER.fine(
-          "Created memory with initial="
-              + initialPages
-              + " pages, max="
-              + maxPages
-              + " pages, handle=0x"
-              + Long.toHexString(memoryHandle));
-      return memory;
-
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
-      }
-      throw new WasmException("Failed to create memory", e);
-    } finally {
-      endOperation();
-    }
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(
-      final int initialPages, final int maxPages) throws WasmException {
-    if (initialPages < 0) {
-      throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
-    }
-    if (maxPages < 1) {
-      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
-    }
-    if (maxPages < initialPages) {
-      throw new IllegalArgumentException(
-          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
-    }
-    beginOperation();
-    try {
-      final long memoryHandle = nativeCreateSharedMemory(getNativeHandle(), initialPages, maxPages);
-
-      if (memoryHandle == 0) {
-        throw new JniException("Native shared memory creation returned null handle");
-      }
-
-      final JniMemory memory = new JniMemory(memoryHandle, this);
-      LOGGER.fine(
-          "Created shared memory with initial="
-              + initialPages
-              + " pages, max="
-              + maxPages
-              + " pages, handle=0x"
-              + Long.toHexString(memoryHandle));
-      return memory;
-
-    } catch (final Exception e) {
-      if (e instanceof WasmException) {
-        throw e;
-      }
-      throw new WasmException("Failed to create shared memory", e);
-    } finally {
-      endOperation();
-    }
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(
-      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
-    Validation.requireNonNull(memoryType, "memoryType");
-    beginOperation();
-    try {
-      final long minPages = memoryType.getMinimum();
-      final long maxPages = memoryType.getMaximum().orElse(-1L);
-      final int isShared = memoryType.isShared() ? 1 : 0;
-      final int is64 = memoryType.is64Bit() ? 1 : 0;
-
-      if (minPages < 0) {
-        throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
-      }
-      if (maxPages != -1 && maxPages < minPages) {
-        throw new IllegalArgumentException(
-            "Maximum pages ("
-                + maxPages
-                + ") cannot be less than minimum pages ("
-                + minPages
-                + ")");
-      }
-      if (memoryType.isShared() && maxPages < 1) {
-        throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
-      }
-
-      try {
-        final long memoryHandle =
-            nativeCreateMemoryWithType(getNativeHandle(), minPages, maxPages, isShared, is64);
-
-        if (memoryHandle == 0) {
-          throw new JniException("Native memory creation with type returned null handle");
-        }
-
-        final JniMemory memory = new JniMemory(memoryHandle, this);
-        LOGGER.fine(
-            "Created memory from type: min="
-                + minPages
-                + ", max="
-                + maxPages
-                + ", shared="
-                + memoryType.isShared()
-                + ", 64bit="
-                + memoryType.is64Bit()
-                + ", handle=0x"
-                + Long.toHexString(memoryHandle));
-        return memory;
-
-      } catch (final Exception e) {
-        if (e instanceof WasmException) {
-          throw e;
-        }
-        throw new WasmException("Failed to create memory from type", e);
-      }
-    } finally {
-      endOperation();
-    }
-  }
-
-  @Override
   public ai.tegmentum.wasmtime4j.WasmTable createTable(
       final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
     Validation.requireNonNull(tableType, "tableType");
@@ -886,6 +745,147 @@ public final class JniStore extends JniResource implements Store {
         }
         throw new WasmException("Failed to create table from type with init value", e);
       }
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
+      throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
+    }
+    if (maxPages < -1) {
+      throw new IllegalArgumentException("Max pages must be -1 (unlimited) or >= 0: " + maxPages);
+    }
+    if (maxPages != -1 && maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
+    beginOperation();
+    try {
+      final long memoryHandle = nativeCreateMemory(getNativeHandle(), initialPages, maxPages);
+
+      if (memoryHandle == 0) {
+        throw new JniException("Native memory creation returned null handle");
+      }
+
+      final JniMemory memory = new JniMemory(memoryHandle, this);
+      LOGGER.fine(
+          "Created memory with initial="
+              + initialPages
+              + " pages, max="
+              + maxPages
+              + " pages, handle=0x"
+              + Long.toHexString(memoryHandle));
+      return memory;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create memory", e);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(
+      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
+    Validation.requireNonNull(memoryType, "memoryType");
+    beginOperation();
+    try {
+      final long minPages = memoryType.getMinimum();
+      final long maxPages = memoryType.getMaximum().orElse(-1L);
+      final int isShared = memoryType.isShared() ? 1 : 0;
+      final int is64 = memoryType.is64Bit() ? 1 : 0;
+
+      if (minPages < 0) {
+        throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+      }
+      if (maxPages != -1 && maxPages < minPages) {
+        throw new IllegalArgumentException(
+            "Maximum pages ("
+                + maxPages
+                + ") cannot be less than minimum pages ("
+                + minPages
+                + ")");
+      }
+      if (memoryType.isShared() && maxPages < 1) {
+        throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+      }
+
+      try {
+        final long memoryHandle =
+            nativeCreateMemoryWithType(getNativeHandle(), minPages, maxPages, isShared, is64);
+
+        if (memoryHandle == 0) {
+          throw new JniException("Native memory creation with type returned null handle");
+        }
+
+        final JniMemory memory = new JniMemory(memoryHandle, this);
+        LOGGER.fine(
+            "Created memory from type: min="
+                + minPages
+                + ", max="
+                + maxPages
+                + ", shared="
+                + memoryType.isShared()
+                + ", 64bit="
+                + memoryType.is64Bit()
+                + ", handle=0x"
+                + Long.toHexString(memoryHandle));
+        return memory;
+
+      } catch (final Exception e) {
+        if (e instanceof WasmException) {
+          throw e;
+        }
+        throw new WasmException("Failed to create memory from type", e);
+      }
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(
+      final int initialPages, final int maxPages) throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative: " + initialPages);
+    }
+    if (maxPages < 1) {
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+    }
+    if (maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
+    beginOperation();
+    try {
+      final long memoryHandle = nativeCreateSharedMemory(getNativeHandle(), initialPages, maxPages);
+
+      if (memoryHandle == 0) {
+        throw new JniException("Native shared memory creation returned null handle");
+      }
+
+      final JniMemory memory = new JniMemory(memoryHandle, this);
+      LOGGER.fine(
+          "Created shared memory with initial="
+              + initialPages
+              + " pages, max="
+              + maxPages
+              + " pages, handle=0x"
+              + Long.toHexString(memoryHandle));
+      return memory;
+
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw e;
+      }
+      throw new WasmException("Failed to create shared memory", e);
     } finally {
       endOperation();
     }
@@ -1156,12 +1156,6 @@ public final class JniStore extends JniResource implements Store {
   private static native long nativeGetFuelRemaining(long storeHandle);
 
   /**
-   * Tries to create a store, returning 0 on allocation failure.
-   *
-   * @param engineHandle the native engine handle
-   * @return the native store handle, or 0 on allocation failure
-   */
-  /**
    * Package-private static helper for tryCreate.
    *
    * @param engineHandle the native engine handle
@@ -1303,11 +1297,6 @@ public final class JniStore extends JniResource implements Store {
   private static native long nativeCreateTable64(
       long storeHandle, int elementType, long initialSize, int hasMaximum, long maximumSize);
 
-  /**
-   * Destroys a native store and releases all associated resources.
-   *
-   * @param storeHandle the native store handle
-   */
   /**
    * Creates a new instance with explicit imports.
    *

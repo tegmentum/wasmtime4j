@@ -4,7 +4,7 @@
 //! matching the declarations in NativeExecutionBindings.java.
 
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int, c_long};
+use std::os::raw::{c_char, c_int};
 
 use crate::coredump;
 use crate::store::StoreData;
@@ -94,7 +94,7 @@ pub extern "C" fn wasmtime4j_coredump_serialize(
     store_ptr: *mut std::ffi::c_void,
     name: *const c_char,
     out_ptr: *mut *mut u8,
-    out_len: *mut c_long,
+    out_len: *mut i64,
 ) -> c_int {
     if store_ptr.is_null() || name.is_null() || out_ptr.is_null() || out_len.is_null() {
         return -1;
@@ -116,7 +116,7 @@ pub extern "C" fn wasmtime4j_coredump_serialize(
             let raw_ptr = Box::into_raw(boxed) as *mut u8;
             unsafe {
                 *out_ptr = raw_ptr;
-                *out_len = len as c_long;
+                *out_len = len as i64;
             }
             0
         }
@@ -126,7 +126,7 @@ pub extern "C" fn wasmtime4j_coredump_serialize(
 
 /// Free bytes allocated by coredump_serialize.
 #[no_mangle]
-pub extern "C" fn wasmtime4j_coredump_bytes_free(ptr: *mut u8, len: c_long) {
+pub extern "C" fn wasmtime4j_coredump_bytes_free(ptr: *mut u8, len: i64) {
     if !ptr.is_null() && len > 0 {
         unsafe {
             let slice = std::slice::from_raw_parts_mut(ptr, len as usize);

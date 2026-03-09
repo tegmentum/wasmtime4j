@@ -7,7 +7,7 @@ use crate::error::ffi_utils;
 use crate::store::Store;
 use crate::table::core;
 use std::ffi::CString;
-use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_uchar, c_uint, c_void};
 use wasmtime::{RefType, ValType};
 
 /// Create a new WebAssembly table (Panama FFI version)
@@ -196,7 +196,7 @@ pub extern "C" fn wasmtime4j_panama_table_get(
     store_ptr: *mut c_void,
     index: c_uint,
     ref_id_present: *mut c_int,
-    ref_id: *mut c_ulong,
+    ref_id: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let table = unsafe { core::get_table_ref(table_ptr)? };
@@ -226,7 +226,7 @@ pub extern "C" fn wasmtime4j_panama_table_set(
     index: c_uint,
     element_type: c_int,
     ref_id_present: c_int,
-    ref_id: c_ulong,
+    ref_id: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let table = unsafe { core::get_table_ref(table_ptr)? };
@@ -263,7 +263,7 @@ pub extern "C" fn wasmtime4j_panama_table_grow(
     delta: c_uint,
     element_type: c_int,
     ref_id_present: c_int,
-    ref_id: c_ulong,
+    ref_id: u64,
     old_size: *mut c_uint,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
@@ -310,7 +310,7 @@ pub extern "C" fn wasmtime4j_panama_table_grow_async(
     delta: c_uint,
     element_type: c_int,
     ref_id_present: c_int,
-    ref_id: c_ulong,
+    ref_id: u64,
     old_size: *mut c_uint,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
@@ -355,7 +355,7 @@ pub extern "C" fn wasmtime4j_panama_table_fill(
     len: c_uint,
     element_type: c_int,
     ref_id_present: c_int,
-    ref_id: c_ulong,
+    ref_id: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let table = unsafe { core::get_table_ref(table_ptr)? };
@@ -390,9 +390,9 @@ pub extern "C" fn wasmtime4j_panama_table_fill(
 pub extern "C" fn wasmtime4j_panama_table_metadata(
     table_ptr: *mut c_void,
     element_type: *mut c_int,
-    initial_size: *mut c_ulong,
+    initial_size: *mut u64,
     has_maximum: *mut c_int,
-    maximum_size: *mut c_ulong,
+    maximum_size: *mut u64,
     is_64: *mut c_int,
     name_ptr: *mut *mut c_char,
 ) -> c_int {
@@ -465,9 +465,9 @@ pub extern "C" fn wasmtime4j_panama_table_destroy(table_ptr: *mut c_void) {
 pub extern "C" fn wasmtime4j_panama_table_create64(
     store_ptr: *mut c_void,
     element_type: c_int,
-    initial_size: c_ulong,
+    initial_size: u64,
     has_maximum: c_int,
-    maximum_size: c_ulong,
+    maximum_size: u64,
     name_ptr: *const c_char,
     table_ptr: *mut *mut c_void,
 ) -> c_int {

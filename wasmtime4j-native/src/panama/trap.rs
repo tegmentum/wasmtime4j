@@ -3,7 +3,7 @@
 //! This module provides C-compatible functions for extracting detailed trap information
 //! from WebAssembly runtime errors, enabling better error reporting and debugging.
 
-use std::os::raw::{c_char, c_int, c_long};
+use std::os::raw::{c_char, c_int};
 
 /// Trap code constants matching Java TrapException.TrapType enum ordinals.
 /// CRITICAL: These ordinals MUST match the Java enum declaration order exactly.
@@ -458,7 +458,7 @@ pub extern "C" fn wasmtime4j_panama_trap_extract_function_name(
 /// # Returns
 /// The instruction offset if found, or -1 if not found
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_trap_extract_offset(error_message: *const c_char) -> c_long {
+pub extern "C" fn wasmtime4j_panama_trap_extract_offset(error_message: *const c_char) -> i64 {
     if error_message.is_null() {
         return -1;
     }
@@ -478,10 +478,10 @@ pub extern "C" fn wasmtime4j_panama_trap_extract_offset(error_message: *const c_
             if let Some(end) = hex_str.find(|c: char| !c.is_ascii_hexdigit()) {
                 let hex = &hex_str[..end];
                 if let Ok(offset) = u64::from_str_radix(hex, 16) {
-                    return offset as c_long;
+                    return offset as i64;
                 }
             } else if let Ok(offset) = u64::from_str_radix(hex_str.trim(), 16) {
-                return offset as c_long;
+                return offset as i64;
             }
         }
     }
@@ -495,7 +495,7 @@ pub struct TrapInfo {
     /// The trap code constant
     pub trap_code: c_int,
     /// Instruction offset (-1 if not available)
-    pub instruction_offset: c_long,
+    pub instruction_offset: i64,
     /// Whether this is definitely a trap (1) or unknown (0)
     pub is_trap: c_int,
 }

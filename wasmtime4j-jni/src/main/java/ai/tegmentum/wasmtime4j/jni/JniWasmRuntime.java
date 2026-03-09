@@ -154,29 +154,6 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   }
 
   @Override
-  public Store tryCreateStore(final Engine engine) throws WasmException {
-    Validation.requireNonNull(engine, "engine");
-    if (!isValid()) {
-      throw new IllegalStateException("JNI runtime is not valid or has been closed");
-    }
-
-    try {
-      if (!(engine instanceof JniEngine)) {
-        throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
-      }
-
-      final JniEngine jniEngine = (JniEngine) engine;
-      final long storeHandle = JniStore.nativeTryCreateStore(jniEngine.getNativeHandle());
-      if (storeHandle == 0) {
-        throw new WasmException("Failed to allocate store (out of memory)");
-      }
-      return new JniStore(storeHandle, engine);
-    } catch (Exception e) {
-      throw JniExceptionMapper.mapException(e);
-    }
-  }
-
-  @Override
   public Store createStore(
       final Engine engine, final ai.tegmentum.wasmtime4j.config.StoreLimits limits)
       throws WasmException {
@@ -288,6 +265,29 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
       throw new WasmException("Unexpected error creating store with resource limits", e);
     } finally {
       endOperation();
+    }
+  }
+
+  @Override
+  public Store tryCreateStore(final Engine engine) throws WasmException {
+    Validation.requireNonNull(engine, "engine");
+    if (!isValid()) {
+      throw new IllegalStateException("JNI runtime is not valid or has been closed");
+    }
+
+    try {
+      if (!(engine instanceof JniEngine)) {
+        throw new IllegalArgumentException("Engine must be a JniEngine instance for JNI runtime");
+      }
+
+      final JniEngine jniEngine = (JniEngine) engine;
+      final long storeHandle = JniStore.nativeTryCreateStore(jniEngine.getNativeHandle());
+      if (storeHandle == 0) {
+        throw new WasmException("Failed to allocate store (out of memory)");
+      }
+      return new JniStore(storeHandle, engine);
+    } catch (Exception e) {
+      throw JniExceptionMapper.mapException(e);
     }
   }
 

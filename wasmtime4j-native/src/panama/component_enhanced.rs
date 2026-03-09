@@ -8,7 +8,7 @@ use crate::component::Component;
 use crate::component_core::EnhancedComponentEngine;
 use crate::error::ffi_utils;
 use crate::wit_value_marshal;
-use std::os::raw::{c_char, c_int, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_void};
 use wasmtime::component::Val;
 
 /// WitValueFFI structure for passing WIT values across FFI boundary
@@ -127,7 +127,7 @@ pub extern "C" fn wasmtime4j_panama_component_validate(
 pub extern "C" fn wasmtime4j_panama_enhanced_component_instantiate(
     engine_ptr: *mut c_void,
     component_ptr: *mut c_void,
-    instance_id_out: *mut c_ulong,
+    instance_id_out: *mut u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let engine =
@@ -149,7 +149,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instantiate(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_invoke(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
+    instance_id: u64,
     function_name: *const c_char,
     params_ptr: *const WitValueFFI,
     params_count: c_int,
@@ -241,7 +241,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_invoke(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_get_exports(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
+    instance_id: u64,
     functions_out: *mut *mut *mut c_char,
     count_out: *mut c_int,
 ) -> c_int {
@@ -449,7 +449,7 @@ pub extern "C" fn wasmtime4j_panama_component_resources_required(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_func(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
+    instance_id: u64,
     function_name: *const c_char,
 ) -> c_int {
     if engine_ptr.is_null() || function_name.is_null() {
@@ -462,7 +462,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_func(
         Err(_) => return -1,
     };
 
-    match engine.has_component_instance_func(instance_id as u64, name) {
+    match engine.has_component_instance_func(instance_id, name) {
         Ok(true) => 1,
         Ok(false) => 0,
         Err(_) => -1,
@@ -476,7 +476,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_func(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_get_module(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
+    instance_id: u64,
     module_name: *const c_char,
     module_out: *mut *mut c_void,
 ) -> c_int {
@@ -494,7 +494,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_get_module(
                 message: "Invalid UTF-8 in module name".to_string(),
             })?;
 
-        match engine.get_component_instance_module(instance_id as u64, name)? {
+        match engine.get_component_instance_module(instance_id, name)? {
             Some(module) => {
                 let boxed = Box::new(module);
                 unsafe {
@@ -516,7 +516,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_get_module(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_resource(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
+    instance_id: u64,
     resource_name: *const c_char,
 ) -> c_int {
     if engine_ptr.is_null() || resource_name.is_null() {
@@ -529,7 +529,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_resource(
         Err(_) => return -1,
     };
 
-    match engine.get_component_instance_resource(instance_id as u64, name) {
+    match engine.get_component_instance_resource(instance_id, name) {
         Ok(true) => 1,
         Ok(false) => 0,
         Err(_) => -1,
@@ -591,7 +591,7 @@ pub extern "C" fn wasmtime4j_panama_component_export_index_destroy(index_ptr: *m
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_func_by_index(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
+    instance_id: u64,
     index_ptr: *const c_void,
 ) -> c_int {
     if engine_ptr.is_null() || index_ptr.is_null() {
@@ -601,7 +601,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_func_by_inde
     let engine = unsafe { &*(engine_ptr as *const EnhancedComponentEngine) };
     let export_index = unsafe { &*(index_ptr as *const wasmtime::component::ComponentExportIndex) };
 
-    match engine.has_component_instance_func_by_index(instance_id as u64, export_index) {
+    match engine.has_component_instance_func_by_index(instance_id, export_index) {
         Ok(true) => 1,
         Ok(false) => 0,
         Err(_) => -1,
@@ -618,10 +618,10 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_has_func_by_inde
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_get_export(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
+    instance_id: u64,
     parent_index_ptr: *const c_void,
     name_ptr: *const c_char,
-    name_len: c_ulong,
+    name_len: u64,
     out_index_ptr: *mut *mut c_void,
 ) -> c_int {
     if engine_ptr.is_null() || name_ptr.is_null() || out_index_ptr.is_null() {
@@ -636,7 +636,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_instance_get_export(
         Some(unsafe { &*(parent_index_ptr as *const wasmtime::component::ComponentExportIndex) })
     };
 
-    match engine.get_component_instance_export(instance_id as u64, parent_index, name) {
+    match engine.get_component_instance_export(instance_id, parent_index, name) {
         Ok(Some((kind, boxed_index))) => {
             unsafe { *out_index_ptr = Box::into_raw(boxed_index) as *mut c_void };
             kind
@@ -667,11 +667,11 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_engine_destroy(engine_ptr
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_enhanced_component_run_concurrent(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
+    instance_id: u64,
     json_ptr: *const u8,
-    json_len: c_ulong,
+    json_len: u64,
     result_ptr: *mut *mut u8,
-    result_len: *mut c_ulong,
+    result_len: *mut u64,
 ) -> c_int {
     if engine_ptr.is_null() || json_ptr.is_null() || result_ptr.is_null() || result_len.is_null() {
         return -1;
@@ -700,13 +700,13 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_run_concurrent(
             std::mem::forget(err_bytes);
             unsafe {
                 *result_ptr = ptr as *mut u8;
-                *result_len = len as c_ulong;
+                *result_len = len as u64;
             }
             return -1;
         }
     };
 
-    match engine.run_concurrent_calls(instance_id as u64, calls) {
+    match engine.run_concurrent_calls(instance_id, calls) {
         Ok(results) => {
             match crate::component_core::concurrent_call_json::serialize_results(&results) {
                 Ok(json_result) => {
@@ -716,7 +716,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_run_concurrent(
                     let ptr = Box::into_raw(boxed) as *mut u8;
                     unsafe {
                         *result_ptr = ptr;
-                        *result_len = len as c_ulong;
+                        *result_len = len as u64;
                     }
                     0
                 }
@@ -735,7 +735,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_run_concurrent(
             let ptr = Box::into_raw(boxed) as *mut u8;
             unsafe {
                 *result_ptr = ptr;
-                *result_len = len as c_ulong;
+                *result_len = len as u64;
             }
             -1
         }
@@ -744,7 +744,7 @@ pub extern "C" fn wasmtime4j_panama_enhanced_component_run_concurrent(
 
 /// Free a string allocated by `wasmtime4j_panama_enhanced_component_run_concurrent`
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_free_concurrent_result(ptr: *mut u8, len: c_ulong) {
+pub extern "C" fn wasmtime4j_panama_free_concurrent_result(ptr: *mut u8, len: u64) {
     if !ptr.is_null() && len > 0 {
         unsafe {
             let _ = Box::from_raw(std::slice::from_raw_parts_mut(ptr, len as usize));
@@ -846,8 +846,8 @@ pub extern "C" fn wasmtime4j_panama_async_val_close(handle: i64) -> c_int {
 #[no_mangle]
 pub extern "C" fn wasmtime4j_panama_resource_any_drop(
     engine_ptr: *mut c_void,
-    instance_id: c_ulong,
-    resource_handle: c_ulong,
+    instance_id: u64,
+    resource_handle: u64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
         let engine =
@@ -867,7 +867,7 @@ pub extern "C" fn wasmtime4j_panama_component_val_from_wave(
     wave_str: *const c_char,
     type_disc_out: *mut c_int,
     data_out: *mut *mut u8,
-    data_len_out: *mut c_ulong,
+    data_len_out: *mut u64,
 ) -> c_int {
     use crate::shared_ffi::{FFI_ERROR, FFI_SUCCESS};
 
@@ -892,7 +892,7 @@ pub extern "C" fn wasmtime4j_panama_component_val_from_wave(
             unsafe {
                 *type_disc_out = disc;
                 let mut boxed = data.into_boxed_slice();
-                *data_len_out = boxed.len() as c_ulong;
+                *data_len_out = boxed.len() as u64;
                 *data_out = boxed.as_mut_ptr();
                 std::mem::forget(boxed);
             }

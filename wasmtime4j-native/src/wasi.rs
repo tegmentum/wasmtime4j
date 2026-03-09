@@ -1682,15 +1682,10 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_get_stdout_capture(
                     return std::ptr::null_mut();
                 }
 
-                // Allocate memory for the data
-                let ptr = libc::malloc(len) as *mut u8;
-                if ptr.is_null() {
-                    *data_len_out = 0;
-                    return std::ptr::null_mut();
-                }
-
-                // Copy data to the allocated buffer
-                std::ptr::copy_nonoverlapping(data.as_ptr(), ptr, len);
+                // Allocate memory using Box<[u8]> (platform-independent)
+                let mut boxed = vec![0u8; len].into_boxed_slice();
+                boxed.copy_from_slice(&data);
+                let ptr = Box::into_raw(boxed) as *mut u8;
                 *data_len_out = len;
                 ptr
             } else {
@@ -1735,15 +1730,10 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_get_stderr_capture(
                     return std::ptr::null_mut();
                 }
 
-                // Allocate memory for the data
-                let ptr = libc::malloc(len) as *mut u8;
-                if ptr.is_null() {
-                    *data_len_out = 0;
-                    return std::ptr::null_mut();
-                }
-
-                // Copy data to the allocated buffer
-                std::ptr::copy_nonoverlapping(data.as_ptr(), ptr, len);
+                // Allocate memory using Box<[u8]> (platform-independent)
+                let mut boxed = vec![0u8; len].into_boxed_slice();
+                boxed.copy_from_slice(&data);
+                let ptr = Box::into_raw(boxed) as *mut u8;
                 *data_len_out = len;
                 ptr
             } else {
@@ -1758,14 +1748,20 @@ pub unsafe extern "C" fn wasmtime4j_wasi_context_get_stderr_capture(
     }
 }
 
-/// Free a capture buffer allocated by get_stdout_capture or get_stderr_capture
+/// Free a capture buffer allocated by get_stdout_capture, get_stderr_capture,
+/// get_environment, or get_arguments.
 ///
 /// # Arguments
 /// * `buffer` - Pointer to the buffer to free (can be null)
+/// * `len` - Length of the buffer in bytes (must match the length returned at allocation)
+///
+/// # Safety
+/// The `buffer` must have been allocated by one of the capture/get functions in this module,
+/// and `len` must exactly match the length that was returned alongside the pointer.
 #[no_mangle]
-pub unsafe extern "C" fn wasmtime4j_wasi_free_capture_buffer(buffer: *mut u8) {
-    if !buffer.is_null() {
-        libc::free(buffer as *mut c_void);
+pub unsafe extern "C" fn wasmtime4j_wasi_free_capture_buffer(buffer: *mut u8, len: usize) {
+    if !buffer.is_null() && len > 0 {
+        let _ = Box::from_raw(std::slice::from_raw_parts_mut(buffer, len));
     }
 }
 

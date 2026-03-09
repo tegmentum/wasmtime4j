@@ -137,9 +137,9 @@ pub extern "C" fn wasmtime4j_panama_wasi_context_get_stderr_capture(
 
 /// Free capture buffer allocated by get_stdout/stderr_capture (Panama FFI)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_wasi_free_capture_buffer(data: *mut u8) {
+pub extern "C" fn wasmtime4j_panama_wasi_free_capture_buffer(data: *mut u8, len: usize) {
     if !data.is_null() {
-        unsafe { crate::wasi::wasmtime4j_wasi_free_capture_buffer(data) }
+        unsafe { crate::wasi::wasmtime4j_wasi_free_capture_buffer(data, len) }
     }
 }
 

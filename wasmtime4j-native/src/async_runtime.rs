@@ -39,7 +39,7 @@ use log::{debug, error, info, warn};
 use std::sync::LazyLock;
 use std::ffi::{c_char, c_void, CStr, CString};
 use std::mem::ManuallyDrop;
-use std::os::raw::{c_int, c_uint, c_ulong};
+use std::os::raw::{c_int, c_uint};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::{Handle, Runtime};
@@ -376,7 +376,7 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
     function_name: *const c_char,
     args_ptr: *const i64,
     args_len: c_uint,
-    timeout_ms: c_ulong,
+    timeout_ms: u64,
     callback: AsyncCallback,
     user_data: *mut c_void,
 ) -> c_int {
@@ -440,7 +440,7 @@ pub unsafe extern "C" fn wasmtime4j_func_call_async(
     let user_data_addr = user_data as usize;
     let function_name_owned = function_name_str.clone();
     let timeout = if timeout_ms > 0 {
-        timeout_ms as u64
+        timeout_ms
     } else {
         30000
     }; // Default 30s timeout

@@ -4,7 +4,7 @@
 //! efficient reuse of WebAssembly instance slots to reduce allocation overhead.
 
 use crate::jni_pooling_allocator_bindings::JniPoolingAllocatorWrapper;
-use std::os::raw::{c_int, c_long, c_void};
+use std::os::raw::{c_int, c_void};
 
 /// Create a pooling allocator with default configuration (Panama FFI)
 ///
@@ -36,7 +36,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_create() -> *mut c_void {
 #[no_mangle]
 pub extern "C" fn wasmtime4j_pooling_allocator_create_with_config(
     instance_pool_size: c_int,
-    max_memory_per_instance: c_long,
+    max_memory_per_instance: i64,
     stack_size: c_int,
     max_stacks: c_int,
     max_tables_per_instance: c_int,
@@ -102,7 +102,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_create_from_json(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_pooling_allocator_allocate_instance(
     allocator_ptr: *mut c_void,
-    instance_id_out: *mut c_long,
+    instance_id_out: *mut i64,
 ) -> c_int {
     if allocator_ptr.is_null() || instance_id_out.is_null() {
         return 0;
@@ -112,7 +112,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_allocate_instance(
 
     match wrapper.allocate_instance() {
         Ok(id) => {
-            unsafe { *instance_id_out = id as c_long };
+            unsafe { *instance_id_out = id as i64 };
             1
         }
         Err(_) => 0,
@@ -126,7 +126,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_allocate_instance(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_pooling_allocator_reuse_instance(
     allocator_ptr: *mut c_void,
-    instance_id: c_long,
+    instance_id: i64,
 ) -> c_int {
     if allocator_ptr.is_null() {
         return 0;
@@ -147,7 +147,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_reuse_instance(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_pooling_allocator_release_instance(
     allocator_ptr: *mut c_void,
-    instance_id: c_long,
+    instance_id: i64,
 ) -> c_int {
     if allocator_ptr.is_null() {
         return 0;
@@ -169,7 +169,7 @@ pub extern "C" fn wasmtime4j_pooling_allocator_release_instance(
 #[no_mangle]
 pub extern "C" fn wasmtime4j_pooling_allocator_get_statistics(
     allocator_ptr: *mut c_void,
-    stats_out: *mut c_long,
+    stats_out: *mut i64,
 ) -> c_int {
     if allocator_ptr.is_null() || stats_out.is_null() {
         return 0;

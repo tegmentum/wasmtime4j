@@ -6,7 +6,7 @@
 use crate::error::ffi_utils;
 use crate::memory::{Memory, MemoryBuilder, MemoryDataType, MemoryRegistry};
 use crate::store::Store;
-use std::os::raw::{c_char, c_int, c_uint, c_ulong, c_void};
+use std::os::raw::{c_char, c_int, c_uint, c_void};
 use std::sync::Arc;
 
 /// Create a new WebAssembly memory with default configuration (Panama FFI version)
@@ -1106,9 +1106,9 @@ pub extern "C" fn wasmtime4j_panama_memory_get_usage(
     current_bytes_out: *mut usize,
     current_pages_out: *mut u64,
     peak_bytes_out: *mut usize,
-    read_count_out: *mut c_ulong,
-    write_count_out: *mut c_ulong,
-    bytes_transferred_out: *mut c_ulong,
+    read_count_out: *mut u64,
+    write_count_out: *mut u64,
+    bytes_transferred_out: *mut u64,
     utilization_percent_out: *mut f64,
 ) -> c_int {
     ffi_utils::ffi_try_code(|| {
@@ -1128,13 +1128,13 @@ pub extern "C" fn wasmtime4j_panama_memory_get_usage(
                 *peak_bytes_out = usage.peak_bytes;
             }
             if !read_count_out.is_null() {
-                *read_count_out = usage.read_count as c_ulong;
+                *read_count_out = usage.read_count;
             }
             if !write_count_out.is_null() {
-                *write_count_out = usage.write_count as c_ulong;
+                *write_count_out = usage.write_count;
             }
             if !bytes_transferred_out.is_null() {
-                *bytes_transferred_out = usage.bytes_transferred as c_ulong;
+                *bytes_transferred_out = usage.bytes_transferred;
             }
             if !utilization_percent_out.is_null() {
                 *utilization_percent_out = usage.utilization_percent;
@@ -1270,6 +1270,6 @@ pub extern "C" fn wasmtime4j_panama_memory_clear_handle_registries() -> c_int {
 /// # Returns
 /// The number of entries cleared from the registry
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_clear_destroyed_pointers() -> c_ulong {
-    crate::error::ffi_utils::clear_destroyed_pointers() as c_ulong
+pub extern "C" fn wasmtime4j_panama_clear_destroyed_pointers() -> u64 {
+    crate::error::ffi_utils::clear_destroyed_pointers() as u64
 }

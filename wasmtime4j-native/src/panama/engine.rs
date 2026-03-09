@@ -3,7 +3,7 @@
 //! This module provides C-compatible functions for creating, configuring,
 //! and managing Wasmtime engines through the Panama Foreign Function Interface.
 
-use std::os::raw::{c_char, c_int, c_long, c_void};
+use std::os::raw::{c_char, c_int, c_void};
 use std::sync::Arc;
 
 use crate::engine::core;
@@ -121,11 +121,11 @@ pub extern "C" fn wasmtime4j_panama_engine_is_coredump_on_trap_enabled(
 
 /// Get stack size limit in bytes (Panama FFI version)
 #[no_mangle]
-pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_void) -> c_long {
+pub extern "C" fn wasmtime4j_panama_engine_get_stack_limit(engine_ptr: *mut c_void) -> i64 {
     match unsafe { core::get_engine_ref(engine_ptr) } {
         Ok(engine) => engine
             .stack_size_limit()
-            .map(|limit| limit as c_long)
+            .map(|limit| limit as i64)
             .unwrap_or(-1),
         Err(_) => -1,
     }

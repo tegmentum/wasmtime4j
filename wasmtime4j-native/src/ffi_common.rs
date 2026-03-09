@@ -1375,7 +1375,7 @@ pub mod error_handling {
 
     /// Validate string parameters for safety and encoding
     pub fn validate_string_parameter(
-        ptr: *const i8,
+        ptr: *const std::os::raw::c_char,
         name: &str,
     ) -> Result<String, ValidationError> {
         if ptr.is_null() {

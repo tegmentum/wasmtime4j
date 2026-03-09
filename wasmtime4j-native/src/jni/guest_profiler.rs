@@ -6,7 +6,7 @@
 //!
 //! Bridges JNI types to the C-ABI functions in `crate::guest_profiler`.
 
-use std::ffi::{c_char, c_int, c_long, c_ulong, c_void, CString};
+use std::ffi::{c_char, c_int, c_void, CString};
 
 use jni::objects::{JClass, JLongArray, JObjectArray, JString};
 use jni::sys::{jbyteArray, jint, jlong};
@@ -77,7 +77,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeG
         crate::guest_profiler::wasmtime4j_guest_profiler_new(
             engine_handle as *const c_void,
             c_name.as_ptr(),
-            interval_nanos as c_long,
+            interval_nanos as i64,
             module_ptrs.as_ptr(),
             name_ptrs.as_ptr(),
             count as c_int,
@@ -151,7 +151,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeG
         crate::guest_profiler::wasmtime4j_guest_profiler_new_component(
             engine_handle as *const c_void,
             c_name.as_ptr(),
-            interval_nanos as c_long,
+            interval_nanos as i64,
             component_handle as *const c_void,
             module_ptrs.as_ptr(),
             name_ptrs.as_ptr(),
@@ -175,7 +175,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeG
         crate::guest_profiler::wasmtime4j_guest_profiler_sample(
             profiler_handle as *mut c_void,
             store_handle as *mut c_void,
-            delta_nanos as c_long,
+            delta_nanos as i64,
         ) as jint
     }
 }
@@ -210,7 +210,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniGuestProfiler_nativeG
     profiler_handle: jlong,
 ) -> jbyteArray {
     let mut data_ptr: *mut u8 = std::ptr::null_mut();
-    let mut data_len: c_ulong = 0;
+    let mut data_len: u64 = 0;
 
     let result = unsafe {
         crate::guest_profiler::wasmtime4j_guest_profiler_finish(
