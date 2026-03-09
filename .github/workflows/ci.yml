@@ -74,7 +74,7 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '23'
           distribution: 'temurin'
 
       - name: Cache Maven
@@ -85,16 +85,16 @@ jobs:
           restore-keys: m2-quality-
 
       - name: Checkstyle
-        run: ./mvnw checkstyle:check -B -P skip-native -pl '!wasmtime4j-panama'
+        run: ./mvnw checkstyle:check -B -P skip-native -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-panama,wasmtime4j-native-loader
 
       - name: Spotless
-        run: ./mvnw spotless:check -B -P skip-native -pl '!wasmtime4j-panama'
+        run: ./mvnw spotless:check -B -P skip-native -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-panama,wasmtime4j-native-loader
 
       - name: SpotBugs
-        run: ./mvnw compile spotbugs:check -B -P skip-native -pl '!wasmtime4j-panama'
+        run: ./mvnw compile spotbugs:check -B -P skip-native -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-panama,wasmtime4j-native-loader
 
       - name: PMD
-        run: ./mvnw compile pmd:check -B -P skip-native -pl '!wasmtime4j-panama'
+        run: ./mvnw compile pmd:check -B -P skip-native -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-panama,wasmtime4j-native-loader
 
   # Test matrix — downloads pre-built native libs
   test:

@@ -854,7 +854,6 @@
                 <module>wasmtime4j-panama</module>
             </modules>
             <properties>
-                <maven.compiler.release>26</maven.compiler.release>
                 <wasmtime4j.runtime>panama</wasmtime4j.runtime>
             </properties>
             <build>
