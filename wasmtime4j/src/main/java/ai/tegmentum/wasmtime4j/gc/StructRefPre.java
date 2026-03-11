@@ -120,6 +120,35 @@ public final class StructRefPre implements AutoCloseable {
     return StructRef.of(instance);
   }
 
+  /**
+   * Asynchronously allocates a new struct instance using this pre-compiled allocator.
+   *
+   * <p>Uses Wasmtime's async resource limiter path for allocation. This should be used when the
+   * store is configured with an async resource limiter.
+   *
+   * @param gcRuntime the GC runtime to allocate in
+   * @param fieldValues the initial field values
+   * @return a new StructRef
+   * @throws GcException if allocation fails
+   * @throws IllegalStateException if this allocator has been closed
+   * @throws IllegalArgumentException if gcRuntime or fieldValues is null
+   * @since 1.1.0
+   */
+  public StructRef allocateAsync(final GcRuntime gcRuntime, final List<GcValue> fieldValues)
+      throws GcException {
+    if (closed) {
+      throw new IllegalStateException("StructRefPre has been closed");
+    }
+    if (gcRuntime == null) {
+      throw new IllegalArgumentException("gcRuntime cannot be null");
+    }
+    if (fieldValues == null) {
+      throw new IllegalArgumentException("fieldValues cannot be null");
+    }
+    final StructInstance instance = gcRuntime.createStructAsync(structType, fieldValues);
+    return StructRef.of(instance);
+  }
+
   @Override
   public void close() {
     closed = true;

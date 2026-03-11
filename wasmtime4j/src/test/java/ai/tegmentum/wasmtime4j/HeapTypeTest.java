@@ -27,6 +27,9 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Comprehensive test suite for the HeapType enum.
@@ -187,6 +190,16 @@ class HeapTypeTest {
       assertEquals(
           "concrete", HeapType.CONCRETE.getWasmName(), "CONCRETE should have wasm name 'concrete'");
     }
+
+    @ParameterizedTest(name = "{0} should have wasm name matching lowercase of enum name")
+    @EnumSource(HeapType.class)
+    @DisplayName("All HeapType values should have a non-null wasm name")
+    void allValuesShouldHaveNonNullWasmName(HeapType type) {
+      String wasmName = type.getWasmName();
+      assertFalse(
+          wasmName == null || wasmName.isEmpty(),
+          type.name() + " should have a non-empty wasm name");
+    }
   }
 
   // ========================================================================
@@ -268,6 +281,33 @@ class HeapTypeTest {
           () -> HeapType.fromWasmName(null),
           "fromWasmName(null) should throw IllegalArgumentException");
     }
+
+    @ParameterizedTest(name = "fromWasmName(''{1}'') should return {0}")
+    @CsvSource({
+      "ANY, any",
+      "EQ, eq",
+      "I31, i31",
+      "STRUCT, struct",
+      "ARRAY, array",
+      "FUNC, func",
+      "NOFUNC, nofunc",
+      "EXTERN, extern",
+      "NOEXTERN, noextern",
+      "NONE, none",
+      "EXN, exn",
+      "NOEXN, noexn",
+      "CONT, cont",
+      "NOCONT, nocont",
+      "CONCRETE, concrete"
+    })
+    @DisplayName("fromWasmName should return correct HeapType for all valid names")
+    void fromWasmNameShouldReturnCorrectType(String expectedName, String wasmName) {
+      HeapType expected = HeapType.valueOf(expectedName);
+      assertEquals(
+          expected,
+          HeapType.fromWasmName(wasmName),
+          "fromWasmName('" + wasmName + "') should return " + expectedName);
+    }
   }
 
   // ========================================================================
@@ -306,6 +346,27 @@ class HeapTypeTest {
     @DisplayName("CONCRETE should not be abstract")
     void concreteShouldNotBeAbstract() {
       assertFalse(HeapType.CONCRETE.isAbstract(), "CONCRETE should not be abstract");
+    }
+
+    @ParameterizedTest(name = "{0} should be abstract")
+    @EnumSource(
+        value = HeapType.class,
+        names = {
+          "ANY", "EQ", "I31", "STRUCT", "ARRAY", "FUNC", "NOFUNC",
+          "EXTERN", "NOEXTERN", "NONE", "EXN", "NOEXN", "CONT", "NOCONT"
+        })
+    @DisplayName("All abstract heap types should return true for isAbstract")
+    void abstractTypesShouldReturnTrue(HeapType type) {
+      assertTrue(type.isAbstract(), type.name() + " should be abstract");
+    }
+
+    @ParameterizedTest(name = "{0} should not be abstract")
+    @EnumSource(
+        value = HeapType.class,
+        names = {"CONCRETE"})
+    @DisplayName("Non-abstract heap types should return false for isAbstract")
+    void nonAbstractTypesShouldReturnFalse(HeapType type) {
+      assertFalse(type.isAbstract(), type.name() + " should not be abstract");
     }
   }
 
@@ -376,6 +437,35 @@ class HeapTypeTest {
     void concreteShouldNotBeBottom() {
       assertFalse(HeapType.CONCRETE.isBottom(), "CONCRETE should not be bottom");
     }
+
+    @ParameterizedTest(name = "{0} should be a bottom type")
+    @EnumSource(
+        value = HeapType.class,
+        names = {"NONE", "NOFUNC", "NOEXTERN", "NOEXN", "NOCONT"})
+    @DisplayName("Bottom types should return true for isBottom")
+    void bottomTypesShouldReturnTrue(HeapType type) {
+      assertTrue(type.isBottom(), type.name() + " should be a bottom type");
+    }
+
+    @ParameterizedTest(name = "{0} should not be a bottom type")
+    @EnumSource(
+        value = HeapType.class,
+        names = {
+          "ANY",
+          "EQ",
+          "I31",
+          "STRUCT",
+          "ARRAY",
+          "FUNC",
+          "EXTERN",
+          "EXN",
+          "CONT",
+          "CONCRETE"
+        })
+    @DisplayName("Non-bottom types should return false for isBottom")
+    void nonBottomTypesShouldReturnFalse(HeapType type) {
+      assertFalse(type.isBottom(), type.name() + " should not be a bottom type");
+    }
   }
 
   // ========================================================================
@@ -420,6 +510,35 @@ class HeapTypeTest {
     @DisplayName("EXTERN should not support equality")
     void externShouldNotSupportEquality() {
       assertFalse(HeapType.EXTERN.supportsEquality(), "EXTERN should not support equality");
+    }
+
+    @ParameterizedTest(name = "{0} should support equality")
+    @EnumSource(
+        value = HeapType.class,
+        names = {"EQ", "I31", "STRUCT", "ARRAY", "NONE"})
+    @DisplayName("Equality-supporting types should return true")
+    void equalitySupportingTypesShouldReturnTrue(HeapType type) {
+      assertTrue(type.supportsEquality(), type.name() + " should support equality");
+    }
+
+    @ParameterizedTest(name = "{0} should not support equality")
+    @EnumSource(
+        value = HeapType.class,
+        names = {
+          "ANY",
+          "FUNC",
+          "NOFUNC",
+          "EXTERN",
+          "NOEXTERN",
+          "EXN",
+          "NOEXN",
+          "CONT",
+          "NOCONT",
+          "CONCRETE"
+        })
+    @DisplayName("Non-equality types should return false")
+    void nonEqualityTypesShouldReturnFalse(HeapType type) {
+      assertFalse(type.supportsEquality(), type.name() + " should not support equality");
     }
   }
 
@@ -512,6 +631,33 @@ class HeapTypeTest {
           HeapType.NOCONT,
           HeapType.NOCONT.getBottomType(),
           "NOCONT should have bottom type NOCONT");
+    }
+
+    @ParameterizedTest(name = "{0} should have bottom type {1}")
+    @CsvSource({
+      "ANY, NONE",
+      "EQ, NONE",
+      "I31, NONE",
+      "STRUCT, NONE",
+      "ARRAY, NONE",
+      "NONE, NONE",
+      "FUNC, NOFUNC",
+      "NOFUNC, NOFUNC",
+      "EXTERN, NOEXTERN",
+      "NOEXTERN, NOEXTERN",
+      "EXN, NOEXN",
+      "NOEXN, NOEXN",
+      "CONT, NOCONT",
+      "NOCONT, NOCONT"
+    })
+    @DisplayName("All heap types should map to correct bottom type")
+    void allTypesShouldMapToCorrectBottomType(String typeName, String expectedBottomName) {
+      HeapType type = HeapType.valueOf(typeName);
+      HeapType expectedBottom = HeapType.valueOf(expectedBottomName);
+      assertEquals(
+          expectedBottom,
+          type.getBottomType(),
+          typeName + " should have bottom type " + expectedBottomName);
     }
   }
 

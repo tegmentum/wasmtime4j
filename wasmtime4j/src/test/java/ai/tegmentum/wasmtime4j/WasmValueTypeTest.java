@@ -23,6 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Unit tests for the WasmValueType enum.
@@ -194,6 +197,25 @@ class WasmValueTypeTest {
     void exnrefShouldBeReferenceType() {
       assertTrue(WasmValueType.EXNREF.isReference(), "EXNREF should be a reference type");
     }
+
+    @ParameterizedTest(name = "{0} should be a GC reference type")
+    @EnumSource(
+        value = WasmValueType.class,
+        names = {
+          "ANYREF",
+          "EQREF",
+          "I31REF",
+          "STRUCTREF",
+          "ARRAYREF",
+          "CONTREF",
+          "NULLCONTREF",
+          "NULLEXNREF"
+        })
+    @DisplayName("All GC reference types should return true for isGcReference")
+    void gcReferenceTypesShouldReturnTrue(WasmValueType type) {
+      assertTrue(type.isReference(), type.name() + " should be a reference type");
+      assertTrue(type.isGcReference(), type.name() + " should be a GC reference type");
+    }
   }
 
   @Nested
@@ -243,6 +265,16 @@ class WasmValueTypeTest {
       assertFalse(WasmValueType.I32.isNullableReference(), "I32 should not be nullable");
       assertFalse(WasmValueType.FUNCREF.isNullableReference(), "FUNCREF should not be nullable");
       assertFalse(WasmValueType.ANYREF.isNullableReference(), "ANYREF should not be nullable");
+    }
+
+    @ParameterizedTest(name = "{0} should be a nullable reference type")
+    @EnumSource(
+        value = WasmValueType.class,
+        names = {"NULLREF", "NULLFUNCREF", "NULLEXTERNREF", "NULLEXNREF", "NULLCONTREF"})
+    @DisplayName("All nullable reference types should return true for isNullableReference")
+    void nullableReferenceTypesShouldReturnTrue(WasmValueType type) {
+      assertTrue(type.isReference(), type.name() + " should be a reference type");
+      assertTrue(type.isNullableReference(), type.name() + " should be nullable");
     }
   }
 
@@ -341,6 +373,27 @@ class WasmValueTypeTest {
         final WasmValueType roundTripped = WasmValueType.fromNativeTypeCode(code);
         assertEquals(type, roundTripped, "Round-trip should preserve type: " + type);
       }
+    }
+
+    @ParameterizedTest(name = "{0} should round-trip through native type code conversion")
+    @EnumSource(WasmValueType.class)
+    @DisplayName("All WasmValueType values should round-trip through native type code")
+    void allTypesShouldRoundTripThroughNativeCode(WasmValueType type) {
+      int code = type.toNativeTypeCode();
+      WasmValueType roundTripped = WasmValueType.fromNativeTypeCode(code);
+      assertEquals(
+          type, roundTripped, type.name() + " should round-trip through native code " + code);
+    }
+
+    @ParameterizedTest(name = "{0} should have native type code {1}")
+    @CsvSource({"I32, 0", "I64, 1", "F32, 2", "F64, 3", "V128, 4", "FUNCREF, 5", "EXTERNREF, 6"})
+    @DisplayName("Core types should have well-known native type codes")
+    void coreTypesShouldHaveWellKnownCodes(String typeName, int expectedCode) {
+      WasmValueType type = WasmValueType.valueOf(typeName);
+      assertEquals(
+          expectedCode,
+          type.toNativeTypeCode(),
+          typeName + " should have native code " + expectedCode);
     }
   }
 
@@ -468,6 +521,23 @@ class WasmValueTypeTest {
           WasmValueType.F32.isSubtypeOf(WasmValueType.F64), "F32 should not be subtype of F64");
       assertFalse(
           WasmValueType.I32.isSubtypeOf(WasmValueType.F32), "I32 should not be subtype of F32");
+    }
+
+    @ParameterizedTest(name = "{0} should be a subtype of itself")
+    @EnumSource(WasmValueType.class)
+    @DisplayName("All types should be subtypes of themselves (reflexive)")
+    void allTypesShouldBeSubtypesOfThemselves(WasmValueType type) {
+      assertTrue(type.isSubtypeOf(type), type.name() + " should be subtype of itself");
+    }
+
+    @ParameterizedTest(name = "{0} should be a subtype of ANYREF")
+    @EnumSource(
+        value = WasmValueType.class,
+        names = {"ANYREF", "EQREF", "I31REF", "STRUCTREF", "ARRAYREF", "NULLREF"})
+    @DisplayName("Types in the ANY hierarchy should be subtypes of ANYREF")
+    void anyHierarchySubtypes(WasmValueType type) {
+      assertTrue(
+          type.isSubtypeOf(WasmValueType.ANYREF), type.name() + " should be subtype of ANYREF");
     }
   }
 }

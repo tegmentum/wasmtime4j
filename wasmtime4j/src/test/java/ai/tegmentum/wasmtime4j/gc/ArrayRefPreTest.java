@@ -87,6 +87,28 @@ class ArrayRefPreTest {
           () -> pre.allocateDefault(null, 10),
           "Should throw IllegalStateException for use after close");
     }
+
+    @Test
+    @DisplayName("allocateAsync should throw after close")
+    void allocateAsyncShouldThrowAfterClose() {
+      final ArrayRefPre pre = ArrayRefPre.create(createTestArrayType());
+      pre.close();
+      assertThrows(
+          IllegalStateException.class,
+          () -> pre.allocateAsync(null, null),
+          "Should throw IllegalStateException for use after close");
+    }
+
+    @Test
+    @DisplayName("allocateFixedAsync should throw after close")
+    void allocateFixedAsyncShouldThrowAfterClose() {
+      final ArrayRefPre pre = ArrayRefPre.create(createTestArrayType());
+      pre.close();
+      assertThrows(
+          IllegalStateException.class,
+          () -> pre.allocateFixedAsync(null, null),
+          "Should throw IllegalStateException for use after close");
+    }
   }
 
   @Nested
@@ -124,6 +146,38 @@ class ArrayRefPreTest {
           IllegalArgumentException.class,
           () -> pre.allocateDefault(null, -1),
           "Should reject negative length");
+    }
+
+    @Test
+    @DisplayName("allocateAsync should throw on null gcRuntime")
+    void allocateAsyncShouldThrowOnNullGcRuntime() {
+      final ArrayRefPre pre = ArrayRefPre.create(createTestArrayType());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> pre.allocateAsync(null, java.util.Collections.emptyList()));
+    }
+
+    @Test
+    @DisplayName("allocateAsync should throw on null elements")
+    void allocateAsyncShouldThrowOnNullElements() {
+      final ArrayRefPre pre = ArrayRefPre.create(createTestArrayType());
+      assertThrows(IllegalArgumentException.class, () -> pre.allocateAsync(null, null));
+    }
+
+    @Test
+    @DisplayName("allocateFixedAsync should throw on null gcRuntime")
+    void allocateFixedAsyncShouldThrowOnNullGcRuntime() {
+      final ArrayRefPre pre = ArrayRefPre.create(createTestArrayType());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> pre.allocateFixedAsync(null, java.util.Collections.emptyList()));
+    }
+
+    @Test
+    @DisplayName("allocateFixedAsync should throw on null elements")
+    void allocateFixedAsyncShouldThrowOnNullElements() {
+      final ArrayRefPre pre = ArrayRefPre.create(createTestArrayType());
+      assertThrows(IllegalArgumentException.class, () -> pre.allocateFixedAsync(null, null));
     }
   }
 

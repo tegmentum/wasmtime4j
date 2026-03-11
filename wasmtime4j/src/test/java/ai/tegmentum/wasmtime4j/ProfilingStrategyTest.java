@@ -27,6 +27,8 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Tests for the {@link ProfilingStrategy} enum.
@@ -84,6 +86,17 @@ class ProfilingStrategyTest {
     void shouldContainVtune() {
       assertNotNull(ProfilingStrategy.VTUNE, "VTUNE constant should exist");
       assertEquals("VTUNE", ProfilingStrategy.VTUNE.name(), "VTUNE name should match");
+    }
+
+    @ParameterizedTest(name = "{0} should exist and have a matching name")
+    @EnumSource(ProfilingStrategy.class)
+    @DisplayName("All ProfilingStrategy values should exist and have matching names")
+    void allValuesShouldExistAndHaveMatchingNames(ProfilingStrategy strategy) {
+      assertNotNull(strategy, strategy.name() + " should exist");
+      assertEquals(
+          strategy,
+          ProfilingStrategy.valueOf(strategy.name()),
+          "valueOf should round-trip " + strategy.name());
     }
   }
 

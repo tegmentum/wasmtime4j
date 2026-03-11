@@ -32,6 +32,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for {@link FrameInfo} class.
@@ -82,6 +84,32 @@ class FrameInfoTest {
       final FrameInfo info = new FrameInfo(2, null, "fn", 50, 10, Collections.emptyList());
 
       assertTrue(info.getSymbols().isEmpty(), "symbols should be empty");
+    }
+
+    @ParameterizedTest(name = "funcIndex={0} should be stored and retrieved correctly")
+    @ValueSource(ints = {0, 1, -1, Integer.MAX_VALUE, Integer.MIN_VALUE, 42, 1000000})
+    @DisplayName("FrameInfo should handle boundary funcIndex values")
+    void shouldHandleBoundaryFuncIndexValues(int funcIndex) {
+      final FrameInfo info = new FrameInfo(funcIndex, null, null, null, null, null);
+      assertEquals(funcIndex, info.getFuncIndex(), "getFuncIndex should return " + funcIndex);
+    }
+
+    @ParameterizedTest(name = "moduleOffset={0} should be stored and retrieved correctly")
+    @ValueSource(ints = {0, 1, -1, Integer.MAX_VALUE, Integer.MIN_VALUE})
+    @DisplayName("FrameInfo should handle boundary moduleOffset values")
+    void shouldHandleBoundaryModuleOffsetValues(int offset) {
+      final FrameInfo info = new FrameInfo(0, null, null, offset, null, null);
+      assertTrue(info.getModuleOffset().isPresent(), "moduleOffset should be present");
+      assertEquals(offset, info.getModuleOffset().get(), "getModuleOffset should return " + offset);
+    }
+
+    @ParameterizedTest(name = "funcOffset={0} should be stored and retrieved correctly")
+    @ValueSource(ints = {0, 1, -1, Integer.MAX_VALUE, Integer.MIN_VALUE})
+    @DisplayName("FrameInfo should handle boundary funcOffset values")
+    void shouldHandleBoundaryFuncOffsetValues(int offset) {
+      final FrameInfo info = new FrameInfo(0, null, null, null, offset, null);
+      assertTrue(info.getFuncOffset().isPresent(), "funcOffset should be present");
+      assertEquals(offset, info.getFuncOffset().get(), "getFuncOffset should return " + offset);
     }
   }
 

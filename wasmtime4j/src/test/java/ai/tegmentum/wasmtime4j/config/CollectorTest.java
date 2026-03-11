@@ -23,6 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Tests for {@link Collector} enum.
@@ -69,6 +72,17 @@ class CollectorTest {
     void nullShouldHaveCorrectRustName() {
       assertEquals("null", Collector.NULL.getRustName());
     }
+
+    @ParameterizedTest(name = "{0} should have rust name ''{1}''")
+    @CsvSource({
+      "AUTO, auto",
+      "DEFERRED_REFERENCE_COUNTING, deferred_reference_counting",
+      "NULL, null"
+    })
+    @DisplayName("All Collector values should have correct rust names")
+    void allValuesShouldHaveCorrectRustNames(String enumName, String expectedRustName) {
+      assertEquals(expectedRustName, Collector.valueOf(enumName).getRustName());
+    }
   }
 
   @Nested
@@ -105,6 +119,16 @@ class CollectorTest {
     @DisplayName("should throw on null input")
     void shouldThrowOnNullInput() {
       assertThrows(IllegalArgumentException.class, () -> Collector.fromString(null));
+    }
+
+    @ParameterizedTest(name = "fromString should round-trip for {0}")
+    @EnumSource(Collector.class)
+    @DisplayName("fromString should round-trip via getRustName for all values")
+    void fromStringShouldRoundTrip(Collector collector) {
+      assertEquals(
+          collector,
+          Collector.fromString(collector.getRustName()),
+          "fromString(getRustName()) should return the original Collector for " + collector.name());
     }
   }
 

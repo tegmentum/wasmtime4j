@@ -26,6 +26,8 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Tests for the {@link WasmTypeKind} enum.
@@ -82,6 +84,17 @@ class WasmTypeKindTest {
     void shouldHaveTableValue() {
       assertNotNull(WasmTypeKind.TABLE, "TABLE should exist");
       assertEquals("TABLE", WasmTypeKind.TABLE.name(), "Name should be TABLE");
+    }
+
+    @ParameterizedTest(name = "{0} should exist and have matching name")
+    @EnumSource(WasmTypeKind.class)
+    @DisplayName("All WasmTypeKind values should exist and have matching names")
+    void allValuesShouldExistAndHaveMatchingNames(WasmTypeKind kind) {
+      assertNotNull(kind, kind.name() + " should exist");
+      assertEquals(
+          kind.name(),
+          WasmTypeKind.valueOf(kind.name()).name(),
+          "valueOf should round-trip " + kind.name());
     }
   }
 
@@ -180,6 +193,13 @@ class WasmTypeKindTest {
     @DisplayName("toString should return enum name for TABLE")
     void toStringShouldReturnEnumNameForTable() {
       assertEquals("TABLE", WasmTypeKind.TABLE.toString(), "Should return TABLE");
+    }
+
+    @ParameterizedTest(name = "{0}.toString() should return its name")
+    @EnumSource(WasmTypeKind.class)
+    @DisplayName("toString should return enum name for all values")
+    void toStringShouldReturnEnumNameForAllValues(WasmTypeKind kind) {
+      assertEquals(kind.name(), kind.toString(), "toString should return " + kind.name());
     }
   }
 

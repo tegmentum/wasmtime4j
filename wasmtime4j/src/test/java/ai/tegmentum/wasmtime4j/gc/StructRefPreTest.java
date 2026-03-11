@@ -90,6 +90,17 @@ class StructRefPreTest {
           () -> pre.allocateDefault(null),
           "Should throw IllegalStateException for use after close");
     }
+
+    @Test
+    @DisplayName("allocateAsync should throw after close")
+    void allocateAsyncShouldThrowAfterClose() {
+      final StructRefPre pre = StructRefPre.create(createTestStructType());
+      pre.close();
+      assertThrows(
+          IllegalStateException.class,
+          () -> pre.allocateAsync(null, null),
+          "Should throw IllegalStateException for use after close");
+    }
   }
 
   @Nested
@@ -118,6 +129,22 @@ class StructRefPreTest {
     void allocateDefaultShouldThrowOnNullGcRuntime() {
       final StructRefPre pre = StructRefPre.create(createTestStructType());
       assertThrows(IllegalArgumentException.class, () -> pre.allocateDefault(null));
+    }
+
+    @Test
+    @DisplayName("allocateAsync should throw on null gcRuntime")
+    void allocateAsyncShouldThrowOnNullGcRuntime() {
+      final StructRefPre pre = StructRefPre.create(createTestStructType());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> pre.allocateAsync(null, java.util.Collections.emptyList()));
+    }
+
+    @Test
+    @DisplayName("allocateAsync should throw on null fieldValues")
+    void allocateAsyncShouldThrowOnNullFieldValues() {
+      final StructRefPre pre = StructRefPre.create(createTestStructType());
+      assertThrows(IllegalArgumentException.class, () -> pre.allocateAsync(null, null));
     }
   }
 

@@ -28,6 +28,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
@@ -256,6 +257,17 @@ class TypeConversionUtilitiesTest {
               IllegalArgumentException.class, () -> TypeConversionUtilities.getValueSize(null));
       assertTrue(exception.getMessage().contains("valueType"));
     }
+
+    @ParameterizedTest(name = "getValueSize({0}) should return {1}")
+    @CsvSource({"I32, 4", "F32, 4", "I64, 8", "F64, 8", "FUNCREF, 8", "EXTERNREF, 8", "V128, 16"})
+    @DisplayName("getValueSize should return correct size for all core types")
+    void getValueSizeShouldReturnCorrectSizeForCoreTypes(String typeName, int expectedSize) {
+      WasmValueType type = WasmValueType.valueOf(typeName);
+      assertEquals(
+          expectedSize,
+          TypeConversionUtilities.getValueSize(type),
+          "getValueSize(" + typeName + ") should return " + expectedSize);
+    }
   }
 
   @Nested
@@ -365,6 +377,18 @@ class TypeConversionUtilitiesTest {
               () -> TypeConversionUtilities.readInt(new byte[3], 0));
       assertTrue(exception.getMessage().contains("underflow"));
     }
+
+    @ParameterizedTest(name = "writeInt/readInt should round-trip value {0}")
+    @ValueSource(ints = {0, 1, -1, Integer.MAX_VALUE, Integer.MIN_VALUE, 0x12345678, -12345})
+    @DisplayName("writeInt and readInt should round-trip boundary and typical int values")
+    void writeReadIntShouldRoundTripBoundaryValues(int value) {
+      final byte[] buffer = new byte[4];
+      TypeConversionUtilities.writeInt(buffer, 0, value);
+      assertEquals(
+          value,
+          TypeConversionUtilities.readInt(buffer, 0),
+          "writeInt/readInt should round-trip " + value);
+    }
   }
 
   @Nested
@@ -463,6 +487,27 @@ class TypeConversionUtilitiesTest {
               IllegalArgumentException.class,
               () -> TypeConversionUtilities.readLong(new byte[7], 0));
       assertTrue(exception.getMessage().contains("underflow"));
+    }
+
+    @ParameterizedTest(name = "writeLong/readLong should round-trip value {0}")
+    @ValueSource(
+        longs = {
+          0L,
+          1L,
+          -1L,
+          Long.MAX_VALUE,
+          Long.MIN_VALUE,
+          0x123456789ABCDEF0L,
+          -123456789012345L
+        })
+    @DisplayName("writeLong and readLong should round-trip boundary and typical long values")
+    void writeReadLongShouldRoundTripBoundaryValues(long value) {
+      final byte[] buffer = new byte[8];
+      TypeConversionUtilities.writeLong(buffer, 0, value);
+      assertEquals(
+          value,
+          TypeConversionUtilities.readLong(buffer, 0),
+          "writeLong/readLong should round-trip " + value);
     }
   }
 

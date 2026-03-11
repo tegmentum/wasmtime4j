@@ -152,6 +152,64 @@ public final class ArrayRefPre implements AutoCloseable {
     return ArrayRef.of(instance);
   }
 
+  /**
+   * Asynchronously allocates a new array instance using this pre-compiled allocator.
+   *
+   * <p>Uses Wasmtime's async resource limiter path for allocation. This should be used when the
+   * store is configured with an async resource limiter.
+   *
+   * @param gcRuntime the GC runtime to allocate in
+   * @param elements the initial element values
+   * @return a new ArrayRef
+   * @throws GcException if allocation fails
+   * @throws IllegalStateException if this allocator has been closed
+   * @throws IllegalArgumentException if gcRuntime or elements is null
+   * @since 1.1.0
+   */
+  public ArrayRef allocateAsync(final GcRuntime gcRuntime, final List<GcValue> elements)
+      throws GcException {
+    if (closed) {
+      throw new IllegalStateException("ArrayRefPre has been closed");
+    }
+    if (gcRuntime == null) {
+      throw new IllegalArgumentException("gcRuntime cannot be null");
+    }
+    if (elements == null) {
+      throw new IllegalArgumentException("elements cannot be null");
+    }
+    final ArrayInstance instance = gcRuntime.createArrayAsync(arrayType, elements);
+    return ArrayRef.of(instance);
+  }
+
+  /**
+   * Asynchronously allocates a new fixed-length array instance using this pre-compiled allocator.
+   *
+   * <p>Uses Wasmtime's async resource limiter path for allocation. This should be used when the
+   * store is configured with an async resource limiter.
+   *
+   * @param gcRuntime the GC runtime to allocate in
+   * @param elements the fixed element values
+   * @return a new ArrayRef with the fixed elements
+   * @throws GcException if allocation fails
+   * @throws IllegalStateException if this allocator has been closed
+   * @throws IllegalArgumentException if gcRuntime or elements is null
+   * @since 1.1.0
+   */
+  public ArrayRef allocateFixedAsync(final GcRuntime gcRuntime, final List<GcValue> elements)
+      throws GcException {
+    if (closed) {
+      throw new IllegalStateException("ArrayRefPre has been closed");
+    }
+    if (gcRuntime == null) {
+      throw new IllegalArgumentException("gcRuntime cannot be null");
+    }
+    if (elements == null) {
+      throw new IllegalArgumentException("elements cannot be null");
+    }
+    final ArrayInstance instance = gcRuntime.createArrayFixedAsync(arrayType, elements);
+    return ArrayRef.of(instance);
+  }
+
   @Override
   public void close() {
     closed = true;

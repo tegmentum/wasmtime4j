@@ -26,6 +26,9 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Tests for the WasmBacktraceDetails enum.
@@ -112,6 +115,13 @@ class WasmBacktraceDetailsTest {
     void environmentShouldReturnTwo() {
       assertEquals(2, WasmBacktraceDetails.ENVIRONMENT.getValue(), "Value should be 2");
     }
+
+    @ParameterizedTest(name = "{0} should have value {1}")
+    @CsvSource({"DISABLE, 0", "ENABLE, 1", "ENVIRONMENT, 2"})
+    @DisplayName("All WasmBacktraceDetails values should have correct integer values")
+    void allValuesShouldHaveCorrectValues(String enumName, int expectedValue) {
+      assertEquals(expectedValue, WasmBacktraceDetails.valueOf(enumName).getValue());
+    }
   }
 
   // ========================================================================
@@ -183,6 +193,30 @@ class WasmBacktraceDetailsTest {
       assertTrue(
           WasmBacktraceDetails.ENVIRONMENT.isEnabled(),
           "ENVIRONMENT should be enabled (backtraces may be collected)");
+    }
+
+    @ParameterizedTest(name = "{0} should be enabled")
+    @EnumSource(
+        value = WasmBacktraceDetails.class,
+        names = {"ENABLE", "ENVIRONMENT"})
+    @DisplayName("Enabled backtrace details should return true for isEnabled")
+    void enabledValuesShouldReturnTrue(WasmBacktraceDetails details) {
+      assertTrue(details.isEnabled(), details.name() + " should be enabled");
+    }
+  }
+
+  @Nested
+  @DisplayName("Round-Trip Tests")
+  class RoundTripTests {
+
+    @ParameterizedTest(name = "fromValue(getValue()) should round-trip for {0}")
+    @EnumSource(WasmBacktraceDetails.class)
+    @DisplayName("fromValue and getValue should be inverses for all values")
+    void fromValueAndGetValueShouldRoundTrip(WasmBacktraceDetails details) {
+      assertEquals(
+          details,
+          WasmBacktraceDetails.fromValue(details.getValue()),
+          "fromValue(getValue()) should return the original value for " + details.name());
     }
   }
 }

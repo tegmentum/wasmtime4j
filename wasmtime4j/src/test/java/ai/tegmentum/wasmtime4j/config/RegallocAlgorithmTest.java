@@ -25,6 +25,9 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Tests for the RegallocAlgorithm enum.
@@ -101,6 +104,13 @@ class RegallocAlgorithmTest {
           RegallocAlgorithm.BACKTRACKING.getValue(),
           "Value should be 'backtracking'");
     }
+
+    @ParameterizedTest(name = "{0} should have value ''{1}''")
+    @CsvSource({"SINGLE_PASS, single_pass", "BACKTRACKING, backtracking"})
+    @DisplayName("All RegallocAlgorithm values should have correct string values")
+    void allValuesShouldHaveCorrectValues(String enumName, String expectedValue) {
+      assertEquals(expectedValue, RegallocAlgorithm.valueOf(enumName).getValue());
+    }
   }
 
   // ========================================================================
@@ -161,6 +171,29 @@ class RegallocAlgorithmTest {
           "backtracking",
           RegallocAlgorithm.BACKTRACKING.toString(),
           "toString should return value");
+    }
+
+    @ParameterizedTest(name = "{0}.toString() should equal getValue()")
+    @EnumSource(RegallocAlgorithm.class)
+    @DisplayName("toString should return the same value as getValue for all values")
+    void toStringShouldMatchGetValue(RegallocAlgorithm algo) {
+      assertEquals(
+          algo.getValue(), algo.toString(), algo.name() + ".toString() should equal getValue()");
+    }
+  }
+
+  @Nested
+  @DisplayName("Round-Trip Tests")
+  class RoundTripTests {
+
+    @ParameterizedTest(name = "fromValue(getValue()) should round-trip for {0}")
+    @EnumSource(RegallocAlgorithm.class)
+    @DisplayName("fromValue and getValue should be inverses for all values")
+    void fromValueAndGetValueShouldRoundTrip(RegallocAlgorithm algo) {
+      assertEquals(
+          algo,
+          RegallocAlgorithm.fromValue(algo.getValue()),
+          "fromValue(getValue()) should return the original value for " + algo.name());
     }
   }
 }

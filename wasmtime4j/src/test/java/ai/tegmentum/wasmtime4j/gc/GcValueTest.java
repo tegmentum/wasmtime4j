@@ -26,6 +26,8 @@ import java.lang.reflect.Modifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for {@link GcValue} abstract class.
@@ -117,6 +119,18 @@ class GcValueTest {
       final GcValue val = GcValue.i32(42);
       assertNotNull(val.toWasmValue(), "toWasmValue should not return null");
     }
+
+    @ParameterizedTest(name = "i32({0}) should create valid I32 value and round-trip")
+    @ValueSource(ints = {0, -1, 1, Integer.MAX_VALUE, Integer.MIN_VALUE, 42, -42})
+    @DisplayName("i32 should handle boundary and typical values correctly")
+    void i32ShouldHandleBoundaryValues(int value) {
+      final GcValue val = GcValue.i32(value);
+      assertEquals(GcValue.Type.I32, val.getType(), "Type should be I32");
+      assertEquals(value, val.asI32(), "asI32 should return " + value);
+      assertFalse(val.isNull(), "I32 should not be null");
+      assertFalse(val.isReference(), "I32 should not be a reference");
+      assertNotNull(val.toWasmValue(), "toWasmValue should not return null");
+    }
   }
 
   @Nested
@@ -137,6 +151,17 @@ class GcValueTest {
       final GcValue v1 = GcValue.i64(100L);
       final GcValue v2 = GcValue.i64(100L);
       assertEquals(v1, v2, "Equal I64 values should be equal");
+    }
+
+    @ParameterizedTest(name = "i64({0}) should create valid I64 value and round-trip")
+    @ValueSource(longs = {0L, -1L, 1L, Long.MAX_VALUE, Long.MIN_VALUE, 100L, -100L})
+    @DisplayName("i64 should handle boundary and typical values correctly")
+    void i64ShouldHandleBoundaryValues(long value) {
+      final GcValue val = GcValue.i64(value);
+      assertEquals(GcValue.Type.I64, val.getType(), "Type should be I64");
+      assertEquals(value, val.asI64(), "asI64 should return " + value);
+      assertFalse(val.isNull(), "I64 should not be null");
+      assertFalse(val.isReference(), "I64 should not be a reference");
     }
   }
 
@@ -159,6 +184,24 @@ class GcValueTest {
       final GcValue v2 = GcValue.f32(1.0f);
       assertEquals(v1, v2, "Equal F32 values should be equal");
     }
+
+    @ParameterizedTest(name = "f32({0}) should create valid F32 value and round-trip")
+    @ValueSource(
+        floats = {
+          0.0f,
+          -1.0f,
+          1.0f,
+          Float.MAX_VALUE,
+          Float.MIN_VALUE,
+          Float.POSITIVE_INFINITY,
+          Float.NEGATIVE_INFINITY
+        })
+    @DisplayName("f32 should handle boundary and special float values correctly")
+    void f32ShouldHandleBoundaryValues(float value) {
+      final GcValue val = GcValue.f32(value);
+      assertEquals(GcValue.Type.F32, val.getType(), "Type should be F32");
+      assertEquals(value, val.asF32(), "asF32 should return " + value);
+    }
   }
 
   @Nested
@@ -179,6 +222,24 @@ class GcValueTest {
       final GcValue v1 = GcValue.f64(1.0);
       final GcValue v2 = GcValue.f64(1.0);
       assertEquals(v1, v2, "Equal F64 values should be equal");
+    }
+
+    @ParameterizedTest(name = "f64({0}) should create valid F64 value and round-trip")
+    @ValueSource(
+        doubles = {
+          0.0,
+          -1.0,
+          1.0,
+          Double.MAX_VALUE,
+          Double.MIN_VALUE,
+          Double.POSITIVE_INFINITY,
+          Double.NEGATIVE_INFINITY
+        })
+    @DisplayName("f64 should handle boundary and special double values correctly")
+    void f64ShouldHandleBoundaryValues(double value) {
+      final GcValue val = GcValue.f64(value);
+      assertEquals(GcValue.Type.F64, val.getType(), "Type should be F64");
+      assertEquals(value, val.asF64(), "asF64 should return " + value);
     }
   }
 

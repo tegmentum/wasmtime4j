@@ -171,6 +171,24 @@ public interface GcRuntime {
     return createArray(arrayType, elements);
   }
 
+  /**
+   * Asynchronously creates a new fixed-length array instance with the given elements.
+   *
+   * <p>Uses Wasmtime's async resource limiter path for allocation. The default implementation
+   * delegates to the synchronous method. Implementations should override this to use the native
+   * async API when available.
+   *
+   * @param arrayType the array type
+   * @param elements the fixed array elements
+   * @return the new fixed array instance
+   * @throws GcException if creation fails
+   * @since 1.1.0
+   */
+  default ArrayInstance createArrayFixedAsync(ArrayType arrayType, List<GcValue> elements)
+      throws GcException {
+    return createArrayFixed(arrayType, elements);
+  }
+
   // ========== Field and Element Access ==========
 
   /**
