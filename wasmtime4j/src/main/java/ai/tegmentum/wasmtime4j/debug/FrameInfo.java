@@ -37,6 +37,7 @@ public final class FrameInfo {
   private final Integer moduleOffset;
   private final Integer funcOffset;
   private final List<FrameSymbol> symbols;
+  private final String moduleName;
 
   /**
    * Creates a new FrameInfo with the specified frame details.
@@ -55,6 +56,28 @@ public final class FrameInfo {
       final Integer moduleOffset,
       final Integer funcOffset,
       final List<FrameSymbol> symbols) {
+    this(funcIndex, module, funcName, moduleOffset, funcOffset, symbols, null);
+  }
+
+  /**
+   * Creates a new FrameInfo with the specified frame details including module name.
+   *
+   * @param funcIndex the function index within the module
+   * @param module the module containing this function
+   * @param funcName the function name (if available)
+   * @param moduleOffset the offset within the module in bytes
+   * @param funcOffset the offset within the function in bytes
+   * @param symbols the debug symbols for this frame
+   * @param moduleName the module's debug name from the name section (if available)
+   */
+  public FrameInfo(
+      final int funcIndex,
+      final Module module,
+      final String funcName,
+      final Integer moduleOffset,
+      final Integer funcOffset,
+      final List<FrameSymbol> symbols,
+      final String moduleName) {
     this.funcIndex = funcIndex;
     this.module = module;
     this.funcName = funcName;
@@ -62,6 +85,7 @@ public final class FrameInfo {
     this.funcOffset = funcOffset;
     this.symbols =
         symbols != null ? Collections.unmodifiableList(symbols) : Collections.emptyList();
+    this.moduleName = moduleName;
   }
 
   /**
@@ -125,6 +149,20 @@ public final class FrameInfo {
     return new java.util.ArrayList<>(symbols);
   }
 
+  /**
+   * Gets the module's debug name from the WebAssembly name section.
+   *
+   * <p>This is the name assigned to the module in its name section, which is separate from the
+   * module reference accessible via {@link #getModule()}. This name is particularly useful for
+   * component model frames where multiple modules may be embedded within a single component.
+   *
+   * @return the module name, or empty if not available
+   * @since 1.1.0
+   */
+  public Optional<String> getModuleName() {
+    return Optional.ofNullable(moduleName);
+  }
+
   @Override
   public boolean equals(final Object obj) {
     if (this == obj) {
@@ -139,18 +177,22 @@ public final class FrameInfo {
         && Objects.equals(funcName, that.funcName)
         && Objects.equals(moduleOffset, that.moduleOffset)
         && Objects.equals(funcOffset, that.funcOffset)
-        && Objects.equals(symbols, that.symbols);
+        && Objects.equals(symbols, that.symbols)
+        && Objects.equals(moduleName, that.moduleName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(funcIndex, module, funcName, moduleOffset, funcOffset, symbols);
+    return Objects.hash(funcIndex, module, funcName, moduleOffset, funcOffset, symbols, moduleName);
   }
 
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder("FrameInfo{");
     sb.append("funcIndex=").append(funcIndex);
+    if (moduleName != null) {
+      sb.append(", moduleName='").append(moduleName).append('\'');
+    }
     if (funcName != null) {
       sb.append(", funcName='").append(funcName).append('\'');
     }

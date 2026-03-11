@@ -1511,9 +1511,20 @@ pub mod core {
             ComponentItem::Resource(resource_ty) => {
                 // ResourceType is opaque in Wasmtime 42.0.1 — no public name/index getters.
                 // The resource name is the JSON key assigned by the caller (imports/exports map).
-                // We include the Debug representation for diagnostic correlation.
+                // We include the Debug representation for diagnostic correlation and a stable
+                // hash for cross-reference equality checking.
+                let debug_str = format!("{:?}", resource_ty);
+                let type_hash = {
+                    use std::hash::{Hash, Hasher};
+                    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                    debug_str.hash(&mut hasher);
+                    hasher.finish()
+                };
                 json.push_str("{\"kind\":\"resource\",\"resourceTypeDebug\":");
-                append_json_string(json, &format!("{:?}", resource_ty));
+                append_json_string(json, &debug_str);
+                json.push_str(",\"resourceTypeId\":");
+                json.push_str(&type_hash.to_string());
+                json.push_str(",\"hostDefined\":false");
                 json.push('}');
             }
         }

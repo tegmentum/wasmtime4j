@@ -157,7 +157,8 @@ public final class NativeWasiBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // data_len_out
 
     addFunctionBinding(
-        "wasmtime4j_wasi_free_capture_buffer", FunctionDescriptor.ofVoid(
+        "wasmtime4j_wasi_free_capture_buffer",
+        FunctionDescriptor.ofVoid(
             ValueLayout.ADDRESS, // buffer
             ValueLayout.JAVA_LONG)); // len
 
@@ -525,7 +526,8 @@ public final class NativeWasiBindings extends NativeBindingsBase {
    * Gets captured stdout data.
    *
    * <p>Returns a pointer to the captured stdout data and sets the length in the output parameter.
-   * The caller must free the returned buffer using {@link #wasiFreeCaptureBuffer(MemorySegment, long)}.
+   * The caller must free the returned buffer using {@link #wasiFreeCaptureBuffer(MemorySegment,
+   * long)}.
    *
    * @param contextHandle the WASI context handle
    * @param lengthOut output parameter for the data length
@@ -546,7 +548,8 @@ public final class NativeWasiBindings extends NativeBindingsBase {
    * Gets captured stderr data.
    *
    * <p>Returns a pointer to the captured stderr data and sets the length in the output parameter.
-   * The caller must free the returned buffer using {@link #wasiFreeCaptureBuffer(MemorySegment, long)}.
+   * The caller must free the returned buffer using {@link #wasiFreeCaptureBuffer(MemorySegment,
+   * long)}.
    *
    * @param contextHandle the WASI context handle
    * @param lengthOut output parameter for the data length

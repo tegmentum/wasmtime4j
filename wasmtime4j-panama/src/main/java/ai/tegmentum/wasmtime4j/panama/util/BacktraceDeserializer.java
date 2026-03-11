@@ -34,6 +34,7 @@ import java.util.List;
  * Backtrace: [frame_count: u32][force_capture: u8][frames...]
  * Frame: [func_index: u32][has_func_name: u8][func_name_len: u32][func_name: bytes]
  *        [has_module_offset: u8][module_offset: u32][has_func_offset: u8][func_offset: u32]
+ *        [has_module_name: u8][module_name_len: u32][module_name: bytes]
  *        [symbol_count: u32][symbols...]
  * Symbol: [has_name: u8][name_len: u32][name: bytes][has_file: u8][file_len: u32][file: bytes]
  *         [has_line: u8][line: u32][has_column: u8][column: u32]
@@ -111,6 +112,17 @@ public final class BacktraceDeserializer {
       funcOffset = null;
     }
 
+    // Module name from WebAssembly name section (optional)
+    final String moduleName;
+    if (buffer.get() != 0) {
+      final int nameLen = buffer.getInt();
+      final byte[] nameBytes = new byte[nameLen];
+      buffer.get(nameBytes);
+      moduleName = new String(nameBytes, StandardCharsets.UTF_8);
+    } else {
+      moduleName = null;
+    }
+
     // Symbols
     final int symbolCount = buffer.getInt();
     final List<FrameSymbol> symbols = new ArrayList<>(symbolCount);
@@ -118,8 +130,8 @@ public final class BacktraceDeserializer {
       symbols.add(deserializeSymbol(buffer));
     }
 
-    // Module is not serialized (would require module handle), pass null
-    return new FrameInfo(funcIndex, null, funcName, moduleOffset, funcOffset, symbols);
+    // Module handle is not serialized (would require module reference), pass null
+    return new FrameInfo(funcIndex, null, funcName, moduleOffset, funcOffset, symbols, moduleName);
   }
 
   /**

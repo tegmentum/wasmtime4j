@@ -940,6 +940,17 @@ fn serialize_backtrace(
             buffer.push(0); // has_func_offset = false
         }
 
+        // Module name (optional) — from the Module's name section
+        let mod_name = frame.module().name();
+        if let Some(module_name) = mod_name {
+            buffer.push(1); // has_module_name = true
+            let name_bytes = module_name.as_bytes();
+            buffer.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
+            buffer.extend_from_slice(name_bytes);
+        } else {
+            buffer.push(0); // has_module_name = false
+        }
+
         // Symbols
         let symbols = frame.symbols();
         buffer.extend_from_slice(&(symbols.len() as u32).to_le_bytes());

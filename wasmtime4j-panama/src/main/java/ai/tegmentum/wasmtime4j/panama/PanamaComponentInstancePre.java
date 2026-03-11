@@ -133,6 +133,11 @@ public final class PanamaComponentInstancePre implements ComponentInstancePre {
                 config.getFuelLimit(),
                 config.getEpochDeadline(),
                 config.getMaxMemoryBytes(),
+                config.getMaxTableElements(),
+                config.getMaxInstances(),
+                config.getMaxTables(),
+                config.getMaxMemories(),
+                config.isTrapOnGrowFailure() ? (byte) 1 : (byte) 0,
                 instanceOutPtr);
 
         if (errorCode != 0) {

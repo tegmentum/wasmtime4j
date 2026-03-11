@@ -153,8 +153,24 @@ public interface ComponentItemInfo {
    *
    * @param name the resource name (may be null)
    * @param resourceTypeId a unique identifier for this resource type
+   * @param debugIdentity the Wasmtime debug identity string for diagnostic correlation (may be
+   *     null)
+   * @param hostDefined whether this resource type was defined by the host (as opposed to a guest
+   *     component)
    */
-  record ResourceInfo(String name, long resourceTypeId) implements ComponentItemInfo {
+  record ResourceInfo(String name, long resourceTypeId, String debugIdentity, boolean hostDefined)
+      implements ComponentItemInfo {
+
+    /**
+     * Creates a ResourceInfo with only name and id (backward-compatible).
+     *
+     * @param name the resource name
+     * @param resourceTypeId the resource type id
+     */
+    public ResourceInfo(final String name, final long resourceTypeId) {
+      this(name, resourceTypeId, null, false);
+    }
+
     @Override
     public ComponentItemKind kind() {
       return ComponentItemKind.RESOURCE;

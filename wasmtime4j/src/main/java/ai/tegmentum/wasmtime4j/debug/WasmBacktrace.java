@@ -145,6 +145,14 @@ public final class WasmBacktrace {
         if (rawName.startsWith("<") && rawName.endsWith(">")) {
           rawName = rawName.substring(1, rawName.length() - 1);
         }
+
+        // Extract module name from "module!func" format
+        String currentModuleName = null;
+        final int bangIndex = rawName.indexOf('!');
+        if (bangIndex > 0) {
+          currentModuleName = rawName.substring(0, bangIndex);
+          rawName = rawName.substring(bangIndex + 1);
+        }
         currentFuncName = rawName;
 
         // Check if next line is a source location
@@ -164,7 +172,14 @@ public final class WasmBacktrace {
         final List<FrameSymbol> symbols =
             symbol != null ? Collections.singletonList(symbol) : Collections.emptyList();
         frames.add(
-            new FrameInfo(currentFuncIndex, null, currentFuncName, currentOffset, null, symbols));
+            new FrameInfo(
+                currentFuncIndex,
+                null,
+                currentFuncName,
+                currentOffset,
+                null,
+                symbols,
+                currentModuleName));
         currentOffset = null;
         currentFuncName = null;
       }

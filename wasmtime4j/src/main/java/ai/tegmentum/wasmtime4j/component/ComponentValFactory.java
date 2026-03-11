@@ -15,6 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.component;
 
+import java.util.AbstractList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -132,6 +134,18 @@ public abstract class ComponentValFactory {
 
   /** Creates a borrow resource component value wrapping a resource handle. */
   public abstract ComponentVal createBorrow(ComponentResourceHandle handle);
+
+  /**
+   * Creates a {@code list<u8>} component value efficiently from a byte array.
+   *
+   * <p>The default implementation wraps the byte array to avoid per-element boxing.
+   *
+   * @param bytes the byte array
+   * @return a new ComponentVal of type list containing u8 elements
+   */
+  public ComponentVal createListU8(final byte[] bytes) {
+    return new ByteArrayListVal(bytes);
+  }
 
   /** Default implementation of ComponentValFactory using simple Java objects. */
   static final class DefaultImpl extends ComponentValFactory {
@@ -635,6 +649,317 @@ public abstract class ComponentValFactory {
     @Override
     public int hashCode() {
       return java.util.Objects.hash(type, value);
+    }
+  }
+
+  /**
+   * Efficient ComponentVal for {@code list<u8>} backed by a byte array.
+   *
+   * <p>Avoids per-element boxing when creating or accessing large byte lists. Supports both {@link
+   * ComponentVal#asList()} (materializes on demand) and {@link ComponentVal#asByteArray()} (zero
+   * copy).
+   */
+  static final class ByteArrayListVal implements ComponentVal {
+    private final byte[] data;
+
+    ByteArrayListVal(final byte[] data) {
+      this.data = Arrays.copyOf(data, data.length);
+    }
+
+    @Override
+    public ComponentType getType() {
+      return ComponentType.LIST;
+    }
+
+    @Override
+    public boolean isBool() {
+      return false;
+    }
+
+    @Override
+    public boolean isS8() {
+      return false;
+    }
+
+    @Override
+    public boolean isS16() {
+      return false;
+    }
+
+    @Override
+    public boolean isS32() {
+      return false;
+    }
+
+    @Override
+    public boolean isS64() {
+      return false;
+    }
+
+    @Override
+    public boolean isU8() {
+      return false;
+    }
+
+    @Override
+    public boolean isU16() {
+      return false;
+    }
+
+    @Override
+    public boolean isU32() {
+      return false;
+    }
+
+    @Override
+    public boolean isU64() {
+      return false;
+    }
+
+    @Override
+    public boolean isF32() {
+      return false;
+    }
+
+    @Override
+    public boolean isF64() {
+      return false;
+    }
+
+    @Override
+    public boolean isChar() {
+      return false;
+    }
+
+    @Override
+    public boolean isString() {
+      return false;
+    }
+
+    @Override
+    public boolean isList() {
+      return true;
+    }
+
+    @Override
+    public boolean isRecord() {
+      return false;
+    }
+
+    @Override
+    public boolean isTuple() {
+      return false;
+    }
+
+    @Override
+    public boolean isVariant() {
+      return false;
+    }
+
+    @Override
+    public boolean isEnum() {
+      return false;
+    }
+
+    @Override
+    public boolean isOption() {
+      return false;
+    }
+
+    @Override
+    public boolean isResult() {
+      return false;
+    }
+
+    @Override
+    public boolean isFlags() {
+      return false;
+    }
+
+    @Override
+    public boolean isResource() {
+      return false;
+    }
+
+    @Override
+    public boolean isFuture() {
+      return false;
+    }
+
+    @Override
+    public boolean isStream() {
+      return false;
+    }
+
+    @Override
+    public boolean isErrorContext() {
+      return false;
+    }
+
+    @Override
+    public boolean asBool() {
+      throw new IllegalStateException("Expected BOOL but was LIST");
+    }
+
+    @Override
+    public byte asS8() {
+      throw new IllegalStateException("Expected S8 but was LIST");
+    }
+
+    @Override
+    public short asS16() {
+      throw new IllegalStateException("Expected S16 but was LIST");
+    }
+
+    @Override
+    public int asS32() {
+      throw new IllegalStateException("Expected S32 but was LIST");
+    }
+
+    @Override
+    public long asS64() {
+      throw new IllegalStateException("Expected S64 but was LIST");
+    }
+
+    @Override
+    public short asU8() {
+      throw new IllegalStateException("Expected U8 but was LIST");
+    }
+
+    @Override
+    public int asU16() {
+      throw new IllegalStateException("Expected U16 but was LIST");
+    }
+
+    @Override
+    public long asU32() {
+      throw new IllegalStateException("Expected U32 but was LIST");
+    }
+
+    @Override
+    public long asU64() {
+      throw new IllegalStateException("Expected U64 but was LIST");
+    }
+
+    @Override
+    public float asF32() {
+      throw new IllegalStateException("Expected F32 but was LIST");
+    }
+
+    @Override
+    public double asF64() {
+      throw new IllegalStateException("Expected F64 but was LIST");
+    }
+
+    @Override
+    public char asChar() {
+      throw new IllegalStateException("Expected CHAR but was LIST");
+    }
+
+    @Override
+    public String asString() {
+      throw new IllegalStateException("Expected STRING but was LIST");
+    }
+
+    @Override
+    public List<ComponentVal> asList() {
+      return new AbstractList<ComponentVal>() {
+        @Override
+        public ComponentVal get(final int index) {
+          return ComponentVal.u8((short) (data[index] & 0xFF));
+        }
+
+        @Override
+        public int size() {
+          return data.length;
+        }
+      };
+    }
+
+    @Override
+    public byte[] asByteArray() {
+      return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
+    public int listSize() {
+      return data.length;
+    }
+
+    @Override
+    public Map<String, ComponentVal> asRecord() {
+      throw new IllegalStateException("Expected RECORD but was LIST");
+    }
+
+    @Override
+    public List<ComponentVal> asTuple() {
+      throw new IllegalStateException("Expected TUPLE but was LIST");
+    }
+
+    @Override
+    public ComponentVariant asVariant() {
+      throw new IllegalStateException("Expected VARIANT but was LIST");
+    }
+
+    @Override
+    public String asEnum() {
+      throw new IllegalStateException("Expected ENUM but was LIST");
+    }
+
+    @Override
+    public Optional<ComponentVal> asSome() {
+      throw new IllegalStateException("Expected OPTION but was LIST");
+    }
+
+    @Override
+    public ComponentResult asResult() {
+      throw new IllegalStateException("Expected RESULT but was LIST");
+    }
+
+    @Override
+    public Set<String> asFlags() {
+      throw new IllegalStateException("Expected FLAGS but was LIST");
+    }
+
+    @Override
+    public ComponentResourceHandle asResource() {
+      throw new IllegalStateException("Expected OWN/BORROW but was LIST");
+    }
+
+    @Override
+    public long asFutureHandle() {
+      throw new IllegalStateException("Expected FUTURE but was LIST");
+    }
+
+    @Override
+    public long asStreamHandle() {
+      throw new IllegalStateException("Expected STREAM but was LIST");
+    }
+
+    @Override
+    public long asErrorContextHandle() {
+      throw new IllegalStateException("Expected ERROR_CONTEXT but was LIST");
+    }
+
+    @Override
+    public String toString() {
+      return "list<u8>(length=" + data.length + ")";
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof ByteArrayListVal)) {
+        return false;
+      }
+      return Arrays.equals(data, ((ByteArrayListVal) obj).data);
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(data);
     }
   }
 }

@@ -1741,6 +1741,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_
     fuel_limit: jlong,
     epoch_deadline: jlong,
     max_memory_bytes: jlong,
+    max_table_elements: jlong,
+    max_instances: jlong,
+    max_tables: jlong,
+    max_memories: jlong,
+    trap_on_grow_failure: jboolean,
 ) -> jlong {
     jni_utils::jni_try_with_default(&mut env, 0, || {
         let pre = unsafe {
@@ -1751,6 +1756,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentInstancePre_
             fuel_limit as u64,
             epoch_deadline as u64,
             max_memory_bytes as u64,
+            max_table_elements as u64,
+            max_instances as u64,
+            max_tables as u64,
+            max_memories as u64,
+            trap_on_grow_failure != 0,
         )?;
 
         // Register the instance in the engine's HashMap so it can be looked up by ID

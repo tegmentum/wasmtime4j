@@ -593,6 +593,11 @@ public final class NativeComponentBindings extends NativeBindingsBase {
             ValueLayout.JAVA_LONG, // fuel limit
             ValueLayout.JAVA_LONG, // epoch deadline
             ValueLayout.JAVA_LONG, // max memory bytes
+            ValueLayout.JAVA_LONG, // max table elements
+            ValueLayout.JAVA_LONG, // max instances
+            ValueLayout.JAVA_LONG, // max tables
+            ValueLayout.JAVA_LONG, // max memories
+            ValueLayout.JAVA_BYTE, // trap on grow failure
             ValueLayout.ADDRESS)); // instance out pointer
 
     addFunctionBinding(
@@ -2213,6 +2218,11 @@ public final class NativeComponentBindings extends NativeBindingsBase {
    * @param fuelLimit fuel limit for the store (0 for no limit)
    * @param epochDeadline epoch deadline for the store (0 for no deadline)
    * @param maxMemoryBytes maximum memory in bytes (0 for unlimited)
+   * @param maxTableElements maximum elements per table (0 for unlimited)
+   * @param maxInstances maximum wasm instances (0 for unlimited)
+   * @param maxTables maximum tables (0 for unlimited)
+   * @param maxMemories maximum memories (0 for unlimited)
+   * @param trapOnGrowFailure whether to trap on grow failure (1) or return -1 (0)
    * @param instanceOutPtr pointer to store the instance pointer
    * @return 0 on success, non-zero on error
    */
@@ -2221,6 +2231,11 @@ public final class NativeComponentBindings extends NativeBindingsBase {
       final long fuelLimit,
       final long epochDeadline,
       final long maxMemoryBytes,
+      final long maxTableElements,
+      final long maxInstances,
+      final long maxTables,
+      final long maxMemories,
+      final byte trapOnGrowFailure,
       final MemorySegment instanceOutPtr) {
     validatePointer(prePtr, "prePtr");
     validatePointer(instanceOutPtr, "instanceOutPtr");
@@ -2231,6 +2246,11 @@ public final class NativeComponentBindings extends NativeBindingsBase {
         fuelLimit,
         epochDeadline,
         maxMemoryBytes,
+        maxTableElements,
+        maxInstances,
+        maxTables,
+        maxMemories,
+        trapOnGrowFailure,
         instanceOutPtr);
   }
 

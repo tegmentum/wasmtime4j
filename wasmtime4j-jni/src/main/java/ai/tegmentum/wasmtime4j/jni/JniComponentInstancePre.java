@@ -89,7 +89,12 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
               engineHandle,
               config.getFuelLimit(),
               config.getEpochDeadline(),
-              config.getMaxMemoryBytes());
+              config.getMaxMemoryBytes(),
+              config.getMaxTableElements(),
+              config.getMaxInstances(),
+              config.getMaxTables(),
+              config.getMaxMemories(),
+              config.isTrapOnGrowFailure());
       if (instanceId == 0) {
         throw new WasmException("Failed to instantiate from ComponentInstancePre with config");
       }
@@ -221,7 +226,16 @@ public final class JniComponentInstancePre implements ComponentInstancePre {
   private static native long nativeInstantiate(long preHandle, long engineHandle);
 
   private static native long nativeInstantiateWithConfig(
-      long preHandle, long engineHandle, long fuelLimit, long epochDeadline, long maxMemoryBytes);
+      long preHandle,
+      long engineHandle,
+      long fuelLimit,
+      long epochDeadline,
+      long maxMemoryBytes,
+      long maxTableElements,
+      long maxInstances,
+      long maxTables,
+      long maxMemories,
+      boolean trapOnGrowFailure);
 
   private static native byte nativeIsValid(long preHandle);
 

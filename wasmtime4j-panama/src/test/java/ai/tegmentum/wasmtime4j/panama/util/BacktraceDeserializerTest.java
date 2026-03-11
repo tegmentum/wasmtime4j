@@ -144,6 +144,7 @@ class BacktraceDeserializerTest {
       buffer.put((byte) 0); // has_func_name = false
       buffer.put((byte) 0); // has_module_offset = false
       buffer.put((byte) 0); // has_func_offset = false
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(0); // symbol_count = 0
 
       final byte[] data = new byte[buffer.position()];
@@ -181,6 +182,7 @@ class BacktraceDeserializerTest {
       buffer.put(funcNameBytes);
       buffer.put((byte) 0); // has_module_offset = false
       buffer.put((byte) 0); // has_func_offset = false
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(0); // symbol_count = 0
 
       final byte[] data = new byte[buffer.position()];
@@ -210,6 +212,7 @@ class BacktraceDeserializerTest {
       buffer.putInt(1024); // module_offset = 1024
       buffer.put((byte) 1); // has_func_offset = true
       buffer.putInt(256); // func_offset = 256
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(0); // symbol_count = 0
 
       final byte[] data = new byte[buffer.position()];
@@ -251,6 +254,7 @@ class BacktraceDeserializerTest {
       buffer.put((byte) 0); // has_func_name = false
       buffer.put((byte) 0); // has_module_offset = false
       buffer.put((byte) 0); // has_func_offset = false
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(1); // symbol_count = 1
 
       // Symbol
@@ -299,6 +303,7 @@ class BacktraceDeserializerTest {
       buffer.put((byte) 0); // has_func_name = false
       buffer.put((byte) 0); // has_module_offset = false
       buffer.put((byte) 0); // has_func_offset = false
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(1); // symbol_count = 1
 
       // Symbol with all optional fields absent
@@ -339,6 +344,7 @@ class BacktraceDeserializerTest {
       buffer.put((byte) 0); // has_func_name = false
       buffer.put((byte) 0); // has_module_offset = false
       buffer.put((byte) 0); // has_func_offset = false
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(0); // symbol_count = 0
 
       // Frame 2
@@ -346,6 +352,7 @@ class BacktraceDeserializerTest {
       buffer.put((byte) 0); // has_func_name = false
       buffer.put((byte) 0); // has_module_offset = false
       buffer.put((byte) 0); // has_func_offset = false
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(0); // symbol_count = 0
 
       // Frame 3
@@ -353,6 +360,7 @@ class BacktraceDeserializerTest {
       buffer.put((byte) 0); // has_func_name = false
       buffer.put((byte) 0); // has_module_offset = false
       buffer.put((byte) 0); // has_func_offset = false
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(0); // symbol_count = 0
 
       final byte[] data = new byte[buffer.position()];
@@ -391,6 +399,7 @@ class BacktraceDeserializerTest {
       buffer.put((byte) 0); // has_func_name = false
       buffer.put((byte) 0); // has_module_offset = false
       buffer.put((byte) 0); // has_func_offset = false
+      buffer.put((byte) 0); // has_module_name = false
       buffer.putInt(2); // symbol_count = 2
 
       // Symbol 1

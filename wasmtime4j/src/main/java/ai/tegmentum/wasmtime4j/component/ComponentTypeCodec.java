@@ -109,7 +109,11 @@ public final class ComponentTypeCodec {
           // The resource name is the map key in the imports/exports structure.
           // resourceTypeDebug carries the Debug representation for diagnostic correlation.
           final String debugStr = (String) obj.get("resourceTypeDebug");
-          return new ComponentItemInfo.ResourceInfo(debugStr, 0);
+          final Object idObj = obj.get("resourceTypeId");
+          final long typeId = idObj instanceof Number ? ((Number) idObj).longValue() : 0;
+          final Object hostObj = obj.get("hostDefined");
+          final boolean hostDefined = hostObj instanceof Boolean && (Boolean) hostObj;
+          return new ComponentItemInfo.ResourceInfo(debugStr, typeId, debugStr, hostDefined);
         }
       default:
         throw new IllegalArgumentException("Unknown component item kind: " + kind);

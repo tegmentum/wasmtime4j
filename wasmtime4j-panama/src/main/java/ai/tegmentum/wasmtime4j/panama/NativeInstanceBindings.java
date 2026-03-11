@@ -51,10 +51,14 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
 
   // Typed fast-path MethodHandles - bypass WasmValue tagged union entirely
   private volatile MethodHandle mhCallVoid; // (ADDRESS, ADDRESS, ADDRESS) -> JAVA_INT
-  private volatile MethodHandle mhCallI32ToI32; // (ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS) -> JAVA_INT
-  private volatile MethodHandle mhCallI32I32ToI32; // (ADDRESS,ADDRESS,ADDRESS,INT,INT,ADDRESS) -> INT
-  private volatile MethodHandle mhCallI64ToI64; // (ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS) -> JAVA_INT
-  private volatile MethodHandle mhCallF64ToF64; // (ADDRESS, ADDRESS, ADDRESS, JAVA_DOUBLE, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle
+      mhCallI32ToI32; // (ADDRESS, ADDRESS, ADDRESS, JAVA_INT, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle
+      mhCallI32I32ToI32; // (ADDRESS,ADDRESS,ADDRESS,INT,INT,ADDRESS) -> INT
+  private volatile MethodHandle
+      mhCallI64ToI64; // (ADDRESS, ADDRESS, ADDRESS, JAVA_LONG, ADDRESS) -> JAVA_INT
+  private volatile MethodHandle
+      mhCallF64ToF64; // (ADDRESS, ADDRESS, ADDRESS, JAVA_DOUBLE, ADDRESS) -> JAVA_INT
   private volatile MethodHandle mhCallToI32; // (ADDRESS, ADDRESS, ADDRESS, ADDRESS) -> JAVA_INT
 
   private NativeInstanceBindings() {

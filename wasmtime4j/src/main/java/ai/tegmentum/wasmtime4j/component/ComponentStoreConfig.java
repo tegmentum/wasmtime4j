@@ -41,11 +41,21 @@ public final class ComponentStoreConfig {
   private final long fuelLimit;
   private final long epochDeadline;
   private final long maxMemoryBytes;
+  private final long maxTableElements;
+  private final long maxInstances;
+  private final long maxTables;
+  private final long maxMemories;
+  private final boolean trapOnGrowFailure;
 
   private ComponentStoreConfig(final Builder builder) {
     this.fuelLimit = builder.fuelLimit;
     this.epochDeadline = builder.epochDeadline;
     this.maxMemoryBytes = builder.maxMemoryBytes;
+    this.maxTableElements = builder.maxTableElements;
+    this.maxInstances = builder.maxInstances;
+    this.maxTables = builder.maxTables;
+    this.maxMemories = builder.maxMemories;
+    this.trapOnGrowFailure = builder.trapOnGrowFailure;
   }
 
   /**
@@ -91,12 +101,73 @@ public final class ComponentStoreConfig {
     return maxMemoryBytes;
   }
 
+  /**
+   * Gets the maximum number of elements per table.
+   *
+   * <p>A value of 0 means no table element limit is applied.
+   *
+   * @return the maximum table elements, or 0 for unlimited
+   */
+  public long getMaxTableElements() {
+    return maxTableElements;
+  }
+
+  /**
+   * Gets the maximum number of WebAssembly instances allowed.
+   *
+   * <p>A value of 0 means no instance limit is applied.
+   *
+   * @return the maximum instances, or 0 for unlimited
+   */
+  public long getMaxInstances() {
+    return maxInstances;
+  }
+
+  /**
+   * Gets the maximum number of tables allowed.
+   *
+   * <p>A value of 0 means no table count limit is applied.
+   *
+   * @return the maximum tables, or 0 for unlimited
+   */
+  public long getMaxTables() {
+    return maxTables;
+  }
+
+  /**
+   * Gets the maximum number of linear memories allowed.
+   *
+   * <p>A value of 0 means no memory count limit is applied.
+   *
+   * @return the maximum memories, or 0 for unlimited
+   */
+  public long getMaxMemories() {
+    return maxMemories;
+  }
+
+  /**
+   * Gets whether to trap on memory/table grow failure instead of returning -1.
+   *
+   * <p>When true, any failed attempt to grow a memory or table will result in a trap. When false
+   * (default), failed grow operations return -1 per the WebAssembly specification.
+   *
+   * @return true if trapping on grow failure is enabled
+   */
+  public boolean isTrapOnGrowFailure() {
+    return trapOnGrowFailure;
+  }
+
   /** Builder for {@link ComponentStoreConfig}. */
   public static final class Builder {
 
     private long fuelLimit;
     private long epochDeadline;
     private long maxMemoryBytes;
+    private long maxTableElements;
+    private long maxInstances;
+    private long maxTables;
+    private long maxMemories;
+    private boolean trapOnGrowFailure;
 
     private Builder() {}
 
@@ -145,6 +216,80 @@ public final class ComponentStoreConfig {
         throw new IllegalArgumentException("maxMemoryBytes must be non-negative");
       }
       this.maxMemoryBytes = maxMemoryBytes;
+      return this;
+    }
+
+    /**
+     * Sets the maximum number of elements per table.
+     *
+     * @param maxTableElements the maximum table elements (0 for unlimited)
+     * @return this builder
+     * @throws IllegalArgumentException if maxTableElements is negative
+     */
+    public Builder maxTableElements(final long maxTableElements) {
+      if (maxTableElements < 0) {
+        throw new IllegalArgumentException("maxTableElements must be non-negative");
+      }
+      this.maxTableElements = maxTableElements;
+      return this;
+    }
+
+    /**
+     * Sets the maximum number of WebAssembly instances allowed.
+     *
+     * @param maxInstances the maximum instance count (0 for unlimited)
+     * @return this builder
+     * @throws IllegalArgumentException if maxInstances is negative
+     */
+    public Builder maxInstances(final long maxInstances) {
+      if (maxInstances < 0) {
+        throw new IllegalArgumentException("maxInstances must be non-negative");
+      }
+      this.maxInstances = maxInstances;
+      return this;
+    }
+
+    /**
+     * Sets the maximum number of tables allowed.
+     *
+     * @param maxTables the maximum table count (0 for unlimited)
+     * @return this builder
+     * @throws IllegalArgumentException if maxTables is negative
+     */
+    public Builder maxTables(final long maxTables) {
+      if (maxTables < 0) {
+        throw new IllegalArgumentException("maxTables must be non-negative");
+      }
+      this.maxTables = maxTables;
+      return this;
+    }
+
+    /**
+     * Sets the maximum number of linear memories allowed.
+     *
+     * @param maxMemories the maximum memory count (0 for unlimited)
+     * @return this builder
+     * @throws IllegalArgumentException if maxMemories is negative
+     */
+    public Builder maxMemories(final long maxMemories) {
+      if (maxMemories < 0) {
+        throw new IllegalArgumentException("maxMemories must be non-negative");
+      }
+      this.maxMemories = maxMemories;
+      return this;
+    }
+
+    /**
+     * Sets whether to trap on memory/table grow failure.
+     *
+     * <p>When enabled, any failed attempt to grow a memory or table results in a trap instead of
+     * returning -1.
+     *
+     * @param trapOnGrowFailure true to trap on grow failure
+     * @return this builder
+     */
+    public Builder trapOnGrowFailure(final boolean trapOnGrowFailure) {
+      this.trapOnGrowFailure = trapOnGrowFailure;
       return this;
     }
 

@@ -413,6 +413,40 @@ public interface ComponentVal {
   java.util.Set<String> asFlags();
 
   /**
+   * Gets this value as a byte array, for efficient access to {@code list<u8>} values.
+   *
+   * <p>This avoids boxing each byte as a {@link ComponentVal}, which is significant for large byte
+   * lists. The default implementation converts from {@link #asList()}, but implementations may
+   * override with a more efficient path that avoids per-element allocation.
+   *
+   * @return the byte array
+   * @throws IllegalStateException if this is not a list of u8 values
+   * @since 1.1.0
+   */
+  default byte[] asByteArray() {
+    final List<ComponentVal> elements = asList();
+    final byte[] bytes = new byte[elements.size()];
+    for (int i = 0; i < bytes.length; i++) {
+      bytes[i] = elements.get(i).asS8();
+    }
+    return bytes;
+  }
+
+  /**
+   * Gets the number of elements in this list without materializing all elements.
+   *
+   * <p>The default implementation calls {@link #asList()} and returns its size, but implementations
+   * may override with a more efficient path for large lists.
+   *
+   * @return the number of list elements
+   * @throws IllegalStateException if this is not a list value
+   * @since 1.1.0
+   */
+  default int listSize() {
+    return asList().size();
+  }
+
+  /**
    * Gets this value as a resource handle.
    *
    * @return the resource handle
@@ -610,6 +644,25 @@ public interface ComponentVal {
    */
   static ComponentVal list(final List<ComponentVal> elements) {
     return ComponentValFactory.INSTANCE.createList(elements);
+  }
+
+  /**
+   * Creates a {@code list<u8>} component value efficiently from a byte array.
+   *
+   * <p>This avoids boxing each byte individually into a {@link ComponentVal}, which is significant
+   * for large byte arrays. The resulting value supports both {@link #asList()} (materializing all
+   * elements) and {@link #asByteArray()} (returning the raw bytes without allocation).
+   *
+   * @param bytes the byte array
+   * @return a new ComponentVal of type list containing u8 elements
+   * @throws IllegalArgumentException if bytes is null
+   * @since 1.1.0
+   */
+  static ComponentVal listU8(final byte[] bytes) {
+    if (bytes == null) {
+      throw new IllegalArgumentException("bytes must not be null");
+    }
+    return ComponentValFactory.INSTANCE.createListU8(bytes);
   }
 
   /**

@@ -1936,16 +1936,43 @@ impl ComponentInstancePreWrapper {
         fuel_limit: u64,
         epoch_deadline: u64,
         max_memory_bytes: u64,
+        max_table_elements: u64,
+        max_instances: u64,
+        max_tables: u64,
+        max_memories: u64,
+        trap_on_grow_failure: bool,
     ) -> WasmtimeResult<ComponentInstanceHandle> {
         let start = Instant::now();
 
-        // Build store limits if memory limit is set
-        let store_limits = if max_memory_bytes > 0 {
-            Some(
-                wasmtime::StoreLimitsBuilder::new()
-                    .memory_size(max_memory_bytes as usize)
-                    .build(),
-            )
+        // Build store limits if any resource limit is set
+        let has_limits = max_memory_bytes > 0
+            || max_table_elements > 0
+            || max_instances > 0
+            || max_tables > 0
+            || max_memories > 0
+            || trap_on_grow_failure;
+
+        let store_limits = if has_limits {
+            let mut builder = wasmtime::StoreLimitsBuilder::new();
+            if max_memory_bytes > 0 {
+                builder = builder.memory_size(max_memory_bytes as usize);
+            }
+            if max_table_elements > 0 {
+                builder = builder.table_elements(max_table_elements as usize);
+            }
+            if max_instances > 0 {
+                builder = builder.instances(max_instances as usize);
+            }
+            if max_tables > 0 {
+                builder = builder.tables(max_tables as usize);
+            }
+            if max_memories > 0 {
+                builder = builder.memories(max_memories as usize);
+            }
+            if trap_on_grow_failure {
+                builder = builder.trap_on_grow_failure(true);
+            }
+            Some(builder.build())
         } else {
             None
         };
@@ -2006,8 +2033,8 @@ impl ComponentInstancePreWrapper {
             store.set_epoch_deadline(epoch_deadline);
         }
 
-        // Apply memory limiter if configured
-        if max_memory_bytes > 0 {
+        // Apply store limiter if any resource limits are configured
+        if has_limits {
             store.limiter(|data| {
                 data.store_limits
                     .as_mut()
@@ -3330,6 +3357,11 @@ pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate_with_conf
     fuel_limit: u64,
     epoch_deadline: u64,
     max_memory_bytes: u64,
+    max_table_elements: u64,
+    max_instances: u64,
+    max_tables: u64,
+    max_memories: u64,
+    trap_on_grow_failure: u8,
     instance_out: *mut *mut c_void,
 ) -> c_int {
     if pre_ptr.is_null() || instance_out.is_null() {
@@ -3338,7 +3370,16 @@ pub unsafe extern "C" fn wasmtime4j_component_instance_pre_instantiate_with_conf
 
     let wrapper = &*(pre_ptr as *const ComponentInstancePreWrapper);
 
-    match wrapper.instantiate_with_config(fuel_limit, epoch_deadline, max_memory_bytes) {
+    match wrapper.instantiate_with_config(
+        fuel_limit,
+        epoch_deadline,
+        max_memory_bytes,
+        max_table_elements,
+        max_instances,
+        max_tables,
+        max_memories,
+        trap_on_grow_failure != 0,
+    ) {
         Ok(instance) => {
             *instance_out = Box::into_raw(Box::new(instance)) as *mut c_void;
             FFI_SUCCESS

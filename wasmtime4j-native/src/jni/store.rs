@@ -1417,10 +1417,22 @@ fn create_frame_info_object<'local>(
         )?;
     }
 
-    // Create FrameInfo object
+    // Get module name from the Module's name section
+    let module_name_string = frame
+        .module()
+        .name()
+        .map(|name| env.new_string(name))
+        .transpose()?;
+    let null_module_name = JObject::null();
+    let module_name = module_name_string
+        .as_ref()
+        .map(|s| JValue::Object(s.as_ref()))
+        .unwrap_or(JValue::Object(&null_module_name));
+
+    // Create FrameInfo object with module name
     let frame_obj = env.new_object(
         "ai/tegmentum/wasmtime4j/debug/FrameInfo",
-        "(ILai/tegmentum/wasmtime4j/Module;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;)V",
+        "(ILai/tegmentum/wasmtime4j/Module;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/String;)V",
         &[
             JValue::Int(func_index),
             JValue::Object(&module_obj),
@@ -1428,6 +1440,7 @@ fn create_frame_info_object<'local>(
             module_offset,
             func_offset,
             JValue::Object(&symbols_list),
+            module_name,
         ],
     )?;
 
