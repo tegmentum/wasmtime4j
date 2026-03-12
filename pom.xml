@@ -238,7 +238,6 @@
                         <compilerArgs>
                             <arg>-Xlint:all</arg>
                             <arg>-Xlint:-options</arg>
-                            <arg>-Xlint:-restricted</arg>
                             <arg>-Werror</arg>
                         </compilerArgs>
                     </configuration>
@@ -862,29 +861,6 @@
             <properties>
                 <wasmtime4j.runtime>panama</wasmtime4j.runtime>
             </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <release>26</release>
-                            <compilerArgs>
-                                <arg>-Xlint:all</arg>
-                                <arg>-Werror</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <!-- Append Panama flags to JaCoCo argLine -->
-                            <argLine>@{argLine} --enable-native-access=ALL-UNNAMED</argLine>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <!-- Release profile for deployment -->

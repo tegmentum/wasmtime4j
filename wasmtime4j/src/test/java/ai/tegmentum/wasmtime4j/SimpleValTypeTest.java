@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.type.ValType;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -387,7 +388,7 @@ class SimpleValTypeTest {
     @DisplayName("should have private final valueType field")
     void shouldHavePrivateFinalValueTypeField() throws NoSuchFieldException {
       Class<?> clazz = getSimpleValTypeClass();
-      var field = clazz.getDeclaredField("valueType");
+      Field field = clazz.getDeclaredField("valueType");
       assertTrue(Modifier.isPrivate(field.getModifiers()), "valueType field should be private");
       assertTrue(Modifier.isFinal(field.getModifiers()), "valueType field should be final");
       assertEquals(WasmValueType.class, field.getType(), "valueType field should be WasmValueType");

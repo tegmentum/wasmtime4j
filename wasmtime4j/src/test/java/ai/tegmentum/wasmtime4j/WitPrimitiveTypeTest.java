@@ -47,7 +47,7 @@ class WitPrimitiveTypeTest {
     @Test
     @DisplayName("should have 13 primitive types")
     void shouldHave13PrimitiveTypes() {
-      final var values = WitPrimitiveType.values();
+      final WitPrimitiveType[] values = WitPrimitiveType.values();
       assertEquals(13, values.length);
     }
   }

@@ -412,7 +412,7 @@ class ComponentLinkerInstanceTest {
 
     static final ComponentHostFunction STUB_FUNC = params -> Collections.emptyList();
     static final ComponentResourceDefinition<Object> STUB_RESOURCE_DEF =
-        new ComponentResourceDefinition<>() {
+        new ComponentResourceDefinition<Object>() {
           @Override
           public String getName() {
             return "stub-resource";

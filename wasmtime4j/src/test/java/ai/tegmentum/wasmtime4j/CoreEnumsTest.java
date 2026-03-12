@@ -23,6 +23,7 @@ import ai.tegmentum.wasmtime4j.config.OptimizationLevel;
 import ai.tegmentum.wasmtime4j.execution.ProfilingStrategy;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -127,7 +128,7 @@ class CoreEnumsTest {
     @Test
     @DisplayName("Enum should work with Arrays.asList")
     void enumShouldWorkWithArraysList() {
-      var list = Arrays.asList(ProfilingStrategy.values());
+      List<ProfilingStrategy> list = Arrays.asList(ProfilingStrategy.values());
       assertEquals(5, list.size(), "List should contain 5 elements");
       assertTrue(list.contains(ProfilingStrategy.JIT_DUMP), "List should contain JIT_DUMP");
     }

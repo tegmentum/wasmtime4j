@@ -84,7 +84,7 @@ jobs:
           languages: java
 
       - name: Build for CodeQL
-        run: ./mvnw compile -B -P skip-native -pl '!wasmtime4j-panama' -DskipTests
+        run: ./mvnw compile -B -P skip-native -pl '!wasmtime4j-panama' -DskipTests -Dcheckstyle.skip=true -Dspotbugs.skip=true -Dpmd.skip=true -Dspotless.check.skip=true
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3

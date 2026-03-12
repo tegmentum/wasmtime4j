@@ -149,7 +149,7 @@ class WasiTcpSocketTypesInnerTest {
   class AcceptResultTests {
 
     /** Minimal stub for WasiTcpSocket. */
-    private final WasiTcpSocket STUB_SOCKET =
+    private final WasiTcpSocket stubSocket =
         new WasiTcpSocket() {
           @Override
           public void startBind(WasiNetwork network, IpSocketAddress localAddress) {}
@@ -241,9 +241,9 @@ class WasiTcpSocketTypesInnerTest {
     @DisplayName("should store socket, input and output streams")
     void shouldStoreSocketInputAndOutputStreams() {
       WasiTcpSocket.AcceptResult ar =
-          new WasiTcpSocket.AcceptResult(STUB_SOCKET, STUB_INPUT, STUB_OUTPUT);
+          new WasiTcpSocket.AcceptResult(stubSocket, STUB_INPUT, STUB_OUTPUT);
 
-      assertSame(STUB_SOCKET, ar.getSocket());
+      assertSame(stubSocket, ar.getSocket());
       assertSame(STUB_INPUT, ar.getInputStream());
       assertSame(STUB_OUTPUT, ar.getOutputStream());
     }
@@ -261,7 +261,7 @@ class WasiTcpSocketTypesInnerTest {
     void shouldThrowWhenInputStreamIsNull() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new WasiTcpSocket.AcceptResult(STUB_SOCKET, null, STUB_OUTPUT));
+          () -> new WasiTcpSocket.AcceptResult(stubSocket, null, STUB_OUTPUT));
     }
 
     @Test
@@ -269,7 +269,7 @@ class WasiTcpSocketTypesInnerTest {
     void shouldThrowWhenOutputStreamIsNull() {
       assertThrows(
           IllegalArgumentException.class,
-          () -> new WasiTcpSocket.AcceptResult(STUB_SOCKET, STUB_INPUT, null));
+          () -> new WasiTcpSocket.AcceptResult(stubSocket, STUB_INPUT, null));
     }
   }
 

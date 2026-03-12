@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.component.ComponentInstanceConfig;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -169,7 +170,7 @@ class ComponentInstanceConfigTest {
       final ComponentInstanceConfig config = new ComponentInstanceConfig();
       config.setProperty("key1", "value1");
 
-      final var properties = config.getProperties();
+      final Map<String, Object> properties = config.getProperties();
       properties.put("key2", "value2");
 
       assertFalse(
@@ -225,21 +226,24 @@ class ComponentInstanceConfigTest {
     @Test
     @DisplayName("should have PERMISSIVE level")
     void shouldHavePermissiveLevel() {
-      final var level = ComponentInstanceConfig.SecurityLevel.PERMISSIVE;
+      final ComponentInstanceConfig.SecurityLevel level =
+          ComponentInstanceConfig.SecurityLevel.PERMISSIVE;
       assertNotNull(level, "PERMISSIVE level should exist");
     }
 
     @Test
     @DisplayName("should have STANDARD level")
     void shouldHaveStandardLevel() {
-      final var level = ComponentInstanceConfig.SecurityLevel.STANDARD;
+      final ComponentInstanceConfig.SecurityLevel level =
+          ComponentInstanceConfig.SecurityLevel.STANDARD;
       assertNotNull(level, "STANDARD level should exist");
     }
 
     @Test
     @DisplayName("should have STRICT level")
     void shouldHaveStrictLevel() {
-      final var level = ComponentInstanceConfig.SecurityLevel.STRICT;
+      final ComponentInstanceConfig.SecurityLevel level =
+          ComponentInstanceConfig.SecurityLevel.STRICT;
       assertNotNull(level, "STRICT level should exist");
     }
 

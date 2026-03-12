@@ -117,7 +117,6 @@
                         <arg>-Xlint:all</arg>
                         <arg>-Xlint:-processing</arg>
                         <arg>-Xlint:-options</arg>
-                        <arg>-Xlint:-restricted</arg>
                         <arg>-Werror</arg>
                     </compilerArgs>
                 </configuration>

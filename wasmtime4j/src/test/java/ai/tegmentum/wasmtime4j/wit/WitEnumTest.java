@@ -41,7 +41,7 @@ class WitEnumTest {
     @Test
     @DisplayName("of with null discriminant should throw IllegalArgumentException")
     void ofWithNullDiscriminantShouldThrow() {
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       assertThrows(
           IllegalArgumentException.class,
@@ -52,7 +52,7 @@ class WitEnumTest {
     @Test
     @DisplayName("of with empty discriminant should throw IllegalArgumentException")
     void ofWithEmptyDiscriminantShouldThrow() {
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       assertThrows(
           IllegalArgumentException.class,
@@ -68,7 +68,7 @@ class WitEnumTest {
     @Test
     @DisplayName("of with valid discriminant should create enum")
     void ofWithValidDiscriminantShouldCreateEnum() {
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       final WitEnum value = WitEnum.of(enumType, "red");
 
@@ -79,7 +79,7 @@ class WitEnumTest {
     @Test
     @DisplayName("toJava should return discriminant string")
     void toJavaShouldReturnDiscriminant() {
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       final WitEnum value = WitEnum.of(enumType, "green");
 
@@ -89,7 +89,7 @@ class WitEnumTest {
     @Test
     @DisplayName("getType should return the enum type")
     void getTypeShouldReturnEnumType() {
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       final WitEnum value = WitEnum.of(enumType, "blue");
 
@@ -106,7 +106,7 @@ class WitEnumTest {
     @DisplayName("constructor must check null discriminant - line 52")
     void constructorMustCheckNullDiscriminant() {
       // Targets line 52: discriminant == null check
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       final IllegalArgumentException ex =
           assertThrows(
@@ -123,7 +123,7 @@ class WitEnumTest {
     void constructorMustCallValidate() {
       // Targets line 56: validate() call removal mutation
       // If validate() is removed, an invalid discriminant would be accepted
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       assertThrows(
           IllegalArgumentException.class,
@@ -153,7 +153,7 @@ class WitEnumTest {
     @DisplayName("validate must check discriminant against valid list - line 91")
     void validateMustCheckDiscriminantAgainstValidList() {
       // Targets line 91: !validDiscriminants.contains(discriminant)
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
 
       // Valid discriminant should work
@@ -174,7 +174,7 @@ class WitEnumTest {
     @Test
     @DisplayName("equals and hashCode work correctly")
     void equalsAndHashCodeWorkCorrectly() {
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       final WitEnum red1 = WitEnum.of(enumType, "red");
       final WitEnum red2 = WitEnum.of(enumType, "red");
@@ -191,7 +191,7 @@ class WitEnumTest {
     @Test
     @DisplayName("toString should contain discriminant")
     void toStringShouldContainDiscriminant() {
-      final var enumType =
+      final WitType enumType =
           WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
       final WitEnum value = WitEnum.of(enumType, "green");
       assertTrue(value.toString().contains("green"), "toString should contain discriminant");
