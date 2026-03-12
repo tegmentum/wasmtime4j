@@ -79,6 +79,9 @@ public final class JniFunction extends JniResource
   /** Whether parameter types have been validated at least once for the cached signature. */
   private volatile boolean typeValidated;
 
+  /** Cached return types to avoid cloning on every call. */
+  private volatile WasmValueType[] cachedReturnTypes;
+
   /** Cached fast-path signature for typed native calls. */
   private volatile FastPath fastPath;
 
@@ -218,7 +221,7 @@ public final class JniFunction extends JniResource
 
       // Skip per-call type validation after first successful call with matching param count.
       // The function signature doesn't change, so re-validation is redundant.
-      if (!typeValidated || params.length != functionType.getParamTypes().length) {
+      if (!typeValidated || params.length != functionType.getParamCount()) {
         JniTypeConverter.validateParameterTypes(params, functionType.getParamTypes());
         typeValidated = true;
       }
@@ -233,9 +236,9 @@ public final class JniFunction extends JniResource
         throw new WasmException("Native function call returned null for '" + name + "'");
       }
 
-      // Convert native results back to WasmValue array
+      // Convert native results back to WasmValue array using cached return types
       return JniTypeConverter.nativeResultsToWasmValues(
-          nativeResults, functionType.getReturnTypes());
+          nativeResults, getReturnTypesInternal());
     } catch (final IllegalArgumentException e) {
       throw new WasmException("Parameter validation failed for function '" + name + "'", e);
     } catch (final RuntimeException e) {
@@ -328,7 +331,7 @@ public final class JniFunction extends JniResource
       }
 
       return JniTypeConverter.nativeResultsToWasmValues(
-          nativeResults, functionType.getReturnTypes());
+          nativeResults, getReturnTypesInternal());
     } catch (final IllegalArgumentException e) {
       throw new WasmException("Parameter validation failed for async function '" + name + "'", e);
     } catch (final RuntimeException e) {
@@ -441,6 +444,19 @@ public final class JniFunction extends JniResource
     // Note: Do NOT call nativeDestroyFunction here. Functions are Store-owned resources.
     // Destroying them while the Store exists causes "object used with wrong store" panics.
     // The Store will clean up all its Functions when it is destroyed.
+  }
+
+  /**
+   * Returns cached return types array, populating the cache on first call.
+   * Avoids cloning the array from FunctionType on every function call.
+   */
+  private WasmValueType[] getReturnTypesInternal() {
+    WasmValueType[] types = cachedReturnTypes;
+    if (types == null) {
+      types = getFunctionType().getReturnTypes();
+      cachedReturnTypes = types;
+    }
+    return types;
   }
 
   // =============================================================================
