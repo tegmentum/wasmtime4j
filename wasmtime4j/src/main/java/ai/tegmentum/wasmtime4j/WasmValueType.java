@@ -25,68 +25,69 @@ package ai.tegmentum.wasmtime4j;
  */
 public enum WasmValueType {
   /** 32-bit integer type. */
-  I32(4, true, false, false, false, false),
+  I32(4, 4, true, false, false, false, false),
 
   /** 64-bit integer type. */
-  I64(8, true, false, false, false, false),
+  I64(8, 8, true, false, false, false, false),
 
   /** 32-bit floating-point type. */
-  F32(4, false, true, false, false, false),
+  F32(4, 4, false, true, false, false, false),
 
   /** 64-bit floating-point type. */
-  F64(8, false, true, false, false, false),
+  F64(8, 8, false, true, false, false, false),
 
   /** 128-bit vector type (SIMD). */
-  V128(16, false, false, false, false, false),
+  V128(16, 16, false, false, false, false, false),
 
   /** Reference to a function. */
-  FUNCREF(-1, false, false, true, false, false),
+  FUNCREF(-1, 8, false, false, true, false, false),
 
   /** Reference to external data. */
-  EXTERNREF(-1, false, false, true, false, false),
+  EXTERNREF(-1, 8, false, false, true, false, false),
 
   // WasmGC reference types
 
   /** Top type in the GC reference hierarchy - all GC references are subtypes of anyref. */
-  ANYREF(-1, false, false, true, true, false),
+  ANYREF(-1, 8, false, false, true, true, false),
 
   /** Equality-testable references - subset of anyref that supports ref.eq. */
-  EQREF(-1, false, false, true, true, false),
+  EQREF(-1, 8, false, false, true, true, false),
 
   /** Immediate 31-bit integer references for efficient small integer storage. */
-  I31REF(-1, false, false, true, true, false),
+  I31REF(-1, 8, false, false, true, true, false),
 
   /** References to struct instances with typed field access. */
-  STRUCTREF(-1, false, false, true, true, false),
+  STRUCTREF(-1, 8, false, false, true, true, false),
 
   /** References to array instances with element type information. */
-  ARRAYREF(-1, false, false, true, true, false),
+  ARRAYREF(-1, 8, false, false, true, true, false),
 
   /** The null reference type - bottom type for nullable references. */
-  NULLREF(-1, false, false, true, true, true),
+  NULLREF(-1, 8, false, false, true, true, true),
 
   /** Nullable function reference type. */
-  NULLFUNCREF(-1, false, false, true, true, true),
+  NULLFUNCREF(-1, 8, false, false, true, true, true),
 
   /** Nullable external reference type. */
-  NULLEXTERNREF(-1, false, false, true, true, true),
+  NULLEXTERNREF(-1, 8, false, false, true, true, true),
 
   /** Exception reference type (exception handling proposal). */
-  EXNREF(-1, false, false, true, true, false),
+  EXNREF(-1, 8, false, false, true, true, false),
 
   /** Null exception reference type - bottom of the exn hierarchy. */
-  NULLEXNREF(-1, false, false, true, true, true),
+  NULLEXNREF(-1, 8, false, false, true, true, true),
 
   /** Continuation reference type (stack switching proposal). */
-  CONTREF(-1, false, false, true, true, false),
+  CONTREF(-1, 8, false, false, true, true, false),
 
   /** Null continuation reference type - bottom of the cont hierarchy. */
-  NULLCONTREF(-1, false, false, true, true, true);
+  NULLCONTREF(-1, 8, false, false, true, true, true);
 
   /** Cached values array for O(1) type code lookup. */
   private static final WasmValueType[] VALUES = values();
 
   private final int size;
+  private final int marshalSize;
   private final boolean isInteger;
   private final boolean isFloat;
   private final boolean reference;
@@ -95,12 +96,14 @@ public enum WasmValueType {
 
   WasmValueType(
       final int size,
+      final int marshalSize,
       final boolean isInteger,
       final boolean isFloat,
       final boolean reference,
       final boolean gcReference,
       final boolean nullableReference) {
     this.size = size;
+    this.marshalSize = marshalSize;
     this.isInteger = isInteger;
     this.isFloat = isFloat;
     this.reference = reference;
@@ -115,6 +118,18 @@ public enum WasmValueType {
    */
   public int getSize() {
     return size;
+  }
+
+  /**
+   * Gets the marshalled size in bytes of this value type for binary serialization.
+   *
+   * <p>Unlike {@link #getSize()}, this returns a valid positive size for all types including
+   * reference types (which marshal as 8-byte pointers).
+   *
+   * @return the marshalled size in bytes
+   */
+  public int getMarshalSize() {
+    return marshalSize;
   }
 
   /**

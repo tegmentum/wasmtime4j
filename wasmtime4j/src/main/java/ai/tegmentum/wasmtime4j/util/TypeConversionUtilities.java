@@ -127,20 +127,7 @@ public final class TypeConversionUtilities {
    */
   public static int getValueSize(final WasmValueType valueType) {
     Validation.requireNonNull(valueType, "valueType");
-    switch (valueType) {
-      case I32:
-      case F32:
-        return 4;
-      case I64:
-      case F64:
-      case FUNCREF:
-      case EXTERNREF:
-        return 8;
-      case V128:
-        return 16;
-      default:
-        throw new IllegalArgumentException("Unsupported value type: " + valueType);
-    }
+    return valueType.getMarshalSize();
   }
 
   /**

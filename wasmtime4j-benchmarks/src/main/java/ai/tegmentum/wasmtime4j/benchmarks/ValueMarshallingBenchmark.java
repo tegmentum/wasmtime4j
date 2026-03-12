@@ -230,6 +230,18 @@ public class ValueMarshallingBenchmark {
   }
 
   @Benchmark
+  public void getMarshalSizeSingle(Blackhole bh) {
+    bh.consume(WasmValueType.I32.getMarshalSize());
+  }
+
+  @Benchmark
+  public void getMarshalSizeSignature(Blackhole bh) {
+    for (WasmValueType type : paramTypeSignature) {
+      bh.consume(type.getMarshalSize());
+    }
+  }
+
+  @Benchmark
   public void fullRoundTripSixMixed(Blackhole bh) {
     WasmValue[] params =
         new WasmValue[] {

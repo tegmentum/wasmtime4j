@@ -471,11 +471,7 @@ public final class JniTypeConverter {
    * @return size in bytes
    */
   private static int getValueSize(final ai.tegmentum.wasmtime4j.WasmValueType valueType) {
-    try {
-      return TypeConversionUtilities.getValueSize(valueType);
-    } catch (final IllegalArgumentException e) {
-      throw new IllegalArgumentException(e.getMessage(), e);
-    }
+    return valueType.getMarshalSize();
   }
 
   /**
