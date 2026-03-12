@@ -68,10 +68,26 @@ test = false
 doc = false
 bench = false
 
+# WIT value serialization round-trip fuzz target
+[[bin]]
+name = "wit_serialize"
+path = "fuzz_targets/wit_serialize.rs"
+test = false
+doc = false
+bench = false
+
 # Error message formatting fuzz target
 [[bin]]
 name = "error_message"
 path = "fuzz_targets/error_message.rs"
+test = false
+doc = false
+bench = false
+
+# Host function callback dispatch fuzz target
+[[bin]]
+name = "jni_callback"
+path = "fuzz_targets/jni_callback.rs"
 test = false
 doc = false
 bench = false

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.fuzz;
 
 import ai.tegmentum.wasmtime4j.Engine;
@@ -151,13 +150,11 @@ public class ComponentModelFuzzer {
 
       try (Module module = engine.compileWat(importModuleWat);
           Instance instance = linker.instantiate(store, module)) {
-        final WasmValue[] callResults =
-            instance.callFunction("call_host", WasmValue.i32(42));
+        final WasmValue[] callResults = instance.callFunction("call_host", WasmValue.i32(42));
         if (callResults != null && callResults.length > 0) {
           final int result = callResults[0].asInt();
           if (result != 42) {
-            throw new AssertionError(
-                "Host function identity expected 42 but got " + result);
+            throw new AssertionError("Host function identity expected 42 but got " + result);
           }
         }
       }

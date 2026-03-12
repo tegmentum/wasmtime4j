@@ -20,6 +20,8 @@ mkdir -p "$CORPUS_DIR/memory_access"
 mkdir -p "$CORPUS_DIR/func_call"
 mkdir -p "$CORPUS_DIR/module_serialize"
 mkdir -p "$CORPUS_DIR/error_message"
+mkdir -p "$CORPUS_DIR/wit_serialize"
+mkdir -p "$CORPUS_DIR/jni_callback"
 
 # =============================================================================
 # module_parse corpus
@@ -205,6 +207,68 @@ printf '\x00\x00\x00\x00' > "$CORPUS_DIR/error_message/empty.bin"
 printf '\x03abc\xff\x00\x00' > "$CORPUS_DIR/error_message/large_category.bin"
 
 # =============================================================================
+# wit_serialize corpus
+# =============================================================================
+echo "Generating wit_serialize corpus..."
+
+# Reuse wit_deserialize seeds as starting points
+if [ -d "$CORPUS_DIR/wit_deserialize" ]; then
+    cp "$CORPUS_DIR/wit_deserialize"/*.bin "$CORPUS_DIR/wit_serialize/" 2>/dev/null || true
+fi
+
+# Arbitrary-derived struct: type_tag (u8) + payload (Vec<u8>) + nesting_depth (u8)
+# We provide seeds that exercise different type tags
+
+# Bool (type 1), payload=true, depth=0
+printf '\x01\x01\x00' > "$CORPUS_DIR/wit_serialize/bool_true.bin"
+
+# S32 (type 2), payload=42 LE, depth=0
+printf '\x02\x2a\x00\x00\x00\x00' > "$CORPUS_DIR/wit_serialize/s32.bin"
+
+# String (type 6), payload=5+"hello", depth=0
+printf '\x06\x05\x00\x00\x00hello\x00' > "$CORPUS_DIR/wit_serialize/string.bin"
+
+# Record (type 7), depth=1, single i32 field
+printf '\x07\x01\x00\x00\x00\x01\x00\x00\x00a\x02\x04\x00\x00\x00\x01\x00\x00\x00\x01' > "$CORPUS_DIR/wit_serialize/record.bin"
+
+# Option Some (type 14), containing bool, depth=1
+printf '\x0e\x01\x01\x04\x00\x00\x00\x01\x01' > "$CORPUS_DIR/wit_serialize/option_some.bin"
+
+# Option None (type 14), depth=0
+printf '\x0e\x00\x00' > "$CORPUS_DIR/wit_serialize/option_none.bin"
+
+# Flags (type 16), 2 flags, depth=0
+printf '\x10\x02\x00\x00\x00\x03\x00\x00\x00foo\x03\x00\x00\x00bar\x00' > "$CORPUS_DIR/wit_serialize/flags.bin"
+
+# =============================================================================
+# jni_callback corpus
+# =============================================================================
+echo "Generating jni_callback corpus..."
+
+# Arbitrary-derived struct: func_index (u8) + params (Vec<u8>) + should_trap (bool) + trap_msg (Vec<u8>)
+
+# Call callback_i32 with value 42, no trap
+printf '\x00\x04\x2a\x00\x00\x00\x00\x00' > "$CORPUS_DIR/jni_callback/i32_normal.bin"
+
+# Call callback_i64 with value 100, no trap
+printf '\x01\x08\x64\x00\x00\x00\x00\x00\x00\x00\x00\x00' > "$CORPUS_DIR/jni_callback/i64_normal.bin"
+
+# Call callback_add with 5 + 3, no trap
+printf '\x02\x08\x05\x00\x00\x00\x03\x00\x00\x00\x00\x00' > "$CORPUS_DIR/jni_callback/add_normal.bin"
+
+# Call callback_void, no trap
+printf '\x03\x00\x00\x00' > "$CORPUS_DIR/jni_callback/void_normal.bin"
+
+# Call callback_i32 with trap
+printf '\x00\x04\xff\xff\xff\xff\x01\x05trap!' > "$CORPUS_DIR/jni_callback/i32_trap.bin"
+
+# Boundary values: i32::MIN
+printf '\x00\x04\x00\x00\x00\x80\x00\x00' > "$CORPUS_DIR/jni_callback/i32_min.bin"
+
+# Boundary values: i32::MAX
+printf '\x00\x04\xff\xff\xff\x7f\x00\x00' > "$CORPUS_DIR/jni_callback/i32_max.bin"
+
+# =============================================================================
 # Summary
 # =============================================================================
 echo ""
@@ -215,3 +279,5 @@ echo "  memory_access:     $(ls -1 "$CORPUS_DIR/memory_access" 2>/dev/null | wc 
 echo "  func_call:         $(ls -1 "$CORPUS_DIR/func_call" 2>/dev/null | wc -l) files"
 echo "  module_serialize:  $(ls -1 "$CORPUS_DIR/module_serialize" 2>/dev/null | wc -l) files"
 echo "  error_message:     $(ls -1 "$CORPUS_DIR/error_message" 2>/dev/null | wc -l) files"
+echo "  wit_serialize:     $(ls -1 "$CORPUS_DIR/wit_serialize" 2>/dev/null | wc -l) files"
+echo "  jni_callback:      $(ls -1 "$CORPUS_DIR/jni_callback" 2>/dev/null | wc -l) files"

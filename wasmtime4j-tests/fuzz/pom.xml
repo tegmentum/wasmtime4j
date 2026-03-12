@@ -18,12 +18,14 @@
     <description>Fuzz testing for Wasmtime4j Java bindings using Jazzer</description>
 
     <properties>
-        <!-- Jazzer version -->
+        <!-- Jazzer 0.22.1 is the final Code Intelligence release -->
         <jazzer.version>0.22.1</jazzer.version>
 
         <!-- Fuzz test configuration -->
         <fuzz.duration>300</fuzz.duration>
         <fuzz.runs>-1</fuzz.runs>
+        <!-- Continue past first crash to find multiple issues per run -->
+        <jazzer.keep_going>10</jazzer.keep_going>
     </properties>
 
     <dependencies>
@@ -116,6 +118,7 @@
                     <systemPropertyVariables>
                         <jazzer.duration>${fuzz.duration}</jazzer.duration>
                         <jazzer.runs>${fuzz.runs}</jazzer.runs>
+                        <jazzer.keep_going>${jazzer.keep_going}</jazzer.keep_going>
                     </systemPropertyVariables>
                 </configuration>
                 <executions>
@@ -148,6 +151,7 @@
                             </excludes>
                             <systemPropertyVariables>
                                 <jazzer.duration>${fuzz.duration}</jazzer.duration>
+                                <jazzer.keep_going>${jazzer.keep_going}</jazzer.keep_going>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
