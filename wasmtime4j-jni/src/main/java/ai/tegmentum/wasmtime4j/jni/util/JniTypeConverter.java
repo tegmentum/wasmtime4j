@@ -19,6 +19,10 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.util.TypeConversionUtilities;
 import ai.tegmentum.wasmtime4j.util.Validation;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -35,6 +39,26 @@ import java.util.logging.Logger;
 public final class JniTypeConverter {
 
   private static final Logger LOGGER = Logger.getLogger(JniTypeConverter.class.getName());
+
+  /** Pre-computed type-to-string cache to avoid repeated toLowerCase() allocations. */
+  private static final Map<WasmValueType, String> TYPE_TO_STRING_CACHE;
+
+  /** Pre-computed string-to-type cache to avoid repeated toUpperCase() + valueOf() lookups. */
+  private static final Map<String, WasmValueType> STRING_TO_TYPE_CACHE;
+
+  static {
+    final EnumMap<WasmValueType, String> typeToString = new EnumMap<>(WasmValueType.class);
+    final Map<String, WasmValueType> stringToType = new HashMap<>();
+    for (final WasmValueType type : WasmValueType.values()) {
+      final String lower = type.name().toLowerCase(java.util.Locale.ROOT);
+      final String upper = type.name().toUpperCase(java.util.Locale.ROOT);
+      typeToString.put(type, lower);
+      stringToType.put(lower, type);
+      stringToType.put(upper, type);
+    }
+    TYPE_TO_STRING_CACHE = Collections.unmodifiableMap(typeToString);
+    STRING_TO_TYPE_CACHE = Collections.unmodifiableMap(stringToType);
+  }
 
   /** Size of v128 vector type in bytes. */
   private static final int V128_SIZE_BYTES = TypeConversionUtilities.V128_SIZE_BYTES;
@@ -53,7 +77,7 @@ public final class JniTypeConverter {
     if (type == null) {
       throw new IllegalArgumentException("type must not be null");
     }
-    return type.name().toLowerCase(java.util.Locale.ROOT);
+    return TYPE_TO_STRING_CACHE.get(type);
   }
 
   /**
@@ -67,11 +91,15 @@ public final class JniTypeConverter {
     if (typeString == null) {
       throw new IllegalArgumentException("typeString must not be null");
     }
-    try {
-      return WasmValueType.valueOf(typeString.toUpperCase(java.util.Locale.ROOT));
-    } catch (final IllegalArgumentException e) {
-      throw new IllegalArgumentException("Invalid WebAssembly type string: " + typeString, e);
+    WasmValueType type = STRING_TO_TYPE_CACHE.get(typeString);
+    if (type == null) {
+      // Fallback for mixed-case input
+      type = STRING_TO_TYPE_CACHE.get(typeString.toLowerCase(java.util.Locale.ROOT));
+      if (type == null) {
+        throw new IllegalArgumentException("Invalid WebAssembly type string: " + typeString);
+      }
     }
+    return type;
   }
 
   /**
@@ -290,7 +318,7 @@ public final class JniTypeConverter {
       if (types[i] == null) {
         throw new IllegalArgumentException("Type at index " + i + " is null");
       }
-      strings[i] = types[i].name().toLowerCase(java.util.Locale.ROOT);
+      strings[i] = TYPE_TO_STRING_CACHE.get(types[i]);
     }
     return strings;
   }
@@ -311,11 +339,14 @@ public final class JniTypeConverter {
       if (typeStrings[i] == null) {
         throw new IllegalArgumentException("Type string at index " + i + " is null");
       }
-      try {
-        types[i] = WasmValueType.valueOf(typeStrings[i].toUpperCase(java.util.Locale.ROOT));
-      } catch (final IllegalArgumentException e) {
-        throw new IllegalArgumentException("Invalid WebAssembly type string: " + typeStrings[i], e);
+      WasmValueType type = STRING_TO_TYPE_CACHE.get(typeStrings[i]);
+      if (type == null) {
+        type = STRING_TO_TYPE_CACHE.get(typeStrings[i].toLowerCase(java.util.Locale.ROOT));
+        if (type == null) {
+          throw new IllegalArgumentException("Invalid WebAssembly type string: " + typeStrings[i]);
+        }
       }
+      types[i] = type;
     }
     return types;
   }

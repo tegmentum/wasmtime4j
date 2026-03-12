@@ -25,72 +25,87 @@ package ai.tegmentum.wasmtime4j;
  */
 public enum WasmValueType {
   /** 32-bit integer type. */
-  I32(4, true, false),
+  I32(4, true, false, false, false, false),
 
   /** 64-bit integer type. */
-  I64(8, true, false),
+  I64(8, true, false, false, false, false),
 
   /** 32-bit floating-point type. */
-  F32(4, false, true),
+  F32(4, false, true, false, false, false),
 
   /** 64-bit floating-point type. */
-  F64(8, false, true),
+  F64(8, false, true, false, false, false),
 
   /** 128-bit vector type (SIMD). */
-  V128(16, false, false),
+  V128(16, false, false, false, false, false),
 
   /** Reference to a function. */
-  FUNCREF(-1, false, false),
+  FUNCREF(-1, false, false, true, false, false),
 
   /** Reference to external data. */
-  EXTERNREF(-1, false, false),
+  EXTERNREF(-1, false, false, true, false, false),
 
   // WasmGC reference types
 
   /** Top type in the GC reference hierarchy - all GC references are subtypes of anyref. */
-  ANYREF(-1, false, false),
+  ANYREF(-1, false, false, true, true, false),
 
   /** Equality-testable references - subset of anyref that supports ref.eq. */
-  EQREF(-1, false, false),
+  EQREF(-1, false, false, true, true, false),
 
   /** Immediate 31-bit integer references for efficient small integer storage. */
-  I31REF(-1, false, false),
+  I31REF(-1, false, false, true, true, false),
 
   /** References to struct instances with typed field access. */
-  STRUCTREF(-1, false, false),
+  STRUCTREF(-1, false, false, true, true, false),
 
   /** References to array instances with element type information. */
-  ARRAYREF(-1, false, false),
+  ARRAYREF(-1, false, false, true, true, false),
 
   /** The null reference type - bottom type for nullable references. */
-  NULLREF(-1, false, false),
+  NULLREF(-1, false, false, true, true, true),
 
   /** Nullable function reference type. */
-  NULLFUNCREF(-1, false, false),
+  NULLFUNCREF(-1, false, false, true, true, true),
 
   /** Nullable external reference type. */
-  NULLEXTERNREF(-1, false, false),
+  NULLEXTERNREF(-1, false, false, true, true, true),
 
   /** Exception reference type (exception handling proposal). */
-  EXNREF(-1, false, false),
+  EXNREF(-1, false, false, true, true, false),
 
   /** Null exception reference type - bottom of the exn hierarchy. */
-  NULLEXNREF(-1, false, false),
+  NULLEXNREF(-1, false, false, true, true, true),
 
   /** Continuation reference type (stack switching proposal). */
-  CONTREF(-1, false, false),
+  CONTREF(-1, false, false, true, true, false),
 
   /** Null continuation reference type - bottom of the cont hierarchy. */
-  NULLCONTREF(-1, false, false);
+  NULLCONTREF(-1, false, false, true, true, true);
+
+  /** Cached values array for O(1) type code lookup. */
+  private static final WasmValueType[] VALUES = values();
 
   private final int size;
   private final boolean isInteger;
   private final boolean isFloat;
+  private final boolean reference;
+  private final boolean gcReference;
+  private final boolean nullableReference;
 
-  WasmValueType(final int size, final boolean isInteger, final boolean isFloat) {
+  WasmValueType(
+      final int size,
+      final boolean isInteger,
+      final boolean isFloat,
+      final boolean reference,
+      final boolean gcReference,
+      final boolean nullableReference) {
     this.size = size;
     this.isInteger = isInteger;
     this.isFloat = isFloat;
+    this.reference = reference;
+    this.gcReference = gcReference;
+    this.nullableReference = nullableReference;
   }
 
   /**
@@ -126,25 +141,7 @@ public enum WasmValueType {
    * @return true if this is a reference type (FUNCREF, EXTERNREF, or any GC reference type)
    */
   public boolean isReference() {
-    switch (this) {
-      case FUNCREF:
-      case EXTERNREF:
-      case ANYREF:
-      case EQREF:
-      case I31REF:
-      case STRUCTREF:
-      case ARRAYREF:
-      case NULLREF:
-      case NULLFUNCREF:
-      case NULLEXTERNREF:
-      case EXNREF:
-      case NULLEXNREF:
-      case CONTREF:
-      case NULLCONTREF:
-        return true;
-      default:
-        return false;
-    }
+    return reference;
   }
 
   /**
@@ -153,23 +150,7 @@ public enum WasmValueType {
    * @return true if this is a WasmGC reference type
    */
   public boolean isGcReference() {
-    switch (this) {
-      case ANYREF:
-      case EQREF:
-      case I31REF:
-      case STRUCTREF:
-      case ARRAYREF:
-      case NULLREF:
-      case NULLFUNCREF:
-      case NULLEXTERNREF:
-      case EXNREF:
-      case NULLEXNREF:
-      case CONTREF:
-      case NULLCONTREF:
-        return true;
-      default:
-        return false;
-    }
+    return gcReference;
   }
 
   /**
@@ -178,16 +159,7 @@ public enum WasmValueType {
    * @return true if this is a nullable reference type
    */
   public boolean isNullableReference() {
-    switch (this) {
-      case NULLREF:
-      case NULLFUNCREF:
-      case NULLEXTERNREF:
-      case NULLEXNREF:
-      case NULLCONTREF:
-        return true;
-      default:
-        return false;
-    }
+    return nullableReference;
   }
 
   /**
@@ -216,49 +188,10 @@ public enum WasmValueType {
    * @throws IllegalArgumentException if the type code is unknown
    */
   public static WasmValueType fromNativeTypeCode(final int typeCode) {
-    switch (typeCode) {
-      case 0:
-        return I32;
-      case 1:
-        return I64;
-      case 2:
-        return F32;
-      case 3:
-        return F64;
-      case 4:
-        return V128;
-      case 5:
-        return FUNCREF;
-      case 6:
-        return EXTERNREF;
-      // WasmGC type codes
-      case 7:
-        return ANYREF;
-      case 8:
-        return EQREF;
-      case 9:
-        return I31REF;
-      case 10:
-        return STRUCTREF;
-      case 11:
-        return ARRAYREF;
-      case 12:
-        return NULLREF;
-      case 13:
-        return NULLFUNCREF;
-      case 14:
-        return NULLEXTERNREF;
-      case 15:
-        return EXNREF;
-      case 16:
-        return NULLEXNREF;
-      case 17:
-        return CONTREF;
-      case 18:
-        return NULLCONTREF;
-      default:
-        throw new IllegalArgumentException("Unknown type code: " + typeCode);
+    if (typeCode < 0 || typeCode >= VALUES.length) {
+      throw new IllegalArgumentException("Unknown type code: " + typeCode);
     }
+    return VALUES[typeCode];
   }
 
   /**
@@ -267,49 +200,7 @@ public enum WasmValueType {
    * @return the native type code for Wasmtime
    */
   public int toNativeTypeCode() {
-    switch (this) {
-      case I32:
-        return 0;
-      case I64:
-        return 1;
-      case F32:
-        return 2;
-      case F64:
-        return 3;
-      case V128:
-        return 4;
-      case FUNCREF:
-        return 5;
-      case EXTERNREF:
-        return 6;
-      // WasmGC type codes
-      case ANYREF:
-        return 7;
-      case EQREF:
-        return 8;
-      case I31REF:
-        return 9;
-      case STRUCTREF:
-        return 10;
-      case ARRAYREF:
-        return 11;
-      case NULLREF:
-        return 12;
-      case NULLFUNCREF:
-        return 13;
-      case NULLEXTERNREF:
-        return 14;
-      case EXNREF:
-        return 15;
-      case NULLEXNREF:
-        return 16;
-      case CONTREF:
-        return 17;
-      case NULLCONTREF:
-        return 18;
-      default:
-        throw new IllegalStateException("Unknown value type: " + this);
-    }
+    return ordinal();
   }
 
   /**

@@ -15,7 +15,12 @@
  */
 package ai.tegmentum.wasmtime4j.benchmarks;
 
+import ai.tegmentum.wasmtime4j.Engine;
+import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
+import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmRuntime;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -34,6 +39,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -678,11 +684,11 @@ public class PerformanceProfilingIntegration extends BenchmarkBase {
       return preventOptimization(0);
     }
 
-    final var runtime = createRuntime(RuntimeType.JNI);
-    final var engine = createEngine(runtime);
-    final var store = createStore(engine);
-    final var module = compileWatModule(engine, COMPLEX_WAT_MODULE);
-    final var instance = instantiateModule(store, module);
+    final WasmRuntime runtime = createRuntime(RuntimeType.JNI);
+    final Engine engine = createEngine(runtime);
+    final Store store = createStore(engine);
+    final Module module = compileWatModule(engine, COMPLEX_WAT_MODULE);
+    final Instance instance = instantiateModule(store, module);
 
     // Perform memory-intensive operations
     return performMemoryIntensiveWork();
@@ -695,11 +701,11 @@ public class PerformanceProfilingIntegration extends BenchmarkBase {
       return preventOptimization(0);
     }
 
-    final var runtime = createRuntime(RuntimeType.PANAMA);
-    final var engine = createEngine(runtime);
-    final var store = createStore(engine);
-    final var module = compileWatModule(engine, COMPLEX_WAT_MODULE);
-    final var instance = instantiateModule(store, module);
+    final WasmRuntime runtime = createRuntime(RuntimeType.PANAMA);
+    final Engine engine = createEngine(runtime);
+    final Store store = createStore(engine);
+    final Module module = compileWatModule(engine, COMPLEX_WAT_MODULE);
+    final Instance instance = instantiateModule(store, module);
 
     // Perform memory-intensive operations
     return performMemoryIntensiveWork();
@@ -807,7 +813,7 @@ public class PerformanceProfilingIntegration extends BenchmarkBase {
             .measurementIterations(10)
             .build();
 
-    final var results = new Runner(options).run();
+    final Collection<RunResult> results = new Runner(options).run();
 
     LOGGER.info("Performance profiling completed with " + results.size() + " benchmark results");
 
