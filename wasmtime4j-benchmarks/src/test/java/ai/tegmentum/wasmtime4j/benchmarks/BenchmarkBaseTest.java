@@ -33,9 +33,11 @@ final class BenchmarkBaseTest {
     // Test that the simple WAT module string is defined and non-empty
     assertNotNull(BenchmarkBase.SIMPLE_WAT_MODULE);
     assertTrue(!BenchmarkBase.SIMPLE_WAT_MODULE.isEmpty(), "SIMPLE_WAT_MODULE should not be empty");
-    assertTrue(BenchmarkBase.SIMPLE_WAT_MODULE.contains("(module"),
+    assertTrue(
+        BenchmarkBase.SIMPLE_WAT_MODULE.contains("(module"),
         "Expected SIMPLE_WAT_MODULE to contain '(module'");
-    assertTrue(BenchmarkBase.SIMPLE_WAT_MODULE.contains("add"),
+    assertTrue(
+        BenchmarkBase.SIMPLE_WAT_MODULE.contains("add"),
         "Expected SIMPLE_WAT_MODULE to contain 'add'");
   }
 
@@ -43,12 +45,16 @@ final class BenchmarkBaseTest {
   void testComplexWatModuleIsDefined() {
     // Test that the complex WAT module string is defined and non-empty
     assertNotNull(BenchmarkBase.COMPLEX_WAT_MODULE);
-    assertTrue(!BenchmarkBase.COMPLEX_WAT_MODULE.isEmpty(), "COMPLEX_WAT_MODULE should not be empty");
-    assertTrue(BenchmarkBase.COMPLEX_WAT_MODULE.contains("(module"),
+    assertTrue(
+        !BenchmarkBase.COMPLEX_WAT_MODULE.isEmpty(), "COMPLEX_WAT_MODULE should not be empty");
+    assertTrue(
+        BenchmarkBase.COMPLEX_WAT_MODULE.contains("(module"),
         "Expected COMPLEX_WAT_MODULE to contain '(module'");
-    assertTrue(BenchmarkBase.COMPLEX_WAT_MODULE.contains("fibonacci"),
+    assertTrue(
+        BenchmarkBase.COMPLEX_WAT_MODULE.contains("fibonacci"),
         "Expected COMPLEX_WAT_MODULE to contain 'fibonacci'");
-    assertTrue(BenchmarkBase.COMPLEX_WAT_MODULE.contains("memory"),
+    assertTrue(
+        BenchmarkBase.COMPLEX_WAT_MODULE.contains("memory"),
         "Expected COMPLEX_WAT_MODULE to contain 'memory'");
   }
 
@@ -62,7 +68,8 @@ final class BenchmarkBaseTest {
   @Test
   void testGetRecommendedRuntime() {
     final RuntimeType runtime = BenchmarkBase.getRecommendedRuntime();
-    assertTrue(runtime == RuntimeType.JNI || runtime == RuntimeType.PANAMA,
+    assertTrue(
+        runtime == RuntimeType.JNI || runtime == RuntimeType.PANAMA,
         "Expected JNI or PANAMA, was: " + runtime);
   }
 
@@ -81,7 +88,8 @@ final class BenchmarkBaseTest {
   void testValidateWasmModuleWithNullModule() {
     IllegalArgumentException ex =
         assertThrows(IllegalArgumentException.class, () -> BenchmarkBase.validateWasmModule(null));
-    assertTrue(ex.getMessage().contains("cannot be null"),
+    assertTrue(
+        ex.getMessage().contains("cannot be null"),
         "Expected message to contain 'cannot be null', was: " + ex.getMessage());
   }
 
@@ -91,7 +99,8 @@ final class BenchmarkBaseTest {
     IllegalArgumentException ex =
         assertThrows(
             IllegalArgumentException.class, () -> BenchmarkBase.validateWasmModule(tooSmall));
-    assertTrue(ex.getMessage().contains("too small"),
+    assertTrue(
+        ex.getMessage().contains("too small"),
         "Expected message to contain 'too small', was: " + ex.getMessage());
   }
 
@@ -101,18 +110,22 @@ final class BenchmarkBaseTest {
     IllegalArgumentException ex =
         assertThrows(
             IllegalArgumentException.class, () -> BenchmarkBase.validateWasmModule(invalidMagic));
-    assertTrue(ex.getMessage().contains("Invalid WASM magic number"),
+    assertTrue(
+        ex.getMessage().contains("Invalid WASM magic number"),
         "Expected message to contain 'Invalid WASM magic number', was: " + ex.getMessage());
   }
 
   @Test
   void testFormatBenchmarkId() {
     final String id = BenchmarkBase.formatBenchmarkId("test_operation", RuntimeType.JNI);
-    assertTrue(id.startsWith("test_operation_jni_"),
+    assertTrue(
+        id.startsWith("test_operation_jni_"),
         "Expected id to start with 'test_operation_jni_', was: " + id);
-    assertTrue(id.length() >= "test_operation_jni_".length() + 1,
+    assertTrue(
+        id.length() >= "test_operation_jni_".length() + 1,
         "Expected id length >= " + ("test_operation_jni_".length() + 1) + ", was: " + id.length());
-    assertTrue(id.length() <= "test_operation_jni_".length() + 4,
+    assertTrue(
+        id.length() <= "test_operation_jni_".length() + 4,
         "Expected id length <= " + ("test_operation_jni_".length() + 4) + ", was: " + id.length());
   }
 

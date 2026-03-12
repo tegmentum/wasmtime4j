@@ -18,6 +18,7 @@ package ai.tegmentum.wasmtime4j.tests.framework;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.factory.WasmRuntimeFactory;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.ArgumentsProvider;
@@ -39,6 +40,7 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
  * }
  * }</pre>
  */
+@ExtendWith(DualRuntimeCleanupExtension.class)
 public abstract class DualRuntimeTest {
 
   private static final ThreadLocal<RuntimeType> currentRuntime = new ThreadLocal<>();

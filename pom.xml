@@ -634,6 +634,12 @@
                             <param>ai.tegmentum.wasmtime4j.execution.*</param>
                             <!-- Validation - critical for safety -->
                             <param>ai.tegmentum.wasmtime4j.validation.*</param>
+                            <!-- Component model types -->
+                            <param>ai.tegmentum.wasmtime4j.component.*</param>
+                            <!-- Type system -->
+                            <param>ai.tegmentum.wasmtime4j.type.*</param>
+                            <!-- Configuration -->
+                            <param>ai.tegmentum.wasmtime4j.config.*</param>
                         </targetClasses>
                         <!-- Test classes to run against mutations -->
                         <targetTests>
@@ -1222,13 +1228,24 @@
                                 <param>ai.tegmentum.wasmtime4j.exception.*</param>
                                 <param>ai.tegmentum.wasmtime4j.execution.*</param>
                                 <param>ai.tegmentum.wasmtime4j.validation.*</param>
-                                <!-- Medium priority packages -->
-                                <param>ai.tegmentum.wasmtime4j.cache.*</param>
-                                <param>ai.tegmentum.wasmtime4j.async.*</param>
-                                <param>ai.tegmentum.wasmtime4j.concurrent.*</param>
+                                <!-- Component model packages -->
+                                <param>ai.tegmentum.wasmtime4j.component.*</param>
+                                <!-- Type system packages -->
+                                <param>ai.tegmentum.wasmtime4j.type.*</param>
+                                <!-- Configuration packages -->
                                 <param>ai.tegmentum.wasmtime4j.config.*</param>
+                                <!-- GC packages -->
+                                <param>ai.tegmentum.wasmtime4j.gc.*</param>
+                                <!-- WASI packages -->
+                                <param>ai.tegmentum.wasmtime4j.wasi.*</param>
+                                <!-- Function handling packages -->
+                                <param>ai.tegmentum.wasmtime4j.func.*</param>
+                                <!-- Pooling packages -->
                                 <param>ai.tegmentum.wasmtime4j.pool.*</param>
-                                <param>ai.tegmentum.wasmtime4j.compilation.*</param>
+                                <!-- Debug packages -->
+                                <param>ai.tegmentum.wasmtime4j.debug.*</param>
+                                <!-- Core dump packages -->
+                                <param>ai.tegmentum.wasmtime4j.coredump.*</param>
                             </targetClasses>
                             <!-- All strong mutators -->
                             <mutators>

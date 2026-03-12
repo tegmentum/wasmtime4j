@@ -2531,4 +2531,741 @@ final class WitValueDeserializerTest {
           "Truncated enum name should throw");
     }
   }
+
+  // ============== InlineConstant mutation-killing: exact byte position verification ==============
+
+  @Test
+  @DisplayName("Deserialize record - verify exact field count and intermediate positions")
+  void testDeserializeRecordExactPositions() throws ValidationException {
+    // Build record bytes: field_count=1, field "a" -> bool(true)
+    final ByteBuffer buffer = ByteBuffer.allocate(18).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // field count
+    buffer.putInt(1); // name length
+    buffer.put((byte) 'a'); // name
+    buffer.putInt(1); // bool discriminator
+    buffer.putInt(1); // data length
+    buffer.put((byte) 1); // true
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(7, data);
+
+    assertInstanceOf(WitRecord.class, result, "Result should be WitRecord");
+    final WitRecord record = (WitRecord) result;
+    assertEquals(1, record.getFieldCount(), "Field count must be exactly 1");
+    assertTrue(record.getFields().containsKey("a"), "Must contain field 'a'");
+    assertInstanceOf(WitBool.class, record.getFields().get("a"), "Field must be WitBool");
+    assertTrue(((WitBool) record.getFields().get("a")).getValue(), "Bool field value must be true");
+  }
+
+  @Test
+  @DisplayName("Deserialize tuple - verify exact element count and values at precise offsets")
+  void testDeserializeTupleExactPositions() throws ValidationException {
+    // count=2, element 0: bool(false), element 1: s32(99)
+    final ByteBuffer buffer = ByteBuffer.allocate(25).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(2); // count
+    buffer.putInt(1); // disc=bool
+    buffer.putInt(1); // len=1
+    buffer.put((byte) 0); // false
+    buffer.putInt(2); // disc=s32
+    buffer.putInt(4); // len=4
+    buffer.putInt(99); // value
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(8, data);
+
+    assertInstanceOf(WitTuple.class, result, "Result should be WitTuple");
+    final WitTuple tuple = (WitTuple) result;
+    assertEquals(2, tuple.getElements().size(), "Tuple must have exactly 2 elements");
+    assertInstanceOf(WitBool.class, tuple.getElements().get(0), "Element 0 must be bool");
+    assertFalse(((WitBool) tuple.getElements().get(0)).getValue(), "Element 0 must be false");
+    assertInstanceOf(WitS32.class, tuple.getElements().get(1), "Element 1 must be s32");
+    assertEquals(99, ((WitS32) tuple.getElements().get(1)).getValue(), "Element 1 must be 99");
+  }
+
+  @Test
+  @DisplayName("Deserialize tuple with 3 bytes (less than 4 minimum) should fail")
+  void testDeserializeTupleTooShort() {
+    final byte[] data = new byte[3];
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(8, data),
+        "3 bytes should be too short for tuple");
+  }
+
+  @Test
+  @DisplayName("Deserialize tuple with exactly 4 bytes and zero count succeeds")
+  void testDeserializeTupleExactlyFourBytesZeroCount() throws ValidationException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(8, data);
+
+    assertInstanceOf(WitTuple.class, result, "Result should be WitTuple");
+    assertEquals(0, ((WitTuple) result).getElements().size(), "Tuple must have 0 elements");
+  }
+
+  @Test
+  @DisplayName("Deserialize tuple with negative count should fail")
+  void testDeserializeTupleNegativeCount() {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(-1);
+    final byte[] data = buffer.array();
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(8, data),
+        "Negative element count should throw");
+  }
+
+  @Test
+  @DisplayName("Deserialize tuple with truncated element header (7 bytes remaining) should fail")
+  void testDeserializeTupleTruncatedElementHeader() {
+    // count=1, but only 7 bytes after count (need 8 for disc+len)
+    final ByteBuffer buffer = ByteBuffer.allocate(11).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1);
+    buffer.putInt(1); // partial
+    buffer.put((byte) 0);
+    buffer.put((byte) 0);
+    buffer.put((byte) 0);
+    final byte[] data = buffer.array();
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(8, data),
+        "7 bytes remaining should be too short for element header");
+  }
+
+  @Test
+  @DisplayName("Deserialize tuple with negative element length should fail")
+  void testDeserializeTupleNegativeElementLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // count
+    buffer.putInt(1); // disc
+    buffer.putInt(-1); // negative length
+    final byte[] data = buffer.array();
+
+    final ValidationException ex =
+        assertThrows(
+            ValidationException.class,
+            () -> WitValueDeserializer.deserialize(8, data),
+            "Negative element length should throw");
+    assertTrue(
+        ex.getMessage().contains("Invalid element data length"),
+        "Message should mention invalid element data length");
+  }
+
+  @Test
+  @DisplayName("Deserialize tuple with element data truncated should fail")
+  void testDeserializeTupleElementDataTruncated() {
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // count
+    buffer.putInt(1); // disc
+    buffer.putInt(5); // length=5, but 0 bytes remain
+    final byte[] data = buffer.array();
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(8, data),
+        "Truncated element data should throw");
+  }
+
+  @Test
+  @DisplayName("Deserialize s32 value 0 - verify exact value not mutated")
+  void testDeserializeS32ValueZero() throws ValidationException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(2, data);
+    assertEquals(0, ((WitS32) result).getValue(), "S32 value 0 must deserialize as exactly 0");
+  }
+
+  @Test
+  @DisplayName("Deserialize s32 value 1 - verify exact value not mutated")
+  void testDeserializeS32ValueOne() throws ValidationException {
+    final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(2, data);
+    assertEquals(1, ((WitS32) result).getValue(), "S32 value 1 must deserialize as exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize s64 value 0 and 1 - verify exact values")
+  void testDeserializeS64BoundaryValues() throws ValidationException {
+    final ByteBuffer zeroBuf = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    zeroBuf.putLong(0L);
+    assertEquals(
+        0L,
+        ((WitS64) WitValueDeserializer.deserialize(3, zeroBuf.array())).getValue(),
+        "S64 value 0 must be exactly 0");
+
+    final ByteBuffer oneBuf = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    oneBuf.putLong(1L);
+    assertEquals(
+        1L,
+        ((WitS64) WitValueDeserializer.deserialize(3, oneBuf.array())).getValue(),
+        "S64 value 1 must be exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize float64 value 0 and 1 - verify exact values")
+  void testDeserializeFloat64BoundaryValues() throws ValidationException {
+    final ByteBuffer zeroBuf = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    zeroBuf.putDouble(0.0);
+    assertEquals(
+        0.0,
+        ((WitFloat64) WitValueDeserializer.deserialize(4, zeroBuf.array())).getValue(),
+        "Float64 value 0.0 must be exactly 0.0");
+
+    final ByteBuffer oneBuf = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    oneBuf.putDouble(1.0);
+    assertEquals(
+        1.0,
+        ((WitFloat64) WitValueDeserializer.deserialize(4, oneBuf.array())).getValue(),
+        "Float64 value 1.0 must be exactly 1.0");
+  }
+
+  @Test
+  @DisplayName("Deserialize float32 value 0 and 1 - verify exact values")
+  void testDeserializeFloat32BoundaryValues() throws ValidationException {
+    final ByteBuffer zeroBuf = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    zeroBuf.putFloat(0.0f);
+    assertEquals(
+        0.0f,
+        ((WitFloat32) WitValueDeserializer.deserialize(21, zeroBuf.array())).getValue(),
+        "Float32 value 0.0 must be exactly 0.0");
+
+    final ByteBuffer oneBuf = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    oneBuf.putFloat(1.0f);
+    assertEquals(
+        1.0f,
+        ((WitFloat32) WitValueDeserializer.deserialize(21, oneBuf.array())).getValue(),
+        "Float32 value 1.0 must be exactly 1.0");
+  }
+
+  @Test
+  @DisplayName("Deserialize s8 value 0 and 1 - verify exact values")
+  void testDeserializeS8BoundaryValues() throws ValidationException {
+    assertEquals(
+        (byte) 0,
+        ((WitS8) WitValueDeserializer.deserialize(17, new byte[] {0})).getValue(),
+        "S8 value 0 must be exactly 0");
+    assertEquals(
+        (byte) 1,
+        ((WitS8) WitValueDeserializer.deserialize(17, new byte[] {1})).getValue(),
+        "S8 value 1 must be exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize s16 value 0 and 1 - verify exact values")
+  void testDeserializeS16BoundaryValues() throws ValidationException {
+    final ByteBuffer zeroBuf = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
+    zeroBuf.putShort((short) 0);
+    assertEquals(
+        (short) 0,
+        ((WitS16) WitValueDeserializer.deserialize(18, zeroBuf.array())).getValue(),
+        "S16 value 0 must be exactly 0");
+
+    final ByteBuffer oneBuf = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
+    oneBuf.putShort((short) 1);
+    assertEquals(
+        (short) 1,
+        ((WitS16) WitValueDeserializer.deserialize(18, oneBuf.array())).getValue(),
+        "S16 value 1 must be exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize u8 value 0 and 1 - verify exact values")
+  void testDeserializeU8BoundaryValues() throws ValidationException {
+    assertEquals(
+        (byte) 0,
+        ((WitU8) WitValueDeserializer.deserialize(19, new byte[] {0})).getValue(),
+        "U8 value 0 must be exactly 0");
+    assertEquals(
+        (byte) 1,
+        ((WitU8) WitValueDeserializer.deserialize(19, new byte[] {1})).getValue(),
+        "U8 value 1 must be exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize u16 value 0 and 1 - verify exact values")
+  void testDeserializeU16BoundaryValues() throws ValidationException {
+    final ByteBuffer zeroBuf = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
+    zeroBuf.putShort((short) 0);
+    assertEquals(
+        (short) 0,
+        ((WitU16) WitValueDeserializer.deserialize(20, zeroBuf.array())).getValue(),
+        "U16 value 0 must be exactly 0");
+
+    final ByteBuffer oneBuf = ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN);
+    oneBuf.putShort((short) 1);
+    assertEquals(
+        (short) 1,
+        ((WitU16) WitValueDeserializer.deserialize(20, oneBuf.array())).getValue(),
+        "U16 value 1 must be exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize u32 value 0 and 1 - verify exact values")
+  void testDeserializeU32BoundaryValues() throws ValidationException {
+    final ByteBuffer zeroBuf = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    zeroBuf.putInt(0);
+    assertEquals(
+        0,
+        ((WitU32) WitValueDeserializer.deserialize(9, zeroBuf.array())).getValue(),
+        "U32 value 0 must be exactly 0");
+
+    final ByteBuffer oneBuf = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    oneBuf.putInt(1);
+    assertEquals(
+        1,
+        ((WitU32) WitValueDeserializer.deserialize(9, oneBuf.array())).getValue(),
+        "U32 value 1 must be exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize u64 value 0 and 1 - verify exact values")
+  void testDeserializeU64BoundaryValues() throws ValidationException {
+    final ByteBuffer zeroBuf = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    zeroBuf.putLong(0L);
+    assertEquals(
+        0L,
+        ((WitU64) WitValueDeserializer.deserialize(10, zeroBuf.array())).getValue(),
+        "U64 value 0 must be exactly 0");
+
+    final ByteBuffer oneBuf = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    oneBuf.putLong(1L);
+    assertEquals(
+        1L,
+        ((WitU64) WitValueDeserializer.deserialize(10, oneBuf.array())).getValue(),
+        "U64 value 1 must be exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize char codepoint 0 and 1 - verify exact values")
+  void testDeserializeCharBoundaryValues() throws ValidationException {
+    final ByteBuffer zeroBuf = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    zeroBuf.putInt(0);
+    assertEquals(
+        0,
+        ((WitChar) WitValueDeserializer.deserialize(5, zeroBuf.array())).getCodepoint(),
+        "Char codepoint 0 must be exactly 0");
+
+    final ByteBuffer oneBuf = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+    oneBuf.putInt(1);
+    assertEquals(
+        1,
+        ((WitChar) WitValueDeserializer.deserialize(5, oneBuf.array())).getCodepoint(),
+        "Char codepoint 1 must be exactly 1");
+  }
+
+  @Test
+  @DisplayName("Deserialize variant with exactly 5 bytes should succeed (boundary for < 5)")
+  void testDeserializeVariantExactlyFiveBytes() throws ValidationException {
+    // Targets: data.length < 5 boundary
+    // name_len=0 + has_payload=0 = 5 bytes total
+    // But name_len=0 means empty name which variant allows
+    final ByteBuffer buffer = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0); // empty name - won't work, need at least 1 char name
+    buffer.put((byte) 0);
+    final byte[] data = buffer.array();
+
+    // Empty case name may or may not be accepted by WitVariant; the key is that
+    // the size check passes for exactly 5 bytes
+    try {
+      final WitValue result = WitValueDeserializer.deserialize(12, data);
+      assertInstanceOf(WitVariant.class, result, "Should deserialize as WitVariant");
+    } catch (final Exception e) {
+      // If WitVariant rejects empty name, that's fine - the boundary check passed
+      assertFalse(
+          e.getMessage().contains("too short"), "Error should not be about data being too short");
+    }
+  }
+
+  @Test
+  @DisplayName("Deserialize variant with 4 bytes should fail (below 5 boundary)")
+  void testDeserializeVariantFourBytes() {
+    final byte[] data = new byte[4]; // Less than 5
+
+    final ValidationException ex =
+        assertThrows(
+            ValidationException.class,
+            () -> WitValueDeserializer.deserialize(12, data),
+            "4 bytes should be too short for variant");
+    assertTrue(ex.getMessage().contains("too short"), "Should mention data too short");
+  }
+
+  @Test
+  @DisplayName("Deserialize variant with payload having negative length should fail")
+  void testDeserializeVariantPayloadNegativeLength() {
+    final byte[] nameBytes = "x".getBytes(StandardCharsets.UTF_8);
+    // name_len(4) + name(1) + has_payload(1) + disc(4) + len(4) = 14
+    final ByteBuffer buffer = ByteBuffer.allocate(14).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(nameBytes.length);
+    buffer.put(nameBytes);
+    buffer.put((byte) 1); // has payload
+    buffer.putInt(2); // disc=s32
+    buffer.putInt(-1); // negative payload length
+    final byte[] data = buffer.array();
+
+    final ValidationException ex =
+        assertThrows(
+            ValidationException.class,
+            () -> WitValueDeserializer.deserialize(12, data),
+            "Negative payload length should throw");
+    assertTrue(
+        ex.getMessage().contains("Invalid payload length"),
+        "Should mention invalid payload length");
+  }
+
+  @Test
+  @DisplayName("Deserialize variant with payload data truncated should fail")
+  void testDeserializeVariantPayloadDataTruncated() {
+    final byte[] nameBytes = "x".getBytes(StandardCharsets.UTF_8);
+    // name_len(4) + name(1) + has_payload(1) + disc(4) + len(4) = 14, claims 100 bytes
+    final ByteBuffer buffer = ByteBuffer.allocate(14).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(nameBytes.length);
+    buffer.put(nameBytes);
+    buffer.put((byte) 1);
+    buffer.putInt(2); // disc
+    buffer.putInt(100); // claims 100 bytes, but 0 remain
+    final byte[] data = buffer.array();
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(12, data),
+        "Truncated payload data should throw");
+  }
+
+  @Test
+  @DisplayName("Deserialize variant with negative case name length should fail")
+  void testDeserializeVariantNegativeCaseNameLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(5).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(-1); // negative name length
+    buffer.put((byte) 0);
+    final byte[] data = buffer.array();
+
+    final ValidationException ex =
+        assertThrows(
+            ValidationException.class,
+            () -> WitValueDeserializer.deserialize(12, data),
+            "Negative case name length should throw");
+    assertTrue(
+        ex.getMessage().contains("Invalid case name length"),
+        "Should mention invalid case name length");
+  }
+
+  @Test
+  @DisplayName("Deserialize result with exactly 2 bytes succeeds (boundary for < 2)")
+  void testDeserializeResultExactlyTwoBytes() throws ValidationException {
+    // is_ok(1) + has_value(1) = 2
+    final byte[] data = {(byte) 1, (byte) 0};
+
+    final WitValue result = WitValueDeserializer.deserialize(15, data);
+    assertInstanceOf(WitResult.class, result, "Should deserialize as WitResult");
+    assertTrue(((WitResult) result).isOk(), "Should be ok");
+  }
+
+  @Test
+  @DisplayName("Deserialize result with 1 byte should fail (below 2 boundary)")
+  void testDeserializeResultOneByte() {
+    final byte[] data = {(byte) 1};
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(15, data),
+        "1 byte should be too short for result");
+  }
+
+  @Test
+  @DisplayName("Deserialize result with payload having negative length should fail")
+  void testDeserializeResultPayloadNegativeLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(10).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.put((byte) 1); // is_ok
+    buffer.put((byte) 1); // has_value
+    buffer.putInt(2); // disc=s32
+    buffer.putInt(-1); // negative length
+    final byte[] data = buffer.array();
+
+    final ValidationException ex =
+        assertThrows(
+            ValidationException.class,
+            () -> WitValueDeserializer.deserialize(15, data),
+            "Negative value length should throw");
+    assertTrue(
+        ex.getMessage().contains("Invalid value length"), "Should mention invalid value length");
+  }
+
+  @Test
+  @DisplayName("Deserialize result with has_value=1 but only 7 bytes remaining should fail")
+  void testDeserializeResultTruncatedPayloadHeader() {
+    // is_ok(1) + has_value(1) + 7 bytes = 9 total (need 8 for disc+len)
+    final byte[] data = new byte[9];
+    data[0] = 1; // is_ok
+    data[1] = 1; // has_value
+    // remaining 7 bytes is not enough for discriminator(4) + length(4)
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(15, data),
+        "7 bytes remaining for payload header should throw");
+  }
+
+  @Test
+  @DisplayName("Deserialize result ok and err distinguish correctly with payload")
+  void testDeserializeResultOkVsErrWithPayload() throws ValidationException {
+    // Ok case
+    final ByteBuffer okBuf = ByteBuffer.allocate(14).order(ByteOrder.LITTLE_ENDIAN);
+    okBuf.put((byte) 1); // is_ok=true
+    okBuf.put((byte) 1); // has_value
+    okBuf.putInt(2); // s32
+    okBuf.putInt(4); // len
+    okBuf.putInt(42); // value
+    final WitResult okResult = (WitResult) WitValueDeserializer.deserialize(15, okBuf.array());
+    assertTrue(okResult.isOk(), "Should be ok");
+    assertFalse(okResult.isErr(), "Should not be err");
+    assertEquals(42, ((WitS32) okResult.getValue().get()).getValue(), "Ok value must be 42");
+
+    // Err case
+    final ByteBuffer errBuf = ByteBuffer.allocate(14).order(ByteOrder.LITTLE_ENDIAN);
+    errBuf.put((byte) 0); // is_ok=false
+    errBuf.put((byte) 1); // has_value
+    errBuf.putInt(2); // s32
+    errBuf.putInt(4); // len
+    errBuf.putInt(99); // value
+    final WitResult errResult = (WitResult) WitValueDeserializer.deserialize(15, errBuf.array());
+    assertTrue(errResult.isErr(), "Should be err");
+    assertFalse(errResult.isOk(), "Should not be ok");
+    assertEquals(99, ((WitS32) errResult.getValue().get()).getValue(), "Err value must be 99");
+  }
+
+  @Test
+  @DisplayName("Deserialize record with field having negative name length should fail")
+  void testDeserializeRecordNegativeNameLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // 1 field
+    buffer.putInt(-1); // negative name length
+    final byte[] data = buffer.array();
+
+    final ValidationException ex =
+        assertThrows(
+            ValidationException.class,
+            () -> WitValueDeserializer.deserialize(7, data),
+            "Negative name length should throw");
+    assertTrue(
+        ex.getMessage().contains("Invalid field name length"),
+        "Should mention invalid field name length");
+  }
+
+  @Test
+  @DisplayName("Deserialize record with field having negative data length should fail")
+  void testDeserializeRecordNegativeDataLength() {
+    final byte[] nameBytes = "f".getBytes(StandardCharsets.UTF_8);
+    // field_count(4) + name_len(4) + name(1) + disc(4) + val_len(4) = 17
+    final ByteBuffer buffer = ByteBuffer.allocate(17).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1);
+    buffer.putInt(nameBytes.length);
+    buffer.put(nameBytes);
+    buffer.putInt(2); // s32
+    buffer.putInt(-1); // negative length
+    final byte[] data = buffer.array();
+
+    final ValidationException ex =
+        assertThrows(
+            ValidationException.class,
+            () -> WitValueDeserializer.deserialize(7, data),
+            "Negative data length should throw");
+    assertTrue(
+        ex.getMessage().contains("Invalid field data length"),
+        "Should mention invalid field data length");
+  }
+
+  @Test
+  @DisplayName("Deserialize record with truncated discriminator/length header should fail")
+  void testDeserializeRecordTruncatedDiscriminatorHeader() {
+    final byte[] nameBytes = "f".getBytes(StandardCharsets.UTF_8);
+    // field_count(4) + name_len(4) + name(1) = 9, need 8 more for disc+len but only 3 remain
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // 1 field
+    buffer.putInt(nameBytes.length);
+    buffer.put(nameBytes);
+    // Only 3 bytes remain, need 8 for disc+len
+    buffer.put((byte) 0);
+    buffer.put((byte) 0);
+    buffer.put((byte) 0);
+    final byte[] data = buffer.array();
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(7, data),
+        "Truncated disc+len header should throw");
+  }
+
+  @Test
+  @DisplayName("Deserialize own with exactly 12 bytes boundary check")
+  void testDeserializeOwnExactly12Bytes() throws ValidationException {
+    // Targets: data.length < 12 boundary
+    // 4 (type_name_length=0) + 8 (handle) = 12
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0);
+    buffer.putLong(7L);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(22, data);
+    assertInstanceOf(WitOwn.class, result, "Should deserialize as WitOwn");
+    assertEquals(7L, ((WitOwn) result).getHandle().getNativeHandle(), "Handle must be 7");
+  }
+
+  @Test
+  @DisplayName("Deserialize borrow with exactly 12 bytes boundary check")
+  void testDeserializeBorrowExactly12Bytes() throws ValidationException {
+    final ByteBuffer buffer = ByteBuffer.allocate(12).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(0);
+    buffer.putLong(7L);
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(23, data);
+    assertInstanceOf(WitBorrow.class, result, "Should deserialize as WitBorrow");
+    assertEquals(7L, ((WitBorrow) result).getHandle().getNativeHandle(), "Handle must be 7");
+  }
+
+  @Test
+  @DisplayName("Deserialize option none returns isNone=true and isSome=false")
+  void testDeserializeOptionNoneExactFlags() throws ValidationException {
+    final byte[] data = {(byte) 0};
+    final WitOption option = (WitOption) WitValueDeserializer.deserialize(14, data);
+    assertTrue(option.isNone(), "Option must be none");
+    assertFalse(option.isSome(), "Option must not be some");
+    assertFalse(option.getValue().isPresent(), "Option value must not be present");
+  }
+
+  @Test
+  @DisplayName("Deserialize option some returns isSome=true and isNone=false")
+  void testDeserializeOptionSomeExactFlags() throws ValidationException {
+    final ByteBuffer buffer = ByteBuffer.allocate(10).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.put((byte) 1);
+    buffer.putInt(1); // bool
+    buffer.putInt(1); // len
+    buffer.put((byte) 0); // false
+    final byte[] data = buffer.array();
+
+    final WitOption option = (WitOption) WitValueDeserializer.deserialize(14, data);
+    assertTrue(option.isSome(), "Option must be some");
+    assertFalse(option.isNone(), "Option must not be none");
+    assertTrue(option.getValue().isPresent(), "Option value must be present");
+  }
+
+  @Test
+  @DisplayName("Deserialize string with exactly length matching (no off-by-one)")
+  void testDeserializeStringExactLengthMatch() throws ValidationException {
+    // Verify STRING_LENGTH_SIZE + length must equal data.length exactly
+    final byte[] text = "xyz".getBytes(StandardCharsets.UTF_8);
+    final ByteBuffer buffer = ByteBuffer.allocate(4 + text.length).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(text.length);
+    buffer.put(text);
+    final byte[] data = buffer.array();
+
+    // Exact match should work
+    final WitValue result = WitValueDeserializer.deserialize(6, data);
+    assertEquals("xyz", ((WitString) result).getValue(), "String must be 'xyz'");
+
+    // One byte too many should fail
+    final byte[] tooLong = new byte[data.length + 1];
+    System.arraycopy(data, 0, tooLong, 0, data.length);
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(6, tooLong),
+        "Extra byte should cause size mismatch");
+
+    // One byte too few should fail
+    final byte[] tooShort = new byte[data.length - 1];
+    System.arraycopy(data, 0, tooShort, 0, tooShort.length);
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(6, tooShort),
+        "Missing byte should cause size mismatch");
+  }
+
+  @Test
+  @DisplayName("Deserialize list with exactly 8 bytes remaining succeeds (boundary for < 8)")
+  void testDeserializeListExactlyEightBytesRemaining() throws ValidationException {
+    // count=1 then exactly 8 bytes for disc+len, then data
+    final ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + 4 + 1).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // count
+    buffer.putInt(1); // disc=bool
+    buffer.putInt(1); // len=1
+    buffer.put((byte) 1); // true
+    final byte[] data = buffer.array();
+
+    final WitValue result = WitValueDeserializer.deserialize(11, data);
+    assertInstanceOf(WitList.class, result, "Should be WitList");
+    assertEquals(1, ((WitList) result).getElements().size(), "Must have 1 element");
+  }
+
+  @Test
+  @DisplayName("Deserialize flags with negative name length should fail")
+  void testDeserializeFlagsNegativeNameLength() {
+    final ByteBuffer buffer = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // 1 flag
+    buffer.putInt(-1); // negative name length
+    final byte[] data = buffer.array();
+
+    final ValidationException ex =
+        assertThrows(
+            ValidationException.class,
+            () -> WitValueDeserializer.deserialize(16, data),
+            "Negative flag name length should throw");
+    assertTrue(
+        ex.getMessage().contains("Invalid flag name length"),
+        "Should mention invalid flag name length");
+  }
+
+  @Test
+  @DisplayName("Deserialize flags with truncated flag name data should fail")
+  void testDeserializeFlagsTruncatedFlagNameData() {
+    final ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + 1).order(ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(1); // 1 flag
+    buffer.putInt(5); // claims 5 bytes name
+    buffer.put((byte) 'a'); // only 1 byte
+    final byte[] data = buffer.array();
+
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(16, data),
+        "Truncated flag name data should throw");
+  }
+
+  @Test
+  @DisplayName("Deserialize with discriminator 0 should fail as invalid")
+  void testDeserializeDiscriminatorZero() {
+    final byte[] data = {(byte) 0};
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(0, data),
+        "Discriminator 0 should be invalid");
+  }
+
+  @Test
+  @DisplayName("Deserialize with discriminator 24 should fail as invalid")
+  void testDeserializeDiscriminator24() {
+    final byte[] data = {(byte) 0};
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(24, data),
+        "Discriminator 24 should be invalid");
+  }
+
+  @Test
+  @DisplayName("Deserialize with negative discriminator should fail")
+  void testDeserializeNegativeDiscriminator() {
+    final byte[] data = {(byte) 0};
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueDeserializer.deserialize(-1, data),
+        "Negative discriminator should be invalid");
+  }
 }
