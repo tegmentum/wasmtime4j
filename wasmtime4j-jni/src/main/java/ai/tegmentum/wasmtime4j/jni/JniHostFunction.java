@@ -95,6 +95,9 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   private final HostFunction implementation;
   private final WeakReference<JniStore> storeRef;
 
+  /** Cached param types to avoid cloning on every callback invocation. */
+  private final ai.tegmentum.wasmtime4j.WasmValueType[] cachedParamTypes;
+
   /** Helper class to hold both the native handle and host function ID. */
   private static class HostFunctionHandle {
     final long nativeHandle;
@@ -263,6 +266,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
     this.functionType = Objects.requireNonNull(functionType, "Function type cannot be null");
     this.implementation = Objects.requireNonNull(implementation, "Implementation cannot be null");
     this.storeRef = new WeakReference<>(Objects.requireNonNull(store, "Store cannot be null"));
+    this.cachedParamTypes = functionType.getParamTypes();
 
     try {
       // Register this host function to prevent GC
@@ -425,10 +429,9 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
         return -2;
       }
 
-      // Unmarshal parameters from native format
+      // Unmarshal parameters from native format using cached param types
       final WasmValue[] wasmParams =
-          JniTypeConverter.unmarshalParameters(
-              paramsData, hostFunction.functionType.getParamTypes());
+          JniTypeConverter.unmarshalParameters(paramsData, hostFunction.cachedParamTypes);
 
       // Invoke the Java callback
       final WasmValue[] wasmResults;

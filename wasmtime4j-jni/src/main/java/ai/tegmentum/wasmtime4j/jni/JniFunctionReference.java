@@ -75,6 +75,12 @@ public final class JniFunctionReference extends JniResource implements FunctionR
   private final String functionName;
   private final FunctionType functionType;
   private final HostFunction hostFunction; // Null for WebAssembly functions
+
+  /** Cached param types to avoid cloning on every callback invocation. */
+  private final ai.tegmentum.wasmtime4j.WasmValueType[] cachedParamTypes;
+
+  /** Cached return types to avoid cloning on every call. */
+  private final ai.tegmentum.wasmtime4j.WasmValueType[] cachedReturnTypes;
   private final WasmFunction wasmFunction; // Null for host functions
   private final WeakReference<JniStore> storeRef;
 
@@ -220,6 +226,8 @@ public final class JniFunctionReference extends JniResource implements FunctionR
     this.functionName = Objects.requireNonNull(functionName, "Function name cannot be null");
     this.functionType = Objects.requireNonNull(functionType, "Function type cannot be null");
     this.hostFunction = hostFunction;
+    this.cachedParamTypes = functionType.getParamTypes();
+    this.cachedReturnTypes = functionType.getReturnTypes();
     this.wasmFunction = wasmFunction;
     this.storeRef = new WeakReference<>(Objects.requireNonNull(store, "Store cannot be null"));
 
@@ -300,8 +308,8 @@ public final class JniFunctionReference extends JniResource implements FunctionR
         throw new WasmException("Native function reference call failed with code: " + result);
       }
 
-      // Unmarshal results from native format
-      return JniTypeConverter.unmarshalResults(resultBuffer, functionType.getReturnTypes());
+      // Unmarshal results from native format using cached return types
+      return JniTypeConverter.unmarshalResults(resultBuffer, cachedReturnTypes);
 
     } catch (WasmException e) {
       throw e;
@@ -407,10 +415,9 @@ public final class JniFunctionReference extends JniResource implements FunctionR
         return -3;
       }
 
-      // Unmarshal parameters from native format
+      // Unmarshal parameters from native format using cached param types
       final WasmValue[] wasmParams =
-          JniTypeConverter.unmarshalParameters(
-              paramsData, functionReference.functionType.getParamTypes());
+          JniTypeConverter.unmarshalParameters(paramsData, functionReference.cachedParamTypes);
 
       // Invoke the host function
       final WasmValue[] wasmResults = functionReference.hostFunction.execute(wasmParams);
