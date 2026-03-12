@@ -459,14 +459,15 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       }
 
       // Validate result types match function signature
-      if (wasmResults.length != hostFunction.functionType.getReturnTypes().length) {
+      final int expectedReturnCount = hostFunction.functionType.getReturnCount();
+      if (wasmResults.length != expectedReturnCount) {
         LOGGER.severe(
             "Host function '"
                 + hostFunction.functionName
                 + "' returned "
                 + wasmResults.length
                 + " values, expected "
-                + hostFunction.functionType.getReturnTypes().length);
+                + expectedReturnCount);
         return -3;
       }
 

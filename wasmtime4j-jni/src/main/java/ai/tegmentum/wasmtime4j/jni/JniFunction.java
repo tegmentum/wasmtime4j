@@ -54,6 +54,9 @@ public final class JniFunction extends JniResource
 
   private static final Logger LOGGER = Logger.getLogger(JniFunction.class.getName());
 
+  /** Cached empty params array to avoid allocation for no-arg calls. */
+  private static final WasmValue[] EMPTY_PARAMS = new WasmValue[0];
+
   // Load native library when this class is first loaded
   static {
     try {
@@ -257,7 +260,7 @@ public final class JniFunction extends JniResource
    * @throws WasmException if function execution fails
    */
   public WasmValue[] call() throws WasmException {
-    return call(new WasmValue[0]);
+    return call(EMPTY_PARAMS);
   }
 
   /**

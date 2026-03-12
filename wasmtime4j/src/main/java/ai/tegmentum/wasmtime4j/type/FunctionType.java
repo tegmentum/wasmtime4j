@@ -38,6 +38,12 @@ public final class FunctionType implements FuncType {
   private final Finality finality;
   private final FuncType supertype;
 
+  /** Cached unmodifiable list view of param types. */
+  private volatile List<WasmValueType> paramsList;
+
+  /** Cached unmodifiable list view of return types. */
+  private volatile List<WasmValueType> resultsList;
+
   /**
    * Creates a new function type.
    *
@@ -142,12 +148,22 @@ public final class FunctionType implements FuncType {
 
   @Override
   public List<WasmValueType> getParams() {
-    return Collections.unmodifiableList(List.of(paramTypes));
+    List<WasmValueType> cached = paramsList;
+    if (cached == null) {
+      cached = Collections.unmodifiableList(Arrays.asList(paramTypes));
+      paramsList = cached;
+    }
+    return cached;
   }
 
   @Override
   public List<WasmValueType> getResults() {
-    return Collections.unmodifiableList(List.of(returnTypes));
+    List<WasmValueType> cached = resultsList;
+    if (cached == null) {
+      cached = Collections.unmodifiableList(Arrays.asList(returnTypes));
+      resultsList = cached;
+    }
+    return cached;
   }
 
   /**

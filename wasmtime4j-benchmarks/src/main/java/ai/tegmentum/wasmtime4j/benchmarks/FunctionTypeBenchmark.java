@@ -119,4 +119,18 @@ public class FunctionTypeBenchmark {
     bh.consume(sixParamType.getParamCount());
     bh.consume(cachedReturnTypes);
   }
+
+  // ==========================================
+  // Cached List access (getParams/getResults)
+  // ==========================================
+
+  @Benchmark
+  public void getParamsList(Blackhole bh) {
+    bh.consume(twoParamType.getParams());
+  }
+
+  @Benchmark
+  public void getResultsList(Blackhole bh) {
+    bh.consume(twoParamType.getResults());
+  }
 }

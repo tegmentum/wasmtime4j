@@ -289,7 +289,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
       final byte[] paramData = JniTypeConverter.marshalParameters(params);
 
       // Allocate result buffer
-      final int resultCount = functionType.getReturnTypes().length;
+      final int resultCount = functionType.getReturnCount();
       final byte[] resultBuffer = new byte[resultCount * 16]; // 16 bytes per value (worst case)
 
       // Call native function with store handle for access to the store context
@@ -416,14 +416,15 @@ public final class JniFunctionReference extends JniResource implements FunctionR
       final WasmValue[] wasmResults = functionReference.hostFunction.execute(wasmParams);
 
       // Validate result types match function signature
-      if (wasmResults.length != functionReference.functionType.getReturnTypes().length) {
+      final int expectedReturnCount = functionReference.functionType.getReturnCount();
+      if (wasmResults.length != expectedReturnCount) {
         LOGGER.severe(
             "Function reference '"
                 + functionReference.functionName
                 + "' returned "
                 + wasmResults.length
                 + " values, expected "
-                + functionReference.functionType.getReturnTypes().length);
+                + expectedReturnCount);
         return -4;
       }
 
