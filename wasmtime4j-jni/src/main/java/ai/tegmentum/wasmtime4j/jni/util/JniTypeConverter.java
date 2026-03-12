@@ -135,13 +135,13 @@ public final class JniTypeConverter {
     final WasmValueType type = value.getType();
     switch (type) {
       case I32:
-        return value.asInt();
       case I64:
-        return value.asLong();
       case F32:
-        return value.asFloat();
       case F64:
-        return value.asDouble();
+        // Return the already-boxed object directly to avoid unbox+rebox overhead.
+        // WasmValue stores Integer/Long/Float/Double internally — returning getValue()
+        // avoids e.g. Integer→int→Integer round-trip that asInt()/asLong() would cause.
+        return value.getValue();
       case V128:
         final byte[] v128Bytes = value.asV128();
         if (v128Bytes.length != V128_SIZE_BYTES) {

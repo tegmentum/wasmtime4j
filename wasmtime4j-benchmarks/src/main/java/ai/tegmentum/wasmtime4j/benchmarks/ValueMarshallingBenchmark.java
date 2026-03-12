@@ -211,6 +211,11 @@ public class ValueMarshallingBenchmark {
   }
 
   @Benchmark
+  public void wasmValueToNativeParamF64(Blackhole bh) {
+    bh.consume(JniTypeConverter.wasmValueToNativeParam(f64Val));
+  }
+
+  @Benchmark
   public void wasmValuesToNativeParamsMixed(Blackhole bh) {
     bh.consume(JniTypeConverter.wasmValuesToNativeParams(mixedParams));
   }
