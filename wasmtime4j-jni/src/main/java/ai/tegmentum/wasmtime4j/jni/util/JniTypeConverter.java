@@ -212,22 +212,22 @@ public final class JniTypeConverter {
         if (!(result instanceof Integer)) {
           throw new IllegalArgumentException("Expected i32 result, got: " + getTypeName(result));
         }
-        return WasmValue.i32((Integer) result);
+        return WasmValue.fromBoxed(WasmValueType.I32, result);
       case I64:
         if (!(result instanceof Long)) {
           throw new IllegalArgumentException("Expected i64 result, got: " + getTypeName(result));
         }
-        return WasmValue.i64((Long) result);
+        return WasmValue.fromBoxed(WasmValueType.I64, result);
       case F32:
         if (!(result instanceof Float)) {
           throw new IllegalArgumentException("Expected f32 result, got: " + getTypeName(result));
         }
-        return WasmValue.f32((Float) result);
+        return WasmValue.fromBoxed(WasmValueType.F32, result);
       case F64:
         if (!(result instanceof Double)) {
           throw new IllegalArgumentException("Expected f64 result, got: " + getTypeName(result));
         }
-        return WasmValue.f64((Double) result);
+        return WasmValue.fromBoxed(WasmValueType.F64, result);
       case V128:
         if (!(result instanceof byte[])) {
           throw new IllegalArgumentException("Expected v128 result, got: " + getTypeName(result));

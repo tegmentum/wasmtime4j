@@ -326,6 +326,21 @@ public final class WasmValue {
   }
 
   /**
+   * Creates a WasmValue from a pre-validated boxed value, avoiding unnecessary unbox+rebox.
+   *
+   * <p>This factory is intended for internal use by type converters that have already validated the
+   * value's type (e.g., confirmed the Object is an Integer for I32). It skips the primitive
+   * parameter overhead that typed factories like {@link #i32(int)} impose.
+   *
+   * @param type the value type
+   * @param value the already-boxed value (Integer, Long, Float, Double, byte[], or reference)
+   * @return a new WasmValue
+   */
+  public static WasmValue fromBoxed(final WasmValueType type, final Object value) {
+    return new WasmValue(type, value);
+  }
+
+  /**
    * Creates a 32-bit integer value.
    *
    * @param value the integer value

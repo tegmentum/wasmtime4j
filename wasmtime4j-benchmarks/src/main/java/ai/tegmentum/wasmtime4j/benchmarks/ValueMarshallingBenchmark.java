@@ -221,6 +221,20 @@ public class ValueMarshallingBenchmark {
   }
 
   // ==========================================
+  // Native result to WasmValue benchmarks
+  // ==========================================
+
+  @Benchmark
+  public void nativeResultToWasmValueI32(Blackhole bh) {
+    bh.consume(JniTypeConverter.nativeResultToWasmValue(Integer.valueOf(42), WasmValueType.I32));
+  }
+
+  @Benchmark
+  public void nativeResultToWasmValueF64(Blackhole bh) {
+    bh.consume(JniTypeConverter.nativeResultToWasmValue(Double.valueOf(2.71828), WasmValueType.F64));
+  }
+
+  // ==========================================
   // Full round-trip benchmarks (most realistic)
   // ==========================================
 
