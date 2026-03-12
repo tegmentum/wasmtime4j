@@ -89,6 +89,12 @@ public final class PanamaFunctionReference implements FunctionReference {
   private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
 
+  /** Cached param types to avoid cloning on every callback invocation. */
+  private final WasmValueType[] cachedParamTypes;
+
+  /** Cached return types to avoid cloning on every call. */
+  private final WasmValueType[] cachedReturnTypes;
+
   /** The native registry ID for this function reference, used when setting funcref globals. */
   private long nativeRegistryId = -1;
 
@@ -127,6 +133,8 @@ public final class PanamaFunctionReference implements FunctionReference {
     this.functionReferenceId = NEXT_FUNCTION_REFERENCE_ID.getAndIncrement();
     this.functionName = "host_function_" + functionReferenceId;
     this.functionType = functionType;
+    this.cachedParamTypes = functionType.getParamTypes();
+    this.cachedReturnTypes = functionType.getReturnTypes();
     this.hostFunction = hostFunction;
     this.wasmFunction = null;
     this.storeRef = new WeakReference<>(store);
@@ -218,6 +226,8 @@ public final class PanamaFunctionReference implements FunctionReference {
             ? wasmFunction.getName()
             : "wasm_function_" + functionReferenceId;
     this.functionType = wasmFunction.getFunctionType();
+    this.cachedParamTypes = this.functionType.getParamTypes();
+    this.cachedReturnTypes = this.functionType.getReturnTypes();
     this.hostFunction = null;
     this.wasmFunction = wasmFunction;
     this.storeRef = new WeakReference<>(store);
@@ -604,7 +614,7 @@ public final class PanamaFunctionReference implements FunctionReference {
     } catch (Exception e) {
       LOGGER.log(Level.SEVERE, "Error in function reference callback: " + funcRef.functionName, e);
       // Return appropriate error value based on return type
-      final WasmValueType[] returnTypes = funcRef.functionType.getReturnTypes();
+      final WasmValueType[] returnTypes = funcRef.cachedReturnTypes;
       if (returnTypes.length == 0) {
         return null;
       } else if (returnTypes.length == 1) {
@@ -765,7 +775,7 @@ public final class PanamaFunctionReference implements FunctionReference {
    * @return the corresponding WasmValue array
    */
   private WasmValue[] marshalParameters(final Object[] nativeParams) {
-    final WasmValueType[] paramTypes = functionType.getParamTypes();
+    final WasmValueType[] paramTypes = cachedParamTypes;
     final WasmValue[] wasmParams = new WasmValue[paramTypes.length];
 
     for (int i = 0; i < paramTypes.length; i++) {
@@ -783,7 +793,7 @@ public final class PanamaFunctionReference implements FunctionReference {
    * @return the native return value
    */
   private Object marshalResults(final WasmValue[] wasmResults) {
-    final WasmValueType[] returnTypes = functionType.getReturnTypes();
+    final WasmValueType[] returnTypes = cachedReturnTypes;
 
     if (returnTypes.length == 0) {
       return null;
@@ -808,10 +818,7 @@ public final class PanamaFunctionReference implements FunctionReference {
    */
   private WasmValue createWasmValue(final WasmValueType valueType, final Object nativeValue) {
     return switch (valueType) {
-      case I32 -> WasmValue.i32((Integer) nativeValue);
-      case I64 -> WasmValue.i64((Long) nativeValue);
-      case F32 -> WasmValue.f32((Float) nativeValue);
-      case F64 -> WasmValue.f64((Double) nativeValue);
+      case I32, I64, F32, F64 -> WasmValue.fromBoxed(valueType, nativeValue);
       case V128 -> WasmValue.v128((byte[]) nativeValue);
       case FUNCREF, EXTERNREF -> WasmValue.externref(nativeValue);
       default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
@@ -826,10 +833,7 @@ public final class PanamaFunctionReference implements FunctionReference {
    */
   private Object extractNativeValue(final WasmValue wasmValue) {
     return switch (wasmValue.getType()) {
-      case I32 -> wasmValue.asInt();
-      case I64 -> wasmValue.asLong();
-      case F32 -> wasmValue.asFloat();
-      case F64 -> wasmValue.asDouble();
+      case I32, I64, F32, F64 -> wasmValue.getValue();
       case V128 -> wasmValue.asV128();
       case FUNCREF, EXTERNREF -> wasmValue.asExternref();
       default ->

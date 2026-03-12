@@ -70,6 +70,12 @@ public final class PanamaHostFunction implements WasmFunction {
   private final ai.tegmentum.wasmtime4j.func.HostFunction implementation;
   private final WeakReference<PanamaStore> storeRef;
   private final ArenaResourceManager arenaManager;
+
+  /** Cached param types to avoid cloning on every callback invocation. */
+  private final WasmValueType[] cachedParamTypes;
+
+  /** Cached return types to avoid cloning on every callback invocation. */
+  private final WasmValueType[] cachedReturnTypes;
   private MemorySegment functionHandle;
   private MemorySegment upcallStub;
   private MemorySegment ffiUpcallStub; // FFI-compatible upcall stub for native registry
@@ -145,6 +151,8 @@ public final class PanamaHostFunction implements WasmFunction {
     this.hostFunctionId = nextHostFunctionId.getAndIncrement();
     this.functionName = Objects.requireNonNull(functionName, "Function name cannot be null");
     this.functionType = Objects.requireNonNull(functionType, "Function type cannot be null");
+    this.cachedParamTypes = functionType.getParamTypes();
+    this.cachedReturnTypes = functionType.getReturnTypes();
     this.callback = Objects.requireNonNull(callback, "Callback cannot be null");
     this.implementation = implementation; // May be null
     this.storeRef = store != null ? new WeakReference<>(store) : null;
@@ -634,7 +642,7 @@ public final class PanamaHostFunction implements WasmFunction {
     // - value: [u8; 16] (16 bytes)
     // Total: 20 bytes
     final int ffiValueSize = 20;
-    final WasmValueType[] paramTypes = hostFunction.functionType.getParamTypes();
+    final WasmValueType[] paramTypes = hostFunction.cachedParamTypes;
     final WasmValue[] result = new WasmValue[paramsLen];
 
     // Reinterpret the zero-length segment with proper bounds
@@ -943,7 +951,7 @@ public final class PanamaHostFunction implements WasmFunction {
     } catch (Exception e) {
       logger.log(Level.SEVERE, "Error in host function callback: " + hostFunction.functionName, e);
       // Return appropriate error value based on return type
-      final WasmValueType[] returnTypes = hostFunction.functionType.getReturnTypes();
+      final WasmValueType[] returnTypes = hostFunction.cachedReturnTypes;
       if (returnTypes.length == 0) {
         return null;
       } else if (returnTypes.length == 1) {
@@ -1255,7 +1263,7 @@ public final class PanamaHostFunction implements WasmFunction {
    * @return the corresponding WasmValue array
    */
   private WasmValue[] marshalParameters(final Object[] nativeParams) {
-    final WasmValueType[] paramTypes = functionType.getParamTypes();
+    final WasmValueType[] paramTypes = cachedParamTypes;
     final WasmValue[] wasmParams = new WasmValue[paramTypes.length];
 
     for (int i = 0; i < paramTypes.length; i++) {
@@ -1273,7 +1281,7 @@ public final class PanamaHostFunction implements WasmFunction {
    * @return the native return value
    */
   private Object marshalResults(final WasmValue[] wasmResults) {
-    final WasmValueType[] returnTypes = functionType.getReturnTypes();
+    final WasmValueType[] returnTypes = cachedReturnTypes;
 
     if (returnTypes.length == 0) {
       return null;
@@ -1298,10 +1306,7 @@ public final class PanamaHostFunction implements WasmFunction {
    */
   private WasmValue createWasmValue(final WasmValueType valueType, final Object nativeValue) {
     return switch (valueType) {
-      case I32 -> WasmValue.i32((Integer) nativeValue);
-      case I64 -> WasmValue.i64((Long) nativeValue);
-      case F32 -> WasmValue.f32((Float) nativeValue);
-      case F64 -> WasmValue.f64((Double) nativeValue);
+      case I32, I64, F32, F64 -> WasmValue.fromBoxed(valueType, nativeValue);
       case V128 -> WasmValue.v128((byte[]) nativeValue);
       case FUNCREF, EXTERNREF -> WasmValue.externref(nativeValue); // Handle as reference
       default -> throw new IllegalArgumentException("Unsupported value type: " + valueType);
@@ -1316,10 +1321,7 @@ public final class PanamaHostFunction implements WasmFunction {
    */
   private Object extractNativeValue(final WasmValue wasmValue) {
     return switch (wasmValue.getType()) {
-      case I32 -> wasmValue.asInt();
-      case I64 -> wasmValue.asLong();
-      case F32 -> wasmValue.asFloat();
-      case F64 -> wasmValue.asDouble();
+      case I32, I64, F32, F64 -> wasmValue.getValue();
       case V128 -> wasmValue.asV128();
       case FUNCREF, EXTERNREF -> wasmValue.asExternref();
       default ->
