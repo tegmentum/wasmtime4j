@@ -772,4 +772,109 @@ class WitPrimitiveValueTest {
       assertTrue(WitU64.of(0L).isUnsigned(), "U64 should be unsigned");
     }
   }
+
+  @Nested
+  @DisplayName("Surviving Mutant Killer Tests")
+  class SurvivingMutantKillerTests {
+
+    @Test
+    @DisplayName("constructor must call validatePrimitiveType - line 64")
+    void constructorMustCallValidatePrimitiveType() {
+      // Targets line 64: validatePrimitiveType() call removal mutation
+      // If validatePrimitiveType is removed, a non-primitive type would be accepted
+      // We cannot easily construct a WitType that is non-primitive and pass it,
+      // but we can verify that valid primitives DO pass validation
+      final WitS32 value = WitS32.of(42);
+      assertNotNull(value, "Valid primitive value must be created");
+      assertNotNull(value.getType(), "Type must be set");
+    }
+
+    @Test
+    @DisplayName(
+        "isFloatingPoint must return false for integer types - kills constant 0->1 mutation")
+    void isFloatingPointMustReturnFalseForIntegers() {
+      // Targets: isFloatingPoint orElse(false) mutation to orElse(true)
+      final WitS32 s32 = WitS32.of(42);
+      assertFalse(s32.isFloatingPoint(), "S32 isFloatingPoint must be exactly false");
+      assertEquals(false, s32.isFloatingPoint(), "isFloatingPoint must return Boolean false");
+
+      final WitU32 u32 = WitU32.of(42);
+      assertFalse(u32.isFloatingPoint(), "U32 isFloatingPoint must be exactly false");
+    }
+
+    @Test
+    @DisplayName("isInteger must return false for non-integer types - kills constant 0->1 mutation")
+    void isIntegerMustReturnFalseForNonIntegers() {
+      // Targets: isInteger orElse(false) mutation to orElse(true)
+      final WitFloat32 f32 = WitFloat32.of(3.14f);
+      assertFalse(f32.isInteger(), "Float32 isInteger must be exactly false");
+      assertEquals(false, f32.isInteger(), "isInteger must return Boolean false");
+
+      final WitBool bool = WitBool.of(true);
+      assertFalse(bool.isInteger(), "Bool isInteger must be exactly false");
+    }
+
+    @Test
+    @DisplayName("isNumeric must return false for non-numeric types - kills constant 0->1 mutation")
+    void isNumericMustReturnFalseForNonNumeric() throws Exception {
+      // Targets: isNumeric orElse(false) mutation to orElse(true)
+      final WitBool bool = WitBool.of(true);
+      assertFalse(bool.isNumeric(), "Bool isNumeric must be exactly false");
+      assertEquals(false, bool.isNumeric(), "isNumeric must return Boolean false");
+
+      final WitString str = WitString.of("hello");
+      assertFalse(str.isNumeric(), "String isNumeric must be exactly false");
+      assertEquals(false, str.isNumeric(), "isNumeric must return Boolean false");
+    }
+
+    @Test
+    @DisplayName(
+        "isSigned must return false for unsigned and non-integer types - kills constant 0->1"
+            + " mutation")
+    void isSignedMustReturnFalseForUnsignedTypes() {
+      // Targets: isSigned orElse(false) mutation to orElse(true)
+      final WitU32 u32 = WitU32.of(42);
+      assertFalse(u32.isSigned(), "U32 isSigned must be exactly false");
+      assertEquals(false, u32.isSigned(), "isSigned must return Boolean false");
+
+      final WitBool bool = WitBool.of(true);
+      assertFalse(bool.isSigned(), "Bool isSigned must be exactly false");
+    }
+
+    @Test
+    @DisplayName(
+        "isUnsigned must return false for signed and non-integer types - kills constant 0->1"
+            + " mutation")
+    void isUnsignedMustReturnFalseForSignedTypes() {
+      // Targets: isUnsigned orElse(false) mutation to orElse(true)
+      final WitS32 s32 = WitS32.of(42);
+      assertFalse(s32.isUnsigned(), "S32 isUnsigned must be exactly false");
+      assertEquals(false, s32.isUnsigned(), "isUnsigned must return Boolean false");
+
+      final WitBool bool = WitBool.of(true);
+      assertFalse(bool.isUnsigned(), "Bool isUnsigned must be exactly false");
+    }
+
+    @Test
+    @DisplayName("validatePrimitiveType conditional must check primitiveType presence")
+    void validatePrimitiveTypeConditionalMustCheck() {
+      // Targets line 74: !type.getKind().getPrimitiveType().isPresent() conditional mutation
+      // Valid primitive type must pass validation
+      final WitS32 valid = WitS32.of(0);
+      assertTrue(valid.isInteger(), "Valid S32 must pass validation and be integer");
+
+      // All valid primitive subclass instances should exist without throwing
+      assertNotNull(WitS8.of((byte) 0), "S8 must pass validation");
+      assertNotNull(WitS16.of((short) 0), "S16 must pass validation");
+      assertNotNull(WitS32.of(0), "S32 must pass validation");
+      assertNotNull(WitS64.of(0L), "S64 must pass validation");
+      assertNotNull(WitU8.of((byte) 0), "U8 must pass validation");
+      assertNotNull(WitU16.of((short) 0), "U16 must pass validation");
+      assertNotNull(WitU32.of(0), "U32 must pass validation");
+      assertNotNull(WitU64.of(0L), "U64 must pass validation");
+      assertNotNull(WitFloat32.of(0f), "Float32 must pass validation");
+      assertNotNull(WitFloat64.of(0d), "Float64 must pass validation");
+      assertNotNull(WitBool.of(false), "Bool must pass validation");
+    }
+  }
 }

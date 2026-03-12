@@ -216,4 +216,74 @@ class WitBorrowTest {
       assertNotEquals(borrow, own, "WitBorrow and WitOwn should not be equal");
     }
   }
+
+  @Nested
+  @DisplayName("Surviving Mutant Killer Tests")
+  class SurvivingMutantKillerTests {
+
+    @Test
+    @DisplayName("constructor must reject null handle - line 66")
+    void constructorMustRejectNullHandle() {
+      // Targets line 66: handle == null check
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitBorrow.fromHandle(null),
+          "Must reject null handle");
+    }
+
+    @Test
+    @DisplayName("constructor must reject owned handle - line 69")
+    void constructorMustRejectOwnedHandle() {
+      // Targets line 69: handle.isOwned() check
+      final ComponentResourceHandle owned = ComponentResourceHandle.own("resource", 1);
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitBorrow.fromHandle(owned),
+          "Must reject owned handle for WitBorrow");
+    }
+
+    @Test
+    @DisplayName("fromHandle must check isOwned conditional - line 133")
+    void fromHandleMustCheckIsOwnedConditional() {
+      // Targets line 133: handle.isOwned() conditional negation
+      // Valid borrowed handle should work
+      final ComponentResourceHandle borrowed = ComponentResourceHandle.borrow("resource", 1);
+      final WitBorrow value = WitBorrow.fromHandle(borrowed);
+      assertNotNull(value, "Valid borrowed handle should create WitBorrow");
+      assertFalse(value.getHandle().isOwned(), "Handle must not be owned");
+
+      // Owned handle should be rejected by fromHandle's own check
+      final ComponentResourceHandle owned = ComponentResourceHandle.own("resource", 1);
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitBorrow.fromHandle(owned),
+          "fromHandle must reject owned handle");
+    }
+
+    @Test
+    @DisplayName("validate must check handle index boundary - line 190")
+    void validateMustCheckHandleIndexBoundary() {
+      // Targets line 190: handle.getNativeHandle() < 0 && handle.getIndex() < 0
+      // Valid positive and zero index must pass
+      final WitBorrow zero = WitBorrow.of("resource", 0);
+      assertEquals(0, zero.getIndex(), "Zero index must be accepted");
+
+      final WitBorrow positive = WitBorrow.of("resource", 100);
+      assertEquals(100, positive.getIndex(), "Positive index must be accepted");
+
+      // Negative index without native handle must be rejected
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitBorrow.of("resource", -1),
+          "Negative index must be rejected");
+    }
+
+    @Test
+    @DisplayName("long handle factory should work with positive values")
+    void longHandleFactoryShouldWork() {
+      final WitBorrow value = WitBorrow.of("resource", 42L);
+      assertNotNull(value, "Long handle factory should create WitBorrow");
+      assertEquals("resource", value.getResourceType(), "Resource type must match");
+    }
+  }
 }

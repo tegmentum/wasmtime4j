@@ -23,7 +23,6 @@ import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.validation.PreInstantiationStatistics;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -158,8 +157,7 @@ class InstancePreTest {
       } catch (final ExecutionException e) {
         // CompletableFuture.supplyAsync unwraps CompletionException, so the cause
         // of ExecutionException is the original WasmException directly
-        assertSame(
-            wasmError, e.getCause(), "Cause should be the original WasmException");
+        assertSame(wasmError, e.getCause(), "Cause should be the original WasmException");
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
         assertTrue(false, "Should not be interrupted");

@@ -403,4 +403,101 @@ class WitListTest {
       assertEquals(empty1, empty2, "Empty lists from factory and builder must be equal");
     }
   }
+
+  @Nested
+  @DisplayName("Surviving Mutant Killer Tests")
+  class SurvivingMutantKillerTests {
+
+    @Test
+    @DisplayName("constructor must reject null elementType - line 62")
+    void constructorMustRejectNullElementType() {
+      // Targets line 62: elementType == null check
+      assertThrows(
+          NullPointerException.class, () -> WitList.empty(null), "Must reject null element type");
+    }
+
+    @Test
+    @DisplayName("constructor must reject null elements - line 65")
+    void constructorMustRejectNullElements() {
+      // Targets line 65: elements == null check
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitList.of((WitValue[]) null),
+          "Must reject null elements array");
+    }
+
+    @Test
+    @DisplayName("of(List) must reject null list - line 102")
+    void ofListMustRejectNullList() {
+      // Targets line 102: elements == null || elements.isEmpty()
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitList.of((java.util.List<WitValue>) null),
+          "Must reject null list");
+    }
+
+    @Test
+    @DisplayName("of(List) must reject empty list - line 102")
+    void ofListMustRejectEmptyList() {
+      // Targets line 102: elements.isEmpty() condition
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitList.of(java.util.Collections.emptyList()),
+          "Must reject empty list");
+    }
+
+    @Test
+    @DisplayName("validate must use correct index i for element access - line 184")
+    void validateMustUseCorrectIndexForElementAccess() {
+      // Targets line 184: index math i in elements.get(i)
+      // A list with multiple elements of same type but one null should report exact index
+      final java.util.List<WitValue> elements = new java.util.ArrayList<>();
+      elements.add(WitS32.of(1));
+      elements.add(WitS32.of(2));
+      elements.add(null);
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitList.of(elements),
+              "Must reject null element at index 2");
+      assertTrue(
+          ex.getMessage().contains("2") || ex.getMessage().contains("index"),
+          "Error should mention index: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate must check type equality with elementType at each index - line 190")
+    void validateMustCheckTypeEqualityAtEachIndex() {
+      // Targets line 190: !element.getType().equals(elementType) check
+      // First element determines the type, second element has a different type
+      final java.util.List<WitValue> mixed = new java.util.ArrayList<>();
+      mixed.add(WitS32.of(1));
+      mixed.add(WitU64.of(2L));
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class, () -> WitList.of(mixed), "Must reject type mismatch");
+      assertTrue(
+          ex.getMessage().contains("type") && ex.getMessage().contains("expected"),
+          "Error should mention type mismatch: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate iterates all elements not just first")
+    void validateIteratesAllElements() {
+      // Targets index math mutations - ensure element at index > 0 is also checked
+      final java.util.List<WitValue> elements = new java.util.ArrayList<>();
+      elements.add(WitS32.of(1));
+      elements.add(WitS32.of(2));
+      elements.add(WitU64.of(3L)); // Type mismatch at index 2
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitList.of(elements),
+              "Must detect mismatch at index 2");
+      assertTrue(ex.getMessage().contains("2"), "Error should mention index 2: " + ex.getMessage());
+    }
+  }
 }

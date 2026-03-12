@@ -799,4 +799,59 @@ class WasiExceptionTest {
           "Null error code should derive SYSTEM category");
     }
   }
+
+  @Nested
+  @DisplayName("Five-arg Constructor with Cause - Retryable Derivation Tests")
+  class FiveArgConstructorRetryableTests {
+
+    @Test
+    @DisplayName("null error code with cause should make retryable false")
+    void nullErrorCodeWithCauseShouldMakeRetryableFalse() {
+      final RuntimeException cause = new RuntimeException("cause");
+      final WasiException exception =
+          new WasiException("error", (WasiErrorCode) null, "op", "res", cause);
+
+      assertFalse(exception.isRetryable(), "Null error code should make retryable false");
+      assertNull(exception.getErrorCode(), "Error code should be null");
+      assertSame(cause, exception.getCause(), "Cause should be preserved");
+    }
+
+    @Test
+    @DisplayName("retryable error code with cause should make retryable true")
+    void retryableErrorCodeWithCauseShouldMakeRetryableTrue() {
+      final RuntimeException cause = new RuntimeException("cause");
+      final WasiException exception =
+          new WasiException("error", WasiErrorCode.EAGAIN, "op", "res", cause);
+
+      assertTrue(exception.isRetryable(), "EAGAIN should make retryable true");
+      assertEquals(WasiErrorCode.EAGAIN, exception.getErrorCode(), "Error code should be EAGAIN");
+      assertSame(cause, exception.getCause(), "Cause should be preserved");
+    }
+
+    @Test
+    @DisplayName("non-retryable error code with cause should make retryable false")
+    void nonRetryableErrorCodeWithCauseShouldMakeRetryableFalse() {
+      final RuntimeException cause = new RuntimeException("cause");
+      final WasiException exception =
+          new WasiException("error", WasiErrorCode.EINVAL, "op", "res", cause);
+
+      assertFalse(exception.isRetryable(), "EINVAL should make retryable false");
+    }
+
+    @Test
+    @DisplayName("four-arg constructor with null error code should make retryable false")
+    void fourArgConstructorNullErrorCodeShouldMakeRetryableFalse() {
+      final WasiException exception = new WasiException("error", (WasiErrorCode) null, "op", "res");
+
+      assertFalse(exception.isRetryable(), "Null error code should make retryable false");
+    }
+
+    @Test
+    @DisplayName("four-arg constructor with retryable error code should make retryable true")
+    void fourArgConstructorRetryableErrorCodeShouldMakeRetryableTrue() {
+      final WasiException exception = new WasiException("error", WasiErrorCode.EAGAIN, "op", "res");
+
+      assertTrue(exception.isRetryable(), "EAGAIN should make retryable true");
+    }
+  }
 }

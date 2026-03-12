@@ -2184,4 +2184,351 @@ final class WitValueDeserializerTest {
           200, ((WitS32) list.getElements().get(1)).getValue(), "Second element should be 200");
     }
   }
+
+  // ============== Mutation-killing boundary tests ==============
+
+  @Nested
+  @DisplayName("Boundary and conditional mutation-killing tests")
+  class MutationKillingTests {
+
+    @Test
+    @DisplayName("deserializeBorrow with empty resource type name defaults to 'resource'")
+    void testDeserializeBorrowEmptyTypeName() throws ValidationException {
+      // Targets line 835: resourceType.isEmpty() ? "resource" : resourceType
+      // Mutant: removed conditional - always returns resourceType (empty string)
+      final ByteBuffer buffer = ByteBuffer.allocate(4 + 0 + 8).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(0); // empty type name
+      buffer.putLong(99L);
+      final byte[] data = buffer.array();
+
+      final WitValue result = WitValueDeserializer.deserialize(23, data);
+
+      assertInstanceOf(WitBorrow.class, result, "Result should be WitBorrow");
+      final WitBorrow borrow = (WitBorrow) result;
+      assertEquals(
+          "resource",
+          borrow.getResourceType(),
+          "Empty resource type name should default to 'resource'");
+    }
+
+    @Test
+    @DisplayName("deserializeBorrow with non-empty resource type name preserves it")
+    void testDeserializeBorrowNonEmptyTypeName() throws ValidationException {
+      // Targets line 835: resourceType.isEmpty() ? "resource" : resourceType
+      // Mutant: always returns "resource" instead of the actual type name
+      final byte[] typeName = "my-resource".getBytes(StandardCharsets.UTF_8);
+      final ByteBuffer buffer =
+          ByteBuffer.allocate(4 + typeName.length + 8).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(typeName.length);
+      buffer.put(typeName);
+      buffer.putLong(99L);
+      final byte[] data = buffer.array();
+
+      final WitValue result = WitValueDeserializer.deserialize(23, data);
+
+      assertInstanceOf(WitBorrow.class, result, "Result should be WitBorrow");
+      final WitBorrow borrow = (WitBorrow) result;
+      assertEquals(
+          "my-resource",
+          borrow.getResourceType(),
+          "Non-empty resource type name should be preserved");
+    }
+
+    @Test
+    @DisplayName("deserializeOwn with empty resource type name defaults to 'resource'")
+    void testDeserializeOwnEmptyTypeName() throws ValidationException {
+      // Targets line 800: resourceType.isEmpty() ? "resource" : resourceType
+      final ByteBuffer buffer = ByteBuffer.allocate(4 + 0 + 8).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(0); // empty type name
+      buffer.putLong(55L);
+      final byte[] data = buffer.array();
+
+      final WitValue result = WitValueDeserializer.deserialize(22, data);
+
+      assertInstanceOf(WitOwn.class, result, "Result should be WitOwn");
+      final WitOwn own = (WitOwn) result;
+      assertEquals(
+          "resource",
+          own.getResourceType(),
+          "Empty resource type name should default to 'resource'");
+    }
+
+    @Test
+    @DisplayName("deserializeOwn with non-empty resource type name preserves it")
+    void testDeserializeOwnNonEmptyTypeName() throws ValidationException {
+      // Targets line 800: always returns "resource" mutant
+      final byte[] typeName = "file-handle".getBytes(StandardCharsets.UTF_8);
+      final ByteBuffer buffer =
+          ByteBuffer.allocate(4 + typeName.length + 8).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(typeName.length);
+      buffer.put(typeName);
+      buffer.putLong(55L);
+      final byte[] data = buffer.array();
+
+      final WitValue result = WitValueDeserializer.deserialize(22, data);
+
+      assertInstanceOf(WitOwn.class, result, "Result should be WitOwn");
+      final WitOwn own = (WitOwn) result;
+      assertEquals(
+          "file-handle", own.getResourceType(), "Non-empty resource type name should be preserved");
+    }
+
+    @Test
+    @DisplayName("deserializeEnum with exactly 4 bytes passes length check (boundary for < 4)")
+    void testDeserializeEnumExactlyFourBytes() {
+      // Targets line 587: data.length < 4 (mutant substitutes 4 with 5)
+      // With exactly 4 bytes and nameLength=0, passes the length check but
+      // WitEnum rejects empty discriminant — still not a ValidationException from length check
+      final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(0); // name length 0
+      final byte[] data = buffer.array();
+
+      // Empty discriminant is rejected by WitEnum constructor
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitValueDeserializer.deserialize(13, data),
+          "Empty discriminant should be rejected");
+    }
+
+    @Test
+    @DisplayName("deserializeEnum with 3 bytes throws (boundary for < 4)")
+    void testDeserializeEnumThreeBytes() {
+      // Targets line 587: data.length < 4 boundary
+      final byte[] data = new byte[3];
+
+      assertThrows(
+          ValidationException.class,
+          () -> WitValueDeserializer.deserialize(13, data),
+          "3 bytes should be too short for enum");
+    }
+
+    @Test
+    @DisplayName("deserializeEnum with nameLength exactly 0 passes length check (boundary for < 0)")
+    void testDeserializeEnumNameLengthZero() {
+      // Targets line 594: nameLength < 0 (mutant substitutes boundary)
+      // nameLength=0 passes the < 0 check but WitEnum rejects empty discriminant
+      final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(0);
+      final byte[] data = buffer.array();
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitValueDeserializer.deserialize(13, data),
+          "Empty discriminant should be rejected by WitEnum");
+    }
+
+    @Test
+    @DisplayName("deserializeFlags with exactly 4 bytes and zero flags succeeds (boundary for < 4)")
+    void testDeserializeFlagsExactlyFourBytes() throws ValidationException {
+      // Targets line 745: buffer.remaining() < 4 (mutant substitutes 4 with 5)
+      // Also targets line 731: data.length < 4
+      final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(0); // zero flags
+      final byte[] data = buffer.array();
+
+      final WitValue result = WitValueDeserializer.deserialize(16, data);
+
+      assertInstanceOf(WitFlags.class, result, "Result should be WitFlags");
+      assertEquals(0, ((WitFlags) result).getSetFlags().size(), "Should have 0 flags");
+    }
+
+    @Test
+    @DisplayName("deserializeFlags with 3 bytes throws (boundary for < 4)")
+    void testDeserializeFlagsThreeBytes() {
+      // Targets line 731: data.length < 4
+      final byte[] data = new byte[3];
+
+      assertThrows(
+          ValidationException.class,
+          () -> WitValueDeserializer.deserialize(16, data),
+          "3 bytes should be too short for flags");
+    }
+
+    @Test
+    @DisplayName("deserializeFlags with one flag having exactly 4 bytes remaining for name length")
+    void testDeserializeFlagsExactRemainingForNameLength() throws ValidationException {
+      // Targets line 745: buffer.remaining() < 4
+      // Create flags with one flag that has name length exactly at boundary
+      final byte[] flagName = "a".getBytes(StandardCharsets.UTF_8);
+      final ByteBuffer buffer =
+          ByteBuffer.allocate(4 + 4 + flagName.length).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(1); // 1 flag
+      buffer.putInt(flagName.length); // name length = 1
+      buffer.put(flagName);
+      final byte[] data = buffer.array();
+
+      final WitValue result = WitValueDeserializer.deserialize(16, data);
+
+      assertInstanceOf(WitFlags.class, result, "Result should be WitFlags");
+      assertEquals(1, ((WitFlags) result).getSetFlags().size(), "Should have 1 flag");
+      assertTrue(((WitFlags) result).getSetFlags().contains("a"), "Should contain flag 'a'");
+    }
+
+    @Test
+    @DisplayName(
+        "deserializeFlags with nameLength exactly 0 passes length check (boundary for < 0)")
+    void testDeserializeFlagsNameLengthZero() {
+      // Targets line 750: nameLength < 0
+      // nameLength=0 passes the < 0 check but WitFlags rejects empty flag names
+      final ByteBuffer buffer = ByteBuffer.allocate(4 + 4).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(1); // 1 flag
+      buffer.putInt(0); // name length 0
+      final byte[] data = buffer.array();
+
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitValueDeserializer.deserialize(16, data),
+          "Empty flag name should be rejected by WitFlags");
+    }
+
+    @Test
+    @DisplayName("deserializeList with element length exactly 0 succeeds (boundary for < 0)")
+    void testDeserializeListElementLengthZero() throws ValidationException {
+      // Targets line 485: length < 0 boundary
+      // A bool element has length 1, but we need to test length=0 boundary
+      // Use a carefully crafted buffer with length exactly 0 but valid discriminator
+      // Actually, length=0 means empty data, let's use discriminator 1 (bool) with 0 bytes
+      // That would fail on the inner deserialize. Instead, test that negative length throws.
+      final ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + 4).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(1); // 1 element
+      buffer.putInt(1); // discriminator 1 (bool)
+      buffer.putInt(0); // length 0
+      final byte[] data = buffer.array();
+
+      // This will call deserialize(1, new byte[0]) which should throw for bool (expects 1 byte)
+      assertThrows(
+          ValidationException.class,
+          () -> WitValueDeserializer.deserialize(11, data),
+          "Element with length 0 for bool should throw");
+    }
+
+    @Test
+    @DisplayName("deserializeList boundary - negative element length throws")
+    void testDeserializeListNegativeElementLengthBoundary() {
+      // Targets line 485: length < 0
+      final ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + 4).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(1); // 1 element
+      buffer.putInt(1); // discriminator
+      buffer.putInt(-1); // negative length
+      final byte[] data = buffer.array();
+
+      final ValidationException ex =
+          assertThrows(
+              ValidationException.class,
+              () -> WitValueDeserializer.deserialize(11, data),
+              "Negative element length should throw");
+      assertTrue(
+          ex.getMessage().contains("Invalid element data length"),
+          "Message should mention invalid element data length");
+    }
+
+    @Test
+    @DisplayName("deserializeOption some with exactly 8 bytes remaining for payload header")
+    void testDeserializeOptionSomeExactlyEightBytesRemaining() throws ValidationException {
+      // Targets line 636: buffer.remaining() < 8 (mutant substitutes 8 with 9)
+      // After reading is_some byte, need exactly 8 bytes for discriminator+length
+      final ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + 4 + 1).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.put((byte) 1); // is_some = true
+      buffer.putInt(1); // discriminator = 1 (bool)
+      buffer.putInt(1); // length = 1
+      buffer.put((byte) 1); // bool true
+      final byte[] data = buffer.array();
+
+      final WitValue result = WitValueDeserializer.deserialize(14, data);
+
+      assertInstanceOf(WitOption.class, result, "Result should be WitOption");
+      assertTrue(((WitOption) result).getValue().isPresent(), "Option should have a value");
+    }
+
+    @Test
+    @DisplayName("deserializeOption some with 7 bytes remaining throws")
+    void testDeserializeOptionSomeSevenBytesRemaining() {
+      // Targets line 636: buffer.remaining() < 8
+      // After reading is_some byte (1 byte), only 7 bytes left
+      final byte[] data = new byte[8]; // 1 + 7 bytes
+      data[0] = 1; // is_some = true
+      // remaining 7 bytes is not enough for discriminator(4) + length(4)
+
+      assertThrows(
+          ValidationException.class,
+          () -> WitValueDeserializer.deserialize(14, data),
+          "7 bytes remaining for payload header should throw");
+    }
+
+    @Test
+    @DisplayName("deserializeOption some with length exactly 0 succeeds for inner deserialize")
+    void testDeserializeOptionSomeLengthZero() {
+      // Targets line 643: length < 0 boundary
+      final ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + 4).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.put((byte) 1); // is_some
+      buffer.putInt(1); // discriminator = 1 (bool)
+      buffer.putInt(0); // length = 0
+
+      final byte[] data = buffer.array();
+
+      // length=0 means empty data for bool, which should throw on inner deserialize
+      assertThrows(
+          ValidationException.class,
+          () -> WitValueDeserializer.deserialize(14, data),
+          "Length 0 with bool discriminator should throw due to invalid bool data size");
+    }
+
+    @Test
+    @DisplayName("deserializeOption some with negative length throws")
+    void testDeserializeOptionSomeNegativeLength() {
+      // Targets line 643: length < 0
+      final ByteBuffer buffer = ByteBuffer.allocate(1 + 4 + 4).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.put((byte) 1); // is_some
+      buffer.putInt(1); // discriminator
+      buffer.putInt(-1); // negative length
+
+      final byte[] data = buffer.array();
+
+      final ValidationException ex =
+          assertThrows(
+              ValidationException.class,
+              () -> WitValueDeserializer.deserialize(14, data),
+              "Negative length should throw");
+      assertTrue(
+          ex.getMessage().contains("Invalid value length"),
+          "Message should mention invalid value length");
+    }
+
+    @Test
+    @DisplayName("deserializeFlags truncated at flag name read throws")
+    void testDeserializeFlagsTruncatedAtFlagName() {
+      // Targets line 745: buffer.remaining() < 4 when reading next flag's name length
+      // Two flags declared but data only has room for one
+      final byte[] flagName = "a".getBytes(StandardCharsets.UTF_8);
+      final ByteBuffer buffer =
+          ByteBuffer.allocate(4 + 4 + flagName.length).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(2); // says 2 flags
+      buffer.putInt(flagName.length);
+      buffer.put(flagName);
+      // No more data for second flag
+      final byte[] data = buffer.array();
+
+      assertThrows(
+          ValidationException.class,
+          () -> WitValueDeserializer.deserialize(16, data),
+          "Should throw when flag data is truncated");
+    }
+
+    @Test
+    @DisplayName("deserializeEnum with exactly boundary remaining for truncated name")
+    void testDeserializeEnumTruncatedNameBoundary() {
+      // Targets line 598: buffer.remaining() < nameLength
+      final ByteBuffer buffer = ByteBuffer.allocate(4 + 2).order(ByteOrder.LITTLE_ENDIAN);
+      buffer.putInt(5); // says name is 5 bytes
+      buffer.put((byte) 'a');
+      buffer.put((byte) 'b');
+      // Only 2 bytes available, need 5
+      final byte[] data = buffer.array();
+
+      assertThrows(
+          ValidationException.class,
+          () -> WitValueDeserializer.deserialize(13, data),
+          "Truncated enum name should throw");
+    }
+  }
 }

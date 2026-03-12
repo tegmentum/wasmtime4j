@@ -32,9 +32,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/**
- * Tests for {@link AbstractWasiContextBuilder} via a concrete test subclass.
- */
+/** Tests for {@link AbstractWasiContextBuilder} via a concrete test subclass. */
 @DisplayName("AbstractWasiContextBuilder Tests")
 class AbstractWasiContextBuilderTest {
 
@@ -111,7 +109,9 @@ class AbstractWasiContextBuilderTest {
       Map<String, String> env = builder.getEnvironment();
       env.put("EXTRA", "modified");
 
-      assertEquals(1, builder.getEnvironment().size(),
+      assertEquals(
+          1,
+          builder.getEnvironment().size(),
           "External modification should not affect builder state");
     }
 
@@ -192,7 +192,8 @@ class AbstractWasiContextBuilderTest {
     @DisplayName("should throw when host directory does not exist")
     void shouldThrowWhenHostDirectoryDoesNotExist() {
       TestBuilder builder = new TestBuilder();
-      assertThrows(IllegalArgumentException.class,
+      assertThrows(
+          IllegalArgumentException.class,
           () -> builder.withPreopenDirectory("/guest", "/nonexistent/path/abc123"));
     }
 
@@ -326,7 +327,8 @@ class AbstractWasiContextBuilderTest {
       TestBuilder result = builder.withInheritedEnvironment();
 
       assertEquals(builder, result);
-      assertFalse(builder.getEnvironment().isEmpty(),
+      assertFalse(
+          builder.getEnvironment().isEmpty(),
           "After inheriting, environment should contain host env vars");
     }
   }

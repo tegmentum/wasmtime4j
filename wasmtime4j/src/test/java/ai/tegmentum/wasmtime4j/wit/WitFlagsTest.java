@@ -389,4 +389,74 @@ class WitFlagsTest {
       assertFalse(setFlags.contains("write"), "Should not contain 'write'");
     }
   }
+
+  @Nested
+  @DisplayName("Surviving Mutant Killer Tests")
+  class SurvivingMutantKillerTests {
+
+    @Test
+    @DisplayName("extractFlagNames must verify kind is not null - line 187")
+    void extractFlagNamesMustVerifyKindNotNull() {
+      // Targets line 187: flagsType.getKind() == null check
+      final WitType primitiveType = WitType.createS32();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitFlags.of(primitiveType, "test"),
+          "Should reject non-flags type");
+    }
+
+    @Test
+    @DisplayName("extractFlagNames must verify category is FLAGS - line 187")
+    void extractFlagNamesMustVerifyCategoryIsFlags() {
+      // Targets line 187: getCategory() != WitTypeCategory.FLAGS
+      final WitType listType = WitType.list(WitType.createS32());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitFlags.of(listType, "test"),
+          "Should reject list type as flags type");
+    }
+
+    @Test
+    @DisplayName("validate must check each flag name against valid flags - line 166/170")
+    void validateMustCheckEachFlagNameAgainstValidFlags() {
+      // Targets lines 166, 170: null/empty flag name and !validFlags.contains(flagName)
+      final WitType ft = createFlagsType();
+
+      // Valid flag must work
+      final WitFlags valid = WitFlags.of(ft, "read");
+      assertTrue(valid.isSet("read"), "Valid flag must be accepted");
+
+      // Invalid flag must be rejected
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitFlags.of(ft, "delete"),
+              "Invalid flag name must be rejected");
+      assertTrue(ex.getMessage().contains("delete"), "Error should mention the invalid flag name");
+      assertTrue(ex.getMessage().contains("not found"), "Error should say 'not found'");
+    }
+
+    @Test
+    @DisplayName("validate must check null and empty flag names - line 166")
+    void validateMustCheckNullAndEmptyFlagNames() {
+      // Targets line 166: flagName == null || flagName.isEmpty()
+      final WitType ft = createFlagsType();
+
+      // Null flag via Set
+      final java.util.Set<String> nullSet = new java.util.HashSet<>();
+      nullSet.add(null);
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitFlags.of(ft, nullSet),
+          "Null flag name must be rejected");
+
+      // Empty string flag
+      final java.util.Set<String> emptySet = new java.util.HashSet<>();
+      emptySet.add("");
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitFlags.of(ft, emptySet),
+          "Empty flag name must be rejected");
+    }
+  }
 }

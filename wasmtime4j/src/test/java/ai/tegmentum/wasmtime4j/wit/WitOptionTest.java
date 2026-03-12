@@ -388,4 +388,81 @@ class WitOptionTest {
       assertFalse(opt.isSome(), "of(null) should not create some option");
     }
   }
+
+  @Nested
+  @DisplayName("Surviving Mutant Killer Tests")
+  class SurvivingMutantKillerTests {
+
+    @Test
+    @DisplayName("extractInnerType must verify kind is not null - line 174")
+    void extractInnerTypeMustVerifyKindNotNull() {
+      // Targets line 174: optionType.getKind() == null
+      final WitType primitiveType = WitType.createS32();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitOption.none(primitiveType),
+          "Should reject non-option type");
+    }
+
+    @Test
+    @DisplayName("extractInnerType must verify category is OPTION - line 175")
+    void extractInnerTypeMustVerifyCategoryIsOption() {
+      // Targets line 175: getCategory() != WitTypeCategory.OPTION
+      final WitType listType = WitType.list(WitType.createS32());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitOption.none(listType),
+          "Should reject list type as option type");
+    }
+
+    @Test
+    @DisplayName("validate must check type equality - lines 156, 159")
+    void validateMustCheckTypeEquality() {
+      // Targets lines 156, 159: !v.getType().equals(innerType)
+      final WitType optS32Type = WitType.option(WitType.createS32());
+
+      // Correct type must work
+      final WitOption valid = WitOption.some(optS32Type, WitS32.of(42));
+      assertEquals(WitS32.of(42), valid.get(), "Correct type should be accepted");
+
+      // Wrong type must be rejected
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitOption.some(optS32Type, WitString.of("wrong")),
+              "Wrong type must be rejected");
+      assertTrue(
+          ex.getMessage().contains("type") || ex.getMessage().contains("expected"),
+          "Error should mention type: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("getInnerType must return the extracted inner type")
+    void getInnerTypeMustReturnExtractedType() {
+      // Validates that extractInnerType correctly extracts the inner type
+      final WitType optS32Type = WitType.option(WitType.createS32());
+      final WitOption opt = WitOption.none(optS32Type);
+      assertEquals(
+          WitType.createS32(),
+          opt.getInnerType(),
+          "getInnerType must return the inner type from the option type");
+    }
+
+    @Test
+    @DisplayName("validate correctly uses innerType not some other type")
+    void validateCorrectlyUsesInnerType() throws Exception {
+      // Tests that validate uses the correct innerType (not a different index or wrong type)
+      final WitType optStringType = WitType.option(WitType.createString());
+
+      // String value should work with option<string>
+      final WitOption valid = WitOption.some(optStringType, WitString.of("hello"));
+      assertEquals("hello", ((WitString) valid.get()).getValue());
+
+      // S32 value should NOT work with option<string>
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitOption.some(optStringType, WitS32.of(42)),
+          "S32 should not be accepted for option<string>");
+    }
+  }
 }

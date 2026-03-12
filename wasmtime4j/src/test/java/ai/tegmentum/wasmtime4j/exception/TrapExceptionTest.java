@@ -483,6 +483,120 @@ class TrapExceptionTest {
   }
 
   @Nested
+  @DisplayName("Constructor Default CoredumpId Tests")
+  class ConstructorDefaultCoredumpIdTests {
+
+    @Test
+    @DisplayName("two-arg constructor should default coredump ID to -1 not 0")
+    void twoArgConstructorShouldDefaultCoredumpIdToNegativeOne() {
+      final TrapException exception = new TrapException(TrapException.TrapType.UNKNOWN, "test");
+      assertEquals(-1L, exception.getCoredumpId(), "Default coredump ID should be -1");
+      assertFalse(exception.hasCoreDump(), "Should not have coredump with default -1");
+    }
+
+    @Test
+    @DisplayName("three-arg constructor with cause should default coredump ID to -1 not 0")
+    void threeArgConstructorWithCauseShouldDefaultCoredumpIdToNegativeOne() {
+      final RuntimeException cause = new RuntimeException("cause");
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNKNOWN, "test", cause);
+      assertEquals(
+          -1L, exception.getCoredumpId(), "Three-arg constructor coredump ID should be -1");
+      assertFalse(exception.hasCoreDump(), "Should not have coredump");
+    }
+
+    @Test
+    @DisplayName("six-arg constructor should default coredump ID to -1 not 0")
+    void sixArgConstructorShouldDefaultCoredumpIdToNegativeOne() {
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNKNOWN, "test", null, null, null, null);
+      assertEquals(-1L, exception.getCoredumpId(), "Six-arg constructor coredump ID should be -1");
+      assertFalse(exception.hasCoreDump(), "Should not have coredump");
+    }
+  }
+
+  @Nested
+  @DisplayName("formatMessage Conditional Tests")
+  class FormatMessageConditionalTests {
+
+    @Test
+    @DisplayName("should include function name when non-null and non-empty")
+    void shouldIncludeFunctionNameWhenPresent() {
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNKNOWN, "test", null, "my_func", null, null);
+      assertTrue(
+          exception.getMessage().contains("(function: my_func)"),
+          "Message should contain function name. Got: " + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("should not include function name when null")
+    void shouldNotIncludeFunctionNameWhenNull() {
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNKNOWN, "test", null, null, null, null);
+      assertFalse(
+          exception.getMessage().contains("function:"),
+          "Message should not contain function marker when null");
+    }
+
+    @Test
+    @DisplayName("should not include function name when empty")
+    void shouldNotIncludeFunctionNameWhenEmpty() {
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNKNOWN, "test", null, "", null, null);
+      assertFalse(
+          exception.getMessage().contains("function:"),
+          "Message should not contain function marker when empty");
+    }
+
+    @Test
+    @DisplayName("should include instruction offset when non-null")
+    void shouldIncludeInstructionOffsetWhenPresent() {
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNKNOWN, "test", null, null, 42, null);
+      assertTrue(
+          exception.getMessage().contains("(offset: 42)"),
+          "Message should contain offset. Got: " + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("should not include instruction offset when null")
+    void shouldNotIncludeInstructionOffsetWhenNull() {
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNKNOWN, "test", null, null, null, null);
+      assertFalse(
+          exception.getMessage().contains("offset:"),
+          "Message should not contain offset marker when null");
+    }
+
+    @Test
+    @DisplayName("should include both function name and offset when both present")
+    void shouldIncludeBothFunctionNameAndOffsetWhenPresent() {
+      final TrapException exception =
+          new TrapException(TrapException.TrapType.UNKNOWN, "test", null, "add", 100, null);
+      final String msg = exception.getMessage();
+      assertTrue(msg.contains("(function: add)"), "Should contain function. Got: " + msg);
+      assertTrue(msg.contains("(offset: 100)"), "Should contain offset. Got: " + msg);
+    }
+
+    @Test
+    @DisplayName("should throw when message is null")
+    void shouldThrowWhenMessageIsNull() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new TrapException(TrapException.TrapType.UNKNOWN, null));
+    }
+
+    @Test
+    @DisplayName("should throw when message is empty")
+    void shouldThrowWhenMessageIsEmpty() {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> new TrapException(TrapException.TrapType.UNKNOWN, ""));
+    }
+  }
+
+  @Nested
   @DisplayName("Category Method Individual Branch Tests")
   class CategoryMethodIndividualBranchTests {
 
@@ -503,6 +617,11 @@ class TrapExceptionTest {
       final TrapException stackOverflow =
           new TrapException(TrapException.TrapType.STACK_OVERFLOW, "test");
       assertTrue(stackOverflow.isMemoryError(), "Third branch: STACK_OVERFLOW");
+
+      // Test fourth condition: trapType == TrapType.ATOMIC_WAIT_NON_SHARED_MEMORY
+      final TrapException atomicWait =
+          new TrapException(TrapException.TrapType.ATOMIC_WAIT_NON_SHARED_MEMORY, "test");
+      assertTrue(atomicWait.isMemoryError(), "Fourth branch: ATOMIC_WAIT_NON_SHARED_MEMORY");
     }
 
     @Test
@@ -545,6 +664,17 @@ class TrapExceptionTest {
       final TrapException nullRef =
           new TrapException(TrapException.TrapType.NULL_REFERENCE, "test");
       assertTrue(nullRef.isControlFlowError(), "Fourth branch: NULL_REFERENCE");
+
+      // Test fifth condition: trapType == TrapType.CAST_FAILURE
+      final TrapException castFailure =
+          new TrapException(TrapException.TrapType.CAST_FAILURE, "test");
+      assertTrue(castFailure.isControlFlowError(), "Fifth branch: CAST_FAILURE");
+
+      // Test sixth condition: trapType == TrapType.ALWAYS_TRAP_ADAPTER
+      @SuppressWarnings("deprecation")
+      final TrapException alwaysTrap =
+          new TrapException(TrapException.TrapType.ALWAYS_TRAP_ADAPTER, "test");
+      assertTrue(alwaysTrap.isControlFlowError(), "Sixth branch: ALWAYS_TRAP_ADAPTER");
     }
 
     @Test
@@ -562,6 +692,11 @@ class TrapExceptionTest {
       // Test third condition: trapType == TrapType.INTERRUPT
       final TrapException interrupt = new TrapException(TrapException.TrapType.INTERRUPT, "test");
       assertTrue(interrupt.isResourceExhaustionError(), "Third branch: INTERRUPT");
+
+      // Test fourth condition: trapType == TrapType.ALLOCATION_TOO_LARGE
+      final TrapException allocTooLarge =
+          new TrapException(TrapException.TrapType.ALLOCATION_TOO_LARGE, "test");
+      assertTrue(allocTooLarge.isResourceExhaustionError(), "Fourth branch: ALLOCATION_TOO_LARGE");
     }
 
     @Test
@@ -581,6 +716,16 @@ class TrapExceptionTest {
       final TrapException arrayOutOfBounds =
           new TrapException(TrapException.TrapType.ARRAY_OUT_OF_BOUNDS, "test");
       assertTrue(arrayOutOfBounds.isBoundsError(), "Third branch: ARRAY_OUT_OF_BOUNDS");
+
+      // Test fourth condition: trapType == TrapType.STRING_OUT_OF_BOUNDS
+      final TrapException stringOutOfBounds =
+          new TrapException(TrapException.TrapType.STRING_OUT_OF_BOUNDS, "test");
+      assertTrue(stringOutOfBounds.isBoundsError(), "Fourth branch: STRING_OUT_OF_BOUNDS");
+
+      // Test fifth condition: trapType == TrapType.LIST_OUT_OF_BOUNDS
+      final TrapException listOutOfBounds =
+          new TrapException(TrapException.TrapType.LIST_OUT_OF_BOUNDS, "test");
+      assertTrue(listOutOfBounds.isBoundsError(), "Fifth branch: LIST_OUT_OF_BOUNDS");
     }
   }
 
@@ -920,6 +1065,95 @@ class TrapExceptionTest {
           "from_bt_field",
           bt.getFrames().get(0).getFuncName().orElse(null),
           "Should use wasmBacktrace field");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with trap_code prefix should resolve TrapType from ordinal")
+    void fromNativeMessageWithTrapCodePrefixShouldResolveTrapType() {
+      // TrapType.MEMORY_OUT_OF_BOUNDS is ordinal 1
+      final TrapException exception =
+          TrapException.fromNativeMessage(
+              TrapException.TrapType.UNKNOWN, "[trap_code:1]memory access out of bounds");
+      assertEquals(
+          TrapException.TrapType.MEMORY_OUT_OF_BOUNDS,
+          exception.getTrapType(),
+          "Should resolve trap type from ordinal 1");
+      assertTrue(
+          exception.getMessage().contains("memory access out of bounds"),
+          "Message should be the text after the prefix");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with trap_code prefix and no closing bracket should not parse")
+    void fromNativeMessageWithTrapCodePrefixNoClosingBracket() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(
+              TrapException.TrapType.UNKNOWN, "[trap_code:1 no closing bracket");
+      assertEquals(
+          TrapException.TrapType.UNKNOWN,
+          exception.getTrapType(),
+          "Should keep original trap type when no closing bracket");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with trap_code prefix and invalid number should not parse")
+    void fromNativeMessageWithTrapCodePrefixInvalidNumber() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, "[trap_code:abc]msg");
+      assertEquals(
+          TrapException.TrapType.UNKNOWN,
+          exception.getTrapType(),
+          "Should keep UNKNOWN for invalid trap code number");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with out-of-range trap code should not change trap type")
+    void fromNativeMessageWithOutOfRangeTrapCode() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, "[trap_code:9999]msg");
+      assertEquals(
+          TrapException.TrapType.UNKNOWN,
+          exception.getTrapType(),
+          "Should keep UNKNOWN for out-of-range trap code");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with negative trap code should not change trap type")
+    void fromNativeMessageWithNegativeTrapCode() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(TrapException.TrapType.UNKNOWN, "[trap_code:-1]msg");
+      assertEquals(
+          TrapException.TrapType.UNKNOWN,
+          exception.getTrapType(),
+          "Should keep UNKNOWN for negative trap code");
+    }
+
+    @Test
+    @DisplayName(
+        "fromNativeMessage with coredump prefix but no closing bracket should not parse coredump")
+    void fromNativeMessageWithCoredumpPrefixNoClosingBracket() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(
+              TrapException.TrapType.UNKNOWN, "[coredump:42 no closing bracket");
+      assertEquals(-1L, exception.getCoredumpId(), "Should default to -1 when no closing bracket");
+      assertFalse(exception.hasCoreDump(), "Should not have coredump");
+    }
+
+    @Test
+    @DisplayName("fromNativeMessage with both coredump and trap_code prefixes should parse both")
+    void fromNativeMessageWithBothCoredumpAndTrapCodePrefixes() {
+      final TrapException exception =
+          TrapException.fromNativeMessage(
+              TrapException.TrapType.UNKNOWN, "[coredump:99][trap_code:0]stack overflow");
+      assertEquals(99L, exception.getCoredumpId(), "Should parse coredump ID");
+      assertTrue(exception.hasCoreDump(), "Should have coredump");
+      assertEquals(
+          TrapException.TrapType.STACK_OVERFLOW,
+          exception.getTrapType(),
+          "Should resolve trap type from code 0");
+      assertTrue(
+          exception.getMessage().contains("stack overflow"),
+          "Message should be the text after both prefixes");
     }
 
     @Test

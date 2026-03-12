@@ -1061,4 +1061,241 @@ final class WitValueSerializerTest {
     assertEquals((byte) 0, buffer.get(), "is_ok byte should be 0");
     assertEquals((byte) 0, buffer.get(), "has_value byte should be 0");
   }
+
+  // ============== Mutation-killing tests for getTypeDiscriminator if/else-if chain ==============
+
+  @Test
+  @DisplayName("Get type discriminator for enum")
+  void testGetTypeDiscriminatorEnum() throws ValidationException {
+    final WitType enumType =
+        WitType.enumType("color", java.util.Arrays.asList("red", "green", "blue"));
+    final WitEnum value = WitEnum.of(enumType, "red");
+    assertEquals(
+        13, WitValueSerializer.getTypeDiscriminator(value), "Enum discriminator should be 13");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for tuple")
+  void testGetTypeDiscriminatorTuple() throws ValidationException {
+    final WitTuple value = WitTuple.of(java.util.Arrays.asList(WitS32.of(1), WitString.of("a")));
+    assertEquals(
+        8, WitValueSerializer.getTypeDiscriminator(value), "Tuple discriminator should be 8");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for flags")
+  void testGetTypeDiscriminatorFlags() throws ValidationException {
+    final WitType flagsType = WitType.flags("perms", java.util.Arrays.asList("read", "write"));
+    final WitFlags value = WitFlags.of(flagsType, "read");
+    assertEquals(
+        16, WitValueSerializer.getTypeDiscriminator(value), "Flags discriminator should be 16");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for result")
+  void testGetTypeDiscriminatorResult() throws ValidationException {
+    final WitType resultType =
+        WitType.result(java.util.Optional.empty(), java.util.Optional.empty());
+    final WitResult value = WitResult.ok(resultType);
+    assertEquals(
+        15, WitValueSerializer.getTypeDiscriminator(value), "Result discriminator should be 15");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for owned WitResource")
+  void testGetTypeDiscriminatorOwnedResource() throws ValidationException {
+    final WitResource value = WitResource.own("TestRes", 1);
+    assertEquals(
+        22,
+        WitValueSerializer.getTypeDiscriminator(value),
+        "Owned WitResource discriminator should be 22");
+  }
+
+  @Test
+  @DisplayName("Get type discriminator for borrowed WitResource")
+  void testGetTypeDiscriminatorBorrowedResource() throws ValidationException {
+    final WitResource value = WitResource.borrow("TestRes", 1);
+    assertEquals(
+        23,
+        WitValueSerializer.getTypeDiscriminator(value),
+        "Borrowed WitResource discriminator should be 23");
+  }
+
+  // ============== Mutation-killing tests for serialize() instanceof chain ==============
+
+  @Test
+  @DisplayName("Serialize WitRecord via serialize() dispatch")
+  void testSerializeRecordViaDispatch() throws ValidationException {
+    final java.util.Map<String, WitValue> fields = new java.util.LinkedHashMap<>();
+    fields.put("x", WitS32.of(1));
+    final WitRecord value = WitRecord.of(fields);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertNotNull(result, "Record serialization should not return null");
+    assertTrue(result.length > 4, "Record should have field count + field data");
+  }
+
+  @Test
+  @DisplayName("Serialize WitVariant via serialize() dispatch")
+  void testSerializeVariantViaDispatch() throws ValidationException {
+    final WitType variantType =
+        WitType.variant("v", java.util.Map.of("a", java.util.Optional.empty()));
+    final WitVariant value = WitVariant.of(variantType, "a");
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertNotNull(result, "Variant serialization should not return null");
+  }
+
+  @Test
+  @DisplayName("Serialize WitTuple via serialize() dispatch")
+  void testSerializeTupleViaDispatch() throws ValidationException {
+    final WitTuple value = WitTuple.of(java.util.Arrays.asList(WitS32.of(1)));
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertNotNull(result, "Tuple serialization should not return null");
+    assertTrue(result.length > 4, "Tuple should have element count + element data");
+  }
+
+  @Test
+  @DisplayName("Serialize owned WitResource via serialize() dispatch")
+  void testSerializeOwnedResourceViaDispatch() throws ValidationException {
+    final WitResource value = WitResource.own("Res", 1);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertNotNull(result, "Owned WitResource serialization should not return null");
+    assertTrue(result.length >= 12, "Owned resource should have name length + handle");
+  }
+
+  @Test
+  @DisplayName("Serialize borrowed WitResource via serialize() dispatch")
+  void testSerializeBorrowedResourceViaDispatch() throws ValidationException {
+    final WitResource value = WitResource.borrow("Res", 1);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertNotNull(result, "Borrowed WitResource serialization should not return null");
+    assertTrue(result.length >= 12, "Borrowed resource should have name length + handle");
+  }
+
+  // ============== Mutation-killing tests for constant boundary mutations ==============
+
+  @Test
+  @DisplayName("Serialize enum - verify exact name length in first 4 bytes (constant 4 boundary)")
+  void testSerializeEnumExactNameLength() throws ValidationException {
+    final WitType enumType = WitType.enumType("color", java.util.Arrays.asList("red"));
+    final WitEnum value = WitEnum.of(enumType, "red");
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    // Verify: [name_length: u32][name: UTF-8]
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    final int nameLength = buffer.getInt();
+    assertEquals(3, nameLength, "Name length should be 3 for 'red'");
+    assertEquals(
+        4 + 3, result.length, "Total length should be 4 (name length int) + 3 (name bytes)");
+
+    // Read the name back to verify it's correct
+    final byte[] nameBytes = new byte[nameLength];
+    buffer.get(nameBytes);
+    assertEquals("red", new String(nameBytes, StandardCharsets.UTF_8), "Name should be 'red'");
+  }
+
+  @Test
+  @DisplayName(
+      "Serialize flags - verify exact name length prefix for each flag (constant 4 boundary)")
+  void testSerializeFlagsExactNameLength() throws ValidationException {
+    final WitType flagsType = WitType.flags("perms", java.util.Arrays.asList("r"));
+    final WitFlags value = WitFlags.of(flagsType, "r");
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    // Verify: [count: u32][name_length: u32][name: UTF-8]
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    final int count = buffer.getInt();
+    assertEquals(1, count, "Flag count should be 1");
+    final int nameLength = buffer.getInt();
+    assertEquals(1, nameLength, "Name length for 'r' should be 1");
+    assertEquals(4 + 4 + 1, result.length, "Total: 4 (count) + 4 (name length) + 1 (name byte)");
+  }
+
+  @Test
+  @DisplayName("Serialize borrow - verify handle uses nativeHandle when >= 0")
+  void testSerializeBorrowHandleBoundary() throws ValidationException {
+    // Targets line 654: nativeHandle >= 0 boundary (mutant changes 0 to 1)
+    final WitBorrow value = WitBorrow.of("T", 0L);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    final int nameLen = buffer.getInt();
+    buffer.position(4 + nameLen);
+    final long handle = buffer.getLong();
+    assertEquals(0L, handle, "Handle 0 should serialize as 0 (>= 0 condition)");
+  }
+
+  @Test
+  @DisplayName("Serialize borrow with handle value 1")
+  void testSerializeBorrowHandleOne() throws ValidationException {
+    // Targets line 654: nativeHandle >= 0 boundary (mutant changes 0 to 1)
+    final WitBorrow value = WitBorrow.of("T", 1L);
+    final byte[] result = WitValueSerializer.serialize(value);
+
+    final ByteBuffer buffer = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    final int nameLen = buffer.getInt();
+    buffer.position(4 + nameLen);
+    final long handle = buffer.getLong();
+    assertEquals(1L, handle, "Handle 1 should serialize as 1");
+  }
+
+  // ============== Serialize primitive type dispatch tests ==============
+
+  @Test
+  @DisplayName("Serialize WitS8 via serialize() dispatch")
+  void testSerializeS8ViaDispatch() throws ValidationException {
+    final WitS8 value = WitS8.of((byte) 42);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertEquals(1, result.length, "S8 should be 1 byte");
+    assertEquals((byte) 42, result[0], "Byte value should be 42");
+  }
+
+  @Test
+  @DisplayName("Serialize WitS16 via serialize() dispatch")
+  void testSerializeS16ViaDispatch() throws ValidationException {
+    final WitS16 value = WitS16.of((short) 1000);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertEquals(2, result.length, "S16 should be 2 bytes");
+    final ByteBuffer buf = ByteBuffer.wrap(result).order(ByteOrder.LITTLE_ENDIAN);
+    assertEquals((short) 1000, buf.getShort(), "Value should be 1000");
+  }
+
+  @Test
+  @DisplayName("Serialize WitU8 via serialize() dispatch")
+  void testSerializeU8ViaDispatch() throws ValidationException {
+    final WitU8 value = WitU8.of((byte) 0xFF);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertEquals(1, result.length, "U8 should be 1 byte");
+  }
+
+  @Test
+  @DisplayName("Serialize WitU16 via serialize() dispatch")
+  void testSerializeU16ViaDispatch() throws ValidationException {
+    final WitU16 value = WitU16.of((short) 0x7FFF);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertEquals(2, result.length, "U16 should be 2 bytes");
+  }
+
+  @Test
+  @DisplayName("Serialize WitU32 via serialize() dispatch")
+  void testSerializeU32ViaDispatch() throws ValidationException {
+    final WitU32 value = WitU32.of(42);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertEquals(4, result.length, "U32 should be 4 bytes");
+  }
+
+  @Test
+  @DisplayName("Serialize WitU64 via serialize() dispatch")
+  void testSerializeU64ViaDispatch() throws ValidationException {
+    final WitU64 value = WitU64.of(42L);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertEquals(8, result.length, "U64 should be 8 bytes");
+  }
+
+  @Test
+  @DisplayName("Serialize WitFloat32 via serialize() dispatch")
+  void testSerializeFloat32ViaDispatch() throws ValidationException {
+    final WitFloat32 value = WitFloat32.of(3.14f);
+    final byte[] result = WitValueSerializer.serialize(value);
+    assertEquals(4, result.length, "Float32 should be 4 bytes");
+  }
 }

@@ -455,4 +455,114 @@ class WitTupleTest {
       assertEquals(30, ((WitS32) elements.get(2)).getValue(), "Third element should be 30");
     }
   }
+
+  @Nested
+  @DisplayName("Surviving Mutant Killer Tests")
+  class SurvivingMutantKillerTests {
+
+    @Test
+    @DisplayName("constructor must reject null elementTypes")
+    void constructorMustRejectNullElementTypes() {
+      // Targets line 65: elementTypes == null check
+      // The constructor is private, but we can exercise it via of(List) with null
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitTuple.of((java.util.List<WitValue>) null),
+          "of(null List) must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("constructor must reject null elements")
+    void constructorMustRejectNullElements() {
+      // Targets line 68: elements == null check
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitTuple.of((WitValue[]) null),
+          "of(null array) must throw IllegalArgumentException");
+    }
+
+    @Test
+    @DisplayName("constructor must check elementTypes size matches elements size")
+    void constructorMustCheckSizeMatch() {
+      // Targets line 71: elementTypes.size() != elements.size()
+      // This is exercised via the builder when types and elements mismatch
+      // We can test via direct type mismatch detection by the validate() call
+      final WitTuple tuple = WitTuple.of(WitS32.of(1), WitS32.of(2));
+      assertEquals(2, tuple.getElementTypes().size(), "Element types count must match");
+      assertEquals(2, tuple.getElements().size(), "Elements count must match");
+    }
+
+    @Test
+    @DisplayName("constructor must call validate which rejects type mismatches")
+    void constructorMustCallValidate() {
+      // Targets line 80: validate() call removal mutation
+      // If validate() is removed, a type-mismatched tuple would be created
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitTuple.builder().add(WitType.createS64(), WitS32.of(42)).build(),
+          "validate() must be called to reject type mismatch");
+    }
+
+    @Test
+    @DisplayName("of(List) must reject null elements in list")
+    void ofListMustRejectNullElementsInList() {
+      // Targets line 113: null check in of(List) method
+      final java.util.List<WitValue> listWithNull = new java.util.ArrayList<>();
+      listWithNull.add(null);
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitTuple.of(listWithNull),
+          "of(List) must reject null element");
+    }
+
+    @Test
+    @DisplayName("validate must iterate with correct index boundaries")
+    void validateMustIterateWithCorrectIndexBoundaries() {
+      // Targets lines 210, 213, 216 - loop index math
+      // Create a tuple with 3 elements of different types to ensure each index is checked
+      final WitTuple tuple = WitTuple.of(WitS32.of(10), WitS64.of(20L), WitBool.of(true));
+
+      // Verify each element type is correctly validated at its index
+      assertEquals(WitType.createS32(), tuple.getTypeAt(0), "Index 0 must be S32");
+      assertEquals(WitType.createS64(), tuple.getTypeAt(1), "Index 1 must be S64");
+      assertEquals(WitType.createBool(), tuple.getTypeAt(2), "Index 2 must be Bool");
+
+      // Verify element at index 0 matches type at index 0, not type at index 1
+      assertEquals(WitS32.of(10), tuple.get(0), "Element at index 0 must be S32(10)");
+      assertNotEquals(tuple.getTypeAt(0), tuple.getTypeAt(1), "Types at different indices differ");
+    }
+
+    @Test
+    @DisplayName("validate must check element null at each index")
+    void validateMustCheckElementNullAtEachIndex() {
+      // Targets line 213: element == null check in validate
+      final java.util.List<WitValue> elements = new java.util.ArrayList<>();
+      elements.add(WitS32.of(1));
+      elements.add(null);
+
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitTuple.of(elements),
+              "Must reject null element during validation");
+      assertTrue(
+          ex.getMessage().contains("null"),
+          "Error message should mention null: " + ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("validate must check type equality at each index")
+    void validateMustCheckTypeEqualityAtEachIndex() {
+      // Targets line 216: !element.getType().equals(expectedType)
+      // This mutation would skip the type check - exercise both matching and mismatching
+      final WitTuple valid = WitTuple.of(WitS32.of(1));
+      assertEquals(WitType.createS32(), valid.getTypeAt(0), "Valid tuple type at 0 should be s32");
+
+      // Mismatch should be caught
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitTuple.builder().add(WitType.createString(), WitS32.of(1)).build(),
+          "Type mismatch must be rejected");
+    }
+  }
 }

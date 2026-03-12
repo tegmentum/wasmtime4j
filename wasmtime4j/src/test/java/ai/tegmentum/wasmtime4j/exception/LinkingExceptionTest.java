@@ -776,4 +776,116 @@ class LinkingExceptionTest {
           "getErrorType should return UNKNOWN when null was passed");
     }
   }
+
+  @Nested
+  @DisplayName("formatMessage Equality Check Mutation Tests")
+  class FormatMessageEqualityCheckMutationTests {
+
+    @Test
+    @DisplayName("null module with non-null non-empty item should show item only")
+    void nullModuleWithNonNullItemShouldShowItemOnly() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", null, "func", null, null, null);
+      assertTrue(
+          exception.getMessage().contains("(func)"),
+          "Should show item only when module is null. Got: " + exception.getMessage());
+      assertFalse(
+          exception.getMessage().contains("module:"),
+          "Should not show module format. Got: " + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("empty module with non-null non-empty item should show item only")
+    void emptyModuleWithNonNullItemShouldShowItemOnly() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", "", "func", null, null, null);
+      assertTrue(
+          exception.getMessage().contains("(func)"),
+          "Should show item only when module is empty. Got: " + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("non-null module with null item should show module only")
+    void nonNullModuleWithNullItemShouldShowModuleOnly() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", "env", null, null, null, null);
+      assertTrue(
+          exception.getMessage().contains("(module: env)"),
+          "Should show module only when item is null. Got: " + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("non-null module with empty item should show module only")
+    void nonNullModuleWithEmptyItemShouldShowModuleOnly() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", "env", "", null, null, null);
+      assertTrue(
+          exception.getMessage().contains("(module: env)"),
+          "Should show module only when item is empty. Got: " + exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("non-null expected with null actual should show expected only")
+    void nonNullExpectedWithNullActualShouldShowExpectedOnly() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", null, null, "(i32)", null, null);
+      assertTrue(
+          exception.getMessage().contains("(expected: (i32))"),
+          "Should show expected only when actual is null. Got: " + exception.getMessage());
+      assertFalse(exception.getMessage().contains("actual:"), "Should not show actual when null");
+    }
+
+    @Test
+    @DisplayName("non-null expected with empty actual should show expected only")
+    void nonNullExpectedWithEmptyActualShouldShowExpectedOnly() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", null, null, "(i32)", "", null);
+      assertTrue(
+          exception.getMessage().contains("(expected: (i32))"),
+          "Should show expected only when actual is empty. Got: " + exception.getMessage());
+      assertFalse(exception.getMessage().contains("actual:"), "Should not show actual when empty");
+    }
+
+    @Test
+    @DisplayName("null expected should not show any type info regardless of actual")
+    void nullExpectedShouldNotShowTypeInfo() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", null, null, null, "(i64)", null);
+      assertFalse(
+          exception.getMessage().contains("expected:"), "Should not show expected when null");
+      assertFalse(
+          exception.getMessage().contains("actual:"),
+          "Should not show actual when expected is null");
+    }
+
+    @Test
+    @DisplayName("empty expected should not show any type info regardless of actual")
+    void emptyExpectedShouldNotShowTypeInfo() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", null, null, "", "(i64)", null);
+      assertFalse(
+          exception.getMessage().contains("expected:"), "Should not show expected when empty");
+      assertFalse(
+          exception.getMessage().contains("actual:"),
+          "Should not show actual when expected is empty");
+    }
+
+    @Test
+    @DisplayName("null module and null item should not add module/item section")
+    void nullModuleAndNullItemShouldNotAddSection() {
+      final LinkingException exception =
+          new LinkingException(
+              LinkingException.LinkingErrorType.UNKNOWN, "Error", null, null, null, null, null);
+      assertEquals(
+          "[UNKNOWN] Error", exception.getMessage(), "Message should not have module/item section");
+    }
+  }
 }

@@ -339,4 +339,137 @@ class WitVariantTest {
           "Should throw IAE when type is not a variant type");
     }
   }
+
+  @Nested
+  @DisplayName("Surviving Mutant Killer Tests")
+  class SurvivingMutantKillerTests {
+
+    @Test
+    @DisplayName("constructor must reject null caseName distinctly from empty")
+    void constructorMustRejectNullCaseNameDistinctly() {
+      // Targets line 63: caseName == null check
+      final WitType vt = createVariantType();
+      final IllegalArgumentException nullEx =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitVariant.of(vt, null),
+              "Null case name must throw");
+      assertTrue(
+          nullEx.getMessage().contains("null") || nullEx.getMessage().contains("empty"),
+          "Error message should mention null or empty");
+    }
+
+    @Test
+    @DisplayName("constructor must reject empty caseName")
+    void constructorMustRejectEmptyCaseName() {
+      // Targets line 63: caseName.isEmpty() check
+      final WitType vt = createVariantType();
+      final IllegalArgumentException emptyEx =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitVariant.of(vt, ""),
+              "Empty case name must throw");
+      assertTrue(
+          emptyEx.getMessage().contains("null") || emptyEx.getMessage().contains("empty"),
+          "Error message should mention null or empty");
+    }
+
+    @Test
+    @DisplayName("null payload in constructor is treated as Optional.empty")
+    void nullPayloadInConstructorIsTreatedAsEmpty() {
+      // Targets line 67: payload == null ? Optional.empty() : payload
+      final WitType vt = createVariantType();
+      // "pending" case doesn't expect a payload, so null payload should work
+      final WitVariant variant = WitVariant.of(vt, "pending");
+      assertFalse(variant.hasPayload(), "No payload case should have empty payload");
+      assertFalse(variant.getPayload().isPresent(), "getPayload must return empty Optional");
+    }
+
+    @Test
+    @DisplayName("extractCases must reject null kind")
+    void extractCasesMustRejectNullKind() {
+      // Targets line 181: variantType.getKind() == null
+      final WitType primitiveType = WitType.createS32();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitVariant.of(primitiveType, "test"),
+          "Should reject non-variant type");
+    }
+
+    @Test
+    @DisplayName("extractCases must verify category is VARIANT")
+    void extractCasesMustVerifyCategoryIsVariant() {
+      // Targets line 189: getCategory() != WitTypeCategory.VARIANT
+      final WitType listType = WitType.list(WitType.createS32());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitVariant.of(listType, "test"),
+          "Should reject list type as variant type");
+    }
+
+    @Test
+    @DisplayName("toJava must return map with exactly 2 keys for payload case")
+    void toJavaMustReturnMapWithExactlyTwoKeysForPayloadCase() {
+      // Targets line 126: HashMap(2) constant mutation
+      final WitType vt = createVariantType();
+      final WitVariant variant = WitVariant.of(vt, "success", WitS32.of(42));
+
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> map = (Map<String, Object>) variant.toJava();
+      assertEquals(2, map.size(), "Map should have exactly 2 entries for payload case");
+      assertTrue(map.containsKey("case"), "Must contain case key");
+      assertTrue(map.containsKey("payload"), "Must contain payload key");
+    }
+
+    @Test
+    @DisplayName("toJava must return map with exactly 1 key for no-payload case")
+    void toJavaMustReturnMapWithExactlyOneKeyForNoPayloadCase() {
+      // Targets line 126: HashMap(2) constant mutation
+      final WitType vt = createVariantType();
+      final WitVariant variant = WitVariant.of(vt, "pending");
+
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> map = (Map<String, Object>) variant.toJava();
+      assertEquals(1, map.size(), "Map should have exactly 1 entry for no-payload case");
+      assertTrue(map.containsKey("case"), "Must contain case key");
+    }
+
+    @Test
+    @DisplayName("validate must check containsKey for case name")
+    void validateMustCheckContainsKeyForCaseName() {
+      // Targets line 141: !cases.containsKey(caseName)
+      final WitType vt = createVariantType();
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitVariant.of(vt, "nonexistent"),
+              "Should reject unknown case name");
+      assertTrue(
+          ex.getMessage().contains("nonexistent"),
+          "Error message should contain the invalid case name");
+      assertTrue(ex.getMessage().contains("not found"), "Error message should say 'not found'");
+    }
+
+    @Test
+    @DisplayName("validate must check payload presence when case expects payload")
+    void validateMustCheckPayloadPresenceWhenCaseExpectsPayload() {
+      // Targets line 152: !payload.isPresent() when expectedPayloadType.isPresent()
+      final WitType vt = createVariantType();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitVariant.of(vt, "success"),
+          "Must reject missing payload when case expects s32 payload");
+    }
+
+    @Test
+    @DisplayName("validate must check payload type matches expected type")
+    void validateMustCheckPayloadTypeMatchesExpected() {
+      // Targets line 160: !payload.get().getType().equals(expectedPayloadType.get())
+      final WitType vt = createVariantType();
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitVariant.of(vt, "success", WitString.of("wrong")),
+          "Must reject wrong payload type");
+    }
+  }
 }

@@ -369,4 +369,108 @@ class WitPrimitiveTypeTest {
       assertFalse(WitPrimitiveType.CHAR.isVariableSize());
     }
   }
+
+  @Nested
+  @DisplayName("Surviving Mutant Killer Tests")
+  class SurvivingMutantKillerTests {
+
+    @Test
+    @DisplayName("fromString must reject null distinctly - line 182")
+    void fromStringMustRejectNull() {
+      // Targets line 182: typeName == null conditional
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitPrimitiveType.fromString(null),
+              "null must throw IllegalArgumentException");
+      assertTrue(
+          ex.getMessage().contains("null") || ex.getMessage().contains("empty"),
+          "Error message should mention null or empty");
+    }
+
+    @Test
+    @DisplayName("fromString must reject empty string - line 182")
+    void fromStringMustRejectEmptyString() {
+      // Targets line 182: typeName.isEmpty() conditional
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitPrimitiveType.fromString(""),
+              "Empty string must throw IllegalArgumentException");
+      assertTrue(
+          ex.getMessage().contains("null") || ex.getMessage().contains("empty"),
+          "Error message should mention null or empty");
+    }
+
+    @Test
+    @DisplayName("getWitTypeName must use underscore to hyphen replacement - line 232")
+    void getWitTypeNameMustReplaceUnderscoreWithHyphen() {
+      // Targets line 232: replace('_', '-') constants 95->96 and 45->46
+      // FLOAT32 name() returns "FLOAT32" which has no underscore, so just lowercase
+      assertEquals("float32", WitPrimitiveType.FLOAT32.getWitTypeName());
+      assertEquals("float64", WitPrimitiveType.FLOAT64.getWitTypeName());
+
+      // All types should produce correct WIT names
+      assertEquals("bool", WitPrimitiveType.BOOL.getWitTypeName());
+      assertEquals("s8", WitPrimitiveType.S8.getWitTypeName());
+      assertEquals("u8", WitPrimitiveType.U8.getWitTypeName());
+      assertEquals("s16", WitPrimitiveType.S16.getWitTypeName());
+      assertEquals("u16", WitPrimitiveType.U16.getWitTypeName());
+      assertEquals("s32", WitPrimitiveType.S32.getWitTypeName());
+      assertEquals("u32", WitPrimitiveType.U32.getWitTypeName());
+      assertEquals("s64", WitPrimitiveType.S64.getWitTypeName());
+      assertEquals("u64", WitPrimitiveType.U64.getWitTypeName());
+      assertEquals("char", WitPrimitiveType.CHAR.getWitTypeName());
+      assertEquals("string", WitPrimitiveType.STRING.getWitTypeName());
+
+      // Verify the name is truly lowercase (not just the first char)
+      for (final WitPrimitiveType type : WitPrimitiveType.values()) {
+        final String witName = type.getWitTypeName();
+        assertEquals(
+            witName.toLowerCase(), witName, "getWitTypeName must return all lowercase for " + type);
+        assertFalse(
+            witName.contains("_"), "getWitTypeName must not contain underscores for " + type);
+      }
+    }
+
+    @Test
+    @DisplayName("isVariableSize must use sizeBytes < 0 boundary - line 90")
+    void isVariableSizeMustUseLessThanZeroBoundary() {
+      // Targets line 90: sizeBytes < 0 boundary mutation
+      // Only STRING has sizeBytes = -1 (variable size)
+      assertTrue(WitPrimitiveType.STRING.isVariableSize(), "STRING must be variable size");
+      assertEquals(-1, WitPrimitiveType.STRING.getSizeBytes(), "STRING sizeBytes must be -1");
+
+      // All other types have positive sizeBytes and must NOT be variable size
+      assertFalse(WitPrimitiveType.BOOL.isVariableSize(), "BOOL must not be variable size");
+      assertEquals(1, WitPrimitiveType.BOOL.getSizeBytes(), "BOOL sizeBytes must be 1");
+
+      assertFalse(WitPrimitiveType.S8.isVariableSize(), "S8 must not be variable size");
+      assertEquals(1, WitPrimitiveType.S8.getSizeBytes(), "S8 sizeBytes must be 1");
+
+      // Verify that sizeBytes == 0 would be treated as non-variable
+      // (tests the < 0 boundary vs <= 0)
+      for (final WitPrimitiveType type : WitPrimitiveType.values()) {
+        if (type == WitPrimitiveType.STRING) {
+          assertTrue(type.isVariableSize(), type + " must be variable size");
+          assertTrue(type.getSizeBytes() < 0, type + " sizeBytes must be negative");
+        } else {
+          assertFalse(type.isVariableSize(), type + " must not be variable size");
+          assertTrue(type.getSizeBytes() > 0, type + " sizeBytes must be positive");
+        }
+      }
+    }
+
+    @Test
+    @DisplayName("fromString roundtrip via getWitTypeName should work for all types")
+    void fromStringRoundtripShouldWork() {
+      // This tests fromString and getWitTypeName consistency
+      for (final WitPrimitiveType type : WitPrimitiveType.values()) {
+        final String witName = type.getWitTypeName();
+        final WitPrimitiveType parsed = WitPrimitiveType.fromString(witName);
+        assertEquals(
+            type, parsed, "fromString(getWitTypeName()) must return the same type for " + type);
+      }
+    }
+  }
 }

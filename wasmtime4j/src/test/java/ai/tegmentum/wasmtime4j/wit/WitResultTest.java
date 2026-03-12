@@ -472,6 +472,202 @@ class WitResultTest {
   }
 
   @Nested
+  @DisplayName("Constructor Null Handling Tests")
+  class ConstructorNullHandlingTests {
+
+    @Test
+    @DisplayName("ok factory with null value treats null as empty via Optional.ofNullable")
+    void okFactoryNullValueProducesEmptyValue() {
+      // This targets the constructor null check at line 67: value == null ? Optional.empty() :
+      // value
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult result = WitResult.ok(rt, null);
+      assertTrue(result.isOk(), "Should be ok");
+      assertFalse(result.getValue().isPresent(), "Null value should become Optional.empty()");
+      assertEquals(Optional.empty(), result.getValue(), "Value must be Optional.empty not null");
+    }
+  }
+
+  @Nested
+  @DisplayName("ExtractTypes Validation Tests")
+  class ExtractTypesValidationTests {
+
+    @Test
+    @DisplayName("extractTypes must verify kind is not null")
+    void extractTypesMustVerifyKindNotNull() {
+      // This targets line 210: resultType.getKind() == null check
+      // A non-result type (like s32) will have a kind that is not RESULT category
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.ok(WitType.createS32(), WitS32.of(1)),
+          "Should reject non-result type");
+    }
+
+    @Test
+    @DisplayName("extractTypes must verify category is RESULT")
+    void extractTypesMustVerifyCategoryIsResult() {
+      // This targets line 211: getCategory() != WitTypeCategory.RESULT
+      final WitType listType = WitType.list(WitType.createS32());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.ok(listType),
+          "Should reject list type as result type");
+    }
+
+    @Test
+    @DisplayName("extractTypes returns correct ok and error types")
+    void extractTypesReturnsCorrectOkAndErrorTypes() throws Exception {
+      // This targets line 215: the array indexing [0] and [1]
+      final WitType rt =
+          WitType.result(Optional.of(WitType.createS32()), Optional.of(WitType.createString()));
+
+      // Verify ok type is S32 by passing correct type
+      final WitResult ok = WitResult.ok(rt, WitS32.of(42));
+      assertTrue(ok.isOk(), "Should be ok");
+      assertEquals(42, ((WitS32) ok.getOk().get()).getValue(), "Ok value should be 42");
+
+      // Verify error type is String by passing correct type
+      final WitResult err = WitResult.err(rt, WitString.of("fail"));
+      assertTrue(err.isErr(), "Should be err");
+      assertEquals("fail", ((WitString) err.getErr().get()).getValue(), "Err value should be fail");
+
+      // Verify wrong ok type is rejected (proves ok type is extracted correctly at index 0)
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.ok(rt, WitString.of("wrong")),
+          "Should reject string as ok value when ok type is s32");
+
+      // Verify wrong error type is rejected (proves error type is extracted correctly at index 1)
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.err(rt, WitS32.of(1)),
+          "Should reject s32 as error value when error type is string");
+    }
+  }
+
+  @Nested
+  @DisplayName("ToJava Map Size Tests")
+  class ToJavaMapSizeTests {
+
+    @Test
+    @DisplayName("toJava for ok without payload should have exactly 1 entry")
+    void toJavaOkWithoutPayloadShouldHaveOneEntry() {
+      // This targets line 165: HashMap(2) constant mutation
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      final WitResult ok = WitResult.ok(rt);
+
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) ok.toJava();
+      assertEquals(1, map.size(), "Map should have exactly 1 entry (isOk only)");
+      assertTrue(map.containsKey("isOk"), "Map must contain isOk key");
+      assertFalse(map.containsKey("ok"), "Map must not contain ok key when no payload");
+      assertFalse(map.containsKey("err"), "Map must not contain err key");
+    }
+
+    @Test
+    @DisplayName("toJava for ok with payload should have exactly 2 entries")
+    void toJavaOkWithPayloadShouldHaveTwoEntries() {
+      final WitType rt = WitType.result(Optional.of(WitType.createS32()), Optional.empty());
+      final WitResult ok = WitResult.ok(rt, WitS32.of(42));
+
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) ok.toJava();
+      assertEquals(2, map.size(), "Map should have exactly 2 entries (isOk + ok)");
+      assertTrue(map.containsKey("isOk"), "Map must contain isOk key");
+      assertTrue(map.containsKey("ok"), "Map must contain ok key for ok payload");
+    }
+
+    @Test
+    @DisplayName("toJava for err with payload should have exactly 2 entries with err key")
+    void toJavaErrWithPayloadShouldHaveTwoEntriesWithErrKey() {
+      final WitType rt = WitType.result(Optional.empty(), Optional.of(WitType.createS32()));
+      final WitResult err = WitResult.err(rt, WitS32.of(99));
+
+      @SuppressWarnings("unchecked")
+      final java.util.Map<String, Object> map = (java.util.Map<String, Object>) err.toJava();
+      assertEquals(2, map.size(), "Map should have exactly 2 entries (isOk + err)");
+      assertTrue(map.containsKey("err"), "Map must contain err key not ok key");
+      assertFalse(map.containsKey("ok"), "Map must not contain ok key for err result");
+    }
+  }
+
+  @Nested
+  @DisplayName("Validate Index Math Tests")
+  class ValidateIndexMathTests {
+
+    @Test
+    @DisplayName("validate checks exact type match for ok payload")
+    void validateChecksExactTypeMatchForOkPayload() throws Exception {
+      // Targets lines 185, 188 - type comparison and error message formatting
+      final WitType rt =
+          WitType.result(Optional.of(WitType.createString()), Optional.of(WitType.createS32()));
+
+      // Correct ok type should work
+      final WitResult ok = WitResult.ok(rt, WitString.of("hello"));
+      assertEquals("hello", ((WitString) ok.getOk().get()).getValue());
+
+      // Wrong ok type should fail
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitResult.ok(rt, WitS32.of(1)),
+              "Should reject wrong type");
+      assertTrue(ex.getMessage().contains("ok"), "Error message should mention ok variant");
+    }
+
+    @Test
+    @DisplayName("validate checks exact type match for err payload")
+    void validateChecksExactTypeMatchForErrPayload() {
+      // Targets lines 185, 188 - type comparison and error message for err side
+      final WitType rt =
+          WitType.result(Optional.of(WitType.createString()), Optional.of(WitType.createS32()));
+
+      // Correct error type should work
+      final WitResult err = WitResult.err(rt, WitS32.of(404));
+      assertEquals(404, ((WitS32) err.getErr().get()).getValue());
+
+      // Wrong error type should fail
+      final IllegalArgumentException ex =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> WitResult.err(rt, WitString.of("wrong")),
+              "Should reject wrong type");
+      assertTrue(ex.getMessage().contains("err"), "Error message should mention err variant");
+    }
+
+    @Test
+    @DisplayName("validate rejects payload when type expects none")
+    void validateRejectsPayloadWhenTypeExpectsNone() {
+      // Targets line 194 - expectedType != null check in else branch
+      final WitType rt = WitType.result(Optional.empty(), Optional.empty());
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.ok(rt, WitS32.of(1)),
+          "Should reject payload when ok type is absent");
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.err(rt, WitS32.of(1)),
+          "Should reject payload when err type is absent");
+    }
+
+    @Test
+    @DisplayName("validate rejects missing payload when type requires one")
+    void validateRejectsMissingPayloadWhenRequired() {
+      // Targets line 194 - expectedType != null check
+      final WitType rt =
+          WitType.result(Optional.of(WitType.createS32()), Optional.of(WitType.createString()));
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.ok(rt),
+          "Should require ok payload when ok type is present");
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> WitResult.err(rt),
+          "Should require err payload when error type is present");
+    }
+  }
+
+  @Nested
   @DisplayName("ToJava and getValue Tests")
   class ToJavaAndGetValueTests {
 

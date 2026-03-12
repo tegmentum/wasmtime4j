@@ -592,4 +592,245 @@ final class WitValueMarshallerTest {
     assertEquals(
         "Hello 世界 🌍", ((WitString) unmarshalled.get(5)).getValue(), "String value preserved");
   }
+
+  // ============== Mutation-killing tests for marshaller logic ==============
+
+  @Test
+  @DisplayName("Marshal s8 value round-trips correctly")
+  void testMarshalS8() throws ValidationException {
+    final WitS8 value = WitS8.of((byte) 127);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(17, result.getTypeDiscriminator(), "Type discriminator should be 17 for s8");
+    assertEquals(1, result.getDataSize(), "Data size should be 1 byte for s8");
+
+    final WitValue unmarshalled =
+        WitValueMarshaller.unmarshal(result.getTypeDiscriminator(), result.getData());
+    assertInstanceOf(WitS8.class, unmarshalled, "Unmarshalled value should be WitS8");
+    assertEquals((byte) 127, ((WitS8) unmarshalled).getValue(), "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Marshal s16 value round-trips correctly")
+  void testMarshalS16() throws ValidationException {
+    final WitS16 value = WitS16.of((short) -32000);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(18, result.getTypeDiscriminator(), "Type discriminator should be 18 for s16");
+    assertEquals(2, result.getDataSize(), "Data size should be 2 bytes for s16");
+  }
+
+  @Test
+  @DisplayName("Marshal u8 value round-trips correctly")
+  void testMarshalU8() throws ValidationException {
+    final WitU8 value = WitU8.of((byte) 0xFF);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(19, result.getTypeDiscriminator(), "Type discriminator should be 19 for u8");
+    assertEquals(1, result.getDataSize(), "Data size should be 1 byte for u8");
+  }
+
+  @Test
+  @DisplayName("Marshal u16 value round-trips correctly")
+  void testMarshalU16() throws ValidationException {
+    final WitU16 value = WitU16.of((short) 0x7FFF);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(20, result.getTypeDiscriminator(), "Type discriminator should be 20 for u16");
+    assertEquals(2, result.getDataSize(), "Data size should be 2 bytes for u16");
+  }
+
+  @Test
+  @DisplayName("Marshal u32 value round-trips correctly")
+  void testMarshalU32() throws ValidationException {
+    final WitU32 value = WitU32.of(42);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(9, result.getTypeDiscriminator(), "Type discriminator should be 9 for u32");
+    assertEquals(4, result.getDataSize(), "Data size should be 4 bytes for u32");
+  }
+
+  @Test
+  @DisplayName("Marshal u64 value round-trips correctly")
+  void testMarshalU64() throws ValidationException {
+    final WitU64 value = WitU64.of(42L);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(10, result.getTypeDiscriminator(), "Type discriminator should be 10 for u64");
+    assertEquals(8, result.getDataSize(), "Data size should be 8 bytes for u64");
+  }
+
+  @Test
+  @DisplayName("Marshal float32 value round-trips correctly")
+  void testMarshalFloat32() throws ValidationException {
+    final WitFloat32 value = WitFloat32.of(2.5f);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(21, result.getTypeDiscriminator(), "Type discriminator should be 21 for float32");
+    assertEquals(4, result.getDataSize(), "Data size should be 4 bytes for float32");
+
+    final WitValue unmarshalled =
+        WitValueMarshaller.unmarshal(result.getTypeDiscriminator(), result.getData());
+    assertInstanceOf(WitFloat32.class, unmarshalled, "Unmarshalled value should be WitFloat32");
+    assertEquals(2.5f, ((WitFloat32) unmarshalled).getValue(), 0.001f, "Value should be preserved");
+  }
+
+  @Test
+  @DisplayName("Marshal record value round-trips correctly")
+  void testMarshalRecord() throws ValidationException {
+    final java.util.Map<String, WitValue> fields = new java.util.LinkedHashMap<>();
+    fields.put("name", WitString.of("test"));
+    fields.put("age", WitS32.of(25));
+    final WitRecord value = WitRecord.of(fields);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(7, result.getTypeDiscriminator(), "Type discriminator should be 7 for record");
+    assertTrue(result.getDataSize() > 4, "Record data should be larger than 4 bytes");
+  }
+
+  @Test
+  @DisplayName("Marshal enum value round-trips correctly")
+  void testMarshalEnum() throws ValidationException {
+    final WitType enumType = WitType.enumType("color", java.util.Arrays.asList("red", "green"));
+    final WitEnum value = WitEnum.of(enumType, "green");
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(13, result.getTypeDiscriminator(), "Type discriminator should be 13 for enum");
+
+    final WitValue unmarshalled =
+        WitValueMarshaller.unmarshal(result.getTypeDiscriminator(), result.getData());
+    assertInstanceOf(WitEnum.class, unmarshalled, "Unmarshalled value should be WitEnum");
+    assertEquals("green", ((WitEnum) unmarshalled).getDiscriminant(), "Discriminant preserved");
+  }
+
+  @Test
+  @DisplayName("Marshal flags value round-trips correctly")
+  void testMarshalFlags() throws ValidationException {
+    final WitType flagsType =
+        WitType.flags("perms", java.util.Arrays.asList("read", "write", "exec"));
+    final WitFlags value = WitFlags.of(flagsType, "read", "exec");
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(16, result.getTypeDiscriminator(), "Type discriminator should be 16 for flags");
+  }
+
+  @Test
+  @DisplayName("Marshal option some round-trips correctly")
+  void testMarshalOptionSome() throws ValidationException {
+    final WitType optionType = WitType.option(WitType.createBool());
+    final WitOption value = WitOption.some(optionType, WitBool.of(true));
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(14, result.getTypeDiscriminator(), "Type discriminator should be 14 for option");
+
+    final WitValue unmarshalled =
+        WitValueMarshaller.unmarshal(result.getTypeDiscriminator(), result.getData());
+    assertInstanceOf(WitOption.class, unmarshalled, "Unmarshalled value should be WitOption");
+    assertTrue(((WitOption) unmarshalled).getValue().isPresent(), "Option should have value");
+  }
+
+  @Test
+  @DisplayName("Marshal option none round-trips correctly")
+  void testMarshalOptionNone() throws ValidationException {
+    final WitType optionType = WitType.option(WitType.createS32());
+    final WitOption value = WitOption.none(optionType);
+    final MarshalledValue result = WitValueMarshaller.marshal(value);
+
+    assertEquals(14, result.getTypeDiscriminator(), "Type discriminator should be 14 for option");
+    assertEquals(1, result.getDataSize(), "Option none should be 1 byte");
+  }
+
+  @Test
+  @DisplayName("From Java with s32 type mismatch throws")
+  void testFromJavaS32TypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not an int", "s32"),
+        "Should throw for non-Integer s32");
+  }
+
+  @Test
+  @DisplayName("From Java with s64 type mismatch throws")
+  void testFromJavaS64TypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a long", "s64"),
+        "Should throw for non-Long s64");
+  }
+
+  @Test
+  @DisplayName("From Java with float64 type mismatch throws")
+  void testFromJavaFloat64TypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a double", "float64"),
+        "Should throw for non-Double float64");
+  }
+
+  @Test
+  @DisplayName("From Java with char type mismatch throws")
+  void testFromJavaCharTypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a char", "char"),
+        "Should throw for non-Integer/Character char");
+  }
+
+  @Test
+  @DisplayName("From Java with string type mismatch throws")
+  void testFromJavaStringTypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava(Integer.valueOf(1), "string"),
+        "Should throw for non-String string");
+  }
+
+  @Test
+  @DisplayName("From Java with s16 type mismatch throws")
+  void testFromJavaS16TypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a number", "s16"),
+        "Should throw for non-Number s16");
+  }
+
+  @Test
+  @DisplayName("From Java with u8 type mismatch throws")
+  void testFromJavaU8TypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a number", "u8"),
+        "Should throw for non-Number u8");
+  }
+
+  @Test
+  @DisplayName("From Java with u32 type mismatch throws")
+  void testFromJavaU32TypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a number", "u32"),
+        "Should throw for non-Number u32");
+  }
+
+  @Test
+  @DisplayName("From Java with u64 type mismatch throws")
+  void testFromJavaU64TypeMismatch() {
+    assertThrows(
+        ValidationException.class,
+        () -> WitValueMarshaller.fromJava("not a number", "u64"),
+        "Should throw for non-Number u64");
+  }
+
+  @Test
+  @DisplayName("MarshalledValue constructor stores defensive copy")
+  void testMarshalledValueConstructorDefensiveCopy() {
+    final byte[] original = {1, 2, 3};
+    final MarshalledValue mv = new MarshalledValue(1, original);
+
+    // Modify original after construction
+    original[0] = 99;
+
+    // Internal copy should be unaffected
+    assertEquals((byte) 1, mv.getData()[0], "Constructor should make defensive copy of data");
+  }
 }

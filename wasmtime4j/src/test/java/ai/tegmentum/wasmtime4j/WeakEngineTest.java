@@ -87,15 +87,13 @@ class WeakEngineTest {
     @Test
     @DisplayName("should declare upgrade method")
     void shouldDeclareUpgradeMethod() throws NoSuchMethodException {
-      assertNotNull(
-          WeakEngine.class.getMethod("upgrade"), "WeakEngine should declare upgrade()");
+      assertNotNull(WeakEngine.class.getMethod("upgrade"), "WeakEngine should declare upgrade()");
     }
 
     @Test
     @DisplayName("should declare isValid method")
     void shouldDeclareIsValidMethod() throws NoSuchMethodException {
-      assertNotNull(
-          WeakEngine.class.getMethod("isValid"), "WeakEngine should declare isValid()");
+      assertNotNull(WeakEngine.class.getMethod("isValid"), "WeakEngine should declare isValid()");
     }
   }
 

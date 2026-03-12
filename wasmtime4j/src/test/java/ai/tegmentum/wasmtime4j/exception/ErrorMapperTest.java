@@ -16,6 +16,7 @@
 package ai.tegmentum.wasmtime4j.exception;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -295,6 +296,109 @@ class ErrorMapperTest {
       final WasmException ex = ErrorMapper.mapErrorCode(-27, "exit_code:42");
       assertInstanceOf(I32ExitException.class, ex, "WASI_EXIT should produce I32ExitException");
       assertEquals(42, ((I32ExitException) ex).getExitCode(), "Parsed exit code should be 42");
+    }
+
+    @Test
+    @DisplayName("WASI_EXIT with null message should default to exit code 1")
+    void wasiExitWithNullMessageShouldDefaultToExitCode1() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-27, null);
+      assertInstanceOf(I32ExitException.class, ex, "WASI_EXIT should produce I32ExitException");
+      assertEquals(
+          1, ((I32ExitException) ex).getExitCode(), "Default exit code should be 1 for null");
+    }
+
+    @Test
+    @DisplayName("WASI_EXIT with non-numeric text after colon should default to exit code 1")
+    void wasiExitWithNonNumericAfterColonShouldDefaultToExitCode1() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-27, "exit_code:abc");
+      assertInstanceOf(I32ExitException.class, ex, "WASI_EXIT should produce I32ExitException");
+      assertEquals(
+          1,
+          ((I32ExitException) ex).getExitCode(),
+          "Default exit code should be 1 for non-numeric");
+    }
+
+    @Test
+    @DisplayName("WASI_EXIT with exit code 0 should parse as 0")
+    void wasiExitWithExitCodeZeroShouldParseAsZero() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-27, "exit_code:0");
+      assertInstanceOf(I32ExitException.class, ex, "WASI_EXIT should produce I32ExitException");
+      assertEquals(0, ((I32ExitException) ex).getExitCode(), "Exit code should be 0");
+    }
+
+    @Test
+    @DisplayName("null context should produce message without prefix colon")
+    void nullContextShouldProduceMessageWithoutPrefixColon() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-1, null);
+      assertNotNull(ex.getMessage(), "Message should not be null");
+      assertFalse(
+          ex.getMessage().startsWith(":"),
+          "Message should not start with colon when context is null");
+    }
+
+    @Test
+    @DisplayName("non-null context should produce message with prefix colon")
+    void nonNullContextShouldProduceMessageWithPrefixColon() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-1, "ctx");
+      assertTrue(
+          ex.getMessage().startsWith("ctx: "),
+          "Message should start with context and colon. Got: " + ex.getMessage());
+    }
+  }
+
+  @Nested
+  @DisplayName("parseTrapOrRuntime Mutation Tests")
+  class ParseTrapOrRuntimeMutationTests {
+
+    @Test
+    @DisplayName("null message should produce WasmRuntimeException not TrapException")
+    void nullMessageShouldProduceWasmRuntimeException() {
+      // Runtime error with null context routes through parseTrapOrRuntime(null)
+      final WasmException ex = ErrorMapper.mapErrorCode(-3, null);
+      assertNotNull(ex, "Exception should not be null");
+      // With null context, parseTrapOrRuntime gets a non-null message (prefix + description)
+      // But we need to test the null path directly. We can do this via runtime error
+      // codes that go through parseTrapOrRuntime - test that non-trap message returns
+      // WasmRuntimeException, not TrapException.
+      assertFalse(
+          ex instanceof TrapException,
+          "Runtime error without trap marker should not produce TrapException");
+    }
+
+    @Test
+    @DisplayName("message with [trap_code:] should produce TrapException")
+    void messageWithTrapCodeShouldProduceTrapException() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-3, "[trap_code:0]stack overflow");
+      assertInstanceOf(
+          TrapException.class, ex, "Message with [trap_code:] should produce TrapException");
+    }
+
+    @Test
+    @DisplayName("message starting with [coredump:] should produce TrapException")
+    void messageStartingWithCoredumpShouldProduceTrapException() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-3, "[coredump:1]trap occurred");
+      assertInstanceOf(
+          TrapException.class,
+          ex,
+          "Message starting with [coredump:] should produce TrapException");
+    }
+
+    @Test
+    @DisplayName("message with WebAssembly trap: should produce TrapException")
+    void messageWithWebAssemblyTrapShouldProduceTrapException() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-3, "WebAssembly trap: unreachable");
+      assertInstanceOf(
+          TrapException.class, ex, "Message with 'WebAssembly trap:' should produce TrapException");
+    }
+
+    @Test
+    @DisplayName("plain runtime message should produce WasmRuntimeException")
+    void plainRuntimeMessageShouldProduceWasmRuntimeException() {
+      final WasmException ex = ErrorMapper.mapErrorCode(-3, "some plain error");
+      assertInstanceOf(
+          WasmRuntimeException.class,
+          ex,
+          "Plain message should produce WasmRuntimeException, not TrapException");
     }
   }
 }
