@@ -1589,11 +1589,6 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
   }
 
   /**
-   * Ensures the linker is not closed.
-   *
-   * @throws IllegalStateException if closed
-   */
-  /**
    * Defines a host function via native FFI, registering it with the Wasmtime linker.
    *
    * <p>This creates a Panama upcall stub for the callback and passes it to native code which

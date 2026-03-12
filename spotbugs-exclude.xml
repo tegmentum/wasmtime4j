@@ -131,6 +131,12 @@
         <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"/>
         <!-- JNI code casts return values from native methods appropriately -->
     </Match>
+
+    <Match>
+        <Class name="~.*\.jni\..*"/>
+        <Bug pattern="BC_UNCONFIRMED_CAST"/>
+        <!-- JNI runtime casts interface types to JNI implementations (e.g. Module to JniModule) -->
+    </Match>
     
     <Match>
         <Class name="~.*\.jni\..*"/>
@@ -1193,5 +1199,41 @@
     <Match>
         <Bug pattern="DMI_INVOKING_TOSTRING_ON_ARRAY"/>
         <Class name="~.*Test.*"/>
+    </Match>
+
+    <!-- Test anonymous inner classes don't need to be static -->
+    <Match>
+        <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON"/>
+        <Class name="~.*Test.*"/>
+    </Match>
+
+    <!-- Test singleton pattern classes are test fixtures, not real singletons -->
+    <Match>
+        <Bug pattern="SING_SINGLETON_HAS_NONPRIVATE_CONSTRUCTOR"/>
+        <Class name="~.*Test.*"/>
+    </Match>
+
+    <!-- Test code intentionally creates Random per invocation for deterministic repeatable output -->
+    <Match>
+        <Bug pattern="DMI_RANDOM_USED_ONLY_ONCE"/>
+        <Class name="~.*Test.*"/>
+    </Match>
+
+    <!-- AbstractFuncType constructor validates params by design -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+        <Class name="ai.tegmentum.wasmtime4j.type.AbstractFuncType"/>
+    </Match>
+
+    <!-- AbstractWasiContextBuilder uses "/" as default WASI working directory -->
+    <Match>
+        <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+        <Class name="ai.tegmentum.wasmtime4j.wasi.AbstractWasiContextBuilder"/>
+    </Match>
+
+    <!-- AbstractWasiContextBuilder validates and normalizes user-provided paths -->
+    <Match>
+        <Bug pattern="PATH_TRAVERSAL_IN"/>
+        <Class name="ai.tegmentum.wasmtime4j.wasi.AbstractWasiContextBuilder"/>
     </Match>
 </FindBugsFilter>

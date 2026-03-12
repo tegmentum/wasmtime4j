@@ -266,11 +266,6 @@ public final class WasiContext implements AutoCloseable {
   }
 
   /**
-   * Ensures that this context has not been closed.
-   *
-   * @throws IllegalStateException if the context has been closed
-   */
-  /**
    * Native method to close the WASI context.
    *
    * @param handle the native handle for the WASI context

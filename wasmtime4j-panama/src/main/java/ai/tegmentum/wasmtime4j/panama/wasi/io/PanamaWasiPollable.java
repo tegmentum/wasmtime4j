@@ -208,6 +208,7 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
     return java.util.Arrays.asList("block", "ready");
   }
 
+  /** {@inheritDoc} */
   public Object invoke(final String operation, final Object... parameters) throws WasmException {
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");

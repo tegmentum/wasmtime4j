@@ -1096,11 +1096,6 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
   }
 
   /**
-   * Destroys a function handle.
-   *
-   * @param funcPtr pointer to the function to destroy
-   */
-  /**
    * Checks if a function matches a function type using subtype-aware checking.
    *
    * @param funcPtr the function pointer
@@ -1131,6 +1126,11 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         resultCount);
   }
 
+  /**
+   * Destroys a function handle.
+   *
+   * @param funcPtr pointer to the function to destroy
+   */
   public void funcDestroy(final MemorySegment funcPtr) {
     if (funcPtr != null && !funcPtr.equals(MemorySegment.NULL)) {
       callNativeFunction("wasmtime4j_panama_func_destroy", Void.class, funcPtr);
@@ -1823,12 +1823,6 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
         "wasmtime4j_instance_pre_instantiate", MemorySegment.class, instancePrePtr, storePtr);
   }
 
-  /**
-   * Checks if an InstancePre is valid.
-   *
-   * @param instancePrePtr pointer to the InstancePre
-   * @return 1 if valid, 0 otherwise
-   */
   /**
    * Asynchronously instantiates from an InstancePre.
    *

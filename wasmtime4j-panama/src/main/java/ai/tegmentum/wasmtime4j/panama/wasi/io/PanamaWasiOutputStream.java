@@ -572,6 +572,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     return !isClosed();
   }
 
+  /** {@inheritDoc} */
   public java.util.List<String> getAvailableOperations() {
     return java.util.Arrays.asList(
         "check-write",
@@ -586,6 +587,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
         "subscribe");
   }
 
+  /** {@inheritDoc} */
   public Object invoke(final String operation, final Object... parameters) throws WasmException {
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");

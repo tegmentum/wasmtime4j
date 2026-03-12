@@ -1458,6 +1458,11 @@ public final class NativeEngineBindings extends NativeBindingsBase {
    *
    * @param enginePtr pointer to the engine
    */
+  public void engineIncrementEpoch(final MemorySegment enginePtr) {
+    validatePointer(enginePtr, "enginePtr");
+    callNativeFunction("wasmtime4j_panama_engine_increment_epoch", Void.class, enginePtr);
+  }
+
   /**
    * Detects whether a host CPU feature is available.
    *
@@ -1475,11 +1480,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   /** Eagerly initializes Wasmtime's thread-local state for the current thread. */
   public void tlsEagerInitialize() {
     callNativeFunction("wasmtime4j_panama_engine_tls_eager_initialize", Void.class);
-  }
-
-  public void engineIncrementEpoch(final MemorySegment enginePtr) {
-    validatePointer(enginePtr, "enginePtr");
-    callNativeFunction("wasmtime4j_panama_engine_increment_epoch", Void.class, enginePtr);
   }
 
   /**
@@ -1725,12 +1725,6 @@ public final class NativeEngineBindings extends NativeBindingsBase {
   // ===========================================================================================
 
   /**
-   * Creates a weak reference to an engine.
-   *
-   * @param enginePtr pointer to the engine
-   * @return pointer to the weak engine, or NULL if creation failed
-   */
-  /**
    * Creates a standalone shared memory from an engine.
    *
    * @param enginePtr pointer to the engine
@@ -1749,6 +1743,12 @@ public final class NativeEngineBindings extends NativeBindingsBase {
         maxPages);
   }
 
+  /**
+   * Creates a weak reference to an engine.
+   *
+   * @param enginePtr pointer to the engine
+   * @return pointer to the weak engine, or NULL if creation failed
+   */
   public MemorySegment engineCreateWeak(final MemorySegment enginePtr) {
     validatePointer(enginePtr, "enginePtr");
     return callNativeFunction(

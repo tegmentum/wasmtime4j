@@ -51,11 +51,8 @@ class WasiRandomSourceTest {
     @Test
     @DisplayName("should work with java.util.Random")
     void shouldWorkWithJavaUtilRandom() {
-      WasiRandomSource deterministic =
-          (dest) -> {
-            Random rng = new Random(42);
-            rng.nextBytes(dest);
-          };
+      Random rng = new Random(42);
+      WasiRandomSource deterministic = rng::nextBytes;
 
       byte[] dest = new byte[16];
       deterministic.fillBytes(dest);

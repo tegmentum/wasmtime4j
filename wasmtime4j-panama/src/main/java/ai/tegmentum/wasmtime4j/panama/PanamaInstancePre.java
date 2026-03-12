@@ -111,6 +111,22 @@ public final class PanamaInstancePre implements InstancePre {
   }
 
   @Override
+  public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
+    Objects.requireNonNull(store, "store cannot be null");
+    Objects.requireNonNull(imports, "imports cannot be null");
+    resourceHandle.beginOperation();
+    try {
+
+      // For now, InstancePre doesn't support additional imports - it uses what was defined
+      // in the linker at pre-instantiation time. Just call the regular instantiate.
+      LOGGER.fine("instantiate with ImportMap called - imports are resolved at pre-instantiation");
+      return instantiate(store);
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
   public CompletableFuture<Instance> instantiateAsync(final Store store) {
     Objects.requireNonNull(store, "store cannot be null");
     return CompletableFuture.supplyAsync(
@@ -144,22 +160,6 @@ public final class PanamaInstancePre implements InstancePre {
             resourceHandle.endOperation();
           }
         });
-  }
-
-  @Override
-  public Instance instantiate(final Store store, final ImportMap imports) throws WasmException {
-    Objects.requireNonNull(store, "store cannot be null");
-    Objects.requireNonNull(imports, "imports cannot be null");
-    resourceHandle.beginOperation();
-    try {
-
-      // For now, InstancePre doesn't support additional imports - it uses what was defined
-      // in the linker at pre-instantiation time. Just call the regular instantiate.
-      LOGGER.fine("instantiate with ImportMap called - imports are resolved at pre-instantiation");
-      return instantiate(store);
-    } finally {
-      resourceHandle.endOperation();
-    }
   }
 
   @Override

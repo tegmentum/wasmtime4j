@@ -1501,198 +1501,6 @@ public final class PanamaStore implements Store {
   }
 
   @Override
-  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
-      throws WasmException {
-    if (initialPages < 0) {
-      throw new IllegalArgumentException("Initial pages cannot be negative");
-    }
-    if (maxPages < -1) {
-      throw new IllegalArgumentException("Max pages must be -1 (unlimited) or non-negative");
-    }
-    if (maxPages != -1 && maxPages < initialPages) {
-      throw new IllegalArgumentException(
-          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
-    }
-    resourceHandle.beginOperation();
-    try {
-
-      try {
-        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
-        if (createHandle == null) {
-          throw new WasmException("Panama memory creation function not available");
-        }
-
-        final long maximumPages = (maxPages == -1) ? 0L : (long) maxPages;
-        final int isShared = 0; // Not shared
-        final int is64 = 0; // Standard 32-bit memory
-        final int memoryIndex = 0; // Not used for direct creation
-
-        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
-
-        final int result =
-            (int)
-                createHandle.invoke(
-                    nativeStore,
-                    (long) initialPages,
-                    maximumPages,
-                    isShared,
-                    is64,
-                    memoryIndex,
-                    MemorySegment.NULL, // name = null
-                    memoryPtr);
-
-        if (result != 0) {
-          throw new WasmException("Failed to create memory");
-        }
-
-        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
-        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
-          throw new WasmException("Created memory pointer is null");
-        }
-
-        return new PanamaMemory(nativeMemoryPtr, this);
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error creating memory: " + e.getMessage(), e);
-      }
-    } finally {
-      resourceHandle.endOperation();
-    }
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(
-      final int initialPages, final int maxPages) throws WasmException {
-    if (initialPages < 0) {
-      throw new IllegalArgumentException("Initial pages cannot be negative");
-    }
-    if (maxPages < 1) {
-      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
-    }
-    if (maxPages < initialPages) {
-      throw new IllegalArgumentException(
-          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
-    }
-    resourceHandle.beginOperation();
-    try {
-
-      try {
-        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
-        if (createHandle == null) {
-          throw new WasmException("Panama memory creation function not available");
-        }
-
-        final int isShared = 1; // Shared memory
-        final int is64 = 0; // Standard 32-bit memory
-        final int memoryIndex = 0; // Not used for direct creation
-
-        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
-
-        final int result =
-            (int)
-                createHandle.invoke(
-                    nativeStore,
-                    (long) initialPages,
-                    (long) maxPages,
-                    isShared,
-                    is64,
-                    memoryIndex,
-                    MemorySegment.NULL, // name = null
-                    memoryPtr);
-
-        if (result != 0) {
-          throw new WasmException("Failed to create shared memory");
-        }
-
-        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
-        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
-          throw new WasmException("Created shared memory pointer is null");
-        }
-
-        return new PanamaMemory(nativeMemoryPtr, this);
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error creating shared memory: " + e.getMessage(), e);
-      }
-    } finally {
-      resourceHandle.endOperation();
-    }
-  }
-
-  @Override
-  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(
-      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
-    if (memoryType == null) {
-      throw new IllegalArgumentException("Memory type cannot be null");
-    }
-    final long minPages = memoryType.getMinimum();
-    final long maxPages = memoryType.getMaximum().orElse(-1L);
-    if (minPages < 0) {
-      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
-    }
-    if (maxPages != -1 && maxPages < minPages) {
-      throw new IllegalArgumentException(
-          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
-    }
-    if (memoryType.isShared() && maxPages < 1) {
-      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
-    }
-    resourceHandle.beginOperation();
-    try {
-
-      try {
-        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
-        if (createHandle == null) {
-          throw new WasmException("Panama memory creation function not available");
-        }
-
-        final long maximumPages = (maxPages == -1) ? 0L : maxPages;
-        final int isShared = memoryType.isShared() ? 1 : 0;
-        final int is64 = memoryType.is64Bit() ? 1 : 0;
-        final int memoryIndex = 0;
-
-        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
-
-        final int result =
-            (int)
-                createHandle.invoke(
-                    nativeStore,
-                    minPages,
-                    maximumPages,
-                    isShared,
-                    is64,
-                    memoryIndex,
-                    MemorySegment.NULL, // name = null
-                    memoryPtr);
-
-        if (result != 0) {
-          throw new WasmException("Failed to create memory from type");
-        }
-
-        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
-        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
-          throw new WasmException("Created memory pointer is null");
-        }
-
-        return new PanamaMemory(nativeMemoryPtr, this);
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error creating memory from type: " + e.getMessage(), e);
-      }
-    } finally {
-      resourceHandle.endOperation();
-    }
-  }
-
-  // createMemoryAsync is overridden at the end of the class with Tokio-based native async bridge
-
-  @Override
   public ai.tegmentum.wasmtime4j.WasmTable createTable(
       final ai.tegmentum.wasmtime4j.type.TableType tableType) throws WasmException {
     if (tableType == null) {
@@ -1869,6 +1677,198 @@ public final class PanamaStore implements Store {
   }
 
   // createTableAsync is overridden at the end of the class with Tokio-based native async bridge
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(final int initialPages, final int maxPages)
+      throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative");
+    }
+    if (maxPages < -1) {
+      throw new IllegalArgumentException("Max pages must be -1 (unlimited) or non-negative");
+    }
+    if (maxPages != -1 && maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
+    resourceHandle.beginOperation();
+    try {
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
+        if (createHandle == null) {
+          throw new WasmException("Panama memory creation function not available");
+        }
+
+        final long maximumPages = (maxPages == -1) ? 0L : (long) maxPages;
+        final int isShared = 0; // Not shared
+        final int is64 = 0; // Standard 32-bit memory
+        final int memoryIndex = 0; // Not used for direct creation
+
+        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    (long) initialPages,
+                    maximumPages,
+                    isShared,
+                    is64,
+                    memoryIndex,
+                    MemorySegment.NULL, // name = null
+                    memoryPtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create memory");
+        }
+
+        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created memory pointer is null");
+        }
+
+        return new PanamaMemory(nativeMemoryPtr, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating memory: " + e.getMessage(), e);
+      }
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createMemory(
+      final ai.tegmentum.wasmtime4j.type.MemoryType memoryType) throws WasmException {
+    if (memoryType == null) {
+      throw new IllegalArgumentException("Memory type cannot be null");
+    }
+    final long minPages = memoryType.getMinimum();
+    final long maxPages = memoryType.getMaximum().orElse(-1L);
+    if (minPages < 0) {
+      throw new IllegalArgumentException("Minimum pages cannot be negative: " + minPages);
+    }
+    if (maxPages != -1 && maxPages < minPages) {
+      throw new IllegalArgumentException(
+          "Maximum pages (" + maxPages + ") cannot be less than minimum pages (" + minPages + ")");
+    }
+    if (memoryType.isShared() && maxPages < 1) {
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+    }
+    resourceHandle.beginOperation();
+    try {
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
+        if (createHandle == null) {
+          throw new WasmException("Panama memory creation function not available");
+        }
+
+        final long maximumPages = (maxPages == -1) ? 0L : maxPages;
+        final int isShared = memoryType.isShared() ? 1 : 0;
+        final int is64 = memoryType.is64Bit() ? 1 : 0;
+        final int memoryIndex = 0;
+
+        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    minPages,
+                    maximumPages,
+                    isShared,
+                    is64,
+                    memoryIndex,
+                    MemorySegment.NULL, // name = null
+                    memoryPtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create memory from type");
+        }
+
+        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created memory pointer is null");
+        }
+
+        return new PanamaMemory(nativeMemoryPtr, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating memory from type: " + e.getMessage(), e);
+      }
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public ai.tegmentum.wasmtime4j.WasmMemory createSharedMemory(
+      final int initialPages, final int maxPages) throws WasmException {
+    if (initialPages < 0) {
+      throw new IllegalArgumentException("Initial pages cannot be negative");
+    }
+    if (maxPages < 1) {
+      throw new IllegalArgumentException("Shared memory requires a positive maximum page count");
+    }
+    if (maxPages < initialPages) {
+      throw new IllegalArgumentException(
+          "Max pages (" + maxPages + ") cannot be less than initial pages (" + initialPages + ")");
+    }
+    resourceHandle.beginOperation();
+    try {
+
+      try {
+        final MethodHandle createHandle = MEMORY_BINDINGS.getPanamaMemoryCreateWithConfig();
+        if (createHandle == null) {
+          throw new WasmException("Panama memory creation function not available");
+        }
+
+        final int isShared = 1; // Shared memory
+        final int is64 = 0; // Standard 32-bit memory
+        final int memoryIndex = 0; // Not used for direct creation
+
+        final MemorySegment memoryPtr = arena.allocate(ValueLayout.ADDRESS);
+
+        final int result =
+            (int)
+                createHandle.invoke(
+                    nativeStore,
+                    (long) initialPages,
+                    (long) maxPages,
+                    isShared,
+                    is64,
+                    memoryIndex,
+                    MemorySegment.NULL, // name = null
+                    memoryPtr);
+
+        if (result != 0) {
+          throw new WasmException("Failed to create shared memory");
+        }
+
+        final MemorySegment nativeMemoryPtr = memoryPtr.get(ValueLayout.ADDRESS, 0);
+        if (nativeMemoryPtr.equals(MemorySegment.NULL)) {
+          throw new WasmException("Created shared memory pointer is null");
+        }
+
+        return new PanamaMemory(nativeMemoryPtr, this);
+      } catch (final Throwable e) {
+        if (e instanceof WasmException) {
+          throw (WasmException) e;
+        }
+        throw new WasmException("Error creating shared memory: " + e.getMessage(), e);
+      }
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  // createMemoryAsync is overridden at the end of the class with Tokio-based native async bridge
 
   private long wasmValueToRefId(final ai.tegmentum.wasmtime4j.WasmValue initValue) {
     if (initValue.getValue() == null) {

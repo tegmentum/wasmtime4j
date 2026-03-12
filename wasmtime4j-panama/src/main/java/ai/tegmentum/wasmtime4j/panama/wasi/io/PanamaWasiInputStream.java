@@ -340,6 +340,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
     return java.util.Arrays.asList("read", "blocking-read", "skip", "blocking-skip", "subscribe");
   }
 
+  /** {@inheritDoc} */
   public Object invoke(final String operation, final Object... parameters) throws WasmException {
     if (operation == null || operation.isEmpty()) {
       throw new IllegalArgumentException("Operation cannot be null or empty");

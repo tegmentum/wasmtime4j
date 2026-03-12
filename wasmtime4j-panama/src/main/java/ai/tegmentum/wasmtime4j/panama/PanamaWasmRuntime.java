@@ -209,24 +209,6 @@ public final class PanamaWasmRuntime implements WasmRuntime {
   }
 
   @Override
-  public Store tryCreateStore(final Engine engine) throws WasmException {
-    Validation.requireNonNull(engine, "engine");
-    resourceHandle.beginOperation();
-    try {
-
-      if (!(engine instanceof PanamaEngine)) {
-        throw new IllegalArgumentException(
-            "Engine must be a PanamaEngine instance for Panama runtime");
-      }
-
-      final PanamaEngine panamaEngine = (PanamaEngine) engine;
-      return panamaEngine.tryCreateStore();
-    } finally {
-      resourceHandle.endOperation();
-    }
-  }
-
-  @Override
   public Store createStore(
       final Engine engine,
       final long fuelLimit,
@@ -274,6 +256,24 @@ public final class PanamaWasmRuntime implements WasmRuntime {
 
       final PanamaEngine panamaEngine = (PanamaEngine) engine;
       return new PanamaStore(panamaEngine, limits);
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public Store tryCreateStore(final Engine engine) throws WasmException {
+    Validation.requireNonNull(engine, "engine");
+    resourceHandle.beginOperation();
+    try {
+
+      if (!(engine instanceof PanamaEngine)) {
+        throw new IllegalArgumentException(
+            "Engine must be a PanamaEngine instance for Panama runtime");
+      }
+
+      final PanamaEngine panamaEngine = (PanamaEngine) engine;
+      return panamaEngine.tryCreateStore();
     } finally {
       resourceHandle.endOperation();
     }

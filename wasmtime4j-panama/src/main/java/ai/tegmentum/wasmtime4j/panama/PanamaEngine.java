@@ -184,6 +184,13 @@ public final class PanamaEngine implements Engine {
     }
   }
 
+  @Override
+  public Store createStore(final Object data) throws WasmException {
+    final Store store = createStore();
+    store.setData(data);
+    return store;
+  }
+
   /**
    * Tries to create a store using OOM-safe allocation.
    *
@@ -197,13 +204,6 @@ public final class PanamaEngine implements Engine {
     } finally {
       resourceHandle.endOperation();
     }
-  }
-
-  @Override
-  public Store createStore(final Object data) throws WasmException {
-    final Store store = createStore();
-    store.setData(data);
-    return store;
   }
 
   @Override
