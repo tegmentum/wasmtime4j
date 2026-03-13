@@ -46,8 +46,14 @@ import java.util.logging.Logger;
  */
 public class JniLinker<T> extends JniResource implements Linker<T> {
   private static final Logger LOGGER = Logger.getLogger(JniLinker.class.getName());
-  private static final java.util.concurrent.ConcurrentHashMap<Long, HostFunctionWrapper>
-      HOST_FUNCTION_CALLBACKS = new java.util.concurrent.ConcurrentHashMap<>();
+  // Array-based callback registry indexed by sequential callback ID for O(1) lookup
+  // without Long autoboxing overhead on every callback dispatch from native code.
+  private static final java.util.concurrent.atomic.AtomicReference<
+          java.util.concurrent.atomic.AtomicReferenceArray<HostFunctionWrapper>>
+      HOST_FUNCTION_CALLBACKS =
+          new java.util.concurrent.atomic.AtomicReference<>(
+              new java.util.concurrent.atomic.AtomicReferenceArray<>(256));
+  private static final Object CALLBACKS_GROW_LOCK = new Object();
 
   private final Engine engine;
   private final Set<String> imports = new HashSet<>();
@@ -641,7 +647,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   /** Cleans up host function callbacks registered by this linker instance. */
   private void cleanupHostFunctionCallbacks() {
     for (final Long callbackId : registeredCallbackIds) {
-      HOST_FUNCTION_CALLBACKS.remove(callbackId);
+      callbacksRemove((int) callbackId.longValue());
     }
     registeredCallbackIds.clear();
   }
@@ -659,7 +665,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       final String moduleName, final String name, final HostFunction implementation) {
     final HostFunctionWrapper wrapper = new HostFunctionWrapper(moduleName, name, implementation);
     final long id = wrapper.getId();
-    HOST_FUNCTION_CALLBACKS.put(id, wrapper);
+    callbacksPut((int) id, wrapper);
     registeredCallbackIds.add(id);
     return id;
   }
@@ -681,7 +687,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       final HostFunction implementation) {
     final HostFunctionWrapper wrapper =
         new HostFunctionWrapper(callbackId, moduleName, name, implementation);
-    HOST_FUNCTION_CALLBACKS.put(callbackId, wrapper);
+    callbacksPut((int) callbackId, wrapper);
   }
 
   /**
@@ -690,7 +696,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    * @param callbackId the callback ID to unregister
    */
   static void unregisterHostFunctionCallback(final long callbackId) {
-    HOST_FUNCTION_CALLBACKS.remove(callbackId);
+    callbacksRemove((int) callbackId);
   }
 
   /**
@@ -716,7 +722,7 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
               + params.length);
     }
 
-    final HostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
+    final HostFunctionWrapper wrapper = callbacksGet(callbackId);
     if (wrapper == null) {
       LOGGER.severe("Host function callback not found for callbackId=" + callbackId);
       throw new WasmException("Host function callback not found: " + callbackId);
@@ -1215,6 +1221,49 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
   }
 
   /** Wrapper for host function callbacks. */
+  // =============================================================================
+  // Array-based callback registry operations (eliminates Long autoboxing on lookup)
+  // =============================================================================
+
+  private static void callbacksPut(final int idx, final HostFunctionWrapper wrapper) {
+    java.util.concurrent.atomic.AtomicReferenceArray<HostFunctionWrapper> arr =
+        HOST_FUNCTION_CALLBACKS.get();
+    if (idx >= arr.length()) {
+      synchronized (CALLBACKS_GROW_LOCK) {
+        arr = HOST_FUNCTION_CALLBACKS.get();
+        if (idx >= arr.length()) {
+          final int newLen = Math.max(idx + 1, arr.length() * 2);
+          final java.util.concurrent.atomic.AtomicReferenceArray<HostFunctionWrapper> newArr =
+              new java.util.concurrent.atomic.AtomicReferenceArray<>(newLen);
+          for (int i = 0; i < arr.length(); i++) {
+            newArr.set(i, arr.get(i));
+          }
+          HOST_FUNCTION_CALLBACKS.set(newArr);
+          arr = newArr;
+        }
+      }
+    }
+    arr.set(idx, wrapper);
+  }
+
+  private static HostFunctionWrapper callbacksGet(final long id) {
+    final int idx = (int) id;
+    final java.util.concurrent.atomic.AtomicReferenceArray<HostFunctionWrapper> arr =
+        HOST_FUNCTION_CALLBACKS.get();
+    if (idx >= 0 && idx < arr.length()) {
+      return arr.get(idx);
+    }
+    return null;
+  }
+
+  private static void callbacksRemove(final int idx) {
+    final java.util.concurrent.atomic.AtomicReferenceArray<HostFunctionWrapper> arr =
+        HOST_FUNCTION_CALLBACKS.get();
+    if (idx >= 0 && idx < arr.length()) {
+      arr.set(idx, null);
+    }
+  }
+
   private static class HostFunctionWrapper {
     private static final java.util.concurrent.atomic.AtomicLong nextId =
         new java.util.concurrent.atomic.AtomicLong(1);
