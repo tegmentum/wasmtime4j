@@ -17,6 +17,7 @@ package ai.tegmentum.wasmtime4j.benchmarks;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -34,9 +35,9 @@ import org.openjdk.jmh.infra.Blackhole;
 /**
  * Benchmarks simulating the host function callback dispatch overhead.
  *
- * <p>Measures the cost of the Java-side dispatch in invokeHostFunctionCallback:
- * ConcurrentHashMap lookup (with Long autoboxing), logging with string concatenation,
- * and the overall dispatch overhead excluding the actual host function execution.
+ * <p>Measures the cost of the Java-side dispatch in hostFunctionCallback: ConcurrentHashMap lookup
+ * (with Long autoboxing) vs AtomicReferenceArray lookup (no autoboxing), logging with string
+ * concatenation, and the overall dispatch overhead excluding the actual host function execution.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
@@ -50,8 +51,11 @@ public class HostCallbackBenchmark {
 
   private static final Logger LOGGER = Logger.getLogger(HostCallbackBenchmark.class.getName());
 
-  // Simulate HOST_FUNCTION_CALLBACKS with Long keys (current implementation)
+  // Simulate HOST_FUNCTION_REGISTRY with Long keys (old implementation)
   private ConcurrentHashMap<Long, Object> mapWithBoxedKeys;
+
+  // Simulate HOST_FUNCTION_REGISTRY with array indexing (new implementation)
+  private AtomicReferenceArray<Object> arrayRegistry;
 
   // Simulate with pre-cached Long keys
   private Long[] preBoxedKeys;
@@ -66,6 +70,7 @@ public class HostCallbackBenchmark {
     LOGGER.setLevel(Level.WARNING);
 
     mapWithBoxedKeys = new ConcurrentHashMap<>();
+    arrayRegistry = new AtomicReferenceArray<>(256);
     rawCallbackIds = new long[100];
     preBoxedKeys = new Long[100];
 
@@ -76,24 +81,36 @@ public class HostCallbackBenchmark {
       long id = i + 1;
       rawCallbackIds[i] = id;
       preBoxedKeys[i] = Long.valueOf(id);
-      mapWithBoxedKeys.put(id, new Object());
+      Object value = new Object();
+      mapWithBoxedKeys.put(id, value);
+      arrayRegistry.set((int) id, value);
     }
   }
 
   // ==========================================
-  // Map lookup with autoboxing (current code)
+  // Map lookup with autoboxing (old code)
   // ==========================================
 
   @Benchmark
   public void mapLookupAutoboxing(Blackhole bh) {
-    // Simulates: HOST_FUNCTION_CALLBACKS.get(callbackId) where callbackId is long
+    // Old: HOST_FUNCTION_REGISTRY.get(callbackId) where callbackId is long
     bh.consume(mapWithBoxedKeys.get(rawCallbackIds[42]));
   }
 
   @Benchmark
   public void mapLookupPreBoxed(Blackhole bh) {
-    // Simulates: lookup with pre-boxed Long key
+    // Comparison: lookup with pre-boxed Long key
     bh.consume(mapWithBoxedKeys.get(preBoxedKeys[42]));
+  }
+
+  // ==========================================
+  // Array lookup without autoboxing (new code)
+  // ==========================================
+
+  @Benchmark
+  public void arrayLookupDirect(Blackhole bh) {
+    // New: direct array index, no autoboxing
+    bh.consume(arrayRegistry.get((int) rawCallbackIds[42]));
   }
 
   // ==========================================
@@ -102,15 +119,14 @@ public class HostCallbackBenchmark {
 
   @Benchmark
   public void loggingUnguardedConcat(Blackhole bh) {
-    // Current code: string concatenation happens even when FINE is disabled
+    // Unguarded: string concatenation happens even when FINE is disabled
     LOGGER.fine(
         "invokeHostFunctionCallback - Called with callbackId="
             + rawCallbackIds[42]
             + ", params.length="
             + 2);
     LOGGER.fine("Executing host function: " + moduleName + "::" + funcName);
-    LOGGER.fine(
-        "invokeHostFunctionCallback - Completed successfully with " + 1 + " results");
+    LOGGER.fine("invokeHostFunctionCallback - Completed successfully with " + 1 + " results");
   }
 
   @Benchmark
@@ -127,8 +143,7 @@ public class HostCallbackBenchmark {
       LOGGER.fine("Executing host function: " + moduleName + "::" + funcName);
     }
     if (LOGGER.isLoggable(Level.FINE)) {
-      LOGGER.fine(
-          "invokeHostFunctionCallback - Completed successfully with " + 1 + " results");
+      LOGGER.fine("invokeHostFunctionCallback - Completed successfully with " + 1 + " results");
     }
   }
 
@@ -137,7 +152,7 @@ public class HostCallbackBenchmark {
   // ==========================================
 
   @Benchmark
-  public void fullDispatchCurrent(Blackhole bh) {
+  public void fullDispatchOldMapUnguarded(Blackhole bh) {
     long callbackId = rawCallbackIds[42];
 
     // 1. Unguarded logging with concatenation
@@ -157,12 +172,11 @@ public class HostCallbackBenchmark {
     bh.consume(wrapper);
 
     // 5. Result logging
-    LOGGER.fine(
-        "invokeHostFunctionCallback - Completed successfully with " + 1 + " results");
+    LOGGER.fine("invokeHostFunctionCallback - Completed successfully with " + 1 + " results");
   }
 
   @Benchmark
-  public void fullDispatchOptimized(Blackhole bh) {
+  public void fullDispatchNewArrayGuarded(Blackhole bh) {
     long callbackId = rawCallbackIds[42];
 
     // 1. Guarded logging
@@ -174,8 +188,8 @@ public class HostCallbackBenchmark {
               + 2);
     }
 
-    // 2. Map lookup (autoboxing still happens, but logging overhead removed)
-    Object wrapper = mapWithBoxedKeys.get(callbackId);
+    // 2. Array lookup (no autoboxing)
+    Object wrapper = arrayRegistry.get((int) callbackId);
 
     // 3. Guarded logging
     if (LOGGER.isLoggable(Level.FINE)) {
@@ -187,8 +201,7 @@ public class HostCallbackBenchmark {
 
     // 5. Guarded result logging
     if (LOGGER.isLoggable(Level.FINE)) {
-      LOGGER.fine(
-          "invokeHostFunctionCallback - Completed successfully with " + 1 + " results");
+      LOGGER.fine("invokeHostFunctionCallback - Completed successfully with " + 1 + " results");
     }
   }
 }

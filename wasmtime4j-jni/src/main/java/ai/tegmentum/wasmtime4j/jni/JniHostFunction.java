@@ -26,7 +26,6 @@ import ai.tegmentum.wasmtime4j.type.FunctionType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,9 +73,15 @@ import java.util.logging.Logger;
 public final class JniHostFunction extends JniResource implements WasmFunction {
   private static final Logger LOGGER = Logger.getLogger(JniHostFunction.class.getName());
 
-  // Global registry for host function callbacks to prevent GC
-  private static final ConcurrentHashMap<Long, JniHostFunction> HOST_FUNCTION_REGISTRY =
-      new ConcurrentHashMap<>();
+  // Array-based registry for host function callbacks to prevent GC.
+  // Uses AtomicReferenceArray indexed by sequential host function ID for O(1) lookup
+  // without Long autoboxing overhead on every callback dispatch.
+  private static final java.util.concurrent.atomic.AtomicReference<
+          java.util.concurrent.atomic.AtomicReferenceArray<JniHostFunction>>
+      HOST_FUNCTION_REGISTRY =
+          new java.util.concurrent.atomic.AtomicReference<>(
+              new java.util.concurrent.atomic.AtomicReferenceArray<>(256));
+  private static final Object REGISTRY_GROW_LOCK = new Object();
   private static final AtomicLong NEXT_HOST_FUNCTION_ID = new AtomicLong(1L);
 
   // Load native library when this class is first loaded
@@ -270,7 +275,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
 
     try {
       // Register this host function to prevent GC
-      HOST_FUNCTION_REGISTRY.put(hostFunctionId, this);
+      registryPut((int) hostFunctionId, this);
 
       // Register with JniLinker's callback map so Rust can invoke this function
       // via JniLinker.invokeHostFunctionCallback when called from WASM
@@ -288,7 +293,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       }
     } catch (Exception e) {
       // Clean up registry on failure
-      HOST_FUNCTION_REGISTRY.remove(hostFunctionId);
+      registryRemove((int) hostFunctionId);
       JniLinker.unregisterHostFunctionCallback(hostFunctionId);
       throw new WasmException("Failed to create host function: " + functionName, e);
     }
@@ -373,7 +378,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   @Override
   protected void doClose() throws Exception {
     // Remove from registry to prevent further callbacks
-    HOST_FUNCTION_REGISTRY.remove(hostFunctionId);
+    registryRemove((int) hostFunctionId);
 
     // Remove from JniLinker's callback map
     JniLinker.unregisterHostFunctionCallback(hostFunctionId);
@@ -417,7 +422,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
       final long callerHandle,
       final byte[] paramsData,
       final byte[] resultsBuffer) {
-    final JniHostFunction hostFunction = HOST_FUNCTION_REGISTRY.get(hostFunctionId);
+    final JniHostFunction hostFunction = registryGet(hostFunctionId);
     if (hostFunction == null) {
       LOGGER.severe("Host function not found in registry: " + hostFunctionId);
       return -1;
@@ -513,7 +518,7 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
    * @return array containing [count, nextId]
    */
   static long[] getRegistryStats() {
-    return new long[] {HOST_FUNCTION_REGISTRY.size(), NEXT_HOST_FUNCTION_ID.get()};
+    return new long[] {registrySize(), NEXT_HOST_FUNCTION_ID.get()};
   }
 
   /**
@@ -523,7 +528,62 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
    * @return the host function, or null if not found
    */
   static JniHostFunction getFromRegistry(final long hostFunctionId) {
-    return HOST_FUNCTION_REGISTRY.get(hostFunctionId);
+    return registryGet(hostFunctionId);
+  }
+
+  // =============================================================================
+  // Array-based registry operations (eliminates Long autoboxing on lookup)
+  // =============================================================================
+
+  private static void registryPut(final int idx, final JniHostFunction func) {
+    java.util.concurrent.atomic.AtomicReferenceArray<JniHostFunction> arr =
+        HOST_FUNCTION_REGISTRY.get();
+    if (idx >= arr.length()) {
+      synchronized (REGISTRY_GROW_LOCK) {
+        arr = HOST_FUNCTION_REGISTRY.get();
+        if (idx >= arr.length()) {
+          final int newLen = Math.max(idx + 1, arr.length() * 2);
+          final java.util.concurrent.atomic.AtomicReferenceArray<JniHostFunction> newArr =
+              new java.util.concurrent.atomic.AtomicReferenceArray<>(newLen);
+          for (int i = 0; i < arr.length(); i++) {
+            newArr.set(i, arr.get(i));
+          }
+          HOST_FUNCTION_REGISTRY.set(newArr);
+          arr = newArr;
+        }
+      }
+    }
+    arr.set(idx, func);
+  }
+
+  private static JniHostFunction registryGet(final long id) {
+    final int idx = (int) id;
+    final java.util.concurrent.atomic.AtomicReferenceArray<JniHostFunction> arr =
+        HOST_FUNCTION_REGISTRY.get();
+    if (idx >= 0 && idx < arr.length()) {
+      return arr.get(idx);
+    }
+    return null;
+  }
+
+  private static void registryRemove(final int idx) {
+    final java.util.concurrent.atomic.AtomicReferenceArray<JniHostFunction> arr =
+        HOST_FUNCTION_REGISTRY.get();
+    if (idx >= 0 && idx < arr.length()) {
+      arr.set(idx, null);
+    }
+  }
+
+  private static int registrySize() {
+    final java.util.concurrent.atomic.AtomicReferenceArray<JniHostFunction> arr =
+        HOST_FUNCTION_REGISTRY.get();
+    int count = 0;
+    for (int i = 0; i < arr.length(); i++) {
+      if (arr.get(i) != null) {
+        count++;
+      }
+    }
+    return count;
   }
 
   // Native method declarations
