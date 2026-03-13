@@ -63,6 +63,15 @@ public final class JniTypeConverter {
   /** Size of v128 vector type in bytes. */
   private static final int V128_SIZE_BYTES = TypeConversionUtilities.V128_SIZE_BYTES;
 
+  /** Cached empty Object array to avoid allocation for no-arg calls. */
+  private static final Object[] EMPTY_OBJECTS = new Object[0];
+
+  /** Cached empty WasmValue array to avoid allocation for void returns. */
+  private static final WasmValue[] EMPTY_WASM_VALUES = new WasmValue[0];
+
+  /** Pre-marshalled empty parameters (just the count=0 header). */
+  private static final byte[] EMPTY_MARSHAL_HEADER = new byte[] {0, 0, 0, 0};
+
   /** Private constructor to prevent instantiation. */
   private JniTypeConverter() {}
 
@@ -111,6 +120,10 @@ public final class JniTypeConverter {
    */
   public static Object[] wasmValuesToNativeParams(final WasmValue[] values) {
     Validation.requireNonNull(values, "values");
+
+    if (values.length == 0) {
+      return EMPTY_OBJECTS;
+    }
 
     final Object[] params = new Object[values.length];
     for (int i = 0; i < values.length; i++) {
@@ -175,6 +188,10 @@ public final class JniTypeConverter {
     if (results.length != expectedTypes.length) {
       throw new IllegalArgumentException(
           "Result count mismatch: got " + results.length + ", expected " + expectedTypes.length);
+    }
+
+    if (results.length == 0) {
+      return EMPTY_WASM_VALUES;
     }
 
     final WasmValue[] wasmValues = new WasmValue[results.length];
@@ -261,11 +278,7 @@ public final class JniTypeConverter {
    */
   public static void validateParameterTypes(
       final WasmValue[] params, final WasmValueType[] expectedTypes) {
-    try {
-      TypeConversionUtilities.validateParameterTypes(params, expectedTypes);
-    } catch (final IllegalArgumentException e) {
-      throw new IllegalArgumentException(e.getMessage(), e);
-    }
+    TypeConversionUtilities.validateParameterTypes(params, expectedTypes);
   }
 
   /**
@@ -275,11 +288,7 @@ public final class JniTypeConverter {
    * @throws IllegalArgumentException if array size is incorrect
    */
   public static void validateV128Size(final byte[] bytes) {
-    try {
-      TypeConversionUtilities.validateV128Size(bytes);
-    } catch (final IllegalArgumentException e) {
-      throw new IllegalArgumentException(e.getMessage(), e);
-    }
+    TypeConversionUtilities.validateV128Size(bytes);
   }
 
   /**
@@ -416,6 +425,10 @@ public final class JniTypeConverter {
     if (paramCount != expectedTypes.length) {
       throw new IllegalArgumentException(
           "Parameter count mismatch: expected " + expectedTypes.length + ", got " + paramCount);
+    }
+
+    if (paramCount == 0) {
+      return EMPTY_WASM_VALUES;
     }
 
     final WasmValue[] params = new WasmValue[paramCount];
@@ -610,6 +623,10 @@ public final class JniTypeConverter {
   public static byte[] marshalParameters(final WasmValue[] params) {
     Validation.requireNonNull(params, "params");
 
+    if (params.length == 0) {
+      return EMPTY_MARSHAL_HEADER.clone();
+    }
+
     // Calculate total size needed
     int totalSize = 4; // 4 bytes for parameter count
     for (final WasmValue param : params) {
@@ -652,6 +669,10 @@ public final class JniTypeConverter {
     if (resultCount != expectedTypes.length) {
       throw new IllegalArgumentException(
           "Result count mismatch: got " + resultCount + ", expected " + expectedTypes.length);
+    }
+
+    if (resultCount == 0) {
+      return EMPTY_WASM_VALUES;
     }
 
     final WasmValue[] results = new WasmValue[resultCount];
