@@ -17,6 +17,7 @@ package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -234,7 +235,7 @@ public interface ComponentResourceDefinition<T> {
       this.name = name;
       this.constructor = constructor;
       this.destructor = destructor;
-      this.methods = Map.copyOf(methods);
+      this.methods = Collections.unmodifiableMap(new HashMap<>(methods));
     }
 
     @Override

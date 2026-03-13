@@ -15,6 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.component;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -62,7 +64,7 @@ public final class ConcurrentCall {
    * @throws IllegalArgumentException if functionName is null or empty, or args is null
    */
   public static ConcurrentCall of(final String functionName, final ComponentVal... args) {
-    return new ConcurrentCall(functionName, List.of(args));
+    return new ConcurrentCall(functionName, Collections.unmodifiableList(Arrays.asList(args)));
   }
 
   /**
@@ -74,7 +76,7 @@ public final class ConcurrentCall {
    * @throws IllegalArgumentException if functionName is null or empty, or args is null
    */
   public static ConcurrentCall of(final String functionName, final List<ComponentVal> args) {
-    return new ConcurrentCall(functionName, List.copyOf(args));
+    return new ConcurrentCall(functionName, Collections.unmodifiableList(new ArrayList<>(args)));
   }
 
   /**

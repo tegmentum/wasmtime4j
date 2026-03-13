@@ -16,7 +16,11 @@
 package ai.tegmentum.wasmtime4j.component;
 
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -232,7 +236,7 @@ public abstract class ComponentValFactory {
       if (elements == null) {
         throw new IllegalArgumentException("List elements cannot be null");
       }
-      return new SimpleVal(ComponentType.LIST, List.copyOf(elements));
+      return new SimpleVal(ComponentType.LIST, Collections.unmodifiableList(new ArrayList<>(elements)));
     }
 
     @Override
@@ -240,7 +244,7 @@ public abstract class ComponentValFactory {
       if (fields == null) {
         throw new IllegalArgumentException("Record fields cannot be null");
       }
-      return new SimpleVal(ComponentType.RECORD, Map.copyOf(fields));
+      return new SimpleVal(ComponentType.RECORD, Collections.unmodifiableMap(new HashMap<>(fields)));
     }
 
     @Override
@@ -248,7 +252,7 @@ public abstract class ComponentValFactory {
       if (elements == null) {
         throw new IllegalArgumentException("Tuple elements cannot be null");
       }
-      return new SimpleVal(ComponentType.TUPLE, List.copyOf(elements));
+      return new SimpleVal(ComponentType.TUPLE, Collections.unmodifiableList(new ArrayList<>(elements)));
     }
 
     @Override
@@ -295,7 +299,7 @@ public abstract class ComponentValFactory {
       if (enabledFlags == null) {
         throw new IllegalArgumentException("Flags cannot be null");
       }
-      return new SimpleVal(ComponentType.FLAGS, Set.copyOf(enabledFlags));
+      return new SimpleVal(ComponentType.FLAGS, Collections.unmodifiableSet(new HashSet<>(enabledFlags)));
     }
 
     @Override

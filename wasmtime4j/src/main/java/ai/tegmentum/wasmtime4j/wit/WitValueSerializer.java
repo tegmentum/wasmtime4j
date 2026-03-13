@@ -308,7 +308,7 @@ public final class WitValueSerializer {
    * @throws ValidationException if serialization fails
    */
   private static byte[] serializeRecord(final WitRecord record) throws ValidationException {
-    final var fields = record.getFields();
+    final java.util.Map<String, WitValue> fields = record.getFields();
 
     // Calculate total size: 4 bytes for count + all field data
     int totalSize = 4; // field count

@@ -17,7 +17,9 @@ package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.ResourceTableException;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -214,7 +216,7 @@ public final class DefaultResourceTable implements ResourceTable {
     if (childSet == null || childSet.isEmpty()) {
       return Collections.emptyList();
     }
-    return List.copyOf(childSet);
+    return Collections.unmodifiableList(new ArrayList<>(childSet));
   }
 
   @Override
@@ -271,7 +273,7 @@ public final class DefaultResourceTable implements ResourceTable {
 
   @Override
   public Set<Integer> handles() {
-    return Collections.unmodifiableSet(Set.copyOf(entries.keySet()));
+    return Collections.unmodifiableSet(new HashSet<>(entries.keySet()));
   }
 
   @Override

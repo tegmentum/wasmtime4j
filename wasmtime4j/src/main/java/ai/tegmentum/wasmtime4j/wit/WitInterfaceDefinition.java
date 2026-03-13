@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.wit;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,7 +67,7 @@ public interface WitInterfaceDefinition {
    * @return unmodifiable map of function name to function definition
    */
   default Map<String, WitFunction> getFunctions() {
-    return Map.of();
+    return Collections.emptyMap();
   }
 
   /**
@@ -82,7 +83,7 @@ public interface WitInterfaceDefinition {
    * @return unmodifiable map of type name to type definition
    */
   default Map<String, WitType> getTypes() {
-    return Map.of();
+    return Collections.emptyMap();
   }
 
   /**

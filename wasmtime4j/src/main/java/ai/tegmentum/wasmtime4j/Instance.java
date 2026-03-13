@@ -91,7 +91,7 @@ public interface Instance extends Closeable {
     }
 
     final Optional<WasmFunction> funcOpt = getFunction(name);
-    if (funcOpt.isEmpty()) {
+    if (!funcOpt.isPresent()) {
       return Optional.empty();
     }
 
@@ -112,7 +112,7 @@ public interface Instance extends Closeable {
     // Build signature string: params->results (e.g., "ii->i")
     final StringBuilder sig = new StringBuilder();
     for (final WasmValueType pt : actualParams) {
-      sig.append(wasmTypeToSignatureChar(pt));
+      sig.append(InstanceUtils.wasmTypeToSignatureChar(pt));
     }
     sig.append("->");
     final WasmValueType[] resultTypes = funcType.getReturnTypes();
@@ -120,7 +120,7 @@ public interface Instance extends Closeable {
       sig.append("v");
     } else {
       for (final WasmValueType rt : resultTypes) {
-        sig.append(wasmTypeToSignatureChar(rt));
+        sig.append(InstanceUtils.wasmTypeToSignatureChar(rt));
       }
     }
 
@@ -129,27 +129,6 @@ public interface Instance extends Closeable {
     }
 
     return Optional.of(TypedFunc.create(func, sig.toString()));
-  }
-
-  /**
-   * Converts a WasmValueType to its signature character representation.
-   *
-   * @param type the value type
-   * @return the signature character
-   */
-  private static char wasmTypeToSignatureChar(final WasmValueType type) {
-    switch (type) {
-      case I32:
-        return 'i';
-      case I64:
-        return 'I';
-      case F32:
-        return 'f';
-      case F64:
-        return 'F';
-      default:
-        throw new IllegalArgumentException("Unsupported type for typed functions: " + type);
-    }
   }
 
   /**
@@ -309,7 +288,7 @@ public interface Instance extends Closeable {
         new java.util.ArrayList<>(names.length);
     for (final String name : names) {
       final java.util.Optional<Extern> ext = getExport(name);
-      ext.ifPresent(e -> result.add(java.util.Map.entry(name, e)));
+      ext.ifPresent(e -> result.add(new java.util.AbstractMap.SimpleImmutableEntry<>(name, e)));
     }
     return result;
   }

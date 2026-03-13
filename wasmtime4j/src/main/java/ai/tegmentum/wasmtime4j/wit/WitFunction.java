@@ -15,6 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.wit;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -50,8 +52,8 @@ public final class WitFunction {
       final boolean isAsync,
       final Optional<String> documentation) {
     this.name = Objects.requireNonNull(name);
-    this.parameters = List.copyOf(Objects.requireNonNull(parameters));
-    this.returnTypes = List.copyOf(Objects.requireNonNull(returnTypes));
+    this.parameters = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(parameters)));
+    this.returnTypes = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(returnTypes)));
     this.isAsync = isAsync;
     this.documentation = Objects.requireNonNull(documentation);
   }

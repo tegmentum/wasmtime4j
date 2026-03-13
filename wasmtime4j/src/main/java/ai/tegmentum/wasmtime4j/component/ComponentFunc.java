@@ -16,6 +16,7 @@
 package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -117,7 +118,7 @@ public interface ComponentFunc {
    * @throws WasmException if the call fails
    */
   default List<ComponentVal> call() throws WasmException {
-    return call(List.of());
+    return call(Collections.emptyList());
   }
 
   /**

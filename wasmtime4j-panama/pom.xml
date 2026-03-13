@@ -17,9 +17,9 @@
     <description>Panama Foreign Function API implementation for Wasmtime4j</description>
 
     <properties>
-        <!-- Override parent to require Java 23+ for Panama FFI -->
-        <maven.compiler.source>26</maven.compiler.source>
-        <maven.compiler.target>26</maven.compiler.target>
+        <!-- Override parent to require Java 22+ for Panama FFI -->
+        <maven.compiler.source>22</maven.compiler.source>
+        <maven.compiler.target>22</maven.compiler.target>
 
         <!-- Panama FFI requires preview features in Java 23+ -->
         <panama.preview.enabled>true</panama.preview.enabled>
@@ -133,8 +133,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>26</source>
-                    <target>26</target>
+                    <source>22</source>
+                    <target>22</target>
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                         <arg>-Xlint:all</arg>

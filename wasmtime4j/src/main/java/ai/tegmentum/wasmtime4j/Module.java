@@ -29,6 +29,7 @@ import ai.tegmentum.wasmtime4j.validation.ImportMap;
 import ai.tegmentum.wasmtime4j.validation.ImportValidation;
 import ai.tegmentum.wasmtime4j.validation.ModuleValidationResult;
 import java.io.Closeable;
+import java.util.Collections;
 import java.util.List;
 import java.util.OptionalInt;
 
@@ -266,13 +267,13 @@ public interface Module extends Closeable {
       throw new IllegalArgumentException("WebAssembly bytes cannot be null");
     }
     if (wasmBytes.length == 0) {
-      return ModuleValidationResult.failure(List.of("WebAssembly bytecode cannot be empty"));
+      return ModuleValidationResult.failure(Collections.singletonList("WebAssembly bytecode cannot be empty"));
     }
 
     // Basic WebAssembly magic number validation (fast fail before native call)
     if (wasmBytes.length < 8) {
       return ModuleValidationResult.failure(
-          List.of("WebAssembly bytecode too short (minimum 8 bytes required)"));
+          Collections.singletonList("WebAssembly bytecode too short (minimum 8 bytes required)"));
     }
 
     // Check WebAssembly magic number (0x00 0x61 0x73 0x6D)
@@ -280,7 +281,7 @@ public interface Module extends Closeable {
         || wasmBytes[1] != 0x61
         || wasmBytes[2] != 0x73
         || wasmBytes[3] != 0x6D) {
-      return ModuleValidationResult.failure(List.of("Invalid WebAssembly magic number"));
+      return ModuleValidationResult.failure(Collections.singletonList("Invalid WebAssembly magic number"));
     }
 
     // Check WebAssembly version (0x01 0x00 0x00 0x00 for version 1)
@@ -288,7 +289,7 @@ public interface Module extends Closeable {
         || wasmBytes[5] != 0x00
         || wasmBytes[6] != 0x00
         || wasmBytes[7] != 0x00) {
-      return ModuleValidationResult.failure(List.of("Unsupported WebAssembly version"));
+      return ModuleValidationResult.failure(Collections.singletonList("Unsupported WebAssembly version"));
     }
 
     // Full structural and semantic validation via the provided engine's runtime
@@ -298,10 +299,10 @@ public interface Module extends Closeable {
         return ModuleValidationResult.success();
       }
       return ModuleValidationResult.failure(
-          List.of("WebAssembly validation failed (structural or semantic error)"));
+          Collections.singletonList("WebAssembly validation failed (structural or semantic error)"));
     } catch (final Exception e) {
       return ModuleValidationResult.failure(
-          List.of("WebAssembly validation error: " + e.getMessage()));
+          Collections.singletonList("WebAssembly validation error: " + e.getMessage()));
     }
   }
 

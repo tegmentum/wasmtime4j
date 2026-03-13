@@ -15,6 +15,9 @@
  */
 package ai.tegmentum.wasmtime4j.wit;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -198,7 +201,7 @@ public abstract class WitTypeKind {
    * @return map of field names to types, or empty map for non-record types
    */
   public Map<String, WitType> getRecordFields() {
-    return Map.of(); // Default implementation for non-record types
+    return Collections.emptyMap(); // Default implementation for non-record types
   }
 
   /**
@@ -207,7 +210,7 @@ public abstract class WitTypeKind {
    * @return map of case names to optional payload types, or empty map for non-variant types
    */
   public Map<String, Optional<WitType>> getVariantCases() {
-    return Map.of(); // Default implementation for non-variant types
+    return Collections.emptyMap(); // Default implementation for non-variant types
   }
 
   /**
@@ -216,7 +219,7 @@ public abstract class WitTypeKind {
    * @return list of flag names, or empty list for non-flags types
    */
   public List<String> getFlags() {
-    return List.of(); // Default implementation for non-flags types
+    return Collections.emptyList(); // Default implementation for non-flags types
   }
 
   /**
@@ -234,7 +237,7 @@ public abstract class WitTypeKind {
    * @return list of enum values, or empty list for non-enum types
    */
   public List<String> getEnumValues() {
-    return List.of(); // Default implementation for non-enum types
+    return Collections.emptyList(); // Default implementation for non-enum types
   }
 
   /**
@@ -261,7 +264,7 @@ public abstract class WitTypeKind {
    * @return list of element types, or empty list for non-tuple types
    */
   public List<WitType> getTupleElements() {
-    return List.of(); // Default implementation for non-tuple types
+    return Collections.emptyList(); // Default implementation for non-tuple types
   }
 
   /**
@@ -342,7 +345,7 @@ public abstract class WitTypeKind {
     private final Map<String, WitType> fields;
 
     private RecordTypeKind(final Map<String, WitType> fields) {
-      this.fields = Map.copyOf(Objects.requireNonNull(fields, "fields"));
+      this.fields = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(fields, "fields")));
     }
 
     @Override
@@ -395,7 +398,7 @@ public abstract class WitTypeKind {
     private final Map<String, Optional<WitType>> cases;
 
     private VariantTypeKind(final Map<String, Optional<WitType>> cases) {
-      this.cases = Map.copyOf(Objects.requireNonNull(cases, "cases"));
+      this.cases = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(cases, "cases")));
     }
 
     @Override
@@ -448,7 +451,7 @@ public abstract class WitTypeKind {
     private final List<String> values;
 
     private EnumTypeKind(final List<String> values) {
-      this.values = List.copyOf(Objects.requireNonNull(values, "values"));
+      this.values = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(values, "values")));
     }
 
     @Override
@@ -506,7 +509,7 @@ public abstract class WitTypeKind {
     private final List<String> flags;
 
     private FlagsTypeKind(final List<String> flags) {
-      this.flags = List.copyOf(Objects.requireNonNull(flags, "flags"));
+      this.flags = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(flags, "flags")));
     }
 
     @Override
@@ -730,7 +733,7 @@ public abstract class WitTypeKind {
     private final List<WitType> elementTypes;
 
     private TupleTypeKind(final List<WitType> elementTypes) {
-      this.elementTypes = List.copyOf(Objects.requireNonNull(elementTypes, "elementTypes"));
+      this.elementTypes = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(elementTypes, "elementTypes")));
     }
 
     @Override

@@ -17,6 +17,7 @@ package ai.tegmentum.wasmtime4j.component;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.Caller;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -87,7 +88,7 @@ public interface ComponentHostFunction {
   static ComponentHostFunction voidFunction(final VoidComponentHostFunction impl) {
     return params -> {
       impl.execute();
-      return List.of();
+      return Collections.emptyList();
     };
   }
 
@@ -101,7 +102,7 @@ public interface ComponentHostFunction {
       final VoidComponentHostFunctionWithParams impl) {
     return params -> {
       impl.execute(params);
-      return List.of();
+      return Collections.emptyList();
     };
   }
 
@@ -114,7 +115,7 @@ public interface ComponentHostFunction {
   static ComponentHostFunction singleValue(final SingleValueComponentHostFunction impl) {
     return params -> {
       final ComponentVal result = impl.execute(params);
-      return result != null ? List.of(result) : List.of();
+      return result != null ? Collections.singletonList(result) : Collections.emptyList();
     };
   }
 

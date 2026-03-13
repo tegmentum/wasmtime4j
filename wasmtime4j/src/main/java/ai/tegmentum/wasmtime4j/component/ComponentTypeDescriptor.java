@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -1179,7 +1180,7 @@ public interface ComponentTypeDescriptor {
 
     TupleImpl(final List<ComponentTypeDescriptor> elements) {
       super(ComponentType.TUPLE);
-      this.elements = List.copyOf(elements);
+      this.elements = Collections.unmodifiableList(new ArrayList<>(elements));
     }
 
     @Override
@@ -1219,7 +1220,7 @@ public interface ComponentTypeDescriptor {
 
     EnumImpl(final List<String> cases) {
       super(ComponentType.ENUM);
-      this.cases = List.copyOf(cases);
+      this.cases = Collections.unmodifiableList(new ArrayList<>(cases));
     }
 
     @Override
@@ -1239,7 +1240,7 @@ public interface ComponentTypeDescriptor {
 
     FlagsImpl(final List<String> names) {
       super(ComponentType.FLAGS);
-      this.names = List.copyOf(names);
+      this.names = Collections.unmodifiableList(new ArrayList<>(names));
     }
 
     @Override

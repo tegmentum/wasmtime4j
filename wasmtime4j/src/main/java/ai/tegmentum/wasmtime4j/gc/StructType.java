@@ -209,7 +209,7 @@ public final class StructType {
    */
   public void validate() {
     // Check for duplicate field names
-    final var fieldNames = new java.util.HashSet<String>();
+    final java.util.HashSet<String> fieldNames = new java.util.HashSet<String>();
     for (final FieldDefinition field : fields) {
       if (field.getName() != null && !fieldNames.add(field.getName())) {
         throw new IllegalStateException("Duplicate field name: " + field.getName());

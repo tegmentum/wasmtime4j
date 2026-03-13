@@ -21,6 +21,8 @@ import ai.tegmentum.wasmtime4j.wasi.random.WasiRandomSource;
 import ai.tegmentum.wasmtime4j.wasi.sockets.SocketAddrCheck;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,9 +87,9 @@ public final class WasiPreview2Config {
   private final SocketAddrCheck socketAddrCheck;
 
   private WasiPreview2Config(final Builder builder) {
-    this.args = List.copyOf(builder.args);
+    this.args = Collections.unmodifiableList(new ArrayList<>(builder.args));
     this.inheritArgs = builder.inheritArgs;
-    this.env = Map.copyOf(builder.env);
+    this.env = Collections.unmodifiableMap(new HashMap<>(builder.env));
     this.inheritEnv = builder.inheritEnv;
     this.inheritStdio = builder.inheritStdio;
     this.inheritStdin = builder.inheritStdin;
@@ -96,7 +98,7 @@ public final class WasiPreview2Config {
     this.stdinConfig = builder.stdinConfig;
     this.stdoutConfig = builder.stdoutConfig;
     this.stderrConfig = builder.stderrConfig;
-    this.preopenDirs = List.copyOf(builder.preopenDirs);
+    this.preopenDirs = Collections.unmodifiableList(new ArrayList<>(builder.preopenDirs));
     this.allowNetwork = builder.allowNetwork;
     this.allowTcp = builder.allowTcp;
     this.allowUdp = builder.allowUdp;
@@ -530,7 +532,7 @@ public final class WasiPreview2Config {
      */
     public Builder args(final String... args) {
       this.args.clear();
-      this.args.addAll(List.of(args));
+      this.args.addAll(Arrays.asList(args));
       return this;
     }
 
@@ -541,7 +543,7 @@ public final class WasiPreview2Config {
      * @return this builder
      */
     public Builder addArgs(final String... args) {
-      this.args.addAll(List.of(args));
+      this.args.addAll(Arrays.asList(args));
       return this;
     }
 

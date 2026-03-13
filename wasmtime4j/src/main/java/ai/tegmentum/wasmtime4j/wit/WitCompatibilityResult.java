@@ -15,6 +15,8 @@
  */
 package ai.tegmentum.wasmtime4j.wit;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -47,8 +49,8 @@ public final class WitCompatibilityResult {
       final Set<String> unsatisfiedImports) {
     this.compatible = compatible;
     this.details = details;
-    this.satisfiedImports = Set.copyOf(satisfiedImports);
-    this.unsatisfiedImports = Set.copyOf(unsatisfiedImports);
+    this.satisfiedImports = Collections.unmodifiableSet(new HashSet<>(satisfiedImports));
+    this.unsatisfiedImports = Collections.unmodifiableSet(new HashSet<>(unsatisfiedImports));
   }
 
   /**
@@ -60,7 +62,7 @@ public final class WitCompatibilityResult {
    */
   public static WitCompatibilityResult compatible(
       final String details, final Set<String> satisfiedImports) {
-    return new WitCompatibilityResult(true, details, satisfiedImports, Set.of());
+    return new WitCompatibilityResult(true, details, satisfiedImports, Collections.emptySet());
   }
 
   /**
@@ -72,7 +74,7 @@ public final class WitCompatibilityResult {
    */
   public static WitCompatibilityResult incompatible(
       final String details, final Set<String> unsatisfiedImports) {
-    return new WitCompatibilityResult(false, details, Set.of(), unsatisfiedImports);
+    return new WitCompatibilityResult(false, details, Collections.emptySet(), unsatisfiedImports);
   }
 
   /**

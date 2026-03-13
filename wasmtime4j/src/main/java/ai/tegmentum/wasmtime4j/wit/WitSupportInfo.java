@@ -15,6 +15,10 @@
  */
 package ai.tegmentum.wasmtime4j.wit;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -51,8 +55,8 @@ public final class WitSupportInfo {
       final int maxInterfaceDepth) {
     this.supported = supported;
     this.version = version;
-    this.supportedFeatures = Set.copyOf(supportedFeatures);
-    this.supportedTypes = List.copyOf(supportedTypes);
+    this.supportedFeatures = Collections.unmodifiableSet(new HashSet<>(supportedFeatures));
+    this.supportedTypes = Collections.unmodifiableList(new ArrayList<>(supportedTypes));
     this.maxInterfaceDepth = maxInterfaceDepth;
   }
 
@@ -127,7 +131,7 @@ public final class WitSupportInfo {
    * @return WIT support info for unsupported runtime
    */
   public static WitSupportInfo unsupported() {
-    return new WitSupportInfo(false, "none", Set.of(), List.of(), 0);
+    return new WitSupportInfo(false, "none", Collections.emptySet(), Collections.emptyList(), 0);
   }
 
   /**
@@ -139,8 +143,8 @@ public final class WitSupportInfo {
     return new WitSupportInfo(
         true,
         "1.0",
-        Set.of("interfaces", "functions", "types"),
-        List.of("u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "string"),
+        Collections.unmodifiableSet(new HashSet<>(Arrays.asList("interfaces", "functions", "types"))),
+        Collections.unmodifiableList(Arrays.asList("u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "string")),
         10);
   }
 

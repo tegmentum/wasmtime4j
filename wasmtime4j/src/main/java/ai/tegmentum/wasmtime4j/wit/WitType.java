@@ -15,6 +15,9 @@
  */
 package ai.tegmentum.wasmtime4j.wit;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,7 +54,7 @@ public final class WitType {
       final Optional<String> documentation) {
     this.name = Objects.requireNonNull(name, "name");
     this.kind = Objects.requireNonNull(kind, "kind");
-    this.metadata = Map.copyOf(Objects.requireNonNull(metadata, "metadata"));
+    this.metadata = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(metadata, "metadata")));
     this.documentation = Objects.requireNonNull(documentation, "documentation");
   }
 
@@ -65,7 +68,7 @@ public final class WitType {
     return new WitType(
         primitive.name().toLowerCase(Locale.ROOT),
         WitTypeKind.primitive(primitive),
-        Map.of(),
+        Collections.emptyMap(),
         Optional.empty());
   }
 
@@ -143,7 +146,7 @@ public final class WitType {
    */
   public static WitType record(final String name, final Map<String, WitType> fields) {
     return new WitType(
-        name, WitTypeKind.record(fields), Map.of("fieldCount", fields.size()), Optional.empty());
+        name, WitTypeKind.record(fields), Collections.singletonMap("fieldCount", fields.size()), Optional.empty());
   }
 
   /**
@@ -155,7 +158,7 @@ public final class WitType {
    */
   public static WitType variant(final String name, final Map<String, Optional<WitType>> cases) {
     return new WitType(
-        name, WitTypeKind.variant(cases), Map.of("caseCount", cases.size()), Optional.empty());
+        name, WitTypeKind.variant(cases), Collections.singletonMap("caseCount", cases.size()), Optional.empty());
   }
 
   /**
@@ -167,7 +170,7 @@ public final class WitType {
    */
   public static WitType enumType(final String name, final List<String> values) {
     return new WitType(
-        name, WitTypeKind.enumType(values), Map.of("valueCount", values.size()), Optional.empty());
+        name, WitTypeKind.enumType(values), Collections.singletonMap("valueCount", values.size()), Optional.empty());
   }
 
   /**
@@ -179,7 +182,7 @@ public final class WitType {
    */
   public static WitType flags(final String name, final List<String> flags) {
     return new WitType(
-        name, WitTypeKind.flags(flags), Map.of("flagCount", flags.size()), Optional.empty());
+        name, WitTypeKind.flags(flags), Collections.singletonMap("flagCount", flags.size()), Optional.empty());
   }
 
   /**
@@ -192,7 +195,7 @@ public final class WitType {
     return new WitType(
         "list<" + elementType.getName() + ">",
         WitTypeKind.list(elementType),
-        Map.of("elementType", elementType.getName()),
+        Collections.singletonMap("elementType", elementType.getName()),
         Optional.empty());
   }
 
@@ -206,7 +209,7 @@ public final class WitType {
     return new WitType(
         "option<" + innerType.getName() + ">",
         WitTypeKind.option(innerType),
-        Map.of("innerType", innerType.getName()),
+        Collections.singletonMap("innerType", innerType.getName()),
         Optional.empty());
   }
 
@@ -236,7 +239,7 @@ public final class WitType {
     }
 
     return new WitType(
-        nameBuilder.toString(), WitTypeKind.result(okType, errorType), Map.of(), Optional.empty());
+        nameBuilder.toString(), WitTypeKind.result(okType, errorType), Collections.emptyMap(), Optional.empty());
   }
 
   /**
@@ -258,7 +261,7 @@ public final class WitType {
     return new WitType(
         nameBuilder.toString(),
         WitTypeKind.tuple(elementTypes),
-        Map.of("elementCount", elementTypes.size()),
+        Collections.singletonMap("elementCount", elementTypes.size()),
         Optional.empty());
   }
 
@@ -269,7 +272,7 @@ public final class WitType {
    * @return a new WIT type
    */
   public static WitType tuple(final WitType... elementTypes) {
-    return tuple(List.of(elementTypes));
+    return tuple(Arrays.asList(elementTypes));
   }
 
   /**
@@ -281,7 +284,7 @@ public final class WitType {
    */
   public static WitType resource(final String name, final String resourceId) {
     return new WitType(
-        name, WitTypeKind.resource(resourceId), Map.of("resourceId", resourceId), Optional.empty());
+        name, WitTypeKind.resource(resourceId), Collections.singletonMap("resourceId", resourceId), Optional.empty());
   }
 
   /**
