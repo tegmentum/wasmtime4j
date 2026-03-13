@@ -139,7 +139,9 @@ public abstract class JniResource implements AutoCloseable {
     this.phantomRef = phantom;
     PHANTOM_REFS.put(this.phantomRef, cleanupData);
 
-    LOGGER.fine(String.format("Created JNI resource with handle: 0x%x", nativeHandle));
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine(String.format("Created JNI resource with handle: 0x%x", nativeHandle));
+    }
   }
 
   /**
@@ -277,9 +279,11 @@ public abstract class JniResource implements AutoCloseable {
 
           // Perform actual resource cleanup
           doClose();
-          LOGGER.fine(
-              String.format(
-                  "Closed %s resource with handle: 0x%x", getResourceType(), nativeHandle));
+          if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+            LOGGER.fine(
+                String.format(
+                    "Closed %s resource with handle: 0x%x", getResourceType(), nativeHandle));
+          }
         } catch (final Exception e) {
           LOGGER.warning(
               String.format(

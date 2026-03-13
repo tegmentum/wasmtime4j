@@ -708,11 +708,13 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       justification = "Called by native code through JNI")
   private static WasmValue[] invokeHostFunctionCallback(
       final long callbackId, final WasmValue[] params) throws WasmException {
-    LOGGER.fine(
-        "invokeHostFunctionCallback - Called with callbackId="
-            + callbackId
-            + ", params.length="
-            + params.length);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine(
+          "invokeHostFunctionCallback - Called with callbackId="
+              + callbackId
+              + ", params.length="
+              + params.length);
+    }
 
     final HostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
     if (wrapper == null) {
@@ -720,13 +722,17 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       throw new WasmException("Host function callback not found: " + callbackId);
     }
 
-    LOGGER.fine("Executing host function: " + wrapper.moduleName + "::" + wrapper.name);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Executing host function: " + wrapper.moduleName + "::" + wrapper.name);
+    }
     try {
       final WasmValue[] results = wrapper.getImplementation().execute(params);
-      LOGGER.fine(
-          "invokeHostFunctionCallback - Completed successfully with "
-              + results.length
-              + " results");
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine(
+            "invokeHostFunctionCallback - Completed successfully with "
+                + results.length
+                + " results");
+      }
       return results;
     } catch (final Exception e) {
       LOGGER.severe("Host function execution failed: " + e.getMessage());

@@ -53,6 +53,41 @@ import ai.tegmentum.wasmtime4j.type.ValType;
  */
 public final class WasmValue {
 
+  // --- Flyweight cache for commonly created values ---
+
+  /** Cache range for i32 small values: [-128, 127] (matches Integer cache). */
+  private static final int I32_CACHE_LOW = -128;
+  private static final int I32_CACHE_HIGH = 127;
+  private static final WasmValue[] I32_CACHE = new WasmValue[I32_CACHE_HIGH - I32_CACHE_LOW + 1];
+
+  /** Cached zero values for other numeric types. */
+  private static final WasmValue I64_ZERO = new WasmValue(WasmValueType.I64, Long.valueOf(0L));
+  private static final WasmValue F32_ZERO = new WasmValue(WasmValueType.F32, Float.valueOf(0.0f));
+  private static final WasmValue F64_ZERO = new WasmValue(WasmValueType.F64, Double.valueOf(0.0));
+
+  /** Cached null reference singletons. */
+  private static final WasmValue NULL_FUNCREF = new WasmValue(WasmValueType.FUNCREF, null);
+  private static final WasmValue NULL_EXTERNREF = new WasmValue(WasmValueType.EXTERNREF, null);
+  private static final WasmValue NULL_ANYREF = new WasmValue(WasmValueType.ANYREF, null);
+  private static final WasmValue NULL_EQREF = new WasmValue(WasmValueType.EQREF, null);
+  private static final WasmValue NULL_I31REF = new WasmValue(WasmValueType.I31REF, null);
+  private static final WasmValue NULL_STRUCTREF = new WasmValue(WasmValueType.STRUCTREF, null);
+  private static final WasmValue NULL_ARRAYREF = new WasmValue(WasmValueType.ARRAYREF, null);
+  private static final WasmValue NULL_NULLREF = new WasmValue(WasmValueType.NULLREF, null);
+  private static final WasmValue NULL_NULLFUNCREF = new WasmValue(WasmValueType.NULLFUNCREF, null);
+  private static final WasmValue NULL_NULLEXTERNREF =
+      new WasmValue(WasmValueType.NULLEXTERNREF, null);
+  private static final WasmValue NULL_EXNREF = new WasmValue(WasmValueType.EXNREF, null);
+  private static final WasmValue NULL_NULLEXNREF = new WasmValue(WasmValueType.NULLEXNREF, null);
+  private static final WasmValue NULL_CONTREF = new WasmValue(WasmValueType.CONTREF, null);
+  private static final WasmValue NULL_NULLCONTREF = new WasmValue(WasmValueType.NULLCONTREF, null);
+
+  static {
+    for (int i = 0; i < I32_CACHE.length; i++) {
+      I32_CACHE[i] = new WasmValue(WasmValueType.I32, Integer.valueOf(i + I32_CACHE_LOW));
+    }
+  }
+
   private final WasmValueType type;
   private final Object value;
 
@@ -337,6 +372,12 @@ public final class WasmValue {
    * @return a new WasmValue
    */
   public static WasmValue fromBoxed(final WasmValueType type, final Object value) {
+    if (type == WasmValueType.I32 && value instanceof Integer) {
+      final int intVal = (Integer) value;
+      if (intVal >= I32_CACHE_LOW && intVal <= I32_CACHE_HIGH) {
+        return I32_CACHE[intVal - I32_CACHE_LOW];
+      }
+    }
     return new WasmValue(type, value);
   }
 
@@ -347,6 +388,9 @@ public final class WasmValue {
    * @return a new WasmValue
    */
   public static WasmValue i32(final int value) {
+    if (value >= I32_CACHE_LOW && value <= I32_CACHE_HIGH) {
+      return I32_CACHE[value - I32_CACHE_LOW];
+    }
     return new WasmValue(WasmValueType.I32, value);
   }
 
@@ -357,6 +401,9 @@ public final class WasmValue {
    * @return a new WasmValue
    */
   public static WasmValue i64(final long value) {
+    if (value == 0L) {
+      return I64_ZERO;
+    }
     return new WasmValue(WasmValueType.I64, value);
   }
 
@@ -367,6 +414,9 @@ public final class WasmValue {
    * @return a new WasmValue
    */
   public static WasmValue f32(final float value) {
+    if (value == 0.0f && Float.floatToRawIntBits(value) == 0) {
+      return F32_ZERO;
+    }
     return new WasmValue(WasmValueType.F32, value);
   }
 
@@ -377,6 +427,9 @@ public final class WasmValue {
    * @return a new WasmValue
    */
   public static WasmValue f64(final double value) {
+    if (value == 0.0 && Double.doubleToRawLongBits(value) == 0L) {
+      return F64_ZERO;
+    }
     return new WasmValue(WasmValueType.F64, value);
   }
 
@@ -458,7 +511,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null funcref
    */
   public static WasmValue nullFuncref() {
-    return new WasmValue(WasmValueType.FUNCREF, null);
+    return NULL_FUNCREF;
   }
 
   /**
@@ -467,7 +520,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null externref
    */
   public static WasmValue nullExternref() {
-    return new WasmValue(WasmValueType.EXTERNREF, null);
+    return NULL_EXTERNREF;
   }
 
   /**
@@ -478,7 +531,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null anyref
    */
   public static WasmValue nullAnyRef() {
-    return new WasmValue(WasmValueType.ANYREF, null);
+    return NULL_ANYREF;
   }
 
   /**
@@ -501,7 +554,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null eqref
    */
   public static WasmValue nullEqRef() {
-    return new WasmValue(WasmValueType.EQREF, null);
+    return NULL_EQREF;
   }
 
   /**
@@ -545,7 +598,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null i31ref
    */
   public static WasmValue nullI31Ref() {
-    return new WasmValue(WasmValueType.I31REF, null);
+    return NULL_I31REF;
   }
 
   /**
@@ -568,7 +621,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null structref
    */
   public static WasmValue nullStructRef() {
-    return new WasmValue(WasmValueType.STRUCTREF, null);
+    return NULL_STRUCTREF;
   }
 
   /**
@@ -591,7 +644,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null arrayref
    */
   public static WasmValue nullArrayRef() {
-    return new WasmValue(WasmValueType.ARRAYREF, null);
+    return NULL_ARRAYREF;
   }
 
   /**
@@ -603,7 +656,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null ref
    */
   public static WasmValue nullRef() {
-    return new WasmValue(WasmValueType.NULLREF, null);
+    return NULL_NULLREF;
   }
 
   /**
@@ -615,7 +668,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null funcref bottom type
    */
   public static WasmValue nullNullFuncRef() {
-    return new WasmValue(WasmValueType.NULLFUNCREF, null);
+    return NULL_NULLFUNCREF;
   }
 
   /**
@@ -627,7 +680,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null externref bottom type
    */
   public static WasmValue nullNullExternRef() {
-    return new WasmValue(WasmValueType.NULLEXTERNREF, null);
+    return NULL_NULLEXTERNREF;
   }
 
   /**
@@ -651,7 +704,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null exnref
    */
   public static WasmValue nullExnRef() {
-    return new WasmValue(WasmValueType.EXNREF, null);
+    return NULL_EXNREF;
   }
 
   /**
@@ -662,7 +715,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null exnref bottom type
    */
   public static WasmValue nullNullExnRef() {
-    return new WasmValue(WasmValueType.NULLEXNREF, null);
+    return NULL_NULLEXNREF;
   }
 
   /**
@@ -686,7 +739,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null contref
    */
   public static WasmValue nullContRef() {
-    return new WasmValue(WasmValueType.CONTREF, null);
+    return NULL_CONTREF;
   }
 
   /**
@@ -698,7 +751,7 @@ public final class WasmValue {
    * @return a new WasmValue representing null contref bottom type
    */
   public static WasmValue nullNullContRef() {
-    return new WasmValue(WasmValueType.NULLCONTREF, null);
+    return NULL_NULLCONTREF;
   }
 
   /**
@@ -710,7 +763,7 @@ public final class WasmValue {
    * @return a new WasmValue representing a null nofunc reference
    */
   public static WasmValue noFuncNullRef() {
-    return new WasmValue(WasmValueType.NULLFUNCREF, null);
+    return NULL_NULLFUNCREF;
   }
 
   /**
@@ -723,7 +776,7 @@ public final class WasmValue {
    * @return a new WasmValue representing a null noextern reference
    */
   public static WasmValue noExternNullRef() {
-    return new WasmValue(WasmValueType.NULLEXTERNREF, null);
+    return NULL_NULLEXTERNREF;
   }
 
   /**
@@ -735,7 +788,7 @@ public final class WasmValue {
    * @return a new WasmValue representing a null noexn reference
    */
   public static WasmValue noExnNullRef() {
-    return new WasmValue(WasmValueType.NULLEXNREF, null);
+    return NULL_NULLEXNREF;
   }
 
   /**
