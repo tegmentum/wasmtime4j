@@ -345,7 +345,9 @@ public final class JniComponentImpl implements Component {
     if (nativeComponent != null && !nativeComponent.isClosed()) {
       try {
         nativeComponent.close();
-        LOGGER.fine("Closed component: " + componentId);
+        if (LOGGER.isLoggable(Level.FINE)) {
+          LOGGER.fine("Closed component: " + componentId);
+        }
       } catch (final Exception e) {
         LOGGER.log(Level.WARNING, "Error closing component: " + componentId, e);
       }

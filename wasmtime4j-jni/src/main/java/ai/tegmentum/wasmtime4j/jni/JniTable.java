@@ -73,7 +73,9 @@ public final class JniTable extends JniResource implements WasmTable {
     Validation.requireNonNull(store, "store");
     this.store = store;
     this.instanceHandle = instanceHandle;
-    LOGGER.fine("Created JNI table with handle: 0x" + Long.toHexString(nativeHandle));
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI table with handle: 0x" + Long.toHexString(nativeHandle));
+    }
   }
 
   /**
@@ -747,7 +749,9 @@ public final class JniTable extends JniResource implements WasmTable {
       }
       return nativeSupports64BitAddressing(getNativeHandle(), store.getNativeHandle());
     } catch (final Exception e) {
-      LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
+      }
       return false;
     } finally {
       endOperation();

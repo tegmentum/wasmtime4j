@@ -161,7 +161,9 @@ public final class NativeMethodBindings {
       if (version == null || version.trim().isEmpty()) {
         throw new RuntimeException("Native library version is null or empty");
       }
-      LOGGER.fine("Native library version: " + version);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Native library version: " + version);
+      }
 
       // Test basic runtime operations to ensure core functionality is available
       final long testHandle = nativeCreateRuntime();

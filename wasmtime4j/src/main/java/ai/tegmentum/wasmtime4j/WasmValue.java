@@ -57,16 +57,19 @@ public final class WasmValue {
 
   /** Cache range for i32 small values: [-128, 127] (matches Integer cache). */
   private static final int I32_CACHE_LOW = -128;
+
   private static final int I32_CACHE_HIGH = 127;
   private static final WasmValue[] I32_CACHE = new WasmValue[I32_CACHE_HIGH - I32_CACHE_LOW + 1];
 
   /** Cached zero values for other numeric types. */
   private static final WasmValue I64_ZERO = new WasmValue(WasmValueType.I64, Long.valueOf(0L));
+
   private static final WasmValue F32_ZERO = new WasmValue(WasmValueType.F32, Float.valueOf(0.0f));
   private static final WasmValue F64_ZERO = new WasmValue(WasmValueType.F64, Double.valueOf(0.0));
 
   /** Cached null reference singletons. */
   private static final WasmValue NULL_FUNCREF = new WasmValue(WasmValueType.FUNCREF, null);
+
   private static final WasmValue NULL_EXTERNREF = new WasmValue(WasmValueType.EXTERNREF, null);
   private static final WasmValue NULL_ANYREF = new WasmValue(WasmValueType.ANYREF, null);
   private static final WasmValue NULL_EQREF = new WasmValue(WasmValueType.EQREF, null);
@@ -471,6 +474,9 @@ public final class WasmValue {
    * @return a new WasmValue
    */
   public static WasmValue funcref(final Object value) {
+    if (value == null) {
+      return NULL_FUNCREF;
+    }
     return new WasmValue(WasmValueType.FUNCREF, value);
   }
 
@@ -491,6 +497,9 @@ public final class WasmValue {
    * @return a new WasmValue
    */
   public static WasmValue externref(final Object value) {
+    if (value == null) {
+      return NULL_EXTERNREF;
+    }
     return new WasmValue(WasmValueType.EXTERNREF, value);
   }
 

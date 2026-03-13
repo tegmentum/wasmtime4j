@@ -67,7 +67,9 @@ public final class JniInstancePre implements InstancePre {
     this.module = Objects.requireNonNull(module, "module cannot be null");
     this.engine = Objects.requireNonNull(engine, "engine cannot be null");
     this.creationTime = Instant.now();
-    LOGGER.fine("Created JniInstancePre with handle: " + nativeHandle);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JniInstancePre with handle: " + nativeHandle);
+    }
   }
 
   @Override
@@ -186,7 +188,9 @@ public final class JniInstancePre implements InstancePre {
     try {
       if (closed.compareAndSet(false, true)) {
         nativeDestroy(nativeHandle);
-        LOGGER.fine("Closed JniInstancePre with handle: " + nativeHandle);
+        if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+          LOGGER.fine("Closed JniInstancePre with handle: " + nativeHandle);
+        }
       }
     } finally {
       closeLock.writeLock().unlock();

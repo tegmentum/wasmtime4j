@@ -81,6 +81,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
 
   /** Cached return types to avoid cloning on every call. */
   private final ai.tegmentum.wasmtime4j.WasmValueType[] cachedReturnTypes;
+
   private final WasmFunction wasmFunction; // Null for host functions
   private final WeakReference<JniStore> storeRef;
 

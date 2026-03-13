@@ -65,7 +65,9 @@ public final class JniWasiPollable extends JniResource implements WasiPollable {
       throw new IllegalArgumentException("Context handle cannot be 0");
     }
     this.contextHandle = contextHandle;
-    LOGGER.fine("Created JNI WASI pollable with handle: " + pollableHandle);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI WASI pollable with handle: " + pollableHandle);
+    }
   }
 
   @Override

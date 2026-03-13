@@ -100,7 +100,9 @@ public final class JniWasiLinker implements WasiLinker {
     this.inheritAllEnvironment = false;
     this.inheritedEnvironmentVariables = null;
 
-    LOGGER.fine("Created JniWasiLinker with handle: " + linkerHandle);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JniWasiLinker with handle: " + linkerHandle);
+    }
   }
 
   @Override
@@ -115,7 +117,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       directoryMappings.put(hostPath, new DirectoryMapping(guestPath));
-      LOGGER.fine("Added directory mapping: " + hostPath + " -> " + guestPath);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Added directory mapping: " + hostPath + " -> " + guestPath);
+      }
     } finally {
       endOperation();
     }
@@ -129,7 +133,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       environmentVariables.put(name, value);
-      LOGGER.fine("Set environment variable: " + name);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Set environment variable: " + name);
+      }
     } finally {
       endOperation();
     }
@@ -143,7 +149,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       environmentVariables.putAll(environment);
-      LOGGER.fine("Added " + environment.size() + " environment variables");
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Added " + environment.size() + " environment variables");
+      }
     } finally {
       endOperation();
     }
@@ -168,7 +176,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       inheritedEnvironmentVariables = new ArrayList<>(variableNames);
-      LOGGER.fine("Set " + variableNames.size() + " environment variables to inherit");
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Set " + variableNames.size() + " environment variables to inherit");
+      }
     } finally {
       endOperation();
     }
@@ -183,7 +193,9 @@ public final class JniWasiLinker implements WasiLinker {
     try {
       arguments.clear();
       arguments.addAll(args);
-      LOGGER.fine("Set " + args.size() + " command line arguments");
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Set " + args.size() + " command line arguments");
+      }
     } finally {
       endOperation();
     }
@@ -197,7 +209,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       stdinConfig = config;
-      LOGGER.fine("Configured stdin: " + config.getType());
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Configured stdin: " + config.getType());
+      }
     } finally {
       endOperation();
     }
@@ -211,7 +225,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       stdoutConfig = config;
-      LOGGER.fine("Configured stdout: " + config.getType());
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Configured stdout: " + config.getType());
+      }
     } finally {
       endOperation();
     }
@@ -225,7 +241,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       stderrConfig = config;
-      LOGGER.fine("Configured stderr: " + config.getType());
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Configured stderr: " + config.getType());
+      }
     } finally {
       endOperation();
     }
@@ -258,7 +276,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       maxFileSize = maxSizeBytes;
-      LOGGER.fine("Set max file size: " + maxSizeBytes);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Set max file size: " + maxSizeBytes);
+      }
     } finally {
       endOperation();
     }
@@ -269,7 +289,9 @@ public final class JniWasiLinker implements WasiLinker {
     beginOperation();
     try {
       maxOpenFiles = max;
-      LOGGER.fine("Set max open files: " + max);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Set max open files: " + max);
+      }
     } finally {
       endOperation();
     }
@@ -403,7 +425,9 @@ public final class JniWasiLinker implements WasiLinker {
           final InputStream inputStream = config.getInputStream();
           final byte[] data = StreamUtils.readAllBytes(inputStream);
           context.setStdinBytes(data);
-          LOGGER.fine("Set stdin from InputStream with " + data.length + " bytes");
+          if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+            LOGGER.fine("Set stdin from InputStream with " + data.length + " bytes");
+          }
         } catch (IOException e) {
           throw new RuntimeException("Failed to read stdin from InputStream", e);
         }

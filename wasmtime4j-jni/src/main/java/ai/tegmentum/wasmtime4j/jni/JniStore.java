@@ -128,7 +128,9 @@ public final class JniStore extends JniResource implements Store {
   JniStore(final long nativeHandle, final Engine engine) {
     super(nativeHandle);
     this.engine = engine;
-    LOGGER.fine("Created JNI store with handle: 0x" + Long.toHexString(nativeHandle));
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI store with handle: 0x" + Long.toHexString(nativeHandle));
+    }
   }
 
   /**
@@ -237,7 +239,9 @@ public final class JniStore extends JniResource implements Store {
     try {
       this.resourceLimiter = limiter;
       nativeSetResourceLimiter(getNativeHandle());
-      LOGGER.fine("Set resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Set resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+      }
     } finally {
       endOperation();
     }
@@ -254,7 +258,9 @@ public final class JniStore extends JniResource implements Store {
       this.resourceLimiter = null;
       this.resourceLimiterAsync = limiter;
       nativeSetResourceLimiterAsync(getNativeHandle());
-      LOGGER.fine("Set async resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Set async resource limiter on store 0x" + Long.toHexString(getNativeHandle()));
+      }
     } finally {
       endOperation();
     }
@@ -269,7 +275,9 @@ public final class JniStore extends JniResource implements Store {
       if (!success) {
         throw new WasmException("Failed to set fuel to " + fuel);
       }
-      LOGGER.fine("Set fuel to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Set fuel to " + fuel + " for store 0x" + Long.toHexString(getNativeHandle()));
+      }
     } catch (final Exception e) {
       if (e instanceof WasmException) {
         throw e;
@@ -1106,7 +1114,9 @@ public final class JniStore extends JniResource implements Store {
 
     if (nativeHandle != 0) {
       nativeDestroyStore(nativeHandle);
-      LOGGER.fine("Destroyed JNI store with handle: 0x" + Long.toHexString(nativeHandle));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Destroyed JNI store with handle: 0x" + Long.toHexString(nativeHandle));
+      }
     }
   }
 

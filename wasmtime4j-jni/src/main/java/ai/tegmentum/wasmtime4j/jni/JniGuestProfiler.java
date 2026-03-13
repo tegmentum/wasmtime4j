@@ -214,7 +214,9 @@ final class JniGuestProfiler implements GuestProfiler {
       throw new WasmException("Failed to finish profiler");
     }
     finished = true;
-    LOGGER.fine("Guest profiler finished, profile size: " + data.length + " bytes");
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Guest profiler finished, profile size: " + data.length + " bytes");
+    }
     return data;
   }
 

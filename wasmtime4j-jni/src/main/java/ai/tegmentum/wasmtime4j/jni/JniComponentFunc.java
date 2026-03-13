@@ -82,7 +82,9 @@ public final class JniComponentFunc
     this.functionName = functionName;
     this.instance = instance;
     this.component = component;
-    LOGGER.fine("Created JniComponentFunc: " + functionName);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JniComponentFunc: " + functionName);
+    }
   }
 
   @Override

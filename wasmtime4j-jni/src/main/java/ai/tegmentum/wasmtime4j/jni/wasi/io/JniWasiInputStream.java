@@ -66,7 +66,9 @@ public final class JniWasiInputStream extends JniResource implements WasiInputSt
       throw new IllegalArgumentException("Context handle cannot be 0");
     }
     this.contextHandle = contextHandle;
-    LOGGER.fine("Created JNI WASI input stream with handle: " + streamHandle);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI WASI input stream with handle: " + streamHandle);
+    }
   }
 
   @Override

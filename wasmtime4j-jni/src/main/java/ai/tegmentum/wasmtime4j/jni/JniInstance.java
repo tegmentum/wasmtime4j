@@ -76,7 +76,9 @@ public final class JniInstance extends JniResource implements Instance {
     Validation.requireNonNull(store, "store");
     this.module = module;
     this.store = store;
-    LOGGER.fine("Created JNI instance with handle: " + nativeHandle);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI instance with handle: " + nativeHandle);
+    }
   }
 
   /**
@@ -526,10 +528,12 @@ public final class JniInstance extends JniResource implements Instance {
   protected void doClose() throws Exception {
     // Instance resources are owned by Store and will be freed when Store is destroyed.
     // Explicitly destroying Instance before Store can corrupt wasmtime's internal slab state.
-    LOGGER.fine(
-        "Instance marked as closed (handle: 0x"
-            + Long.toHexString(nativeHandle)
-            + "). Native resources will be freed when Store is destroyed.");
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine(
+          "Instance marked as closed (handle: 0x"
+              + Long.toHexString(nativeHandle)
+              + "). Native resources will be freed when Store is destroyed.");
+    }
   }
 
   @Override

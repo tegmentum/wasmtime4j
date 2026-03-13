@@ -78,7 +78,9 @@ public final class JniWasiHttpContext implements WasiHttpContext {
         throw new WasmException("Failed to create native WASI HTTP context");
       }
       this.contextId = nativeGetContextId(contextHandle);
-      LOGGER.fine("Created WASI HTTP context: " + contextId);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created WASI HTTP context: " + contextId);
+      }
     } catch (final WasmException e) {
       throw e;
     } catch (final Exception e) {
@@ -130,7 +132,9 @@ public final class JniWasiHttpContext implements WasiHttpContext {
   public void close() {
     if (closed.compareAndSet(false, true)) {
       nativeFree(contextHandle);
-      LOGGER.fine("Closed WASI HTTP context: " + contextId);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Closed WASI HTTP context: " + contextId);
+      }
     }
   }
 

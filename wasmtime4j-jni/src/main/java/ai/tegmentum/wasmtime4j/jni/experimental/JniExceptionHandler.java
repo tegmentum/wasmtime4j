@@ -97,7 +97,9 @@ public final class JniExceptionHandler implements ExceptionHandler {
     this.nextTagHandle = new AtomicLong(1);
     this.enabled = new AtomicBoolean(true);
     this.closed = new AtomicBoolean(false);
-    LOGGER.fine("Created JNI exception handler: " + handlerName);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI exception handler: " + handlerName);
+    }
   }
 
   @Override
@@ -110,7 +112,9 @@ public final class JniExceptionHandler implements ExceptionHandler {
       return HandlingResult.NOT_HANDLED;
     }
 
-    LOGGER.fine("Handling exception: " + exception.getClass().getName());
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Handling exception: " + exception.getClass().getName());
+    }
     return HandlingResult.HANDLED;
   }
 
@@ -154,7 +158,9 @@ public final class JniExceptionHandler implements ExceptionHandler {
       tagsByName.put(trimmedName, tag);
       tagsByHandle.put(tagHandle, tag);
 
-      LOGGER.fine("Created exception tag '" + trimmedName + "' with handle: " + tagHandle);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created exception tag '" + trimmedName + "' with handle: " + tagHandle);
+      }
       return tag;
     } finally {
       endOperation();
@@ -202,7 +208,9 @@ public final class JniExceptionHandler implements ExceptionHandler {
               + "wasm function 1: <wasm_entry>\n"
               + "wasm function 2: <wasm_start>";
 
-      LOGGER.fine("Captured stack trace for tag handle: " + tagHandle);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Captured stack trace for tag handle: " + tagHandle);
+      }
       return trace;
     } finally {
       endOperation();
@@ -221,7 +229,9 @@ public final class JniExceptionHandler implements ExceptionHandler {
       }
 
       final boolean shouldContinue = currentDepth < config.getMaxUnwindDepth();
-      LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
+      }
       return shouldContinue;
     } finally {
       endOperation();

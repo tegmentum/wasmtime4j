@@ -120,13 +120,15 @@ public final class JniFunction extends JniResource
     this.name = name;
     this.moduleHandle = moduleHandle;
     this.store = store;
-    LOGGER.fine(
-        "Created JNI function '"
-            + name
-            + "' with handle: 0x"
-            + Long.toHexString(nativeHandle)
-            + ", module: 0x"
-            + Long.toHexString(moduleHandle));
+    if (LOGGER.isLoggable(Level.FINE)) {
+      LOGGER.fine(
+          "Created JNI function '"
+              + name
+              + "' with handle: 0x"
+              + Long.toHexString(nativeHandle)
+              + ", module: 0x"
+              + Long.toHexString(moduleHandle));
+    }
   }
 
   /**
@@ -240,8 +242,7 @@ public final class JniFunction extends JniResource
       }
 
       // Convert native results back to WasmValue array using cached return types
-      return JniTypeConverter.nativeResultsToWasmValues(
-          nativeResults, getReturnTypesInternal());
+      return JniTypeConverter.nativeResultsToWasmValues(nativeResults, getReturnTypesInternal());
     } catch (final IllegalArgumentException e) {
       throw new WasmException("Parameter validation failed for function '" + name + "'", e);
     } catch (final RuntimeException e) {
@@ -333,8 +334,7 @@ public final class JniFunction extends JniResource
         throw new WasmException("Native async function call returned null for '" + name + "'");
       }
 
-      return JniTypeConverter.nativeResultsToWasmValues(
-          nativeResults, getReturnTypesInternal());
+      return JniTypeConverter.nativeResultsToWasmValues(nativeResults, getReturnTypesInternal());
     } catch (final IllegalArgumentException e) {
       throw new WasmException("Parameter validation failed for async function '" + name + "'", e);
     } catch (final RuntimeException e) {
@@ -450,8 +450,8 @@ public final class JniFunction extends JniResource
   }
 
   /**
-   * Returns cached return types array, populating the cache on first call.
-   * Avoids cloning the array from FunctionType on every function call.
+   * Returns cached return types array, populating the cache on first call. Avoids cloning the array
+   * from FunctionType on every function call.
    */
   private WasmValueType[] getReturnTypesInternal() {
     WasmValueType[] types = cachedReturnTypes;

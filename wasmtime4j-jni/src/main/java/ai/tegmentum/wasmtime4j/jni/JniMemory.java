@@ -71,7 +71,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
   JniMemory(final long nativeHandle, final JniStore store) {
     super(nativeHandle);
     this.store = store;
-    LOGGER.fine("Created JNI memory with handle: 0x" + Long.toHexString(nativeHandle));
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI memory with handle: 0x" + Long.toHexString(nativeHandle));
+    }
   }
 
   /**

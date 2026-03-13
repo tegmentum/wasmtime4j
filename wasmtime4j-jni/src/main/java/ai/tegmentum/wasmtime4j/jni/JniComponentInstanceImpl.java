@@ -118,7 +118,9 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
       } catch (final Exception e) {
         LOGGER.warning("Error closing component instance: " + e.getMessage());
       }
-      LOGGER.fine("Closed component instance: " + instanceId);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Closed component instance: " + instanceId);
+      }
     }
   }
 

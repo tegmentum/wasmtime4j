@@ -127,7 +127,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       }
       functions.add(functionName);
 
-      LOGGER.fine("Defined component function: " + witPath);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Defined component function: " + witPath);
+      }
     } finally {
       endOperation();
     }
@@ -161,7 +163,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         throw new WasmException("Failed to define host function: " + e.getMessage(), e);
       }
 
-      LOGGER.fine("Defined component function: " + witPath);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Defined component function: " + witPath);
+      }
     } finally {
       endOperation();
     }
@@ -233,7 +237,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         throw new WasmException("Failed to define async host function: " + e.getMessage(), e);
       }
 
-      LOGGER.fine("Defined async component function: " + witPath);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Defined async component function: " + witPath);
+      }
     } finally {
       endOperation();
     }
@@ -399,7 +405,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         throw new WasmException("Failed to define module: " + e.getMessage(), e);
       }
 
-      LOGGER.fine("Defined core module '" + name + "' on instance path '" + instancePath + "'");
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Defined core module '" + name + "' on instance path '" + instancePath + "'");
+      }
     } finally {
       endOperation();
     }
@@ -982,7 +990,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         definedInterfaces.put(toKey, aliasFunctions);
       }
 
-      LOGGER.fine("Created interface alias: " + fromKey + " -> " + toKey);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created interface alias: " + fromKey + " -> " + toKey);
+      }
     } finally {
       endOperation();
     }

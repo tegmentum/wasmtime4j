@@ -53,7 +53,9 @@ public final class JniComponentTypedFunc implements ComponentTypedFunc {
     Validation.requireNonEmpty(signature, "signature");
     this.function = function;
     this.signature = signature;
-    LOGGER.fine("Created JniComponentTypedFunc with signature: " + signature);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JniComponentTypedFunc with signature: " + signature);
+    }
   }
 
   @Override
@@ -360,7 +362,9 @@ public final class JniComponentTypedFunc implements ComponentTypedFunc {
     try {
       if (!closed) {
         closed = true;
-        LOGGER.fine("Closed JniComponentTypedFunc with signature: " + signature);
+        if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+          LOGGER.fine("Closed JniComponentTypedFunc with signature: " + signature);
+        }
       }
     } finally {
       closeLock.writeLock().unlock();

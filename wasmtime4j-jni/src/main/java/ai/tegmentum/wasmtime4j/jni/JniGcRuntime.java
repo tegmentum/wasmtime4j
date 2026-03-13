@@ -73,7 +73,9 @@ public final class JniGcRuntime implements GcRuntime {
       throw new JniException("Failed to create GC runtime");
     }
 
-    LOGGER.fine("Created JNI GC runtime with handle: " + this.nativeHandle);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI GC runtime with handle: " + this.nativeHandle);
+    }
   }
 
   /**
@@ -1094,7 +1096,9 @@ public final class JniGcRuntime implements GcRuntime {
       if (!disposed) {
         destroyRuntimeNative(nativeHandle);
         disposed = true;
-        LOGGER.fine("Disposed JNI GC runtime with handle: " + nativeHandle);
+        if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+          LOGGER.fine("Disposed JNI GC runtime with handle: " + nativeHandle);
+        }
       }
     } finally {
       lock.writeLock().unlock();

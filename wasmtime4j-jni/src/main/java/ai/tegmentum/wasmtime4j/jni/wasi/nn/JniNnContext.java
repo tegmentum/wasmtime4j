@@ -149,7 +149,9 @@ public final class JniNnContext extends JniResource implements NnContext {
           try {
             encodings.add(NnGraphEncoding.fromNativeCode(code));
           } catch (IllegalArgumentException e) {
-            LOGGER.fine("Unknown encoding code from native: " + code);
+            if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+              LOGGER.fine("Unknown encoding code from native: " + code);
+            }
           }
         }
       }

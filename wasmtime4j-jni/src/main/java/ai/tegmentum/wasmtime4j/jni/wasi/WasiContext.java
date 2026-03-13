@@ -196,7 +196,9 @@ public final class WasiContext extends JniResource {
 
   @Override
   protected void doClose() throws Exception {
-    LOGGER.fine("Closing WASI context with handle: 0x" + Long.toHexString(nativeHandle));
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Closing WASI context with handle: 0x" + Long.toHexString(nativeHandle));
+    }
 
     // Call native cleanup
     nativeClose(nativeHandle);

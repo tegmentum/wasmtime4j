@@ -89,7 +89,9 @@ public final class JniPoolingAllocator implements PoolingAllocator {
       throw new WasmException("Failed to create native pooling allocator");
     }
 
-    LOGGER.fine("Created JNI pooling allocator with config: " + config);
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI pooling allocator with config: " + config);
+    }
   }
 
   @Override

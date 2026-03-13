@@ -516,7 +516,9 @@ public final class JniComponent {
      */
     JniComponentEngine(final long nativeHandle) {
       super(nativeHandle);
-      LOGGER.fine("Created component engine with handle: 0x" + Long.toHexString(nativeHandle));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created component engine with handle: 0x" + Long.toHexString(nativeHandle));
+      }
     }
 
     /**
@@ -632,7 +634,10 @@ public final class JniComponent {
     protected void doClose() throws Exception {
       if (nativeHandle != 0) {
         nativeDestroyComponentEngine(nativeHandle);
-        LOGGER.fine("Destroyed component engine with handle: 0x" + Long.toHexString(nativeHandle));
+        if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+          LOGGER.fine(
+              "Destroyed component engine with handle: 0x" + Long.toHexString(nativeHandle));
+        }
       }
     }
 
@@ -662,7 +667,9 @@ public final class JniComponent {
      */
     JniComponentHandle(final long nativeHandle) {
       super(nativeHandle);
-      LOGGER.fine("Created component handle with handle: 0x" + Long.toHexString(nativeHandle));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created component handle with handle: 0x" + Long.toHexString(nativeHandle));
+      }
     }
 
     /**
@@ -727,7 +734,9 @@ public final class JniComponent {
     protected void doClose() throws Exception {
       if (nativeHandle != 0) {
         nativeDestroyComponent(nativeHandle);
-        LOGGER.fine("Destroyed component with handle: 0x" + Long.toHexString(nativeHandle));
+        if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+          LOGGER.fine("Destroyed component with handle: 0x" + Long.toHexString(nativeHandle));
+        }
       }
     }
 
@@ -766,7 +775,9 @@ public final class JniComponent {
     JniComponentInstanceHandle(final long instanceId) {
       super(instanceId);
       this.engineHandle = 0;
-      LOGGER.fine("Created unmanaged component instance with ID: " + instanceId);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created unmanaged component instance with ID: " + instanceId);
+      }
     }
 
     /**
@@ -799,14 +810,18 @@ public final class JniComponent {
     protected void doClose() throws Exception {
       if (nativeHandle != 0 && engineHandle != 0) {
         nativeDestroyComponentInstance(engineHandle, nativeHandle);
-        LOGGER.fine(
-            "Destroyed component instance with ID: "
-                + nativeHandle
-                + " from engine: 0x"
-                + Long.toHexString(engineHandle));
+        if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+          LOGGER.fine(
+              "Destroyed component instance with ID: "
+                  + nativeHandle
+                  + " from engine: 0x"
+                  + Long.toHexString(engineHandle));
+        }
       } else if (nativeHandle != 0) {
         // Unmanaged instance - no native cleanup needed
-        LOGGER.fine("Closed unmanaged component instance with ID: " + nativeHandle);
+        if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+          LOGGER.fine("Closed unmanaged component instance with ID: " + nativeHandle);
+        }
       }
     }
 

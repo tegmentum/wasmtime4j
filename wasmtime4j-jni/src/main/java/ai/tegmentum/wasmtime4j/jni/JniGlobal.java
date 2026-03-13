@@ -63,7 +63,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     super(nativeHandle);
     Validation.requireNonNull(store, "store");
     this.store = store;
-    LOGGER.fine("Created JNI global with handle: 0x" + Long.toHexString(nativeHandle));
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine("Created JNI global with handle: 0x" + Long.toHexString(nativeHandle));
+    }
   }
 
   /**

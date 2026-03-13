@@ -111,7 +111,9 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
       // Get the native engine wrapper using the handle we just passed to super
       this.nativeEngine = new JniComponent.JniComponentEngine(getNativeHandle());
 
-      LOGGER.fine("Created JNI component engine: " + engineId);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created JNI component engine: " + engineId);
+      }
     } catch (final Exception e) {
       throw new WasmException("Failed to create JNI component engine", e);
     }
@@ -364,7 +366,9 @@ public final class JniComponentEngine extends JniResource implements ComponentEn
 
     if (nativeEngine != null && nativeEngine.isValid()) {
       nativeEngine.close();
-      LOGGER.fine("Closed JNI component engine: " + engineId);
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Closed JNI component engine: " + engineId);
+      }
     }
   }
 

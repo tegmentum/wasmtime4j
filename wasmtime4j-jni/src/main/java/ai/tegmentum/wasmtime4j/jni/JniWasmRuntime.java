@@ -84,7 +84,10 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
   public JniWasmRuntime() throws WasmException {
     super(initializeRuntime());
 
-    LOGGER.fine("Created JNI WebAssembly runtime with handle: 0x" + Long.toHexString(nativeHandle));
+    if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+      LOGGER.fine(
+          "Created JNI WebAssembly runtime with handle: 0x" + Long.toHexString(nativeHandle));
+    }
   }
 
   /**
@@ -117,7 +120,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
       final JniEngine engine = new JniEngine(engineHandle, JniWasmRuntime.this);
 
-      LOGGER.fine("Created engine with handle: 0x" + Long.toHexString(engineHandle));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created engine with handle: 0x" + Long.toHexString(engineHandle));
+      }
       return engine;
     } catch (final WasmException e) {
       throw e;
@@ -326,7 +331,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
       final JniTag tag = new JniTag(tagHandle, storeHandle);
 
-      LOGGER.fine("Created tag with handle: 0x" + Long.toHexString(tagHandle));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created tag with handle: 0x" + Long.toHexString(tagHandle));
+      }
       return tag;
     } catch (final Exception e) {
       if (e instanceof WasmException) {
@@ -359,7 +366,9 @@ public final class JniWasmRuntime extends JniResource implements WasmRuntime {
 
       final JniGcRuntime gcRuntime = new JniGcRuntime(engineHandle);
 
-      LOGGER.fine("Created GC runtime for engine: 0x" + Long.toHexString(engineHandle));
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine("Created GC runtime for engine: 0x" + Long.toHexString(engineHandle));
+      }
       return gcRuntime;
     } catch (final Exception e) {
       throw new WasmException("Unexpected error creating GC runtime", e);
