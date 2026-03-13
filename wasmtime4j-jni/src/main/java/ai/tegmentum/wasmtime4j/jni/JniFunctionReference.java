@@ -26,7 +26,6 @@ import ai.tegmentum.wasmtime4j.type.FunctionType;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,9 +55,15 @@ import java.util.logging.Logger;
 public final class JniFunctionReference extends JniResource implements FunctionReference {
   private static final Logger LOGGER = Logger.getLogger(JniFunctionReference.class.getName());
 
-  // Global registry for function references to prevent GC
-  private static final ConcurrentHashMap<Long, JniFunctionReference> FUNCTION_REFERENCE_REGISTRY =
-      new ConcurrentHashMap<>();
+  // Array-based registry for function references to prevent GC.
+  // Uses AtomicReferenceArray indexed by sequential ID for O(1) lookup
+  // without Long autoboxing overhead on every callback dispatch.
+  private static final java.util.concurrent.atomic.AtomicReference<
+          java.util.concurrent.atomic.AtomicReferenceArray<JniFunctionReference>>
+      FUNCTION_REFERENCE_REGISTRY =
+          new java.util.concurrent.atomic.AtomicReference<>(
+              new java.util.concurrent.atomic.AtomicReferenceArray<>(256));
+  private static final Object REGISTRY_GROW_LOCK = new Object();
   private static final AtomicLong NEXT_FUNCTION_REFERENCE_ID = new AtomicLong(1L);
 
   // Load native library when this class is first loaded
@@ -234,7 +239,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
 
     try {
       // Register this function reference to prevent GC
-      FUNCTION_REFERENCE_REGISTRY.put(functionReferenceId, this);
+      registryPut((int) functionReferenceId, this);
 
       if (LOGGER.isLoggable(Level.FINE)) {
         LOGGER.fine(
@@ -247,7 +252,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
       }
     } catch (Exception e) {
       // Clean up registry on failure
-      FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
+      registryRemove((int) functionReferenceId);
       throw new WasmException("Failed to create function reference: " + functionName, e);
     }
   }
@@ -362,7 +367,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
   @Override
   protected void doClose() throws Exception {
     // Remove from registry to prevent further use
-    FUNCTION_REFERENCE_REGISTRY.remove(functionReferenceId);
+    registryRemove((int) functionReferenceId);
 
     // Note: Do NOT call nativeDestroyFunctionReference here. FunctionReferences are Store-owned.
     // The Store will clean up all its FunctionReferences when it is destroyed.
@@ -395,8 +400,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
       justification = "Called by native code through JNI")
   private static int functionReferenceCallback(
       final long functionReferenceId, final byte[] paramsData, final byte[] resultsBuffer) {
-    final JniFunctionReference functionReference =
-        FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+    final JniFunctionReference functionReference = registryGet(functionReferenceId);
     if (functionReference == null) {
       LOGGER.severe("Function reference not found in registry: " + functionReferenceId);
       return -1;
@@ -468,7 +472,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
    * @return array containing [count, nextId]
    */
   static long[] getRegistryStats() {
-    return new long[] {FUNCTION_REFERENCE_REGISTRY.size(), NEXT_FUNCTION_REFERENCE_ID.get()};
+    return new long[] {registrySize(), NEXT_FUNCTION_REFERENCE_ID.get()};
   }
 
   /**
@@ -478,7 +482,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
    * @return the function reference, or null if not found
    */
   static JniFunctionReference getFromRegistry(final long functionReferenceId) {
-    return FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+    return registryGet(functionReferenceId);
   }
 
   /**
@@ -499,8 +503,7 @@ public final class JniFunctionReference extends JniResource implements FunctionR
       justification = "Called by native code through JNI")
   private static WasmValue[] invokeFunctionReferenceCallback(
       final long functionReferenceId, final WasmValue[] params) throws WasmException {
-    final JniFunctionReference functionReference =
-        FUNCTION_REFERENCE_REGISTRY.get(functionReferenceId);
+    final JniFunctionReference functionReference = registryGet(functionReferenceId);
     if (functionReference == null) {
       LOGGER.severe("Function reference not found in registry: " + functionReferenceId);
       throw new WasmException("Function reference not found: " + functionReferenceId);
@@ -538,6 +541,61 @@ public final class JniFunctionReference extends JniResource implements FunctionR
       throw new WasmException(
           "Function reference execution failed: " + functionReference.functionName, e);
     }
+  }
+
+  // =============================================================================
+  // Array-based registry operations (eliminates Long autoboxing on lookup)
+  // =============================================================================
+
+  private static void registryPut(final int idx, final JniFunctionReference ref) {
+    java.util.concurrent.atomic.AtomicReferenceArray<JniFunctionReference> arr =
+        FUNCTION_REFERENCE_REGISTRY.get();
+    if (idx >= arr.length()) {
+      synchronized (REGISTRY_GROW_LOCK) {
+        arr = FUNCTION_REFERENCE_REGISTRY.get();
+        if (idx >= arr.length()) {
+          final int newLen = Math.max(idx + 1, arr.length() * 2);
+          final java.util.concurrent.atomic.AtomicReferenceArray<JniFunctionReference> newArr =
+              new java.util.concurrent.atomic.AtomicReferenceArray<>(newLen);
+          for (int i = 0; i < arr.length(); i++) {
+            newArr.set(i, arr.get(i));
+          }
+          FUNCTION_REFERENCE_REGISTRY.set(newArr);
+          arr = newArr;
+        }
+      }
+    }
+    arr.set(idx, ref);
+  }
+
+  private static JniFunctionReference registryGet(final long id) {
+    final int idx = (int) id;
+    final java.util.concurrent.atomic.AtomicReferenceArray<JniFunctionReference> arr =
+        FUNCTION_REFERENCE_REGISTRY.get();
+    if (idx >= 0 && idx < arr.length()) {
+      return arr.get(idx);
+    }
+    return null;
+  }
+
+  private static void registryRemove(final int idx) {
+    final java.util.concurrent.atomic.AtomicReferenceArray<JniFunctionReference> arr =
+        FUNCTION_REFERENCE_REGISTRY.get();
+    if (idx >= 0 && idx < arr.length()) {
+      arr.set(idx, null);
+    }
+  }
+
+  private static int registrySize() {
+    final java.util.concurrent.atomic.AtomicReferenceArray<JniFunctionReference> arr =
+        FUNCTION_REFERENCE_REGISTRY.get();
+    int count = 0;
+    for (int i = 0; i < arr.length(); i++) {
+      if (arr.get(i) != null) {
+        count++;
+      }
+    }
+    return count;
   }
 
   // Native method declarations

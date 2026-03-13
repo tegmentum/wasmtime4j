@@ -51,8 +51,14 @@ import java.util.logging.Logger;
  */
 public final class JniComponentLinker<T> extends JniResource implements ComponentLinker<T> {
   private static final Logger LOGGER = Logger.getLogger(JniComponentLinker.class.getName());
-  private static final ConcurrentHashMap<Long, ComponentHostFunctionWrapper>
-      HOST_FUNCTION_CALLBACKS = new ConcurrentHashMap<>();
+  // Array-based callback registry indexed by sequential callback ID for O(1) lookup
+  // without Long autoboxing overhead on every callback dispatch from native code.
+  private static final java.util.concurrent.atomic.AtomicReference<
+          java.util.concurrent.atomic.AtomicReferenceArray<ComponentHostFunctionWrapper>>
+      HOST_FUNCTION_CALLBACKS =
+          new java.util.concurrent.atomic.AtomicReference<>(
+              new java.util.concurrent.atomic.AtomicReferenceArray<>(256));
+  private static final Object CALLBACKS_GROW_LOCK = new Object();
   private static final AtomicLong CALLBACK_ID_GENERATOR = new AtomicLong(1);
 
   private final Engine engine;
@@ -110,7 +116,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       } catch (final Exception e) {
         // Remove from local tracking if native call fails
         hostFunctions.remove(witPath);
-        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        callbacksRemove((int) callbackId);
         registeredCallbackIds.remove(callbackId);
         if (e instanceof WasmException) {
           throw (WasmException) e;
@@ -155,7 +161,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       } catch (final Exception e) {
         // Remove from local tracking if native call fails
         hostFunctions.remove(witPath);
-        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        callbacksRemove((int) callbackId);
         registeredCallbackIds.remove(callbackId);
         if (e instanceof WasmException) {
           throw (WasmException) e;
@@ -229,7 +235,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       } catch (final Exception e) {
         // Remove from local tracking if native call fails
         hostFunctions.remove(witPath);
-        HOST_FUNCTION_CALLBACKS.remove(callbackId);
+        callbacksRemove((int) callbackId);
         registeredCallbackIds.remove(callbackId);
         if (e instanceof WasmException) {
           throw (WasmException) e;
@@ -341,11 +347,11 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       } catch (final Exception e) {
         // Remove from local tracking if native call fails
         if (constructorCallbackId > 0) {
-          HOST_FUNCTION_CALLBACKS.remove(constructorCallbackId);
+          callbacksRemove((int) constructorCallbackId);
           registeredCallbackIds.remove(constructorCallbackId);
         }
         if (destructorCallbackId > 0) {
-          HOST_FUNCTION_CALLBACKS.remove(destructorCallbackId);
+          callbacksRemove((int) destructorCallbackId);
           registeredCallbackIds.remove(destructorCallbackId);
         }
         if (e instanceof WasmException) {
@@ -1077,14 +1083,14 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     final long callbackId = CALLBACK_ID_GENERATOR.getAndIncrement();
     final ComponentHostFunctionWrapper wrapper =
         new ComponentHostFunctionWrapper(callbackId, implementation);
-    HOST_FUNCTION_CALLBACKS.put(callbackId, wrapper);
+    callbacksPut((int) callbackId, wrapper);
     registeredCallbackIds.add(callbackId);
     return callbackId;
   }
 
   private void cleanupHostFunctionCallbacks() {
     for (final Long callbackId : registeredCallbackIds) {
-      HOST_FUNCTION_CALLBACKS.remove(callbackId);
+      callbacksRemove((int) callbackId.longValue());
     }
     registeredCallbackIds.clear();
   }
@@ -1100,7 +1106,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
    */
   @SuppressWarnings("unused") // Called from native code via JNI
   static void dispatchDestructorCallback(final long callbackId, final int rep) {
-    final ComponentHostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
+    final ComponentHostFunctionWrapper wrapper = callbacksGet(callbackId);
     if (wrapper == null) {
       LOGGER.warning(
           "Destructor callback not found for ID: "
@@ -1139,7 +1145,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
    */
   @SuppressWarnings("unused") // Called from native code via JNI
   static String dispatchHostFunctionCallback(final long callbackId, final String params) {
-    final ComponentHostFunctionWrapper wrapper = HOST_FUNCTION_CALLBACKS.get(callbackId);
+    final ComponentHostFunctionWrapper wrapper = callbacksGet(callbackId);
     if (wrapper == null) {
       LOGGER.severe("Host function callback not found for ID: " + callbackId);
       return null;
@@ -1153,6 +1159,49 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     } catch (final Exception e) {
       LOGGER.severe("Host function callback failed for ID: " + callbackId + ": " + e.getMessage());
       return null;
+    }
+  }
+
+  // =============================================================================
+  // Array-based callback registry operations (eliminates Long autoboxing on lookup)
+  // =============================================================================
+
+  private static void callbacksPut(final int idx, final ComponentHostFunctionWrapper wrapper) {
+    java.util.concurrent.atomic.AtomicReferenceArray<ComponentHostFunctionWrapper> arr =
+        HOST_FUNCTION_CALLBACKS.get();
+    if (idx >= arr.length()) {
+      synchronized (CALLBACKS_GROW_LOCK) {
+        arr = HOST_FUNCTION_CALLBACKS.get();
+        if (idx >= arr.length()) {
+          final int newLen = Math.max(idx + 1, arr.length() * 2);
+          final java.util.concurrent.atomic.AtomicReferenceArray<ComponentHostFunctionWrapper>
+              newArr = new java.util.concurrent.atomic.AtomicReferenceArray<>(newLen);
+          for (int i = 0; i < arr.length(); i++) {
+            newArr.set(i, arr.get(i));
+          }
+          HOST_FUNCTION_CALLBACKS.set(newArr);
+          arr = newArr;
+        }
+      }
+    }
+    arr.set(idx, wrapper);
+  }
+
+  private static ComponentHostFunctionWrapper callbacksGet(final long id) {
+    final int idx = (int) id;
+    final java.util.concurrent.atomic.AtomicReferenceArray<ComponentHostFunctionWrapper> arr =
+        HOST_FUNCTION_CALLBACKS.get();
+    if (idx >= 0 && idx < arr.length()) {
+      return arr.get(idx);
+    }
+    return null;
+  }
+
+  private static void callbacksRemove(final int idx) {
+    final java.util.concurrent.atomic.AtomicReferenceArray<ComponentHostFunctionWrapper> arr =
+        HOST_FUNCTION_CALLBACKS.get();
+    if (idx >= 0 && idx < arr.length()) {
+      arr.set(idx, null);
     }
   }
 
