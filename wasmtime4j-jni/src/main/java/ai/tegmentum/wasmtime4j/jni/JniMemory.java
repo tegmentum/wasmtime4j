@@ -48,7 +48,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
   // Store reference for atomic operations
   private final JniStore store;
 
-  // Cached store native handle to avoid redundant ensureNotClosed() calls via store.getNativeHandle()
+  // Cached store native handle to avoid redundant ensureNotClosed() calls via
+  // store.getNativeHandle()
   private final long storeNativeHandle;
 
   // Instance handle for data segment operations (memory.init, data.drop)
