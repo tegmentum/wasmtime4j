@@ -154,6 +154,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Automatic-Module-Name>ai.tegmentum.wasmtime4j.nativeloader</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -270,41 +277,6 @@
             </build>
         </profile>
 
-        <!-- Compile module-info.java on Java 9+ (javac 8 does not support modules) -->
-        <profile>
-            <id>java9-module-info</id>
-            <activation>
-                <jdk>[9,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>compile-module-info</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>compile</goal>
-                                </goals>
-                                <configuration>
-                                    <release>9</release>
-                                    <compilerArgs>
-                                        <arg>-Xlint:all</arg>
-                                        <arg>-Xlint:-processing</arg>
-                                        <arg>-Xlint:-options</arg>
-                                    </compilerArgs>
-                                    <includes>
-                                        <include>module-info.java</include>
-                                    </includes>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
 
         <!-- GPG signing profile - can be activated manually -->
         <profile>

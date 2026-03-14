@@ -72,11 +72,12 @@ final class NativeLoaderTest {
   @Test
   void testUtilityClassInstantiation() {
     // Use reflection to try to instantiate the utility class
-    final var exception =
+    final InvocationTargetException exception =
         assertThrows(
             InvocationTargetException.class,
             () -> {
-              final var constructor = NativeLoader.class.getDeclaredConstructor();
+              final java.lang.reflect.Constructor<?> constructor =
+                  NativeLoader.class.getDeclaredConstructor();
               constructor.setAccessible(true);
               constructor.newInstance();
             },
