@@ -61,6 +61,11 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
       mhCallF64ToF64; // (ADDRESS, ADDRESS, ADDRESS, JAVA_DOUBLE, ADDRESS) -> JAVA_INT
   private volatile MethodHandle mhCallToI32; // (ADDRESS, ADDRESS, ADDRESS, ADDRESS) -> JAVA_INT
 
+  // Instance global get/set MethodHandles
+  private volatile MethodHandle mhInstanceGetGlobalValue; // 9×ADDRESS -> INT
+  private volatile MethodHandle
+      mhInstanceSetGlobalValue; // 3×ADDRESS,INT,INT,LONG,DBL,DBL,INT,LONG -> INT
+
   private NativeInstanceBindings() {
     super();
     initializeBindings();
@@ -102,6 +107,8 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     initTypedHandle("wasmtime4j_instance_call_i64_to_i64", h -> this.mhCallI64ToI64 = h);
     initTypedHandle("wasmtime4j_instance_call_f64_to_f64", h -> this.mhCallF64ToF64 = h);
     initTypedHandle("wasmtime4j_instance_call_to_i32", h -> this.mhCallToI32 = h);
+    initTypedHandle("wasmtime4j_instance_get_global_value", h -> this.mhInstanceGetGlobalValue = h);
+    initTypedHandle("wasmtime4j_instance_set_global_value", h -> this.mhInstanceSetGlobalValue = h);
   }
 
   private void initTypedHandle(
@@ -646,6 +653,24 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(instancePtr, "instancePtr");
     validatePointer(storePtr, "storePtr");
     validatePointer(name, "name");
+    final MethodHandle mh = mhInstanceGetGlobalValue;
+    if (mh != null) {
+      try {
+        return (int)
+            mh.invokeExact(
+                instancePtr,
+                storePtr,
+                name,
+                i32Out,
+                i64Out,
+                f32Out,
+                f64Out,
+                refIdPresentOut,
+                refIdOut);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native instanceGetGlobalValue failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_instance_get_global_value",
         Integer.class,
@@ -689,6 +714,25 @@ public final class NativeInstanceBindings extends NativeBindingsBase {
     validatePointer(instancePtr, "instancePtr");
     validatePointer(storePtr, "storePtr");
     validatePointer(name, "name");
+    final MethodHandle mh = mhInstanceSetGlobalValue;
+    if (mh != null) {
+      try {
+        return (int)
+            mh.invokeExact(
+                instancePtr,
+                storePtr,
+                name,
+                valueTypeCode,
+                i32Value,
+                i64Value,
+                f32Value,
+                f64Value,
+                refIdPresent,
+                refId);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native instanceSetGlobalValue failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_instance_set_global_value",
         Integer.class,

@@ -48,6 +48,21 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
   private final Arena arena;
   private final NativeResourceHandle resourceHandle;
 
+  // Cached native pointers — avoid per-call method dispatch
+  private final MemorySegment cachedNativeInstance;
+  private final MemorySegment cachedNativeStore;
+  private final MemorySegment cachedNameSegment;
+
+  // Pre-allocated output buffers for get() — avoids Arena + 6 allocations per call.
+  // Synchronized access via getBufferLock since beginOperation() is a shared read lock.
+  private final Object getBufferLock = new Object();
+  private final MemorySegment bufI32;
+  private final MemorySegment bufI64;
+  private final MemorySegment bufF32;
+  private final MemorySegment bufF64;
+  private final MemorySegment bufRefIdPresent;
+  private final MemorySegment bufRefId;
+
   /**
    * Package-private constructor for wrapping a global export from an instance.
    *
@@ -82,6 +97,20 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
     this.type = type;
     this.mutable = mutable;
     this.arena = Arena.ofShared();
+
+    // Cache native pointers and name segment at construction time
+    this.cachedNativeInstance = instance.getNativeInstance();
+    this.cachedNativeStore = store.getNativeStore();
+    this.cachedNameSegment = arena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+
+    // Pre-allocate output buffers from the shared arena
+    this.bufI32 = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufI64 = arena.allocate(ValueLayout.JAVA_LONG);
+    this.bufF32 = arena.allocate(ValueLayout.JAVA_DOUBLE);
+    this.bufF64 = arena.allocate(ValueLayout.JAVA_DOUBLE);
+    this.bufRefIdPresent = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufRefId = arena.allocate(ValueLayout.JAVA_LONG);
+
     final Arena capturedArena = this.arena;
     this.resourceHandle =
         new NativeResourceHandle(
@@ -108,52 +137,43 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
   public WasmValue get() {
     resourceHandle.beginOperation();
     try {
-
-      try (final Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment nameSegment =
-            tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
-        final MemorySegment i32Value = tempArena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment i64Value = tempArena.allocate(ValueLayout.JAVA_LONG);
-        final MemorySegment f32Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-        final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-        final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
-
+      // Use pre-allocated buffers with synchronization to avoid per-call Arena + 6 allocations.
+      synchronized (getBufferLock) {
         final int result =
             NATIVE_BINDINGS.instanceGetGlobalValue(
-                instance.getNativeInstance(),
-                store.getNativeStore(),
-                nameSegment,
-                i32Value,
-                i64Value,
-                f32Value,
-                f64Value,
-                refIdPresent,
-                refId);
+                cachedNativeInstance,
+                cachedNativeStore,
+                cachedNameSegment,
+                bufI32,
+                bufI64,
+                bufF32,
+                bufF64,
+                bufRefIdPresent,
+                bufRefId);
 
         if (result != 0) {
           throw new RuntimeException(
               "Failed to get global value: " + PanamaErrorMapper.getErrorDescription(result));
         }
 
-        // Convert based on type
+        // Convert based on type — read from pre-allocated buffers
         switch (type) {
           case I32:
-            return WasmValue.i32(i32Value.get(ValueLayout.JAVA_INT, 0));
+            return WasmValue.i32(bufI32.get(ValueLayout.JAVA_INT, 0));
           case I64:
-            return WasmValue.i64(i64Value.get(ValueLayout.JAVA_LONG, 0));
+            return WasmValue.i64(bufI64.get(ValueLayout.JAVA_LONG, 0));
           case F32:
-            return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
+            return WasmValue.f32((float) bufF32.get(ValueLayout.JAVA_DOUBLE, 0));
           case F64:
-            return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
+            return WasmValue.f64(bufF64.get(ValueLayout.JAVA_DOUBLE, 0));
           case FUNCREF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.funcref(bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.funcref(null);
           case EXTERNREF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.externref(bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.externref(null);
           default:
@@ -181,73 +201,67 @@ final class PanamaInstanceGlobal implements WasmGlobal, AutoCloseable {
             "Type mismatch: cannot set " + value.getType() + " value on " + type + " global");
       }
 
-      try (final Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment nameSegment =
-            tempArena.allocateFrom(name, java.nio.charset.StandardCharsets.UTF_8);
+      // Extract value based on type — no Arena needed, pass primitives directly
+      int valueTypeCode = type.toNativeTypeCode();
+      int i32Value = 0;
+      long i64Value = 0L;
+      double f32Value = 0.0;
+      double f64Value = 0.0;
+      int refIdPresent = 0;
+      long refId = 0L;
 
-        // Extract value based on type
-        int valueTypeCode = type.toNativeTypeCode();
-        int i32Value = 0;
-        long i64Value = 0L;
-        double f32Value = 0.0;
-        double f64Value = 0.0;
-        int refIdPresent = 0;
-        long refId = 0L;
-
-        switch (type) {
-          case I32:
-            i32Value = value.asInt();
-            break;
-          case I64:
-            i64Value = value.asLong();
-            break;
-          case F32:
-            f32Value = value.asFloat();
-            break;
-          case F64:
-            f64Value = value.asDouble();
-            break;
-          case FUNCREF:
-          case EXTERNREF:
-            final Object refValue = value.getValue();
-            if (refValue != null) {
-              refIdPresent = 1;
-              if (refValue
-                  instanceof ai.tegmentum.wasmtime4j.func.FunctionReference funcReference) {
-                refId = funcReference.getId();
-              } else if (refValue instanceof Long) {
-                refId = (Long) refValue;
-              } else if (refValue instanceof Integer) {
-                refId = ((Integer) refValue).longValue();
-              } else {
-                throw new IllegalArgumentException(
-                    "Unsupported reference value type: "
-                        + refValue.getClass().getName()
-                        + ". Expected FunctionReference, Long, or Integer.");
-              }
+      switch (type) {
+        case I32:
+          i32Value = value.asInt();
+          break;
+        case I64:
+          i64Value = value.asLong();
+          break;
+        case F32:
+          f32Value = value.asFloat();
+          break;
+        case F64:
+          f64Value = value.asDouble();
+          break;
+        case FUNCREF:
+        case EXTERNREF:
+          final Object refValue = value.getValue();
+          if (refValue != null) {
+            refIdPresent = 1;
+            if (refValue instanceof ai.tegmentum.wasmtime4j.func.FunctionReference funcReference) {
+              refId = funcReference.getId();
+            } else if (refValue instanceof Long) {
+              refId = (Long) refValue;
+            } else if (refValue instanceof Integer) {
+              refId = ((Integer) refValue).longValue();
+            } else {
+              throw new IllegalArgumentException(
+                  "Unsupported reference value type: "
+                      + refValue.getClass().getName()
+                      + ". Expected FunctionReference, Long, or Integer.");
             }
-            break;
-          default:
-            throw new UnsupportedOperationException("Unsupported type: " + type);
-        }
+          }
+          break;
+        default:
+          throw new UnsupportedOperationException("Unsupported type: " + type);
+      }
 
-        final int result =
-            NATIVE_BINDINGS.instanceSetGlobalValue(
-                instance.getNativeInstance(),
-                store.getNativeStore(),
-                nameSegment,
-                valueTypeCode,
-                i32Value,
-                i64Value,
-                f32Value,
-                f64Value,
-                refIdPresent,
-                refId);
+      final int result =
+          NATIVE_BINDINGS.instanceSetGlobalValue(
+              cachedNativeInstance,
+              cachedNativeStore,
+              cachedNameSegment,
+              valueTypeCode,
+              i32Value,
+              i64Value,
+              f32Value,
+              f64Value,
+              refIdPresent,
+              refId);
 
-        if (result != 0) {
-          throw new RuntimeException(
-              "Failed to set global value: " + PanamaErrorMapper.getErrorDescription(result));
-        }
+      if (result != 0) {
+        throw new RuntimeException(
+            "Failed to set global value: " + PanamaErrorMapper.getErrorDescription(result));
       }
     } finally {
       resourceHandle.endOperation();
