@@ -238,6 +238,7 @@
                         <compilerArgs>
                             <arg>-Xlint:all</arg>
                             <arg>-Xlint:-options</arg>
+                            <arg>-Xlint:-try</arg>
                             <arg>-Werror</arg>
                         </compilerArgs>
                     </configuration>
