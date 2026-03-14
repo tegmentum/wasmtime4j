@@ -89,6 +89,13 @@ public final class PanamaFunction implements WasmFunction, TypedFunc.TypedFuncti
   }
 
   /**
+   * Returns the instance containing this function. Package-private for PanamaTypedFunc fast path.
+   */
+  PanamaInstance getInstance() {
+    return instance;
+  }
+
+  /**
    * Creates a typed function wrapper with the specified signature.
    *
    * <p>This method provides zero-cost typed function calls by eliminating runtime type checking

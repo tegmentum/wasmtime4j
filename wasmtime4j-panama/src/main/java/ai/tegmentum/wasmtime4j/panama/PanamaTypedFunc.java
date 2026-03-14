@@ -20,6 +20,10 @@ import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.TypedFunc;
 import ai.tegmentum.wasmtime4j.panama.util.NativeResourceHandle;
+import ai.tegmentum.wasmtime4j.panama.util.PanamaErrorMapper;
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,6 +73,9 @@ public final class PanamaTypedFunc implements TypedFunc {
 
   private static final Logger LOGGER = Logger.getLogger(PanamaTypedFunc.class.getName());
 
+  private static final NativeInstanceBindings NATIVE_BINDINGS =
+      NativeInstanceBindings.getInstance();
+
   /** The underlying function to call. */
   private final WasmFunction function;
 
@@ -77,6 +84,14 @@ public final class PanamaTypedFunc implements TypedFunc {
 
   /** Resource handle for managing lifecycle and cleanup. */
   private final NativeResourceHandle resourceHandle;
+
+  // Cached native pointers for direct FFI calls (bypasses PanamaFunction + PanamaInstance layers)
+  private final MemorySegment cachedNativeInstance;
+  private final MemorySegment cachedNativeStore;
+  private final MemorySegment cachedFunctionName;
+  private final NativeResourceHandle instanceResourceHandle;
+  private final Arena resultArena;
+  private final MemorySegment resultBuffer;
 
   /**
    * Creates a typed function wrapper from a regular function.
@@ -108,12 +123,35 @@ public final class PanamaTypedFunc implements TypedFunc {
     this.function = func;
     this.signature = signature;
 
+    // Cache native pointers for direct FFI calls if function is PanamaFunction
+    if (func instanceof PanamaFunction) {
+      final PanamaFunction pf = (PanamaFunction) func;
+      final PanamaInstance inst = pf.getInstance();
+      this.cachedNativeInstance = inst.nativeInstance();
+      this.cachedNativeStore = inst.nativeStorePtr();
+      this.cachedFunctionName = inst.resolvedFunctionName(pf.getName());
+      this.instanceResourceHandle = inst.instanceResourceHandle();
+      this.resultArena = Arena.ofShared();
+      this.resultBuffer = resultArena.allocate(ValueLayout.JAVA_LONG);
+    } else {
+      this.cachedNativeInstance = null;
+      this.cachedNativeStore = null;
+      this.cachedFunctionName = null;
+      this.instanceResourceHandle = null;
+      this.resultArena = null;
+      this.resultBuffer = null;
+    }
+
     LOGGER.log(Level.FINE, "Created TypedFunc with signature: {0}", signature);
 
+    final Arena arenaToClose = this.resultArena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaTypedFunc",
             () -> {
+              if (arenaToClose != null) {
+                arenaToClose.close();
+              }
               LOGGER.log(Level.FINE, "Closed TypedFunc with signature: {0}", signature);
             });
   }
@@ -124,6 +162,21 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public void callVoidToVoid() throws WasmException {
+    if (cachedNativeInstance != null) {
+      instanceResourceHandle.beginOperation();
+      try {
+        final int rc =
+            NATIVE_BINDINGS.instanceCallVoid(
+                cachedNativeInstance, cachedNativeStore, cachedFunctionName);
+        if (rc < 0) {
+          final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new WasmException(errorMsg != null ? errorMsg : "Failed to call function");
+        }
+        return;
+      } finally {
+        instanceResourceHandle.endOperation();
+      }
+    }
     resourceHandle.ensureNotClosed();
     function.callVoid();
   }
@@ -182,6 +235,21 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public int callI32ToI32(final int param) throws WasmException {
+    if (cachedNativeInstance != null) {
+      instanceResourceHandle.beginOperation();
+      try {
+        final int rc =
+            NATIVE_BINDINGS.instanceCallI32ToI32(
+                cachedNativeInstance, cachedNativeStore, cachedFunctionName, param, resultBuffer);
+        if (rc < 0) {
+          final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new WasmException(errorMsg != null ? errorMsg : "Failed to call function");
+        }
+        return resultBuffer.get(ValueLayout.JAVA_INT, 0);
+      } finally {
+        instanceResourceHandle.endOperation();
+      }
+    }
     resourceHandle.ensureNotClosed();
     return function.callI32ToI32(param);
   }
@@ -195,6 +263,26 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public int callI32I32ToI32(final int param1, final int param2) throws WasmException {
+    if (cachedNativeInstance != null) {
+      instanceResourceHandle.beginOperation();
+      try {
+        final int rc =
+            NATIVE_BINDINGS.instanceCallI32I32ToI32(
+                cachedNativeInstance,
+                cachedNativeStore,
+                cachedFunctionName,
+                param1,
+                param2,
+                resultBuffer);
+        if (rc < 0) {
+          final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new WasmException(errorMsg != null ? errorMsg : "Failed to call function");
+        }
+        return resultBuffer.get(ValueLayout.JAVA_INT, 0);
+      } finally {
+        instanceResourceHandle.endOperation();
+      }
+    }
     resourceHandle.ensureNotClosed();
     return function.callI32I32ToI32(param1, param2);
   }
@@ -207,6 +295,21 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public long callI64ToI64(final long param) throws WasmException {
+    if (cachedNativeInstance != null) {
+      instanceResourceHandle.beginOperation();
+      try {
+        final int rc =
+            NATIVE_BINDINGS.instanceCallI64ToI64(
+                cachedNativeInstance, cachedNativeStore, cachedFunctionName, param, resultBuffer);
+        if (rc < 0) {
+          final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new WasmException(errorMsg != null ? errorMsg : "Failed to call function");
+        }
+        return resultBuffer.get(ValueLayout.JAVA_LONG, 0);
+      } finally {
+        instanceResourceHandle.endOperation();
+      }
+    }
     resourceHandle.ensureNotClosed();
     return function.callI64ToI64(param);
   }
@@ -252,6 +355,21 @@ public final class PanamaTypedFunc implements TypedFunc {
    * @throws WasmException if function execution fails
    */
   public double callF64ToF64(final double param) throws WasmException {
+    if (cachedNativeInstance != null) {
+      instanceResourceHandle.beginOperation();
+      try {
+        final int rc =
+            NATIVE_BINDINGS.instanceCallF64ToF64(
+                cachedNativeInstance, cachedNativeStore, cachedFunctionName, param, resultBuffer);
+        if (rc < 0) {
+          final String errorMsg = PanamaErrorMapper.retrieveNativeErrorMessage();
+          throw new WasmException(errorMsg != null ? errorMsg : "Failed to call function");
+        }
+        return resultBuffer.get(ValueLayout.JAVA_DOUBLE, 0);
+      } finally {
+        instanceResourceHandle.endOperation();
+      }
+    }
     resourceHandle.ensureNotClosed();
     return function.callF64ToF64(param);
   }

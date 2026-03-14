@@ -1220,6 +1220,29 @@ public final class PanamaInstance implements Instance {
     return !resourceHandle.isClosed() && !disposed.get();
   }
 
+  // ===== Package-private accessors for PanamaTypedFunc fast-path =====
+
+  /** Returns the native instance pointer for direct FFI calls. */
+  MemorySegment nativeInstance() {
+    return nativeInstance;
+  }
+
+  /** Returns the native store pointer for direct FFI calls. */
+  MemorySegment nativeStorePtr() {
+    return store.getNativeStore();
+  }
+
+  /** Returns a pre-resolved native function name segment, allocating if needed. */
+  MemorySegment resolvedFunctionName(final String name) {
+    return functionNameCache.computeIfAbsent(
+        name, n -> getCallArena().allocateFrom(n, java.nio.charset.StandardCharsets.UTF_8));
+  }
+
+  /** Returns the resource handle for lifecycle management. */
+  NativeResourceHandle instanceResourceHandle() {
+    return resourceHandle;
+  }
+
   // ===== Optimized Typed Function Call Methods =====
   // These methods bypass WasmValue boxing/unboxing for maximum performance.
 
