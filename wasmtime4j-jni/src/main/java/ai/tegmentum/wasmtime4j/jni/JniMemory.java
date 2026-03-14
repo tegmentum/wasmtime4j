@@ -1505,17 +1505,31 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public long getSize64() {
-    ensureUsable();
-    return sizeInBytes() / 65536L;
+    beginOperation();
+    try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeGetSize(nativeHandle, storeNativeHandle) / 65536L;
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
   public long getMaxSize64() {
-    ensureUsable();
+    beginOperation();
     try {
-      return nativeGetMaxSize(getNativeHandle());
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeGetMaxSize(nativeHandle);
+    } catch (final JniResourceException e) {
+      throw e;
     } catch (final Exception e) {
       return -1; // Default to unlimited on error
+    } finally {
+      endOperation();
     }
   }
 
@@ -1524,119 +1538,118 @@ public final class JniMemory extends JniResource implements WasmMemory {
     if (pages < 0) {
       return -1;
     }
-    ensureUsable();
-    final long previousSize = nativeGrow(getNativeHandle(), store.getNativeHandle(), pages);
-    if (previousSize >= 0) {
-      // Invalidate cached buffer since memory layout changed
-      cachedBuffer = null;
+    beginOperation();
+    try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      final long previousSize = nativeGrow(nativeHandle, storeNativeHandle, pages);
+      if (previousSize >= 0) {
+        // Invalidate cached buffer since memory layout changed
+        cachedBuffer = null;
+      }
+      return previousSize;
+    } finally {
+      endOperation();
     }
-    return previousSize;
   }
 
   @Override
   public byte readByte64(final long offset) {
     Validation.requireNonNegative(offset, "offset");
-    ensureUsable();
-    validateOffset64(offset, 1);
-
-    if (store == null) {
-      throw new IllegalStateException("Memory store reference is null");
-    }
-
+    beginOperation();
     try {
-      return nativeReadByte(getNativeHandle(), store.getNativeHandle(), offset);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeReadByte(nativeHandle, storeNativeHandle, offset);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error reading byte", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void writeByte64(final long offset, final byte value) {
     Validation.requireNonNegative(offset, "offset");
-    ensureUsable();
-    validateOffset64(offset, 1);
-
-    if (store == null) {
-      throw new IllegalStateException("Memory store reference is null");
-    }
-
+    beginOperation();
     try {
-      nativeWriteByte(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      nativeWriteByte(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error writing byte", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void readBytes64(
       final long offset, final byte[] dest, final int destOffset, final int length) {
-    ensureUsable();
     Validation.requireNonNull(dest, "dest");
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(destOffset, "destOffset");
     Validation.requireNonNegative(length, "length");
 
-    if (store == null) {
-      throw new IllegalStateException("Memory store reference is null");
-    }
-
     if (destOffset + length > dest.length) {
       throw new IndexOutOfBoundsException("destOffset + length exceeds dest array length");
     }
 
-    validateOffset64(offset, length);
-
-    final long storeHandle = store.getNativeHandle();
-
+    beginOperation();
     try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+
       if (destOffset == 0 && length == dest.length) {
         // Direct read into destination array
-        nativeReadBytes(getNativeHandle(), storeHandle, offset, dest);
+        nativeReadBytes(nativeHandle, storeNativeHandle, offset, dest);
       } else if (length >= BULK_OPERATION_THRESHOLD) {
         // Use optimized bulk read for large operations
         readBytesOptimized64(offset, dest, destOffset, length);
       } else {
         // Original implementation for small operations
         final byte[] tempBuffer = new byte[length];
-        final int bytesRead = nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
+        final int bytesRead = nativeReadBytes(nativeHandle, storeNativeHandle, offset, tempBuffer);
         System.arraycopy(tempBuffer, 0, dest, destOffset, Math.min(bytesRead, length));
       }
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error reading bytes", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void writeBytes64(
       final long offset, final byte[] src, final int srcOffset, final int length) {
-    ensureUsable();
     Validation.requireNonNull(src, "src");
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
 
-    if (store == null) {
-      throw new IllegalStateException("Memory store reference is null");
-    }
-
     if (srcOffset + length > src.length) {
       throw new IndexOutOfBoundsException("srcOffset + length exceeds src array length");
     }
 
-    validateOffset64(offset, length);
-
-    final long storeHandle = store.getNativeHandle();
-
+    beginOperation();
     try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+
       if (srcOffset == 0 && length == src.length) {
         // Direct write from source array
-        nativeWriteBytes(getNativeHandle(), storeHandle, offset, src);
+        nativeWriteBytes(nativeHandle, storeNativeHandle, offset, src);
       } else if (length >= BULK_OPERATION_THRESHOLD) {
         // Use optimized bulk write for large operations
         writeBytesOptimized64(offset, src, srcOffset, length);
@@ -1644,12 +1657,14 @@ public final class JniMemory extends JniResource implements WasmMemory {
         // Original implementation for small operations
         final byte[] tempBuffer = new byte[length];
         System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-        nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
+        nativeWriteBytes(nativeHandle, storeNativeHandle, offset, tempBuffer);
       }
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error writing bytes", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -1658,17 +1673,18 @@ public final class JniMemory extends JniResource implements WasmMemory {
     Validation.requireNonNegative(destOffset, "destOffset");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
-    ensureUsable();
-
-    validateOffset64(destOffset, length);
-    validateOffset64(srcOffset, length);
-
+    beginOperation();
     try {
-      nativeMemoryCopy64(getNativeHandle(), store.getNativeHandle(), destOffset, srcOffset, length);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      nativeMemoryCopy64(nativeHandle, storeNativeHandle, destOffset, srcOffset, length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error copying memory", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -1676,16 +1692,18 @@ public final class JniMemory extends JniResource implements WasmMemory {
   public void fill64(final long offset, final byte value, final long length) {
     Validation.requireNonNegative(offset, "offset");
     Validation.requireNonNegative(length, "length");
-    ensureUsable();
-
-    validateOffset64(offset, length);
-
+    beginOperation();
     try {
-      nativeMemoryFill64(getNativeHandle(), store.getNativeHandle(), offset, value, length);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      nativeMemoryFill64(nativeHandle, storeNativeHandle, offset, value, length);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error filling memory", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -1696,18 +1714,19 @@ public final class JniMemory extends JniResource implements WasmMemory {
     Validation.requireNonNegative(dataSegmentIndex, "dataSegmentIndex");
     Validation.requireNonNegative(srcOffset, "srcOffset");
     Validation.requireNonNegative(length, "length");
-    ensureUsable();
 
     if (instanceHandle == 0) {
       throw new IllegalStateException("Cannot init: memory not associated with an instance");
     }
 
-    validateOffset64(destOffset, length);
-
+    beginOperation();
     try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
       nativeMemoryInit64(
-          getNativeHandle(),
-          store.getNativeHandle(),
+          nativeHandle,
+          storeNativeHandle,
           instanceHandle,
           destOffset,
           dataSegmentIndex,
@@ -1717,23 +1736,32 @@ public final class JniMemory extends JniResource implements WasmMemory {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Unexpected error initializing memory from data segment", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public boolean supports64BitAddressing() {
-    ensureUsable();
+    beginOperation();
     try {
-      return nativeSupports64BitAddressing(getNativeHandle());
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeSupports64BitAddressing(nativeHandle);
+    } catch (final JniResourceException e) {
+      throw e;
     } catch (final Exception e) {
       LOGGER.warning("Failed to query 64-bit addressing support: " + e.getMessage());
       return false; // Default to 32-bit if query fails
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long getSizeInBytes64() {
-    return getSize64() * 65536L;
+    return sizeInBytes();
   }
 
   @Override
@@ -1767,7 +1795,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   private void readBytesOptimized64(
       final long offset, final byte[] dest, final int destOffset, final int length) {
-    final long storeHandle = store.getNativeHandle();
     try {
       final ByteBuffer buffer = getBuffer();
       // ByteBuffer.position() only supports int offsets, so skip fast path for large offsets
@@ -1778,13 +1805,13 @@ public final class JniMemory extends JniResource implements WasmMemory {
       } else {
         // Fallback to native read for large offsets or unavailable buffer
         final byte[] tempBuffer = new byte[length];
-        nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
+        nativeReadBytes(nativeHandle, storeNativeHandle, offset, tempBuffer);
         System.arraycopy(tempBuffer, 0, dest, destOffset, length);
       }
     } catch (final Exception e) {
       // Fallback to regular read on any error
       final byte[] tempBuffer = new byte[length];
-      nativeReadBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
+      nativeReadBytes(nativeHandle, storeNativeHandle, offset, tempBuffer);
       System.arraycopy(tempBuffer, 0, dest, destOffset, length);
     }
   }
@@ -1800,7 +1827,6 @@ public final class JniMemory extends JniResource implements WasmMemory {
    */
   private void writeBytesOptimized64(
       final long offset, final byte[] src, final int srcOffset, final int length) {
-    final long storeHandle = store.getNativeHandle();
     try {
       final ByteBuffer buffer = getBuffer();
       // ByteBuffer.position() only supports int offsets, so skip fast path for large offsets
@@ -1812,37 +1838,36 @@ public final class JniMemory extends JniResource implements WasmMemory {
         // Fallback to native write for large offsets or unavailable buffer
         final byte[] tempBuffer = new byte[length];
         System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-        nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
+        nativeWriteBytes(nativeHandle, storeNativeHandle, offset, tempBuffer);
       }
     } catch (final Exception e) {
       // Fallback to regular write on any error
       final byte[] tempBuffer = new byte[length];
       System.arraycopy(src, srcOffset, tempBuffer, 0, length);
-      nativeWriteBytes(getNativeHandle(), storeHandle, offset, tempBuffer);
+      nativeWriteBytes(nativeHandle, storeNativeHandle, offset, tempBuffer);
     }
   }
 
   @Override
   public long growAsync(final long pages) throws ai.tegmentum.wasmtime4j.exception.WasmException {
     Validation.requireNonNegative(pages, "pages");
-    ensureUsable();
-
-    if (store == null) {
-      throw new IllegalStateException("Memory store reference is null");
-    }
-
-    final long memHandle = getNativeHandle();
-    final long storeHandle = store.getNativeHandle();
-    LOGGER.fine(
-        "growAsync: memHandle=0x"
-            + Long.toHexString(memHandle)
-            + ", storeHandle=0x"
-            + Long.toHexString(storeHandle)
-            + ", pages="
-            + pages);
-
+    beginOperation();
     try {
-      final long previousSize = nativeGrowAsync(memHandle, storeHandle, pages);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+
+      if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
+        LOGGER.fine(
+            "growAsync: memHandle=0x"
+                + Long.toHexString(nativeHandle)
+                + ", storeHandle=0x"
+                + Long.toHexString(storeNativeHandle)
+                + ", pages="
+                + pages);
+      }
+
+      final long previousSize = nativeGrowAsync(nativeHandle, storeNativeHandle, pages);
       // Invalidate cached buffer since memory layout changed
       cachedBuffer = null;
       return previousSize;
@@ -1850,6 +1875,8 @@ public final class JniMemory extends JniResource implements WasmMemory {
       throw e;
     } catch (final Exception e) {
       throw new ai.tegmentum.wasmtime4j.exception.WasmException("Async memory growth failed", e);
+    } finally {
+      endOperation();
     }
   }
 
