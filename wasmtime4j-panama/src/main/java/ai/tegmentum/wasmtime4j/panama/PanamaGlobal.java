@@ -43,6 +43,17 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   private boolean mutable;
   private final NativeResourceHandle resourceHandle;
 
+  // Pre-allocated output buffers for get() — avoids Arena + 7 allocations per call.
+  // Synchronized access via getBufferLock since beginOperation() is a shared read lock.
+  private final Object getBufferLock = new Object();
+  private MemorySegment bufI32;
+  private MemorySegment bufI64;
+  private MemorySegment bufF32;
+  private MemorySegment bufF64;
+  private MemorySegment bufRefIdPresent;
+  private MemorySegment bufRefId;
+  private MemorySegment bufV128;
+
   /**
    * Creates a new Panama global with a native handle.
    *
@@ -70,6 +81,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     this.mutable = mutable;
     this.store = store;
     this.arena = Arena.ofShared();
+    initGetBuffers();
 
     // Create native global via Panama FFI
     final MemorySegment globalPtrPtr = arena.allocate(ValueLayout.ADDRESS);
@@ -133,6 +145,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     this.nativeGlobal = nativeGlobal;
     this.store = store;
     this.arena = Arena.ofShared();
+    initGetBuffers();
 
     // Query type and mutability from native global
     queryMetadata();
@@ -188,6 +201,7 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
     this.mutable = mutable;
     this.store = store;
     this.arena = Arena.ofShared();
+    initGetBuffers();
 
     final MemorySegment globalHandle = this.nativeGlobal;
     final Arena globalArena = this.arena;
@@ -215,80 +229,72 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   public WasmValue get() {
     resourceHandle.beginOperation();
     try {
-
-      try (final Arena tempArena = Arena.ofConfined()) {
-        final MemorySegment i32Value = tempArena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment i64Value = tempArena.allocate(ValueLayout.JAVA_LONG);
-        final MemorySegment f32Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-        final MemorySegment f64Value = tempArena.allocate(ValueLayout.JAVA_DOUBLE);
-        final MemorySegment refIdPresent = tempArena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment refId = tempArena.allocate(ValueLayout.JAVA_LONG);
-        final MemorySegment v128Bytes = tempArena.allocate(16);
-
+      // Use pre-allocated buffers with synchronization to avoid per-call Arena + 7 allocations.
+      synchronized (getBufferLock) {
         final int result =
             NATIVE_BINDINGS.panamaGlobalGet(
                 nativeGlobal,
                 store.getNativeStore(),
-                i32Value,
-                i64Value,
-                f32Value,
-                f64Value,
-                refIdPresent,
-                refId,
-                v128Bytes);
+                bufI32,
+                bufI64,
+                bufF32,
+                bufF64,
+                bufRefIdPresent,
+                bufRefId,
+                bufV128);
 
         if (result != 0) {
           throw new RuntimeException(
               "Failed to get global value: " + PanamaErrorMapper.getErrorDescription(result));
         }
 
-        // Convert based on type
+        // Convert based on type — read from pre-allocated buffers
         switch (type) {
           case I32:
-            return WasmValue.i32(i32Value.get(ValueLayout.JAVA_INT, 0));
+            return WasmValue.i32(bufI32.get(ValueLayout.JAVA_INT, 0));
           case I64:
-            return WasmValue.i64(i64Value.get(ValueLayout.JAVA_LONG, 0));
+            return WasmValue.i64(bufI64.get(ValueLayout.JAVA_LONG, 0));
           case F32:
-            return WasmValue.f32((float) f32Value.get(ValueLayout.JAVA_DOUBLE, 0));
+            return WasmValue.f32((float) bufF32.get(ValueLayout.JAVA_DOUBLE, 0));
           case F64:
-            return WasmValue.f64(f64Value.get(ValueLayout.JAVA_DOUBLE, 0));
+            return WasmValue.f64(bufF64.get(ValueLayout.JAVA_DOUBLE, 0));
           case V128:
             final byte[] bytes = new byte[16];
-            MemorySegment.copy(v128Bytes, ValueLayout.JAVA_BYTE, 0, bytes, 0, 16);
+            MemorySegment.copy(bufV128, ValueLayout.JAVA_BYTE, 0, bytes, 0, 16);
             return WasmValue.v128(bytes);
           case FUNCREF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.funcref(refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.funcref(bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.funcref(null);
           case EXTERNREF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.externref(refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.externref(bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.externref(null);
           case ANYREF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.anyref(refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.anyref(bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.nullAnyRef();
           case EQREF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.eqref(refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.eqref(bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.nullEqRef();
           case I31REF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.i31ref((int) refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.i31ref((int) bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.nullI31Ref();
           case STRUCTREF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.structref(refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.structref(bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.nullStructRef();
           case ARRAYREF:
-            if (refIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
-              return WasmValue.arrayref(refId.get(ValueLayout.JAVA_LONG, 0));
+            if (bufRefIdPresent.get(ValueLayout.JAVA_INT, 0) != 0) {
+              return WasmValue.arrayref(bufRefId.get(ValueLayout.JAVA_LONG, 0));
             }
             return WasmValue.nullArrayRef();
           case NULLREF:
@@ -393,6 +399,17 @@ public final class PanamaGlobal implements WasmGlobal, AutoCloseable {
   @Override
   public void close() {
     resourceHandle.close();
+  }
+
+  /** Pre-allocates output buffers for get() from the shared arena. */
+  private void initGetBuffers() {
+    this.bufI32 = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufI64 = arena.allocate(ValueLayout.JAVA_LONG);
+    this.bufF32 = arena.allocate(ValueLayout.JAVA_DOUBLE);
+    this.bufF64 = arena.allocate(ValueLayout.JAVA_DOUBLE);
+    this.bufRefIdPresent = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufRefId = arena.allocate(ValueLayout.JAVA_LONG);
+    this.bufV128 = arena.allocate(16);
   }
 
   /** Queries type and mutability metadata from the native global. */

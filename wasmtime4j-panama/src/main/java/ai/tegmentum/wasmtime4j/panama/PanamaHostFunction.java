@@ -76,6 +76,7 @@ public final class PanamaHostFunction implements WasmFunction {
 
   /** Cached return types to avoid cloning on every callback invocation. */
   private final WasmValueType[] cachedReturnTypes;
+
   private MemorySegment functionHandle;
   private MemorySegment upcallStub;
   private MemorySegment ffiUpcallStub; // FFI-compatible upcall stub for native registry

@@ -21,8 +21,8 @@
         <maven.compiler.source>22</maven.compiler.source>
         <maven.compiler.target>22</maven.compiler.target>
 
-        <!-- Panama FFI requires preview features in Java 23+ -->
-        <panama.preview.enabled>true</panama.preview.enabled>
+        <!-- Panama FFI was finalized in Java 22 (JEP 454) -->
+        <panama.preview.enabled>false</panama.preview.enabled>
 
     </properties>
 
@@ -136,9 +136,7 @@
                     <source>22</source>
                     <target>22</target>
                     <compilerArgs>
-                        <arg>--enable-preview</arg>
                         <arg>-Xlint:all</arg>
-                        <arg>-Xlint:-preview</arg>
                         <arg>-Xlint:-restricted</arg>
                         <!-- Don't treat warnings as errors for Panama restricted methods -->
                         <!-- <arg>-Werror</arg> -->
@@ -154,7 +152,6 @@
                     <!-- @{argLine} is set by jacoco-maven-plugin for code coverage -->
                     <argLine>
                         @{argLine}
-                        --enable-preview
                         --enable-native-access=ALL-UNNAMED
                         -XX:+EnableDynamicAgentLoading
                     </argLine>
@@ -176,7 +173,6 @@
                     <!-- @{argLine} is set by jacoco-maven-plugin for code coverage -->
                     <argLine>
                         @{argLine}
-                        --enable-preview
                         --enable-native-access=ALL-UNNAMED
                     </argLine>
                     <systemPropertyVariables>

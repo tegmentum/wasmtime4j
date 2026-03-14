@@ -52,6 +52,12 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
   /** Hot-path MethodHandle for memory write bytes (invokeExact optimization). */
   private volatile MethodHandle mhPanamaMemoryWriteBytes;
 
+  /** Hot-path MethodHandle for global get (invokeExact optimization). */
+  private volatile MethodHandle mhPanamaGlobalGet;
+
+  /** Hot-path MethodHandle for global set (invokeExact optimization). */
+  private volatile MethodHandle mhPanamaGlobalSet;
+
   private NativeMemoryBindings() {
     super();
     initializeBindings();
@@ -65,6 +71,16 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
     FunctionBinding memWriteBinding = getFunctionBinding("wasmtime4j_panama_memory_write_bytes");
     if (memWriteBinding != null) {
       this.mhPanamaMemoryWriteBytes = memWriteBinding.getMethodHandle().orElse(null);
+    }
+
+    FunctionBinding globalGetBinding = getFunctionBinding("wasmtime4j_panama_global_get");
+    if (globalGetBinding != null) {
+      this.mhPanamaGlobalGet = globalGetBinding.getMethodHandle().orElse(null);
+    }
+
+    FunctionBinding globalSetBinding = getFunctionBinding("wasmtime4j_panama_global_set");
+    if (globalSetBinding != null) {
+      this.mhPanamaGlobalSet = globalSetBinding.getMethodHandle().orElse(null);
     }
 
     markInitialized();
@@ -1982,6 +1998,25 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
     validatePointer(refIdOutPtr, "refIdOutPtr");
     // v128BytesOutPtr can be null
 
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhPanamaGlobalGet;
+    if (mh != null) {
+      try {
+        return (int)
+            mh.invokeExact(
+                globalPtr,
+                storePtr,
+                i32ValueOutPtr,
+                i64ValueOutPtr,
+                f32ValueOutPtr,
+                f64ValueOutPtr,
+                refIdPresentOutPtr,
+                refIdOutPtr,
+                v128BytesOutPtr == null ? MemorySegment.NULL : v128BytesOutPtr);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native panamaGlobalGet failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_panama_global_get",
         Integer.class,
@@ -2026,6 +2061,26 @@ public final class NativeMemoryBindings extends NativeBindingsBase {
     validatePointer(storePtr, "storePtr");
     // v128BytesPtr can be null
 
+    // Use fast path with invokeExact if available
+    final MethodHandle mh = mhPanamaGlobalSet;
+    if (mh != null) {
+      try {
+        return (int)
+            mh.invokeExact(
+                globalPtr,
+                storePtr,
+                valueType,
+                i32Value,
+                i64Value,
+                f32Value,
+                f64Value,
+                refIdPresent,
+                refId,
+                v128BytesPtr == null ? MemorySegment.NULL : v128BytesPtr);
+      } catch (Throwable t) {
+        throw new RuntimeException("Native panamaGlobalSet failed", t);
+      }
+    }
     return callNativeFunction(
         "wasmtime4j_panama_global_set",
         Integer.class,
