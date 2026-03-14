@@ -170,7 +170,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
     try {
       this.nativeHandle =
           (MemorySegment)
-              CREATE_HANDLER.invoke(
+              CREATE_HANDLER.invokeExact(
                   config.isNestedTryCatchEnabled(),
                   config.isExceptionUnwindingEnabled(),
                   config.getMaxUnwindDepth(),
@@ -193,7 +193,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
                 if (nativeHandle != null && nativeHandle.address() != 0L) {
                   try {
-                    CLOSE_HANDLER.invoke(nativeHandle);
+                    CLOSE_HANDLER.invokeExact(nativeHandle);
                   } catch (final Throwable t) {
                     throw new Exception("Failed to close native exception handler", t);
                   }
@@ -206,7 +206,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
               () -> {
                 if (handleForCleanup != null && handleForCleanup.address() != 0L) {
                   try {
-                    CLOSE_HANDLER.invoke(handleForCleanup);
+                    CLOSE_HANDLER.invokeExact(handleForCleanup);
                   } catch (final Throwable t) {
                     LOGGER.log(Level.WARNING, "Safety net cleanup failed", t);
                   }
@@ -285,7 +285,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
         final long tagHandle =
             (long)
-                CREATE_TAG.invoke(
+                CREATE_TAG.invokeExact(
                     nativeHandle, nameSegment, typesSegment, (long) parameterTypes.size());
 
         if (tagHandle == 0L) {
@@ -336,14 +336,14 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
       try {
         final MemorySegment traceSegment =
-            (MemorySegment) CAPTURE_STACK_TRACE.invoke(nativeHandle, tagHandle);
+            (MemorySegment) CAPTURE_STACK_TRACE.invokeExact(nativeHandle, tagHandle);
 
         if (traceSegment == null || traceSegment.address() == 0L) {
           return null;
         }
 
         final String trace = traceSegment.reinterpret(Long.MAX_VALUE).getString(0);
-        FREE_STRING.invoke(traceSegment);
+        FREE_STRING.invokeExact(traceSegment);
 
         LOGGER.fine("Captured stack trace for tag handle: " + tagHandle);
         return trace;
@@ -371,7 +371,7 @@ public final class PanamaExceptionHandler implements ExceptionHandler {
 
       try {
         final boolean shouldContinue =
-            (boolean) PERFORM_UNWINDING.invoke(nativeHandle, currentDepth);
+            (boolean) PERFORM_UNWINDING.invokeExact(nativeHandle, currentDepth);
         LOGGER.fine("Unwinding at depth " + currentDepth + ", continue: " + shouldContinue);
         return shouldContinue;
       } catch (final Throwable e) {

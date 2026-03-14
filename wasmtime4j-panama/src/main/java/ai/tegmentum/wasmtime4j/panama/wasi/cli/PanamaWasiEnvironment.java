@@ -131,7 +131,7 @@ public final class PanamaWasiEnvironment implements WasiEnvironment {
       final MemorySegment outEnvVars = arena.allocate(ValueLayout.ADDRESS);
       final MemorySegment outEnvVarsLen = arena.allocate(ValueLayout.JAVA_INT);
 
-      final int result = (int) GET_ALL_HANDLE.invoke(contextHandle, outEnvVars, outEnvVarsLen);
+      final int result = (int) GET_ALL_HANDLE.invokeExact(contextHandle, outEnvVars, outEnvVarsLen);
 
       if (result != 0) {
         LOGGER.warning("Failed to get environment variables");
@@ -187,7 +187,7 @@ public final class PanamaWasiEnvironment implements WasiEnvironment {
 
       final int result =
           (int)
-              GET_HANDLE.invoke(
+              GET_HANDLE.invokeExact(
                   contextHandle, nameSegment, nameBytes.length, outValue, outValueLen);
 
       if (result != 0) {
@@ -215,7 +215,7 @@ public final class PanamaWasiEnvironment implements WasiEnvironment {
       final MemorySegment outArgs = arena.allocate(ValueLayout.ADDRESS);
       final MemorySegment outArgsLen = arena.allocate(ValueLayout.JAVA_INT);
 
-      final int result = (int) GET_ARGUMENTS_HANDLE.invoke(contextHandle, outArgs, outArgsLen);
+      final int result = (int) GET_ARGUMENTS_HANDLE.invokeExact(contextHandle, outArgs, outArgsLen);
 
       if (result != 0) {
         LOGGER.warning("Failed to get command-line arguments");
@@ -255,7 +255,7 @@ public final class PanamaWasiEnvironment implements WasiEnvironment {
       final MemorySegment outCwd = arena.allocate(ValueLayout.ADDRESS);
       final MemorySegment outCwdLen = arena.allocate(ValueLayout.JAVA_INT);
 
-      final int result = (int) GET_INITIAL_CWD_HANDLE.invoke(contextHandle, outCwd, outCwdLen);
+      final int result = (int) GET_INITIAL_CWD_HANDLE.invokeExact(contextHandle, outCwd, outCwdLen);
 
       if (result != 0) {
         return Optional.empty();

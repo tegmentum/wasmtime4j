@@ -80,7 +80,7 @@ public final class PanamaWasiExit implements WasiExit {
   @Override
   public void exit(final int statusCode) {
     try {
-      final int result = (int) EXIT_HANDLE.invoke(contextHandle, statusCode);
+      final int result = (int) EXIT_HANDLE.invokeExact(contextHandle, statusCode);
 
       if (result != 0) {
         LOGGER.warning("Failed to exit with status code: " + statusCode);

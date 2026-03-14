@@ -103,7 +103,7 @@ public final class PanamaWasiStdio implements WasiStdio {
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outStreamHandle = arena.allocate(ValueLayout.ADDRESS);
 
-      final int result = (int) GET_STDIN_HANDLE.invoke(contextHandle, outStreamHandle);
+      final int result = (int) GET_STDIN_HANDLE.invokeExact(contextHandle, outStreamHandle);
 
       if (result != 0) {
         throw new RuntimeException("Failed to get stdin stream");
@@ -126,7 +126,7 @@ public final class PanamaWasiStdio implements WasiStdio {
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outStreamHandle = arena.allocate(ValueLayout.ADDRESS);
 
-      final int result = (int) GET_STDOUT_HANDLE.invoke(contextHandle, outStreamHandle);
+      final int result = (int) GET_STDOUT_HANDLE.invokeExact(contextHandle, outStreamHandle);
 
       if (result != 0) {
         throw new RuntimeException("Failed to get stdout stream");
@@ -149,7 +149,7 @@ public final class PanamaWasiStdio implements WasiStdio {
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment outStreamHandle = arena.allocate(ValueLayout.ADDRESS);
 
-      final int result = (int) GET_STDERR_HANDLE.invoke(contextHandle, outStreamHandle);
+      final int result = (int) GET_STDERR_HANDLE.invokeExact(contextHandle, outStreamHandle);
 
       if (result != 0) {
         throw new RuntimeException("Failed to get stderr stream");

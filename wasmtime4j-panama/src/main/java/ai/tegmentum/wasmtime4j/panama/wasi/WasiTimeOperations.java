@@ -91,7 +91,7 @@ public final class WasiTimeOperations extends AbstractWasiTimeOperations {
       final MemorySegment resolutionOut = arena.allocate(ValueLayout.JAVA_LONG);
 
       // Call wasi_clock_res_get
-      final int result = (int) clockResGetHandle.invoke(clockId, resolutionOut);
+      final int result = (int) clockResGetHandle.invokeExact(clockId, resolutionOut);
 
       if (result != 0) {
         throw PanamaErrorMapper.mapNativeError(
@@ -130,7 +130,7 @@ public final class WasiTimeOperations extends AbstractWasiTimeOperations {
       final MemorySegment timestampOut = arena.allocate(ValueLayout.JAVA_LONG);
 
       // Call wasi_clock_time_get
-      final int result = (int) clockTimeGetHandle.invoke(clockId, precision, timestampOut);
+      final int result = (int) clockTimeGetHandle.invokeExact(clockId, precision, timestampOut);
 
       if (result != 0) {
         throw PanamaErrorMapper.mapNativeError(
