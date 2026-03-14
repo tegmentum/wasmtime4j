@@ -42,6 +42,19 @@ public final class PanamaTable implements WasmTable {
   private final WasmValueType elementType;
   private final NativeResourceHandle resourceHandle;
 
+  // Cached native store pointer — avoids per-call instanceof checks and method dispatch
+  private final MemorySegment cachedStorePtr;
+
+  // Cached MethodHandles for hot-path operations — avoids HashMap lookup per call
+  private final MethodHandle mhGet;
+  private final MethodHandle mhSet;
+  private final MethodHandle mhSize;
+
+  // Pre-allocated output buffers for get() — avoids per-call arena allocations (which leak)
+  private final MemorySegment bufRefIdPresent;
+  private final MemorySegment bufRefId;
+  private final MemorySegment bufSize;
+
   /**
    * Package-private constructor for wrapping an existing native table pointer.
    *
@@ -61,6 +74,18 @@ public final class PanamaTable implements WasmTable {
     this.store = null;
     // Query element type from native table metadata
     this.elementType = queryElementTypeFromNative(nativeTable, arena);
+
+    // Cache store pointer
+    this.cachedStorePtr = resolveStorePtr();
+
+    // Cache MethodHandles and pre-allocate buffers
+    this.mhGet = NATIVE_BINDINGS.getPanamaTableGet();
+    this.mhSet = NATIVE_BINDINGS.getPanamaTableSet();
+    this.mhSize = NATIVE_BINDINGS.getPanamaTableSize();
+    this.bufRefIdPresent = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufRefId = arena.allocate(ValueLayout.JAVA_LONG);
+    this.bufSize = arena.allocate(ValueLayout.JAVA_INT);
+
     final MemorySegment capturedNativeTable = this.nativeTable;
     final Arena capturedArena = this.arena;
     this.resourceHandle =
@@ -118,6 +143,18 @@ public final class PanamaTable implements WasmTable {
     this.elementType = elementType;
     this.instance = null; // Tables created by store don't have an instance
     this.store = store;
+
+    // Cache store pointer
+    this.cachedStorePtr = store.getNativeStore();
+
+    // Cache MethodHandles and pre-allocate buffers
+    this.mhGet = NATIVE_BINDINGS.getPanamaTableGet();
+    this.mhSet = NATIVE_BINDINGS.getPanamaTableSet();
+    this.mhSize = NATIVE_BINDINGS.getPanamaTableSize();
+    this.bufRefIdPresent = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufRefId = arena.allocate(ValueLayout.JAVA_LONG);
+    this.bufSize = arena.allocate(ValueLayout.JAVA_INT);
+
     final MemorySegment capturedNativeTable2 = this.nativeTable;
     final Arena capturedArena2 = this.arena;
     this.resourceHandle =
@@ -185,21 +222,20 @@ public final class PanamaTable implements WasmTable {
         throw new IllegalStateException("Cannot get size: table not associated with an instance");
       }
 
-      try {
-        final MethodHandle getSizeHandle = NATIVE_BINDINGS.getPanamaTableSize();
-        if (getSizeHandle == null) {
-          throw new IllegalStateException("Panama table size function not available");
-        }
+      if (mhSize == null) {
+        throw new IllegalStateException("Panama table size function not available");
+      }
 
-        final MemorySegment sizeSegment = arena.allocate(ValueLayout.JAVA_INT);
-        final int result =
-            (int) getSizeHandle.invoke(nativeTable, getNativeStorePointer(), sizeSegment);
+      try {
+        final int result = (int) mhSize.invokeExact(nativeTable, cachedStorePtr, bufSize);
 
         if (result != 0) {
           throw new IllegalStateException("Failed to get table size");
         }
 
-        return sizeSegment.get(ValueLayout.JAVA_INT, 0);
+        return bufSize.get(ValueLayout.JAVA_INT, 0);
+      } catch (final IllegalStateException e) {
+        throw e;
       } catch (final Throwable e) {
         throw new IllegalStateException("Error getting table size: " + e.getMessage(), e);
       }
@@ -224,38 +260,42 @@ public final class PanamaTable implements WasmTable {
           throw new IllegalStateException("Panama table metadata function not available");
         }
 
-        final MemorySegment elementTypeSegment = arena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment initialSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
-        final MemorySegment hasMaximumSegment = arena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment maximumSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
-        final MemorySegment is64Segment = arena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment nameSegment = arena.allocate(ValueLayout.ADDRESS);
+        try (final Arena tempArena = Arena.ofConfined()) {
+          final MemorySegment elementTypeSegment = tempArena.allocate(ValueLayout.JAVA_INT);
+          final MemorySegment initialSizeSegment = tempArena.allocate(ValueLayout.JAVA_LONG);
+          final MemorySegment hasMaximumSegment = tempArena.allocate(ValueLayout.JAVA_INT);
+          final MemorySegment maximumSizeSegment = tempArena.allocate(ValueLayout.JAVA_LONG);
+          final MemorySegment is64Segment = tempArena.allocate(ValueLayout.JAVA_INT);
+          final MemorySegment nameSegment = tempArena.allocate(ValueLayout.ADDRESS);
 
-        final int result =
-            (int)
-                metadataHandle.invoke(
-                    nativeTable,
-                    elementTypeSegment,
-                    initialSizeSegment,
-                    hasMaximumSegment,
-                    maximumSizeSegment,
-                    is64Segment,
-                    nameSegment);
+          final int result =
+              (int)
+                  metadataHandle.invoke(
+                      nativeTable,
+                      elementTypeSegment,
+                      initialSizeSegment,
+                      hasMaximumSegment,
+                      maximumSizeSegment,
+                      is64Segment,
+                      nameSegment);
 
-        if (result != 0) {
-          throw new IllegalStateException("Failed to get table metadata");
+          if (result != 0) {
+            throw new IllegalStateException("Failed to get table metadata");
+          }
+
+          final int elementTypeCode = elementTypeSegment.get(ValueLayout.JAVA_INT, 0);
+          final WasmValueType element = WasmValueType.fromNativeTypeCode(elementTypeCode);
+          final long minimum = initialSizeSegment.get(ValueLayout.JAVA_LONG, 0);
+          final int hasMaximum = hasMaximumSegment.get(ValueLayout.JAVA_INT, 0);
+          final Long maximum =
+              hasMaximum != 0
+                  ? Long.valueOf(maximumSizeSegment.get(ValueLayout.JAVA_LONG, 0))
+                  : null;
+          final boolean is64 = is64Segment.get(ValueLayout.JAVA_INT, 0) != 0;
+
+          return new ai.tegmentum.wasmtime4j.panama.type.PanamaTableType(
+              element, minimum, maximum, is64, arena, nativeTable);
         }
-
-        final int elementTypeCode = elementTypeSegment.get(ValueLayout.JAVA_INT, 0);
-        final WasmValueType element = WasmValueType.fromNativeTypeCode(elementTypeCode);
-        final long minimum = initialSizeSegment.get(ValueLayout.JAVA_LONG, 0);
-        final int hasMaximum = hasMaximumSegment.get(ValueLayout.JAVA_INT, 0);
-        final Long maximum =
-            hasMaximum != 0 ? Long.valueOf(maximumSizeSegment.get(ValueLayout.JAVA_LONG, 0)) : null;
-        final boolean is64 = is64Segment.get(ValueLayout.JAVA_INT, 0) != 0;
-
-        return new ai.tegmentum.wasmtime4j.panama.type.PanamaTableType(
-            element, minimum, maximum, is64, arena, nativeTable);
       } catch (final Throwable e) {
         throw new IllegalStateException("Error getting table type: " + e.getMessage(), e);
       }
@@ -300,7 +340,7 @@ public final class PanamaTable implements WasmTable {
             (int)
                 growHandle.invoke(
                     nativeTable,
-                    getNativeStorePointer(),
+                    cachedStorePtr,
                     elements,
                     elementTypeCode,
                     (int) refPair[0],
@@ -331,34 +371,36 @@ public final class PanamaTable implements WasmTable {
           throw new IllegalStateException("Panama table metadata function not available");
         }
 
-        final MemorySegment elementTypeSegment = arena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment initialSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
-        final MemorySegment hasMaximumSegment = arena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment maximumSizeSegment = arena.allocate(ValueLayout.JAVA_LONG);
-        final MemorySegment is64Segment = arena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment nameSegment = arena.allocate(ValueLayout.ADDRESS);
+        try (final Arena tempArena = Arena.ofConfined()) {
+          final MemorySegment elementTypeSegment = tempArena.allocate(ValueLayout.JAVA_INT);
+          final MemorySegment initialSizeSegment = tempArena.allocate(ValueLayout.JAVA_LONG);
+          final MemorySegment hasMaximumSegment = tempArena.allocate(ValueLayout.JAVA_INT);
+          final MemorySegment maximumSizeSegment = tempArena.allocate(ValueLayout.JAVA_LONG);
+          final MemorySegment is64Segment = tempArena.allocate(ValueLayout.JAVA_INT);
+          final MemorySegment nameSegment = tempArena.allocate(ValueLayout.ADDRESS);
 
-        final int result =
-            (int)
-                metadataHandle.invoke(
-                    nativeTable,
-                    elementTypeSegment,
-                    initialSizeSegment,
-                    hasMaximumSegment,
-                    maximumSizeSegment,
-                    is64Segment,
-                    nameSegment);
+          final int result =
+              (int)
+                  metadataHandle.invoke(
+                      nativeTable,
+                      elementTypeSegment,
+                      initialSizeSegment,
+                      hasMaximumSegment,
+                      maximumSizeSegment,
+                      is64Segment,
+                      nameSegment);
 
-        if (result != 0) {
-          throw new IllegalStateException("Failed to get table metadata");
+          if (result != 0) {
+            throw new IllegalStateException("Failed to get table metadata");
+          }
+
+          final int hasMaximum = hasMaximumSegment.get(ValueLayout.JAVA_INT, 0);
+          if (hasMaximum == 0) {
+            return -1; // No maximum
+          }
+
+          return (int) maximumSizeSegment.get(ValueLayout.JAVA_LONG, 0);
         }
-
-        final int hasMaximum = hasMaximumSegment.get(ValueLayout.JAVA_INT, 0);
-        if (hasMaximum == 0) {
-          return -1; // No maximum
-        }
-
-        return (int) maximumSizeSegment.get(ValueLayout.JAVA_LONG, 0);
       } catch (final Throwable e) {
         throw new IllegalStateException("Error getting table max size: " + e.getMessage(), e);
       }
@@ -379,30 +421,24 @@ public final class PanamaTable implements WasmTable {
             "Cannot get element: table not associated with an instance");
       }
 
+      if (mhGet == null) {
+        throw new IllegalStateException("Panama table get function not available");
+      }
+
       try {
-        final MethodHandle getHandle = NATIVE_BINDINGS.getPanamaTableGet();
-        if (getHandle == null) {
-          throw new IllegalStateException("Panama table get function not available");
-        }
-
-        final MemorySegment refIdPresentSegment = arena.allocate(ValueLayout.JAVA_INT);
-        final MemorySegment refIdSegment = arena.allocate(ValueLayout.JAVA_LONG);
-
         final int result =
-            (int)
-                getHandle.invoke(
-                    nativeTable, getNativeStorePointer(), index, refIdPresentSegment, refIdSegment);
+            (int) mhGet.invokeExact(nativeTable, cachedStorePtr, index, bufRefIdPresent, bufRefId);
 
         if (result != 0) {
           throw new IndexOutOfBoundsException("Failed to get table element at index " + index);
         }
 
-        final int refIdPresent = refIdPresentSegment.get(ValueLayout.JAVA_INT, 0);
+        final int refIdPresent = bufRefIdPresent.get(ValueLayout.JAVA_INT, 0);
         if (refIdPresent == 0) {
           return null; // No reference present
         }
 
-        final long refId = refIdSegment.get(ValueLayout.JAVA_LONG, 0);
+        final long refId = bufRefId.get(ValueLayout.JAVA_LONG, 0);
         return Long.valueOf(refId);
       } catch (final IndexOutOfBoundsException e) {
         throw e;
@@ -426,30 +462,29 @@ public final class PanamaTable implements WasmTable {
             "Cannot set element: table not associated with an instance");
       }
 
+      if (mhSet == null) {
+        throw new IllegalStateException("Panama table set function not available");
+      }
+
+      // Determine element type based on table's element type
+      final int elementTypeCode;
+      if (elementType == WasmValueType.FUNCREF) {
+        elementTypeCode = 5; // FUNCREF
+      } else if (elementType == WasmValueType.EXTERNREF) {
+        elementTypeCode = 6; // EXTERNREF
+      } else {
+        throw new IllegalArgumentException("Unsupported element type: " + elementType);
+      }
+
+      // Handle value conversion
+      final long[] refPair = objectToRefIdPair(value);
+
       try {
-        final MethodHandle setHandle = NATIVE_BINDINGS.getPanamaTableSet();
-        if (setHandle == null) {
-          throw new IllegalStateException("Panama table set function not available");
-        }
-
-        // Determine element type based on table's element type
-        final int elementTypeCode;
-        if (elementType == WasmValueType.FUNCREF) {
-          elementTypeCode = 5; // FUNCREF
-        } else if (elementType == WasmValueType.EXTERNREF) {
-          elementTypeCode = 6; // EXTERNREF
-        } else {
-          throw new IllegalArgumentException("Unsupported element type: " + elementType);
-        }
-
-        // Handle value conversion
-        final long[] refPair = objectToRefIdPair(value);
-
         final int result =
             (int)
-                setHandle.invoke(
+                mhSet.invokeExact(
                     nativeTable,
-                    getNativeStorePointer(),
+                    cachedStorePtr,
                     index,
                     elementTypeCode,
                     (int) refPair[0],
@@ -559,7 +594,7 @@ public final class PanamaTable implements WasmTable {
             (int)
                 fillHandle.invoke(
                     nativeTable,
-                    getNativeStorePointer(),
+                    cachedStorePtr,
                     start,
                     count,
                     elementTypeCode,
@@ -616,7 +651,7 @@ public final class PanamaTable implements WasmTable {
       }
 
       final int result =
-          NATIVE_BINDINGS.panamaTableCopy(nativeTable, getNativeStorePointer(), dst, src, count);
+          NATIVE_BINDINGS.panamaTableCopy(nativeTable, cachedStorePtr, dst, src, count);
 
       if (result != 0) {
         throw new IllegalStateException(
@@ -657,7 +692,7 @@ public final class PanamaTable implements WasmTable {
 
       final int result =
           NATIVE_BINDINGS.panamaTableCopyFrom(
-              nativeTable, getNativeStorePointer(), dst, srcTablePtr, srcIndex, count);
+              nativeTable, cachedStorePtr, dst, srcTablePtr, srcIndex, count);
 
       if (result != 0) {
         throw new IllegalStateException(
@@ -729,12 +764,10 @@ public final class PanamaTable implements WasmTable {
         throw new IllegalStateException("Cannot init: table not associated with an instance");
       }
 
-      final PanamaStore actualStore = getActualStore();
-      if (actualStore == null) {
+      if (cachedStorePtr == null) {
         throw new IllegalStateException("Store is not available");
       }
 
-      final MemorySegment storePtr = actualStore.getNativeStore();
       final MemorySegment instancePtr = instance.getNativeInstance();
 
       if (nativeTable == null || nativeTable.equals(MemorySegment.NULL)) {
@@ -747,7 +780,13 @@ public final class PanamaTable implements WasmTable {
 
       final int result =
           NATIVE_BINDINGS.panamaTableInit(
-              nativeTable, storePtr, instancePtr, destIndex, srcIndex, count, elementSegmentIndex);
+              nativeTable,
+              cachedStorePtr,
+              instancePtr,
+              destIndex,
+              srcIndex,
+              count,
+              elementSegmentIndex);
 
       if (result != 0) {
         throw new RuntimeException(
@@ -801,21 +840,6 @@ public final class PanamaTable implements WasmTable {
     }
   }
 
-  /**
-   * Helper method to get the actual store from either store or instance.
-   *
-   * @return PanamaStore instance
-   */
-  private PanamaStore getActualStore() {
-    if (store != null) {
-      return store;
-    }
-    if (instance != null && instance.getStore() instanceof PanamaStore) {
-      return (PanamaStore) instance.getStore();
-    }
-    return null;
-  }
-
   /** Closes the table and releases resources. */
   public void close() {
     resourceHandle.close();
@@ -831,23 +855,18 @@ public final class PanamaTable implements WasmTable {
   }
 
   /**
-   * Gets the native store pointer from either the instance or direct store reference.
+   * Resolves the native store pointer from either the store or instance.
    *
    * @return native store segment
-   * @throws IllegalStateException if store is not available or not a PanamaStore
    */
-  private MemorySegment getNativeStorePointer() {
+  private MemorySegment resolveStorePtr() {
     if (store != null) {
-      // Table was created directly by store
       return store.getNativeStore();
     }
-    if (instance == null || instance.getStore() == null) {
-      throw new IllegalStateException("Instance or store is null");
+    if (instance != null && instance.getStore() instanceof PanamaStore) {
+      return ((PanamaStore) instance.getStore()).getNativeStore();
     }
-    if (!(instance.getStore() instanceof PanamaStore)) {
-      throw new IllegalStateException("Store is not a PanamaStore");
-    }
-    return ((PanamaStore) instance.getStore()).getNativeStore();
+    return null;
   }
 
   @Override
@@ -878,7 +897,7 @@ public final class PanamaTable implements WasmTable {
         final int result =
             NATIVE_BINDINGS.panamaTableGrowAsync(
                 nativeTable,
-                getNativeStorePointer(),
+                cachedStorePtr,
                 elements,
                 elementTypeCode,
                 (int) refPair[0],
@@ -906,8 +925,7 @@ public final class PanamaTable implements WasmTable {
     }
     try {
       try {
-        final MemorySegment storePtr = getNativeStorePointer();
-        return NATIVE_BINDINGS.tableSupports64BitAddressing(nativeTable, storePtr);
+        return NATIVE_BINDINGS.tableSupports64BitAddressing(nativeTable, cachedStorePtr);
       } catch (final Exception e) {
         LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
         return false;

@@ -42,8 +42,8 @@ import org.openjdk.jmh.infra.Blackhole;
 /**
  * Benchmarks measuring per-operation overhead of Panama typed function calls.
  *
- * <p>This benchmark mirrors TypedFuncOverheadBenchmark but uses the Panama FFI path to measure
- * the performance of Panama typed function calls vs JNI.
+ * <p>This benchmark mirrors TypedFuncOverheadBenchmark but uses the Panama FFI path to measure the
+ * performance of Panama typed function calls vs JNI.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.Throughput)
@@ -84,9 +84,7 @@ public class PanamaFuncBenchmark extends BenchmarkBase {
     final WasmFunction addFunc =
         instance.getFunction("add").orElseThrow(() -> new WasmException("add not found"));
     final WasmFunction identityFunc =
-        instance
-            .getFunction("identity")
-            .orElseThrow(() -> new WasmException("identity not found"));
+        instance.getFunction("identity").orElseThrow(() -> new WasmException("identity not found"));
     final WasmFunction noopFunc =
         instance.getFunction("noop").orElseThrow(() -> new WasmException("noop not found"));
 
