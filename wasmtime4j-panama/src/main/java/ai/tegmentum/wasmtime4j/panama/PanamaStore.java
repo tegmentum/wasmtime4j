@@ -497,6 +497,21 @@ public final class PanamaStore implements Store {
   private final AtomicLong debugHandlerCallbackId = new AtomicLong(0);
   private ai.tegmentum.wasmtime4j.debug.DebugHandler debugHandler;
 
+  // Cached MethodHandles for fuel/epoch hot-path operations — avoids per-call getter overhead
+  private MethodHandle mhSetFuel;
+  private MethodHandle mhGetFuel;
+  private MethodHandle mhAddFuel;
+  private MethodHandle mhConsumeFuel;
+  private MethodHandle mhSetEpochDeadline;
+  private MethodHandle mhGetHostcallFuel;
+  private MethodHandle mhSetHostcallFuel;
+  private MethodHandle mhSetFuelAsyncYieldInterval;
+
+  // Pre-allocated output buffers for fuel queries — avoids per-call Arena allocation + memory leak
+  private MemorySegment bufGetFuel;
+  private MemorySegment bufConsumeFuel;
+  private MemorySegment bufHostcallFuel;
+
   /**
    * Creates a new Panama store.
    *
@@ -526,6 +541,8 @@ public final class PanamaStore implements Store {
     this.resourceManager = new ArenaResourceManager(arena, false);
 
     this.resourceHandle = createResourceHandle();
+
+    initFuelHandlesAndBuffers();
 
     LOGGER.fine("Created Panama store");
   }
@@ -584,6 +601,8 @@ public final class PanamaStore implements Store {
     this.resourceManager = new ArenaResourceManager(arena, false);
 
     this.resourceHandle = createResourceHandle();
+
+    initFuelHandlesAndBuffers();
 
     LOGGER.fine("Created Panama store with limits: " + limits);
   }
@@ -646,6 +665,8 @@ public final class PanamaStore implements Store {
 
     this.resourceHandle = createResourceHandle();
 
+    initFuelHandlesAndBuffers();
+
     LOGGER.fine(
         "Created Panama store with resource limits - fuel: "
             + fuelLimit
@@ -681,7 +702,25 @@ public final class PanamaStore implements Store {
 
     this.resourceHandle = createResourceHandle();
 
+    initFuelHandlesAndBuffers();
+
     LOGGER.fine("Created Panama store from pre-created native handle");
+  }
+
+  /** Caches MethodHandles and pre-allocates output buffers for fuel/epoch operations. */
+  private void initFuelHandlesAndBuffers() {
+    this.mhSetFuel = NATIVE_BINDINGS.getPanamaStoreSetFuel();
+    this.mhGetFuel = NATIVE_BINDINGS.getPanamaStoreGetFuel();
+    this.mhAddFuel = NATIVE_BINDINGS.getPanamaStoreAddFuel();
+    this.mhConsumeFuel = NATIVE_BINDINGS.getPanamaStoreConsumeFuel();
+    this.mhSetEpochDeadline = NATIVE_BINDINGS.getPanamaStoreSetEpochDeadline();
+    this.mhGetHostcallFuel = NATIVE_BINDINGS.getPanamaStoreGetHostcallFuel();
+    this.mhSetHostcallFuel = NATIVE_BINDINGS.getPanamaStoreSetHostcallFuel();
+    this.mhSetFuelAsyncYieldInterval = NATIVE_BINDINGS.getPanamaStoreSetFuelAsyncYieldInterval();
+
+    this.bufGetFuel = arena.allocate(ValueLayout.JAVA_LONG);
+    this.bufConsumeFuel = arena.allocate(ValueLayout.JAVA_LONG);
+    this.bufHostcallFuel = arena.allocate(ValueLayout.JAVA_LONG);
   }
 
   /**
@@ -897,24 +936,18 @@ public final class PanamaStore implements Store {
     }
     resourceHandle.beginOperation();
     try {
-
-      try {
-        final MethodHandle setFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetFuel();
-        if (setFuelHandle == null) {
-          throw new WasmException("Panama store set fuel function not available");
-        }
-
-        final int result = (int) setFuelHandle.invoke(nativeStore, fuel);
-
-        if (result != 0) {
-          throw new WasmException("Failed to set fuel");
-        }
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error setting fuel: " + e.getMessage(), e);
+      final MethodHandle mh = mhSetFuel;
+      if (mh == null) {
+        throw new WasmException("Panama store set fuel function not available");
       }
+      final int result = (int) mh.invokeExact(nativeStore, fuel);
+      if (result != 0) {
+        throw new WasmException("Failed to set fuel");
+      }
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error setting fuel: " + e.getMessage(), e);
     } finally {
       resourceHandle.endOperation();
     }
@@ -924,28 +957,19 @@ public final class PanamaStore implements Store {
   public long getFuel() throws WasmException {
     resourceHandle.beginOperation();
     try {
-
-      try {
-        final MethodHandle getFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetFuel();
-        if (getFuelHandle == null) {
-          throw new WasmException("Panama store get fuel function not available");
-        }
-
-        final MemorySegment fuelSegment = arena.allocate(ValueLayout.JAVA_LONG);
-
-        final int result = (int) getFuelHandle.invoke(nativeStore, fuelSegment);
-
-        if (result != 0) {
-          throw new WasmException("Failed to get fuel");
-        }
-
-        return fuelSegment.get(ValueLayout.JAVA_LONG, 0);
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error getting fuel: " + e.getMessage(), e);
+      final MethodHandle mh = mhGetFuel;
+      if (mh == null) {
+        throw new WasmException("Panama store get fuel function not available");
       }
+      final int result = (int) mh.invokeExact(nativeStore, bufGetFuel);
+      if (result != 0) {
+        throw new WasmException("Failed to get fuel");
+      }
+      return bufGetFuel.get(ValueLayout.JAVA_LONG, 0);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error getting fuel: " + e.getMessage(), e);
     } finally {
       resourceHandle.endOperation();
     }
@@ -958,24 +982,18 @@ public final class PanamaStore implements Store {
     }
     resourceHandle.beginOperation();
     try {
-
-      try {
-        final MethodHandle addFuelHandle = NATIVE_BINDINGS.getPanamaStoreAddFuel();
-        if (addFuelHandle == null) {
-          throw new WasmException("Panama store add fuel function not available");
-        }
-
-        final int result = (int) addFuelHandle.invoke(nativeStore, fuel);
-
-        if (result != 0) {
-          throw new WasmException("Failed to add fuel");
-        }
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error adding fuel: " + e.getMessage(), e);
+      final MethodHandle mh = mhAddFuel;
+      if (mh == null) {
+        throw new WasmException("Panama store add fuel function not available");
       }
+      final int result = (int) mh.invokeExact(nativeStore, fuel);
+      if (result != 0) {
+        throw new WasmException("Failed to add fuel");
+      }
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error adding fuel: " + e.getMessage(), e);
     } finally {
       resourceHandle.endOperation();
     }
@@ -985,25 +1003,18 @@ public final class PanamaStore implements Store {
   public void setEpochDeadline(final long ticks) throws WasmException {
     resourceHandle.beginOperation();
     try {
-
-      try {
-        final MethodHandle setEpochDeadlineHandle =
-            NATIVE_BINDINGS.getPanamaStoreSetEpochDeadline();
-        if (setEpochDeadlineHandle == null) {
-          throw new WasmException("Panama store set epoch deadline function not available");
-        }
-
-        final int result = (int) setEpochDeadlineHandle.invoke(nativeStore, ticks);
-
-        if (result != 0) {
-          throw new WasmException("Failed to set epoch deadline");
-        }
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error setting epoch deadline: " + e.getMessage(), e);
+      final MethodHandle mh = mhSetEpochDeadline;
+      if (mh == null) {
+        throw new WasmException("Panama store set epoch deadline function not available");
       }
+      final int result = (int) mh.invokeExact(nativeStore, ticks);
+      if (result != 0) {
+        throw new WasmException("Failed to set epoch deadline");
+      }
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error setting epoch deadline: " + e.getMessage(), e);
     } finally {
       resourceHandle.endOperation();
     }
@@ -1016,28 +1027,19 @@ public final class PanamaStore implements Store {
     }
     resourceHandle.beginOperation();
     try {
-
-      try {
-        final MethodHandle consumeFuelHandle = NATIVE_BINDINGS.getPanamaStoreConsumeFuel();
-        if (consumeFuelHandle == null) {
-          throw new WasmException("Panama store consume fuel function not available");
-        }
-
-        final MemorySegment consumedSegment = arena.allocate(ValueLayout.JAVA_LONG);
-
-        final int result = (int) consumeFuelHandle.invoke(nativeStore, fuel, consumedSegment);
-
-        if (result != 0) {
-          throw new WasmException("Failed to consume fuel");
-        }
-
-        return consumedSegment.get(ValueLayout.JAVA_LONG, 0);
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error consuming fuel: " + e.getMessage(), e);
+      final MethodHandle mh = mhConsumeFuel;
+      if (mh == null) {
+        throw new WasmException("Panama store consume fuel function not available");
       }
+      final int result = (int) mh.invokeExact(nativeStore, fuel, bufConsumeFuel);
+      if (result != 0) {
+        throw new WasmException("Failed to consume fuel");
+      }
+      return bufConsumeFuel.get(ValueLayout.JAVA_LONG, 0);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error consuming fuel: " + e.getMessage(), e);
     } finally {
       resourceHandle.endOperation();
     }
@@ -1047,28 +1049,19 @@ public final class PanamaStore implements Store {
   public long hostcallFuel() throws WasmException {
     resourceHandle.beginOperation();
     try {
-
-      try {
-        final MethodHandle getHostcallFuelHandle = NATIVE_BINDINGS.getPanamaStoreGetHostcallFuel();
-        if (getHostcallFuelHandle == null) {
-          throw new WasmException("Panama store get hostcall fuel function not available");
-        }
-
-        final MemorySegment fuelSegment = arena.allocate(ValueLayout.JAVA_LONG);
-
-        final int result = (int) getHostcallFuelHandle.invoke(nativeStore, fuelSegment);
-
-        if (result != 0) {
-          throw new WasmException("Failed to get hostcall fuel");
-        }
-
-        return fuelSegment.get(ValueLayout.JAVA_LONG, 0);
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error getting hostcall fuel: " + e.getMessage(), e);
+      final MethodHandle mh = mhGetHostcallFuel;
+      if (mh == null) {
+        throw new WasmException("Panama store get hostcall fuel function not available");
       }
+      final int result = (int) mh.invokeExact(nativeStore, bufHostcallFuel);
+      if (result != 0) {
+        throw new WasmException("Failed to get hostcall fuel");
+      }
+      return bufHostcallFuel.get(ValueLayout.JAVA_LONG, 0);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error getting hostcall fuel: " + e.getMessage(), e);
     } finally {
       resourceHandle.endOperation();
     }
@@ -1081,24 +1074,18 @@ public final class PanamaStore implements Store {
     }
     resourceHandle.beginOperation();
     try {
-
-      try {
-        final MethodHandle setHostcallFuelHandle = NATIVE_BINDINGS.getPanamaStoreSetHostcallFuel();
-        if (setHostcallFuelHandle == null) {
-          throw new WasmException("Panama store set hostcall fuel function not available");
-        }
-
-        final int result = (int) setHostcallFuelHandle.invoke(nativeStore, fuel);
-
-        if (result != 0) {
-          throw new WasmException("Failed to set hostcall fuel");
-        }
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error setting hostcall fuel: " + e.getMessage(), e);
+      final MethodHandle mh = mhSetHostcallFuel;
+      if (mh == null) {
+        throw new WasmException("Panama store set hostcall fuel function not available");
       }
+      final int result = (int) mh.invokeExact(nativeStore, fuel);
+      if (result != 0) {
+        throw new WasmException("Failed to set hostcall fuel");
+      }
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error setting hostcall fuel: " + e.getMessage(), e);
     } finally {
       resourceHandle.endOperation();
     }
@@ -2521,23 +2508,20 @@ public final class PanamaStore implements Store {
     }
     resourceHandle.beginOperation();
     try {
-      try {
-        final MethodHandle handle = NATIVE_BINDINGS.getPanamaStoreSetFuelAsyncYieldInterval();
-        if (handle == null) {
-          throw new WasmException(
-              "Panama store set fuel async yield interval function not available");
-        }
-        final int result = (int) handle.invoke(nativeStore, interval);
-        if (result != 0) {
-          throw new WasmException("Failed to set fuel async yield interval");
-        }
-        this.fuelAsyncYieldInterval = interval;
-      } catch (final Throwable e) {
-        if (e instanceof WasmException) {
-          throw (WasmException) e;
-        }
-        throw new WasmException("Error setting fuel async yield interval: " + e.getMessage(), e);
+      final MethodHandle mh = mhSetFuelAsyncYieldInterval;
+      if (mh == null) {
+        throw new WasmException(
+            "Panama store set fuel async yield interval function not available");
       }
+      final int result = (int) mh.invokeExact(nativeStore, interval);
+      if (result != 0) {
+        throw new WasmException("Failed to set fuel async yield interval");
+      }
+      this.fuelAsyncYieldInterval = interval;
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Throwable e) {
+      throw new WasmException("Error setting fuel async yield interval: " + e.getMessage(), e);
     } finally {
       resourceHandle.endOperation();
     }

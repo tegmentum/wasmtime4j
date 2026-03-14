@@ -80,13 +80,9 @@ public class PanamaGlobalBenchmark extends BenchmarkBase {
             .getGlobal("counter")
             .orElseThrow(() -> new WasmException("counter global not found"));
     immutableGlobal =
-        instance
-            .getGlobal("limit")
-            .orElseThrow(() -> new WasmException("limit global not found"));
+        instance.getGlobal("limit").orElseThrow(() -> new WasmException("limit global not found"));
     doubleGlobal =
-        instance
-            .getGlobal("ratio")
-            .orElseThrow(() -> new WasmException("ratio global not found"));
+        instance.getGlobal("ratio").orElseThrow(() -> new WasmException("ratio global not found"));
   }
 
   @TearDown(Level.Trial)
