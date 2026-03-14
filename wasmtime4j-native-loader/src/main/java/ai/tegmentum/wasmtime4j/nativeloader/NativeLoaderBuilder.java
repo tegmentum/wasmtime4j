@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.nativeloader;
 
 import java.util.Objects;
@@ -170,7 +169,8 @@ public final class NativeLoaderBuilder {
    * @throws IllegalStateException if the configuration cannot be built
    */
   public NativeLibraryUtils.LibraryLoadInfo load() {
-    final NativeLibraryConfig config = new NativeLibraryConfig(libraryName, tempFilePrefix, tempDirSuffix);
+    final NativeLibraryConfig config =
+        new NativeLibraryConfig(libraryName, tempFilePrefix, tempDirSuffix);
     return performLoad(config);
   }
 
@@ -224,5 +224,4 @@ public final class NativeLoaderBuilder {
   public PathConvention getPathConvention() {
     return pathConvention;
   }
-
 }

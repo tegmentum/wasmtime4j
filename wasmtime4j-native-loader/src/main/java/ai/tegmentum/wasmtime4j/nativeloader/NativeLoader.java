@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Tegmentum AI
+ * Copyright 2025 Tegmentum AI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package ai.tegmentum.wasmtime4j.nativeloader;
 
 /**
@@ -22,8 +21,7 @@ package ai.tegmentum.wasmtime4j.nativeloader;
  * <p>This class provides a comprehensive solution for loading native libraries in Java applications
  * with automatic platform detection, secure resource extraction, and flexible configuration
  * options. It serves as a high-level facade over the underlying {@link NativeLibraryUtils} while
- * providing additional features like resource path conventions and fallback
- * strategies.
+ * providing additional features like resource path conventions and fallback strategies.
  *
  * <p><strong>Key Features:</strong>
  *
