@@ -52,6 +52,12 @@ public final class PanamaMemory implements WasmMemory {
   private final PanamaStore store; // For memories created directly by store (instance will be null)
   private final NativeResourceHandle resourceHandle;
 
+  // Pre-allocated output buffers for atomic operations — avoids per-call arena leak.
+  // Synchronized access via atomicBufferLock since beginOperation() is a shared read lock.
+  private final Object atomicBufferLock = new Object();
+  private final MemorySegment bufAtomicI32;
+  private final MemorySegment bufAtomicI64;
+
   // Performance optimization: cached memory pointer to avoid repeated lookups
   private volatile MemorySegment cachedMemoryPointer;
 
@@ -83,6 +89,8 @@ public final class PanamaMemory implements WasmMemory {
     this.memoryName = memoryName;
     this.instance = instance;
     this.store = null; // Instance-exported memories don't have direct store reference
+    this.bufAtomicI32 = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufAtomicI64 = arena.allocate(ValueLayout.JAVA_LONG);
     this.resourceHandle = createResourceHandle();
     LOGGER.fine("Created memory wrapper for export: " + memoryName);
   }
@@ -105,6 +113,8 @@ public final class PanamaMemory implements WasmMemory {
     this.memoryName = null; // Store-created memories don't have a name
     this.instance = null; // Memories created by store don't have an instance
     this.store = store;
+    this.bufAtomicI32 = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufAtomicI64 = arena.allocate(ValueLayout.JAVA_LONG);
     this.resourceHandle = createResourceHandle();
     LOGGER.fine("Created memory from store");
   }
@@ -127,6 +137,8 @@ public final class PanamaMemory implements WasmMemory {
     this.memoryName = null;
     this.instance = null;
     this.store = null;
+    this.bufAtomicI32 = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufAtomicI64 = arena.allocate(ValueLayout.JAVA_LONG);
     this.resourceHandle = createResourceHandle();
     LOGGER.fine("Created standalone shared memory");
   }
@@ -612,38 +624,41 @@ public final class PanamaMemory implements WasmMemory {
       final PanamaStore panamaStore = getPanamaStore();
       final MemorySegment storePtr = panamaStore.getNativeStore();
 
-      // Get minimum from native
-      final MemorySegment minimumOut = arena.allocate(ValueLayout.JAVA_LONG);
-      final int minResult = NATIVE_BINDINGS.panamaMemoryGetMinimum(memPtr, storePtr, minimumOut);
-      if (minResult != 0) {
-        throw new IllegalStateException(
-            "Failed to get memory minimum: " + PanamaErrorMapper.getErrorDescription(minResult));
-      }
-      final long minimum = minimumOut.get(ValueLayout.JAVA_LONG, 0);
+      // Use confined arena for temporary allocations (avoids shared arena leak)
+      try (final Arena tempArena = Arena.ofConfined()) {
+        // Get minimum from native
+        final MemorySegment minimumOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final int minResult = NATIVE_BINDINGS.panamaMemoryGetMinimum(memPtr, storePtr, minimumOut);
+        if (minResult != 0) {
+          throw new IllegalStateException(
+              "Failed to get memory minimum: " + PanamaErrorMapper.getErrorDescription(minResult));
+        }
+        final long minimum = minimumOut.get(ValueLayout.JAVA_LONG, 0);
 
-      // Get maximum from native (-1 means unlimited)
-      final MemorySegment maximumOut = arena.allocate(ValueLayout.JAVA_LONG);
-      final int maxResult = NATIVE_BINDINGS.panamaMemoryGetMaximum(memPtr, storePtr, maximumOut);
-      if (maxResult != 0) {
-        throw new IllegalStateException(
-            "Failed to get memory maximum: " + PanamaErrorMapper.getErrorDescription(maxResult));
-      }
-      final long maxValue = maximumOut.get(ValueLayout.JAVA_LONG, 0);
-      final Long maximum = maxValue == -1 ? null : maxValue;
+        // Get maximum from native (-1 means unlimited)
+        final MemorySegment maximumOut = tempArena.allocate(ValueLayout.JAVA_LONG);
+        final int maxResult = NATIVE_BINDINGS.panamaMemoryGetMaximum(memPtr, storePtr, maximumOut);
+        if (maxResult != 0) {
+          throw new IllegalStateException(
+              "Failed to get memory maximum: " + PanamaErrorMapper.getErrorDescription(maxResult));
+        }
+        final long maxValue = maximumOut.get(ValueLayout.JAVA_LONG, 0);
+        final Long maximum = maxValue == -1 ? null : maxValue;
 
-      // Get page size log2 from native
-      final MemorySegment pageSizeLog2Out = arena.allocate(ValueLayout.JAVA_INT);
-      final int psResult =
-          NATIVE_BINDINGS.panamaMemoryGetPageSizeLog2(memPtr, storePtr, pageSizeLog2Out);
-      final int pageSizeLog2;
-      if (psResult != 0) {
-        pageSizeLog2 = 16; // Default to standard 64KB page size
-      } else {
-        pageSizeLog2 = pageSizeLog2Out.get(ValueLayout.JAVA_INT, 0);
-      }
+        // Get page size log2 from native
+        final MemorySegment pageSizeLog2Out = tempArena.allocate(ValueLayout.JAVA_INT);
+        final int psResult =
+            NATIVE_BINDINGS.panamaMemoryGetPageSizeLog2(memPtr, storePtr, pageSizeLog2Out);
+        final int pageSizeLog2;
+        if (psResult != 0) {
+          pageSizeLog2 = 16; // Default to standard 64KB page size
+        } else {
+          pageSizeLog2 = pageSizeLog2Out.get(ValueLayout.JAVA_INT, 0);
+        }
 
-      return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
-          minimum, maximum, is64Bit, sharedFlag, pageSizeLog2);
+        return new ai.tegmentum.wasmtime4j.panama.type.PanamaMemoryType(
+            minimum, maximum, is64Bit, sharedFlag, pageSizeLog2);
+      }
     } finally {
       resourceHandle.endOperation();
     }
@@ -714,19 +729,23 @@ public final class PanamaMemory implements WasmMemory {
 
     final MemorySegment storePtr = getNativeStorePointer();
 
-    // Allocate output pointers for data pointer and size
-    final MemorySegment dataPtrOut = arena.allocate(ValueLayout.ADDRESS);
-    final MemorySegment sizeOut = arena.allocate(ValueLayout.JAVA_LONG);
+    // Use confined arena for temporary output pointers (avoids shared arena leak)
+    final long rawPtr;
+    final long size;
+    try (final Arena tempArena = Arena.ofConfined()) {
+      final MemorySegment dataPtrOut = tempArena.allocate(ValueLayout.ADDRESS);
+      final MemorySegment sizeOut = tempArena.allocate(ValueLayout.JAVA_LONG);
 
-    final int result = NATIVE_BINDINGS.panamaMemoryGetData(memPtr, storePtr, dataPtrOut, sizeOut);
+      final int result = NATIVE_BINDINGS.panamaMemoryGetData(memPtr, storePtr, dataPtrOut, sizeOut);
 
-    if (result != 0) {
-      throw new RuntimeException(
-          "Failed to get memory data pointer: " + PanamaErrorMapper.getErrorDescription(result));
+      if (result != 0) {
+        throw new RuntimeException(
+            "Failed to get memory data pointer: " + PanamaErrorMapper.getErrorDescription(result));
+      }
+
+      rawPtr = dataPtrOut.get(ValueLayout.ADDRESS, 0).address();
+      size = sizeOut.get(ValueLayout.JAVA_LONG, 0);
     }
-
-    final long rawPtr = dataPtrOut.get(ValueLayout.ADDRESS, 0).address();
-    final long size = sizeOut.get(ValueLayout.JAVA_LONG, 0);
 
     if (rawPtr == 0) {
       throw new IllegalStateException("Memory data pointer is null");
@@ -844,11 +863,12 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         4,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicCompareAndSwapI32(
-                  memPtr, storePtr, offset, expected, newValue, resultOut));
-          return resultOut.get(ValueLayout.JAVA_INT, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicCompareAndSwapI32(
+                    memPtr, storePtr, offset, expected, newValue, bufAtomicI32));
+            return bufAtomicI32.get(ValueLayout.JAVA_INT, 0);
+          }
         });
   }
 
@@ -858,11 +878,12 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         8,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicCompareAndSwapI64(
-                  memPtr, storePtr, offset, expected, newValue, resultOut));
-          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicCompareAndSwapI64(
+                    memPtr, storePtr, offset, expected, newValue, bufAtomicI64));
+            return bufAtomicI64.get(ValueLayout.JAVA_LONG, 0);
+          }
         });
   }
 
@@ -872,10 +893,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         4,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, resultOut));
-          return resultOut.get(ValueLayout.JAVA_INT, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicLoadI32(memPtr, storePtr, offset, bufAtomicI32));
+            return bufAtomicI32.get(ValueLayout.JAVA_INT, 0);
+          }
         });
   }
 
@@ -885,10 +907,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         8,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, resultOut));
-          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicLoadI64(memPtr, storePtr, offset, bufAtomicI64));
+            return bufAtomicI64.get(ValueLayout.JAVA_LONG, 0);
+          }
         });
   }
 
@@ -920,10 +943,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         4,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicAddI32(memPtr, storePtr, offset, value, resultOut));
-          return resultOut.get(ValueLayout.JAVA_INT, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicAddI32(memPtr, storePtr, offset, value, bufAtomicI32));
+            return bufAtomicI32.get(ValueLayout.JAVA_INT, 0);
+          }
         });
   }
 
@@ -933,10 +957,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         8,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicAddI64(memPtr, storePtr, offset, value, resultOut));
-          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicAddI64(memPtr, storePtr, offset, value, bufAtomicI64));
+            return bufAtomicI64.get(ValueLayout.JAVA_LONG, 0);
+          }
         });
   }
 
@@ -946,10 +971,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         4,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicAndI32(memPtr, storePtr, offset, value, resultOut));
-          return resultOut.get(ValueLayout.JAVA_INT, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicAndI32(memPtr, storePtr, offset, value, bufAtomicI32));
+            return bufAtomicI32.get(ValueLayout.JAVA_INT, 0);
+          }
         });
   }
 
@@ -959,10 +985,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         4,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicOrI32(memPtr, storePtr, offset, value, resultOut));
-          return resultOut.get(ValueLayout.JAVA_INT, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicOrI32(memPtr, storePtr, offset, value, bufAtomicI32));
+            return bufAtomicI32.get(ValueLayout.JAVA_INT, 0);
+          }
         });
   }
 
@@ -972,10 +999,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         4,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicXorI32(memPtr, storePtr, offset, value, resultOut));
-          return resultOut.get(ValueLayout.JAVA_INT, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicXorI32(memPtr, storePtr, offset, value, bufAtomicI32));
+            return bufAtomicI32.get(ValueLayout.JAVA_INT, 0);
+          }
         });
   }
 
@@ -985,10 +1013,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         8,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicAndI64(memPtr, storePtr, offset, value, resultOut));
-          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicAndI64(memPtr, storePtr, offset, value, bufAtomicI64));
+            return bufAtomicI64.get(ValueLayout.JAVA_LONG, 0);
+          }
         });
   }
 
@@ -998,10 +1027,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         8,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicOrI64(memPtr, storePtr, offset, value, resultOut));
-          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicOrI64(memPtr, storePtr, offset, value, bufAtomicI64));
+            return bufAtomicI64.get(ValueLayout.JAVA_LONG, 0);
+          }
         });
   }
 
@@ -1011,10 +1041,11 @@ public final class PanamaMemory implements WasmMemory {
         offset,
         8,
         (memPtr, storePtr) -> {
-          final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_LONG);
-          checkAtomicResult(
-              NATIVE_BINDINGS.memoryAtomicXorI64(memPtr, storePtr, offset, value, resultOut));
-          return resultOut.get(ValueLayout.JAVA_LONG, 0);
+          synchronized (atomicBufferLock) {
+            checkAtomicResult(
+                NATIVE_BINDINGS.memoryAtomicXorI64(memPtr, storePtr, offset, value, bufAtomicI64));
+            return bufAtomicI64.get(ValueLayout.JAVA_LONG, 0);
+          }
         });
   }
 
@@ -1248,15 +1279,16 @@ public final class PanamaMemory implements WasmMemory {
         throw new IllegalStateException("Memory pointer is null");
       }
 
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      final int errorCode =
-          NATIVE_BINDINGS.memoryAtomicNotify(memPtr, storePtr, offset, count, resultOut);
+      synchronized (atomicBufferLock) {
+        final int errorCode =
+            NATIVE_BINDINGS.memoryAtomicNotify(memPtr, storePtr, offset, count, bufAtomicI32);
 
-      if (errorCode != 0) {
-        throwAtomicOperationError(errorCode, "Atomic operation failed");
+        if (errorCode != 0) {
+          throwAtomicOperationError(errorCode, "Atomic operation failed");
+        }
+
+        return bufAtomicI32.get(ValueLayout.JAVA_INT, 0);
       }
-
-      return resultOut.get(ValueLayout.JAVA_INT, 0);
     } finally {
       resourceHandle.endOperation();
     }
@@ -1281,16 +1313,17 @@ public final class PanamaMemory implements WasmMemory {
         throw new IllegalStateException("Memory pointer is null");
       }
 
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      final int errorCode =
-          NATIVE_BINDINGS.memoryAtomicWait32(
-              memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
+      synchronized (atomicBufferLock) {
+        final int errorCode =
+            NATIVE_BINDINGS.memoryAtomicWait32(
+                memPtr, storePtr, offset, expected, timeoutNanos, bufAtomicI32);
 
-      if (errorCode != 0) {
-        throwAtomicOperationError(errorCode, "Atomic operation failed");
+        if (errorCode != 0) {
+          throwAtomicOperationError(errorCode, "Atomic operation failed");
+        }
+
+        return WaitResult.fromNativeCode(bufAtomicI32.get(ValueLayout.JAVA_INT, 0));
       }
-
-      return WaitResult.fromNativeCode(resultOut.get(ValueLayout.JAVA_INT, 0));
     } finally {
       resourceHandle.endOperation();
     }
@@ -1315,16 +1348,17 @@ public final class PanamaMemory implements WasmMemory {
         throw new IllegalStateException("Memory pointer is null");
       }
 
-      final MemorySegment resultOut = arena.allocate(ValueLayout.JAVA_INT);
-      final int errorCode =
-          NATIVE_BINDINGS.memoryAtomicWait64(
-              memPtr, storePtr, offset, expected, timeoutNanos, resultOut);
+      synchronized (atomicBufferLock) {
+        final int errorCode =
+            NATIVE_BINDINGS.memoryAtomicWait64(
+                memPtr, storePtr, offset, expected, timeoutNanos, bufAtomicI32);
 
-      if (errorCode != 0) {
-        throwAtomicOperationError(errorCode, "Atomic operation failed");
+        if (errorCode != 0) {
+          throwAtomicOperationError(errorCode, "Atomic operation failed");
+        }
+
+        return WaitResult.fromNativeCode(bufAtomicI32.get(ValueLayout.JAVA_INT, 0));
       }
-
-      return WaitResult.fromNativeCode(resultOut.get(ValueLayout.JAVA_INT, 0));
     } finally {
       resourceHandle.endOperation();
     }
