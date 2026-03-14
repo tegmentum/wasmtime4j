@@ -190,6 +190,11 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
   private final java.time.Instant createdAt = java.time.Instant.now();
   private volatile java.time.Instant lastAccessedAt;
 
+  // Pre-allocated output buffers for fixed-size outputs
+  private final Arena bufferArena;
+  private final MemorySegment bufOutCapacity;
+  private final MemorySegment bufOutSpliced;
+
   /**
    * Creates a new Panama WASI output stream with the given native handles.
    *
@@ -204,14 +209,20 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     this.nativeHandle = streamHandle;
     this.contextHandle = contextHandle;
 
+    // Pre-allocate output buffers for fixed-size results
+    this.bufferArena = Arena.ofShared();
+    this.bufOutCapacity = bufferArena.allocate(ValueLayout.JAVA_LONG);
+    this.bufOutSpliced = bufferArena.allocate(ValueLayout.JAVA_LONG);
+
     final MemorySegment ctx = this.contextHandle;
     final MemorySegment handle = this.nativeHandle;
+    final Arena capturedArena = this.bufferArena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaWasiOutputStream",
             () -> {
               try {
-                final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
+                final int result = (int) CLOSE_HANDLE.invokeExact(contextHandle, nativeHandle);
                 if (result != 0) {
                   LOGGER.warning(
                       "Failed to close WASI output stream: "
@@ -220,13 +231,19 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
               } catch (final Throwable e) {
                 throw new Exception("Error closing WASI output stream", e);
               }
+              if (bufferArena.scope().isAlive()) {
+                bufferArena.close();
+              }
             },
             this,
             () -> {
               try {
-                CLOSE_HANDLE.invoke(ctx, handle);
+                CLOSE_HANDLE.invokeExact(ctx, handle);
               } catch (final Throwable e) {
                 LOGGER.warning("Safety net: error closing WASI output stream: " + e.getMessage());
+              }
+              if (capturedArena.scope().isAlive()) {
+                capturedArena.close();
               }
             });
 
@@ -240,16 +257,15 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment outCapacity = arena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result = (int) CHECK_WRITE_HANDLE.invoke(contextHandle, nativeHandle, outCapacity);
+    try {
+      final int result =
+          (int) CHECK_WRITE_HANDLE.invokeExact(contextHandle, nativeHandle, bufOutCapacity);
 
       if (result != 0) {
         throw new WasmException("Failed to check write capacity on WASI output stream");
       }
 
-      final long capacity = outCapacity.get(ValueLayout.JAVA_LONG, 0);
+      final long capacity = bufOutCapacity.get(ValueLayout.JAVA_LONG, 0);
       if (capacity < 0) {
         throw new WasmException("Invalid write capacity: " + capacity);
       }
@@ -279,7 +295,8 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       final MemorySegment buffer = arena.allocateFrom(ValueLayout.JAVA_BYTE, contents);
 
       final int result =
-          (int) WRITE_HANDLE.invoke(contextHandle, nativeHandle, buffer, (long) contents.length);
+          (int)
+              WRITE_HANDLE.invokeExact(contextHandle, nativeHandle, buffer, (long) contents.length);
 
       if (result != 0) {
         throw new WasmException("Failed to write to WASI output stream");
@@ -311,7 +328,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
 
       final int result =
           (int)
-              BLOCKING_WRITE_AND_FLUSH_HANDLE.invoke(
+              BLOCKING_WRITE_AND_FLUSH_HANDLE.invokeExact(
                   contextHandle, nativeHandle, buffer, (long) contents.length);
 
       if (result != 0) {
@@ -337,7 +354,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
     try {
-      final int result = (int) FLUSH_HANDLE.invoke(contextHandle, nativeHandle);
+      final int result = (int) FLUSH_HANDLE.invokeExact(contextHandle, nativeHandle);
 
       if (result != 0) {
         throw new WasmException("Failed to flush WASI output stream");
@@ -360,7 +377,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
     try {
-      final int result = (int) BLOCKING_FLUSH_HANDLE.invoke(contextHandle, nativeHandle);
+      final int result = (int) BLOCKING_FLUSH_HANDLE.invokeExact(contextHandle, nativeHandle);
 
       if (result != 0) {
         throw new WasmException("Failed to perform blocking flush");
@@ -384,7 +401,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
     try {
-      final int result = (int) WRITE_ZEROES_HANDLE.invoke(contextHandle, nativeHandle, length);
+      final int result = (int) WRITE_ZEROES_HANDLE.invokeExact(contextHandle, nativeHandle, length);
 
       if (result != 0) {
         throw new WasmException("Failed to write zeroes to output stream");
@@ -409,7 +426,9 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     }
     try {
       final int result =
-          (int) BLOCKING_WRITE_ZEROES_AND_FLUSH_HANDLE.invoke(contextHandle, nativeHandle, length);
+          (int)
+              BLOCKING_WRITE_ZEROES_AND_FLUSH_HANDLE.invokeExact(
+                  contextHandle, nativeHandle, length);
 
       if (result != 0) {
         throw new WasmException("Failed to perform blocking write zeroes and flush");
@@ -449,18 +468,17 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
         throw new WasmException("Source stream is closed: " + e.getMessage(), e);
       }
 
-      try (final Arena arena = Arena.ofConfined()) {
-        final MemorySegment outSpliced = arena.allocate(ValueLayout.JAVA_LONG);
-
+      try {
         final int result =
             (int)
-                SPLICE_HANDLE.invoke(contextHandle, nativeHandle, sourceHandle, length, outSpliced);
+                SPLICE_HANDLE.invokeExact(
+                    contextHandle, nativeHandle, sourceHandle, length, bufOutSpliced);
 
         if (result != 0) {
           throw new WasmException("Failed to splice streams");
         }
 
-        final long spliced = outSpliced.get(ValueLayout.JAVA_LONG, 0);
+        final long spliced = bufOutSpliced.get(ValueLayout.JAVA_LONG, 0);
         if (spliced < 0) {
           throw new WasmException("Invalid spliced count: " + spliced);
         }
@@ -501,19 +519,17 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
         throw new WasmException("Source stream is closed: " + e.getMessage(), e);
       }
 
-      try (final Arena arena = Arena.ofConfined()) {
-        final MemorySegment outSpliced = arena.allocate(ValueLayout.JAVA_LONG);
-
+      try {
         final int result =
             (int)
-                BLOCKING_SPLICE_HANDLE.invoke(
-                    contextHandle, nativeHandle, sourceHandle, length, outSpliced);
+                BLOCKING_SPLICE_HANDLE.invokeExact(
+                    contextHandle, nativeHandle, sourceHandle, length, bufOutSpliced);
 
         if (result != 0) {
           throw new WasmException("Failed to perform blocking splice");
         }
 
-        final long spliced = outSpliced.get(ValueLayout.JAVA_LONG, 0);
+        final long spliced = bufOutSpliced.get(ValueLayout.JAVA_LONG, 0);
         if (spliced < 0) {
           throw new WasmException("Invalid spliced count: " + spliced);
         }
@@ -539,7 +555,7 @@ public final class PanamaWasiOutputStream implements WasiOutputStream, AutoClose
     }
     try {
       final MemorySegment pollableHandle =
-          (MemorySegment) SUBSCRIBE_HANDLE.invoke(contextHandle, nativeHandle);
+          (MemorySegment) SUBSCRIBE_HANDLE.invokeExact(contextHandle, nativeHandle);
 
       if (pollableHandle == null || pollableHandle.address() == 0) {
         throw new WasmException("Failed to create pollable for output stream");

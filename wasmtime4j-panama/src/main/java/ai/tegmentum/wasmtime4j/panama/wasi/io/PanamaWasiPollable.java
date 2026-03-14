@@ -92,6 +92,10 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
   private final java.time.Instant createdAt = java.time.Instant.now();
   private volatile java.time.Instant lastAccessedAt;
 
+  // Pre-allocated output buffer for ready() — avoids per-call Arena
+  private final Arena bufferArena;
+  private final MemorySegment bufOutReady;
+
   /**
    * Creates a new Panama WASI pollable with the given native handles.
    *
@@ -105,14 +109,19 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
     this.nativeHandle = pollableHandle;
     this.contextHandle = contextHandle;
 
+    // Pre-allocate output buffer for ready()
+    this.bufferArena = Arena.ofShared();
+    this.bufOutReady = bufferArena.allocate(ValueLayout.JAVA_INT);
+
     final MemorySegment ctx = this.contextHandle;
     final MemorySegment handle = this.nativeHandle;
+    final Arena capturedArena = this.bufferArena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaWasiPollable",
             () -> {
               try {
-                final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
+                final int result = (int) CLOSE_HANDLE.invokeExact(contextHandle, nativeHandle);
                 if (result != 0) {
                   LOGGER.warning(
                       "Failed to close WASI pollable: "
@@ -121,13 +130,19 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
               } catch (final Throwable e) {
                 throw new Exception("Error closing WASI pollable", e);
               }
+              if (bufferArena.scope().isAlive()) {
+                bufferArena.close();
+              }
             },
             this,
             () -> {
               try {
-                CLOSE_HANDLE.invoke(ctx, handle);
+                CLOSE_HANDLE.invokeExact(ctx, handle);
               } catch (final Throwable e) {
                 LOGGER.warning("Safety net: error closing WASI pollable: " + e.getMessage());
+              }
+              if (capturedArena.scope().isAlive()) {
+                capturedArena.close();
               }
             });
 
@@ -142,7 +157,7 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
     try {
-      final int result = (int) BLOCK_HANDLE.invoke(contextHandle, nativeHandle);
+      final int result = (int) BLOCK_HANDLE.invokeExact(contextHandle, nativeHandle);
 
       if (result != 0) {
         throw new WasmException("Failed to block on WASI pollable");
@@ -166,16 +181,14 @@ public final class PanamaWasiPollable implements WasiPollable, AutoCloseable {
     } catch (final IllegalStateException e) {
       throw new WasmException("Pollable is closed: " + e.getMessage(), e);
     }
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment outReady = arena.allocate(ValueLayout.JAVA_INT);
-
-      final int result = (int) READY_HANDLE.invoke(contextHandle, nativeHandle, outReady);
+    try {
+      final int result = (int) READY_HANDLE.invokeExact(contextHandle, nativeHandle, bufOutReady);
 
       if (result != 0) {
         throw new WasmException("Failed to check readiness of WASI pollable");
       }
 
-      final int ready = outReady.get(ValueLayout.JAVA_INT, 0);
+      final int ready = bufOutReady.get(ValueLayout.JAVA_INT, 0);
       lastAccessedAt = java.time.Instant.now();
       return ready != 0;
 

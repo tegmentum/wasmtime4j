@@ -124,6 +124,11 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
   private final java.time.Instant createdAt = java.time.Instant.now();
   private volatile java.time.Instant lastAccessedAt;
 
+  // Pre-allocated output buffers for fixed-size outputs — avoids per-call Arena for small reads
+  private final Arena bufferArena;
+  private final MemorySegment bufOutLength;
+  private final MemorySegment bufOutSkipped;
+
   /**
    * Creates a new Panama WASI input stream with the given native handles.
    *
@@ -138,14 +143,20 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
     this.nativeHandle = streamHandle;
     this.contextHandle = contextHandle;
 
+    // Pre-allocate output buffers for fixed-size results
+    this.bufferArena = Arena.ofShared();
+    this.bufOutLength = bufferArena.allocate(ValueLayout.JAVA_LONG);
+    this.bufOutSkipped = bufferArena.allocate(ValueLayout.JAVA_LONG);
+
     final MemorySegment ctx = this.contextHandle;
     final MemorySegment handle = this.nativeHandle;
+    final Arena capturedArena = this.bufferArena;
     this.resourceHandle =
         new NativeResourceHandle(
             "PanamaWasiInputStream",
             () -> {
               try {
-                final int result = (int) CLOSE_HANDLE.invoke(contextHandle, nativeHandle);
+                final int result = (int) CLOSE_HANDLE.invokeExact(contextHandle, nativeHandle);
                 if (result != 0) {
                   LOGGER.warning(
                       "Failed to close WASI input stream: "
@@ -154,13 +165,19 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
               } catch (final Throwable e) {
                 throw new Exception("Error closing WASI input stream", e);
               }
+              if (bufferArena.scope().isAlive()) {
+                bufferArena.close();
+              }
             },
             this,
             () -> {
               try {
-                CLOSE_HANDLE.invoke(ctx, handle);
+                CLOSE_HANDLE.invokeExact(ctx, handle);
               } catch (final Throwable e) {
                 LOGGER.warning("Safety net: error closing WASI input stream: " + e.getMessage());
+              }
+              if (capturedArena.scope().isAlive()) {
+                capturedArena.close();
               }
             });
 
@@ -177,16 +194,15 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
     }
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment buffer = arena.allocate(length);
-      final MemorySegment outLength = arena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
-          (int) READ_HANDLE.invoke(contextHandle, nativeHandle, length, buffer, outLength);
+          (int) READ_HANDLE.invokeExact(contextHandle, nativeHandle, length, buffer, bufOutLength);
 
       if (result != 0) {
         throw new WasmException("Failed to read from WASI input stream");
       }
 
-      final long bytesRead = outLength.get(ValueLayout.JAVA_LONG, 0);
+      final long bytesRead = bufOutLength.get(ValueLayout.JAVA_LONG, 0);
       if (bytesRead < 0) {
         throw new WasmException("Invalid bytes read count: " + bytesRead);
       }
@@ -215,16 +231,17 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
     }
     try (final Arena arena = Arena.ofConfined()) {
       final MemorySegment buffer = arena.allocate(length);
-      final MemorySegment outLength = arena.allocate(ValueLayout.JAVA_LONG);
 
       final int result =
-          (int) BLOCKING_READ_HANDLE.invoke(contextHandle, nativeHandle, length, buffer, outLength);
+          (int)
+              BLOCKING_READ_HANDLE.invokeExact(
+                  contextHandle, nativeHandle, length, buffer, bufOutLength);
 
       if (result != 0) {
         throw new WasmException("Failed to perform blocking read from WASI input stream");
       }
 
-      final long bytesRead = outLength.get(ValueLayout.JAVA_LONG, 0);
+      final long bytesRead = bufOutLength.get(ValueLayout.JAVA_LONG, 0);
       if (bytesRead < 0) {
         throw new WasmException("Invalid bytes read count: " + bytesRead);
       }
@@ -251,16 +268,15 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
     } catch (final IllegalStateException e) {
       throw new WasmException("Resource is closed: " + e.getMessage(), e);
     }
-    try (final Arena arena = Arena.ofConfined()) {
-      final MemorySegment outSkipped = arena.allocate(ValueLayout.JAVA_LONG);
-
-      final int result = (int) SKIP_HANDLE.invoke(contextHandle, nativeHandle, length, outSkipped);
+    try {
+      final int result =
+          (int) SKIP_HANDLE.invokeExact(contextHandle, nativeHandle, length, bufOutSkipped);
 
       if (result != 0) {
         throw new WasmException("Failed to skip bytes in WASI input stream");
       }
 
-      final long skipped = outSkipped.get(ValueLayout.JAVA_LONG, 0);
+      final long skipped = bufOutSkipped.get(ValueLayout.JAVA_LONG, 0);
       if (skipped < 0) {
         throw new WasmException("Invalid skipped count: " + skipped);
       }
@@ -303,7 +319,7 @@ public final class PanamaWasiInputStream implements WasiInputStream, AutoCloseab
     }
     try {
       final MemorySegment pollableHandle =
-          (MemorySegment) SUBSCRIBE_HANDLE.invoke(contextHandle, nativeHandle);
+          (MemorySegment) SUBSCRIBE_HANDLE.invokeExact(contextHandle, nativeHandle);
 
       if (pollableHandle == null || pollableHandle.address() == 0) {
         throw new WasmException("Failed to create pollable for input stream");
