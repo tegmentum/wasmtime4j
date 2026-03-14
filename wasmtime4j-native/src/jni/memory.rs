@@ -1353,20 +1353,18 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniTable_nativeSet(
                     if func_handle == 0 {
                         crate::table::TableElement::FuncRef(None)
                     } else {
-                        // The handle points to a JniHostFunctionHandle struct containing:
-                        // - host_function_id: u64 (for callback management)
-                        // - func_ref_id: u64 (registry ID for table operations)
-                        #[repr(C)]
-                        struct JniHostFunctionHandle {
-                            host_function_id: u64,
-                            func_ref_id: u64,
-                        }
+                        // Both FunctionHandle and JniHostFunctionHandle are #[repr(C)]
+                        // with wasmtime::Func as the first field, so we can safely read
+                        // the Func at offset 0 regardless of which type the handle points to.
+                        let func = unsafe {
+                            let func_ptr = func_handle as *const wasmtime::Func;
+                            *func_ptr
+                        };
 
-                        let handle_struct =
-                            unsafe { &*(func_handle as *const JniHostFunctionHandle) };
-                        let func_ref_id = handle_struct.func_ref_id;
+                        // Register the func in the reference registry and use the returned ID
+                        let ref_id = crate::table::core::register_function_reference(func, store.id())?;
 
-                        crate::table::TableElement::FuncRef(Some(func_ref_id))
+                        crate::table::TableElement::FuncRef(Some(ref_id))
                     }
                 }
                 Err(e) => {
