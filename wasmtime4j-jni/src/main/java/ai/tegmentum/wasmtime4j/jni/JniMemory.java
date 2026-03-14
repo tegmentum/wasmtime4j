@@ -52,6 +52,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
   // store.getNativeHandle()
   private final long storeNativeHandle;
 
+  // Cached shared flag to avoid redundant nativeIsShared JNI calls per atomic operation
+  private final boolean shared;
+
   // Instance handle for data segment operations (memory.init, data.drop)
   private long instanceHandle;
 
@@ -76,6 +79,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
     super(nativeHandle);
     this.store = store;
     this.storeNativeHandle = store != null ? store.getNativeHandle() : 0;
+    this.shared = store != null && nativeIsShared(nativeHandle, this.storeNativeHandle);
     if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
       LOGGER.fine("Created JNI memory with handle: 0x" + Long.toHexString(nativeHandle));
     }
@@ -912,360 +916,372 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public boolean isShared() {
-    ensureUsable();
-    try {
-      return nativeIsShared(getNativeHandle(), store.getNativeHandle());
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException("Failed to query memory shared status", e);
-    }
+    return shared;
   }
 
   @Override
   public int atomicCompareAndSwapInt(final int offset, final int expected, final int newValue) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     checkSharedMemory();
-
+    beginOperation();
     try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
       return nativeAtomicCompareAndSwapInt(
-          getNativeHandle(), store.getNativeHandle(), offset, expected, newValue);
+          nativeHandle, storeNativeHandle, offset, expected, newValue);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic compare-and-swap failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long atomicCompareAndSwapLong(final int offset, final long expected, final long newValue) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 8);
-    validateOffset(offset, 8);
     checkSharedMemory();
-
+    beginOperation();
     try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
       return nativeAtomicCompareAndSwapLong(
-          getNativeHandle(), store.getNativeHandle(), offset, expected, newValue);
+          nativeHandle, storeNativeHandle, offset, expected, newValue);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic compare-and-swap failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public int atomicLoadInt(final int offset) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicLoadInt(getNativeHandle(), store.getNativeHandle(), offset);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicLoadInt(nativeHandle, storeNativeHandle, offset);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic load failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long atomicLoadLong(final int offset) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 8);
-    validateOffset(offset, 8);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicLoadLong(getNativeHandle(), store.getNativeHandle(), offset);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicLoadLong(nativeHandle, storeNativeHandle, offset);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic load failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void atomicStoreInt(final int offset, final int value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      nativeAtomicStoreInt(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      nativeAtomicStoreInt(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic store failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void atomicStoreLong(final int offset, final long value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 8);
-    validateOffset(offset, 8);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      nativeAtomicStoreLong(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      nativeAtomicStoreLong(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic store failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public int atomicAddInt(final int offset, final int value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicAddInt(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicAddInt(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic add failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long atomicAddLong(final int offset, final long value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 8);
-    validateOffset(offset, 8);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicAddLong(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicAddLong(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic add failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public int atomicAndInt(final int offset, final int value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicAndInt(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicAndInt(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic AND failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public int atomicOrInt(final int offset, final int value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicOrInt(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicOrInt(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic OR failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public int atomicXorInt(final int offset, final int value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicXorInt(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicXorInt(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic XOR failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long atomicAndLong(final int offset, final long value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 8);
-    validateOffset(offset, 8);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicAndLong(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicAndLong(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic AND i64 failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long atomicOrLong(final int offset, final long value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 8);
-    validateOffset(offset, 8);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicOrLong(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicOrLong(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic OR i64 failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public long atomicXorLong(final int offset, final long value) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 8);
-    validateOffset(offset, 8);
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicXorLong(getNativeHandle(), store.getNativeHandle(), offset, value);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicXorLong(nativeHandle, storeNativeHandle, offset, value);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic XOR i64 failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public void atomicFence() {
-    ensureUsable();
     checkSharedMemory();
-
+    beginOperation();
     try {
-      nativeAtomicFence(getNativeHandle(), store.getNativeHandle());
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      nativeAtomicFence(nativeHandle, storeNativeHandle);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic fence failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public int atomicNotify(final int offset, final int count) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     Validation.requireNonNegative(count, "count");
     checkSharedMemory();
-
+    beginOperation();
     try {
-      return nativeAtomicNotify(getNativeHandle(), store.getNativeHandle(), offset, count);
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      return nativeAtomicNotify(nativeHandle, storeNativeHandle, offset, count);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic notify failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public WaitResult atomicWait32(final int offset, final int expected, final long timeoutNanos) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     if (timeoutNanos < -1) {
       throw new IllegalArgumentException("Timeout must be non-negative or -1");
     }
     checkAligned(offset, 4);
-    validateOffset(offset, 4);
     checkSharedMemory();
-
+    beginOperation();
     try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
       return WaitResult.fromNativeCode(
-          nativeAtomicWait32(
-              getNativeHandle(), store.getNativeHandle(), offset, expected, timeoutNanos));
+          nativeAtomicWait32(nativeHandle, storeNativeHandle, offset, expected, timeoutNanos));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic wait failed", e);
+    } finally {
+      endOperation();
     }
   }
 
   @Override
   public WaitResult atomicWait64(final int offset, final long expected, final long timeoutNanos) {
-    ensureUsable();
-    if (offset < 0) {
-      throw new IllegalArgumentException("Offset must be non-negative");
-    }
+    Validation.requireNonNegative(offset, "offset");
     checkAligned(offset, 8);
-    validateOffset(offset, 8);
     checkSharedMemory();
-
+    beginOperation();
     try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
       return WaitResult.fromNativeCode(
-          nativeAtomicWait64(
-              getNativeHandle(), store.getNativeHandle(), offset, expected, timeoutNanos));
+          nativeAtomicWait64(nativeHandle, storeNativeHandle, offset, expected, timeoutNanos));
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
       throw new RuntimeException("Atomic wait failed", e);
+    } finally {
+      endOperation();
     }
   }
 
@@ -1275,7 +1291,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws UnsupportedOperationException if this memory is not shared
    */
   private void checkSharedMemory() {
-    if (!isShared()) {
+    if (!shared) {
       throw new UnsupportedOperationException("Operation requires shared memory");
     }
   }
