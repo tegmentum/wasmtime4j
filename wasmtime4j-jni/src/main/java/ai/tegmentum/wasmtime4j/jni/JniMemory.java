@@ -547,6 +547,148 @@ public final class JniMemory extends JniResource implements WasmMemory {
     }
   }
 
+  // Optimized typed memory access overrides — bypass readBytes64/writeBytes64 entirely
+  // by using the cached direct ByteBuffer for zero-allocation, zero-JNI reads/writes.
+
+  @Override
+  public int readInt32(final long offset) {
+    Validation.requireNonNegative(offset, "offset");
+    beginOperation();
+    try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      // Fast path: direct memory access via cached ByteBuffer (no JNI call, no allocation)
+      ByteBuffer buf = cachedBuffer;
+      if (buf == null) {
+        buf = nativeGetBuffer(nativeHandle, storeNativeHandle);
+        if (buf != null) {
+          buf.order(ByteOrder.LITTLE_ENDIAN);
+          cachedBuffer = buf;
+          lastBufferCheck = System.currentTimeMillis();
+        }
+      }
+      if (buf != null && offset <= Integer.MAX_VALUE - 4 && buf.capacity() >= offset + 4) {
+        return buf.getInt((int) offset);
+      }
+      // Slow path: JNI read for 64-bit offsets or unavailable buffer
+      final byte[] bytes = new byte[4];
+      nativeReadBytes(nativeHandle, storeNativeHandle, offset, bytes);
+      return (bytes[0] & 0xFF)
+          | ((bytes[1] & 0xFF) << 8)
+          | ((bytes[2] & 0xFF) << 16)
+          | ((bytes[3] & 0xFF) << 24);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public void writeInt32(final long offset, final int value) {
+    Validation.requireNonNegative(offset, "offset");
+    beginOperation();
+    try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      ByteBuffer buf = cachedBuffer;
+      if (buf == null) {
+        buf = nativeGetBuffer(nativeHandle, storeNativeHandle);
+        if (buf != null) {
+          buf.order(ByteOrder.LITTLE_ENDIAN);
+          cachedBuffer = buf;
+          lastBufferCheck = System.currentTimeMillis();
+        }
+      }
+      if (buf != null && offset <= Integer.MAX_VALUE - 4 && buf.capacity() >= offset + 4) {
+        buf.putInt((int) offset, value);
+        return;
+      }
+      // Slow path: JNI write for 64-bit offsets or unavailable buffer
+      final byte[] bytes = new byte[4];
+      bytes[0] = (byte) (value & 0xFF);
+      bytes[1] = (byte) ((value >> 8) & 0xFF);
+      bytes[2] = (byte) ((value >> 16) & 0xFF);
+      bytes[3] = (byte) ((value >> 24) & 0xFF);
+      nativeWriteBytes(nativeHandle, storeNativeHandle, offset, bytes);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public long readInt64(final long offset) {
+    Validation.requireNonNegative(offset, "offset");
+    beginOperation();
+    try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      ByteBuffer buf = cachedBuffer;
+      if (buf == null) {
+        buf = nativeGetBuffer(nativeHandle, storeNativeHandle);
+        if (buf != null) {
+          buf.order(ByteOrder.LITTLE_ENDIAN);
+          cachedBuffer = buf;
+          lastBufferCheck = System.currentTimeMillis();
+        }
+      }
+      if (buf != null && offset <= Integer.MAX_VALUE - 8 && buf.capacity() >= offset + 8) {
+        return buf.getLong((int) offset);
+      }
+      // Slow path
+      final byte[] bytes = new byte[8];
+      nativeReadBytes(nativeHandle, storeNativeHandle, offset, bytes);
+      return (bytes[0] & 0xFFL)
+          | ((bytes[1] & 0xFFL) << 8)
+          | ((bytes[2] & 0xFFL) << 16)
+          | ((bytes[3] & 0xFFL) << 24)
+          | ((bytes[4] & 0xFFL) << 32)
+          | ((bytes[5] & 0xFFL) << 40)
+          | ((bytes[6] & 0xFFL) << 48)
+          | ((bytes[7] & 0xFFL) << 56);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public void writeInt64(final long offset, final long value) {
+    Validation.requireNonNegative(offset, "offset");
+    beginOperation();
+    try {
+      if (store != null && store.isClosed()) {
+        throw new JniResourceException("Store is closed");
+      }
+      ByteBuffer buf = cachedBuffer;
+      if (buf == null) {
+        buf = nativeGetBuffer(nativeHandle, storeNativeHandle);
+        if (buf != null) {
+          buf.order(ByteOrder.LITTLE_ENDIAN);
+          cachedBuffer = buf;
+          lastBufferCheck = System.currentTimeMillis();
+        }
+      }
+      if (buf != null && offset <= Integer.MAX_VALUE - 8 && buf.capacity() >= offset + 8) {
+        buf.putLong((int) offset, value);
+        return;
+      }
+      // Slow path
+      final byte[] bytes = new byte[8];
+      bytes[0] = (byte) (value & 0xFF);
+      bytes[1] = (byte) ((value >> 8) & 0xFF);
+      bytes[2] = (byte) ((value >> 16) & 0xFF);
+      bytes[3] = (byte) ((value >> 24) & 0xFF);
+      bytes[4] = (byte) ((value >> 32) & 0xFF);
+      bytes[5] = (byte) ((value >> 40) & 0xFF);
+      bytes[6] = (byte) ((value >> 48) & 0xFF);
+      bytes[7] = (byte) ((value >> 56) & 0xFF);
+      nativeWriteBytes(nativeHandle, storeNativeHandle, offset, bytes);
+    } finally {
+      endOperation();
+    }
+  }
+
   // Interface implementation methods for WasmMemory
 
   @Override
