@@ -49,11 +49,16 @@ public final class PanamaTable implements WasmTable {
   private final MethodHandle mhGet;
   private final MethodHandle mhSet;
   private final MethodHandle mhSize;
+  private final MethodHandle mhDelete;
+  private final MethodHandle mhMetadata;
+  private final MethodHandle mhGrow;
+  private final MethodHandle mhFill;
 
-  // Pre-allocated output buffers for get() — avoids per-call arena allocations (which leak)
+  // Pre-allocated output buffers — avoids per-call arena allocations (which leak)
   private final MemorySegment bufRefIdPresent;
   private final MemorySegment bufRefId;
   private final MemorySegment bufSize;
+  private final MemorySegment bufOldSize;
 
   /**
    * Package-private constructor for wrapping an existing native table pointer.
@@ -82,10 +87,16 @@ public final class PanamaTable implements WasmTable {
     this.mhGet = NATIVE_BINDINGS.getPanamaTableGet();
     this.mhSet = NATIVE_BINDINGS.getPanamaTableSet();
     this.mhSize = NATIVE_BINDINGS.getPanamaTableSize();
+    this.mhDelete = NATIVE_BINDINGS.getPanamaTableDelete();
+    this.mhMetadata = NATIVE_BINDINGS.getPanamaTableMetadata();
+    this.mhGrow = NATIVE_BINDINGS.getPanamaTableGrow();
+    this.mhFill = NATIVE_BINDINGS.getPanamaTableFill();
     this.bufRefIdPresent = arena.allocate(ValueLayout.JAVA_INT);
     this.bufRefId = arena.allocate(ValueLayout.JAVA_LONG);
     this.bufSize = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufOldSize = arena.allocate(ValueLayout.JAVA_INT);
 
+    final MethodHandle capturedDelete = this.mhDelete;
     final MemorySegment capturedNativeTable = this.nativeTable;
     final Arena capturedArena = this.arena;
     this.resourceHandle =
@@ -93,9 +104,8 @@ public final class PanamaTable implements WasmTable {
             "PanamaTable",
             () -> {
               try {
-                final MethodHandle deleteHandle = NATIVE_BINDINGS.getPanamaTableDelete();
-                if (deleteHandle != null) {
-                  deleteHandle.invoke(nativeTable);
+                if (capturedDelete != null) {
+                  capturedDelete.invokeExact(nativeTable);
                 }
                 arena.close();
                 LOGGER.fine("Closed Panama table");
@@ -106,9 +116,8 @@ public final class PanamaTable implements WasmTable {
             this,
             () -> {
               try {
-                final MethodHandle deleteHandle = NATIVE_BINDINGS.getPanamaTableDelete();
-                if (deleteHandle != null) {
-                  deleteHandle.invoke(capturedNativeTable);
+                if (capturedDelete != null) {
+                  capturedDelete.invokeExact(capturedNativeTable);
                 }
               } catch (final Throwable e) {
                 // Safety net — best effort
@@ -151,10 +160,16 @@ public final class PanamaTable implements WasmTable {
     this.mhGet = NATIVE_BINDINGS.getPanamaTableGet();
     this.mhSet = NATIVE_BINDINGS.getPanamaTableSet();
     this.mhSize = NATIVE_BINDINGS.getPanamaTableSize();
+    this.mhDelete = NATIVE_BINDINGS.getPanamaTableDelete();
+    this.mhMetadata = NATIVE_BINDINGS.getPanamaTableMetadata();
+    this.mhGrow = NATIVE_BINDINGS.getPanamaTableGrow();
+    this.mhFill = NATIVE_BINDINGS.getPanamaTableFill();
     this.bufRefIdPresent = arena.allocate(ValueLayout.JAVA_INT);
     this.bufRefId = arena.allocate(ValueLayout.JAVA_LONG);
     this.bufSize = arena.allocate(ValueLayout.JAVA_INT);
+    this.bufOldSize = arena.allocate(ValueLayout.JAVA_INT);
 
+    final MethodHandle capturedDelete2 = this.mhDelete;
     final MemorySegment capturedNativeTable2 = this.nativeTable;
     final Arena capturedArena2 = this.arena;
     this.resourceHandle =
@@ -162,9 +177,8 @@ public final class PanamaTable implements WasmTable {
             "PanamaTable",
             () -> {
               try {
-                final MethodHandle deleteHandle = NATIVE_BINDINGS.getPanamaTableDelete();
-                if (deleteHandle != null) {
-                  deleteHandle.invoke(nativeTable);
+                if (capturedDelete2 != null) {
+                  capturedDelete2.invokeExact(nativeTable);
                 }
                 arena.close();
                 LOGGER.fine("Closed Panama table");
@@ -175,9 +189,8 @@ public final class PanamaTable implements WasmTable {
             this,
             () -> {
               try {
-                final MethodHandle deleteHandle = NATIVE_BINDINGS.getPanamaTableDelete();
-                if (deleteHandle != null) {
-                  deleteHandle.invoke(capturedNativeTable2);
+                if (capturedDelete2 != null) {
+                  capturedDelete2.invokeExact(capturedNativeTable2);
                 }
               } catch (final Throwable e) {
                 // Safety net — best effort
@@ -255,8 +268,7 @@ public final class PanamaTable implements WasmTable {
     try {
 
       try {
-        final MethodHandle metadataHandle = NATIVE_BINDINGS.getPanamaTableMetadata();
-        if (metadataHandle == null) {
+        if (mhMetadata == null) {
           throw new IllegalStateException("Panama table metadata function not available");
         }
 
@@ -270,7 +282,7 @@ public final class PanamaTable implements WasmTable {
 
           final int result =
               (int)
-                  metadataHandle.invoke(
+                  mhMetadata.invokeExact(
                       nativeTable,
                       elementTypeSegment,
                       initialSizeSegment,
@@ -316,8 +328,7 @@ public final class PanamaTable implements WasmTable {
       }
 
       try {
-        final MethodHandle growHandle = NATIVE_BINDINGS.getPanamaTableGrow();
-        if (growHandle == null) {
+        if (mhGrow == null) {
           throw new IllegalStateException("Panama table grow function not available");
         }
 
@@ -334,24 +345,22 @@ public final class PanamaTable implements WasmTable {
         // Handle init value
         final long[] refPair = objectToRefIdPair(initValue);
 
-        final MemorySegment oldSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
-
         final int result =
             (int)
-                growHandle.invoke(
+                mhGrow.invokeExact(
                     nativeTable,
                     cachedStorePtr,
                     elements,
                     elementTypeCode,
                     (int) refPair[0],
                     refPair[1],
-                    oldSizeSegment);
+                    bufOldSize);
 
         if (result != 0) {
           return -1; // Growth failed
         }
 
-        return oldSizeSegment.get(ValueLayout.JAVA_INT, 0);
+        return bufOldSize.get(ValueLayout.JAVA_INT, 0);
       } catch (final Throwable e) {
         throw new IllegalStateException("Error growing table: " + e.getMessage(), e);
       }
@@ -366,8 +375,7 @@ public final class PanamaTable implements WasmTable {
     try {
 
       try {
-        final MethodHandle metadataHandle = NATIVE_BINDINGS.getPanamaTableMetadata();
-        if (metadataHandle == null) {
+        if (mhMetadata == null) {
           throw new IllegalStateException("Panama table metadata function not available");
         }
 
@@ -381,7 +389,7 @@ public final class PanamaTable implements WasmTable {
 
           final int result =
               (int)
-                  metadataHandle.invoke(
+                  mhMetadata.invokeExact(
                       nativeTable,
                       elementTypeSegment,
                       initialSizeSegment,
@@ -572,8 +580,7 @@ public final class PanamaTable implements WasmTable {
       }
 
       try {
-        final MethodHandle fillHandle = NATIVE_BINDINGS.getPanamaTableFill();
-        if (fillHandle == null) {
+        if (mhFill == null) {
           throw new IllegalStateException("Panama table fill function not available");
         }
 
@@ -592,7 +599,7 @@ public final class PanamaTable implements WasmTable {
 
         final int result =
             (int)
-                fillHandle.invoke(
+                mhFill.invokeExact(
                     nativeTable,
                     cachedStorePtr,
                     start,
@@ -892,8 +899,6 @@ public final class PanamaTable implements WasmTable {
         // Handle init value
         final long[] refPair = objectToRefIdPair(initValue);
 
-        final MemorySegment oldSizeSegment = arena.allocate(ValueLayout.JAVA_INT);
-
         final int result =
             NATIVE_BINDINGS.panamaTableGrowAsync(
                 nativeTable,
@@ -902,13 +907,13 @@ public final class PanamaTable implements WasmTable {
                 elementTypeCode,
                 (int) refPair[0],
                 refPair[1],
-                oldSizeSegment);
+                bufOldSize);
 
         if (result != 0) {
           return -1; // Growth failed
         }
 
-        return oldSizeSegment.get(ValueLayout.JAVA_INT, 0);
+        return bufOldSize.get(ValueLayout.JAVA_INT, 0);
       } catch (final Throwable e) {
         throw new ai.tegmentum.wasmtime4j.exception.WasmException(
             "Async table growth failed: " + e.getMessage(), e);
@@ -960,7 +965,7 @@ public final class PanamaTable implements WasmTable {
 
       final int result =
           (int)
-              metadataHandle.invoke(
+              metadataHandle.invokeExact(
                   nativeTable,
                   elementTypeSegment,
                   initialSizeSegment,
