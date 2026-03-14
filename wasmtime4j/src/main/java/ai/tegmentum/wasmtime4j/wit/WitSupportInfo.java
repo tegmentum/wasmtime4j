@@ -143,8 +143,11 @@ public final class WitSupportInfo {
     return new WitSupportInfo(
         true,
         "1.0",
-        Collections.unmodifiableSet(new HashSet<>(Arrays.asList("interfaces", "functions", "types"))),
-        Collections.unmodifiableList(Arrays.asList("u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "string")),
+        Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList("interfaces", "functions", "types"))),
+        Collections.unmodifiableList(
+            Arrays.asList(
+                "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "string")),
         10);
   }
 

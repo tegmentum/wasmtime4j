@@ -236,7 +236,8 @@ public abstract class ComponentValFactory {
       if (elements == null) {
         throw new IllegalArgumentException("List elements cannot be null");
       }
-      return new SimpleVal(ComponentType.LIST, Collections.unmodifiableList(new ArrayList<>(elements)));
+      return new SimpleVal(
+          ComponentType.LIST, Collections.unmodifiableList(new ArrayList<>(elements)));
     }
 
     @Override
@@ -244,7 +245,8 @@ public abstract class ComponentValFactory {
       if (fields == null) {
         throw new IllegalArgumentException("Record fields cannot be null");
       }
-      return new SimpleVal(ComponentType.RECORD, Collections.unmodifiableMap(new HashMap<>(fields)));
+      return new SimpleVal(
+          ComponentType.RECORD, Collections.unmodifiableMap(new HashMap<>(fields)));
     }
 
     @Override
@@ -252,7 +254,8 @@ public abstract class ComponentValFactory {
       if (elements == null) {
         throw new IllegalArgumentException("Tuple elements cannot be null");
       }
-      return new SimpleVal(ComponentType.TUPLE, Collections.unmodifiableList(new ArrayList<>(elements)));
+      return new SimpleVal(
+          ComponentType.TUPLE, Collections.unmodifiableList(new ArrayList<>(elements)));
     }
 
     @Override
@@ -299,7 +302,8 @@ public abstract class ComponentValFactory {
       if (enabledFlags == null) {
         throw new IllegalArgumentException("Flags cannot be null");
       }
-      return new SimpleVal(ComponentType.FLAGS, Collections.unmodifiableSet(new HashSet<>(enabledFlags)));
+      return new SimpleVal(
+          ComponentType.FLAGS, Collections.unmodifiableSet(new HashSet<>(enabledFlags)));
     }
 
     @Override

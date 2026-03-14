@@ -345,7 +345,8 @@ public abstract class WitTypeKind {
     private final Map<String, WitType> fields;
 
     private RecordTypeKind(final Map<String, WitType> fields) {
-      this.fields = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(fields, "fields")));
+      this.fields =
+          Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(fields, "fields")));
     }
 
     @Override
@@ -398,7 +399,8 @@ public abstract class WitTypeKind {
     private final Map<String, Optional<WitType>> cases;
 
     private VariantTypeKind(final Map<String, Optional<WitType>> cases) {
-      this.cases = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(cases, "cases")));
+      this.cases =
+          Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(cases, "cases")));
     }
 
     @Override
@@ -451,7 +453,8 @@ public abstract class WitTypeKind {
     private final List<String> values;
 
     private EnumTypeKind(final List<String> values) {
-      this.values = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(values, "values")));
+      this.values =
+          Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(values, "values")));
     }
 
     @Override
@@ -509,7 +512,8 @@ public abstract class WitTypeKind {
     private final List<String> flags;
 
     private FlagsTypeKind(final List<String> flags) {
-      this.flags = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(flags, "flags")));
+      this.flags =
+          Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(flags, "flags")));
     }
 
     @Override
@@ -733,7 +737,9 @@ public abstract class WitTypeKind {
     private final List<WitType> elementTypes;
 
     private TupleTypeKind(final List<WitType> elementTypes) {
-      this.elementTypes = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(elementTypes, "elementTypes")));
+      this.elementTypes =
+          Collections.unmodifiableList(
+              new ArrayList<>(Objects.requireNonNull(elementTypes, "elementTypes")));
     }
 
     @Override

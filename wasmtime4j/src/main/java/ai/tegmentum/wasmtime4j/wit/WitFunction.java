@@ -52,8 +52,10 @@ public final class WitFunction {
       final boolean isAsync,
       final Optional<String> documentation) {
     this.name = Objects.requireNonNull(name);
-    this.parameters = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(parameters)));
-    this.returnTypes = Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(returnTypes)));
+    this.parameters =
+        Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(parameters)));
+    this.returnTypes =
+        Collections.unmodifiableList(new ArrayList<>(Objects.requireNonNull(returnTypes)));
     this.isAsync = isAsync;
     this.documentation = Objects.requireNonNull(documentation);
   }

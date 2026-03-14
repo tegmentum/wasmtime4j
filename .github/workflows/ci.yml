@@ -151,7 +151,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
-          distribution: 'temurin'
+          distribution: ${{ matrix.java == '8' && 'zulu' || 'temurin' }}
 
       - name: Cache Maven
         uses: actions/cache@v4

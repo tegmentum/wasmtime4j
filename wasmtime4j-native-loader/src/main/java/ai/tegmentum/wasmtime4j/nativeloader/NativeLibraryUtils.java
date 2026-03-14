@@ -52,7 +52,7 @@ import java.util.logging.Logger;
  * <p>PMD: AvoidUsingNativeCode - This is a native library loader, native code usage is required.
  * AvoidDuplicateLiterals - Suppression string literals are repeated for different methods.
  */
-@SuppressWarnings({"PMD.AvoidUsingNativeCode", "PMD.AvoidDuplicateLiterals"})
+@SuppressWarnings({"PMD.AvoidUsingNativeCode", "PMD.AvoidDuplicateLiterals", "restricted"})
 public final class NativeLibraryUtils {
 
   private static final Logger LOGGER = Logger.getLogger(NativeLibraryUtils.class.getName());

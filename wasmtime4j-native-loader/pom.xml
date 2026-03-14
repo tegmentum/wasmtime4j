@@ -101,7 +101,7 @@
 
     <build>
         <plugins>
-            <!-- Ensure Java 8+ compatibility -->
+            <!-- Ensure Java 8+ compatibility; compile module-info.java separately with Java 9 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -120,6 +120,16 @@
                         <arg>-Werror</arg>
                     </compilerArgs>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>module-info.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Test execution -->
@@ -253,6 +263,42 @@
                                 <goals>
                                     <goal>sign</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Compile module-info.java on Java 9+ (javac 8 does not support modules) -->
+        <profile>
+            <id>java9-module-info</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>compile-module-info</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>compile</goal>
+                                </goals>
+                                <configuration>
+                                    <release>9</release>
+                                    <compilerArgs>
+                                        <arg>-Xlint:all</arg>
+                                        <arg>-Xlint:-processing</arg>
+                                        <arg>-Xlint:-options</arg>
+                                    </compilerArgs>
+                                    <includes>
+                                        <include>module-info.java</include>
+                                    </includes>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

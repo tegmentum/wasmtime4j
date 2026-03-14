@@ -54,7 +54,8 @@ public final class WitType {
       final Optional<String> documentation) {
     this.name = Objects.requireNonNull(name, "name");
     this.kind = Objects.requireNonNull(kind, "kind");
-    this.metadata = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(metadata, "metadata")));
+    this.metadata =
+        Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(metadata, "metadata")));
     this.documentation = Objects.requireNonNull(documentation, "documentation");
   }
 
@@ -146,7 +147,10 @@ public final class WitType {
    */
   public static WitType record(final String name, final Map<String, WitType> fields) {
     return new WitType(
-        name, WitTypeKind.record(fields), Collections.singletonMap("fieldCount", fields.size()), Optional.empty());
+        name,
+        WitTypeKind.record(fields),
+        Collections.singletonMap("fieldCount", fields.size()),
+        Optional.empty());
   }
 
   /**
@@ -158,7 +162,10 @@ public final class WitType {
    */
   public static WitType variant(final String name, final Map<String, Optional<WitType>> cases) {
     return new WitType(
-        name, WitTypeKind.variant(cases), Collections.singletonMap("caseCount", cases.size()), Optional.empty());
+        name,
+        WitTypeKind.variant(cases),
+        Collections.singletonMap("caseCount", cases.size()),
+        Optional.empty());
   }
 
   /**
@@ -170,7 +177,10 @@ public final class WitType {
    */
   public static WitType enumType(final String name, final List<String> values) {
     return new WitType(
-        name, WitTypeKind.enumType(values), Collections.singletonMap("valueCount", values.size()), Optional.empty());
+        name,
+        WitTypeKind.enumType(values),
+        Collections.singletonMap("valueCount", values.size()),
+        Optional.empty());
   }
 
   /**
@@ -182,7 +192,10 @@ public final class WitType {
    */
   public static WitType flags(final String name, final List<String> flags) {
     return new WitType(
-        name, WitTypeKind.flags(flags), Collections.singletonMap("flagCount", flags.size()), Optional.empty());
+        name,
+        WitTypeKind.flags(flags),
+        Collections.singletonMap("flagCount", flags.size()),
+        Optional.empty());
   }
 
   /**
@@ -239,7 +252,10 @@ public final class WitType {
     }
 
     return new WitType(
-        nameBuilder.toString(), WitTypeKind.result(okType, errorType), Collections.emptyMap(), Optional.empty());
+        nameBuilder.toString(),
+        WitTypeKind.result(okType, errorType),
+        Collections.emptyMap(),
+        Optional.empty());
   }
 
   /**
@@ -284,7 +300,10 @@ public final class WitType {
    */
   public static WitType resource(final String name, final String resourceId) {
     return new WitType(
-        name, WitTypeKind.resource(resourceId), Collections.singletonMap("resourceId", resourceId), Optional.empty());
+        name,
+        WitTypeKind.resource(resourceId),
+        Collections.singletonMap("resourceId", resourceId),
+        Optional.empty());
   }
 
   /**

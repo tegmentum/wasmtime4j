@@ -267,7 +267,8 @@ public interface Module extends Closeable {
       throw new IllegalArgumentException("WebAssembly bytes cannot be null");
     }
     if (wasmBytes.length == 0) {
-      return ModuleValidationResult.failure(Collections.singletonList("WebAssembly bytecode cannot be empty"));
+      return ModuleValidationResult.failure(
+          Collections.singletonList("WebAssembly bytecode cannot be empty"));
     }
 
     // Basic WebAssembly magic number validation (fast fail before native call)
@@ -281,7 +282,8 @@ public interface Module extends Closeable {
         || wasmBytes[1] != 0x61
         || wasmBytes[2] != 0x73
         || wasmBytes[3] != 0x6D) {
-      return ModuleValidationResult.failure(Collections.singletonList("Invalid WebAssembly magic number"));
+      return ModuleValidationResult.failure(
+          Collections.singletonList("Invalid WebAssembly magic number"));
     }
 
     // Check WebAssembly version (0x01 0x00 0x00 0x00 for version 1)
@@ -289,7 +291,8 @@ public interface Module extends Closeable {
         || wasmBytes[5] != 0x00
         || wasmBytes[6] != 0x00
         || wasmBytes[7] != 0x00) {
-      return ModuleValidationResult.failure(Collections.singletonList("Unsupported WebAssembly version"));
+      return ModuleValidationResult.failure(
+          Collections.singletonList("Unsupported WebAssembly version"));
     }
 
     // Full structural and semantic validation via the provided engine's runtime
@@ -299,7 +302,8 @@ public interface Module extends Closeable {
         return ModuleValidationResult.success();
       }
       return ModuleValidationResult.failure(
-          Collections.singletonList("WebAssembly validation failed (structural or semantic error)"));
+          Collections.singletonList(
+              "WebAssembly validation failed (structural or semantic error)"));
     } catch (final Exception e) {
       return ModuleValidationResult.failure(
           Collections.singletonList("WebAssembly validation error: " + e.getMessage()));

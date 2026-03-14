@@ -42,9 +42,7 @@ public interface ComponentItemInfo {
    */
   ComponentItemKind kind();
 
-  /**
-   * A component model function with typed parameters and results.
-   */
+  /** A component model function with typed parameters and results. */
   public static final class ComponentFuncInfo implements ComponentItemInfo {
     private final List<NamedType> params;
     private final List<ComponentTypeDescriptor> results;
@@ -64,17 +62,29 @@ public interface ComponentItemInfo {
       this.isAsync = isAsync;
     }
 
-    /** @return the function parameters as name-type pairs */
+    /**
+     * Gets the function parameters.
+     *
+     * @return the function parameters as name-type pairs
+     */
     public List<NamedType> params() {
       return params;
     }
 
-    /** @return the function result types */
+    /**
+     * Gets the function result types.
+     *
+     * @return the function result types
+     */
     public List<ComponentTypeDescriptor> results() {
       return results;
     }
 
-    /** @return whether the function is async */
+    /**
+     * Returns whether the function is async.
+     *
+     * @return whether the function is async
+     */
     public boolean isAsync() {
       return isAsync;
     }
@@ -86,8 +96,12 @@ public interface ComponentItemInfo {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ComponentFuncInfo)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ComponentFuncInfo)) {
+        return false;
+      }
       ComponentFuncInfo that = (ComponentFuncInfo) o;
       return isAsync == that.isAsync
           && Objects.equals(params, that.params)
@@ -102,16 +116,17 @@ public interface ComponentItemInfo {
     @Override
     public String toString() {
       return "ComponentFuncInfo["
-          + "params=" + params
-          + ", results=" + results
-          + ", isAsync=" + isAsync
+          + "params="
+          + params
+          + ", results="
+          + results
+          + ", isAsync="
+          + isAsync
           + ']';
     }
   }
 
-  /**
-   * A core WebAssembly function with core value types.
-   */
+  /** A core WebAssembly function with core value types. */
   public static final class CoreFuncInfo implements ComponentItemInfo {
     private final List<String> params;
     private final List<String> results;
@@ -127,12 +142,20 @@ public interface ComponentItemInfo {
       this.results = Collections.unmodifiableList(new ArrayList<>(results));
     }
 
-    /** @return the core parameter types as strings (e.g., "i32", "i64") */
+    /**
+     * Gets the core parameter types.
+     *
+     * @return the core parameter types as strings (e.g., "i32", "i64")
+     */
     public List<String> params() {
       return params;
     }
 
-    /** @return the core result types as strings */
+    /**
+     * Gets the core result types.
+     *
+     * @return the core result types as strings
+     */
     public List<String> results() {
       return results;
     }
@@ -144,11 +167,14 @@ public interface ComponentItemInfo {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof CoreFuncInfo)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof CoreFuncInfo)) {
+        return false;
+      }
       CoreFuncInfo that = (CoreFuncInfo) o;
-      return Objects.equals(params, that.params)
-          && Objects.equals(results, that.results);
+      return Objects.equals(params, that.params) && Objects.equals(results, that.results);
     }
 
     @Override
@@ -158,10 +184,7 @@ public interface ComponentItemInfo {
 
     @Override
     public String toString() {
-      return "CoreFuncInfo["
-          + "params=" + params
-          + ", results=" + results
-          + ']';
+      return "CoreFuncInfo[" + "params=" + params + ", results=" + results + ']';
     }
   }
 
@@ -178,7 +201,11 @@ public interface ComponentItemInfo {
       this.name = name;
     }
 
-    /** @return the module name (may be null) */
+    /**
+     * Gets the module name.
+     *
+     * @return the module name (may be null)
+     */
     public String name() {
       return name;
     }
@@ -190,8 +217,12 @@ public interface ComponentItemInfo {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ModuleInfo)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ModuleInfo)) {
+        return false;
+      }
       ModuleInfo that = (ModuleInfo) o;
       return Objects.equals(name, that.name);
     }
@@ -224,12 +255,20 @@ public interface ComponentItemInfo {
       this.exports = Collections.unmodifiableMap(new HashMap<>(exports));
     }
 
-    /** @return the nested component's imports */
+    /**
+     * Gets the nested component's imports.
+     *
+     * @return the nested component's imports
+     */
     public Map<String, ComponentItemInfo> imports() {
       return imports;
     }
 
-    /** @return the nested component's exports */
+    /**
+     * Gets the nested component's exports.
+     *
+     * @return the nested component's exports
+     */
     public Map<String, ComponentItemInfo> exports() {
       return exports;
     }
@@ -241,11 +280,14 @@ public interface ComponentItemInfo {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ComponentInfo)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ComponentInfo)) {
+        return false;
+      }
       ComponentInfo that = (ComponentInfo) o;
-      return Objects.equals(imports, that.imports)
-          && Objects.equals(exports, that.exports);
+      return Objects.equals(imports, that.imports) && Objects.equals(exports, that.exports);
     }
 
     @Override
@@ -255,10 +297,7 @@ public interface ComponentItemInfo {
 
     @Override
     public String toString() {
-      return "ComponentInfo["
-          + "imports=" + imports
-          + ", exports=" + exports
-          + ']';
+      return "ComponentInfo[" + "imports=" + imports + ", exports=" + exports + ']';
     }
   }
 
@@ -275,7 +314,11 @@ public interface ComponentItemInfo {
       this.exports = Collections.unmodifiableMap(new HashMap<>(exports));
     }
 
-    /** @return the instance's exports */
+    /**
+     * Gets the instance's exports.
+     *
+     * @return the instance's exports
+     */
     public Map<String, ComponentItemInfo> exports() {
       return exports;
     }
@@ -287,8 +330,12 @@ public interface ComponentItemInfo {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ComponentInstanceInfo)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ComponentInstanceInfo)) {
+        return false;
+      }
       ComponentInstanceInfo that = (ComponentInstanceInfo) o;
       return Objects.equals(exports, that.exports);
     }
@@ -318,7 +365,11 @@ public interface ComponentItemInfo {
       this.descriptor = descriptor;
     }
 
-    /** @return the type descriptor */
+    /**
+     * Gets the type descriptor.
+     *
+     * @return the type descriptor
+     */
     public ComponentTypeDescriptor descriptor() {
       return descriptor;
     }
@@ -330,8 +381,12 @@ public interface ComponentItemInfo {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof TypeInfo)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof TypeInfo)) {
+        return false;
+      }
       TypeInfo that = (TypeInfo) o;
       return Objects.equals(descriptor, that.descriptor);
     }
@@ -347,9 +402,7 @@ public interface ComponentItemInfo {
     }
   }
 
-  /**
-   * A resource type.
-   */
+  /** A resource type. */
   public static final class ResourceInfo implements ComponentItemInfo {
     private final String name;
     private final long resourceTypeId;
@@ -384,22 +437,38 @@ public interface ComponentItemInfo {
       this(name, resourceTypeId, null, false);
     }
 
-    /** @return the resource name (may be null) */
+    /**
+     * Gets the resource name.
+     *
+     * @return the resource name (may be null)
+     */
     public String name() {
       return name;
     }
 
-    /** @return a unique identifier for this resource type */
+    /**
+     * Gets the resource type identifier.
+     *
+     * @return a unique identifier for this resource type
+     */
     public long resourceTypeId() {
       return resourceTypeId;
     }
 
-    /** @return the Wasmtime debug identity string for diagnostic correlation (may be null) */
+    /**
+     * Gets the debug identity string.
+     *
+     * @return the Wasmtime debug identity string for diagnostic correlation (may be null)
+     */
     public String debugIdentity() {
       return debugIdentity;
     }
 
-    /** @return whether this resource type was defined by the host */
+    /**
+     * Returns whether this resource type was defined by the host.
+     *
+     * @return whether this resource type was defined by the host
+     */
     public boolean hostDefined() {
       return hostDefined;
     }
@@ -411,8 +480,12 @@ public interface ComponentItemInfo {
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ResourceInfo)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ResourceInfo)) {
+        return false;
+      }
       ResourceInfo that = (ResourceInfo) o;
       return resourceTypeId == that.resourceTypeId
           && hostDefined == that.hostDefined
@@ -428,10 +501,14 @@ public interface ComponentItemInfo {
     @Override
     public String toString() {
       return "ResourceInfo["
-          + "name=" + name
-          + ", resourceTypeId=" + resourceTypeId
-          + ", debugIdentity=" + debugIdentity
-          + ", hostDefined=" + hostDefined
+          + "name="
+          + name
+          + ", resourceTypeId="
+          + resourceTypeId
+          + ", debugIdentity="
+          + debugIdentity
+          + ", hostDefined="
+          + hostDefined
           + ']';
     }
   }
@@ -454,20 +531,32 @@ public interface ComponentItemInfo {
       this.type = type;
     }
 
-    /** @return the parameter name */
+    /**
+     * Gets the parameter name.
+     *
+     * @return the parameter name
+     */
     public String name() {
       return name;
     }
 
-    /** @return the parameter type descriptor */
+    /**
+     * Gets the parameter type descriptor.
+     *
+     * @return the parameter type descriptor
+     */
     public ComponentTypeDescriptor type() {
       return type;
     }
 
     @Override
     public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof NamedType)) return false;
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof NamedType)) {
+        return false;
+      }
       NamedType that = (NamedType) o;
       return Objects.equals(name, that.name) && Objects.equals(type, that.type);
     }
