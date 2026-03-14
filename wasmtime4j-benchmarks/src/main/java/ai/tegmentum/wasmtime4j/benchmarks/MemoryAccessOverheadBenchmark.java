@@ -42,8 +42,8 @@ import org.openjdk.jmh.infra.Blackhole;
  * Benchmarks measuring per-operation overhead of single-value memory accesses.
  *
  * <p>This benchmark isolates the overhead of individual readByte/writeByte/readInt/writeInt
- * operations to measure the impact of removing redundant validateOffset JNI calls and
- * streamlining the guard pattern.
+ * operations to measure the impact of removing redundant validateOffset JNI calls and streamlining
+ * the guard pattern.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.Throughput)
@@ -67,8 +67,7 @@ public class MemoryAccessOverheadBenchmark extends BenchmarkBase {
     store = createStore(engine);
     module = compileWatModule(engine, COMPLEX_WAT_MODULE);
     instance = instantiateModule(store, module);
-    memory = instance.getMemory("memory")
-        .orElseThrow(() -> new WasmException("Memory not found"));
+    memory = instance.getMemory("memory").orElseThrow(() -> new WasmException("Memory not found"));
 
     // Pre-write some data so reads return non-zero values
     byte[] initData = new byte[1024];

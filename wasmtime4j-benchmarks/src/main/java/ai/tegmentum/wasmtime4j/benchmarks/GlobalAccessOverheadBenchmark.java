@@ -21,7 +21,6 @@ import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.RuntimeType;
 import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.WasmRuntime;
-import ai.tegmentum.wasmtime4j.WasmValue;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.jni.JniGlobal;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +41,9 @@ import org.openjdk.jmh.infra.Blackhole;
 /**
  * Benchmarks measuring per-operation overhead of global variable access.
  *
- * <p>This benchmark isolates the overhead of individual getIntValue/setIntValue
- * operations to measure the impact of removing redundant validateMutable JNI calls
- * (isMutable) and streamlining the guard pattern in JniGlobal.
+ * <p>This benchmark isolates the overhead of individual getIntValue/setIntValue operations to
+ * measure the impact of removing redundant validateMutable JNI calls (isMutable) and streamlining
+ * the guard pattern in JniGlobal.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.Throughput)
@@ -76,12 +75,21 @@ public class GlobalAccessOverheadBenchmark extends BenchmarkBase {
     store = createStore(engine);
     module = compileWatModule(engine, GLOBAL_WAT_MODULE);
     instance = instantiateModule(store, module);
-    mutableGlobal = (JniGlobal) instance.getGlobal("counter")
-        .orElseThrow(() -> new WasmException("counter global not found"));
-    immutableGlobal = (JniGlobal) instance.getGlobal("limit")
-        .orElseThrow(() -> new WasmException("limit global not found"));
-    doubleGlobal = (JniGlobal) instance.getGlobal("ratio")
-        .orElseThrow(() -> new WasmException("ratio global not found"));
+    mutableGlobal =
+        (JniGlobal)
+            instance
+                .getGlobal("counter")
+                .orElseThrow(() -> new WasmException("counter global not found"));
+    immutableGlobal =
+        (JniGlobal)
+            instance
+                .getGlobal("limit")
+                .orElseThrow(() -> new WasmException("limit global not found"));
+    doubleGlobal =
+        (JniGlobal)
+            instance
+                .getGlobal("ratio")
+                .orElseThrow(() -> new WasmException("ratio global not found"));
   }
 
   @TearDown(Level.Trial)

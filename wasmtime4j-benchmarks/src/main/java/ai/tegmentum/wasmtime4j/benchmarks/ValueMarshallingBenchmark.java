@@ -231,7 +231,8 @@ public class ValueMarshallingBenchmark {
 
   @Benchmark
   public void nativeResultToWasmValueF64(Blackhole bh) {
-    bh.consume(JniTypeConverter.nativeResultToWasmValue(Double.valueOf(2.71828), WasmValueType.F64));
+    bh.consume(
+        JniTypeConverter.nativeResultToWasmValue(Double.valueOf(2.71828), WasmValueType.F64));
   }
 
   // ==========================================

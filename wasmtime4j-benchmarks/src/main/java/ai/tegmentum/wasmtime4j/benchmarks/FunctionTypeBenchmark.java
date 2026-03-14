@@ -33,8 +33,8 @@ import org.openjdk.jmh.infra.Blackhole;
 /**
  * JMH benchmarks for FunctionType access patterns.
  *
- * <p>Measures the cost of array cloning in getParamTypes()/getReturnTypes() versus
- * non-cloning alternatives like getParamCount()/getReturnCount() and cached return types.
+ * <p>Measures the cost of array cloning in getParamTypes()/getReturnTypes() versus non-cloning
+ * alternatives like getParamCount()/getReturnCount() and cached return types.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)

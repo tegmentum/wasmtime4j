@@ -31,11 +31,11 @@ import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
 /**
- * Benchmarks for WasmValue creation patterns, measuring the impact of
- * flyweight caching for common values (small integers, zero values, null refs).
+ * Benchmarks for WasmValue creation patterns, measuring the impact of flyweight caching for common
+ * values (small integers, zero values, null refs).
  *
- * <p>These benchmarks target the allocation hot path that runs on every Wasm
- * function call returning small integer results (booleans, error codes, counters).
+ * <p>These benchmarks target the allocation hot path that runs on every Wasm function call
+ * returning small integer results (booleans, error codes, counters).
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
@@ -110,7 +110,8 @@ public class WasmValueCacheBenchmark {
 
   @Benchmark
   public void resultPathI32Large(Blackhole bh) {
-    bh.consume(JniTypeConverter.nativeResultToWasmValue(Integer.valueOf(999999), WasmValueType.I32));
+    bh.consume(
+        JniTypeConverter.nativeResultToWasmValue(Integer.valueOf(999999), WasmValueType.I32));
   }
 
   @Benchmark

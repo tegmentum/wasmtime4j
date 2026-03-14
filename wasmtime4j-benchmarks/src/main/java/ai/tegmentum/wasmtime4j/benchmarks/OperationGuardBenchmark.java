@@ -35,8 +35,8 @@ import org.openjdk.jmh.infra.Blackhole;
  * Benchmarks comparing ReentrantReadWriteLock vs AtomicInteger-based operation guards.
  *
  * <p>Every JNI function call goes through beginOperation()/endOperation() which currently
- * acquires/releases a ReentrantReadWriteLock read lock. This benchmark measures the overhead
- * of the current approach vs a lighter-weight AtomicInteger reference counting approach.
+ * acquires/releases a ReentrantReadWriteLock read lock. This benchmark measures the overhead of the
+ * current approach vs a lighter-weight AtomicInteger reference counting approach.
  */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MICROSECONDS)

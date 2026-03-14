@@ -41,9 +41,9 @@ import org.openjdk.jmh.infra.Blackhole;
 /**
  * Benchmarks measuring per-operation overhead of table element access.
  *
- * <p>This benchmark isolates the overhead of individual get/set/getSize operations
- * to measure the impact of removing redundant validateIndex JNI calls (getSize)
- * and streamlining the guard pattern in JniTable.
+ * <p>This benchmark isolates the overhead of individual get/set/getSize operations to measure the
+ * impact of removing redundant validateIndex JNI calls (getSize) and streamlining the guard pattern
+ * in JniTable.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Mode.Throughput)
@@ -74,8 +74,7 @@ public class TableAccessOverheadBenchmark extends BenchmarkBase {
     store = createStore(engine);
     module = compileWatModule(engine, TABLE_WAT_MODULE);
     instance = instantiateModule(store, module);
-    table = instance.getTable("table")
-        .orElseThrow(() -> new WasmException("Table not found"));
+    table = instance.getTable("table").orElseThrow(() -> new WasmException("Table not found"));
   }
 
   @TearDown(Level.Trial)
