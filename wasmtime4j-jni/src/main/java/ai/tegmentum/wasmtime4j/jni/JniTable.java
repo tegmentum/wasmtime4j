@@ -35,6 +35,7 @@ public final class JniTable extends JniResource implements WasmTable {
 
   private static final Logger LOGGER = Logger.getLogger(JniTable.class.getName());
   private final JniStore store;
+  private final long storeNativeHandle;
   private final long instanceHandle;
 
   // Load native library when this class is first loaded
@@ -73,6 +74,7 @@ public final class JniTable extends JniResource implements WasmTable {
     Validation.requireNonNull(store, "store");
     this.store = store;
     this.instanceHandle = instanceHandle;
+    this.storeNativeHandle = store.getNativeHandle();
     if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
       LOGGER.fine("Created JNI table with handle: 0x" + Long.toHexString(nativeHandle));
     }
@@ -100,10 +102,7 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final long tableHandle = getNativeHandle();
-      final long storeHandle = store.getNativeHandle();
-      final int size = nativeGetSize(tableHandle, storeHandle);
-      return size;
+      return nativeGetSize(nativeHandle, storeNativeHandle);
     } catch (final JniResourceException | IllegalStateException e) {
       throw e;
     } catch (final Exception e) {
@@ -124,7 +123,7 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      return nativeGetMaxSize(getNativeHandle(), store.getNativeHandle());
+      return nativeGetMaxSize(nativeHandle, storeNativeHandle);
     } catch (final JniResourceException | IllegalStateException e) {
       throw e;
     } catch (final Exception e) {
@@ -145,7 +144,7 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final String typeString = nativeGetElementType(getNativeHandle(), store.getNativeHandle());
+      final String typeString = nativeGetElementType(nativeHandle, storeNativeHandle);
       if (typeString == null) {
         throw new IllegalStateException("Native returned null element type for table");
       }
@@ -201,7 +200,7 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final long[] typeInfo = nativeGetTableTypeInfo(getNativeHandle(), store.getNativeHandle());
+      final long[] typeInfo = nativeGetTableTypeInfo(nativeHandle, storeNativeHandle);
       if (typeInfo.length < 3) {
         throw new IllegalStateException("Invalid table type info from native");
       }
@@ -233,9 +232,7 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final long handle = getNativeHandle();
-      validateIndex(index);
-      return nativeGet(handle, store.getNativeHandle(), index);
+      return nativeGet(nativeHandle, storeNativeHandle, index);
     } catch (final JniResourceException
         | IllegalStateException
         | IllegalArgumentException
@@ -263,9 +260,7 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final long handle = getNativeHandle();
-      validateIndex(index);
-      final boolean success = nativeSet(handle, store.getNativeHandle(), index, value);
+      final boolean success = nativeSet(nativeHandle, storeNativeHandle, index, value);
       if (!success) {
         throw new RuntimeException("Failed to set table element");
       }
@@ -296,10 +291,8 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final long tableHandle = getNativeHandle();
-      final long storeHandle = store.getNativeHandle();
       final long initValue = objectToRefHandle(init);
-      return (int) nativeTableGrow(tableHandle, storeHandle, delta, initValue);
+      return (int) nativeTableGrow(nativeHandle, storeNativeHandle, delta, initValue);
     } catch (final JniResourceException | IllegalStateException | IllegalArgumentException e) {
       throw e;
     } catch (final Exception e) {
@@ -327,11 +320,9 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final long handle = getNativeHandle();
-      validateRange(start, count);
-      final long storeHandle = store.getNativeHandle();
       final long valueHandle = objectToRefHandle(value);
-      final int result = nativeTableFill(handle, storeHandle, start, valueHandle, count);
+      final int result =
+          nativeTableFill(nativeHandle, storeNativeHandle, start, valueHandle, count);
       if (result != 0) {
         throw new RuntimeException("Failed to fill table range");
       }
@@ -365,10 +356,7 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final long handle = getNativeHandle();
-      validateRange(dst, count);
-      validateRange(src, count);
-      final boolean success = nativeCopy(handle, store.getNativeHandle(), dst, src, count);
+      final boolean success = nativeCopy(nativeHandle, storeNativeHandle, dst, src, count);
       if (!success) {
         throw new RuntimeException("Failed to copy table elements");
       }
@@ -422,35 +410,10 @@ public final class JniTable extends JniResource implements WasmTable {
       }
 
       final JniTable srcTable = (JniTable) src;
-      final long dstHandle = getNativeHandle();
-      final long srcHandle = srcTable.getNativeHandle();
-
-      // Validate destination range
-      validateRange(dst, count);
-
-      // Validate source range
-      final int srcTableSize = srcTable.getSize();
-      if ((long) srcIndex + count > srcTableSize) {
-        throw new IndexOutOfBoundsException(
-            "Source range ["
-                + srcIndex
-                + ", "
-                + ((long) srcIndex + count)
-                + ") exceeds source table size "
-                + srcTableSize);
-      }
-
-      // Validate type compatibility
-      if (!getElementType().equals(srcTable.getElementType())) {
-        throw new IllegalArgumentException(
-            "Table element types must match: this="
-                + getElementType()
-                + ", src="
-                + srcTable.getElementType());
-      }
 
       final boolean success =
-          nativeCopyFromTable(dstHandle, store.getNativeHandle(), dst, srcHandle, srcIndex, count);
+          nativeCopyFromTable(
+              nativeHandle, storeNativeHandle, dst, srcTable.nativeHandle, srcIndex, count);
       if (!success) {
         throw new RuntimeException("Failed to copy elements from source table");
       }
@@ -697,8 +660,8 @@ public final class JniTable extends JniResource implements WasmTable {
         throw new IllegalStateException("Cannot init table: table not associated with an instance");
       }
       nativeTableInit(
-          getNativeHandle(),
-          store.getNativeHandle(),
+          nativeHandle,
+          storeNativeHandle,
           instanceHandle,
           destOffset,
           srcOffset,
@@ -725,10 +688,8 @@ public final class JniTable extends JniResource implements WasmTable {
     beginOperation();
     try {
       checkStoreOpen();
-      final long tableHandle = getNativeHandle();
-      final long storeHandle = store.getNativeHandle();
       final long initRef = objectToRefHandle(initValue);
-      return nativeTableGrowAsync(tableHandle, storeHandle, elements, initRef);
+      return nativeTableGrowAsync(nativeHandle, storeNativeHandle, elements, initRef);
     } catch (final RuntimeException e) {
       throw e;
     } catch (final Exception e) {
@@ -747,7 +708,7 @@ public final class JniTable extends JniResource implements WasmTable {
       if (store.isClosed()) {
         return false;
       }
-      return nativeSupports64BitAddressing(getNativeHandle(), store.getNativeHandle());
+      return nativeSupports64BitAddressing(nativeHandle, storeNativeHandle);
     } catch (final Exception e) {
       if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
         LOGGER.fine("Error checking 64-bit addressing support: " + e.getMessage());
