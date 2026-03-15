@@ -126,10 +126,47 @@ jobs:
           ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-stress'
           ./mvnw test $COMMON_ARGS -pl wasmtime4j-tests/wasmtime
 
+  # Static analysis (runs in parallel with tests)
+  quality:
+    name: Code Quality
+    needs: build-native
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '23'
+          distribution: 'temurin'
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: m2-quality-${{ hashFiles('**/pom.xml') }}
+          restore-keys: m2-quality-
+
+      - name: Checkstyle
+        run: ./mvnw checkstyle:check -B -P skip-native -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-native-loader
+
+      - name: Spotless
+        run: ./mvnw spotless:check -B -P skip-native -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-panama,wasmtime4j-native-loader
+
+      - name: Install dependencies
+        run: |
+          ./mvnw install -B -N -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true
+          ./mvnw install -B -P skip-native -pl wasmtime4j-native-loader -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true
+
+      - name: SpotBugs
+        run: ./mvnw compile spotbugs:check -B -P skip-native -pl wasmtime4j
+
+      - name: PMD
+        run: ./mvnw compile pmd:check -B -P skip-native -pl wasmtime4j
+
   # Publish — requires manual approval via GitHub environment
   publish:
     name: Publish
-    needs: test
+    needs: [test, quality]
     runs-on: ubuntu-latest
     environment: production
     permissions:
