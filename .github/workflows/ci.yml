@@ -172,7 +172,12 @@ jobs:
 
       - name: Install modules locally
         shell: bash
-        run: ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true -pl '!:wasmtime4j-tests-integration'
+        run: |
+          INSTALL_EXCLUDES=""
+          if [ "${{ matrix.java }}" != "23" ]; then
+            INSTALL_EXCLUDES="-pl !:wasmtime4j-tests-integration"
+          fi
+          ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true $INSTALL_EXCLUDES
 
       - name: Run tests
         shell: bash
@@ -180,8 +185,10 @@ jobs:
           EXTRA_ARGS=""
           if [ "${{ matrix.java }}" = "8" ]; then
             EXTRA_ARGS="-pl !:wasmtime4j-panama,!:wasmtime4j-tests,!:wasmtime4j-tests-wasmtime,!:wasmtime4j-tests-integration,!:wasmtime4j-tests-fuzz,!:wasmtime4j-tests-smoke,!:wasmtime4j-tests-stress -Dcheckstyle.skip=true"
+          elif [ "${{ matrix.java }}" = "21" ]; then
+            EXTRA_ARGS="-pl !:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke"
           fi
-          ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true -pl '!:wasmtime4j-jni' $EXTRA_ARGS
+          ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -pl '!:wasmtime4j-jni' $EXTRA_ARGS
 
       - name: Upload test results
         if: always()

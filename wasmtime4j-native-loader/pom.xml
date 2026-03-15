@@ -170,14 +170,6 @@
                 </executions>
             </plugin>
 
-            <!-- Checkstyle for code standards -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <configuration>
-                    <excludes>**/jmh_generated/**/*</excludes>
-                </configuration>
-            </plugin>
 
             <!-- SpotBugs for bug detection -->
             <plugin>
