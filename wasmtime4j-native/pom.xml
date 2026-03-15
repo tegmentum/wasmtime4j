@@ -299,6 +299,7 @@
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
                         <manifestEntries>
+                            <Automatic-Module-Name>ai.tegmentum.wasmtime4j.natives</Automatic-Module-Name>
                             <Native-Library-Name>${native.library.name}</Native-Library-Name>
                             <Wasmtime-Version>${wasmtime.version}</Wasmtime-Version>
                             <Build-Platform>${os.name}-${os.arch}</Build-Platform>
