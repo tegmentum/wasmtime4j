@@ -172,7 +172,7 @@ jobs:
 
       - name: Install modules locally
         shell: bash
-        run: ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true
+        run: ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true
 
       - name: Run tests
         shell: bash
