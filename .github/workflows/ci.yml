@@ -174,8 +174,10 @@ jobs:
         shell: bash
         run: |
           INSTALL_EXCLUDES=""
-          if [ "${{ matrix.java }}" != "23" ]; then
-            INSTALL_EXCLUDES="-pl !:wasmtime4j-tests-integration"
+          if [ "${{ matrix.java }}" = "21" ]; then
+            INSTALL_EXCLUDES="-pl !:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke"
+          elif [ "${{ matrix.java }}" = "8" ]; then
+            INSTALL_EXCLUDES="-pl !:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke,!:wasmtime4j-panama,!:wasmtime4j-native-loader"
           fi
           ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true $INSTALL_EXCLUDES
 
