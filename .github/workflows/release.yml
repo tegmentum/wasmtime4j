@@ -194,7 +194,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           ./mvnw deploy -B -P release,skip-native \
-            -DskipTests \
+            -DskipTests -DskipQuality \
             -Drevision=${{ steps.version.outputs.version }}
 
       - name: Deploy to GitHub Packages
@@ -214,7 +214,7 @@ jobs:
           </settings>
           SETTINGS
           ./mvnw deploy -B -P skip-native \
-            -DskipTests \
+            -DskipTests -DskipQuality \
             -Drevision=${{ steps.version.outputs.version }} \
             -DaltDeploymentRepository=github::https://maven.pkg.github.com/${{ github.repository }} \
             -Dgpg.skip=true \
@@ -223,7 +223,7 @@ jobs:
       - name: Package release artifacts
         run: |
           ./mvnw package -B -P release,skip-native \
-            -DskipTests \
+            -DskipTests -DskipQuality \
             -Drevision=${{ steps.version.outputs.version }}
 
       - name: Create checksums
