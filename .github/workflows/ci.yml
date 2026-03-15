@@ -179,7 +179,7 @@ jobs:
         run: |
           EXTRA_ARGS=""
           if [ "${{ matrix.java }}" = "8" ]; then
-            EXTRA_ARGS="-pl !:wasmtime4j-panama"
+            EXTRA_ARGS="-pl !:wasmtime4j-panama,!:wasmtime4j-tests,!:wasmtime4j-tests-wasmtime,!:wasmtime4j-tests-integration,!:wasmtime4j-tests-fuzz,!:wasmtime4j-tests-smoke,!:wasmtime4j-tests-stress"
           fi
           ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true -pl '!:wasmtime4j-jni' $EXTRA_ARGS
 

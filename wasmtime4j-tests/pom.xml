@@ -17,6 +17,12 @@
     <name>Wasmtime4j Tests</name>
     <description>Test modules for Wasmtime4j Java bindings</description>
 
+    <properties>
+        <!-- Test modules use text blocks and switch expressions (Java 17+) -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
+
     <modules>
         <module>integration</module>
         <module>fuzz</module>
