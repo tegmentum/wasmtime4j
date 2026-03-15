@@ -176,7 +176,12 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true -pl '!wasmtime4j-jni'
+        run: |
+          EXCLUDE_MODULES="-pl !wasmtime4j-jni"
+          if [ "${{ matrix.java }}" = "8" ]; then
+            EXCLUDE_MODULES="-pl !wasmtime4j-jni,!wasmtime4j-tests/integration,!wasmtime4j-panama"
+          fi
+          ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true $EXCLUDE_MODULES
 
       - name: Upload test results
         if: always()

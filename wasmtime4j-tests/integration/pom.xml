@@ -18,6 +18,10 @@
     <description>Integration tests for Wasmtime4j Java bindings</description>
 
     <properties>
+        <!-- Integration tests use text blocks (Java 15+) -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+
         <!-- Test-specific properties -->
         <test.timeout>60</test.timeout>
         <test.memory>2g</test.memory>
