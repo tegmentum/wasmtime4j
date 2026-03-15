@@ -76,7 +76,7 @@ public class SymbolLookupDebugTest {
 
       // Also check the JAR library
       System.out.println("\nJAR library epoch symbols:");
-      String version = "41.0.3-1.0.0";
+      String version = "42.0.1-1.0.0";
       String jarPath =
           System.getProperty("user.home")
               + "/.m2/repository/ai/tegmentum/wasmtime4j-native/"

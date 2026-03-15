@@ -180,8 +180,8 @@ jobs:
             ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl wasmtime4j,wasmtime4j-native,wasmtime4j-jni,wasmtime4j-native-loader
             ./mvnw test $COMMON_ARGS -pl wasmtime4j
           elif [ "${{ matrix.java }}" = "21" ]; then
-            # Java 21: install all (skip test compilation for Java 22+ modules), test wasmtime suite
-            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true
+            # Java 21: install all except Java 22+ modules, test wasmtime suite
+            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-integration,!:wasmtime4j-tests-stress'
             ./mvnw test $COMMON_ARGS -pl wasmtime4j-tests/wasmtime
           else
             # Java 23: full install, run wasmtime + benchmark tests
