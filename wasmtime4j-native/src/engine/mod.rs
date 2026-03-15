@@ -46,6 +46,11 @@ pub use ffi::*;
 pub(crate) fn safe_wasmtime_config() -> Config {
     let mut config = Config::new();
     config.signals_based_traps(false);
+    // Set a default max Wasm stack size to prevent stack overflow from crashing
+    // the JVM process. Without this, deeply recursive Wasm code can exhaust the
+    // native thread stack (causing SIGSEGV) before Wasmtime's explicit stack
+    // checks detect the overflow.
+    config.max_wasm_stack(512 * 1024); // 512 KiB
     config
 }
 

@@ -49,10 +49,6 @@ public final class ImportWorksTest {
   public void testImportWorksWithGcTypes() throws Exception {
     LOGGER.info("Testing import works with GC types (anyref, funcref, externref)");
 
-    // GC ref types require Panama runtime (Java 22+)
-    org.junit.jupiter.api.Assumptions.assumeTrue(
-        Runtime.version().feature() >= 22, "GC ref types require Java 22+ (Panama runtime)");
-
     // Track host function invocations
     final AtomicInteger hits = new AtomicInteger(0);
 

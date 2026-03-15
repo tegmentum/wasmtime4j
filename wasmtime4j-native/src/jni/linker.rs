@@ -372,6 +372,90 @@ fn wasm_value_to_java<'local>(
                 backtrace: None,
             })
         }
+        WasmValue::ExternRef(opt_id) => {
+            if opt_id.is_none() {
+                env.call_static_method(
+                    wasm_value_class,
+                    "nullExternref",
+                    "()Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[],
+                )
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to call nullExternref method: {}", e),
+                    backtrace: None,
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to get object: {}", e),
+                    backtrace: None,
+                })
+            } else {
+                // Non-null externref: box the ID as a Java Long object
+                let id = opt_id.unwrap();
+                let long_obj = env.new_object("java/lang/Long", "(J)V", &[jni::objects::JValue::Long(id)])
+                    .map_err(|e| WasmtimeError::Runtime {
+                        message: format!("Failed to create Long for externref: {}", e),
+                        backtrace: None,
+                    })?;
+                env.call_static_method(
+                    wasm_value_class,
+                    "externref",
+                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[jni::objects::JValue::Object(&long_obj)],
+                )
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to call externref method: {}", e),
+                    backtrace: None,
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to get object: {}", e),
+                    backtrace: None,
+                })
+            }
+        }
+        WasmValue::FuncRef(opt_id) => {
+            if opt_id.is_none() {
+                env.call_static_method(
+                    wasm_value_class,
+                    "nullFuncref",
+                    "()Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[],
+                )
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to call nullFuncref method: {}", e),
+                    backtrace: None,
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to get object: {}", e),
+                    backtrace: None,
+                })
+            } else {
+                // Non-null funcref: box the ID as a Java Long object
+                let id = opt_id.unwrap();
+                let long_obj = env.new_object("java/lang/Long", "(J)V", &[jni::objects::JValue::Long(id)])
+                    .map_err(|e| WasmtimeError::Runtime {
+                        message: format!("Failed to create Long for funcref: {}", e),
+                        backtrace: None,
+                    })?;
+                env.call_static_method(
+                    wasm_value_class,
+                    "funcref",
+                    "(Ljava/lang/Object;)Lai/tegmentum/wasmtime4j/WasmValue;",
+                    &[jni::objects::JValue::Object(&long_obj)],
+                )
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to call funcref method: {}", e),
+                    backtrace: None,
+                })?
+                .l()
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to get object: {}", e),
+                    backtrace: None,
+                })
+            }
+        }
         _ => Err(WasmtimeError::Runtime {
             message: format!("Unsupported value type: {:?}", value),
             backtrace: None,

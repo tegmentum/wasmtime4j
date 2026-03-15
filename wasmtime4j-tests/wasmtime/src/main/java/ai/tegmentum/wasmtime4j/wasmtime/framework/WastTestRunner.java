@@ -104,7 +104,8 @@ public final class WastTestRunner implements AutoCloseable {
         .addWasmFeature(WasmFeature.CUSTOM_PAGE_SIZES)
         .addWasmFeature(WasmFeature.WIDE_ARITHMETIC)
         .wasmFunctionReferences(true)
-        .wasmGc(true);
+        .wasmGc(true)
+        .setMaxWasmStack(512 * 1024); // 512 KiB — safe limit within JVM thread stack
   }
 
   /**
