@@ -155,8 +155,10 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java }}
-          distribution: ${{ matrix.java == '8' && 'zulu' || 'temurin' }}
+          # Java 8 target: use JDK 21 to compile with -source/-target 8 and run tests
+          # (test dependencies like Mockito 5.x require JDK 11+)
+          java-version: ${{ matrix.java == '8' && '21' || matrix.java }}
+          distribution: 'temurin'
 
       - name: Cache Maven
         uses: actions/cache@v4
@@ -181,8 +183,9 @@ jobs:
           COMMON_ARGS="-B -P skip-native -q -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true"
 
           if [ "${{ matrix.java }}" = "8" ]; then
-            # Java 8: verify core modules compile (test deps like Mockito 5.x require Java 11+)
-            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl wasmtime4j,wasmtime4j-native,wasmtime4j-jni,wasmtime4j-native-loader
+            # Java 8 target: compile with source/target 8 (from pom.xml), run tests on JDK 21
+            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-stress'
+            ./mvnw test $COMMON_ARGS -pl wasmtime4j-tests/wasmtime
           elif [ "${{ matrix.java }}" = "21" ]; then
             # Java 21: install all except Java 22+ modules, test wasmtime suite
             ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-stress'
