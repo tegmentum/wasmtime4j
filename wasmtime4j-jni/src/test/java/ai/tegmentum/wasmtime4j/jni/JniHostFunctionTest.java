@@ -25,6 +25,7 @@ import ai.tegmentum.wasmtime4j.WasmValueType;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.func.HostFunction;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -48,6 +49,12 @@ class JniHostFunctionTest {
     testStore = new JniStore(VALID_HANDLE, testEngine);
     testFunctionType = new FunctionType(new WasmValueType[0], new WasmValueType[0]);
     testImplementation = params -> null;
+  }
+
+  @AfterEach
+  void tearDown() {
+    testStore.markClosedForTesting();
+    testEngine.markClosedForTesting();
   }
 
   // Constructor validation tests - all will fail at native level since library not loaded

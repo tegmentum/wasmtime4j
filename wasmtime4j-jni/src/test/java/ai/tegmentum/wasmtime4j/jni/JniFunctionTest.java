@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.WasmValue;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -41,6 +42,12 @@ class JniFunctionTest {
   private static final String FUNCTION_NAME = "test_function";
   private static final JniEngine MOCK_ENGINE = new JniEngine(VALID_ENGINE_HANDLE);
   private static final JniStore MOCK_STORE = new JniStore(VALID_STORE_HANDLE, MOCK_ENGINE);
+
+  @AfterAll
+  static void tearDown() {
+    MOCK_STORE.markClosedForTesting();
+    MOCK_ENGINE.markClosedForTesting();
+  }
 
   @Test
   void testConstructorWithValidParameters() {

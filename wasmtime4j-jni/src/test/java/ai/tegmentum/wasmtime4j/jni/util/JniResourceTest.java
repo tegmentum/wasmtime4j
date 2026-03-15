@@ -404,9 +404,9 @@ class JniResourceTest {
                 try {
                   operationStarted.countDown();
                   closeAttempted.await(5, TimeUnit.SECONDS);
-                  // Give close() thread time to block on write lock
+                  // Give close() thread time to set flag and start spinning
                   Thread.sleep(100);
-                  closedBeforeOperationEnd.set(resource.isClosed());
+                  closedBeforeOperationEnd.set(resource.getCloseCount() > 0);
                 } catch (final InterruptedException e) {
                   Thread.currentThread().interrupt();
                 } finally {
@@ -430,9 +430,9 @@ class JniResourceTest {
 
       assertFalse(
           closedBeforeOperationEnd.get(),
-          "Resource should NOT be closed while operation read lock is held");
-      assertTrue(
-          resource.isClosed(), "Resource should be closed after operation released the lock");
+          "doClose() should NOT be called while operation is in-flight");
+      assertEquals(
+          1, resource.getCloseCount(), "doClose() should be called after operation completes");
     }
 
     @Test
@@ -498,7 +498,7 @@ class JniResourceTest {
                     lockHeld.countDown();
                     // Wait for close thread to start attempting close
                     Thread.sleep(200);
-                    closedBeforeRelease.set(resource.isClosed());
+                    closedBeforeRelease.set(resource.getCloseCount() > 0);
                   } catch (final InterruptedException e) {
                     Thread.currentThread().interrupt();
                   } finally {
@@ -519,7 +519,7 @@ class JniResourceTest {
       assertTrue(closeDone.await(5, TimeUnit.SECONDS));
       assertFalse(
           closedBeforeRelease.get(),
-          "Resource should NOT be closed while tryBeginOperation lock is held");
+          "doClose() should NOT be called while tryBeginOperation lock is held");
     }
   }
 

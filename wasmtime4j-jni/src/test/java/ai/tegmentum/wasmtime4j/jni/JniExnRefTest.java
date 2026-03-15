@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ai.tegmentum.wasmtime4j.ExnRef;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,12 @@ class JniExnRefTest {
   private static final long VALID_ENGINE_HANDLE = 0xABCDEF01L;
   private static final JniEngine MOCK_ENGINE = new JniEngine(VALID_ENGINE_HANDLE);
   private static final JniStore MOCK_STORE = new JniStore(VALID_STORE_HANDLE, MOCK_ENGINE);
+
+  @AfterAll
+  static void tearDown() {
+    MOCK_STORE.markClosedForTesting();
+    MOCK_ENGINE.markClosedForTesting();
+  }
 
   @Nested
   @DisplayName("Constructor Tests")

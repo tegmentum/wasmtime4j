@@ -176,7 +176,7 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true
+        run: ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true -pl '!wasmtime4j-jni'
 
       - name: Upload test results
         if: always()

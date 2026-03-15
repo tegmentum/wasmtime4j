@@ -189,6 +189,10 @@ public abstract class JniResource implements AutoCloseable {
    */
   public void markClosedForTesting() {
     closed.set(true);
+    // Remove phantom reference to prevent the cleanup thread from calling
+    // native destroy on fake test handles, which would cause SIGABRT.
+    PHANTOM_REFS.remove(phantomRef);
+    phantomRef.clear();
   }
 
   /**
