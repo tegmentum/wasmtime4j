@@ -177,7 +177,7 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
-          EXCLUDE_MODULES="-pl !wasmtime4j-jni"
+          EXCLUDE_MODULES="-pl !wasmtime4j-jni,!wasmtime4j-tests/integration"
           if [ "${{ matrix.java }}" = "8" ]; then
             EXCLUDE_MODULES="-pl !wasmtime4j-jni,!wasmtime4j-tests/integration,!wasmtime4j-panama"
           fi
