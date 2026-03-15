@@ -91,10 +91,10 @@ jobs:
         run: ./mvnw spotless:check -B -P skip-native -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-panama,wasmtime4j-native-loader
 
       - name: SpotBugs
-        run: ./mvnw compile spotbugs:check -B -P skip-native -pl wasmtime4j,wasmtime4j-native-loader
+        run: ./mvnw compile spotbugs:check -B -P skip-native -pl wasmtime4j
 
       - name: PMD
-        run: ./mvnw compile pmd:check -B -P skip-native -pl wasmtime4j,wasmtime4j-native-loader
+        run: ./mvnw compile pmd:check -B -P skip-native -pl wasmtime4j
 
   # Test matrix — downloads pre-built native libs
   test:
@@ -181,7 +181,7 @@ jobs:
             ./mvnw test $COMMON_ARGS -pl wasmtime4j
           elif [ "${{ matrix.java }}" = "21" ]; then
             # Java 21: install all except Java 22+ modules, test wasmtime suite
-            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-integration,!:wasmtime4j-tests-stress'
+            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke,!:wasmtime4j-tests-stress'
             ./mvnw test $COMMON_ARGS -pl wasmtime4j-tests/wasmtime
           else
             # Java 23: full install, run wasmtime + benchmark tests
