@@ -391,7 +391,7 @@ public interface Module extends Closeable {
     for (MemoryType mt : memTypes) {
       minMemory += mt.getMinimum() * 65536L;
       java.util.Optional<Long> max = mt.getMaximum();
-      if (max.isEmpty()) {
+      if (!max.isPresent()) {
         maxMemory = -1;
       } else if (maxMemory >= 0) {
         maxMemory += max.get() * 65536L;
@@ -402,7 +402,7 @@ public interface Module extends Closeable {
     for (TableType tt : tableTypes) {
       minTable += tt.getMinimum();
       java.util.Optional<Long> max = tt.getMaximum();
-      if (max.isEmpty()) {
+      if (!max.isPresent()) {
         maxTable = -1;
       } else if (maxTable >= 0) {
         maxTable += max.get();

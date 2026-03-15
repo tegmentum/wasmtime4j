@@ -726,7 +726,7 @@ public final class WasiPreview2Config {
      * @return this builder
      */
     public Builder preopenDir(final String hostPath, final String guestPath) {
-      return preopenDir(Path.of(hostPath), guestPath);
+      return preopenDir(java.nio.file.Paths.get(hostPath), guestPath);
     }
 
     /**
@@ -774,7 +774,7 @@ public final class WasiPreview2Config {
         final String guestPath,
         final DirPerms dirPerms,
         final FilePerms filePerms) {
-      return preopenDir(Path.of(hostPath), guestPath, dirPerms, filePerms);
+      return preopenDir(java.nio.file.Paths.get(hostPath), guestPath, dirPerms, filePerms);
     }
 
     /**
