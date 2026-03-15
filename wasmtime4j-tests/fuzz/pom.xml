@@ -18,6 +18,13 @@
     <description>Fuzz testing for Wasmtime4j Java bindings using Jazzer</description>
 
     <properties>
+        <!-- Fuzz tests use text blocks and switch expressions (Java 17+) -->
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <!-- Skip fuzz tests by default; run via fuzz workflow -->
+        <maven.test.skip>${skip.fuzz}</maven.test.skip>
+        <skip.fuzz>true</skip.fuzz>
+
         <!-- Jazzer 0.22.1 is the final Code Intelligence release -->
         <jazzer.version>0.22.1</jazzer.version>
 
