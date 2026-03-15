@@ -138,18 +138,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
 
-            <!-- Generate sources jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-
-            <!-- Generate javadoc jar -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-
             <!-- JAR packaging -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
