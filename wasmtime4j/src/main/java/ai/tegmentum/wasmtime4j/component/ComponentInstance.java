@@ -189,7 +189,7 @@ public interface ComponentInstance extends AutoCloseable {
     }
 
     final Optional<ComponentFunction> func = getFunc(functionName);
-    if (func.isEmpty()) {
+    if (!func.isPresent()) {
       return Optional.empty();
     }
 

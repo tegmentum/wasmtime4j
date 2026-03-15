@@ -54,7 +54,7 @@ final class WastRunnerFactory {
     }
 
     // Auto-detect: Panama for Java 23+, JNI otherwise
-    final int javaVersion = Runtime.version().feature();
+    final int javaVersion = getMajorJavaVersion();
     if (javaVersion >= 23) {
       try {
         return createPanamaRunner();
@@ -67,6 +67,21 @@ final class WastRunnerFactory {
     }
 
     return createJniRunner();
+  }
+
+  private static int getMajorJavaVersion() {
+    try {
+      // Java 9+: Runtime.version().feature()
+      Object version = Runtime.class.getMethod("version").invoke(null);
+      return (int) version.getClass().getMethod("feature").invoke(version);
+    } catch (Exception e) {
+      // Java 8: parse from system property
+      String spec = System.getProperty("java.specification.version", "8");
+      if (spec.startsWith("1.")) {
+        spec = spec.substring(2);
+      }
+      return Integer.parseInt(spec);
+    }
   }
 
   private static WastRunner createPanamaRunner() {

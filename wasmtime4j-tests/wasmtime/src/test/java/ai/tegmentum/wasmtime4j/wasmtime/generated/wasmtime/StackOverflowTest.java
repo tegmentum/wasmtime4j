@@ -41,6 +41,11 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
  * <p>Source:
  * https://github.com/bytecodealliance/wasmtime/blob/main/tests/misc_testsuite/stack_overflow.wast
  */
+@org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable(
+    named = "CI",
+    matches = "true",
+    disabledReason =
+        "Stack overflow signal handling conflicts with JVM signal handlers on CI runners")
 public final class StackOverflowTest extends DualRuntimeTest {
 
   private static String loadResource(final String path) throws IOException {

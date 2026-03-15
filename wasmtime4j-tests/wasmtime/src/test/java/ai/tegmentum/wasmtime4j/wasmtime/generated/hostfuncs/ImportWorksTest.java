@@ -41,6 +41,8 @@ public final class ImportWorksTest {
   public void testImportWorks() throws Exception {
     // This test requires EXTERNREF and FUNCREF support in host function definitions,
     // which is only available in the Panama implementation. We explicitly use Panama runtime.
+    org.junit.jupiter.api.Assumptions.assumeTrue(
+        Runtime.version().feature() >= 22, "Requires Java 22+ for Panama runtime");
 
     // Atomic counter to track host function calls
     final AtomicInteger hits = new AtomicInteger(0);
