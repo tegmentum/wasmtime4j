@@ -18,9 +18,12 @@
     <description>Integration tests for Wasmtime4j Java bindings</description>
 
     <properties>
-        <!-- Integration tests use text blocks (Java 15+) -->
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <!-- Integration tests use Panama (Java 22+) and text blocks (Java 15+) -->
+        <maven.compiler.source>22</maven.compiler.source>
+        <maven.compiler.target>22</maven.compiler.target>
+        <!-- Skip by default; run explicitly with -pl wasmtime4j-tests/integration -Dskip.integration=false -->
+        <maven.test.skip>${skip.integration}</maven.test.skip>
+        <skip.integration>true</skip.integration>
 
         <!-- Test-specific properties -->
         <test.timeout>60</test.timeout>
