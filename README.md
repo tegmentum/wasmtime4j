@@ -1,7 +1,7 @@
 # Wasmtime4j
 
 [![Build Status](https://github.com/tegmentum/wasmtime4j/actions/workflows/ci.yml/badge.svg)](https://github.com/tegmentum/wasmtime4j/actions)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/ai.tegmentum/wasmtime4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/ai.tegmentum/wasmtime4j)
+[![Maven Central](https://img.shields.io/maven-central/v/ai.tegmentum/wasmtime4j)](https://central.sonatype.com/artifact/ai.tegmentum/wasmtime4j)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Java bindings for the [Wasmtime](https://wasmtime.dev/) WebAssembly runtime. Provides both JNI and Panama Foreign Function Interface implementations with automatic runtime selection based on Java version.
