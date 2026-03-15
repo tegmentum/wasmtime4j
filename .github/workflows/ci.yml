@@ -176,16 +176,16 @@ jobs:
           COMMON_ARGS="-B -P skip-native -q -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true"
 
           if [ "${{ matrix.java }}" = "8" ]; then
-            # Java 8: install core modules, run only wasmtime4j unit tests
-            ./mvnw install $COMMON_ARGS -DskipTests -pl wasmtime4j,wasmtime4j-native,wasmtime4j-jni,wasmtime4j-native-loader
+            # Java 8: install core modules (skip test compilation), test wasmtime4j only
+            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl wasmtime4j,wasmtime4j-native,wasmtime4j-jni,wasmtime4j-native-loader
             ./mvnw test $COMMON_ARGS -pl wasmtime4j
           elif [ "${{ matrix.java }}" = "21" ]; then
-            # Java 21: install all except Java 22+ modules, run wasmtime test suite
-            ./mvnw install $COMMON_ARGS -DskipTests -pl '!:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke,!:wasmtime4j-tests-stress'
+            # Java 21: install all (skip test compilation for Java 22+ modules), test wasmtime suite
+            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true
             ./mvnw test $COMMON_ARGS -pl wasmtime4j-tests/wasmtime
           else
             # Java 23: full install, run wasmtime + benchmark tests
-            ./mvnw install $COMMON_ARGS -DskipTests
+            ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true
             ./mvnw test $COMMON_ARGS --fail-at-end -pl wasmtime4j-tests/wasmtime,wasmtime4j-benchmarks
           fi
 
