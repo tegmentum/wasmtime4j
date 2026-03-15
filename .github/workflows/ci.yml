@@ -176,7 +176,7 @@ jobs:
 
       - name: Run tests
         shell: bash
-        run: ./mvnw test -B -P skip-native -q --fail-at-end -Dcheckstyle.skip=true -Dspotbugs.skip=true -Dpmd.skip=true -Dspotless.check.skip=true
+        run: ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true
 
       - name: Upload test results
         if: always()
