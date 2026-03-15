@@ -170,9 +170,9 @@ jobs:
         shell: bash
         run: ls -la wasmtime4j-native/src/main/resources/natives/${{ matrix.platform }}/
 
-      - name: Install native module locally
+      - name: Install modules locally
         shell: bash
-        run: ./mvnw install -B -P skip-native -pl wasmtime4j-native -q -DskipTests -Dcheckstyle.skip=true -Dspotbugs.skip=true -Dpmd.skip=true -Dspotless.check.skip=true -Dmaven.javadoc.skip=true
+        run: ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true
 
       - name: Run tests
         shell: bash
