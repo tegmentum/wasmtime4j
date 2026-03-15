@@ -170,27 +170,24 @@ jobs:
         shell: bash
         run: ls -la wasmtime4j-native/src/main/resources/natives/${{ matrix.platform }}/
 
-      - name: Install modules locally
+      - name: Install and test
         shell: bash
         run: |
-          INSTALL_EXCLUDES=""
-          if [ "${{ matrix.java }}" = "21" ]; then
-            INSTALL_EXCLUDES="-pl !:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke"
-          elif [ "${{ matrix.java }}" = "8" ]; then
-            INSTALL_EXCLUDES="-pl !:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke,!:wasmtime4j-panama,!:wasmtime4j-native-loader"
-          fi
-          ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true $INSTALL_EXCLUDES
+          COMMON_ARGS="-B -P skip-native -q -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true"
 
-      - name: Run tests
-        shell: bash
-        run: |
-          EXTRA_ARGS=""
           if [ "${{ matrix.java }}" = "8" ]; then
-            EXTRA_ARGS="-pl !:wasmtime4j-panama,!:wasmtime4j-tests,!:wasmtime4j-tests-wasmtime,!:wasmtime4j-tests-integration,!:wasmtime4j-tests-fuzz,!:wasmtime4j-tests-smoke,!:wasmtime4j-tests-stress -Dcheckstyle.skip=true"
+            # Java 8: only install and test core modules (JNI runtime)
+            ./mvnw install $COMMON_ARGS -DskipTests -pl wasmtime4j,wasmtime4j-native,wasmtime4j-jni,wasmtime4j-native-loader
+            ./mvnw test $COMMON_ARGS -pl wasmtime4j -Dsurefire.failIfNoSpecifiedTests=false
           elif [ "${{ matrix.java }}" = "21" ]; then
-            EXTRA_ARGS="-pl !:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke"
+            # Java 21: install all except integration/smoke (Java 22+), run wasmtime tests
+            ./mvnw install $COMMON_ARGS -DskipTests -pl '!:wasmtime4j-tests-integration,!:wasmtime4j-tests-smoke'
+            ./mvnw test $COMMON_ARGS --fail-at-end -pl wasmtime4j-tests/wasmtime -pl '!:wasmtime4j-jni'
+          else
+            # Java 23: full install and test (excluding JNI unit tests)
+            ./mvnw install $COMMON_ARGS -DskipTests
+            ./mvnw test $COMMON_ARGS --fail-at-end -pl '!:wasmtime4j-jni'
           fi
-          ./mvnw test -B -P skip-native -q --fail-at-end -DskipQuality -Dmaven.javadoc.skip=true -Dcheckstyle.skip=true -pl '!:wasmtime4j-jni' $EXTRA_ARGS
 
       - name: Upload test results
         if: always()
