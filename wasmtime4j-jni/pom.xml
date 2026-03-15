@@ -71,12 +71,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <release>8</release>
                     <compilerArgs>
                         <arg>-Xlint:all</arg>
                         <arg>-Xlint:-options</arg>
-                        <arg>-h</arg>
-                        <arg>${project.build.directory}/generated-sources/native-headers</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

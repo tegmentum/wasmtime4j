@@ -74,7 +74,7 @@ final class WastRunnerFactory {
       // Java 9+: Runtime.version().feature()
       Object version = Runtime.class.getMethod("version").invoke(null);
       return (int) version.getClass().getMethod("feature").invoke(version);
-    } catch (Exception e) {
+    } catch (ReflectiveOperationException e) {
       // Java 8: parse from system property
       String spec = System.getProperty("java.specification.version", "8");
       if (spec.startsWith("1.")) {

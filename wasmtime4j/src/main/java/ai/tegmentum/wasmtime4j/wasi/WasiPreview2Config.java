@@ -725,7 +725,9 @@ public final class WasiPreview2Config {
      * @param guestPath the path as seen by the guest
      * @return this builder
      */
-    @SuppressWarnings("findsecbugs:PATH_TRAVERSAL_IN")
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+        value = "PATH_TRAVERSAL_IN",
+        justification = "Host path is intentionally user-specified for WASI directory preopening")
     public Builder preopenDir(final String hostPath, final String guestPath) {
       return preopenDir(java.nio.file.Paths.get(hostPath), guestPath);
     }
@@ -770,7 +772,9 @@ public final class WasiPreview2Config {
      * @param filePerms the file permissions
      * @return this builder
      */
-    @SuppressWarnings("findsecbugs:PATH_TRAVERSAL_IN")
+    @edu.umd.cs.findbugs.annotations.SuppressFBWarnings(
+        value = "PATH_TRAVERSAL_IN",
+        justification = "Host path is intentionally user-specified for WASI directory preopening")
     public Builder preopenDir(
         final String hostPath,
         final String guestPath,
