@@ -90,11 +90,14 @@ jobs:
       - name: Spotless
         run: ./mvnw spotless:check -B -P skip-native -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-panama,wasmtime4j-native-loader
 
+      - name: Install dependencies
+        run: ./mvnw install -B -P skip-native -pl wasmtime4j-native-loader -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true
+
       - name: SpotBugs
-        run: ./mvnw compile spotbugs:check -B -P skip-native -pl wasmtime4j -am
+        run: ./mvnw compile spotbugs:check -B -P skip-native -pl wasmtime4j
 
       - name: PMD
-        run: ./mvnw compile pmd:check -B -P skip-native -pl wasmtime4j -am
+        run: ./mvnw compile pmd:check -B -P skip-native -pl wasmtime4j
 
   # Test matrix — downloads pre-built native libs
   test:

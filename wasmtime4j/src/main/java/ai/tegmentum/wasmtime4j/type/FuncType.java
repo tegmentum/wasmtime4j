@@ -73,7 +73,7 @@ public interface FuncType extends WasmType {
    * @since 1.1.0
    */
   default List<ValType> params() {
-    return getParams().stream().map(ValType::from).collect(Collectors.toUnmodifiableList());
+    return getParams().stream().map(ValType::from).collect(Collectors.toList());
   }
 
   /**
@@ -86,7 +86,7 @@ public interface FuncType extends WasmType {
    * @since 1.1.0
    */
   default List<ValType> results() {
-    return getResults().stream().map(ValType::from).collect(Collectors.toUnmodifiableList());
+    return getResults().stream().map(ValType::from).collect(Collectors.toList());
   }
 
   /**

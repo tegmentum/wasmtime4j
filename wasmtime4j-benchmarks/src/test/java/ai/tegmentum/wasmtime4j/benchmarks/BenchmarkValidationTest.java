@@ -62,7 +62,16 @@ final class BenchmarkValidationTest {
           NativeLoaderComparisonBenchmark.class,
           ConcurrencyBenchmark.class,
           PerformanceOptimizationBenchmark.class,
-          PerformanceProfilingIntegration.class);
+          PerformanceProfilingIntegration.class,
+          MemoryAccessOverheadBenchmark.class,
+          GlobalAccessOverheadBenchmark.class,
+          TableAccessOverheadBenchmark.class,
+          AtomicAccessOverheadBenchmark.class,
+          TypedFuncOverheadBenchmark.class,
+          PanamaFuncBenchmark.class,
+          PanamaGlobalBenchmark.class,
+          PanamaTableBenchmark.class,
+          PanamaStoreFuelBenchmark.class);
 
   static Stream<Class<?>> benchmarkClasses() {
     return BENCHMARK_CLASSES.stream();
@@ -147,11 +156,11 @@ final class BenchmarkValidationTest {
   }
 
   @Test
-  @DisplayName("Validation list contains exactly 19 benchmark classes")
+  @DisplayName("Validation list contains exactly 28 benchmark classes")
   void validationListSize() {
     assertTrue(
-        BENCHMARK_CLASSES.size() == 19,
-        "Expected 19 benchmark classes but found " + BENCHMARK_CLASSES.size());
+        BENCHMARK_CLASSES.size() == 28,
+        "Expected 28 benchmark classes but found " + BENCHMARK_CLASSES.size());
   }
 
   /** Checks whether the given class or any of its superclasses has the {@link State} annotation. */
