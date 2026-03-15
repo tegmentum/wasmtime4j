@@ -172,7 +172,7 @@ jobs:
 
       - name: Install modules locally
         shell: bash
-        run: ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true
+        run: ./mvnw install -B -P skip-native -q -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -pl '!:wasmtime4j-tests-integration,!:wasmtime4j-jni'
 
       - name: Run tests
         shell: bash
