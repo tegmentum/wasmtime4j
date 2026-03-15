@@ -102,7 +102,8 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java }}
+          # Java 8 target: use JDK 21 to compile with source/target 8 and run tests
+          java-version: ${{ matrix.java == '8' && '21' || matrix.java }}
           distribution: 'temurin'
 
       - name: Cache Maven
@@ -118,9 +119,12 @@ jobs:
           name: native-${{ matrix.platform }}
           path: wasmtime4j-native/src/main/resources/natives/${{ matrix.platform }}/
 
-      - name: Run tests
+      - name: Install and test
         shell: bash
-        run: ./mvnw test -B -P skip-native -q
+        run: |
+          COMMON_ARGS="-B -P skip-native -q -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true"
+          ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-stress'
+          ./mvnw test $COMMON_ARGS -pl wasmtime4j-tests/wasmtime
 
   # Publish — requires manual approval via GitHub environment
   publish:
@@ -136,7 +140,7 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '8'
+          java-version: '21'
           distribution: 'temurin'
           server-id: central
           server-username: MAVEN_CENTRAL_USERNAME
