@@ -56,7 +56,13 @@ jobs:
 
       - name: Test updated dependencies
         run: |
-          ./mvnw compile test -B -P skip-native -pl '!wasmtime4j-panama' -q || {
+          COMMON_ARGS="-B -P skip-native -q -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true"
+          ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-stress' || {
+            echo "Build failed with updated dependencies"
+            git checkout -- pom.xml */pom.xml
+            exit 1
+          }
+          ./mvnw test $COMMON_ARGS -pl wasmtime4j-tests/wasmtime || {
             echo "Tests failed with updated dependencies"
             git checkout -- pom.xml */pom.xml
             exit 1

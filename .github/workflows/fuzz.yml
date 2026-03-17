@@ -90,7 +90,10 @@ jobs:
         run: cargo build --release
 
       - name: Build Java
-        run: ./mvnw compile test-compile -q -DskipTests -Dspotbugs.skip=true -Dcheckstyle.skip=true -Djacoco.skip=true -Dspotless.check.skip=true -Dpmd.skip=true -Dmaven.javadoc.skip=true
+        run: |
+          COMMON_ARGS="-B -P skip-native -q -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true"
+          ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-stress'
+          ./mvnw test-compile $COMMON_ARGS -pl wasmtime4j-tests/fuzz
 
       - name: Run Java fuzz tests (60s)
         run: ./mvnw verify -P fuzz -pl wasmtime4j-tests/fuzz -Dfuzz.duration=60
@@ -193,7 +196,10 @@ jobs:
         run: cargo build --release
 
       - name: Build Java
-        run: ./mvnw compile test-compile -q -DskipTests -Dspotbugs.skip=true -Dcheckstyle.skip=true -Djacoco.skip=true -Dspotless.check.skip=true -Dpmd.skip=true -Dmaven.javadoc.skip=true
+        run: |
+          COMMON_ARGS="-B -P skip-native -q -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true"
+          ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-stress'
+          ./mvnw test-compile $COMMON_ARGS -pl wasmtime4j-tests/fuzz
 
       - name: Determine fuzz duration
         id: duration
