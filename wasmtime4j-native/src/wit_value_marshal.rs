@@ -417,8 +417,17 @@ fn deserialize_resource(data: &[u8]) -> Result<Val, WasmtimeError> {
         });
     }
 
-    let type_name_len =
-        i32::from_le_bytes([data[0], data[1], data[2], data[3]]) as usize;
+    let type_name_len_raw =
+        i32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+    if type_name_len_raw < 0 || type_name_len_raw as usize > data.len() {
+        return Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "Invalid resource type name length: {}",
+                type_name_len_raw
+            ),
+        });
+    }
+    let type_name_len = type_name_len_raw as usize;
     let handle_offset = 4 + type_name_len;
 
     if data.len() < handle_offset + 8 {
