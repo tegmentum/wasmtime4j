@@ -96,7 +96,7 @@ jobs:
           ./mvnw test-compile $COMMON_ARGS -pl wasmtime4j-tests/fuzz
 
       - name: Run Java fuzz tests (60s)
-        run: ./mvnw verify -P fuzz -pl wasmtime4j-tests/fuzz -Dfuzz.duration=60
+        run: ./mvnw verify -P fuzz -pl wasmtime4j-tests/fuzz -Dfuzz.duration=60 -DskipQuality -Dcheckstyle.skip=true
 
       - name: Upload crash artifacts
         if: failure()
@@ -211,7 +211,7 @@ jobs:
           fi
 
       - name: Run Java fuzz tests
-        run: ./mvnw verify -P fuzz -pl wasmtime4j-tests/fuzz -Dfuzz.duration=${{ steps.duration.outputs.seconds }}
+        run: ./mvnw verify -P fuzz -pl wasmtime4j-tests/fuzz -Dfuzz.duration=${{ steps.duration.outputs.seconds }} -DskipQuality -Dcheckstyle.skip=true
 
       - name: Upload crash artifacts
         if: failure()
