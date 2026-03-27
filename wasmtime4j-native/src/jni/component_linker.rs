@@ -268,6 +268,42 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 // WASI Config Enable/Set JNI Native Methods
 // ============================================================================
 
+/// Enable experimental WASI P3 on the component linker
+/// JNI binding for JniComponentLinker.nativeEnableWasiP3
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiP3(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        linker.enable_wasi_p3()?;
+        Ok(())
+    });
+}
+
+/// Enable experimental WASI HTTP P3 on the component linker
+/// JNI binding for JniComponentLinker.nativeEnableWasiHttpP3
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiHttpP3(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        linker.enable_wasi_http_p3()?;
+        Ok(())
+    });
+}
+
 /// Enable WASI Config on the component linker
 /// JNI binding for JniComponentLinker.nativeEnableWasiConfig
 #[no_mangle]

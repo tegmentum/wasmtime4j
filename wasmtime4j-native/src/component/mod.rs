@@ -158,6 +158,20 @@ impl wasmtime_wasi_http::p2::WasiHttpView for ComponentStoreData {
     }
 }
 
+// Implement WasiHttpView (p3) for ComponentStoreData to enable WASI HTTP P3 support
+#[cfg(all(feature = "wasi-p3", feature = "wasi-http"))]
+impl wasmtime_wasi_http::p3::WasiHttpView for ComponentStoreData {
+    fn http(&mut self) -> wasmtime_wasi_http::p3::WasiHttpCtxView<'_> {
+        wasmtime_wasi_http::p3::WasiHttpCtxView {
+            ctx: self
+                .wasi_http_ctx
+                .get_or_insert_with(wasmtime_wasi_http::WasiHttpCtx::new),
+            table: &mut self.resource_table,
+            hooks: &mut self.wasi_http_hooks,
+        }
+    }
+}
+
 /// A compiled WebAssembly component
 ///
 /// Represents a WebAssembly component that has been compiled and is ready

@@ -78,6 +78,9 @@ wasi = ["wasmtime-wasi", "rand_core"]
 # WASI HTTP support (using wasmtime-wasi-http crate)
 wasi-http = ["wasmtime-wasi-http", "wasi"]
 
+# WASI P3 support (experimental, unstable — requires wasi + wasi-http)
+wasi-p3 = ["wasi", "wasi-http"]
+
 # WASI-NN support (neural network inference - Tier 3 experimental)
 wasi-nn = ["wasmtime-wasi-nn", "wasi"]
 

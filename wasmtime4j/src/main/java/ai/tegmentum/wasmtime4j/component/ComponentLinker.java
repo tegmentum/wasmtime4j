@@ -347,6 +347,28 @@ public interface ComponentLinker<T> extends Closeable {
   void enableWasiHttp(WasiHttpConfig config) throws WasmException;
 
   /**
+   * Enables experimental WASI P3 support in this component linker.
+   *
+   * <p>WASI P3 is experimental, unstable and incomplete. WASI Preview 2 must be enabled first.
+   * Requires the native library to be compiled with the {@code wasi-p3} feature.
+   *
+   * @throws WasmException if WASI P3 cannot be enabled
+   * @since 1.1.0
+   */
+  void enableWasiP3() throws WasmException;
+
+  /**
+   * Enables experimental WASI HTTP P3 support in this component linker.
+   *
+   * <p>WASI P3 is experimental, unstable and incomplete. Both WASI P3 and WASI HTTP (P2) must be
+   * enabled first. Requires the native library to be compiled with the {@code wasi-p3} feature.
+   *
+   * @throws WasmException if WASI HTTP P3 cannot be enabled
+   * @since 1.1.0
+   */
+  void enableWasiHttpP3() throws WasmException;
+
+  /**
    * Enables WASI Config support in this component linker.
    *
    * <p>Adds the {@code wasi:config/store} interfaces, allowing components to read configuration

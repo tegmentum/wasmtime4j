@@ -615,6 +615,38 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
   }
 
   @Override
+  public void enableWasiP3() throws WasmException {
+    resourceHandle.beginOperation();
+    try {
+      final int result =
+          NATIVE_BINDINGS.callNativeFunction(
+              "wasmtime4j_component_linker_enable_wasi_p3", Integer.class, nativeLinker);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI P3");
+      }
+      LOGGER.fine("Enabled WASI P3 in component linker");
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public void enableWasiHttpP3() throws WasmException {
+    resourceHandle.beginOperation();
+    try {
+      final int result =
+          NATIVE_BINDINGS.callNativeFunction(
+              "wasmtime4j_component_linker_enable_wasi_http_p3", Integer.class, nativeLinker);
+      if (result != 0) {
+        throw PanamaErrorMapper.mapNativeError(result, "Failed to enable WASI HTTP P3");
+      }
+      LOGGER.fine("Enabled WASI HTTP P3 in component linker");
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
   public void enableWasiConfig() throws WasmException {
     resourceHandle.beginOperation();
     try {

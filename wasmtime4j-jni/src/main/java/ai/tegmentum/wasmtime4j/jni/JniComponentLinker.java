@@ -615,6 +615,36 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   }
 
   @Override
+  public void enableWasiP3() throws WasmException {
+    beginOperation();
+    try {
+      nativeEnableWasiP3(nativeHandle);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to enable WASI P3", e);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public void enableWasiHttpP3() throws WasmException {
+    beginOperation();
+    try {
+      nativeEnableWasiHttpP3(nativeHandle);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to enable WASI HTTP P3", e);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
   public void enableWasiConfig() throws WasmException {
     beginOperation();
     try {
@@ -1231,6 +1261,10 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private native void nativeEnableWasiHttp(long linkerHandle);
 
   private native void nativeEnableWasiHttpWithConfig(long linkerHandle, long fieldSizeLimit);
+
+  private native void nativeEnableWasiP3(long linkerHandle);
+
+  private native void nativeEnableWasiHttpP3(long linkerHandle);
 
   private native void nativeEnableWasiConfig(long linkerHandle);
 

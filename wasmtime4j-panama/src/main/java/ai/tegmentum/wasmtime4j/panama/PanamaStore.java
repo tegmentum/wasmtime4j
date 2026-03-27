@@ -2608,8 +2608,7 @@ public final class PanamaStore implements Store {
     resourceHandle.beginOperation();
     try {
       try {
-        final java.lang.invoke.MethodHandle handle =
-            NATIVE_BINDINGS.getStoreDebugInstanceCount();
+        final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreDebugInstanceCount();
         if (handle == null) {
           return 0;
         }
@@ -2628,8 +2627,7 @@ public final class PanamaStore implements Store {
     resourceHandle.beginOperation();
     try {
       try {
-        final java.lang.invoke.MethodHandle handle =
-            NATIVE_BINDINGS.getStoreDebugModuleCount();
+        final java.lang.invoke.MethodHandle handle = NATIVE_BINDINGS.getStoreDebugModuleCount();
         if (handle == null) {
           return 0;
         }

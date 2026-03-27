@@ -680,6 +680,9 @@ pub struct ComponentLinker {
     /// Whether WASI Config is enabled
     #[cfg(feature = "wasi-config")]
     wasi_config_enabled: bool,
+    /// Whether WASI P3 is enabled (experimental)
+    #[cfg(feature = "wasi-p3")]
+    wasi_p3_enabled: bool,
     /// WASI Config variables to inject into store data during instantiation
     #[cfg(feature = "wasi-config")]
     wasi_config_vars: Vec<(String, String)>,
@@ -720,6 +723,8 @@ impl ComponentLinker {
             wasi_config_enabled: false,
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: Vec::new(),
+            #[cfg(feature = "wasi-p3")]
+            wasi_p3_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -753,6 +758,8 @@ impl ComponentLinker {
             wasi_config_enabled: false,
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: Vec::new(),
+            #[cfg(feature = "wasi-p3")]
+            wasi_p3_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -1538,6 +1545,77 @@ impl ComponentLinker {
         log::debug!("WASI Config enabled in component linker");
 
         Ok(())
+    }
+
+    /// Enable experimental WASI P3 support in the component linker.
+    ///
+    /// WASI P3 is experimental, unstable and incomplete. WASI Preview 2 must be
+    /// enabled first.
+    #[cfg(feature = "wasi-p3")]
+    pub fn enable_wasi_p3(&mut self) -> WasmtimeResult<()> {
+        if self.wasi_p3_enabled {
+            return Ok(());
+        }
+        if !self.wasi_p2_enabled {
+            return Err(WasmtimeError::Runtime {
+                message: "WASI Preview 2 must be enabled before WASI P3".to_string(),
+                backtrace: None,
+            });
+        }
+
+        wasmtime_wasi::p3::add_to_linker(&mut self.linker).map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to enable WASI P3: {}", e),
+        })?;
+
+        self.wasi_p3_enabled = true;
+        log::debug!("WASI P3 enabled in component linker");
+        Ok(())
+    }
+
+    /// Enable experimental WASI HTTP P3 support in the component linker.
+    ///
+    /// WASI P3 is experimental, unstable and incomplete. WASI P3 and HTTP P2
+    /// must be enabled first.
+    #[cfg(feature = "wasi-p3")]
+    pub fn enable_wasi_http_p3(&mut self) -> WasmtimeResult<()> {
+        if !self.wasi_p3_enabled {
+            return Err(WasmtimeError::Runtime {
+                message: "WASI P3 must be enabled before HTTP P3".to_string(),
+                backtrace: None,
+            });
+        }
+        if !self.wasi_http_enabled {
+            return Err(WasmtimeError::Runtime {
+                message: "WASI HTTP (P2) must be enabled before HTTP P3".to_string(),
+                backtrace: None,
+            });
+        }
+
+        wasmtime_wasi_http::p3::add_to_linker(&mut self.linker).map_err(|e| {
+            WasmtimeError::Wasi {
+                message: format!("Failed to enable WASI HTTP P3: {}", e),
+            }
+        })?;
+
+        log::debug!("WASI HTTP P3 enabled in component linker");
+        Ok(())
+    }
+
+    #[cfg(not(feature = "wasi-p3"))]
+    pub fn enable_wasi_p3(&mut self) -> WasmtimeResult<()> {
+        Err(WasmtimeError::Runtime {
+            message: "WASI P3 support not compiled in. Enable the 'wasi-p3' feature.".to_string(),
+            backtrace: None,
+        })
+    }
+
+    #[cfg(not(feature = "wasi-p3"))]
+    pub fn enable_wasi_http_p3(&mut self) -> WasmtimeResult<()> {
+        Err(WasmtimeError::Runtime {
+            message: "WASI HTTP P3 support not compiled in. Enable the 'wasi-p3' feature."
+                .to_string(),
+            backtrace: None,
+        })
     }
 
     /// Set configuration variables for WASI Config.
@@ -2399,6 +2477,8 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(
             wasi_config_enabled: false,
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: Vec::new(),
+            #[cfg(feature = "wasi-p3")]
+            wasi_p3_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -3075,6 +3155,44 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_wasi_http_enabled(
         1
     } else {
         0
+    }
+}
+
+/// Enable experimental WASI P3 support
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_p3(
+    linker_ptr: *mut c_void,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    match linker.enable_wasi_p3() {
+        Ok(()) => FFI_SUCCESS,
+        Err(e) => {
+            log::error!("Failed to enable WASI P3: {}", e);
+            FFI_ERROR
+        }
+    }
+}
+
+/// Enable experimental WASI HTTP P3 support
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_component_linker_enable_wasi_http_p3(
+    linker_ptr: *mut c_void,
+) -> c_int {
+    if linker_ptr.is_null() {
+        return FFI_ERROR;
+    }
+
+    let linker = &mut *(linker_ptr as *mut ComponentLinker);
+    match linker.enable_wasi_http_p3() {
+        Ok(()) => FFI_SUCCESS,
+        Err(e) => {
+            log::error!("Failed to enable WASI HTTP P3: {}", e);
+            FFI_ERROR
+        }
     }
 }
 
