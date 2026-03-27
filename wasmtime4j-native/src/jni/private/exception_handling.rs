@@ -80,7 +80,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniWasmRuntime_nativeCre
         .collect();
 
     // Create a FuncType for the tag (tags use params only, empty results)
-    let func_type = FuncType::new(store.engine().inner(), params.iter().cloned(), []);
+    let func_type = match FuncType::try_new(store.engine().inner(), params.iter().cloned(), []) {
+        Ok(ft) => ft,
+        Err(e) => {
+            jni_utils::throw_jni_exception(
+                &mut env,
+                &WasmtimeError::Runtime {
+                    message: format!("Failed to create tag function type: {}", e),
+                    backtrace: None,
+                },
+            );
+            return 0;
+        }
+    };
 
     // Create TagType from FuncType
     let tag_type = TagType::new(func_type);

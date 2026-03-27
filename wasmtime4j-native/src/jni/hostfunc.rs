@@ -280,5 +280,9 @@ pub fn unmarshal_function_type(engine: &wasmtime::Engine, data: &[u8]) -> Wasmti
         return_types.push(val_type);
     }
 
-    Ok(wasmtime::FuncType::new(engine, param_types, return_types))
+    wasmtime::FuncType::try_new(engine, param_types, return_types)
+        .map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to create function type: {}", e),
+            backtrace: None,
+        })
 }

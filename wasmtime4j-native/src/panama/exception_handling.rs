@@ -46,7 +46,10 @@ pub extern "C" fn wasmtime4j_panama_tag_create(
     };
 
     // Create FuncType for the tag (tags use params only, empty results)
-    let func_type = FuncType::new(store.engine().inner(), params.iter().cloned(), []);
+    let func_type = match FuncType::try_new(store.engine().inner(), params.iter().cloned(), []) {
+        Ok(ft) => ft,
+        Err(_) => return std::ptr::null_mut(),
+    };
 
     // Create TagType from FuncType
     let tag_type = TagType::new(func_type);

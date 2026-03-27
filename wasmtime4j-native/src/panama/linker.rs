@@ -181,7 +181,11 @@ pub extern "C" fn wasmtime4j_panama_linker_define_host_function(
         let engine = linker_lock.engine();
 
         // Create function type
-        let func_type = FuncType::new(engine, param_val_types, return_val_types);
+        let func_type = FuncType::try_new(engine, param_val_types, return_val_types)
+            .map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Failed to create function type: {}", e),
+                backtrace: None,
+            })?;
 
         // Drop lock before creating host function
         drop(linker_lock);
@@ -262,7 +266,11 @@ pub extern "C" fn wasmtime4j_panama_linker_define_host_function_unchecked(
         let linker = unsafe { linker_core::get_linker_mut(linker_ptr)? };
         let linker_lock = linker.inner()?;
         let engine = linker_lock.engine();
-        let func_type = FuncType::new(engine, param_val_types, return_val_types);
+        let func_type = FuncType::try_new(engine, param_val_types, return_val_types)
+            .map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Failed to create function type: {}", e),
+                backtrace: None,
+            })?;
         drop(linker_lock);
 
         let callback = PanamaHostFunctionCallbackImpl {
@@ -981,7 +989,11 @@ pub extern "C" fn wasmtime4j_panama_function_reference_create(
 
         // Get wasmtime engine from store to create FuncType
         let wasmtime_engine = store.engine().inner();
-        let func_type = FuncType::new(wasmtime_engine, param_val_types, return_val_types);
+        let func_type = FuncType::try_new(wasmtime_engine, param_val_types, return_val_types)
+            .map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Failed to create function type: {}", e),
+                backtrace: None,
+            })?;
 
         // Create Panama callback wrapper
         let callback = PanamaHostFunctionCallbackImpl {

@@ -651,7 +651,11 @@ impl HostFunctionBuilder {
             message: "Host function callback not set".to_string(),
         })?;
 
-        let func_type = FuncType::new(engine, self.param_types, self.return_types);
+        let func_type = FuncType::try_new(engine, self.param_types, self.return_types)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create function type: {}", e),
+                backtrace: None,
+            })?;
 
         HostFunction::new(self.name, func_type, callback)
     }

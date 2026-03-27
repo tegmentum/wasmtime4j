@@ -1166,7 +1166,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHo
         let engine = linker_lock.engine();
 
         // Create function type
-        let func_type = FuncType::new(engine, param_val_types, return_val_types);
+        let func_type = FuncType::try_new(engine, param_val_types, return_val_types)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create function type: {}", e),
+                backtrace: None,
+            })?;
 
         // Drop lock before creating host function
         drop(linker_lock);
@@ -1269,7 +1273,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniLinker_nativeDefineHo
 
         let linker_lock = linker.inner()?;
         let engine = linker_lock.engine();
-        let func_type = FuncType::new(engine, param_val_types, return_val_types);
+        let func_type = FuncType::try_new(engine, param_val_types, return_val_types)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to create function type: {}", e),
+                backtrace: None,
+            })?;
         drop(linker_lock);
 
         let callback = JniHostFunctionCallback {

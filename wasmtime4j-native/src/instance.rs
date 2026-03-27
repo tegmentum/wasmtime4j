@@ -2316,7 +2316,11 @@ pub mod core {
                 .map(|&code| crate::ffi_common::valtype_conversion::int_to_valtype(code))
                 .collect::<WasmtimeResult<Vec<_>>>()?;
 
-            let func_type = wasmtime::FuncType::new(engine, params, results);
+            let func_type = wasmtime::FuncType::try_new(engine, params, results)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to create function type: {}", e),
+                    backtrace: None,
+                })?;
             Ok(func.matches_ty(&ctx, &func_type))
         })
     }

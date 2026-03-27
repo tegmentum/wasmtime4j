@@ -427,11 +427,14 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
         // Create FuncType using the Store's engine
         let func_type = store.with_context(|ctx| {
             let engine = ctx.engine();
-            Ok(FuncType::new(
+            FuncType::try_new(
                 engine,
                 param_val_types.clone(),
                 return_val_types.clone(),
-            ))
+            ).map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Failed to create function type: {}", e),
+                backtrace: None,
+            })
         })?;
 
         // Create callback implementation that calls the Panama callback
@@ -594,11 +597,14 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function_unchecked(
 
         let func_type = store.with_context(|ctx| {
             let engine = ctx.engine();
-            Ok(FuncType::new(
+            FuncType::try_new(
                 engine,
                 param_val_types.clone(),
                 return_val_types.clone(),
-            ))
+            ).map_err(|e| crate::error::WasmtimeError::Runtime {
+                message: format!("Failed to create function type: {}", e),
+                backtrace: None,
+            })
         })?;
 
         struct StoreHostFunctionCallbackImpl {
