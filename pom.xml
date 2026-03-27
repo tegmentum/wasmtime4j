@@ -938,6 +938,7 @@
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>true</autoPublish>
                             <waitUntil>published</waitUntil>
+                            <waitMaxTime>60</waitMaxTime>
                         </configuration>
                     </plugin>
                 </plugins>
