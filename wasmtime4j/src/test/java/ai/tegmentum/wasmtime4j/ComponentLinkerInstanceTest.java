@@ -513,6 +513,12 @@ class ComponentLinkerInstanceTest {
     public void enableWasiHttp(final ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig config) {}
 
     @Override
+    public void enableWasiP3() {}
+
+    @Override
+    public void enableWasiHttpP3() {}
+
+    @Override
     public void enableWasiConfig() {}
 
     @Override

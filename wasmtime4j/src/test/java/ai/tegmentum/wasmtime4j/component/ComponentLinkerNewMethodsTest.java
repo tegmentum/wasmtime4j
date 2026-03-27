@@ -367,6 +367,12 @@ class ComponentLinkerNewMethodsTest {
     }
 
     @Override
+    public void enableWasiP3() {}
+
+    @Override
+    public void enableWasiHttpP3() {}
+
+    @Override
     public void enableWasiConfig() {}
 
     @Override
