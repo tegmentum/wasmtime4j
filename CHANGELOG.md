@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [43.0.0-1.1.0] - 2026-03-27
+
+### Changed
+
+- **Wasmtime upgraded from 42.0.1 to 43.0.0**
+  - WasiHttpView trait migrated to `p2` submodule with new `http()` method
+  - `debug_frames()` cursor API replaced with `debug_exit_frames()` iterator
+  - `Config::wasm_backtrace` deprecated; migrated to `wasm_backtrace_max_frames`
+  - Serialized modules from 42.0.1 are not compatible with 43.0.0
+
+### Added
+
+- **OperatorCost configuration**: Per-operator fuel cost control (0-255 per operator).
+  Configure via `EngineConfig.operatorCost(OperatorCost.defaults().set("Call", 5))`.
+  Only meaningful when `consumeFuel` is enabled.
+- **Store debug introspection APIs**: `Store.debugInstanceCount()` and
+  `Store.debugModuleCount()` for runtime introspection of active instances and
+  modules when guest debugging is enabled.
+- **Experimental WASI P3 support**: `ComponentLinker.enableWasiP3()` and
+  `enableWasiHttpP3()` behind opt-in `wasi-p3` feature flag. P3 is experimental
+  and unstable per the wasmtime project.
+- **FuncType::try_new**: Graceful OOM handling in host function creation. Allocation
+  failures now propagate as `WasmException` instead of panicking.
+- **ExternRef/FuncRef JNI support**: JNI host function callbacks now handle
+  ExternRef and FuncRef parameter types.
+- **Stack overflow protection**: Default `max_wasm_stack(512 KiB)` prevents
+  recursive Wasm code from causing SIGSEGV.
+
+### Fixed
+
+- Arithmetic overflow in WIT value deserializer when parsing malformed resource data
+- JNI phantom reference cleanup crash (SIGABRT) on JVM shutdown with fake test handles
+- Flaky JniResourceTest threading tests checking `isClosed()` instead of `getCloseCount()`
+- CI pipeline fully green for the first time (17/17 jobs across 4 platforms, 3 Java versions)
+- Multiple CI workflow fixes for Java 8/21/23 compatibility, checkstyle, SpotBugs, spotless
+- CodeQL, fuzz testing, dependency update, and security workflows all passing
+
+### Dependencies
+
+- Wasmtime 43.0.0 (upgraded from 42.0.1)
+- Java 8+ (JNI), Java 23+ (Panama)
+- Rust stable toolchain
+- Maven 3.6+
+
 ## [42.0.1-1.0.0] - 2025-03-08
 
 Initial public release of Wasmtime4j, providing complete Java bindings for
