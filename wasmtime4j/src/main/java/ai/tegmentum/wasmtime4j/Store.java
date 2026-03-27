@@ -906,8 +906,8 @@ public interface Store extends Closeable {
   /**
    * Returns the count of all active instances in the store for debugging.
    *
-   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
-   * Returns 0 if debugging is not enabled.
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}. Returns 0 if debugging
+   * is not enabled.
    *
    * @return the number of active instances
    * @throws WasmException if the count cannot be retrieved
@@ -920,8 +920,8 @@ public interface Store extends Closeable {
   /**
    * Returns the count of all modules held in the store for debugging.
    *
-   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
-   * Returns 0 if debugging is not enabled.
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}. Returns 0 if debugging
+   * is not enabled.
    *
    * @return the number of modules
    * @throws WasmException if the count cannot be retrieved

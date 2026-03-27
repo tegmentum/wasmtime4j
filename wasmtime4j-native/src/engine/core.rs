@@ -35,6 +35,7 @@ pub struct EngineConfigFfi {
     // Core settings
     pub debug_info: Option<bool>,
     pub fuel_enabled: Option<bool>,
+    pub operator_cost: Option<std::collections::HashMap<String, u8>>,
     pub epoch_interruption: Option<bool>,
     pub async_support: Option<bool>,
     pub concurrency_support: Option<bool>,
@@ -233,6 +234,9 @@ fn build_engine_from_config(config: EngineConfigFfi) -> WasmtimeResult<EngineBui
     }
     if let Some(v) = config.fuel_enabled {
         builder = builder.fuel_enabled(v);
+    }
+    if let Some(ref cost_map) = config.operator_cost {
+        builder = builder.operator_cost(cost_map);
     }
     if let Some(v) = config.epoch_interruption {
         builder = builder.epoch_interruption(v);

@@ -34,6 +34,7 @@ public final class EngineConfig {
   private boolean debugInfo = false;
   private boolean guestDebug = false;
   private boolean consumeFuel = false;
+  private OperatorCost operatorCost = null;
   private OptimizationLevel optimizationLevel = OptimizationLevel.SPEED;
   private boolean parallelCompilation = true;
   private boolean craneliftDebugVerifier = false;
@@ -241,6 +242,21 @@ public final class EngineConfig {
    */
   public EngineConfig consumeFuel(final boolean consumeFuel) {
     this.consumeFuel = consumeFuel;
+    return this;
+  }
+
+  /**
+   * Sets per-operator fuel cost configuration.
+   *
+   * <p>This allows fine-grained control over how much fuel each WebAssembly operator consumes. Only
+   * meaningful when {@link #consumeFuel(boolean)} is enabled.
+   *
+   * @param operatorCost the operator cost configuration
+   * @return this EngineConfig for method chaining
+   * @since 1.1.0
+   */
+  public EngineConfig operatorCost(final OperatorCost operatorCost) {
+    this.operatorCost = operatorCost;
     return this;
   }
 
@@ -1329,6 +1345,7 @@ public final class EngineConfig {
     c.debugInfo = this.debugInfo;
     c.guestDebug = this.guestDebug;
     c.consumeFuel = this.consumeFuel;
+    c.operatorCost = this.operatorCost;
     c.optimizationLevel = this.optimizationLevel;
     c.parallelCompilation = this.parallelCompilation;
     c.craneliftDebugVerifier = this.craneliftDebugVerifier;
@@ -3324,6 +3341,13 @@ public final class EngineConfig {
     // Core boolean settings
     first = appendJsonBool(sb, first, "debugInfo", debugInfo);
     first = appendJsonBool(sb, first, "fuelEnabled", consumeFuel);
+    if (operatorCost != null) {
+      if (!first) {
+        sb.append(',');
+      }
+      sb.append("\"operatorCost\":").append(operatorCost.toJson());
+      first = false;
+    }
     if (fuelAsyncYieldInterval > 0) {
       first = appendJsonLong(sb, first, "fuelAsyncYieldInterval", fuelAsyncYieldInterval);
     }

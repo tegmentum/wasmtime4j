@@ -1678,6 +1678,34 @@ impl EngineBuilder {
         self
     }
 
+    /// Configure per-operator fuel costs.
+    ///
+    /// Accepts a map of operator name to cost (0-255). Operators not in the map
+    /// use default costs (1 for most, 0 for control flow). Only meaningful when
+    /// fuel consumption is enabled.
+    pub fn operator_cost(mut self, cost_map: &std::collections::HashMap<String, u8>) -> Self {
+        // OperatorCost is serializable — deserialize from a JSON map to set fields by name.
+        // This leverages serde's field-name matching for the ~500 operator fields.
+        let json = serde_json::to_value(wasmtime::OperatorCost::default())
+            .unwrap_or_else(|_| serde_json::Value::Object(serde_json::Map::new()));
+        let mut map = match json {
+            serde_json::Value::Object(m) => m,
+            _ => serde_json::Map::new(),
+        };
+        for (name, &value) in cost_map {
+            map.insert(name.clone(), serde_json::Value::Number(value.into()));
+        }
+        match serde_json::from_value::<wasmtime::OperatorCost>(serde_json::Value::Object(map)) {
+            Ok(cost) => {
+                self.config.operator_cost(cost);
+            }
+            Err(e) => {
+                log::warn!("Failed to apply operator cost configuration: {}", e);
+            }
+        }
+        self
+    }
+
     /// Configure address map generation for compiled code
     ///
     /// Address maps provide mapping from native code addresses back to WebAssembly
