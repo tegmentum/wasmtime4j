@@ -2055,6 +2055,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeClearCall
 
 // ===== Debugging API =====
 
+/// Get count of all debug instances in the store
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDebugInstanceCount(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        Ok(store.debug_instance_count()? as i32)
+    })
+}
+
+/// Get count of all debug modules in the store
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeDebugModuleCount(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) -> jint {
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        Ok(store.debug_module_count()? as i32)
+    })
+}
+
 /// Check if single-step mode is active
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeIsSingleStep(

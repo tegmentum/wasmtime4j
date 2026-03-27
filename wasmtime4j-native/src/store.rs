@@ -546,6 +546,55 @@ impl Store {
         Ok(Some(frames))
     }
 
+    /// Get the count of all instances in the store (for debugging).
+    ///
+    /// Returns 0 if guest debugging is not enabled.
+    pub fn debug_instance_count(&self) -> WasmtimeResult<usize> {
+        let mut store = self.try_lock_store()?;
+        Ok(store.debug_all_instances().len())
+    }
+
+    /// Get the count of all modules in the store (for debugging).
+    ///
+    /// Returns 0 if guest debugging is not enabled.
+    pub fn debug_module_count(&self) -> WasmtimeResult<usize> {
+        let mut store = self.try_lock_store()?;
+        Ok(store.debug_all_modules().len())
+    }
+
+    /// Get export names for all instances in the store (for debugging).
+    ///
+    /// Returns a list of export name lists, one per instance.
+    /// Returns empty if guest debugging is not enabled.
+    pub fn debug_all_instance_exports(
+        &self,
+    ) -> WasmtimeResult<Vec<Vec<String>>> {
+        let mut store = self.try_lock_store()?;
+        let instances = store.debug_all_instances();
+        let mut result = Vec::with_capacity(instances.len());
+        for instance in &instances {
+            let exports: Vec<String> = instance
+                .exports(&mut *store)
+                .map(|e| e.name().to_string())
+                .collect();
+            result.push(exports);
+        }
+        Ok(result)
+    }
+
+    /// Get names for all modules in the store (for debugging).
+    ///
+    /// Returns a list of module names (may be None for unnamed modules).
+    /// Returns empty if guest debugging is not enabled.
+    pub fn debug_all_module_names(&self) -> WasmtimeResult<Vec<Option<String>>> {
+        let mut store = self.try_lock_store()?;
+        let modules = store.debug_all_modules();
+        Ok(modules
+            .iter()
+            .map(|m| m.name().map(|s| s.to_string()))
+            .collect())
+    }
+
     /// Check if the store has been closed.
     ///
     /// Returns an error if the store is closed, preventing use-after-close bugs.
@@ -3248,6 +3297,38 @@ pub unsafe extern "C" fn wasmtime4j_store_debug_exit_frames(
                 }
                 -1 // debugging not enabled
             }
+            Err(_) => FFI_ERROR,
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get the count of all debug instances in the store.
+///
+/// Returns the instance count on success, -1 if debugging not enabled, -2 on error.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_debug_instance_count(
+    store_ptr: *const c_void,
+) -> c_int {
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => match store.debug_instance_count() {
+            Ok(count) => count as c_int,
+            Err(_) => FFI_ERROR,
+        },
+        Err(_) => FFI_ERROR,
+    }
+}
+
+/// Get the count of all debug modules in the store.
+///
+/// Returns the module count on success, -1 if debugging not enabled, -2 on error.
+#[no_mangle]
+pub unsafe extern "C" fn wasmtime4j_store_debug_module_count(
+    store_ptr: *const c_void,
+) -> c_int {
+    match core::get_store_ref(store_ptr) {
+        Ok(store) => match store.debug_module_count() {
+            Ok(count) => count as c_int,
             Err(_) => FFI_ERROR,
         },
         Err(_) => FFI_ERROR,

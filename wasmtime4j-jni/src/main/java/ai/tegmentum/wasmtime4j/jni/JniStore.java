@@ -1816,6 +1816,30 @@ public final class JniStore extends JniResource implements Store {
   // ===== Debugging API =====
 
   @Override
+  public int debugInstanceCount() {
+    if (!tryBeginOperation()) {
+      return 0;
+    }
+    try {
+      return nativeDebugInstanceCount(getNativeHandle());
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public int debugModuleCount() {
+    if (!tryBeginOperation()) {
+      return 0;
+    }
+    try {
+      return nativeDebugModuleCount(getNativeHandle());
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
   public boolean isSingleStep() {
     if (!tryBeginOperation()) {
       return false;
@@ -1943,6 +1967,10 @@ public final class JniStore extends JniResource implements Store {
   }
 
   // Debugging native methods
+  private static native int nativeDebugInstanceCount(long storeHandle);
+
+  private static native int nativeDebugModuleCount(long storeHandle);
+
   private static native boolean nativeIsSingleStep(long storeHandle);
 
   private static native boolean nativeIsAsync(long storeHandle);

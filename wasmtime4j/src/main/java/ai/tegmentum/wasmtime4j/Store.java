@@ -904,6 +904,34 @@ public interface Store extends Closeable {
   }
 
   /**
+   * Returns the count of all active instances in the store for debugging.
+   *
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
+   * Returns 0 if debugging is not enabled.
+   *
+   * @return the number of active instances
+   * @throws WasmException if the count cannot be retrieved
+   * @since 1.1.0
+   */
+  default int debugInstanceCount() throws WasmException {
+    return 0;
+  }
+
+  /**
+   * Returns the count of all modules held in the store for debugging.
+   *
+   * <p>Requires the engine to be configured with {@code guestDebug(true)}.
+   * Returns 0 if debugging is not enabled.
+   *
+   * @return the number of modules
+   * @throws WasmException if the count cannot be retrieved
+   * @since 1.1.0
+   */
+  default int debugModuleCount() throws WasmException {
+    return 0;
+  }
+
+  /**
    * Creates a breakpoint editor for batch-modifying breakpoints.
    *
    * <p>The returned editor allows adding/removing breakpoints and toggling single-step mode.

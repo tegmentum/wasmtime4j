@@ -300,6 +300,14 @@ public final class NativeStoreBindings extends NativeBindingsBase {
             ValueLayout.ADDRESS)); // out_count (pointer to i32 for frame count)
 
     addFunctionBinding(
+        "wasmtime4j_store_debug_instance_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
+        "wasmtime4j_store_debug_module_count",
+        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)); // store_ptr
+
+    addFunctionBinding(
         "wasmtime4j_panama_store_epoch_deadline_async_yield_and_update",
         FunctionDescriptor.of(
             ValueLayout.JAVA_INT, // return code
@@ -990,6 +998,24 @@ public final class NativeStoreBindings extends NativeBindingsBase {
    */
   public MethodHandle getStoreDebugExitFrames() {
     return resolveHandle("wasmtime4j_store_debug_exit_frames");
+  }
+
+  /**
+   * Gets the method handle for getting debug instance count.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreDebugInstanceCount() {
+    return resolveHandle("wasmtime4j_store_debug_instance_count");
+  }
+
+  /**
+   * Gets the method handle for getting debug module count.
+   *
+   * @return the method handle, or null if not available
+   */
+  public MethodHandle getStoreDebugModuleCount() {
+    return resolveHandle("wasmtime4j_store_debug_module_count");
   }
 
   // ===========================================================================================

@@ -2604,6 +2604,46 @@ public final class PanamaStore implements Store {
   // ===== Debugging API =====
 
   @Override
+  public int debugInstanceCount() throws WasmException {
+    resourceHandle.beginOperation();
+    try {
+      try {
+        final java.lang.invoke.MethodHandle handle =
+            NATIVE_BINDINGS.getStoreDebugInstanceCount();
+        if (handle == null) {
+          return 0;
+        }
+        final int result = (int) handle.invoke(nativeStore);
+        return result >= 0 ? result : 0;
+      } catch (final Throwable e) {
+        return 0;
+      }
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
+  public int debugModuleCount() throws WasmException {
+    resourceHandle.beginOperation();
+    try {
+      try {
+        final java.lang.invoke.MethodHandle handle =
+            NATIVE_BINDINGS.getStoreDebugModuleCount();
+        if (handle == null) {
+          return 0;
+        }
+        final int result = (int) handle.invoke(nativeStore);
+        return result >= 0 ? result : 0;
+      } catch (final Throwable e) {
+        return 0;
+      }
+    } finally {
+      resourceHandle.endOperation();
+    }
+  }
+
+  @Override
   public boolean isSingleStep() {
     resourceHandle.beginOperation();
     try {
