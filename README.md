@@ -6,7 +6,7 @@
 
 Java bindings for the [Wasmtime](https://wasmtime.dev/) WebAssembly runtime. Provides both JNI and Panama Foreign Function Interface implementations with automatic runtime selection based on Java version.
 
-Built against **Wasmtime 42.0.1**.
+Built against **Wasmtime 43.0.0**.
 
 ## Features
 
@@ -26,7 +26,7 @@ Add the dependency:
 <dependency>
     <groupId>ai.tegmentum</groupId>
     <artifactId>wasmtime4j</artifactId>
-    <version>42.0.1-1.0.0</version>
+    <version>43.0.0-1.0.0</version>
 </dependency>
 ```
 ### Basic Usage

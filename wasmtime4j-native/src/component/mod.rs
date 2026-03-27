@@ -91,6 +91,9 @@ pub struct ComponentStoreData {
     /// WASI HTTP context for HTTP request/response support
     #[cfg(feature = "wasi-http")]
     pub wasi_http_ctx: Option<wasmtime_wasi_http::WasiHttpCtx>,
+    /// No-op HTTP hooks (required by WasiHttpView trait in wasmtime 43+)
+    #[cfg(feature = "wasi-http")]
+    pub wasi_http_hooks: [(); 0],
     /// WASI config variables for wasi:config/runtime support
     #[cfg(feature = "wasi-config")]
     pub wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables,
@@ -120,6 +123,8 @@ impl Default for ComponentStoreData {
             wasi_ctx: wasmtime_wasi::WasiCtx::builder().build(),
             #[cfg(feature = "wasi-http")]
             wasi_http_ctx: None,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_hooks: [(); 0],
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
             store_limits: None,
@@ -141,14 +146,15 @@ impl wasmtime_wasi::WasiView for ComponentStoreData {
 
 // Implement WasiHttpView for ComponentStoreData to enable WASI HTTP support
 #[cfg(feature = "wasi-http")]
-impl wasmtime_wasi_http::WasiHttpView for ComponentStoreData {
-    fn ctx(&mut self) -> &mut wasmtime_wasi_http::WasiHttpCtx {
-        self.wasi_http_ctx
-            .get_or_insert_with(wasmtime_wasi_http::WasiHttpCtx::new)
-    }
-
-    fn table(&mut self) -> &mut ResourceTable {
-        &mut self.resource_table
+impl wasmtime_wasi_http::p2::WasiHttpView for ComponentStoreData {
+    fn http(&mut self) -> wasmtime_wasi_http::p2::WasiHttpCtxView<'_> {
+        wasmtime_wasi_http::p2::WasiHttpCtxView {
+            ctx: self
+                .wasi_http_ctx
+                .get_or_insert_with(wasmtime_wasi_http::WasiHttpCtx::new),
+            table: &mut self.resource_table,
+            hooks: &mut self.wasi_http_hooks,
+        }
     }
 }
 

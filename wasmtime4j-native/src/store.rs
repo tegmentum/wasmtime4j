@@ -84,6 +84,9 @@ pub struct StoreData {
     /// Optional WASI HTTP context for HTTP requests
     #[cfg(feature = "wasi-http")]
     pub wasi_http_ctx: Option<WasiHttpCtx>,
+    /// No-op HTTP hooks (required by WasiHttpView trait in wasmtime 43+)
+    #[cfg(feature = "wasi-http")]
+    pub wasi_http_hooks: [(); 0],
     /// Resource table for WASI HTTP (required by WasiHttpView trait)
     #[cfg(feature = "wasi-http")]
     pub resource_table: ResourceTable,
@@ -117,6 +120,8 @@ impl StoreData {
             wasi_fd_manager: None,
             #[cfg(feature = "wasi-http")]
             wasi_http_ctx: None,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_hooks: [(); 0],
             #[cfg(feature = "wasi-http")]
             resource_table: ResourceTable::new(),
             #[cfg(feature = "wasi-nn")]
@@ -219,6 +224,8 @@ impl Clone for StoreData {
             #[cfg(feature = "wasi-http")]
             wasi_http_ctx: None, // WasiHttpCtx is store-specific
             #[cfg(feature = "wasi-http")]
+            wasi_http_hooks: [(); 0],
+            #[cfg(feature = "wasi-http")]
             resource_table: ResourceTable::new(), // Fresh table for cloned store
             #[cfg(feature = "wasi-nn")]
             wasi_nn_ctx: None, // WasiNnCtx is store-specific
@@ -232,13 +239,13 @@ impl Clone for StoreData {
 }
 
 #[cfg(feature = "wasi-http")]
-impl wasmtime_wasi_http::WasiHttpView for StoreData {
-    fn ctx(&mut self) -> &mut WasiHttpCtx {
-        self.wasi_http_ctx.get_or_insert_with(WasiHttpCtx::new)
-    }
-
-    fn table(&mut self) -> &mut ResourceTable {
-        &mut self.resource_table
+impl wasmtime_wasi_http::p2::WasiHttpView for StoreData {
+    fn http(&mut self) -> wasmtime_wasi_http::p2::WasiHttpCtxView<'_> {
+        wasmtime_wasi_http::p2::WasiHttpCtxView {
+            ctx: self.wasi_http_ctx.get_or_insert_with(WasiHttpCtx::new),
+            table: &mut self.resource_table,
+            hooks: &mut self.wasi_http_hooks,
+        }
     }
 }
 
@@ -520,22 +527,20 @@ impl Store {
     /// Each frame is represented as [func_index, pc, num_locals, num_stacks].
     pub fn debug_exit_frames(&self) -> WasmtimeResult<Option<Vec<[i32; 4]>>> {
         let mut store = self.try_lock_store()?;
-        let cursor = store.debug_frames();
-        let Some(mut cursor) = cursor else {
+        let frame_handles: Vec<_> = store.debug_exit_frames().collect();
+        if frame_handles.is_empty() {
             return Ok(None);
-        };
+        }
         let mut frames = Vec::new();
-        loop {
-            cursor.move_to_parent();
-            if cursor.done() {
-                break;
-            }
-            let (func_index, pc) = cursor
-                .wasm_function_index_and_pc()
+        for handle in &frame_handles {
+            let (func_index, pc) = handle
+                .wasm_function_index_and_pc(&mut *store)
+                .ok()
+                .flatten()
                 .map(|(fi, pc)| (fi.as_u32() as i32, pc as i32))
                 .unwrap_or((-1, -1));
-            let num_locals = cursor.num_locals() as i32;
-            let num_stacks = cursor.num_stacks() as i32;
+            let num_locals = handle.num_locals(&mut *store).unwrap_or(0) as i32;
+            let num_stacks = handle.num_stacks(&mut *store).unwrap_or(0) as i32;
             frames.push([func_index, pc, num_locals, num_stacks]);
         }
         Ok(Some(frames))

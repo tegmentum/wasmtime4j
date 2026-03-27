@@ -1487,7 +1487,7 @@ impl ComponentLinker {
 
         // Add WASI HTTP to the linker - use add_only_http_to_linker_sync
         // since WASI P2 is already added
-        wasmtime_wasi_http::add_only_http_to_linker_sync(&mut self.linker).map_err(|e| {
+        wasmtime_wasi_http::p2::add_only_http_to_linker_sync(&mut self.linker).map_err(|e| {
             WasmtimeError::Wasi {
                 message: format!("Failed to enable WASI HTTP: {}", e),
             }
@@ -1617,6 +1617,8 @@ impl ComponentLinker {
                 } else {
                     None
                 },
+                #[cfg(feature = "wasi-http")]
+                wasi_http_hooks: [(); 0],
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits: None,
@@ -1878,6 +1880,8 @@ impl ComponentInstancePreWrapper {
                 } else {
                     None
                 },
+                #[cfg(feature = "wasi-http")]
+                wasi_http_hooks: [(); 0],
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits: None,
@@ -1990,6 +1994,8 @@ impl ComponentInstancePreWrapper {
                 } else {
                     None
                 },
+                #[cfg(feature = "wasi-http")]
+                wasi_http_hooks: [(); 0],
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits,
