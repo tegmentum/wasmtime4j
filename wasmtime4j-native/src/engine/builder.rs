@@ -844,7 +844,8 @@ impl EngineBuilder {
         config.debug_info(true);
 
         // Enable WASM backtraces for better error diagnostics
-        config.wasm_backtrace(true);
+        // wasm_backtrace_max_frames replaces deprecated wasm_backtrace in wasmtime 43+
+        config.wasm_backtrace_max_frames(std::num::NonZero::new(20));
         config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
 
         // Note: Fuel consumption is opt-in via StoreBuilder.fuel_limit()
@@ -1661,7 +1662,7 @@ impl EngineBuilder {
     /// # Arguments
     /// * `enable` - Whether to collect backtraces (default: true)
     pub fn wasm_backtrace(mut self, enable: bool) -> Self {
-        self.config.wasm_backtrace(enable);
+        self.config.wasm_backtrace_max_frames(if enable { std::num::NonZero::new(20) } else { None });
         self.wasm_backtrace = enable;
         self
     }
