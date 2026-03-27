@@ -87,7 +87,10 @@ jobs:
           languages: java
 
       - name: Build for CodeQL
-        run: ./mvnw compile -B -P skip-native -pl '!wasmtime4j-panama' -DskipTests -Dcheckstyle.skip=true -Dspotbugs.skip=true -Dpmd.skip=true -Dspotless.check.skip=true
+        run: |
+          COMMON_ARGS="-B -P skip-native -DskipTests -DskipQuality -Dmaven.javadoc.skip=true -Dgpg.skip=true -Dcheckstyle.skip=true -Dspotless.check.skip=true"
+          ./mvnw install $COMMON_ARGS -Dmaven.test.skip=true -pl '!:wasmtime4j-tests-stress' -q
+          ./mvnw compile $COMMON_ARGS -pl wasmtime4j,wasmtime4j-jni,wasmtime4j-native-loader
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
