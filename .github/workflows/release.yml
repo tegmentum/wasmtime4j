@@ -21,10 +21,12 @@ jobs:
             platform: linux-x86_64
             target: x86_64-unknown-linux-gnu
             lib: libwasmtime4j.so
+            container: almalinux:8
           - os: ubuntu-24.04-arm
             platform: linux-aarch64
             target: aarch64-unknown-linux-gnu
             lib: libwasmtime4j.so
+            container: almalinux:8
           - os: macos-latest
             platform: darwin-aarch64
             target: aarch64-apple-darwin
@@ -34,7 +36,12 @@ jobs:
             target: x86_64-pc-windows-msvc
             lib: wasmtime4j.dll
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container || '' }}
     steps:
+      - name: Install build prerequisites
+        if: matrix.container
+        run: dnf install -y gcc gcc-c++ make curl git perl-core
+
       - uses: actions/checkout@v4
 
       - uses: dtolnay/rust-toolchain@stable
