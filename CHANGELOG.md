@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [43.0.0-1.1.1] - 2026-04-09
+
+### Fixed
+
+- **Linux glibc compatibility**: Linux native libraries are now built on
+  AlmaLinux 8 (glibc 2.28) instead of Ubuntu 24.04 (glibc 2.39), restoring
+  compatibility with RHEL 8, CentOS 8, Rocky Linux 8, Ubuntu 20.04, Debian 10,
+  and other distributions with glibc >= 2.28.
+- Increased Maven Central publish wait timeout from the default to 60 minutes
+  to prevent release failures during artifact validation and propagation.
+
+### Dependencies
+
+- spotbugs-annotations 4.8.6 -> 4.9.8
+- awaitility 4.2.0 -> 4.3.0
+- jackson-databind 2.15.2/2.16.1 -> 2.21.2
+- jackson-datatype-jsr310 2.15.2/2.16.1 -> 2.21.2
+
 ## [43.0.0-1.1.0] - 2026-03-27
 
 ### Changed
