@@ -28,9 +28,16 @@ jobs:
 
       - name: Audit Rust dependencies
         run: |
-          # Ignore RUSTSEC-2026-0049 (rustls-webpki CRL matching bug) — transitive
-          # dependency pinned by wasmtime-wasi-http 43.0.0 via rustls 0.22.4
-          cargo audit --ignore RUSTSEC-2026-0049
+          # All ignored advisories are transitive rustls-webpki 0.102.8 issues
+          # pinned by wasmtime-wasi-http 43.0.1 via rustls 0.22.4. Fix requires
+          # an upstream wasmtime release bumping rustls.
+          # RUSTSEC-2026-0049: rustls-webpki CRL matching bug
+          # RUSTSEC-2026-0098: name constraints accepted for URI names
+          # RUSTSEC-2026-0099: name constraints accepted for wildcard names
+          cargo audit \
+            --ignore RUSTSEC-2026-0049 \
+            --ignore RUSTSEC-2026-0098 \
+            --ignore RUSTSEC-2026-0099
 
   # Maven dependency vulnerability check
   dependency-check:
