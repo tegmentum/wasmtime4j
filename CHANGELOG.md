@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [43.0.1-1.1.1] - 2026-04-17
+
+### Security
+
+- **Wasmtime upgraded from 43.0.0 to 43.0.1** — upstream security patch
+  release addressing multiple advisories. Users are encouraged to upgrade.
+  Affected areas include:
+  - Sandbox escape on aarch64 Cranelift via miscompiled guest heap access
+    ([GHSA-jhxm-h53p-jm7w](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-jhxm-h53p-jm7w))
+  - Sandbox-escaping memory access with the Winch compiler backend
+    ([GHSA-xx5w-cvp6-jv83](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-xx5w-cvp6-jv83))
+  - Out-of-bounds write / crash in component model string transcoding
+    ([GHSA-394w-hwhg-8vgm](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-394w-hwhg-8vgm))
+  - Host panic on Winch `table.fill`
+    ([GHSA-q49f-xg75-m9xw](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-q49f-xg75-m9xw))
+  - Segfault / out-of-sandbox load with `f64x2.splat` on x86-64
+    ([GHSA-qqfj-4vcm-26hv](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-qqfj-4vcm-26hv))
+  - Improperly masked `table.grow` return value with Winch
+    ([GHSA-f984-pcp8-v2p7](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-f984-pcp8-v2p7))
+  - Panic transcoding misaligned utf-16 strings
+    ([GHSA-jxhv-7h78-9775](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-jxhv-7h78-9775))
+  - Panic lifting `flags` component value
+    ([GHSA-m758-wjhj-p3jq](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-m758-wjhj-p3jq))
+  - Heap OOB read in UTF-16 to latin1+utf16 transcoding
+    ([GHSA-hx6p-xpx3-jvvv](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-hx6p-xpx3-jvvv))
+  - Use-after-free after cloning `wasmtime::Linker`
+    ([GHSA-hfr4-7c6c-48w2](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-hfr4-7c6c-48w2))
+  - Data leakage between pooling allocator instances
+    ([GHSA-6wgr-89rj-399p](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-6wgr-89rj-399p))
+  - Host data leakage with 64-bit tables and Winch
+    ([GHSA-m9w2-8782-2946](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-m9w2-8782-2946))
+
 ## [43.0.0-1.1.1] - 2026-04-09
 
 ### Fixed

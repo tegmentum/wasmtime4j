@@ -76,7 +76,7 @@
 
         <!-- Native build properties -->
         <native.library.name>wasmtime4j</native.library.name>
-        <wasmtime.version>43.0.0</wasmtime.version>
+        <wasmtime.version>43.0.1</wasmtime.version>
         <rust.version>1.90.0</rust.version>
         <cargo.version>1.90.0</cargo.version>
         
