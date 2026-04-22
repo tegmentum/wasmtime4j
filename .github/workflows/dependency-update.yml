@@ -33,12 +33,36 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
       - name: Cache Maven
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository
           key: m2-deps-${{ hashFiles('**/pom.xml') }}
           restore-keys: m2-deps-
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            wasmtime4j-native/.cargo-target
+          key: cargo-deps-${{ hashFiles('**/Cargo.toml', '**/Cargo.lock') }}
+          restore-keys: cargo-deps-
+
+      - name: Build and stage native library
+        shell: bash
+        env:
+          CARGO_TARGET_DIR: wasmtime4j-native/.cargo-target
+        run: |
+          cargo build --release --target x86_64-unknown-linux-gnu
+          mkdir -p wasmtime4j-native/src/main/resources/natives/linux-x86_64
+          cp wasmtime4j-native/.cargo-target/x86_64-unknown-linux-gnu/release/libwasmtime4j.so \
+             wasmtime4j-native/src/main/resources/natives/linux-x86_64/libwasmtime4j.so
 
       - name: Check for updates
         run: |
