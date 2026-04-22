@@ -537,7 +537,7 @@ impl Store {
                 .wasm_function_index_and_pc(&mut *store)
                 .ok()
                 .flatten()
-                .map(|(fi, pc)| (fi.as_u32() as i32, pc as i32))
+                .map(|(fi, pc)| (fi.as_u32() as i32, pc.raw() as i32))
                 .unwrap_or((-1, -1));
             let num_locals = handle.num_locals(&mut *store).unwrap_or(0) as i32;
             let num_stacks = handle.num_stacks(&mut *store).unwrap_or(0) as i32;
@@ -3201,7 +3201,7 @@ pub unsafe extern "C" fn wasmtime4j_store_add_breakpoint(
         Ok(store) => {
             let wasm_module = module.inner().clone();
             match store.edit_breakpoints(|edit| {
-                let _ = edit.add_breakpoint(&wasm_module, pc);
+                let _ = edit.add_breakpoint(&wasm_module, wasmtime::ModulePC::new(pc));
             }) {
                 Ok(true) => FFI_SUCCESS,
                 Ok(false) => 1,
@@ -3241,7 +3241,7 @@ pub unsafe extern "C" fn wasmtime4j_store_remove_breakpoint(
         Ok(store) => {
             let wasm_module = module.inner().clone();
             match store.edit_breakpoints(|edit| {
-                let _ = edit.remove_breakpoint(&wasm_module, pc);
+                let _ = edit.remove_breakpoint(&wasm_module, wasmtime::ModulePC::new(pc));
             }) {
                 Ok(true) => FFI_SUCCESS,
                 Ok(false) => 1,

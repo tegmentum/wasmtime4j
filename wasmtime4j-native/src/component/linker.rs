@@ -238,6 +238,12 @@ pub fn val_to_component_value(val: &Val) -> ComponentValue {
             let handle = registry.store(val.clone());
             ComponentValue::ErrorContext(handle)
         }
+        Val::Map(_) => {
+            // map<K, V> is an experimental wasmtime 44 component model feature
+            // that is not enabled by wasmtime4j. Reaching this branch implies
+            // a mismatched build configuration.
+            panic!("component model map<K, V> values are not supported")
+        }
     }
 }
 

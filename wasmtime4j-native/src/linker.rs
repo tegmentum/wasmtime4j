@@ -1512,7 +1512,7 @@ pub mod core {
     ) -> WasmtimeResult<Option<wasmtime::Extern>> {
         let linker_guard = linker.inner()?;
         let mut store_guard = store.try_lock_store()?;
-        Ok(linker_guard.get(&mut *store_guard, module_name, name))
+        Ok(linker_guard.get(&mut *store_guard, module_name, name).ok())
     }
 
     /// Core function to define an extern with a module and item name.

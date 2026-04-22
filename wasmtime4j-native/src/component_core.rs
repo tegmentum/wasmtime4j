@@ -895,6 +895,10 @@ impl EnhancedComponentEngine {
                 // Error context type
                 ComponentValueType::Type("error-context".to_string())
             }
+            Type::Map(_) => {
+                // Experimental wasmtime 44 map<K, V> — not enabled by wasmtime4j
+                ComponentValueType::Type("map".to_string())
+            }
         }
     }
 
@@ -1298,6 +1302,10 @@ pub mod concurrent_call_json {
                             .to_string(),
                     })
                 }
+                Val::Map(_) => Err(WasmtimeError::InvalidParameter {
+                    message: "map<K, V> values cannot be serialized for concurrent calls"
+                        .to_string(),
+                }),
             }
         }
 

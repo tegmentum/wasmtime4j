@@ -2140,7 +2140,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeAddBreakp
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
         let wasm_module = module.inner().clone();
         match store.edit_breakpoints(|edit| {
-            let _ = edit.add_breakpoint(&wasm_module, pc as u32);
+            let _ = edit.add_breakpoint(&wasm_module, wasmtime::ModulePC::new(pc as u32));
         }) {
             Ok(true) => Ok(0),
             Ok(false) => Ok(1),
@@ -2163,7 +2163,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeRemoveBre
         let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
         let wasm_module = module.inner().clone();
         match store.edit_breakpoints(|edit| {
-            let _ = edit.remove_breakpoint(&wasm_module, pc as u32);
+            let _ = edit.remove_breakpoint(&wasm_module, wasmtime::ModulePC::new(pc as u32));
         }) {
             Ok(true) => Ok(0),
             Ok(false) => Ok(1),

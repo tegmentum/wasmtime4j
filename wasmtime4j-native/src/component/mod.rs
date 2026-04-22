@@ -1688,6 +1688,13 @@ pub mod core {
                 json.push('}');
             }
             Type::ErrorContext => json.push_str("{\"type\":\"error_context\"}"),
+            Type::Map(map_ty) => {
+                json.push_str("{\"type\":\"map\",\"key\":");
+                type_to_json(json, &map_ty.key());
+                json.push_str(",\"value\":");
+                type_to_json(json, &map_ty.value());
+                json.push('}');
+            }
         }
     }
 

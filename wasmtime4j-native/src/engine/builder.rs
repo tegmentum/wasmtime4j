@@ -1430,7 +1430,8 @@ impl EngineBuilder {
     /// # Arguments
     /// * `enable` - Whether to enable PCC validation
     pub fn cranelift_pcc(mut self, enable: bool) -> Self {
-        self.config.cranelift_pcc(enable);
+        // Wasmtime 44.0.0 removed Config::cranelift_pcc. The setting is retained
+        // on our side for API compatibility but no longer affects the engine.
         self.cranelift_pcc = enable;
         self
     }

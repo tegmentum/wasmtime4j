@@ -183,7 +183,7 @@ pub mod core {
                 .wasm_function_index_and_pc(caller.as_context_mut())
                 .ok()
                 .flatten()
-                .map(|(fi, pc)| (fi.as_u32() as i32, pc as i32))
+                .map(|(fi, pc)| (fi.as_u32() as i32, pc.raw() as i32))
                 .unwrap_or((-1, -1));
             let num_locals = handle
                 .num_locals(caller.as_context_mut())

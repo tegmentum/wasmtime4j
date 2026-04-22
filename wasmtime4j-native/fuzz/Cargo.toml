@@ -19,7 +19,7 @@ features = ["jni-bindings", "panama-ffi", "wasi"]
 
 # Additional dependencies for fuzzing
 [dependencies.wasmtime]
-version = "43.0.1"
+version = "44.0.0"
 features = ["component-model"]
 
 [dependencies.anyhow]

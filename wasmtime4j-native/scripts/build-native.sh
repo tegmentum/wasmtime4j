@@ -11,7 +11,7 @@ NATIVE_DIR="$PROJECT_ROOT/src/main/resources/natives"
 
 # Configuration - read version from single source of truth
 WASMTIME_VERSION=$(grep 'wasmtime.version=' "$PROJECT_ROOT/../../wasmtime-version.properties" | cut -d= -f2)
-RUST_VERSION="1.90.0"
+RUST_VERSION="1.92.0"
 
 # Colors for output
 RED='\033[0;31m'
