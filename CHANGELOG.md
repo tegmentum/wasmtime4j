@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [44.0.0-1.1.2] - 2026-04-22
+
+### Changed
+
+- **Wasmtime upgraded from 43.0.1 to 44.0.0.** Rust MSRV is now 1.92.0
+  to match the new wasmtime requirement.
+- `wasmtime::ModulePC` is now a newtype instead of a raw `u32`. All
+  internal debug-frame and breakpoint call sites were updated to use
+  `ModulePC::new(pc)` / `pc.raw()`. No Java-facing API change.
+- `Linker::get` now returns `Result<Extern>` upstream. The wrapper maps
+  the "missing definition" error back to `None` so the Java
+  `Optional<Extern>` contract is preserved.
+- `EngineConfig.craneliftPcc(boolean)` is retained for source
+  compatibility but is now a no-op — wasmtime 44 removed
+  `Config::cranelift_pcc` and PCC validation is no longer available
+  from the engine.
+
+### Added
+
+- **Component model `map<K, V>` type handling**: wasmtime 44 added
+  experimental `Type::Map` / `Val::Map` variants. Reported as
+  `ComponentValueType::Type("map")` via the introspection surface;
+  serialized as an unsupported-parameter error by the concurrent-call
+  JSON codec. Wasmtime4j does not currently enable this experimental
+  feature; handlers exist to keep match expressions exhaustive.
+
+### Fixed
+
+- **`memory.grow` behavior on i32 custom-page-size-1 memories**:
+  wasmtime 44 now traps instead of returning -1 when such a memory
+  would grow past 4 GiB (upstream FIXME tied to
+  [WebAssembly/custom-page-sizes#45](https://github.com/WebAssembly/custom-page-sizes/issues/45)).
+  The generated `MemoryCombosTest` assertions for `grow_m3`, `grow_m4`,
+  and `grow_m8` with delta -1 were updated to expect the trap.
+- **`Dependency Updates` workflow**: now builds the native library for
+  `linux-x86_64` before running tests, so bumped Maven dependencies are
+  actually exercised against the JNI runtime. Previously the workflow
+  silently discarded dependency bumps for 10+ consecutive weekly runs
+  because `JniWasmRuntime` could not load the missing native library.
+
 ## [43.0.1-1.1.1] - 2026-04-17
 
 ### Security
