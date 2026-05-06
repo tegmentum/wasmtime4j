@@ -1,6 +1,6 @@
 [package]
 name = "wasmtime4j-native"
-version = "44.0.1-1.1.2"
+version = "44.0.1-1.1.3"
 edition = "2021"
 description = "Native Rust library providing unified Wasmtime bindings for both JNI and Panama FFI"
 license = "Apache-2.0"

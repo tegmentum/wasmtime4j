@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [44.0.1-1.1.3] - 2026-05-05
+
+### Security
+
+- **Wasmtime upgraded from 44.0.0 to 44.0.1** — upstream security patch
+  release. Users are encouraged to upgrade.
+  - Panic when allocating a table exceeding the size of the host's
+    address space
+    ([GHSA-p8xm-42r7-89xg](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-p8xm-42r7-89xg))
+
+No wasmtime4j source changes were required for this upgrade. All 794
+wasmtime behavior tests pass (6 pre-existing skips).
+
 ## [44.0.0-1.1.2] - 2026-04-22
 
 ### Changed
