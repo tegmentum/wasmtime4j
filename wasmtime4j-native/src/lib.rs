@@ -232,7 +232,7 @@ pub use shared_ffi::{
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Wasmtime version this library is built against
-pub const WASMTIME_VERSION: &str = "44.0.0";
+pub const WASMTIME_VERSION: &str = "44.0.1";
 
 /// Initialize the native library
 ///

@@ -7,12 +7,12 @@ resolver = "2"
 # Update wasmtime version here - it propagates to all crates
 [workspace.dependencies]
 # Wasmtime WebAssembly runtime - single source of truth for version
-wasmtime = { version = "44.0.0", features = ["component-model", "component-model-async", "component-model-async-bytes", "async", "call-hook", "coredump", "gc", "cache", "debug", "incremental-cache", "wave"] }
-wasmtime-wasi = { version = "44.0.0", features = ["p3"] }
-wasmtime-wasi-http = { version = "44.0.0", features = ["p3"] }
-wasmtime-wasi-nn = { version = "44.0.0" }
-wasmtime-wasi-config = { version = "44.0.0" }
-wasmtime-wast = { version = "44.0.0", features = ["component-model", "component-model-async"] }
+wasmtime = { version = "44.0.1", features = ["component-model", "component-model-async", "component-model-async-bytes", "async", "call-hook", "coredump", "gc", "cache", "debug", "incremental-cache", "wave"] }
+wasmtime-wasi = { version = "44.0.1", features = ["p3"] }
+wasmtime-wasi-http = { version = "44.0.1", features = ["p3"] }
+wasmtime-wasi-nn = { version = "44.0.1" }
+wasmtime-wasi-config = { version = "44.0.1" }
+wasmtime-wast = { version = "44.0.1", features = ["component-model", "component-model-async"] }
 
 # WebAssembly text format parser
 wat = "1.0"
