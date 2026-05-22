@@ -328,15 +328,8 @@ impl EnhancedComponentEngine {
 
         match call_result {
             Ok(_) => {
-                // Call succeeded, now do post_return cleanup
-                func.post_return(&mut instance_info.store)
-                    .map_err(|e| WasmtimeError::Runtime {
-                        message: format!(
-                            "Failed to complete post-return cleanup for '{}': {}",
-                            function_name, e
-                        ),
-                        backtrace: None,
-                    })?;
+                // wasmtime 45 performs post-return cleanup automatically; the
+                // explicit `Func::post_return` call is no longer required.
             }
             Err(e) => {
                 return Err(WasmtimeError::Runtime {

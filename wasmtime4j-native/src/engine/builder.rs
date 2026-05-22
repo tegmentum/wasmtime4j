@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, RwLock};
 
-use wasmtime::{Config, Engine as WasmtimeEngine, OptLevel, RegallocAlgorithm, Strategy};
+use wasmtime::{Config, Engine as WasmtimeEngine, Inlining, OptLevel, RegallocAlgorithm, Strategy};
 
 use super::{safe_wasmtime_config, Engine};
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -1100,7 +1100,7 @@ impl EngineBuilder {
 
     /// Configure WebAssembly component model async builtins support
     pub fn wasm_component_model_async_builtins(mut self, enable: bool) -> Self {
-        self.config.wasm_component_model_async_builtins(enable);
+        self.config.wasm_component_model_more_async_builtins(enable);
         self.wasm_component_model_async_builtins = enable;
         self
     }
@@ -1794,7 +1794,11 @@ impl EngineBuilder {
     /// # Arguments
     /// * `enable` - Whether to enable compiler inlining
     pub fn compiler_inlining(mut self, enable: bool) -> Self {
-        self.config.compiler_inlining(enable);
+        // wasmtime 45 replaced the boolean toggle with an `Inlining` enum.
+        // Preserve the previous boolean contract: enabled maps to full inlining,
+        // disabled maps to no inlining.
+        let inlining = if enable { Inlining::Yes } else { Inlining::No };
+        self.config.compiler_inlining(inlining);
         self.compiler_inlining = enable;
         self
     }

@@ -455,26 +455,28 @@ pub struct CallbackRng {
 // SAFETY: The function pointers are thread-safe as they synchronously call back to Java.
 unsafe impl Send for CallbackRng {}
 
+// rand_core 0.10 (pulled in transitively by wasmtime-wasi 45) inverted the trait
+// hierarchy: `Rng` is now the core trait, auto-implemented for any infallible
+// `TryRng`. Implementing `TryRng<Error = Infallible>` therefore yields `Rng`,
+// which is what `WasiCtxBuilder::secure_random`/`insecure_random` now require.
 #[cfg(feature = "wasi")]
-impl rand_core::RngCore for CallbackRng {
-    fn next_u32(&mut self) -> u32 {
+impl rand_core::TryRng for CallbackRng {
+    type Error = core::convert::Infallible;
+
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
         let mut buf = [0u8; 4];
-        self.fill_bytes(&mut buf);
-        u32::from_le_bytes(buf)
+        self.try_fill_bytes(&mut buf)?;
+        Ok(u32::from_le_bytes(buf))
     }
 
-    fn next_u64(&mut self) -> u64 {
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
         let mut buf = [0u8; 8];
-        self.fill_bytes(&mut buf);
-        u64::from_le_bytes(buf)
+        self.try_fill_bytes(&mut buf)?;
+        Ok(u64::from_le_bytes(buf))
     }
 
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
         (self.fill_bytes_fn)(self.callback_id, dest.as_mut_ptr(), dest.len());
-    }
-
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        self.fill_bytes(dest);
         Ok(())
     }
 }

@@ -201,10 +201,9 @@ public final class MemoryCombosTest extends DualRuntimeTest {
       runner.assertReturn("size_m3", new WasmValue[] {WasmValue.i32(2)});
 
       // ( assert_return ( invoke "grow_m3" ( i32.const -1)) ( i32.const -1))
-      // Wasmtime 44 traps instead of returning -1 for i32 custom-page-size-1 memories
-      // that would grow past 4 GiB (see wasmtime-environ allow_growth_to). Pending
-      // resolution of WebAssembly/custom-page-sizes#45.
-      runner.assertTrap("grow_m3", "disallowing growth", WasmValue.i32(-1));
+      // Wasmtime 45 resolved WebAssembly/custom-page-sizes#45: disallowed growth on
+      // i32 custom-page-size-1 memories now returns -1 instead of trapping (44 trapped).
+      runner.assertReturn("grow_m3", new WasmValue[] {WasmValue.i32(-1)}, WasmValue.i32(-1));
 
       // ( assert_return ( invoke "load_m3" ( i32.const 1)) ( i32.const 0))
       runner.assertReturn("load_m3", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(1));
@@ -258,8 +257,8 @@ public final class MemoryCombosTest extends DualRuntimeTest {
       runner.assertReturn("size_m4", new WasmValue[] {WasmValue.i32(2)});
 
       // ( assert_return ( invoke "grow_m4" ( i32.const -1)) ( i32.const -1))
-      // See note above on grow_m3: wasmtime 44 traps here.
-      runner.assertTrap("grow_m4", "disallowing growth", WasmValue.i32(-1));
+      // See note above on grow_m3: wasmtime 45 returns -1 here instead of trapping.
+      runner.assertReturn("grow_m4", new WasmValue[] {WasmValue.i32(-1)}, WasmValue.i32(-1));
 
       // ( assert_return ( invoke "load_m4" ( i32.const 1)) ( i32.const 0))
       runner.assertReturn("load_m4", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(1));
@@ -367,8 +366,8 @@ public final class MemoryCombosTest extends DualRuntimeTest {
       runner.assertReturn("size_m8", new WasmValue[] {WasmValue.i32(2)});
 
       // ( assert_return ( invoke "grow_m8" ( i32.const -1)) ( i32.const -1))
-      // See note above on grow_m3: wasmtime 44 traps here.
-      runner.assertTrap("grow_m8", "disallowing growth", WasmValue.i32(-1));
+      // See note above on grow_m3: wasmtime 45 returns -1 here instead of trapping.
+      runner.assertReturn("grow_m8", new WasmValue[] {WasmValue.i32(-1)}, WasmValue.i32(-1));
 
       // ( assert_return ( invoke "load_m8" ( i32.const 1)) ( i32.const 0))
       runner.assertReturn("load_m8", new WasmValue[] {WasmValue.i32(0)}, WasmValue.i32(1));

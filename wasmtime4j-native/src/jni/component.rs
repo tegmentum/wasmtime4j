@@ -467,12 +467,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
                 backtrace: None,
             })?;
 
-        let handle_ref = &mut *handle;
-        func.post_return(&mut handle_ref.store)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Post-return failed: {}", e),
-                backtrace: None,
-            })?;
+        // wasmtime 45 performs post-return cleanup automatically; the explicit
+        // `Func::post_return` call is no longer required.
 
         // Handle void return (no results)
         if results.is_empty() {
