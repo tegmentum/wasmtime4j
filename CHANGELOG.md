@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [45.0.0-1.1.4] - 2026-05-22
+
+### Changed
+
+- **Wasmtime upgraded from 44.0.1 to 45.0.0.** Rust MSRV is now 1.93.0 to
+  match the new wasmtime requirement. The `wast` (248.0.0), `wasmparser`
+  (0.248), and `rand_core` (0.10) dependencies were bumped accordingly.
+- `Config::wasm_component_model_async_builtins` was renamed upstream to
+  `wasm_component_model_more_async_builtins`; the engine builder now calls
+  the new name. No Java-facing API change.
+- `Config::compiler_inlining` now takes an `Inlining` enum instead of a
+  `bool`. The wrapper maps the existing boolean to `Inlining::Yes` /
+  `Inlining::No`, preserving the previous contract.
+- `CallbackRng` now implements `rand_core::TryRng<Error = Infallible>`
+  instead of the old `RngCore`. rand_core 0.10 (pulled in by wasmtime-wasi
+  45 via rand 0.10) inverted its trait hierarchy so that `Rng` is the core
+  trait — this is what `WasiCtxBuilder::secure_random` / `insecure_random`
+  now require.
+
+### Removed
+
+- Removed the explicit `component::Func::post_return` calls. wasmtime 45
+  performs post-return cleanup automatically and the method is now a
+  deprecated no-op.
+
+### Fixed
+
+- **`memory.grow` behavior on i32 custom-page-size-1 memories**: wasmtime
+  45 resolved
+  [WebAssembly/custom-page-sizes#45](https://github.com/WebAssembly/custom-page-sizes/issues/45)
+  so that growth past 4 GiB returns -1 again instead of trapping (the trap
+  added in wasmtime 44 was a conservative stopgap). The generated
+  `MemoryCombosTest` assertions for `grow_m3`, `grow_m4`, and `grow_m8`
+  with delta -1 were reverted to expect -1.
+- **Hardened native pointer validation**: the `validate_ptr_not_null!` and
+  `validate_ptr_not_null_c!` macros now reject obviously-invalid pointers
+  (addresses below the first page, or carrying the fake/test-pointer magic
+  prefix) in addition to null, reusing the same `is_fake_pointer` heuristic
+  as `safe_destroy`. A bogus native handle such as `1` previously passed
+  the null check and was then dereferenced, causing a SIGSEGV that aborted
+  the JVM; it now produces a recoverable `IllegalArgumentException`.
+
+All 794 wasmtime behavior tests pass (6 pre-existing skips).
+
 ## [44.0.1-1.1.3] - 2026-05-05
 
 ### Security

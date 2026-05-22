@@ -26,7 +26,7 @@ Add the dependency:
 <dependency>
     <groupId>ai.tegmentum</groupId>
     <artifactId>wasmtime4j</artifactId>
-    <version>45.0.0-1.1.3</version>
+    <version>45.0.0-1.1.4</version>
 </dependency>
 ```
 ### Basic Usage
