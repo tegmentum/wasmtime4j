@@ -831,10 +831,15 @@ macro_rules! validate_slice_bounds {
     };
 }
 
-/// Validates that a C-style pointer is not null and returns error if it is
+/// Validates that a pointer is safe to dereference and returns an error if not
 ///
-/// This macro performs defensive null pointer checking for FFI operations
-/// to prevent segmentation faults and undefined behavior.
+/// This macro performs defensive validation for FFI operations to prevent
+/// segmentation faults and undefined behavior. It rejects null pointers and,
+/// in addition, obviously-invalid pointers — addresses below the first page or
+/// carrying the fake/test-pointer magic prefix — using the same heuristic as
+/// `safe_destroy` (see [`crate::ffi_common::resource_destruction::is_fake_pointer`]).
+/// This turns bogus handles such as `1` (commonly passed by unit tests) into a
+/// recoverable error instead of a dereference into unmapped memory.
 ///
 /// # Arguments
 ///
@@ -843,37 +848,54 @@ macro_rules! validate_slice_bounds {
 ///
 /// # Returns
 ///
-/// Returns `WasmtimeError::InvalidParameter` if pointer is null
+/// Returns `WasmtimeError::InvalidParameter` if the pointer is null or appears
+/// to be a fake/test pointer.
 #[macro_export]
 macro_rules! validate_ptr_not_null {
-    ($ptr:expr, $name:expr) => {
-        if $ptr.is_null() {
+    ($ptr:expr, $name:expr) => {{
+        let __validated_ptr = $ptr;
+        if __validated_ptr.is_null() {
             return Err(WasmtimeError::InvalidParameter {
                 message: format!("{} pointer cannot be null", $name),
             });
         }
-    };
+        if $crate::ffi_common::resource_destruction::is_fake_pointer(__validated_ptr as usize) {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("{} pointer is not a valid native handle", $name),
+            });
+        }
+    }};
 }
 
-/// Validates that a pointer is not null for C functions returning c_int
+/// Validates that a pointer is safe to dereference for C functions returning c_int
 ///
 /// This macro performs defensive validation for C functions that return
-/// error codes as c_int instead of Result types.
+/// error codes as c_int instead of Result types. Like [`validate_ptr_not_null`]
+/// it rejects null pointers as well as obviously-invalid (fake/test) pointers.
 ///
 /// # Returns
 ///
-/// Returns error code as i32 if pointer is null
+/// Returns error code as i32 if the pointer is null or appears to be a
+/// fake/test pointer.
 #[macro_export]
 macro_rules! validate_ptr_not_null_c {
-    ($ptr:expr, $name:expr) => {
-        if $ptr.is_null() {
+    ($ptr:expr, $name:expr) => {{
+        let __validated_ptr = $ptr;
+        if __validated_ptr.is_null() {
             log::error!("{} pointer cannot be null", $name);
             let error = WasmtimeError::InvalidParameter {
                 message: format!("{} pointer cannot be null", $name),
             };
             return error.to_error_code() as i32;
         }
-    };
+        if $crate::ffi_common::resource_destruction::is_fake_pointer(__validated_ptr as usize) {
+            log::error!("{} pointer is not a valid native handle", $name);
+            let error = WasmtimeError::InvalidParameter {
+                message: format!("{} pointer is not a valid native handle", $name),
+            };
+            return error.to_error_code() as i32;
+        }
+    }};
 }
 
 /// Validates that an array/slice is not empty

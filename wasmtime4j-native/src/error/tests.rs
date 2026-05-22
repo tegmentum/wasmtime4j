@@ -725,3 +725,43 @@ fn test_linker_error() {
         ErrorCode::ImportExportError
     ));
 }
+
+// =========================================================================
+// Pointer validation macro hardening (validate_ptr_not_null!)
+// =========================================================================
+
+/// Wraps the `validate_ptr_not_null!` macro in a function so its early
+/// `return Err(..)` can be observed without dereferencing the pointer.
+fn validate_ptr(ptr: *const std::os::raw::c_void) -> WasmtimeResult<()> {
+    use crate::validate_ptr_not_null;
+    validate_ptr_not_null!(ptr, "test resource");
+    Ok(())
+}
+
+#[test]
+fn test_validate_ptr_rejects_null() {
+    let err = validate_ptr(std::ptr::null()).unwrap_err();
+    assert!(matches!(err, WasmtimeError::InvalidParameter { .. }));
+    assert!(err.to_c_string().to_str().unwrap().contains("cannot be null"));
+}
+
+#[test]
+fn test_validate_ptr_rejects_fake_handles() {
+    // Bogus handles such as `1` are commonly passed by unit tests. These must
+    // be rejected with an error instead of dereferenced into unmapped memory.
+    for fake in [1usize, 0x100, 0xfff] {
+        assert!(
+            validate_ptr(fake as *const std::os::raw::c_void).is_err(),
+            "fake pointer {fake:#x} should be rejected"
+        );
+    }
+    // The magic test-pointer prefix used by safe_destroy is also rejected.
+    assert!(validate_ptr(0x1234_5600_0000_0001usize as *const std::os::raw::c_void).is_err());
+}
+
+#[test]
+fn test_validate_ptr_accepts_real_pointer() {
+    let value = Box::new(0u64);
+    let ptr = &*value as *const u64 as *const std::os::raw::c_void;
+    assert!(validate_ptr(ptr).is_ok());
+}
