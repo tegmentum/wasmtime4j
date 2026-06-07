@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [45.0.1-1.1.5] - 2026-06-07
+
+### Changed
+
+- **Wasmtime upgraded from 45.0.0 to 45.0.1** — upstream patch release.
+  Fixes a WASIp2 regression where zero-delay clocks/timers would not make
+  progress on repeat calls to `.ready()`.
+
+No wasmtime4j source changes were required for this upgrade. The native
+library was rebuilt against wasmtime 45.0.1.
+
 ## [45.0.0-1.1.4] - 2026-05-22
 
 ### Changed
