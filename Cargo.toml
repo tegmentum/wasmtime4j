@@ -20,7 +20,7 @@ wast = "248.0.0"
 wasmparser = "0.248"
 
 # JNI support for Java 8-22 compatibility
-jni = "0.21.1"
+jni = "0.22.4"
 
 # Async runtime for WASI and other async operations
 tokio = { version = "1.35", features = ["full"] }
