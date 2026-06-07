@@ -1,0 +1,69 @@
+name: Wasmtime Upstream Watch
+
+on:
+  schedule:
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Check upstream wasmtime release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare versions and manage tracking issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          current="$(grep -E '^wasmtime\.version=' wasmtime-version.properties | cut -d= -f2 | tr -d '[:space:]')"
+          if [ -z "$current" ]; then
+            echo "Could not read wasmtime.version from wasmtime-version.properties"
+            exit 1
+          fi
+
+          upstream_tag="$(gh api repos/bytecodealliance/wasmtime/releases/latest --jq .tag_name)"
+          upstream="${upstream_tag#v}"
+          echo "current=$current upstream=$upstream"
+
+          # Sort versions; if current is already >= upstream, we're up to date.
+          highest="$(printf '%s\n%s\n' "$current" "$upstream" | sort -V | tail -n1)"
+          if [ "$highest" = "$current" ]; then
+            echo "Up to date."
+            exit 0
+          fi
+
+          label="wasmtime-upstream"
+          # Ensure label exists (idempotent).
+          gh label create "$label" --color "0e8a16" --description "Upstream wasmtime release available" --repo "$REPO" 2>/dev/null || true
+
+          title="Wasmtime upstream ${upstream} available (currently ${current})"
+          body=$(printf '%s\n' \
+            "Upstream \`bytecodealliance/wasmtime\` has released **${upstream_tag}**." \
+            "" \
+            "- Current pin: \`${current}\` (\`wasmtime-version.properties\`)" \
+            "- Upstream latest: \`${upstream}\`" \
+            "- Release notes: https://github.com/bytecodealliance/wasmtime/releases/tag/${upstream_tag}" \
+            "" \
+            "To upgrade:" \
+            "1. Edit \`wasmtime-version.properties\` (\`wasmtime.version=${upstream}\`)" \
+            "2. Run \`./scripts/sync-wasmtime-version.sh\`" \
+            "3. \`cargo update -p wasmtime\` and rebuild" \
+            "" \
+            "_This issue is auto-managed by \`.github/workflows/wasmtime-upstream-watch.yml\`._")
+
+          existing="$(gh issue list --repo "$REPO" --state open --label "$label" --json number,title --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --repo "$REPO" --title "$title" --body "$body"
+            echo "Updated existing issue #$existing"
+          else
+            gh issue create --repo "$REPO" --title "$title" --body "$body" --label "$label"
+            echo "Opened new tracking issue"
+          fi

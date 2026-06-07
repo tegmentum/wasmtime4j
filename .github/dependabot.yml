@@ -1,0 +1,62 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:00"
+    open-pull-requests-limit: 10
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: maven
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:00"
+    open-pull-requests-limit: 10
+    groups:
+      maven-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:00"
+    open-pull-requests-limit: 10
+    # Wasmtime crates are pinned to wasmtime-version.properties and bumped
+    # via scripts/sync-wasmtime-version.sh; the wasmtime-upstream-watch
+    # workflow opens a tracking issue when upstream releases. Keep Dependabot
+    # away from them so it doesn't fight the version-sync flow.
+    ignore:
+      - dependency-name: "wasmtime"
+      - dependency-name: "wasmtime-*"
+    groups:
+      cargo-minor-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: cargo
+    directory: /wasmtime4j-native/fuzz
+    schedule:
+      interval: weekly
+      day: monday
+      time: "10:00"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "wasmtime"
+      - dependency-name: "wasmtime-*"
+    groups:
+      cargo-fuzz-minor-patch:
+        update-types:
+          - minor
+          - patch
