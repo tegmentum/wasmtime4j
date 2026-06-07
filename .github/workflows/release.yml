@@ -42,14 +42,14 @@ jobs:
         if: matrix.container
         run: dnf install -y gcc gcc-c++ make curl git perl-core
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
       - name: Cache Cargo
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry
@@ -64,7 +64,7 @@ jobs:
           CARGO_TARGET_DIR: wasmtime4j-native/.cargo-target
         run: cargo build --release --target ${{ matrix.target }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: native-${{ matrix.platform }}
           path: wasmtime4j-native/.cargo-target/${{ matrix.target }}/release/${{ matrix.lib }}
@@ -105,23 +105,23 @@ jobs:
             java: '23'
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           # Java 8 target: use JDK 21 to compile with source/target 8 and run tests
           java-version: ${{ matrix.java == '8' && '21' || matrix.java }}
           distribution: 'temurin'
 
       - name: Cache Maven
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: m2-test-${{ matrix.java }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: m2-test-
 
       - name: Download native library
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: native-${{ matrix.platform }}
           path: wasmtime4j-native/src/main/resources/natives/${{ matrix.platform }}/
@@ -139,15 +139,15 @@ jobs:
     needs: build-native
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           java-version: '23'
           distribution: 'temurin'
 
       - name: Cache Maven
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: m2-quality-${{ hashFiles('**/pom.xml') }}
@@ -180,9 +180,9 @@ jobs:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -193,7 +193,7 @@ jobs:
           gpg-passphrase: GPG_PASSPHRASE
 
       - name: Cache Maven
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.m2/repository
           key: m2-publish-${{ hashFiles('**/pom.xml') }}
@@ -201,19 +201,19 @@ jobs:
 
       # Download all 4 native libraries into resource directories
       - name: Download native libraries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: native-linux-x86_64
           path: wasmtime4j-native/src/main/resources/natives/linux-x86_64/
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: native-linux-aarch64
           path: wasmtime4j-native/src/main/resources/natives/linux-aarch64/
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: native-darwin-aarch64
           path: wasmtime4j-native/src/main/resources/natives/darwin-aarch64/
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: native-windows-x86_64
           path: wasmtime4j-native/src/main/resources/natives/windows-x86_64/
@@ -287,7 +287,7 @@ jobs:
           done
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: |
