@@ -33,7 +33,7 @@
         <panama.java.version>23</panama.java.version>
 
         <!-- Dependency versions -->
-        <junit.version>5.10.4</junit.version>
+        <junit.version>6.1.0</junit.version>
         <junit.platform.version>1.10.4</junit.platform.version>
         <jmh.version>1.37</jmh.version>
         <mockito.version>5.15.2</mockito.version>
