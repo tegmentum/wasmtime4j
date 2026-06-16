@@ -128,7 +128,7 @@
                 </executions>
             </plugin>
 
-            <!-- Compiler plugin with Java 23+ and preview features -->
+            <!-- Compiler plugin with Java 22+ and preview features -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -199,22 +199,22 @@
         </plugins>
     </build>
 
-    <!-- Profile to skip Panama module if Java version < 23 -->
+    <!-- Profile to skip Panama module if Java version < 22 -->
     <profiles>
         <profile>
             <id>panama-available</id>
             <activation>
-                <jdk>[23,)</jdk>
+                <jdk>[22,)</jdk>
             </activation>
         </profile>
         <profile>
             <id>panama-unavailable</id>
             <activation>
-                <jdk>[,23)</jdk>
+                <jdk>[,22)</jdk>
             </activation>
             <build>
                 <plugins>
-                    <!-- Skip compilation if Java < 23 -->
+                    <!-- Skip compilation if Java < 22 -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-compiler-plugin</artifactId>
@@ -229,7 +229,7 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <!-- Skip testing if Java < 23 -->
+                    <!-- Skip testing if Java < 22 -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
