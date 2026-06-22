@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [45.0.2-1.1.6] - 2026-06-22
+
+### Security
+
+- **Wasmtime upgraded from 45.0.1 to 45.0.2** — upstream security patch
+  release ([GHSA-3p27-qvp9-27qf](https://github.com/bytecodealliance/wasmtime/security/advisories/GHSA-3p27-qvp9-27qf)).
+  Fixes a file-descriptor leak in the WASIp1 `fd_renumber` implementation,
+  which only updated the WASIp1 descriptor table and not the underlying
+  host descriptor table. A guest making repeated `fd_renumber` calls could
+  exhaust host file descriptors until the `Store` was dropped (low-severity
+  resource exhaustion, CVSS 2.3).
+
+No wasmtime4j source changes were required for this upgrade. The native
+library was rebuilt against wasmtime 45.0.2.
+
 ## [45.0.1-1.1.5] - 2026-06-07
 
 ### Changed
