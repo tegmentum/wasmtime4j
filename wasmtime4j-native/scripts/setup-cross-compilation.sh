@@ -10,8 +10,8 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT_DIR="$PROJECT_ROOT/scripts"
 
 # Configuration
-WASMTIME_VERSION="45.0.1"
-REQUIRED_RUST_VERSION="1.75.0"
+WASMTIME_VERSION="46.0.1"
+REQUIRED_RUST_VERSION="1.94.0"
 
 # Cross-compilation targets and platform mappings
 TARGETS_LIST=(

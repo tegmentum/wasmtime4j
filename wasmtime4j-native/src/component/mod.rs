@@ -665,11 +665,11 @@ impl ComponentEngine {
             let mut functions = Vec::new();
 
             use wasmtime::component::types::ComponentItem;
-            match import_ty {
+            match import_ty.ty {
                 ComponentItem::ComponentInstance(instance_ty) => {
                     // It's an instance import - enumerate its functions
                     for (func_name, func_ty) in instance_ty.exports(&self.engine) {
-                        if matches!(func_ty, ComponentItem::ComponentFunc(_)) {
+                        if matches!(func_ty.ty, ComponentItem::ComponentFunc(_)) {
                             functions.push(FunctionDefinition {
                                 name: func_name.to_string(),
                                 parameters: Vec::new(),
@@ -708,11 +708,11 @@ impl ComponentEngine {
             // Try to extract functions from the export type
             // The export might be a ComponentItem which could be a function or instance
             use wasmtime::component::types::ComponentItem;
-            match export_ty {
+            match export_ty.ty {
                 ComponentItem::ComponentInstance(instance_ty) => {
                     // It's an instance export - enumerate its functions
                     for (func_name, func_ty) in instance_ty.exports(&self.engine) {
-                        if matches!(func_ty, ComponentItem::ComponentFunc(_)) {
+                        if matches!(func_ty.ty, ComponentItem::ComponentFunc(_)) {
                             functions.push(FunctionDefinition {
                                 name: func_name.to_string(),
                                 parameters: Vec::new(), // Function signature details
@@ -1320,7 +1320,7 @@ pub mod core {
             first = false;
             append_json_string(&mut json, name);
             json.push(':');
-            component_item_to_json(&mut json, &item, engine, 0);
+            component_item_to_json(&mut json, &item.ty, engine, 0);
         }
 
         json.push_str("},\"exports\":{");
@@ -1333,7 +1333,7 @@ pub mod core {
             first = false;
             append_json_string(&mut json, name);
             json.push(':');
-            component_item_to_json(&mut json, &item, engine, 0);
+            component_item_to_json(&mut json, &item.ty, engine, 0);
         }
 
         json.push_str("}}");
@@ -1371,7 +1371,7 @@ pub mod core {
             first = false;
             append_json_string(&mut json, name);
             json.push(':');
-            component_item_to_json(&mut json, &item, engine, 0);
+            component_item_to_json(&mut json, &item.ty, engine, 0);
         }
 
         json.push_str("},\"exports\":{");
@@ -1384,7 +1384,7 @@ pub mod core {
             first = false;
             append_json_string(&mut json, name);
             json.push(':');
-            component_item_to_json(&mut json, &item, engine, 0);
+            component_item_to_json(&mut json, &item.ty, engine, 0);
         }
 
         json.push_str("}}");
@@ -1494,7 +1494,7 @@ pub mod core {
                     first = false;
                     append_json_string(json, name);
                     json.push(':');
-                    component_item_to_json(json, &sub_item, engine, depth + 1);
+                    component_item_to_json(json, &sub_item.ty, engine, depth + 1);
                 }
                 json.push_str("},\"exports\":{");
                 let mut first = true;
@@ -1505,7 +1505,7 @@ pub mod core {
                     first = false;
                     append_json_string(json, name);
                     json.push(':');
-                    component_item_to_json(json, &sub_item, engine, depth + 1);
+                    component_item_to_json(json, &sub_item.ty, engine, depth + 1);
                 }
                 json.push_str("}}");
             }
@@ -1519,7 +1519,7 @@ pub mod core {
                     first = false;
                     append_json_string(json, name);
                     json.push(':');
-                    component_item_to_json(json, &sub_item, engine, depth + 1);
+                    component_item_to_json(json, &sub_item.ty, engine, depth + 1);
                 }
                 json.push_str("}}");
             }

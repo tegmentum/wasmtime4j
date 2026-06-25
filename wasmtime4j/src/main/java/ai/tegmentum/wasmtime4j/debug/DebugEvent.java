@@ -34,19 +34,24 @@ public enum DebugEvent {
   HOSTCALL_ERROR(0),
 
   /**
-   * A caught exception was thrown.
+   * An exception was thrown.
    *
-   * <p>This event fires when a WebAssembly exception is thrown and there is a matching catch
-   * handler in the call stack.
+   * <p>This event fires when a WebAssembly exception is thrown. As of Wasmtime 46 the runtime no
+   * longer distinguishes caught from uncaught exceptions at this point, because the handler stack
+   * has not yet been searched when the event is delivered. This constant therefore fires for any
+   * thrown exception regardless of whether it is later caught.
    */
   CAUGHT_EXCEPTION_THROWN(1),
 
   /**
    * An uncaught exception was thrown.
    *
-   * <p>This event fires when a WebAssembly exception is thrown and there is no matching catch
-   * handler, which will cause a trap.
+   * @deprecated As of Wasmtime 46 this event is no longer emitted. The runtime delivers a single
+   *     exception event ({@link #CAUGHT_EXCEPTION_THROWN}) at throw time, before the handler stack
+   *     has been searched, so caught and uncaught exceptions can no longer be distinguished here.
+   *     Retained for backward compatibility with the native FFI event-code contract.
    */
+  @Deprecated
   UNCAUGHT_EXCEPTION_THROWN(2),
 
   /**

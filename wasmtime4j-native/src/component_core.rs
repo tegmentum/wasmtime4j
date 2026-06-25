@@ -717,13 +717,13 @@ impl EnhancedComponentEngine {
 
         // Process imports
         for (name, import_type) in component_type.imports(&self.engine) {
-            let interface_def = self.convert_component_item_to_interface(name, &import_type)?;
+            let interface_def = self.convert_component_item_to_interface(name, &import_type.ty)?;
             imports.push(interface_def);
         }
 
         // Process exports
         for (name, export_type) in component_type.exports(&self.engine) {
-            let interface_def = self.convert_component_item_to_interface(name, &export_type)?;
+            let interface_def = self.convert_component_item_to_interface(name, &export_type.ty)?;
             exports.push(interface_def);
         }
 

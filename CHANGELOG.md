@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.1.7] - 2026-06-24
+
+### Changed
+
+- **Wasmtime upgraded from 45.0.2 to 46.0.1.** This is a major upstream
+  release. The native library was rebuilt against wasmtime 46.0.1 and all 794
+  wasmtime behavior tests pass (6 pre-existing skips).
+- **Minimum Rust version raised to 1.94.0** (from 1.93.0), as required by
+  wasmtime 46.
+- The wasmtime cargo feature `component-model-async-bytes` was renamed
+  upstream to `component-model-bytes`; the workspace dependency was updated
+  accordingly. No effect on the public Java API.
+
+### Fixed
+
+- Adapted to the wasmtime 46 component-type reflection API: `ComponentType`
+  import/export iterators now yield a `ComponentExtern` wrapper whose
+  `ComponentItem` is accessed via its `ty` field. Internal metadata extraction
+  was updated to match.
+
+### Deprecated
+
+- `DebugEvent.UNCAUGHT_EXCEPTION_THROWN` is no longer emitted. Wasmtime 46
+  merged the previous caught/uncaught exception debug events into a single
+  exception event delivered at throw time (before the handler stack has been
+  searched), so the runtime can no longer distinguish the two. The native
+  layer now maps that event to `DebugEvent.CAUGHT_EXCEPTION_THROWN`, which
+  fires for any thrown exception regardless of whether it is later caught.
+
 ## [45.0.2-1.1.6] - 2026-06-22
 
 ### Security

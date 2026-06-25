@@ -1043,8 +1043,8 @@ impl Store {
     ///
     /// The callback function receives a callback_id and an event code:
     /// - 0 = HostcallError
-    /// - 1 = CaughtExceptionThrown
-    /// - 2 = UncaughtExceptionThrown
+    /// - 1 = Exception (wasmtime 46+; previously CaughtExceptionThrown)
+    /// - 2 = (unused since wasmtime 46; previously UncaughtExceptionThrown)
     /// - 3 = Trap
     /// - 4 = Breakpoint
     /// - 5 = EpochYield
@@ -3360,8 +3360,11 @@ impl DebugHandler for FfiDebugHandler {
     ) -> impl Future<Output = ()> + Send {
         let event_code = match event {
             DebugEvent::HostcallError(_) => 0,
-            DebugEvent::CaughtExceptionThrown(_) => 1,
-            DebugEvent::UncaughtExceptionThrown(_) => 2,
+            // Wasmtime 46 merged the previous CaughtExceptionThrown/UncaughtExceptionThrown
+            // variants into a single `Exception` event: the distinction no longer exists at
+            // throw time because the handler stack has not been searched yet. We map it to the
+            // existing "exception thrown" code (1); code 2 is no longer emitted.
+            DebugEvent::Exception(_) => 1,
             DebugEvent::Trap(_) => 3,
             DebugEvent::Breakpoint => 4,
             DebugEvent::EpochYield => 5,
