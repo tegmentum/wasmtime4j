@@ -34,7 +34,7 @@
 
         <!-- Dependency versions -->
         <junit.version>5.10.4</junit.version>
-        <junit.platform.version>1.10.4</junit.platform.version>
+        <junit.platform.version>6.1.0</junit.platform.version>
         <jmh.version>1.37</jmh.version>
         <mockito.version>5.15.2</mockito.version>
         <bytebuddy.version>1.18.4</bytebuddy.version>
