@@ -23,7 +23,7 @@
         <skip.fuzz>true</skip.fuzz>
 
         <!-- Jazzer 0.22.1 is the final Code Intelligence release -->
-        <jazzer.version>0.22.1</jazzer.version>
+        <jazzer.version>0.30.0</jazzer.version>
 
         <!-- Fuzz test configuration -->
         <fuzz.duration>300</fuzz.duration>

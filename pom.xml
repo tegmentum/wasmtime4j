@@ -36,40 +36,40 @@
         <junit.version>5.10.4</junit.version>
         <junit.platform.version>1.10.4</junit.platform.version>
         <jmh.version>1.37</jmh.version>
-        <mockito.version>5.15.2</mockito.version>
-        <bytebuddy.version>1.18.4</bytebuddy.version>
+        <mockito.version>5.23.0</mockito.version>
+        <bytebuddy.version>1.18.10</bytebuddy.version>
 
 
         <!-- Plugin versions -->
-        <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
-        <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
-        <maven.failsafe.plugin.version>3.1.2</maven.failsafe.plugin.version>
-        <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
-        <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
-        <maven.javadoc.plugin.version>3.6.0</maven.javadoc.plugin.version>
-        <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
-        <maven.clean.plugin.version>3.3.1</maven.clean.plugin.version>
-        <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
-        <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
+        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
+        <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
+        <maven.failsafe.plugin.version>3.5.6</maven.failsafe.plugin.version>
+        <maven.jar.plugin.version>3.5.0</maven.jar.plugin.version>
+        <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
+        <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
+        <maven.resources.plugin.version>3.5.0</maven.resources.plugin.version>
+        <maven.clean.plugin.version>3.5.0</maven.clean.plugin.version>
+        <maven.install.plugin.version>3.1.4</maven.install.plugin.version>
+        <maven.deploy.plugin.version>3.1.4</maven.deploy.plugin.version>
         <maven.site.plugin.version>4.0.0-M9</maven.site.plugin.version>
         
         <!-- Native build plugin versions -->
-        <exec.plugin.version>3.1.0</exec.plugin.version>
+        <exec.plugin.version>3.6.3</exec.plugin.version>
         <cargo.plugin.version>1.10.0</cargo.plugin.version>
         <os.detector.plugin.version>1.7.1</os.detector.plugin.version>
 
         <!-- Quality tool plugin versions -->
-        <checkstyle.plugin.version>3.3.0</checkstyle.plugin.version>
+        <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
         <checkstyle.version>10.12.3</checkstyle.version>
         <spotless.plugin.version>2.46.1</spotless.plugin.version>
-        <spotbugs.plugin.version>4.9.8.2</spotbugs.plugin.version>
-        <spotbugs.version>4.9.8</spotbugs.version>
+        <spotbugs.plugin.version>4.10.2.0</spotbugs.plugin.version>
+        <spotbugs.version>4.10.2</spotbugs.version>
         <findsecbugs.version>1.14.0</findsecbugs.version>
         <pmd.plugin.version>3.28.0</pmd.plugin.version>
-        <pmd.version>7.22.0</pmd.version>
-        <jacoco.plugin.version>0.8.14</jacoco.plugin.version>
-        <pitest.plugin.version>1.22.0</pitest.plugin.version>
-        <pitest.junit5.version>1.2.1</pitest.junit5.version>
+        <pmd.version>7.26.0</pmd.version>
+        <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
+        <pitest.plugin.version>1.25.5</pitest.plugin.version>
+        <pitest.junit5.version>1.2.3</pitest.junit5.version>
 
         <!-- Default argLine for surefire (JaCoCo will prepend to this) -->
         <argLine></argLine>
@@ -228,7 +228,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-enforcer-plugin</artifactId>
-                    <version>3.4.1</version>
+                    <version>3.6.3</version>
                     <executions>
                         <execution>
                             <id>enforce-maven</id>
@@ -745,7 +745,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>flatten-maven-plugin</artifactId>
-                    <version>1.6.0</version>
+                    <version>1.7.3</version>
                     <configuration>
                         <updatePomFile>true</updatePomFile>
                         <flattenMode>ossrh</flattenMode>
@@ -910,7 +910,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.1.0</version>
+                        <version>3.2.8</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
