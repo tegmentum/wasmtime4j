@@ -70,6 +70,12 @@ pub struct ComponentInstanceHandle {
     pub ref_count: usize,
     /// Original component bytes for re-compilation (e.g., with concurrent engine)
     pub component_bytes: Arc<Vec<u8>>,
+    /// Per-CALL fuel budget re-applied before each invoke, when set. `None` leaves fuel as set at
+    /// instantiation (a per-instance-lifetime budget). `Some` makes `fuel_per_call` truly per call.
+    pub per_call_fuel: Option<u64>,
+    /// Per-CALL epoch deadline (relative ticks) re-applied before each invoke, when set. `None`
+    /// leaves the instantiation-time deadline in place; `Some` makes `deadline_ms` per call.
+    pub per_call_epoch_deadline: Option<u64>,
 }
 
 /// Component performance metrics
@@ -237,6 +243,9 @@ impl EnhancedComponentEngine {
             last_accessed: start_time,
             ref_count: 1,
             component_bytes: Arc::clone(component.original_bytes()),
+            // No high-level caps on this path; leave the instantiation-time (unlimited) budgets.
+            per_call_fuel: None,
+            per_call_epoch_deadline: None,
         };
 
         // Store the instance in the engine's HashMap to maintain Engine/Store/Instance ownership
@@ -336,6 +345,9 @@ impl EnhancedComponentEngine {
             last_accessed: start_time,
             ref_count: 1,
             component_bytes: Arc::clone(component.original_bytes()),
+            // Re-applied before each invoke so fuel_per_call / deadline_ms are per CALL.
+            per_call_fuel: Some(fuel_limit.unwrap_or(u64::MAX)),
+            per_call_epoch_deadline: Some(epoch_deadline.unwrap_or(NO_EPOCH_DEADLINE)),
         };
 
         {

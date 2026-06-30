@@ -574,6 +574,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
 
         // Call the function - need a fresh mutable reference
         let handle_ref = &mut *handle;
+        // Re-apply per-call resource budgets so a fuel_per_call / deadline_ms cap is a fresh budget
+        // for THIS call, not a per-instance-lifetime budget that, once spent, traps every later
+        // call. Only the high-level (policy) path sets these; other paths leave them as instantiated.
+        if let Some(fuel) = handle_ref.per_call_fuel {
+            let _ = handle_ref.store.set_fuel(fuel);
+        }
+        if let Some(deadline) = handle_ref.per_call_epoch_deadline {
+            handle_ref.store.set_epoch_deadline(deadline);
+        }
         let results_len = func.ty(&handle_ref.store).results().len();
         let mut results = vec![wasmtime::component::Val::Bool(false); results_len];
         func.call(&mut handle_ref.store, &params, &mut results)

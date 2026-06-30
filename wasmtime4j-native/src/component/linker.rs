@@ -2014,6 +2014,9 @@ impl ComponentInstancePreWrapper {
             last_accessed: start,
             ref_count: 1,
             component_bytes: Arc::clone(&self.original_bytes),
+            // Native ComponentLinker path: limits stay as configured at instantiation.
+            per_call_fuel: None,
+            per_call_epoch_deadline: None,
         })
     }
 
@@ -2154,6 +2157,9 @@ impl ComponentInstancePreWrapper {
             last_accessed: start,
             ref_count: 1,
             component_bytes: Arc::clone(&self.original_bytes),
+            // This path already applies fuel/epoch/memory at instantiation; keep them as set.
+            per_call_fuel: None,
+            per_call_epoch_deadline: None,
         })
     }
 
