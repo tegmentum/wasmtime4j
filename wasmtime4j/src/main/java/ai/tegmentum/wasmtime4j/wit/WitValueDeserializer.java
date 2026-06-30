@@ -469,7 +469,11 @@ public final class WitValueDeserializer {
     }
 
     if (elementCount == 0) {
-      throw new ValidationException("Cannot infer list element type from empty list");
+      // The wire format carries no per-element type for a zero-length list, so the element type
+      // cannot be recovered — but it is irrelevant for an empty list (no elements to read). Return
+      // an empty list with a placeholder element type rather than failing (e.g. a vm-error's empty
+      // cause-chain must still deserialize).
+      return WitList.empty(WitType.createString());
     }
 
     final java.util.List<WitValue> elements = new java.util.ArrayList<>(elementCount);

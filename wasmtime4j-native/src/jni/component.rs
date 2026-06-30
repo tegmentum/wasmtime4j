@@ -74,6 +74,85 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
     })
 }
 
+/// Instantiate a component with a host-supplied WASI capability policy (preopens / env /
+/// network), registering the instance in the component's engine so it is invocable.
+///
+/// This is the native backing for capability-confined component instantiation: the host
+/// passes the granted preopen dirs (host path, guest path, dir/file permission bits), env
+/// vars, stdio inheritance, and a network allow flag. Everything not granted is denied.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInstantiateComponentWithWasi(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    component_ptr: jlong,
+    host_paths: jni::objects::JObjectArray,
+    guest_paths: jni::objects::JObjectArray,
+    dir_perm_bits: jni::objects::JIntArray,
+    file_perm_bits: jni::objects::JIntArray,
+    env_keys: jni::objects::JObjectArray,
+    env_vals: jni::objects::JObjectArray,
+    inherit_stdout: jboolean,
+    inherit_stderr: jboolean,
+    allow_network: jboolean,
+) -> jlong {
+    fn read_strings(env: &mut JNIEnv, arr: &jni::objects::JObjectArray) -> Vec<String> {
+        let len = env.get_array_length(arr).unwrap_or(0);
+        let mut out = Vec::with_capacity(len.max(0) as usize);
+        for i in 0..len {
+            if let Ok(elem) = env.get_object_array_element(arr, i) {
+                let jstr: JString = elem.into();
+                let s = match env.get_string(&jstr) {
+                    Ok(s) => s.to_string_lossy().into_owned(),
+                    Err(_) => continue,
+                };
+                out.push(s);
+            }
+        }
+        out
+    }
+    fn read_ints(env: &mut JNIEnv, arr: &jni::objects::JIntArray) -> Vec<i32> {
+        let len = env.get_array_length(arr).unwrap_or(0).max(0) as usize;
+        let mut buf = vec![0i32; len];
+        let _ = env.get_int_array_region(arr, 0, &mut buf);
+        buf
+    }
+
+    let hosts = read_strings(&mut env, &host_paths);
+    let guests = read_strings(&mut env, &guest_paths);
+    let dperms = read_ints(&mut env, &dir_perm_bits);
+    let fperms = read_ints(&mut env, &file_perm_bits);
+    let ekeys = read_strings(&mut env, &env_keys);
+    let evals = read_strings(&mut env, &env_vals);
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        let engine = unsafe {
+            &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
+        };
+        let component = unsafe {
+            crate::component::core::get_component_ref(component_ptr as *const std::os::raw::c_void)?
+        };
+
+        let mut cfg = crate::component::WasiP2Config::default();
+        cfg.allow_network = allow_network != 0;
+        cfg.inherit_stdout = inherit_stdout != 0;
+        cfg.inherit_stderr = inherit_stderr != 0;
+        for i in 0..hosts.len() {
+            let d = dperms.get(i).copied().unwrap_or(1) as u32;
+            let f = fperms.get(i).copied().unwrap_or(1) as u32;
+            let guest = guests.get(i).cloned().unwrap_or_else(|| hosts[i].clone());
+            cfg.preopened_dirs.push((hosts[i].clone(), guest, d, f));
+        }
+        for i in 0..ekeys.len() {
+            cfg.env
+                .insert(ekeys[i].clone(), evals.get(i).cloned().unwrap_or_default());
+        }
+
+        let wasi_ctx = cfg.build_wasi_ctx();
+        Ok(engine.instantiate_component_with_wasi(component, wasi_ctx)? as jlong)
+    })
+}
+
 /// Get the number of exported interfaces from a component
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeGetComponentExportCount(
@@ -449,13 +528,38 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         // Get a single mutable reference so Rust can split borrows on different fields
         let handle_ref = &mut *handle;
 
-        // Get the function using disjoint field borrows
-        let func: Func = handle_ref
-            .instance
-            .get_func(&mut handle_ref.store, &func_name)
-            .ok_or_else(|| WasmtimeError::ImportExport {
-                message: format!("Function '{}' not found in component exports", func_name),
-            })?;
+        // Get the function using disjoint field borrows. Top-level exports resolve by name;
+        // functions nested inside an exported interface are addressed as
+        // "<interface>#<func>" (e.g. "fiji:jvm/jvm@0.1.0#create-vm") and require drilling
+        // through the interface's export index — wasmtime's name-based get_func only sees
+        // top-level exports.
+        let func: Func = match handle_ref.instance.get_func(&mut handle_ref.store, &func_name) {
+            Some(f) => f,
+            None => {
+                let (iface, fname) =
+                    func_name.rsplit_once('#').ok_or_else(|| WasmtimeError::ImportExport {
+                        message: format!("Function '{}' not found in component exports", func_name),
+                    })?;
+                let (_, iface_idx) = handle_ref
+                    .instance
+                    .get_export(&mut handle_ref.store, None, iface)
+                    .ok_or_else(|| WasmtimeError::ImportExport {
+                        message: format!("Exported interface '{}' not found", iface),
+                    })?;
+                let (_, func_idx) = handle_ref
+                    .instance
+                    .get_export(&mut handle_ref.store, Some(&iface_idx), fname)
+                    .ok_or_else(|| WasmtimeError::ImportExport {
+                        message: format!("Function '{}' not found in interface '{}'", fname, iface),
+                    })?;
+                handle_ref
+                    .instance
+                    .get_func(&mut handle_ref.store, &func_idx)
+                    .ok_or_else(|| WasmtimeError::ImportExport {
+                        message: format!("Export '{}' is not a function", func_name),
+                    })?
+            }
+        };
 
         // Call the function - need a fresh mutable reference
         let handle_ref = &mut *handle;

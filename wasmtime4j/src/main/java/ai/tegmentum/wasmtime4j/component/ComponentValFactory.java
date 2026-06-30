@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -245,8 +246,10 @@ public abstract class ComponentValFactory {
       if (fields == null) {
         throw new IllegalArgumentException("Record fields cannot be null");
       }
+      // LinkedHashMap: WIT records are positional — wasmtime matches fields in declaration
+      // order, so insertion order (declaration order, as supplied by the caller) must survive.
       return new SimpleVal(
-          ComponentType.RECORD, Collections.unmodifiableMap(new HashMap<>(fields)));
+          ComponentType.RECORD, Collections.unmodifiableMap(new LinkedHashMap<>(fields)));
     }
 
     @Override

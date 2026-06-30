@@ -121,6 +121,26 @@ public final class JniComponent {
   static native long nativeInstantiateComponent(long engineHandle, long componentHandle);
 
   /**
+   * Instantiate a component with a host-supplied WASI capability policy and register it in the
+   * given engine. Preopens are parallel arrays (host path, guest path, dir-perm bits, file-perm
+   * bits); env is parallel key/value arrays. Anything not granted is denied.
+   *
+   * @return native component instance id or 0 on failure
+   */
+  static native long nativeInstantiateComponentWithWasi(
+      long engineHandle,
+      long componentHandle,
+      String[] hostPaths,
+      String[] guestPaths,
+      int[] dirPermBits,
+      int[] filePermBits,
+      String[] envKeys,
+      String[] envVals,
+      boolean inheritStdout,
+      boolean inheritStderr,
+      boolean allowNetwork);
+
+  /**
    * Gets the size of a component in bytes.
    *
    * @param componentHandle the native component handle

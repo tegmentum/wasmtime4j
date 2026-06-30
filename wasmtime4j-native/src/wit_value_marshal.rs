@@ -184,7 +184,8 @@ fn deserialize_to_val_inner(
         19 => deserialize_u8(data),
         20 => deserialize_u16(data),
         21 => deserialize_float32(data),
-        22 | 23 => deserialize_resource(data),
+        22 => deserialize_resource(data, true),
+        23 => deserialize_resource(data, false),
         _ => Err(WasmtimeError::InvalidParameter {
             message: format!("Invalid type discriminator: {}", type_discriminator),
         }),
@@ -406,7 +407,7 @@ fn deserialize_float32(data: &[u8]) -> Result<Val, WasmtimeError> {
 /// - 8 bytes: handle ID (u64, little-endian)
 ///
 /// The handle ID is used to look up the actual ResourceAny in the registry.
-fn deserialize_resource(data: &[u8]) -> Result<Val, WasmtimeError> {
+fn deserialize_resource(data: &[u8], is_own: bool) -> Result<Val, WasmtimeError> {
     // Format: [type_name_length: i32][type_name: UTF-8][handle_id: i64] (little-endian)
     if data.len() < 12 {
         return Err(WasmtimeError::InvalidParameter {
@@ -451,8 +452,16 @@ fn deserialize_resource(data: &[u8]) -> Result<Val, WasmtimeError> {
         data[handle_offset + 7],
     ]) as u64;
 
-    // Retrieve the resource from the registry
-    let resource = take_resource(handle_id).ok_or_else(|| WasmtimeError::InvalidParameter {
+    // Retrieve the resource from the registry. An `own` transfers ownership to the guest, so
+    // remove it; a `borrow` leaves the caller owning the resource, so peek without removing —
+    // otherwise the handle vanishes after the first borrow and later calls (e.g. reusing a
+    // vm-handle across define-class / invoke-static) fail with "not found in registry".
+    let resource = if is_own {
+        take_resource(handle_id)
+    } else {
+        get_resource(handle_id)
+    }
+    .ok_or_else(|| WasmtimeError::InvalidParameter {
         message: format!("Resource handle {} not found in registry", handle_id),
     })?;
 

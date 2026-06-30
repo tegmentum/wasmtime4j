@@ -248,6 +248,80 @@ impl EnhancedComponentEngine {
         Ok(instance_id)
     }
 
+    /// Instantiate a component using a caller-supplied WASI context.
+    ///
+    /// Identical to [`instantiate_component`](Self::instantiate_component) except the store's
+    /// WASI context is the one provided (preopens / env / network policy from the host) instead
+    /// of an empty default. The instance is registered in this engine's `instances` map so it is
+    /// reachable by `nativeComponentInvokeFunction` (which looks the instance up in the
+    /// component's engine). This makes WASI-needing components (e.g. a Fiji JVM cell) invocable
+    /// from a Java host under a capability policy.
+    #[cfg(feature = "wasi")]
+    pub fn instantiate_component_with_wasi(
+        &self,
+        component: &Component,
+        wasi_ctx: wasmtime_wasi::WasiCtx,
+    ) -> WasmtimeResult<u64> {
+        let instance_id = self.get_next_instance_id()?;
+        let start_time = Instant::now();
+
+        let store_data = ComponentStoreData {
+            instance_id,
+            user_data: None,
+            resource_table: ResourceTable::new(),
+            wasi_ctx,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_ctx: None,
+            #[cfg(feature = "wasi-http")]
+            wasi_http_hooks: [(); 0],
+            #[cfg(feature = "wasi-config")]
+            wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
+            store_limits: None,
+            start_time,
+        };
+
+        let mut store = Store::new(&self.engine, store_data);
+
+        let mut linker: ComponentLinker<ComponentStoreData> = ComponentLinker::new(&self.engine);
+        wasmtime_wasi::p2::add_to_linker_sync(&mut linker).map_err(|e| {
+            WasmtimeError::Instance {
+                message: format!("Failed to add WASI to linker: {}", e),
+            }
+        })?;
+
+        let instance = linker
+            .instantiate(&mut store, component.wasmtime_component())
+            .map_err(|e| WasmtimeError::Instance {
+                message: format!("Failed to instantiate component: {}", e),
+            })?;
+
+        let handle = ComponentInstanceHandle {
+            store,
+            instance,
+            metadata: component.metadata().clone(),
+            created_at: start_time,
+            last_accessed: start_time,
+            ref_count: 1,
+            component_bytes: Arc::clone(component.original_bytes()),
+        };
+
+        {
+            let mut instances = self
+                .instances
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire instances write lock".to_string(),
+                })?;
+            instances.insert(instance_id, handle);
+        }
+
+        if let Ok(mut metrics) = self.metrics.write() {
+            metrics.instances_created += 1;
+        }
+
+        Ok(instance_id)
+    }
+
     /// Register an externally-created component instance in this engine's registry.
     ///
     /// This is used when instances are created via `ComponentInstancePre` (which creates

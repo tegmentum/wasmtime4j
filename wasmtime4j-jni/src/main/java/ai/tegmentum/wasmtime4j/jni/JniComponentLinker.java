@@ -68,6 +68,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private final ai.tegmentum.wasmtime4j.component.DefaultResourceTable resourceTable =
       new ai.tegmentum.wasmtime4j.component.DefaultResourceTable();
 
+  /** WASI Preview 2 config supplied via {@link #enableWasiPreview2(WasiPreview2Config)}, if any. */
+  private volatile WasiPreview2Config wasiConfig;
+
   /**
    * Creates a new JNI component linker with the given native handle.
    *
@@ -519,8 +522,55 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       final long storeHandle = getStoreHandle(store);
       final long componentHandle = jniComponent.getNativeHandle();
 
-      final long instanceHandle =
-          nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
+      final long instanceHandle;
+      final WasiPreview2Config cfg = this.wasiConfig;
+      if (cfg != null) {
+        // Instantiate on the COMPONENT's engine with the supplied WASI capability policy and
+        // register the instance there, so it is reachable by invocation (which looks the
+        // instance up in the component's engine). This is the path that lets WASI-needing
+        // components be driven under a capability policy.
+        final long engineHandle = jniComponent.getEngine().getNativeHandle();
+        final java.util.List<WasiPreview2Config.PreopenDir> preopens =
+            cfg.getPreopenDirs() == null
+                ? java.util.Collections.emptyList()
+                : cfg.getPreopenDirs();
+        final String[] hostPaths = new String[preopens.size()];
+        final String[] guestPaths = new String[preopens.size()];
+        final int[] dirPermBits = new int[preopens.size()];
+        final int[] filePermBits = new int[preopens.size()];
+        for (int i = 0; i < preopens.size(); i++) {
+          final WasiPreview2Config.PreopenDir dir = preopens.get(i);
+          hostPaths[i] = dir.getHostPath().toAbsolutePath().toString();
+          guestPaths[i] = dir.getGuestPath();
+          dirPermBits[i] = dir.getDirPerms().getBits();
+          filePermBits[i] = dir.getFilePerms().getBits();
+        }
+        final java.util.Map<String, String> envMap =
+            cfg.getEnv() == null ? java.util.Collections.emptyMap() : cfg.getEnv();
+        final String[] envKeys = new String[envMap.size()];
+        final String[] envVals = new String[envMap.size()];
+        int ei = 0;
+        for (final java.util.Map.Entry<String, String> e : envMap.entrySet()) {
+          envKeys[ei] = e.getKey();
+          envVals[ei] = e.getValue();
+          ei++;
+        }
+        instanceHandle =
+            JniComponent.nativeInstantiateComponentWithWasi(
+                engineHandle,
+                componentHandle,
+                hostPaths,
+                guestPaths,
+                dirPermBits,
+                filePermBits,
+                envKeys,
+                envVals,
+                cfg.isInheritStdout() || cfg.isInheritStdio(),
+                cfg.isInheritStderr() || cfg.isInheritStdio(),
+                cfg.isAllowNetwork());
+      } else {
+        instanceHandle = nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
+      }
       if (instanceHandle == 0) {
         throw new WasmException("Failed to instantiate component with linker");
       }
@@ -571,6 +621,10 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     try {
       // Apply config settings before enabling WASI
       applyWasiConfig(config);
+
+      // Retain the config so instantiate() can build the store's WASI context (preopens/env/
+      // network) on the component's engine — see instantiate(Store, Component).
+      this.wasiConfig = config;
 
       // Enable WASI Preview 2
       enableWasiPreview2();
