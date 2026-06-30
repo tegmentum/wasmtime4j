@@ -657,8 +657,9 @@ public final class WitValueDeserializer {
 
       final WitValue value = deserialize(discriminator, valueData);
 
-      // Create a placeholder option type - full implementation would need actual WitType
-      return WitOption.some(WitType.option(WitType.createBool()), value);
+      // Derive the option's element type from the decoded value (was hardcoded to bool, which
+      // made every option<T> with a present non-bool payload fail validation in WitOption).
+      return WitOption.some(WitType.option(value.getType()), value);
     }
   }
 
