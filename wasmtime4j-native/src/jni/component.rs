@@ -96,6 +96,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
     inherit_stderr: jboolean,
     allow_network: jboolean,
     fuel_limit: jlong,
+    max_memory_bytes: jlong,
+    epoch_deadline: jlong,
 ) -> jlong {
     fn read_strings(env: &mut JNIEnv, arr: &jni::objects::JObjectArray) -> Vec<String> {
         let len = env.get_array_length(arr).unwrap_or(0);
@@ -150,13 +152,15 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
         }
 
         let wasi_ctx = cfg.build_wasi_ctx();
-        // Negative = no cap (run unlimited); >= 0 = the requested fuel budget.
-        let fuel = if fuel_limit < 0 {
-            None
-        } else {
-            Some(fuel_limit as u64)
-        };
-        Ok(engine.instantiate_component_with_wasi(component, wasi_ctx, fuel)? as jlong)
+        // Negative = no cap (run unlimited); >= 0 = the requested budget.
+        let opt = |v: jlong| if v < 0 { None } else { Some(v as u64) };
+        Ok(engine.instantiate_component_with_wasi(
+            component,
+            wasi_ctx,
+            opt(fuel_limit),
+            opt(max_memory_bytes),
+            opt(epoch_deadline),
+        )? as jlong)
     })
 }
 

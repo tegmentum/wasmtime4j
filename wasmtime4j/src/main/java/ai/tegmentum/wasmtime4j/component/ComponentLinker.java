@@ -325,6 +325,20 @@ public interface ComponentLinker<T> extends Closeable {
   void enableWasiPreview2(WasiPreview2Config config) throws WasmException;
 
   /**
+   * Sets the per-instance resource caps applied to the store created at {@link #instantiate}. A
+   * value {@code < 0} means "no cap" (unlimited). Fuel is carried separately via the store; this
+   * covers the caps that a store cannot report back: maximum linear memory and the epoch deadline.
+   *
+   * <p>Default no-op for providers that do not enforce component resource limits.
+   *
+   * @param maxMemoryBytes maximum total linear memory in bytes, or {@code < 0} for unlimited
+   * @param epochDeadline epoch-tick deadline (~milliseconds), or {@code < 0} for no deadline
+   */
+  default void setComponentResourceLimits(long maxMemoryBytes, long epochDeadline) {
+    // no-op by default
+  }
+
+  /**
    * Enables WASI HTTP support in this component linker.
    *
    * <p>WASI Preview 2 must be enabled first via {@link #enableWasiPreview2()} before enabling HTTP

@@ -21,7 +21,7 @@ use wasmtime::{
         types::ComponentItem, Component as WasmtimeComponent,
         Instance as WasmtimeComponentInstance, Linker as ComponentLinker, ResourceTable, Type, Val,
     },
-    AsContextMut, Engine, Store,
+    AsContextMut, Engine, Store, StoreLimitsBuilder,
 };
 
 #[cfg(feature = "wasi")]
@@ -33,6 +33,10 @@ use crate::component::{
     TypeDefinition,
 };
 use crate::error::{WasmtimeError, WasmtimeResult};
+
+/// "No epoch deadline" sentinel: a relative tick count large enough to never fire, yet small
+/// enough that `current_epoch + this` cannot overflow (the epoch ticker advances ~1/ms).
+const NO_EPOCH_DEADLINE: u64 = u64::MAX >> 1;
 
 /// Enhanced component engine with actual Wasmtime component model integration
 pub struct EnhancedComponentEngine {
@@ -197,8 +201,13 @@ impl EnhancedComponentEngine {
         };
 
         let mut store = Store::new(&self.engine, store_data);
-        // The shared component engine meters fuel; this path takes no cap, so run unlimited.
+        // The shared component engine meters fuel + epoch; this path takes no caps, so run
+        // unlimited (otherwise the first instruction / first tick would trap).
         let _ = store.set_fuel(u64::MAX);
+        // set_epoch_deadline is RELATIVE (current_epoch + ticks); the ticker has already advanced
+        // the epoch, so u64::MAX would overflow and wrap to an already-passed deadline. Use a large
+        // finite sentinel for "no deadline".
+        store.set_epoch_deadline(NO_EPOCH_DEADLINE);
 
         // Create a fresh linker for this instantiation
         // This avoids potential issues with shared mutable state in the linker
@@ -264,9 +273,17 @@ impl EnhancedComponentEngine {
         component: &Component,
         wasi_ctx: wasmtime_wasi::WasiCtx,
         fuel_limit: Option<u64>,
+        max_memory_bytes: Option<u64>,
+        epoch_deadline: Option<u64>,
     ) -> WasmtimeResult<u64> {
         let instance_id = self.get_next_instance_id()?;
         let start_time = Instant::now();
+
+        // A memory cap becomes a wasmtime StoreLimits limiter (caps total linear memory; a grow
+        // beyond it fails and the guest traps). Held in the store data so the limiter closure can
+        // borrow it for the store's lifetime.
+        let store_limits = max_memory_bytes
+            .map(|bytes| StoreLimitsBuilder::new().memory_size(bytes as usize).build());
 
         let store_data = ComponentStoreData {
             instance_id,
@@ -279,14 +296,24 @@ impl EnhancedComponentEngine {
             wasi_http_hooks: [(); 0],
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
-            store_limits: None,
+            store_limits,
             start_time,
         };
 
         let mut store = Store::new(&self.engine, store_data);
-        // Apply the caller's compute cap (the shared component engine meters fuel); no cap = run
-        // unlimited. This is where a Svalinn policy's fuel budget is actually enforced.
+        // Apply the caller's resource caps (the shared component engine meters fuel + epoch); no
+        // cap = run unlimited. This is where a Svalinn policy's compute/memory budget is enforced.
         let _ = store.set_fuel(fuel_limit.unwrap_or(u64::MAX));
+        // Relative deadline; use a large finite sentinel for "no deadline" to avoid overflow (see
+        // instantiate_component).
+        store.set_epoch_deadline(epoch_deadline.unwrap_or(NO_EPOCH_DEADLINE));
+        if store.data().store_limits.is_some() {
+            store.limiter(|data| {
+                data.store_limits
+                    .as_mut()
+                    .expect("store_limits present when a memory cap was requested")
+            });
+        }
 
         let mut linker: ComponentLinker<ComponentStoreData> = ComponentLinker::new(&self.engine);
         wasmtime_wasi::p2::add_to_linker_sync(&mut linker).map_err(|e| {

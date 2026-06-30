@@ -139,7 +139,9 @@ public final class JniComponent {
       boolean inheritStdout,
       boolean inheritStderr,
       boolean allowNetwork,
-      long fuelLimit);
+      long fuelLimit,
+      long maxMemoryBytes,
+      long epochDeadline);
 
   /**
    * Gets the size of a component in bytes.

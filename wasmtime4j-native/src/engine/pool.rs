@@ -54,8 +54,29 @@ pub(crate) fn init_shared_component_wasmtime_engine() -> Result<WasmtimeEngine, 
     // containment). Stores created on this engine MUST set fuel (the requested cap, or u64::MAX
     // for "unlimited") or their first instruction traps — see EnhancedComponentEngine::instantiate*.
     config.consume_fuel(true);
-    WasmtimeEngine::new(&config)
-        .map_err(|e| format!("Failed to create shared component wasmtime engine: {}", e))
+    // Enable epoch interruption so a per-instance wall-clock deadline is enforceable. A background
+    // ticker (start_component_epoch_ticker) advances the epoch ~1/ms; stores set a deadline in
+    // those ~ms ticks (or u64::MAX for "no deadline").
+    config.epoch_interruption(true);
+    let engine = WasmtimeEngine::new(&config)
+        .map_err(|e| format!("Failed to create shared component wasmtime engine: {}", e))?;
+    start_component_epoch_ticker(engine.clone());
+    Ok(engine)
+}
+
+/// One daemon thread advances the shared component engine's epoch roughly once per millisecond, so
+/// per-store epoch deadlines (set in ms-ticks) actually fire. Started once, lives for the process.
+fn start_component_epoch_ticker(engine: WasmtimeEngine) {
+    static TICKER_STARTED: OnceLock<()> = OnceLock::new();
+    TICKER_STARTED.get_or_init(|| {
+        std::thread::Builder::new()
+            .name("svalinn-component-epoch".to_string())
+            .spawn(move || loop {
+                std::thread::sleep(std::time::Duration::from_millis(1));
+                engine.increment_epoch();
+            })
+            .ok();
+    });
 }
 
 /// Shared wasmtime::Engine with GC enabled.
@@ -109,11 +130,14 @@ pub fn get_shared_component_wasmtime_engine() -> WasmtimeEngine {
             let mut config = safe_wasmtime_config();
             config.wasm_component_model(true);
             config.consume_fuel(true);
-            WasmtimeEngine::new(&config).unwrap_or_else(|_| {
+            config.epoch_interruption(true);
+            let fallback = WasmtimeEngine::new(&config).unwrap_or_else(|_| {
                 // Ultimate fallback: basic config
                 WasmtimeEngine::new(&safe_wasmtime_config())
                     .expect("Failed to create even basic fallback engine")
-            })
+            });
+            start_component_epoch_ticker(fallback.clone());
+            fallback
         }
     }
 }

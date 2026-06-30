@@ -71,6 +71,11 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   /** WASI Preview 2 config supplied via {@link #enableWasiPreview2(WasiPreview2Config)}, if any. */
   private volatile WasiPreview2Config wasiConfig;
 
+  /** Per-instance memory cap (bytes) / epoch deadline (ticks); {@code < 0} = unlimited. */
+  private volatile long maxMemoryBytes = -1L;
+
+  private volatile long epochDeadline = -1L;
+
   /**
    * Creates a new JNI component linker with the given native handle.
    *
@@ -85,6 +90,12 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   @Override
   public Engine getEngine() {
     return engine;
+  }
+
+  @Override
+  public void setComponentResourceLimits(final long maxMemoryBytes, final long epochDeadline) {
+    this.maxMemoryBytes = maxMemoryBytes;
+    this.epochDeadline = epochDeadline;
   }
 
   @Override
@@ -582,7 +593,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
                 cfg.isInheritStdout() || cfg.isInheritStdio(),
                 cfg.isInheritStderr() || cfg.isInheritStdio(),
                 cfg.isAllowNetwork(),
-                fuelLimit);
+                fuelLimit,
+                maxMemoryBytes,
+                epochDeadline);
       } else {
         instanceHandle = nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
       }
