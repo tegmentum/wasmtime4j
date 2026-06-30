@@ -138,7 +138,8 @@ public final class JniComponent {
       String[] envVals,
       boolean inheritStdout,
       boolean inheritStderr,
-      boolean allowNetwork);
+      boolean allowNetwork,
+      long fuelLimit);
 
   /**
    * Gets the size of a component in bytes.

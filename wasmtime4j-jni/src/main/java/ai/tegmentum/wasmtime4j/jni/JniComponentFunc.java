@@ -18,10 +18,10 @@ package ai.tegmentum.wasmtime4j.jni;
 import ai.tegmentum.wasmtime4j.component.ComponentFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentFunction;
 import ai.tegmentum.wasmtime4j.component.ComponentInstance;
-import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
-import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentResourceHandle;
 import ai.tegmentum.wasmtime4j.component.ComponentResult;
+import ai.tegmentum.wasmtime4j.component.ComponentTypeDescriptor;
+import ai.tegmentum.wasmtime4j.component.ComponentTypedFunc;
 import ai.tegmentum.wasmtime4j.component.ComponentVal;
 import ai.tegmentum.wasmtime4j.component.ComponentValFactory;
 import ai.tegmentum.wasmtime4j.component.ComponentVariant;
@@ -261,92 +261,103 @@ public final class JniComponentFunc
           return WitChar.of(val.asChar());
         case STRING:
           return WitString.of(val.asString());
-        case OWN: {
-          // Coerce to an owned handle: a value tagged OWN may still wrap a handle whose
-          // own/borrow flag was set differently (e.g. a handle returned by a prior call).
-          final ComponentResourceHandle h = val.asResource();
-          return WitOwn.fromHandle(
-              h.isOwned() ? h : ComponentResourceHandle.own(h.getResourceType(), h.getIndex()));
-        }
-        case BORROW: {
-          // Coerce to a borrowed handle. Resources returned as `own` (e.g. a vm-handle from
-          // create-vm) are commonly passed back as `borrow<T>` to later calls (define-class,
-          // invoke-static); present them as a borrow of the same resource index.
-          final ComponentResourceHandle h = val.asResource();
-          return WitBorrow.fromHandle(
-              h.isBorrowed() ? h : ComponentResourceHandle.borrow(h.getResourceType(), h.getIndex()));
-        }
-        case LIST: {
-          final List<ComponentVal> src = val.asList();
-          if (src.isEmpty()) {
-            // Empty list: element type can't be inferred from values. The canonical ABI
-            // lowering of a zero-length list doesn't use the element type, so a placeholder
-            // is adequate.
-            return WitList.empty(WitType.createString());
+        case OWN:
+          {
+            // Coerce to an owned handle: a value tagged OWN may still wrap a handle whose
+            // own/borrow flag was set differently (e.g. a handle returned by a prior call).
+            final ComponentResourceHandle h = val.asResource();
+            return WitOwn.fromHandle(
+                h.isOwned() ? h : ComponentResourceHandle.own(h.getResourceType(), h.getIndex()));
           }
-          final List<WitValue> elements = new ArrayList<>();
-          for (final ComponentVal e : src) {
-            elements.add(componentValToWitValue(e));
+        case BORROW:
+          {
+            // Coerce to a borrowed handle. Resources returned as `own` (e.g. a vm-handle from
+            // create-vm) are commonly passed back as `borrow<T>` to later calls (define-class,
+            // invoke-static); present them as a borrow of the same resource index.
+            final ComponentResourceHandle h = val.asResource();
+            return WitBorrow.fromHandle(
+                h.isBorrowed()
+                    ? h
+                    : ComponentResourceHandle.borrow(h.getResourceType(), h.getIndex()));
           }
-          return WitList.of(elements);
-        }
-        case TUPLE: {
-          final List<WitValue> elements = new ArrayList<>();
-          for (final ComponentVal e : val.asTuple()) {
-            elements.add(componentValToWitValue(e));
+        case LIST:
+          {
+            final List<ComponentVal> src = val.asList();
+            if (src.isEmpty()) {
+              // Empty list: element type can't be inferred from values. The canonical ABI
+              // lowering of a zero-length list doesn't use the element type, so a placeholder
+              // is adequate.
+              return WitList.empty(WitType.createString());
+            }
+            final List<WitValue> elements = new ArrayList<>();
+            for (final ComponentVal e : src) {
+              elements.add(componentValToWitValue(e));
+            }
+            return WitList.of(elements);
           }
-          return WitTuple.of(elements);
-        }
-        case RECORD: {
-          final Map<String, WitValue> fields = new LinkedHashMap<>();
-          for (final Map.Entry<String, ComponentVal> e : val.asRecord().entrySet()) {
-            fields.put(e.getKey(), componentValToWitValue(e.getValue()));
+        case TUPLE:
+          {
+            final List<WitValue> elements = new ArrayList<>();
+            for (final ComponentVal e : val.asTuple()) {
+              elements.add(componentValToWitValue(e));
+            }
+            return WitTuple.of(elements);
           }
-          return WitRecord.of(fields);
-        }
-        case OPTION: {
-          final Optional<ComponentVal> some = val.asSome();
-          if (some.isPresent()) {
-            final WitValue inner = componentValToWitValue(some.get());
-            return WitOption.some(WitType.option(witTypeOf(some.get())), inner);
+        case RECORD:
+          {
+            final Map<String, WitValue> fields = new LinkedHashMap<>();
+            for (final Map.Entry<String, ComponentVal> e : val.asRecord().entrySet()) {
+              fields.put(e.getKey(), componentValToWitValue(e.getValue()));
+            }
+            return WitRecord.of(fields);
           }
-          // None: the inner type is not recoverable from the value; the canonical lowering
-          // uses the function's declared parameter type, so a string placeholder is adequate.
-          return WitOption.none(WitType.option(WitType.createString()));
-        }
-        case VARIANT: {
-          final ComponentVariant variant = val.asVariant();
-          final Optional<ComponentVal> payload = variant.getPayload();
-          final Map<String, Optional<WitType>> cases = new LinkedHashMap<>();
-          cases.put(variant.getCaseName(),
-              payload.map(JniComponentFunc.this::witTypeOf));
-          final WitType type = WitType.variant("variant", cases);
-          return payload.isPresent()
-              ? WitVariant.of(type, variant.getCaseName(), componentValToWitValue(payload.get()))
-              : WitVariant.of(type, variant.getCaseName());
-        }
+        case OPTION:
+          {
+            final Optional<ComponentVal> some = val.asSome();
+            if (some.isPresent()) {
+              final WitValue inner = componentValToWitValue(some.get());
+              return WitOption.some(WitType.option(witTypeOf(some.get())), inner);
+            }
+            // None: the inner type is not recoverable from the value; the canonical lowering
+            // uses the function's declared parameter type, so a string placeholder is adequate.
+            return WitOption.none(WitType.option(WitType.createString()));
+          }
+        case VARIANT:
+          {
+            final ComponentVariant variant = val.asVariant();
+            final Optional<ComponentVal> payload = variant.getPayload();
+            final Map<String, Optional<WitType>> cases = new LinkedHashMap<>();
+            cases.put(variant.getCaseName(), payload.map(JniComponentFunc.this::witTypeOf));
+            final WitType type = WitType.variant("variant", cases);
+            return payload.isPresent()
+                ? WitVariant.of(type, variant.getCaseName(), componentValToWitValue(payload.get()))
+                : WitVariant.of(type, variant.getCaseName());
+          }
         case ENUM:
           return WitEnum.of(WitType.enumType("enum", List.of(val.asEnum())), val.asEnum());
-        case FLAGS: {
-          final List<String> names = new ArrayList<>(val.asFlags());
-          return WitFlags.of(WitType.flags("flags", names), val.asFlags());
-        }
-        case RESULT: {
-          final ComponentResult result = val.asResult();
-          final Optional<ComponentVal> ok = result.getOk();
-          final Optional<ComponentVal> err = result.getErr();
-          final WitType type = WitType.result(
-              ok.map(JniComponentFunc.this::witTypeOf),
-              err.map(JniComponentFunc.this::witTypeOf));
-          if (result.isOk()) {
-            return ok.isPresent()
-                ? WitResult.ok(type, componentValToWitValue(ok.get()))
-                : WitResult.ok(type);
+        case FLAGS:
+          {
+            final List<String> names = new ArrayList<>(val.asFlags());
+            return WitFlags.of(WitType.flags("flags", names), val.asFlags());
           }
-          return err.isPresent()
-              ? WitResult.err(type, componentValToWitValue(err.get()))
-              : WitResult.err(type);
-        }
+        case RESULT:
+          {
+            final ComponentResult result = val.asResult();
+            final Optional<ComponentVal> ok = result.getOk();
+            final Optional<ComponentVal> err = result.getErr();
+            final WitType type =
+                WitType.result(
+                    ok.map(JniComponentFunc.this::witTypeOf),
+                    err.map(JniComponentFunc.this::witTypeOf));
+            if (result.isOk()) {
+              return ok.isPresent()
+                  ? WitResult.ok(type, componentValToWitValue(ok.get()))
+                  : WitResult.ok(type);
+            }
+            return err.isPresent()
+                ? WitResult.err(type, componentValToWitValue(err.get()))
+                : WitResult.err(type);
+          }
         default:
           throw new IllegalArgumentException("Unsupported ComponentVal type: " + val.getType());
       }
@@ -360,60 +371,78 @@ public final class JniComponentFunc
   }
 
   /**
-   * Best-effort derivation of a {@link WitType} from a value's structure. Used where the
-   * composite WitValue factories require a type (option/variant/result/enum/flags). Inner types
-   * of empty collections / {@code none} are not recoverable from the value alone; the canonical
-   * ABI lowering uses the function's declared parameter type, so a placeholder suffices there.
+   * Best-effort derivation of a {@link WitType} from a value's structure. Used where the composite
+   * WitValue factories require a type (option/variant/result/enum/flags). Inner types of empty
+   * collections / {@code none} are not recoverable from the value alone; the canonical ABI lowering
+   * uses the function's declared parameter type, so a placeholder suffices there.
    */
   private WitType witTypeOf(final ComponentVal val) {
     switch (val.getType()) {
-      case BOOL:    return WitType.createBool();
-      case S8:      return WitType.createS8();
-      case S16:     return WitType.createS16();
-      case S32:     return WitType.createS32();
-      case S64:     return WitType.createS64();
-      case U8:      return WitType.createU8();
-      case U16:     return WitType.createU16();
-      case U32:     return WitType.createU32();
-      case U64:     return WitType.createU64();
-      case F32:     return WitType.createFloat32();
-      case F64:     return WitType.createFloat64();
-      case CHAR:    return WitType.createChar();
-      case STRING:  return WitType.createString();
-      case LIST: {
-        final List<ComponentVal> es = val.asList();
-        return WitType.list(es.isEmpty() ? WitType.createString() : witTypeOf(es.get(0)));
-      }
-      case TUPLE: {
-        final List<WitType> types = new ArrayList<>();
-        for (final ComponentVal e : val.asTuple()) {
-          types.add(witTypeOf(e));
+      case BOOL:
+        return WitType.createBool();
+      case S8:
+        return WitType.createS8();
+      case S16:
+        return WitType.createS16();
+      case S32:
+        return WitType.createS32();
+      case S64:
+        return WitType.createS64();
+      case U8:
+        return WitType.createU8();
+      case U16:
+        return WitType.createU16();
+      case U32:
+        return WitType.createU32();
+      case U64:
+        return WitType.createU64();
+      case F32:
+        return WitType.createFloat32();
+      case F64:
+        return WitType.createFloat64();
+      case CHAR:
+        return WitType.createChar();
+      case STRING:
+        return WitType.createString();
+      case LIST:
+        {
+          final List<ComponentVal> es = val.asList();
+          return WitType.list(es.isEmpty() ? WitType.createString() : witTypeOf(es.get(0)));
         }
-        return WitType.tuple(types);
-      }
-      case RECORD: {
-        final Map<String, WitType> fields = new LinkedHashMap<>();
-        for (final Map.Entry<String, ComponentVal> e : val.asRecord().entrySet()) {
-          fields.put(e.getKey(), witTypeOf(e.getValue()));
+      case TUPLE:
+        {
+          final List<WitType> types = new ArrayList<>();
+          for (final ComponentVal e : val.asTuple()) {
+            types.add(witTypeOf(e));
+          }
+          return WitType.tuple(types);
         }
-        return WitType.record("record", fields);
-      }
+      case RECORD:
+        {
+          final Map<String, WitType> fields = new LinkedHashMap<>();
+          for (final Map.Entry<String, ComponentVal> e : val.asRecord().entrySet()) {
+            fields.put(e.getKey(), witTypeOf(e.getValue()));
+          }
+          return WitType.record("record", fields);
+        }
       case OPTION:
         return WitType.option(val.asSome().map(this::witTypeOf).orElse(WitType.createString()));
       case ENUM:
         return WitType.enumType("enum", List.of(val.asEnum()));
       case FLAGS:
         return WitType.flags("flags", new ArrayList<>(val.asFlags()));
-      case VARIANT: {
-        final ComponentVariant v = val.asVariant();
-        final Map<String, Optional<WitType>> cases = new LinkedHashMap<>();
-        cases.put(v.getCaseName(), v.getPayload().map(this::witTypeOf));
-        return WitType.variant("variant", cases);
-      }
-      case RESULT: {
-        final ComponentResult r = val.asResult();
-        return WitType.result(r.getOk().map(this::witTypeOf), r.getErr().map(this::witTypeOf));
-      }
+      case VARIANT:
+        {
+          final ComponentVariant v = val.asVariant();
+          final Map<String, Optional<WitType>> cases = new LinkedHashMap<>();
+          cases.put(v.getCaseName(), v.getPayload().map(this::witTypeOf));
+          return WitType.variant("variant", cases);
+        }
+      case RESULT:
+        {
+          final ComponentResult r = val.asResult();
+          return WitType.result(r.getOk().map(this::witTypeOf), r.getErr().map(this::witTypeOf));
+        }
       default:
         return WitType.createString();
     }
@@ -496,8 +525,7 @@ public final class JniComponentFunc
     } else if (val instanceof WitVariant) {
       final WitVariant var = (WitVariant) val;
       return ComponentValFactory.INSTANCE.createVariant(
-          var.getCaseName(),
-          var.getPayload().map(this::witValueToComponentVal).orElse(null));
+          var.getCaseName(), var.getPayload().map(this::witValueToComponentVal).orElse(null));
     } else if (val instanceof WitEnum) {
       return ComponentValFactory.INSTANCE.createEnum(((WitEnum) val).getDiscriminant());
     } else if (val instanceof WitFlags) {

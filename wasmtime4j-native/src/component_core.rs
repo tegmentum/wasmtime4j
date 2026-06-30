@@ -197,6 +197,8 @@ impl EnhancedComponentEngine {
         };
 
         let mut store = Store::new(&self.engine, store_data);
+        // The shared component engine meters fuel; this path takes no cap, so run unlimited.
+        let _ = store.set_fuel(u64::MAX);
 
         // Create a fresh linker for this instantiation
         // This avoids potential issues with shared mutable state in the linker
@@ -261,6 +263,7 @@ impl EnhancedComponentEngine {
         &self,
         component: &Component,
         wasi_ctx: wasmtime_wasi::WasiCtx,
+        fuel_limit: Option<u64>,
     ) -> WasmtimeResult<u64> {
         let instance_id = self.get_next_instance_id()?;
         let start_time = Instant::now();
@@ -281,6 +284,9 @@ impl EnhancedComponentEngine {
         };
 
         let mut store = Store::new(&self.engine, store_data);
+        // Apply the caller's compute cap (the shared component engine meters fuel); no cap = run
+        // unlimited. This is where a Svalinn policy's fuel budget is actually enforced.
+        let _ = store.set_fuel(fuel_limit.unwrap_or(u64::MAX));
 
         let mut linker: ComponentLinker<ComponentStoreData> = ComponentLinker::new(&self.engine);
         wasmtime_wasi::p2::add_to_linker_sync(&mut linker).map_err(|e| {

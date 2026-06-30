@@ -531,9 +531,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
         // components be driven under a capability policy.
         final long engineHandle = jniComponent.getEngine().getNativeHandle();
         final java.util.List<WasiPreview2Config.PreopenDir> preopens =
-            cfg.getPreopenDirs() == null
-                ? java.util.Collections.emptyList()
-                : cfg.getPreopenDirs();
+            cfg.getPreopenDirs() == null ? java.util.Collections.emptyList() : cfg.getPreopenDirs();
         final String[] hostPaths = new String[preopens.size()];
         final String[] guestPaths = new String[preopens.size()];
         final int[] dirPermBits = new int[preopens.size()];
@@ -555,6 +553,22 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
           envVals[ei] = e.getValue();
           ei++;
         }
+        // Carry the caller's compute cap to the component store the native side creates: the
+        // high-level provider sets it via Store.setFuel on this (fuel-metered) store, so its
+        // remaining fuel IS the requested budget. If the store's engine isn't fuel-metered,
+        // getFuel throws and we pass -1 (unlimited). See UPSTREAM-FIXES.md Fix 11.
+        long fuelLimit = -1L;
+        if (store instanceof JniStore) {
+          try {
+            final long f = ((JniStore) store).getFuel();
+            // > 0 is a real cap; 0 means the store's engine isn't fuel-metered (no cap set) — treat
+            // as unlimited (-1). A literal 0-fuel cap is meaningless (the component can't even
+            // instantiate), so it is not a value worth distinguishing.
+            fuelLimit = f > 0L ? f : -1L;
+          } catch (final WasmException ignored) {
+            fuelLimit = -1L;
+          }
+        }
         instanceHandle =
             JniComponent.nativeInstantiateComponentWithWasi(
                 engineHandle,
@@ -567,7 +581,8 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
                 envVals,
                 cfg.isInheritStdout() || cfg.isInheritStdio(),
                 cfg.isInheritStderr() || cfg.isInheritStdio(),
-                cfg.isAllowNetwork());
+                cfg.isAllowNetwork(),
+                fuelLimit);
       } else {
         instanceHandle = nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
       }

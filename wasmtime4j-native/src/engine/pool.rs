@@ -50,6 +50,10 @@ pub(crate) fn init_shared_component_wasmtime_engine() -> Result<WasmtimeEngine, 
     config.wasm_bulk_memory(true);
     config.wasm_multi_value(true);
     config.wasm_reference_types(true);
+    // Enable fuel metering so per-instance compute caps are enforceable (Svalinn resource
+    // containment). Stores created on this engine MUST set fuel (the requested cap, or u64::MAX
+    // for "unlimited") or their first instruction traps — see EnhancedComponentEngine::instantiate*.
+    config.consume_fuel(true);
     WasmtimeEngine::new(&config)
         .map_err(|e| format!("Failed to create shared component wasmtime engine: {}", e))
 }
@@ -104,6 +108,7 @@ pub fn get_shared_component_wasmtime_engine() -> WasmtimeEngine {
             // Create a minimal fallback engine - this is a last resort
             let mut config = safe_wasmtime_config();
             config.wasm_component_model(true);
+            config.consume_fuel(true);
             WasmtimeEngine::new(&config).unwrap_or_else(|_| {
                 // Ultimate fallback: basic config
                 WasmtimeEngine::new(&safe_wasmtime_config())
