@@ -293,7 +293,7 @@ public final class JniComponentFunc
             for (final ComponentVal e : src) {
               elements.add(componentValToWitValue(e));
             }
-            return WitList.of(elements);
+            return WitList.of(unifyVariantElementTypes(elements));
           }
         case TUPLE:
           {
@@ -368,6 +368,39 @@ public final class JniComponentFunc
       throw new ValidationException(
           "Failed to convert ComponentVal to WitValue: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * Give every element of an all-variant list one shared variant {@link WitType} (the union of the
+   * elements' active cases), so {@link WitList} — which infers a single element type from the first
+   * element — accepts a list whose variants carry <em>different</em> active cases. This is exactly
+   * a {@code list<variant>} argument list, e.g. fiji:jvm's {@code list<value>} of {@code
+   * [string-value, int-value]}: without this, element 1's single-case type mismatches element 0's
+   * and {@code WitList.validate} rejects it. The case set only drives Java-side validation; native
+   * lowering resolves each element by its case <em>name</em> (see {@code WitValueSerializer}), so a
+   * union of just the present cases is sufficient and correct. Non-variant lists pass through.
+   */
+  private static List<WitValue> unifyVariantElementTypes(final List<WitValue> elements) {
+    for (final WitValue e : elements) {
+      if (!(e instanceof WitVariant)) {
+        return elements;
+      }
+    }
+    final Map<String, Optional<WitType>> cases = new LinkedHashMap<>();
+    for (final WitValue e : elements) {
+      final WitVariant v = (WitVariant) e;
+      cases.put(v.getCaseName(), v.getPayload().map(WitValue::getType));
+    }
+    final WitType unified = WitType.variant("variant", cases);
+    final List<WitValue> retyped = new ArrayList<>(elements.size());
+    for (final WitValue e : elements) {
+      final WitVariant v = (WitVariant) e;
+      retyped.add(
+          v.getPayload().isPresent()
+              ? WitVariant.of(unified, v.getCaseName(), v.getPayload().get())
+              : WitVariant.of(unified, v.getCaseName()));
+    }
+    return retyped;
   }
 
   /**
