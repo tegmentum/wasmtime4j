@@ -38,7 +38,8 @@ pub use wit::{
 };
 
 pub use linker::{
-    component_linker_core, get_component_host_function_registry, parse_wit_path,
+    add_registered_host_functions_to_linker, component_linker_core,
+    get_component_host_function_registry, parse_wit_path,
     CallbackMonotonicClock, CallbackRng, CallbackSocketAddrCheck, CallbackWallClock,
     ComponentHostCallback, ComponentHostFunctionEntry, ComponentInstancePreWrapper,
     ComponentLinker, ComponentValue, ResourceDestructorCallback, WasiP2Config,

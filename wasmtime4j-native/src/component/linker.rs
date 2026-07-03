@@ -351,6 +351,79 @@ pub fn get_component_host_function_registry(
     COMPONENT_HOST_FUNCTION_REGISTRY.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
+/// Register every host function currently in the global component host-function
+/// registry onto `linker`, under its exact (possibly versioned) interface path.
+///
+/// The WASI capability-policy instantiation path (`instantiate_component_with_wasi`)
+/// builds a fresh `Linker` and only adds WASI. Without this, host functions defined
+/// via `defineFunction`/`define_function_by_path` (e.g. Fiji's host-callback bridge)
+/// are dropped and the component's corresponding import resolves as "not found".
+/// Registering functions a component does not import is harmless — wasmtime ignores
+/// linker definitions that are not requested.
+pub fn add_registered_host_functions_to_linker(
+    linker: &mut Linker<ComponentStoreData>,
+) -> WasmtimeResult<()> {
+    // Group by interface path: wasmtime's LinkerInstance::instance(name) may be called
+    // only once per name, so all funcs of an interface are added under one instance().
+    let mut by_iface: HashMap<String, Vec<Arc<ComponentHostFunctionEntry>>> = HashMap::new();
+    {
+        let registry =
+            get_component_host_function_registry()
+                .lock()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to lock component host function registry: {}", e),
+                })?;
+        for entry in registry.values() {
+            by_iface
+                .entry(entry.interface_path.clone())
+                .or_default()
+                .push(entry.clone());
+        }
+    }
+    if by_iface.is_empty() {
+        return Ok(());
+    }
+    linker.allow_shadowing(true);
+    for (iface, entries) in by_iface {
+        let mut root = linker.root();
+        let mut inst = root.instance(&iface).map_err(|e| WasmtimeError::Linker {
+            message: format!("Failed to get linker instance for '{}': {}", iface, e),
+        })?;
+        for entry in entries {
+            let fn_name = entry.function_name.clone();
+            let fn_entry = entry.clone();
+            inst.func_new(
+                &fn_name,
+                move |_store_ctx: StoreContextMut<'_, ComponentStoreData>,
+                      _func_type,
+                      params: &[Val],
+                      results: &mut [Val]| {
+                    let cv_params: Vec<ComponentValue> =
+                        params.iter().map(val_to_component_value).collect();
+                    let cv_results = fn_entry.callback.execute(&cv_params).map_err(|e| {
+                        wasmtime::Error::msg(format!("Host function callback failed: {}", e))
+                    })?;
+                    for (i, cv) in cv_results.iter().enumerate() {
+                        if i < results.len() {
+                            results[i] = component_value_to_val(cv).map_err(|e| {
+                                wasmtime::Error::msg(format!(
+                                    "Failed to convert result value: {}",
+                                    e
+                                ))
+                            })?;
+                        }
+                    }
+                    Ok(())
+                },
+            )
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!("Failed to define host function '{}': {}", fn_name, e),
+            })?;
+        }
+    }
+    Ok(())
+}
+
 /// Entry in the component host function registry
 pub struct ComponentHostFunctionEntry {
     /// Unique identifier
@@ -361,6 +434,10 @@ pub struct ComponentHostFunctionEntry {
     pub interface_name: String,
     /// Function name (e.g., "print")
     pub function_name: String,
+    /// Full interface path as it appears before '#', INCLUDING any @version
+    /// (e.g., "fiji:host-callback-bridge/bridge@0.1.0"). Used to register the
+    /// function on a linker under the exact (semver-aware) import name.
+    pub interface_path: String,
     /// Callback implementation
     pub callback: Box<dyn ComponentHostCallback>,
 }
@@ -947,6 +1024,7 @@ impl ComponentLinker {
             interface_namespace: interface_namespace.to_string(),
             interface_name: interface_name.to_string(),
             function_name: function_name.to_string(),
+            interface_path: format!("{}/{}", interface_namespace, interface_name),
             callback,
         });
 
@@ -1009,6 +1087,7 @@ impl ComponentLinker {
             interface_namespace: namespace.clone(),
             interface_name: interface.clone(),
             function_name: function.clone(),
+            interface_path: wit_path.split('#').next().unwrap_or(wit_path).to_string(),
             callback,
         });
 
@@ -1210,6 +1289,7 @@ impl ComponentLinker {
             interface_namespace: interface_namespace.to_string(),
             interface_name: interface_name.to_string(),
             function_name: function_name.to_string(),
+            interface_path: format!("{}/{}", interface_namespace, interface_name),
             callback,
         });
 
@@ -1287,6 +1367,7 @@ impl ComponentLinker {
             interface_namespace: namespace.clone(),
             interface_name: interface.clone(),
             function_name: function.clone(),
+            interface_path: wit_path.split('#').next().unwrap_or(wit_path).to_string(),
             callback,
         });
 
@@ -1741,7 +1822,7 @@ impl ComponentLinker {
             .linker
             .instantiate(&mut store, comp_ref)
             .map_err(|e| WasmtimeError::Instance {
-                message: format!("Failed to instantiate component: {}", e),
+                message: format!("Failed to instantiate component: {:#}", e),
             })?;
 
         Ok(Arc::new(instance))

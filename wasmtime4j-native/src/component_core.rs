@@ -229,10 +229,15 @@ impl EnhancedComponentEngine {
             })?;
         }
 
+        // Wire in host functions defined via defineFunction (e.g. Fiji's host-callback bridge).
+        // This WASI-capability path builds a fresh linker; without re-registering them here, those
+        // host imports resolve as "not found". Registering ones a component doesn't import is harmless.
+        crate::component::add_registered_host_functions_to_linker(&mut linker)?;
+
         let instance = linker
             .instantiate(&mut store, component.wasmtime_component())
             .map_err(|e| WasmtimeError::Instance {
-                message: format!("Failed to instantiate component: {}", e),
+                message: format!("Failed to instantiate component: {:#}", e),
             })?;
 
         let handle = ComponentInstanceHandle {
@@ -331,10 +336,15 @@ impl EnhancedComponentEngine {
             }
         })?;
 
+        // Wire in host functions defined via defineFunction (e.g. Fiji's host-callback bridge).
+        // This WASI-capability path builds a fresh linker; without re-registering them here, those
+        // host imports resolve as "not found". Registering ones a component doesn't import is harmless.
+        crate::component::add_registered_host_functions_to_linker(&mut linker)?;
+
         let instance = linker
             .instantiate(&mut store, component.wasmtime_component())
             .map_err(|e| WasmtimeError::Instance {
-                message: format!("Failed to instantiate component: {}", e),
+                message: format!("Failed to instantiate component: {:#}", e),
             })?;
 
         let handle = ComponentInstanceHandle {
