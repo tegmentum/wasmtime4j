@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.2.0] - 2026-07-05
+
+Wasmtime version unchanged (46.0.1). This is a wasmtime4j minor release
+that lands end-to-end Component Model invocation from Java, per-instance
+resource caps (fuel / memory / epoch), and a batch of WIT marshalling
+fixes surfaced by driving a real component (Fiji JVM) end-to-end.
+
+### Added
+
+- **Component Model invocation, end-to-end.** The component path can now
+  drive a real component from Java: composite argument marshalling
+  (record / list / option / variant / result / tuple / enum / flags),
+  WASI-configured instantiation, interface-nested exports (resolved by
+  `iface#func`), and resource handles (`own` = take, `borrow` = peek so
+  a borrowed handle survives reuse across calls). Empty lists no longer
+  require an explicit element type.
+- **`ComponentInstance.invokeWit`** — symmetric typed round-trip variant
+  of `invoke()`. Same argument marshalling, but returns the raw
+  `WitValue` tree instead of a lossy `toJava()`'d Java-shape value
+  (preserves `u64` width, enum discriminants, and option inner types).
+  `invoke()` now delegates to `invokeWit` so the two entry points cannot
+  drift.
+- **Per-instance fuel cap on component invocations.** The shared
+  component engine now enables `consume_fuel`; every component store
+  gets a fuel budget on creation. `JniComponentLinker.instantiate` reads
+  the cap from the supplied store (`getFuel`; `>0` = real cap, `0` /
+  non-metered = unlimited) and threads it through to the native side.
+  Runaway component code under a fuel cap now traps in milliseconds
+  instead of hanging.
+- **Per-instance memory and epoch caps on component invocations.**
+  Memory is enforced via a wasmtime `StoreLimits` limiter built from the
+  configured max. Epoch enforcement enables `epoch_interruption` on the
+  shared component engine with a daemon ticker advancing the epoch
+  ~1/ms; stores set a relative deadline in those ticks (an unset
+  deadline uses a finite sentinel to avoid `current+ticks` overflow
+  wrapping to an already-passed deadline). Threaded through a new
+  `ComponentLinker.setComponentResourceLimits(maxMemoryBytes, epochDeadline)`
+  hook and two new native params. Unbudgeted paths remain unlimited.
+- **Per-call re-arm of fuel and epoch budgets.** The invoke path now
+  re-applies the configured fuel / epoch budgets immediately before each
+  `func.call`, so a `fuel_per_call` / `deadline_ms` reading is
+  per-call, not a per-instance-lifetime budget that traps every later
+  call once the first one exhausts it. Only the high-level WASI
+  instantiate path opts in; the non-WASI and native `ComponentLinker`
+  paths keep their instantiation-time behavior.
+
+### Fixed
+
+- **`nativeInstantiateWithLinker` now really instantiates.** It was a
+  stub that returned a monotonically incrementing phantom instance ID
+  without instantiating the component or registering it in the engine's
+  instance map, so the follow-up invoke failed with "Instance ID N not
+  found in engine". The JNI call now routes through
+  `EnhancedComponentEngine::instantiate_component`, which instantiates,
+  creates the store on the component's engine, and inserts the handle
+  into the engine's instances map. Adds an `engine_handle` param to the
+  JNI signature.
+- **`defineFunction` host functions on the WASI instantiation path.**
+  When a `WasiPreview2Config` was set, the component was instantiated
+  against a fresh Linker with only WASI added, silently dropping every
+  host function defined via `defineFunction`. Component imports meant
+  to be satisfied by those functions then failed as "not found in the
+  linker" even though the function was registered on the
+  `ComponentLinker`'s own linker. The full versioned interface path is
+  now stored on each `ComponentHostFunctionEntry`, and both instantiate
+  paths re-register global-registry host functions onto the linker
+  after `add_to_linker_sync`. `defineFunction` + WASI now compose.
+- **Variant validation uses structural type compatibility.**
+  `WitVariant.validate` compared payload types by strict equals, so a
+  record built via `WitRecord.builder()` (which synthesises the generic
+  name "record") could never match a variant case whose declared inner
+  type had a specific name — even when the field shape matched exactly.
+  Now uses `WitType.isCompatibleWith`, which is structural for records,
+  variants, enums, flags, lists, and options — matching the equality
+  WIT's canonical ABI uses on the wire.
+- **Heterogeneous `list<value>` variant cases accepted.**
+  `componentValToWitValue` builds a single-case `WitType.variant` per
+  value, so a `WitList` inferred its element type from element 0 and
+  rejected a differently-cased element 1. The list case now unifies
+  every element under one shared variant `WitType` (the union of active
+  cases) and re-types each `WitVariant` to it. Unblocks multi-arg
+  component calls with mixed cases (e.g. `fiji:jvm invoke-static` of
+  `(String, int)`).
+- **`WitValueDeserializer.deserializeOption` derives element type from
+  the decoded value.** It previously hardcoded the element type to
+  `bool` when a value was present, so any `some(non-bool)` payload was
+  rejected by `WitOption.validate` with "Option value has type X but
+  expected bool". The `none` arm was unaffected, which hid the bug
+  until a component returned `some(string)` (WASI probe read-env).
+
 ## [46.0.1-1.1.7] - 2026-06-24
 
 ### Changed

@@ -598,8 +598,8 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
                 epochDeadline);
       } else {
         final long engineHandle = jniComponent.getEngine().getNativeHandle();
-        instanceHandle = nativeInstantiateWithLinker(
-            engineHandle, nativeHandle, storeHandle, componentHandle);
+        instanceHandle =
+            nativeInstantiateWithLinker(engineHandle, nativeHandle, storeHandle, componentHandle);
       }
       if (instanceHandle == 0) {
         throw new WasmException("Failed to instantiate component with linker");

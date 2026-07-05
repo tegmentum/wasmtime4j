@@ -55,15 +55,13 @@ public interface ComponentInstance extends AutoCloseable {
   Component getComponent();
 
   /**
-   * Invokes a function exported by this component. The return is unwrapped to a
-   * natural Java shape via {@link ai.tegmentum.wasmtime4j.wit.WitValue#toJava()} for
-   * caller convenience (records → Map, lists → List, options → Optional, results →
-   * Map with isOk/ok/err, etc.).
+   * Invokes a function exported by this component. The return is unwrapped to a natural Java shape
+   * via {@link ai.tegmentum.wasmtime4j.wit.WitValue#toJava()} for caller convenience (records →
+   * Map, lists → List, options → Optional, results → Map with isOk/ok/err, etc.).
    *
    * <p>See {@link #invokeWit} for the typed variant that preserves the {@link
-   * ai.tegmentum.wasmtime4j.wit.WitValue} tree — required for downstream typed
-   * marshalling or when the caller wants exact WIT typing without inspecting Java
-   * shape conventions.
+   * ai.tegmentum.wasmtime4j.wit.WitValue} tree — required for downstream typed marshalling or when
+   * the caller wants exact WIT typing without inspecting Java shape conventions.
    *
    * @param functionName the name of the function to invoke
    * @param args the arguments to pass to the function
@@ -73,14 +71,13 @@ public interface ComponentInstance extends AutoCloseable {
   Object invoke(String functionName, Object... args) throws WasmException;
 
   /**
-   * Typed variant of {@link #invoke} that returns the {@link
-   * ai.tegmentum.wasmtime4j.wit.WitValue} tree directly instead of calling {@link
-   * ai.tegmentum.wasmtime4j.wit.WitValue#toJava()} on it. Symmetric with the input
-   * side, which already requires {@link ai.tegmentum.wasmtime4j.wit.WitValue}
-   * arguments.
+   * Typed variant of {@link #invoke} that returns the {@link ai.tegmentum.wasmtime4j.wit.WitValue}
+   * tree directly instead of calling {@link ai.tegmentum.wasmtime4j.wit.WitValue#toJava()} on it.
+   * Symmetric with the input side, which already requires {@link
+   * ai.tegmentum.wasmtime4j.wit.WitValue} arguments.
    *
-   * <p>Default implementation delegates to {@link #invoke}; providers should
-   * override for a zero-copy typed path.
+   * <p>Default implementation delegates to {@link #invoke}; providers should override for a
+   * zero-copy typed path.
    *
    * @param functionName the name of the function to invoke
    * @param args the arguments to pass to the function
