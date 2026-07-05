@@ -45,9 +45,19 @@ updates:
     # via scripts/sync-wasmtime-version.sh; the wasmtime-upstream-watch
     # workflow opens a tracking issue when upstream releases. Keep Dependabot
     # away from them so it doesn't fight the version-sync flow.
+    # jni 0.22 is a type-system redesign (JNIEnv split into
+    # EnvUnowned/EnvOwned, GlobalRef<T> and JavaStr<StringRef>
+    # generics, JValueGen -> JValue, jboolean semantics). Migrating
+    # requires ~1000+ edits across native/src and revalidation of the
+    # WAST suite — scoped work, not a Dependabot merge. Block minor
+    # and major bumps until we adopt it deliberately.
     ignore:
       - dependency-name: "wasmtime"
       - dependency-name: "wasmtime-*"
+      - dependency-name: "jni"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
     groups:
       cargo-minor-patch:
         update-types:
@@ -64,6 +74,10 @@ updates:
     ignore:
       - dependency-name: "wasmtime"
       - dependency-name: "wasmtime-*"
+      - dependency-name: "jni"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
     groups:
       cargo-fuzz-minor-patch:
         update-types:
