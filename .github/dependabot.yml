@@ -19,6 +19,15 @@ updates:
       day: monday
       time: "10:00"
     open-pull-requests-limit: 10
+    # JUnit 6 requires Java 17+ and a coordinated toolchain bump
+    # (surefire 3.5+, drop Java 8 from the CI matrix, unify
+    # junit.platform.version into junit.version). Block major bumps
+    # until we're ready to do that as a scoped piece of work.
+    ignore:
+      - dependency-name: "org.junit.jupiter:*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.junit.platform:*"
+        update-types: ["version-update:semver-major"]
     groups:
       maven-minor-patch:
         update-types:
