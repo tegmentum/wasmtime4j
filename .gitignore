@@ -76,6 +76,11 @@ jacoco.xml
 wasmtime4j/disaster-recovery-backups/
 wasmtime4j-native/jni-headers/
 
+# JVM crash dumps and stray trace logs
+hs_err_pid*.log
+replay_pid*.log
+trace.log
+
 # JMH Benchmark results
 **/benchmark-results.json
 **/profiling-results.json

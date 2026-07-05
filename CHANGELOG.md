@@ -11,8 +11,23 @@ Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
 Wasmtime version unchanged (46.0.1). This is a wasmtime4j minor release
 that lands end-to-end Component Model invocation from Java, per-instance
-resource caps (fuel / memory / epoch), and a batch of WIT marshalling
-fixes surfaced by driving a real component (Fiji JVM) end-to-end.
+resource caps (fuel / memory / epoch), a batch of WIT marshalling
+fixes surfaced by driving a real component (Fiji JVM) end-to-end, and
+a fix for the empty `wasmtime4j-panama` jar shipped to Maven Central.
+
+### Packaging
+
+- **wasmtime4j-panama Maven Central artifact now contains class files.**
+  The Publish job previously ran on JDK 21, which activated the
+  `panama-unavailable` profile in `wasmtime4j-panama/pom.xml` and
+  skipped compilation — the jar shipped to Maven Central and GitHub
+  Packages was empty, and `WasmRuntimeFactory.create(PANAMA)` threw
+  "runtime type PANAMA is not available and no suitable fallback
+  found". Publish now runs on JDK 23 (matches the CI matrix upper
+  bound; ≥ 22 is required for the finalized Foreign Function & Memory
+  API). Fixes #339. Thanks to @rapus95 (#340) for lowering the profile
+  activation range to `[22,)` to match the module's actual JDK 22
+  compiler settings.
 
 ### Added
 
