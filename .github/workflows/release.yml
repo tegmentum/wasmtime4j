@@ -182,9 +182,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # JDK 23 (>= 22) so the panama-available profile activates and
+      # wasmtime4j-panama actually compiles; JDK 21 activated panama-
+      # unavailable and shipped an empty jar to Maven Central (#339).
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '23'
           distribution: 'temurin'
           server-id: central
           server-username: MAVEN_CENTRAL_USERNAME

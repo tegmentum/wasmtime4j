@@ -51,7 +51,7 @@ Feature requests are welcome! Please:
 
 2. **Install Prerequisites**:
    - Java 8+ (JNI development)
-   - Java 23+ (Panama development)
+   - Java 22+ (Panama development)
    - Rust toolchain (latest stable)
    - Maven 3.6+
 
@@ -269,7 +269,7 @@ Releases follow semantic versioning (SemVer):
 
 #### Panama Development
 
-- Use Panama FFI for Java 23+
+- Use Panama FFI for Java 22+
 - Implementation goes in `wasmtime4j-panama`
 - Leverage shared native library from `wasmtime4j-native`
 - Handle preview feature requirements
