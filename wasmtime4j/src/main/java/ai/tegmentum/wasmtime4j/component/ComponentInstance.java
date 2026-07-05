@@ -55,7 +55,15 @@ public interface ComponentInstance extends AutoCloseable {
   Component getComponent();
 
   /**
-   * Invokes a function exported by this component.
+   * Invokes a function exported by this component. The return is unwrapped to a
+   * natural Java shape via {@link ai.tegmentum.wasmtime4j.wit.WitValue#toJava()} for
+   * caller convenience (records → Map, lists → List, options → Optional, results →
+   * Map with isOk/ok/err, etc.).
+   *
+   * <p>See {@link #invokeWit} for the typed variant that preserves the {@link
+   * ai.tegmentum.wasmtime4j.wit.WitValue} tree — required for downstream typed
+   * marshalling or when the caller wants exact WIT typing without inspecting Java
+   * shape conventions.
    *
    * @param functionName the name of the function to invoke
    * @param args the arguments to pass to the function
@@ -63,6 +71,35 @@ public interface ComponentInstance extends AutoCloseable {
    * @throws WasmException if function invocation fails
    */
   Object invoke(String functionName, Object... args) throws WasmException;
+
+  /**
+   * Typed variant of {@link #invoke} that returns the {@link
+   * ai.tegmentum.wasmtime4j.wit.WitValue} tree directly instead of calling {@link
+   * ai.tegmentum.wasmtime4j.wit.WitValue#toJava()} on it. Symmetric with the input
+   * side, which already requires {@link ai.tegmentum.wasmtime4j.wit.WitValue}
+   * arguments.
+   *
+   * <p>Default implementation delegates to {@link #invoke}; providers should
+   * override for a zero-copy typed path.
+   *
+   * @param functionName the name of the function to invoke
+   * @param args the arguments to pass to the function
+   * @return the WIT value returned by the function, or null for void returns
+   * @throws WasmException if function invocation fails
+   */
+  default ai.tegmentum.wasmtime4j.wit.WitValue invokeWit(String functionName, Object... args)
+      throws WasmException {
+    final Object result = invoke(functionName, args);
+    if (result == null) {
+      return null;
+    }
+    if (result instanceof ai.tegmentum.wasmtime4j.wit.WitValue) {
+      return (ai.tegmentum.wasmtime4j.wit.WitValue) result;
+    }
+    throw new WasmException(
+        "Default invokeWit sees a Java-shape result from invoke; provider must override "
+            + "invokeWit to expose the WitValue tree directly");
+  }
 
   /**
    * Checks if this component instance exports the specified function.

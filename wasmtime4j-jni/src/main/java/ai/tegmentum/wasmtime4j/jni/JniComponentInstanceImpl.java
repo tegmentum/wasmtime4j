@@ -256,6 +256,13 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   @Override
   public Object invoke(final String functionName, final Object... args)
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    final WitValue resultValue = invokeWit(functionName, args);
+    return resultValue == null ? null : resultValue.toJava();
+  }
+
+  @Override
+  public WitValue invokeWit(final String functionName, final Object... args)
+      throws ai.tegmentum.wasmtime4j.exception.WasmException {
     Validation.requireNonEmpty(functionName, "functionName");
     if (!isValid()) {
       throw new WasmException("Component instance is not valid");
@@ -301,13 +308,11 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
         return null;
       }
 
-      // Unmarshal result
+      // Unmarshal result — return the WitValue tree directly. The Java-shape
+      // {@link #invoke} entry-point calls WitValue.toJava() on top of this.
       final int resultType = (Integer) result[0];
       final byte[] resultData = (byte[]) result[1];
-      final WitValue resultValue = WitValueMarshaller.unmarshal(resultType, resultData);
-
-      // Convert back to Java type
-      return resultValue.toJava();
+      return WitValueMarshaller.unmarshal(resultType, resultData);
 
     } catch (final ValidationException e) {
       throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
