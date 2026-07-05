@@ -155,8 +155,12 @@ public final class WitVariant extends WitValue {
                 "Case '%s' requires a payload of type %s",
                 caseName, expectedPayloadType.get().getName()));
       }
-      // Verify payload type matches
-      if (!payload.get().getType().equals(expectedPayloadType.get())) {
+      // Verify payload type is structurally compatible with the declared case type.
+      // Using isCompatibleWith rather than strict equals lets a payload built via
+      // WitRecord.builder() (which synthesises the generic "record" name) satisfy a
+      // variant case that references a named record type with the same field shape —
+      // exactly matching the structural equality WIT's canonical ABI uses on the wire.
+      if (!payload.get().getType().isCompatibleWith(expectedPayloadType.get())) {
         throw new IllegalArgumentException(
             String.format(
                 "Case '%s' payload has type %s but expected %s",
