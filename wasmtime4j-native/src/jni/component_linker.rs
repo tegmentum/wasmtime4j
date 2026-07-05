@@ -1615,11 +1615,19 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeInstantiateWithLinker(
     mut env: JNIEnv,
     _obj: JObject,
+    engine_handle: jlong,
     linker_handle: jlong,
     store_handle: jlong,
     component_handle: jlong,
 ) -> jlong {
     // Validate parameters
+    if engine_handle == 0 {
+        let error = WasmtimeError::InvalidParameter {
+            message: "Invalid engine handle".to_string(),
+        };
+        jni_utils::throw_jni_exception(&mut env, &error);
+        return 0;
+    }
     if linker_handle == 0 {
         let error = WasmtimeError::InvalidParameter {
             message: "Invalid linker handle".to_string(),
@@ -1637,34 +1645,35 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     }
 
     log::info!(
-        "Instantiating component with linker: linker={}, store={}, component={}",
+        "Instantiating component with linker: engine={}, linker={}, store={}, component={}",
+        engine_handle,
         linker_handle,
         store_handle,
         component_handle
     );
 
-    // The linker-based instantiation uses the EnhancedComponentEngine's linker
-    // to instantiate the component with the defined host functions and resources.
-    // For now, delegate to the component's direct instantiation since the linker
-    // context is managed on the Java side. Full integration would require
-    // maintaining the wasmtime Linker<T> on the native side.
-
+    // Real linker-based instantiation. Previously this returned a phantom instance ID
+    // without registering anything with the component engine, so subsequent invokes
+    // failed with "Instance ID N not found in engine".
+    //
+    // The caller-supplied linker/store handles are intentionally not used here: this
+    // path routes to `EnhancedComponentEngine::instantiate_component`, which
+    // constructs its own Store on the component's engine (with defaults) and
+    // registers the instance in that engine's HashMap so it is reachable by
+    // subsequent `nativeComponentInvokeFunction` calls. Callers who need explicit
+    // WASI capabilities or a custom store should use
+    // `nativeInstantiateComponentWithWasi`.
     jni_utils::jni_try_with_default(&mut env, 0, || {
-        // Get the component reference
-        let _component = unsafe {
+        let engine = unsafe {
+            &*(engine_handle as *const crate::component_core::EnhancedComponentEngine)
+        };
+        let component = unsafe {
             crate::component::core::get_component_ref(
                 component_handle as *const std::os::raw::c_void,
             )?
         };
 
-        // For linker-based instantiation, we use the component's engine
-        // which already has the enhanced instantiation logic
-        // This returns an instance ID that can be used to call exported functions
-
-        // Generate a unique instance ID for tracking
-        static INSTANCE_ID_COUNTER: std::sync::atomic::AtomicU64 =
-            std::sync::atomic::AtomicU64::new(1);
-        let instance_id = INSTANCE_ID_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let instance_id = engine.instantiate_component(component)?;
 
         log::info!(
             "Created component instance {} via linker instantiation",

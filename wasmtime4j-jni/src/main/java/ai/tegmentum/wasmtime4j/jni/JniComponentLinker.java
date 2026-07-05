@@ -597,7 +597,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
                 maxMemoryBytes,
                 epochDeadline);
       } else {
-        instanceHandle = nativeInstantiateWithLinker(nativeHandle, storeHandle, componentHandle);
+        final long engineHandle = jniComponent.getEngine().getNativeHandle();
+        instanceHandle = nativeInstantiateWithLinker(
+            engineHandle, nativeHandle, storeHandle, componentHandle);
       }
       if (instanceHandle == 0) {
         throw new WasmException("Failed to instantiate component with linker");
@@ -1371,7 +1373,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
       long linkerHandle, String instancePath, String name, long moduleHandle);
 
   private native long nativeInstantiateWithLinker(
-      long linkerHandle, long storeHandle, long componentHandle);
+      long engineHandle, long linkerHandle, long storeHandle, long componentHandle);
 
   private native long nativeInstantiatePre(long linkerHandle, long componentHandle);
 
