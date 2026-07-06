@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.type.MemoryType;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
@@ -93,6 +94,10 @@ class WasmMemoryTest {
       }
 
       @Override
+      @SuppressFBWarnings(
+          value = "EI_EXPOSE_BUF",
+          justification =
+              "Test double intentionally shares the backing array so tests can observe writes.")
       public ByteBuffer getBuffer() {
         return ByteBuffer.wrap(data);
       }
