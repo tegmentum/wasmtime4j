@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.wasi.http;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,6 +77,12 @@ public abstract class AbstractWasiHttpConfig implements WasiHttpConfig {
    * @param userAgent the user agent string
    */
   @SuppressWarnings("checkstyle:ParameterNumber")
+  @SuppressFBWarnings(
+      value = "CT_CONSTRUCTOR_THROW",
+      justification =
+          "Objects.requireNonNull on collection args can throw NPE; matches the pattern used in"
+              + " WitValue (validate inputs during construction, no subclass can bypass) and the"
+              + " class is abstract with a protected constructor.")
   protected AbstractWasiHttpConfig(
       final Set<String> allowedHosts,
       final Set<String> blockedHosts,

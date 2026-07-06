@@ -195,7 +195,7 @@ public final class WitResource extends WitValue {
   }
 
   @Override
-  public void validate() {
+  protected void validate() {
     if (handle.getIndex() < 0 && handle.getNativeHandle() < 0) {
       throw new IllegalStateException("Resource handle must have a valid index or native handle");
     }

@@ -76,6 +76,10 @@ public abstract class DualRuntimeTest {
    */
   public static class RuntimeProvider implements ArgumentsProvider {
 
+    // JUnit Jupiter 5.13+ deprecated the single-arg provideArguments(ExtensionContext) in favor
+    // of provideArguments(ParameterDeclarations, ExtensionContext). Suppressed so the single-arg
+    // override still compiles clean under -Werror when the junit.version property crosses 5.13.
+    @SuppressWarnings("deprecation")
     @Override
     public Stream<? extends Arguments> provideArguments(final ExtensionContext context) {
       return runtimeTypes().map(Arguments::of);
