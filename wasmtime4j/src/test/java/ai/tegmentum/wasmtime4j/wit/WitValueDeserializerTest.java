@@ -1096,23 +1096,18 @@ final class WitValueDeserializerTest {
   // ==================== List Deserialization Boundary Tests ====================
 
   @Test
-  @DisplayName(
-      "Deserialize list with exactly 4 bytes (minimum for count) should work if count is 0")
-  void testDeserializeListExactlyMinimumBytesForCount() {
-    // 4 bytes for count, but count=0 is not allowed (can't infer type from empty list)
+  @DisplayName("Deserialize list with exactly 4 bytes (minimum for count) yields an empty list")
+  void testDeserializeListExactlyMinimumBytesForCount() throws ValidationException {
+    // 4 bytes for count = 0. WIT allows empty lists on the wire; the deserializer returns
+    // an empty WitList with a placeholder element type (the type is unknowable without
+    // per-element data, but is irrelevant since there are no elements to iterate).
     final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
-    buffer.putInt(0); // count = 0
+    buffer.putInt(0);
     final byte[] data = buffer.array();
 
-    final ValidationException exception =
-        assertThrows(
-            ValidationException.class,
-            () -> WitValueDeserializer.deserialize(11, data),
-            "Empty list should throw exception");
-
-    assertTrue(
-        exception.getMessage().contains("Cannot infer list element type"),
-        "Exception should mention empty list: " + exception.getMessage());
+    final WitValue result = WitValueDeserializer.deserialize(11, data);
+    assertInstanceOf(WitList.class, result, "Result should be WitList");
+    assertEquals(0, ((WitList) result).getElements().size(), "List should be empty");
   }
 
   @Test
@@ -2147,16 +2142,17 @@ final class WitValueDeserializerTest {
     }
 
     @Test
-    @DisplayName("Deserialize list with zero elements should throw (cannot infer element type)")
-    void testDeserializeListZeroElementsShouldThrow() {
+    @DisplayName("Deserialize list with zero elements yields an empty list")
+    void testDeserializeListZeroElementsYieldsEmpty() throws ValidationException {
+      // WIT permits empty lists on the wire; the deserializer uses a placeholder element
+      // type (unrecoverable but irrelevant when count is 0).
       final ByteBuffer buffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
       buffer.putInt(0);
       final byte[] data = buffer.array();
 
-      assertThrows(
-          ValidationException.class,
-          () -> WitValueDeserializer.deserialize(11, data),
-          "Empty list should throw because element type cannot be inferred");
+      final WitValue result = WitValueDeserializer.deserialize(11, data);
+      assertInstanceOf(WitList.class, result, "Result should be WitList");
+      assertEquals(0, ((WitList) result).getElements().size(), "List should be empty");
     }
 
     @Test
