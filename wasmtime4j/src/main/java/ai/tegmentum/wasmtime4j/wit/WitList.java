@@ -180,13 +180,15 @@ public final class WitList extends WitValue {
 
   @Override
   protected void validate() {
-    // Validate that all elements match the declared element type
+    // Use structural compatibility rather than strict equality: sibling elements produced by
+    // WitValueDeserializer may carry independently-synthesised type instances (notably the
+    // "deserialized_variant" placeholder), which are equivalent in shape but not by equals().
     for (int i = 0; i < elements.size(); i++) {
       final WitValue element = elements.get(i);
       if (element == null) {
         throw new IllegalArgumentException("List element at index " + i + " cannot be null");
       }
-      if (!element.getType().equals(elementType)) {
+      if (!element.getType().isStructurallyCompatibleWith(elementType)) {
         throw new IllegalArgumentException(
             String.format(
                 "List element at index %d has type %s but expected %s",
@@ -240,7 +242,9 @@ public final class WitList extends WitValue {
       if (element == null) {
         throw new IllegalArgumentException("Element cannot be null");
       }
-      if (!element.getType().equals(elementType)) {
+      // Mirror WitList.validate: structural compatibility, not strict equality, so post-
+      // deserialization element types don't spuriously reject each other.
+      if (!element.getType().isStructurallyCompatibleWith(elementType)) {
         throw new IllegalArgumentException(
             String.format(
                 "Element type %s does not match list element type %s",

@@ -363,6 +363,128 @@ public final class WitType {
   }
 
   /**
+   * Marker name written by {@link WitValueDeserializer#deserializeVariant} into the synthesised
+   * variant type. When both sides of a comparison carry this marker, the cases-map only reflects
+   * the runtime case that happened to be observed on the wire, so strict cases equality would
+   * reject two otherwise-structurally-identical variants that just happened to carry different
+   * runtime cases.
+   */
+  private static final String DESERIALIZED_VARIANT_MARKER = "deserialized_variant";
+
+  /**
+   * Structural compatibility used by {@link WitList} to accept sibling elements whose types were
+   * reconstructed independently by {@link WitValueDeserializer}. Unlike {@link #equals(Object)} and
+   * {@link #isCompatibleWith(WitType)}, this recurses through records, variants, options, lists,
+   * tuples, and results comparing shape only, and specifically treats two "deserialized_variant"
+   * placeholder types as compatible when their overlapping case names carry compatible payloads.
+   *
+   * <p>The relation is intentionally symmetric so a list's element-type inference (which fixes on
+   * the first element and validates the rest) does not depend on which element appears first.
+   *
+   * @param other the other type
+   * @return true if structurally compatible, false otherwise
+   */
+  public boolean isStructurallyCompatibleWith(final WitType other) {
+    if (other == null) {
+      return false;
+    }
+    if (this.equals(other)) {
+      return true;
+    }
+    final WitTypeCategory thisCategory = kind.getCategory();
+    final WitTypeCategory otherCategory = other.kind.getCategory();
+    if (thisCategory != otherCategory) {
+      return false;
+    }
+    switch (thisCategory) {
+      case PRIMITIVE:
+        return kind.getPrimitiveType().equals(other.kind.getPrimitiveType());
+      case RECORD:
+        return recordFieldsStructurallyCompatible(
+            kind.getRecordFields(), other.kind.getRecordFields());
+      case VARIANT:
+        return variantCasesStructurallyCompatible(this, other);
+      case LIST:
+      case OPTION:
+        return kind.getInnerType()
+            .get()
+            .isStructurallyCompatibleWith(other.kind.getInnerType().get());
+      case TUPLE:
+        return tupleElementsStructurallyCompatible(
+            kind.getTupleElements(), other.kind.getTupleElements());
+      case RESULT:
+        return optionalTypeStructurallyCompatible(kind.getOkType(), other.kind.getOkType())
+            && optionalTypeStructurallyCompatible(kind.getErrorType(), other.kind.getErrorType());
+      default:
+        // Enums, flags, resources have no nested WitType payloads, so their kind-level equality
+        // is already the right notion of structural compatibility.
+        return kind.equals(other.kind);
+    }
+  }
+
+  private static boolean recordFieldsStructurallyCompatible(
+      final Map<String, WitType> left, final Map<String, WitType> right) {
+    if (!left.keySet().equals(right.keySet())) {
+      return false;
+    }
+    for (final Map.Entry<String, WitType> entry : left.entrySet()) {
+      if (!entry.getValue().isStructurallyCompatibleWith(right.get(entry.getKey()))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean variantCasesStructurallyCompatible(
+      final WitType left, final WitType right) {
+    final Map<String, Optional<WitType>> leftCases = left.kind.getVariantCases();
+    final Map<String, Optional<WitType>> rightCases = right.kind.getVariantCases();
+    // Only relax cases equality when BOTH sides are the deserializer's synthetic placeholder
+    // variant. A real, fully-declared variant type must still match strictly so we don't silently
+    // conflate distinct WIT variants that happen to share a case name.
+    final boolean bothDeserialized =
+        DESERIALIZED_VARIANT_MARKER.equals(left.name)
+            && DESERIALIZED_VARIANT_MARKER.equals(right.name);
+    if (!bothDeserialized) {
+      return leftCases.equals(rightCases);
+    }
+    for (final Map.Entry<String, Optional<WitType>> entry : leftCases.entrySet()) {
+      final Optional<WitType> matching = rightCases.get(entry.getKey());
+      if (matching == null) {
+        continue;
+      }
+      if (!optionalTypeStructurallyCompatible(entry.getValue(), matching)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean tupleElementsStructurallyCompatible(
+      final List<WitType> left, final List<WitType> right) {
+    if (left.size() != right.size()) {
+      return false;
+    }
+    for (int i = 0; i < left.size(); i++) {
+      if (!left.get(i).isStructurallyCompatibleWith(right.get(i))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static boolean optionalTypeStructurallyCompatible(
+      final Optional<WitType> left, final Optional<WitType> right) {
+    if (!left.isPresent() && !right.isPresent()) {
+      return true;
+    }
+    if (!left.isPresent() || !right.isPresent()) {
+      return false;
+    }
+    return left.get().isStructurallyCompatibleWith(right.get());
+  }
+
+  /**
    * Gets the size in bytes for this type (for primitive types).
    *
    * @return the size in bytes, or empty for composite types
