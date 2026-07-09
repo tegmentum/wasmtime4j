@@ -131,8 +131,22 @@ public final class WitVariant extends WitValue {
     return result;
   }
 
+  /**
+   * Marker written by {@link WitValueDeserializer} into the shared synthetic variant type. The
+   * wire format does not carry the full set of declared cases, so that sentinel type has an empty
+   * cases map by design (a stable singleton is required for cross-instance {@code equals()}). The
+   * runtime case/payload were produced directly from the wire, so the structural checks below —
+   * which assume a fully-populated declared type — would spuriously reject the sentinel. Bypassing
+   * them for this marker preserves the invariant they enforce for real, user-defined variant
+   * types.
+   */
+  private static final String DESERIALIZED_VARIANT_MARKER = "deserialized_variant";
+
   @Override
   protected void validate() {
+    if (DESERIALIZED_VARIANT_MARKER.equals(getType().getName())) {
+      return;
+    }
     // Extract expected cases from variant type
     final Map<String, Optional<WitType>> cases = extractCases(getType());
 

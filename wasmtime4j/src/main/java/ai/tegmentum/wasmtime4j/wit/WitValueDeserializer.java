@@ -44,6 +44,18 @@ public final class WitValueDeserializer {
   private static final int CHAR_SIZE = 4;
   private static final int STRING_LENGTH_SIZE = 4;
 
+  /**
+   * Stable singleton {@link WitType} used for every variant reconstructed from the wire. The wire
+   * format only carries the runtime case that happened to be present, so any per-instance cases
+   * map would make two nominally-identical variants (e.g. {@code iri} vs {@code literal} cases of
+   * a {@code value} variant) compare non-{@code equals()} — which in turn breaks first-element
+   * type inference in {@link WitList#of}. Sharing one canonical, cases-agnostic {@code WitType}
+   * instance means all deserialized variants collapse to the same type identity while the
+   * observed case name is still preserved on the {@link WitVariant} value itself.
+   */
+  private static final WitType DESERIALIZED_VARIANT_TYPE =
+      WitType.variant("deserialized_variant", java.util.Collections.emptyMap());
+
   /** Private constructor to prevent instantiation. */
   private WitValueDeserializer() {}
 
@@ -542,10 +554,7 @@ public final class WitValueDeserializer {
     final byte hasPayload = buffer.get();
 
     if (hasPayload == 0) {
-      final java.util.Map<String, java.util.Optional<WitType>> cases =
-          new java.util.LinkedHashMap<>();
-      cases.put(caseName, java.util.Optional.empty());
-      return WitVariant.of(WitType.variant("deserialized_variant", cases), caseName);
+      return WitVariant.of(DESERIALIZED_VARIANT_TYPE, caseName);
     } else {
       // Read payload
       if (buffer.remaining() < 8) {
@@ -568,10 +577,7 @@ public final class WitValueDeserializer {
 
       final WitValue payload = deserialize(discriminator, payloadData);
 
-      final java.util.Map<String, java.util.Optional<WitType>> cases =
-          new java.util.LinkedHashMap<>();
-      cases.put(caseName, java.util.Optional.of(payload.getType()));
-      return WitVariant.of(WitType.variant("deserialized_variant", cases), caseName, payload);
+      return WitVariant.of(DESERIALIZED_VARIANT_TYPE, caseName, payload);
     }
   }
 
