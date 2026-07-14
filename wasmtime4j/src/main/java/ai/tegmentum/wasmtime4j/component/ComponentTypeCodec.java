@@ -524,7 +524,18 @@ public final class ComponentTypeCodec {
       if (isFloat) {
         return Double.parseDouble(numStr);
       }
-      final long longVal = Long.parseLong(numStr);
+      // The native side serializes wasmtime resource type ids as raw u64 values
+      // (see `resourceTypeId` in component_item_to_json). Values with the high
+      // bit set overflow signed long; fall back to parseUnsignedLong so the
+      // full 64-bit pattern round-trips into a signed long. Callers that treat
+      // the value as opaque (only ((Number) x).longValue() matters — see
+      // parseComponentItem's "resource" branch) see identical bits.
+      final long longVal;
+      try {
+        longVal = Long.parseLong(numStr);
+      } catch (NumberFormatException e) {
+        return Long.parseUnsignedLong(numStr);
+      }
       if (longVal >= Integer.MIN_VALUE && longVal <= Integer.MAX_VALUE) {
         return (int) longVal;
       }
