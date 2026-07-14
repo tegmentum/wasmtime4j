@@ -189,6 +189,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
     inherit_stdout: jboolean,
     inherit_stderr: jboolean,
     allow_network: jboolean,
+    socket_addr_check: JObject,
     fuel_limit: jlong,
     max_memory_bytes: jlong,
     epoch_deadline: jlong,
@@ -222,6 +223,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
     let ekeys = read_strings(&mut env, &env_keys);
     let evals = read_strings(&mut env, &env_vals);
 
+    // Marshal the host-supplied SocketAddrCheck (network-egress allow/deny policy) across the JNI
+    // boundary BEFORE the borrow of `env` is handed to jni_try_with_default, so it can be applied
+    // to the WASI ctx this component instantiates with. Without this the check would be dropped and
+    // every connect would be allowed. A null object means no check was configured (allow per the
+    // network flags). Reuses the same JNI global-ref + trampoline registration as the linker's
+    // set_wasi_socket_addr_check path.
+    let socket_check = if socket_addr_check.is_null() {
+        None
+    } else {
+        match crate::jni::component_linker::setup_jni_wasi_callback(&mut env, &socket_addr_check) {
+            Ok(callback_id) => Some(crate::component::CallbackSocketAddrCheck {
+                check_fn: crate::jni::component_linker::jni_socket_addr_check,
+                callback_id,
+            }),
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                return 0;
+            }
+        }
+    };
+
     jni_utils::jni_try_with_default(&mut env, 0, || {
         let engine = unsafe {
             &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
@@ -244,6 +266,8 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
             cfg.env
                 .insert(ekeys[i].clone(), evals.get(i).cloned().unwrap_or_default());
         }
+
+        cfg.socket_addr_check = socket_check;
 
         let wasi_ctx = cfg.build_wasi_ctx();
         // Negative = no cap (run unlimited); >= 0 = the requested budget.
