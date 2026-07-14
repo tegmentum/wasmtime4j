@@ -660,7 +660,10 @@ fn get_wasi_callback_context(callback_id: i64) -> Option<(Arc<JavaVM>, usize)> {
 
 /// Helper to register a Java callback object in the WASI callback registry.
 /// Returns the generated callback_id on success.
-fn setup_jni_wasi_callback(env: &mut JNIEnv, callback_obj: &JObject) -> Result<i64, WasmtimeError> {
+pub(crate) fn setup_jni_wasi_callback(
+    env: &mut JNIEnv,
+    callback_obj: &JObject,
+) -> Result<i64, WasmtimeError> {
     let jvm = env.get_java_vm().map_err(|e| WasmtimeError::Runtime {
         message: format!("Failed to get JVM: {}", e),
         backtrace: None,
@@ -922,7 +925,7 @@ extern "C" fn jni_random_fill_bytes(callback_id: i64, buf_ptr: *mut u8, buf_len:
 // =============================================================================
 
 /// Trampoline for SocketAddrCheck.check(InetSocketAddress, SocketAddrUse) -> boolean
-extern "C" fn jni_socket_addr_check(
+pub(crate) extern "C" fn jni_socket_addr_check(
     callback_id: i64,
     _ip_version: i32,
     ip_bytes_ptr: *const u8,
