@@ -404,4 +404,52 @@ class ComponentTypeCodecTest {
       LOGGER.info("Empty component type parsed successfully");
     }
   }
+
+  @Nested
+  @DisplayName("Resource type id u64 overflow")
+  class ResourceTypeIdU64Overflow {
+
+    /** Parse a resource whose {@code resourceTypeId} is the given u64 literal; return its id. */
+    private long parseResourceTypeId(final String u64Literal) {
+      final String json =
+          "{\"imports\":{},\"exports\":{\"r\":"
+              + "{\"kind\":\"resource\",\"resourceTypeId\":"
+              + u64Literal
+              + "}}}";
+      final ComponentTypeInfo info = ComponentTypeCodec.deserialize(json);
+      final ComponentItemInfo item = info.exportItems().get("r");
+      assertInstanceOf(ComponentItemInfo.ResourceInfo.class, item, "resource item");
+      return ((ComponentItemInfo.ResourceInfo) item).resourceTypeId();
+    }
+
+    @Test
+    @DisplayName("u64 max (0xFFFF...FFFF) round-trips as the all-ones long (-1)")
+    void u64MaxRoundTrips() {
+      // 18446744073709551615 overflows signed Long.parseLong; the fix's parseUnsignedLong fallback
+      // preserves the bit pattern, so longValue() is -1 (all 64 bits set) — lossless round-trip.
+      assertEquals(-1L, parseResourceTypeId("18446744073709551615"));
+    }
+
+    @Test
+    @DisplayName("high-bit-set u64 (Long.MAX_VALUE + 1) maps to Long.MIN_VALUE, not a parse failure")
+    void highBitSetU64() {
+      // 9223372036854775808 = 0x8000000000000000, one past Long.MAX_VALUE. The pre-fix parser threw
+      // NumberFormatException here; the fix maps it to the signed pattern Long.MIN_VALUE.
+      assertEquals(Long.MIN_VALUE, parseResourceTypeId("9223372036854775808"));
+    }
+
+    @Test
+    @DisplayName("Long.MAX_VALUE (largest non-overflowing id) is unaffected by the fix")
+    void longMaxValueUnaffected() {
+      // 9223372036854775807 fits signed long — the fast path (Long.parseLong) still handles it,
+      // confirming the unsigned fallback didn't perturb non-overflowing values.
+      assertEquals(Long.MAX_VALUE, parseResourceTypeId("9223372036854775807"));
+    }
+
+    @Test
+    @DisplayName("small resource ids still parse unchanged")
+    void smallIdUnaffected() {
+      assertEquals(5L, parseResourceTypeId("5"));
+    }
+  }
 }
