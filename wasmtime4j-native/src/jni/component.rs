@@ -10,6 +10,100 @@ use jni::JNIEnv;
 use crate::component::Component;
 use crate::error::jni_utils;
 
+/// Temporary env-gated phase profiler for decomposing component-invoke cost.
+/// Enabled when the `W4J_PROFILE` env var is set. Prototype instrumentation only.
+pub(crate) mod invoke_profile {
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+    use std::time::Instant;
+
+    pub static SETUP: AtomicU64 = AtomicU64::new(0);
+    pub static ARGDESER: AtomicU64 = AtomicU64::new(0);
+    pub static GETFUNC: AtomicU64 = AtomicU64::new(0);
+    pub static TY: AtomicU64 = AtomicU64::new(0);
+    pub static CALL: AtomicU64 = AtomicU64::new(0);
+    pub static REPLY: AtomicU64 = AtomicU64::new(0);
+    pub static COUNT: AtomicU64 = AtomicU64::new(0);
+
+    pub fn enabled() -> bool {
+        static ENABLED: AtomicBool = AtomicBool::new(false);
+        static INIT: AtomicBool = AtomicBool::new(false);
+        if !INIT.swap(true, Ordering::Relaxed) {
+            ENABLED.store(std::env::var("W4J_PROFILE").is_ok(), Ordering::Relaxed);
+        }
+        ENABLED.load(Ordering::Relaxed)
+    }
+
+    #[inline]
+    pub fn add(acc: &AtomicU64, since: Instant) -> Instant {
+        let now = Instant::now();
+        acc.fetch_add(now.duration_since(since).as_nanos() as u64, Ordering::Relaxed);
+        now
+    }
+
+    pub fn tick_and_maybe_report() {
+        let n = COUNT.fetch_add(1, Ordering::Relaxed) + 1;
+        if n % 500_000 == 0 {
+            let g = |a: &AtomicU64| a.load(Ordering::Relaxed) as f64 / n as f64;
+            eprintln!(
+                "[W4J_PROFILE n={}] setup={:.0} argdeser={:.0} getfunc={:.0} ty={:.0} call={:.0} reply={:.0} (ns/call)",
+                n, g(&SETUP), g(&ARGDESER), g(&GETFUNC), g(&TY), g(&CALL), g(&REPLY)
+            );
+        }
+    }
+}
+
+/// Process-global cache of the JNI references used to build the invoke reply
+/// (`Object[]{Integer, byte[]}`). Resolving `java/lang/Object`, `java/lang/Integer`
+/// and the `Integer(int)` constructor via `find_class` / `get_method_id` on every
+/// call was the single largest component-invoke cost (~1.6 us of ~4.7 us). These
+/// handles are stable for the life of the JVM, so we resolve them once.
+pub(crate) mod reply_cache {
+    use crate::error::WasmtimeError;
+    use jni::objects::{GlobalRef, JMethodID};
+    use jni::JNIEnv;
+    use std::sync::OnceLock;
+
+    pub struct ReplyRefs {
+        /// Global ref keeping `java/lang/Object` loaded; used as the array element class.
+        pub object_class: GlobalRef,
+        /// Global ref keeping `java/lang/Integer` loaded; target of `new_object_unchecked`.
+        pub integer_class: GlobalRef,
+        /// Cached `Integer(int)` constructor id (valid while `integer_class` stays loaded).
+        pub integer_ctor: JMethodID,
+    }
+
+    // GlobalRef is Send+Sync; JMethodID is declared Send+Sync by the jni crate.
+    static REFS: OnceLock<ReplyRefs> = OnceLock::new();
+
+    pub fn get(env: &mut JNIEnv) -> Result<&'static ReplyRefs, WasmtimeError> {
+        if let Some(r) = REFS.get() {
+            return Ok(r);
+        }
+        let integer_class = env
+            .find_class("java/lang/Integer")
+            .map_err(|e| WasmtimeError::JniError(format!("find Integer: {}", e)))?;
+        let integer_ctor = env
+            .get_method_id(&integer_class, "<init>", "(I)V")
+            .map_err(|e| WasmtimeError::JniError(format!("Integer(int) ctor: {}", e)))?;
+        let object_class = env
+            .find_class("java/lang/Object")
+            .map_err(|e| WasmtimeError::JniError(format!("find Object: {}", e)))?;
+        let integer_ref = env
+            .new_global_ref(&integer_class)
+            .map_err(|e| WasmtimeError::JniError(format!("global Integer: {}", e)))?;
+        let object_ref = env
+            .new_global_ref(&object_class)
+            .map_err(|e| WasmtimeError::JniError(format!("global Object: {}", e)))?;
+        // Ignore a benign race: if another thread set it first, keep the winner.
+        let _ = REFS.set(ReplyRefs {
+            object_class: object_ref,
+            integer_class: integer_ref,
+            integer_ctor,
+        });
+        Ok(REFS.get().unwrap())
+    }
+}
+
 /// Create a new component engine
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCreateComponentEngine(
@@ -447,6 +541,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
     jni_utils::jni_try_object(&mut env, |env| {
         use crate::error::WasmtimeError;
 
+        let prof = invoke_profile::enabled();
+        let mut _t = std::time::Instant::now();
+
         // Validate parameters
         if engine_ptr == 0 {
             return Err(WasmtimeError::InvalidParameter {
@@ -506,6 +603,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         let param_data_obj: JObject = unsafe { JObject::from_raw(param_data) };
         let param_data_typed = jni::objects::JObjectArray::from(param_data_obj);
 
+        if prof {
+            _t = invoke_profile::add(&invoke_profile::SETUP, _t);
+        }
+
         // Deserialize parameters to Val
         let mut params = Vec::with_capacity(param_count);
         for i in 0..param_count {
@@ -529,6 +630,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
                 })?;
 
             params.push(val);
+        }
+
+        if prof {
+            _t = invoke_profile::add(&invoke_profile::ARGDESER, _t);
         }
 
         // Get the function export and call it
@@ -572,6 +677,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
             }
         };
 
+        if prof {
+            _t = invoke_profile::add(&invoke_profile::GETFUNC, _t);
+        }
+
         // Call the function - need a fresh mutable reference
         let handle_ref = &mut *handle;
         // Re-apply per-call resource budgets so a fuel_per_call / deadline_ms cap is a fresh budget
@@ -585,11 +694,17 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         }
         let results_len = func.ty(&handle_ref.store).results().len();
         let mut results = vec![wasmtime::component::Val::Bool(false); results_len];
+        if prof {
+            _t = invoke_profile::add(&invoke_profile::TY, _t);
+        }
         func.call(&mut handle_ref.store, &params, &mut results)
             .map_err(|e| WasmtimeError::Runtime {
                 message: format!("Function call failed: {}", e),
                 backtrace: None,
             })?;
+        if prof {
+            _t = invoke_profile::add(&invoke_profile::CALL, _t);
+        }
 
         // wasmtime 45 performs post-return cleanup automatically; the explicit
         // `Func::post_return` call is no longer required.
@@ -609,30 +724,30 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
                 }
             })?;
 
-        // Create Java Object array with [discriminator, data]
-        let object_class = env
-            .find_class("java/lang/Object")
-            .map_err(|e| WasmtimeError::JniError(format!("Failed to find Object class: {}", e)))?;
+        // Create Java Object array with [discriminator, data].
+        // Reuse process-global Object/Integer class + ctor handles instead of
+        // resolving them via find_class / GetMethodID on every call.
+        let refs = reply_cache::get(env)?;
+        let object_class =
+            unsafe { jni::objects::JClass::from_raw(refs.object_class.as_raw()) };
+        let integer_class =
+            unsafe { jni::objects::JClass::from_raw(refs.integer_class.as_raw()) };
 
         let result_array = env
-            .new_object_array(2, object_class, jni::objects::JObject::null())
+            .new_object_array(2, &object_class, jni::objects::JObject::null())
             .map_err(|e| {
                 WasmtimeError::JniError(format!("Failed to create result array: {}", e))
             })?;
 
-        // Set discriminator (as Integer)
-        let integer_class = env
-            .find_class("java/lang/Integer")
-            .map_err(|e| WasmtimeError::JniError(format!("Failed to find Integer class: {}", e)))?;
-        let integer_obj = env
-            .new_object(
-                integer_class,
-                "(I)V",
-                &[jni::objects::JValue::Int(result_discriminator)],
+        // Set discriminator (as Integer) via the cached constructor id.
+        let integer_obj = unsafe {
+            env.new_object_unchecked(
+                &integer_class,
+                refs.integer_ctor,
+                &[jni::objects::JValue::Int(result_discriminator).as_jni()],
             )
-            .map_err(|e| {
-                WasmtimeError::JniError(format!("Failed to create Integer object: {}", e))
-            })?;
+        }
+        .map_err(|e| WasmtimeError::JniError(format!("Failed to create Integer object: {}", e)))?;
 
         env.set_object_array_element(&result_array, 0, integer_obj)
             .map_err(|e| {
@@ -646,6 +761,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
 
         env.set_object_array_element(&result_array, 1, jni::objects::JObject::from(data_jarray))
             .map_err(|e| WasmtimeError::JniError(format!("Failed to set data in array: {}", e)))?;
+
+        if prof {
+            invoke_profile::add(&invoke_profile::REPLY, _t);
+            invoke_profile::tick_and_maybe_report();
+        }
 
         // Convert to static lifetime for jni_try_object return
         Ok(unsafe { jni::objects::JObject::from_raw(result_array.as_raw()) })
