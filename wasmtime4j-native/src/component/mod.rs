@@ -20,6 +20,8 @@
 //! to prevent JVM crashes and ensure robust operation in production environments.
 
 mod linker;
+#[cfg(feature = "wasi")]
+mod observed_fs;
 mod resources;
 mod wit;
 
@@ -40,11 +42,14 @@ pub use wit::{
 pub use linker::{
     add_registered_host_functions_to_linker, component_linker_core,
     get_component_host_function_registry, parse_wit_path,
-    CallbackMonotonicClock, CallbackRng, CallbackSocketAddrCheck, CallbackWallClock,
-    ComponentHostCallback, ComponentHostFunctionEntry, ComponentInstancePreWrapper,
-    ComponentLinker, ComponentValue, ResourceDestructorCallback, WasiP2Config,
-    NEXT_COMPONENT_HOST_FUNCTION_ID,
+    CallbackFsAccessObserver, CallbackMonotonicClock, CallbackRng, CallbackSocketAddrCheck,
+    CallbackWallClock, ComponentHostCallback, ComponentHostFunctionEntry,
+    ComponentInstancePreWrapper, ComponentLinker, ComponentValue, ResourceDestructorCallback,
+    WasiP2Config, NEXT_COMPONENT_HOST_FUNCTION_ID,
 };
+
+#[cfg(feature = "wasi")]
+pub use observed_fs::install_observed_filesystem;
 pub(crate) use linker::{async_val_close, component_value_to_json_val, json_val_to_component_value};
 
 use crate::error::{WasmtimeError, WasmtimeResult};
@@ -100,6 +105,11 @@ pub struct ComponentStoreData {
     pub wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables,
     /// Optional store limits for resource governance
     pub store_limits: Option<wasmtime::StoreLimits>,
+    /// Optional filesystem-access denial observer. When set, the interposing
+    /// `wasi:filesystem/types` binding reads it to notify the host of `open-at` / `stat-at`
+    /// denials on this instance. OBSERVE-ONLY: never changes enforcement.
+    #[cfg(feature = "wasi")]
+    pub fs_access_observer: Option<CallbackFsAccessObserver>,
     /// Start time for performance tracking
     pub start_time: Instant,
 }
@@ -129,6 +139,8 @@ impl Default for ComponentStoreData {
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
             store_limits: None,
+            #[cfg(feature = "wasi")]
+            fs_access_observer: None,
             start_time: Instant::now(),
         }
     }

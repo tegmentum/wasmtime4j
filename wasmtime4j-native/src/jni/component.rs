@@ -190,6 +190,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
     inherit_stderr: jboolean,
     allow_network: jboolean,
     socket_addr_check: JObject,
+    fs_access_observer: JObject,
     fuel_limit: jlong,
     max_memory_bytes: jlong,
     epoch_deadline: jlong,
@@ -244,6 +245,25 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
         }
     };
 
+    // Marshal the host-supplied FsAccessObserver (filesystem-denial OBSERVER) across the JNI
+    // boundary, using the same JNI global-ref + trampoline registration as the socket check. A
+    // null object means no observer was configured: the interposition is NOT installed and the
+    // default WASI filesystem binding is used unchanged (zero overhead, no behaviour change).
+    let fs_observer = if fs_access_observer.is_null() {
+        None
+    } else {
+        match crate::jni::component_linker::setup_jni_wasi_callback(&mut env, &fs_access_observer) {
+            Ok(callback_id) => Some(crate::component::CallbackFsAccessObserver {
+                observe_fn: crate::jni::component_linker::jni_fs_access_observer,
+                callback_id,
+            }),
+            Err(e) => {
+                jni_utils::throw_jni_exception(&mut env, &e);
+                return 0;
+            }
+        }
+    };
+
     jni_utils::jni_try_with_default(&mut env, 0, || {
         let engine = unsafe {
             &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine)
@@ -268,6 +288,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
         }
 
         cfg.socket_addr_check = socket_check;
+        cfg.fs_access_observer = fs_observer;
 
         let wasi_ctx = cfg.build_wasi_ctx();
         // Negative = no cap (run unlimited); >= 0 = the requested budget.
@@ -275,6 +296,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInsta
         Ok(engine.instantiate_component_with_wasi(
             component,
             wasi_ctx,
+            cfg.fs_access_observer,
             opt(fuel_limit),
             opt(max_memory_bytes),
             opt(epoch_deadline),

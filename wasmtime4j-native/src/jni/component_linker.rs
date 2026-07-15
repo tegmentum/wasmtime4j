@@ -1075,6 +1075,102 @@ pub(crate) extern "C" fn jni_socket_addr_check(
 }
 
 // =============================================================================
+// Filesystem Access Denial Observer Trampoline
+// =============================================================================
+
+/// Trampoline for FsAccessObserver.onDenied(String path, String operation, String reason, int
+/// errorCode). OBSERVE-ONLY: the return value is void and cannot influence enforcement -- wasmtime
+/// has already performed the real open/stat and produced the real Err by the time this fires.
+///
+/// The three string arguments are UTF-8 byte spans borrowed from the caller for the duration of
+/// this call. Errors are logged and swallowed (a broken observer must never break the guest).
+#[allow(clippy::too_many_arguments)]
+pub(crate) extern "C" fn jni_fs_access_observer(
+    callback_id: i64,
+    path_ptr: *const u8,
+    path_len: usize,
+    op_ptr: *const u8,
+    op_len: usize,
+    reason_ptr: *const u8,
+    reason_len: usize,
+    error_code: i32,
+) {
+    let (jvm, obj_ptr) = match get_wasi_callback_context(callback_id) {
+        Some(ctx) => ctx,
+        None => {
+            log::error!(
+                "No WASI fs access observer callback found for ID: {}",
+                callback_id
+            );
+            return;
+        }
+    };
+
+    // SAFETY: pointers are valid UTF-8 spans supplied by the interposing view for this call only.
+    let read_str = |ptr: *const u8, len: usize| -> String {
+        if ptr.is_null() || len == 0 {
+            return String::new();
+        }
+        let slice = unsafe { std::slice::from_raw_parts(ptr, len) };
+        String::from_utf8_lossy(slice).into_owned()
+    };
+    let path = read_str(path_ptr, path_len);
+    let operation = read_str(op_ptr, op_len);
+    let reason = read_str(reason_ptr, reason_len);
+
+    let _r = match jvm.attach_current_thread() {
+        Ok(mut env) => {
+            // SAFETY: The GlobalRef is kept alive by the JniWasiCallbackContext in the registry.
+            let obj = unsafe { JObject::from_raw(obj_ptr as jni::sys::jobject) };
+
+            let j_path = match env.new_string(&path) {
+                Ok(s) => s,
+                Err(e) => {
+                    log::error!("Failed to create path string for fs observer: {}", e);
+                    return;
+                }
+            };
+            let j_op = match env.new_string(&operation) {
+                Ok(s) => s,
+                Err(e) => {
+                    log::error!("Failed to create operation string for fs observer: {}", e);
+                    return;
+                }
+            };
+            let j_reason = match env.new_string(&reason) {
+                Ok(s) => s,
+                Err(e) => {
+                    log::error!("Failed to create reason string for fs observer: {}", e);
+                    return;
+                }
+            };
+
+            match env.call_method(
+                &obj,
+                "onDenied",
+                "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V",
+                &[
+                    jni::objects::JValue::Object(&j_path),
+                    jni::objects::JValue::Object(&j_op),
+                    jni::objects::JValue::Object(&j_reason),
+                    jni::objects::JValue::Int(error_code),
+                ],
+            ) {
+                Ok(_) => {}
+                Err(e) => {
+                    log::error!("Failed to call FsAccessObserver.onDenied(): {}", e);
+                    // Clear any pending Java exception so it does not leak into the guest frame.
+                    let _ = env.exception_clear();
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Failed to attach JVM thread for fs access observer: {}", e);
+        }
+    };
+}
+
+// =============================================================================
 // JNI Native Methods for WASI Callbacks
 // =============================================================================
 

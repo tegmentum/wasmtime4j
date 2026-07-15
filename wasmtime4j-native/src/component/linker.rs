@@ -577,6 +577,27 @@ pub struct CallbackSocketAddrCheck {
 unsafe impl Send for CallbackSocketAddrCheck {}
 unsafe impl Sync for CallbackSocketAddrCheck {}
 
+/// Callback-based filesystem-access denial OBSERVER for Java FFI.
+///
+/// Uses an extern "C" function pointer to notify Java code that a path-based `open-at` / `stat-at`
+/// on the component/WASI-preopen path was refused by `wasmtime-wasi`. This is OBSERVE-ONLY: it
+/// never changes enforcement (wasmtime still performs the real open and returns the real `Err`).
+/// The callback receives the raw guest path, the operation name, the classified `FsError` reason
+/// (kebab-case WIT `error-code` name), and that reason's numeric discriminant.
+#[derive(Debug, Clone, Copy)]
+pub struct CallbackFsAccessObserver {
+    /// Callback: (callback_id, path_ptr, path_len, op_ptr, op_len, reason_ptr, reason_len,
+    /// error_code) -> (). All string pointers are UTF-8 and borrowed for the call only.
+    pub observe_fn:
+        extern "C" fn(i64, *const u8, usize, *const u8, usize, *const u8, usize, i32),
+    /// Identifier for the Java-side observer implementation.
+    pub callback_id: i64,
+}
+
+// SAFETY: The function pointer is thread-safe as it synchronously calls back to Java.
+unsafe impl Send for CallbackFsAccessObserver {}
+unsafe impl Sync for CallbackFsAccessObserver {}
+
 /// WASI Preview 2 configuration for component model
 #[derive(Clone)]
 pub struct WasiP2Config {
@@ -624,6 +645,10 @@ pub struct WasiP2Config {
     pub insecure_random: Option<CallbackRng>,
     /// Custom socket address check callback (if set)
     pub socket_addr_check: Option<CallbackSocketAddrCheck>,
+    /// Filesystem-access denial observer callback (if set). When present, an interposing
+    /// `wasi:filesystem/types` binding is installed to OBSERVE (never change) `open-at` / `stat-at`
+    /// denials on the component/WASI-preopen path.
+    pub fs_access_observer: Option<CallbackFsAccessObserver>,
 }
 
 impl Default for WasiP2Config {
@@ -651,6 +676,7 @@ impl Default for WasiP2Config {
             secure_random: None,
             insecure_random: None,
             socket_addr_check: None,
+            fs_access_observer: None,
         }
     }
 }
@@ -1789,6 +1815,8 @@ impl ComponentLinker {
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits: None,
+                #[cfg(feature = "wasi")]
+                fs_access_observer: None,
                 start_time: Instant::now(),
             }
         } else {
@@ -2052,6 +2080,8 @@ impl ComponentInstancePreWrapper {
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits: None,
+                #[cfg(feature = "wasi")]
+                fs_access_observer: None,
                 start_time: Instant::now(),
             }
         } else {
@@ -2169,6 +2199,8 @@ impl ComponentInstancePreWrapper {
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
                 store_limits,
+                #[cfg(feature = "wasi")]
+                fs_access_observer: None,
                 start_time: Instant::now(),
             }
         } else {

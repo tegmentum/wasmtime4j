@@ -69,6 +69,7 @@ class WasiPreview2ConfigTest {
       assertNull(config.getSecureRandom());
       assertNull(config.getInsecureRandom());
       assertNull(config.getSocketAddrCheck());
+      assertNull(config.getFsAccessObserver());
     }
   }
 
@@ -353,6 +354,17 @@ class WasiPreview2ConfigTest {
       WasiPreview2Config config = WasiPreview2Config.builder().socketAddrCheck(check).build();
 
       assertNotNull(config.getSocketAddrCheck());
+    }
+
+    @Test
+    @DisplayName("should set fs access observer")
+    void shouldSetFsAccessObserver() {
+      ai.tegmentum.wasmtime4j.wasi.filesystem.FsAccessObserver observer =
+          (path, operation, reason, errorCode) -> {};
+
+      WasiPreview2Config config = WasiPreview2Config.builder().fsAccessObserver(observer).build();
+
+      assertNotNull(config.getFsAccessObserver());
     }
   }
 }

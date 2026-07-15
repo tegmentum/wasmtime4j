@@ -594,6 +594,7 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
                 cfg.isInheritStderr() || cfg.isInheritStdio(),
                 cfg.isAllowNetwork(),
                 cfg.getSocketAddrCheck(),
+                cfg.getFsAccessObserver(),
                 fuelLimit,
                 maxMemoryBytes,
                 epochDeadline);

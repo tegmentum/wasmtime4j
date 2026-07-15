@@ -203,6 +203,8 @@ impl EnhancedComponentEngine {
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
             store_limits: None,
+            #[cfg(feature = "wasi")]
+            fs_access_observer: None,
             start_time,
         };
 
@@ -286,6 +288,7 @@ impl EnhancedComponentEngine {
         &self,
         component: &Component,
         wasi_ctx: wasmtime_wasi::WasiCtx,
+        fs_access_observer: Option<crate::component::CallbackFsAccessObserver>,
         fuel_limit: Option<u64>,
         max_memory_bytes: Option<u64>,
         epoch_deadline: Option<u64>,
@@ -311,6 +314,7 @@ impl EnhancedComponentEngine {
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
             store_limits,
+            fs_access_observer,
             start_time,
         };
 
@@ -340,6 +344,19 @@ impl EnhancedComponentEngine {
         // This WASI-capability path builds a fresh linker; without re-registering them here, those
         // host imports resolve as "not found". Registering ones a component doesn't import is harmless.
         crate::component::add_registered_host_functions_to_linker(&mut linker)?;
+
+        // When a filesystem-access denial observer is configured, install the interposing
+        // `wasi:filesystem/types` binding AFTER the default WASI binding (it shadows it). This is
+        // OBSERVE-ONLY: wasmtime-wasi still performs the real open/stat and returns the real Err.
+        // With no observer the default binding is left untouched (zero overhead, no behaviour
+        // change), so the existing preopen path is preserved exactly.
+        if store.data().fs_access_observer.is_some() {
+            crate::component::install_observed_filesystem(&mut linker).map_err(|e| {
+                WasmtimeError::Instance {
+                    message: format!("Failed to install fs-denial observer on linker: {}", e),
+                }
+            })?;
+        }
 
         let instance = linker
             .instantiate(&mut store, component.wasmtime_component())
@@ -1182,6 +1199,8 @@ impl EnhancedComponentEngine {
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
                 store_limits: None,
+                #[cfg(feature = "wasi")]
+                fs_access_observer: None,
                 start_time: Instant::now(),
             };
 

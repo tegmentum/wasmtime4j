@@ -17,6 +17,7 @@ package ai.tegmentum.wasmtime4j.wasi;
 
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiMonotonicClock;
 import ai.tegmentum.wasmtime4j.wasi.clocks.WasiWallClock;
+import ai.tegmentum.wasmtime4j.wasi.filesystem.FsAccessObserver;
 import ai.tegmentum.wasmtime4j.wasi.random.WasiRandomSource;
 import ai.tegmentum.wasmtime4j.wasi.sockets.SocketAddrCheck;
 import java.nio.file.Path;
@@ -85,6 +86,7 @@ public final class WasiPreview2Config {
   private final WasiRandomSource secureRandom;
   private final WasiRandomSource insecureRandom;
   private final SocketAddrCheck socketAddrCheck;
+  private final FsAccessObserver fsAccessObserver;
 
   private WasiPreview2Config(final Builder builder) {
     this.args = Collections.unmodifiableList(new ArrayList<>(builder.args));
@@ -113,6 +115,7 @@ public final class WasiPreview2Config {
     this.secureRandom = builder.secureRandom;
     this.insecureRandom = builder.insecureRandom;
     this.socketAddrCheck = builder.socketAddrCheck;
+    this.fsAccessObserver = builder.fsAccessObserver;
   }
 
   /**
@@ -378,6 +381,15 @@ public final class WasiPreview2Config {
   }
 
   /**
+   * Gets the filesystem-access denial observer, if set.
+   *
+   * @return the filesystem-access denial observer, or null if no observer is configured
+   */
+  public FsAccessObserver getFsAccessObserver() {
+    return fsAccessObserver;
+  }
+
+  /**
    * Creates a new builder.
    *
    * @return a new builder
@@ -521,6 +533,7 @@ public final class WasiPreview2Config {
     private WasiRandomSource secureRandom = null;
     private WasiRandomSource insecureRandom = null;
     private SocketAddrCheck socketAddrCheck = null;
+    private FsAccessObserver fsAccessObserver = null;
 
     Builder() {}
 
@@ -954,6 +967,22 @@ public final class WasiPreview2Config {
      */
     public Builder socketAddrCheck(final SocketAddrCheck check) {
       this.socketAddrCheck = check;
+      return this;
+    }
+
+    /**
+     * Sets a filesystem-access denial observer.
+     *
+     * <p>This observe-only callback is invoked when a component's path-based {@code open-at} /
+     * {@code stat-at} is denied on the capability-confined (preopen) instantiation path. It cannot
+     * change enforcement; it only surfaces the denied path and the classified reason for host
+     * observability. When no observer is set, the interposition is not installed (no overhead).
+     *
+     * @param observer the filesystem-access denial observer
+     * @return this builder
+     */
+    public Builder fsAccessObserver(final FsAccessObserver observer) {
+      this.fsAccessObserver = observer;
       return this;
     }
 

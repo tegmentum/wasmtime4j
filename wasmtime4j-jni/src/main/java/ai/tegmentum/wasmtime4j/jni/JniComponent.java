@@ -140,6 +140,7 @@ public final class JniComponent {
       boolean inheritStderr,
       boolean allowNetwork,
       Object socketAddrCheck,
+      Object fsAccessObserver,
       long fuelLimit,
       long maxMemoryBytes,
       long epochDeadline);
