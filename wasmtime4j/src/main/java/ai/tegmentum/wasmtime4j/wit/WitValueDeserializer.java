@@ -46,12 +46,12 @@ public final class WitValueDeserializer {
 
   /**
    * Stable singleton {@link WitType} used for every variant reconstructed from the wire. The wire
-   * format only carries the runtime case that happened to be present, so any per-instance cases
-   * map would make two nominally-identical variants (e.g. {@code iri} vs {@code literal} cases of
-   * a {@code value} variant) compare non-{@code equals()} — which in turn breaks first-element
-   * type inference in {@link WitList#of}. Sharing one canonical, cases-agnostic {@code WitType}
-   * instance means all deserialized variants collapse to the same type identity while the
-   * observed case name is still preserved on the {@link WitVariant} value itself.
+   * format only carries the runtime case that happened to be present, so any per-instance cases map
+   * would make two nominally-identical variants (e.g. {@code iri} vs {@code literal} cases of a
+   * {@code value} variant) compare non-{@code equals()} — which in turn breaks first-element type
+   * inference in {@link WitList#of}. Sharing one canonical, cases-agnostic {@code WitType} instance
+   * means all deserialized variants collapse to the same type identity while the observed case name
+   * is still preserved on the {@link WitVariant} value itself.
    */
   private static final WitType DESERIALIZED_VARIANT_TYPE =
       WitType.variant("deserialized_variant", java.util.Collections.emptyMap());
