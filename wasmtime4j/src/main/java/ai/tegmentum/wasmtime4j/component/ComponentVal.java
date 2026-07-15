@@ -427,7 +427,10 @@ public interface ComponentVal {
     final List<ComponentVal> elements = asList();
     final byte[] bytes = new byte[elements.size()];
     for (int i = 0; i < bytes.length; i++) {
-      bytes[i] = elements.get(i).asS8();
+      // Elements are u8 (per this method's contract + createListU8): read them unsigned and pack
+      // the
+      // low 8 bits. Calling asS8() here threw "Expected S8 but was U8" on any real list<u8> return.
+      bytes[i] = (byte) elements.get(i).asU8();
     }
     return bytes;
   }

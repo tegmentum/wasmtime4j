@@ -15,6 +15,7 @@
  */
 package ai.tegmentum.wasmtime4j.component;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -916,6 +917,24 @@ public final class ComponentValTest {
       assertEquals("created", data.get("status").asString(), "Status should match");
 
       LOGGER.info("result containing record test passed");
+    }
+  }
+
+  @Nested
+  @DisplayName("list<u8> / byte array")
+  class ByteArrayTests {
+
+    @Test
+    @DisplayName("asByteArray round-trips a list<u8> including high (>127) bytes")
+    void asByteArrayRoundTripsUnsignedBytes() {
+      // Regression: asByteArray() previously read elements via asS8(), which threw
+      // "Expected S8 but was U8" on any real list<u8> — high bytes (128..255) never round-tripped.
+      final byte[] input = {0, 1, 127, (byte) 128, (byte) 200, (byte) 255};
+      final ComponentVal value = ComponentValFactory.INSTANCE.createListU8(input);
+      assertArrayEquals(
+          input,
+          value.asByteArray(),
+          "list<u8> must round-trip through createListU8 -> asByteArray, unsigned-safe");
     }
   }
 }

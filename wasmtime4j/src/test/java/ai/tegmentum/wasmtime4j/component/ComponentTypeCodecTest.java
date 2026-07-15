@@ -431,7 +431,8 @@ class ComponentTypeCodecTest {
     }
 
     @Test
-    @DisplayName("high-bit-set u64 (Long.MAX_VALUE + 1) maps to Long.MIN_VALUE, not a parse failure")
+    @DisplayName(
+        "high-bit-set u64 (Long.MAX_VALUE + 1) maps to Long.MIN_VALUE, not a parse failure")
     void highBitSetU64() {
       // 9223372036854775808 = 0x8000000000000000, one past Long.MAX_VALUE. The pre-fix parser threw
       // NumberFormatException here; the fix maps it to the signed pattern Long.MIN_VALUE.
