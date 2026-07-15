@@ -16,8 +16,8 @@ wasmtime-wast = { version = "46.0.1", features = ["component-model", "component-
 
 # WebAssembly text format parser
 wat = "1.0"
-wast = "252.0.0"
-wasmparser = "0.252"
+wast = "253.0.0"
+wasmparser = "0.253"
 
 # JNI support for Java 8-22 compatibility
 jni = "0.21.1"

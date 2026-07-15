@@ -60,15 +60,15 @@
 
         <!-- Quality tool plugin versions -->
         <checkstyle.plugin.version>3.6.0</checkstyle.plugin.version>
-        <checkstyle.version>13.7.0</checkstyle.version>
+        <checkstyle.version>13.8.0</checkstyle.version>
         <spotless.plugin.version>3.8.0</spotless.plugin.version>
-        <spotbugs.plugin.version>4.10.2.0</spotbugs.plugin.version>
-        <spotbugs.version>4.10.2</spotbugs.version>
+        <spotbugs.plugin.version>4.10.3.0</spotbugs.plugin.version>
+        <spotbugs.version>4.10.3</spotbugs.version>
         <findsecbugs.version>1.14.0</findsecbugs.version>
         <pmd.plugin.version>3.28.0</pmd.plugin.version>
         <pmd.version>7.26.0</pmd.version>
         <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
-        <pitest.plugin.version>1.25.5</pitest.plugin.version>
+        <pitest.plugin.version>1.25.7</pitest.plugin.version>
         <pitest.junit5.version>1.2.3</pitest.junit5.version>
 
         <!-- Default argLine for surefire (JaCoCo will prepend to this) -->
