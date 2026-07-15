@@ -24,6 +24,8 @@ updates:
     # junit.platform.version into junit.version). Block major bumps
     # until we're ready to do that as a scoped piece of work.
     ignore:
+      - dependency-name: "org.junit:*"
+        update-types: ["version-update:semver-major"]
       - dependency-name: "org.junit.jupiter:*"
         update-types: ["version-update:semver-major"]
       - dependency-name: "org.junit.platform:*"
