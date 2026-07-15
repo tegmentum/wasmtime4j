@@ -1,0 +1,13 @@
+// Svalinn file-stream-reader witness: read a granted file via std::fs, which on
+// wasm32-wasip2 routes through wasi:filesystem `read-via-stream` + wasi:io/streams
+// (a file-backed INPUT stream). This is the path that traps on the component
+// instantiation path in wasmtime4j-native, unlike the low-level positioned
+// `descriptor.read` used by the fsread witness.
+package svalinn:file-stream-reader@0.1.0;
+
+world file-stream-reader {
+  // Read the file at the given guest path via std::fs (the stream path) and return
+  // its contents as "OK:\n<contents>". Any failure surfaces as "ERR: <detail>" so
+  // a host trap (which produces no return at all) is distinguishable from a clean error.
+  export read-stream: func(path: string) -> string;
+}

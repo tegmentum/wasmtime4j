@@ -1,0 +1,16 @@
+[package]
+name = "svalinn-file-stream-reader"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Svalinn witness: reads a granted file via std::fs (wasi:io/streams read-via-stream) to reproduce the file-backed input-stream trap"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "0.36"
+
+[profile.release]
+opt-level = "s"
+strip = true
