@@ -1,0 +1,19 @@
+[package]
+name = "svalinn-file-stream-reader-0212"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Svalinn: reproduce the wasi:io/streams@0.2.12 read-via-stream trap (vs the 0.2.6 sibling that works)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = "0.36"
+wasi = "0.14"
+
+[profile.release]
+opt-level = "s"
+strip = true
+
+[workspace]

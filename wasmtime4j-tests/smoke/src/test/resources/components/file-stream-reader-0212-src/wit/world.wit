@@ -1,0 +1,7 @@
+package svalinn:file-stream-reader-newwasi@0.1.0;
+world file-stream-reader-newwasi {
+  // Read the file at the given guest path via the wasi crate's read-via-stream + blocking-read
+  // (wasi:io/streams@0.2.12). Returns "OK:\n<bytes>" on success or "ERR: <detail>" on a clean error;
+  // a host trap produces no return at all (the invoke throws) — that is the gap under test.
+  export read-stream: func(path: string) -> string;
+}

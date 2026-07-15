@@ -60,6 +60,16 @@ import org.junit.jupiter.api.io.TempDir;
  * string}; it calls {@code std::fs::read} on the given guest path and returns {@code "OK:\n<bytes>"}
  * on success or {@code "ERR: <detail>"} on a clean Rust error. A host trap would produce no return at
  * all (the invoke would throw), which is what a stream-wiring regression would look like.
+ *
+ * <p><b>What actually caused the Svalinn trap (resolved).</b> This component is pure {@code std}
+ * (no {@code wasi} crate) and imports {@code wasi 0.2.6}; its {@code std::fs} read returns the bytes.
+ * The Svalinn fsread witness trap was later isolated to a GUEST-SIDE ABI mix, not a host defect: its
+ * component links BOTH {@code std} (its own older wasip2 bindings) AND the {@code wasi} crate, which
+ * unifies the component's imports up to {@code 0.2.12}; {@code std::fs}'s compiled read-via-stream
+ * then skews against the unified imports and traps, while the identical read-via-stream byte path
+ * driven through the {@code wasi} crate succeeds. The host services read-via-stream at both 0.2.6
+ * (this test) and 0.2.12 (see {@link ComponentReadViaStreamAt0212SmokeTest}). See
+ * {@code witness/fsread/FINDINGS.md} for the full three-export isolation.
  */
 @DisplayName("Component File-Backed Input Stream Read Smoke Test")
 public final class ComponentFileInputStreamReadSmokeTest {
