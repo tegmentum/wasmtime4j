@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.4.1] - 2026-07-16
+
+Wasmtime version unchanged (46.0.1). Patch release that finishes the two
+wasi-nn follow-ups called out in 1.4.0:
+
+  1. The `WasiNnConfig#namedModels` map is now wired end-to-end through
+     JNI — registered `(name, bytes)` pairs are decoded once against the
+     compiled backend and become resolvable via `wasi:nn/graph.load-by-
+     name(name)` in the guest, without re-decoding on every store.
+
+  2. A `wasi-nn` Maven profile ships wasi-nn-featured artifacts under a
+     `wasi-nn` classifier so consumers can add wasi:nn to their coordinate
+     without a local ORT build.
+
+### Added
+
+- `ComponentLinker::enable_wasi_nn_with_models(Vec<(String, Vec<u8>)>)`
+  (Rust) and matching JNI export
+  `Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiNnWithModels(long,
+  String[], byte[][])`. Wired into
+  `JniComponentLinker#enableWasiNn(WasiNnConfig)`; the plain
+  `enableWasiNn()` path is unchanged (still calls `nativeEnableWasiNn`).
+- `NamedGraphRegistry` in `wasmtime4j-native` — a minimal `GraphRegistry`
+  impl over `HashMap<String, Graph>`, needed because
+  `wasmtime_wasi_nn::InMemoryRegistry` only exposes `load(backend, path)`
+  and can't accept pre-decoded graphs from bytes. Registry entries
+  clone-on-instantiate (`Graph(Arc<dyn BackendGraph>)`) so per-store cost
+  is one pointer bump per model, not a re-decode.
+- `ComponentInstancePreWrapper::wasi_nn_named_models` — carries the
+  loaded models forward so pre-instantiated components see the same
+  named-registry results.
+
+### Packaging
+
+- **New `wasi-nn` Maven profile in `wasmtime4j-native`.** Activating
+  `-P wasi-nn` builds the native lib with `--features default,wasi-nn`
+  and packages every JAR under a `wasi-nn` classifier
+  (`wasmtime4j-native-46.0.1-1.4.1-wasi-nn.jar`,
+  `-wasi-nn-darwin-aarch64.jar`, etc.). Consumers depend on the
+  classified variant to get wasi:nn; the plain classifier-less
+  coordinate stays feature-parity with 1.4.0.
+- **Runtime prerequisite for wasi-nn consumers.** The wasi-nn classified
+  artifact links against `wasmtime-wasi-nn` + `ort =2.0.0-rc.10` and
+  requires `libonnxruntime.{so,dylib,dll}` on the loader path at run
+  time. macOS: `brew install onnxruntime` places it under
+  `/opt/homebrew/lib`. Linux: install `libonnxruntime` from the
+  distribution package manager or ONNX Runtime GitHub releases.
+- **Publishing (out-of-band).** The `wasi-nn` classifier JARs are not
+  yet published from CI — the release pipeline needs an `ort_install`
+  step plus a `wasi-nn` matrix axis before Maven Central / GitHub
+  Packages upload. Until then downstream projects that need wasi:nn
+  build the classified artifact locally via
+  `mvn -pl wasmtime4j-native -am install -P wasi-nn` and depend on the
+  installed classifier from their own repos.
+
+### Docs / tests
+
+- `WasiNnConfig` javadoc updated — the "reserved for a future release"
+  note on `Builder#registerModel` is now the wire-through behaviour.
+- `ComponentLinker#enableWasiNn(WasiNnConfig)` interface javadoc
+  documents named-model behaviour.
+- New JNI unit test `JniComponentLinkerWasiNnTest` — WasiNnConfig
+  round-trip (empty config = same code path as `enableWasiNn`;
+  non-empty config exercises `nativeEnableWasiNnWithModels`).
+
 ## [46.0.1-1.4.0] - 2026-07-16
 
 Wasmtime version unchanged (46.0.1). Minor release that lands WASI-NN

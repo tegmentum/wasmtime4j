@@ -842,6 +842,150 @@
             </build>
         </profile>
 
+        <!--
+          Profile that produces a wasi-nn-featured native artifact.
+
+          Activation: -P wasi-nn (opt-in - the plain build stays feature-parity
+          with 1.4.0 so operators without ONNX Runtime installed don't get a
+          hard build break).
+
+          What it changes:
+            * Passes 'features default,wasi-nn' to cargo build, so the
+              produced libwasmtime4j.{so,dylib,dll} links against
+              wasmtime-wasi-nn + ort.
+            * Every packaged JAR (default + per-platform) receives a wasi-nn
+              classifier suffix (e.g. wasmtime4j-native-46.0.1-1.4.1-wasi-nn.jar
+              and wasmtime4j-native-46.0.1-1.4.1-wasi-nn-darwin-aarch64.jar).
+
+          Operator prerequisites (build host):
+            * Rust toolchain (as for the plain build).
+            * ONNX Runtime 1.20.x reachable via ORT_STRATEGY=system
+              ORT_PREFER_DYNAMIC_LINK=1 ORT_LIB_LOCATION=<prefix>. macOS
+              users: brew install onnxruntime + ORT_LIB_LOCATION=/opt/homebrew.
+
+          Runtime prerequisites (deployment host):
+            * libonnxruntime.{so,dylib,dll} on the loader path
+              (LD_LIBRARY_PATH / DYLD_LIBRARY_PATH / PATH).
+
+          Publishing story: consumers that want wasi:nn add the wasi-nn
+          classifier to their dep coordinate (groupId ai.tegmentum, artifactId
+          wasmtime4j-native, version 46.0.1-1.4.1, classifier wasi-nn).
+          Consumers that don't want it keep the classifier-less dep and get
+          the feature-parity-with-1.4.0 build.
+
+          NOTE: publishing the wasi-nn classifier variant to Maven Central /
+          the GitHub Packages release repo is out-of-band in this commit; the
+          Publish workflow needs an ort_install step + a matrix wasi-nn
+          axis. Documented in CHANGELOG 46.0.1-1.4.1 under Packaging.
+        -->
+        <profile>
+            <id>wasi-nn</id>
+            <properties>
+                <cargo.features>default,wasi-nn</cargo.features>
+                <native.classifier.suffix>-wasi-nn</native.classifier.suffix>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>default-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>wasi-nn</classifier>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>all-platforms-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>wasi-nn-all-platforms</classifier>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>linux-x86_64-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>wasi-nn-linux-x86_64</classifier>
+                                    <includes>
+                                        <include>natives/linux-x86_64/**</include>
+                                        <include>META-INF/**</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>linux-aarch64-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>wasi-nn-linux-aarch64</classifier>
+                                    <includes>
+                                        <include>natives/linux-aarch64/**</include>
+                                        <include>META-INF/**</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>windows-x86_64-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>wasi-nn-windows-x86_64</classifier>
+                                    <includes>
+                                        <include>natives/windows-x86_64/**</include>
+                                        <include>META-INF/**</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>darwin-x86_64-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>wasi-nn-darwin-x86_64</classifier>
+                                    <includes>
+                                        <include>natives/darwin-x86_64/**</include>
+                                        <include>META-INF/**</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>darwin-aarch64-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>wasi-nn-darwin-aarch64</classifier>
+                                    <includes>
+                                        <include>natives/darwin-aarch64/**</include>
+                                        <include>META-INF/**</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- Profile for Wasmtime source code integration -->
         <profile>
             <id>wasmtime.source.build</id>

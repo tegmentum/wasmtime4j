@@ -155,6 +155,47 @@ pub fn async_val_close(handle: u64) -> bool {
 }
 
 // =============================================================================
+// wasi-nn named-model registry
+// =============================================================================
+
+/// Mutable named-model registry for wasi-nn.
+///
+/// `wasmtime_wasi_nn::InMemoryRegistry` gives us `new()` + `load(backend,
+/// path)` — it can only pull models off the filesystem via a backend that
+/// implements `BackendFromDir`. That doesn't match the JVM path where
+/// callers hand us model bytes directly and we've already decoded them
+/// through `Backend::load(&[&bytes], target)`. `NamedGraphRegistry` is
+/// the tiny `GraphRegistry` impl that lets us insert pre-decoded `Graph`s
+/// keyed by name.
+#[cfg(feature = "wasi-nn")]
+struct NamedGraphRegistry {
+    graphs: HashMap<String, wasmtime_wasi_nn::Graph>,
+}
+
+#[cfg(feature = "wasi-nn")]
+impl NamedGraphRegistry {
+    fn new() -> Self {
+        Self {
+            graphs: HashMap::new(),
+        }
+    }
+
+    fn insert(&mut self, name: String, graph: wasmtime_wasi_nn::Graph) {
+        self.graphs.insert(name, graph);
+    }
+}
+
+#[cfg(feature = "wasi-nn")]
+impl wasmtime_wasi_nn::GraphRegistry for NamedGraphRegistry {
+    fn get(&self, name: &str) -> Option<&wasmtime_wasi_nn::Graph> {
+        self.graphs.get(name)
+    }
+    fn get_mut(&mut self, name: &str) -> Option<&mut wasmtime_wasi_nn::Graph> {
+        self.graphs.get_mut(name)
+    }
+}
+
+// =============================================================================
 // Val <-> ComponentValue conversions
 // =============================================================================
 
@@ -802,6 +843,12 @@ pub struct ComponentLinker {
     /// wasi:nn/{graph,inference,tensor,errors} host bindings can resolve.
     #[cfg(feature = "wasi-nn")]
     wasi_nn_enabled: bool,
+    /// Named-model registry entries for wasi-nn. Loaded once against a
+    /// throwaway `Backend` at `enable_wasi_nn_with_models` time and
+    /// carried across store instantiations. `Graph` is `Arc`-backed so
+    /// per-store registries clone cheaply.
+    #[cfg(feature = "wasi-nn")]
+    wasi_nn_named_models: HashMap<String, wasmtime_wasi_nn::Graph>,
     /// WASI Config variables to inject into store data during instantiation
     #[cfg(feature = "wasi-config")]
     wasi_config_vars: Vec<(String, String)>,
@@ -846,6 +893,8 @@ impl ComponentLinker {
             wasi_p3_enabled: false,
             #[cfg(feature = "wasi-nn")]
             wasi_nn_enabled: false,
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_named_models: HashMap::new(),
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -883,6 +932,8 @@ impl ComponentLinker {
             wasi_p3_enabled: false,
             #[cfg(feature = "wasi-nn")]
             wasi_nn_enabled: false,
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_named_models: HashMap::new(),
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -1854,19 +1905,100 @@ impl ComponentLinker {
         false
     }
 
-    /// Build a fresh `WasiNnCtx` for a new store, using the auto-detected
-    /// backend list and an empty in-memory model registry.
+    /// Enable WASI-NN with a caller-supplied named-model registry.
     ///
-    /// The registry is empty on purpose: the wf_sagegraph_nn guest and
-    /// its siblings load the model from bytes via `graph::load(builders,
-    /// encoding, target)` — they don't rely on host-side pre-registration
-    /// via `load-by-name`. Model-by-name registration can be added later
-    /// without breaking this construction path.
+    /// Idempotent-equivalent to [`enable_wasi_nn`] on the linker side (calls
+    /// through to it) plus a one-time model load per entry. Each `(name,
+    /// bytes)` pair is decoded now against the compiled backend set
+    /// (ONNX/ORT under our workspace pin) and the resulting `Graph`
+    /// (`Arc`-backed) is stored on the linker. Per-store `WasiNnCtx`
+    /// instances built at [`instantiate`] time carry a fresh registry
+    /// populated with clones so the guest's `wasi:nn/graph.load-by-name`
+    /// resolves without re-decoding.
+    ///
+    /// # Errors
+    /// Returns `WasmtimeError::Wasi` if the compiled backend set is
+    /// empty (no ML backend feature enabled) or if a model fails to
+    /// decode against the first available backend. The error surface is
+    /// deliberately narrow — the ONNX-only build has a single backend,
+    /// so backend selection isn't yet exposed.
+    #[cfg(feature = "wasi-nn")]
+    pub fn enable_wasi_nn_with_models(
+        &mut self,
+        named_models: Vec<(String, Vec<u8>)>,
+    ) -> WasmtimeResult<()> {
+        self.enable_wasi_nn()?;
+
+        if named_models.is_empty() {
+            return Ok(());
+        }
+
+        let mut backends = wasmtime_wasi_nn::backend::list();
+        if backends.is_empty() {
+            return Err(WasmtimeError::Wasi {
+                message: "wasi-nn has no compiled backends; cannot load named models"
+                    .to_string(),
+            });
+        }
+        // Under our workspace pin `wasi-nn = { default-features = false,
+        // features = ["onnx"] }` there is exactly one backend (ORT). If
+        // additional backends land later a per-model encoding hint on
+        // `WasiNnConfig` would let us pick; for now the first backend is
+        // the only backend.
+        let backend = &mut backends[0];
+        for (name, bytes) in named_models {
+            let graph = backend
+                .load(&[&bytes], wasmtime_wasi_nn::wit::ExecutionTarget::Cpu)
+                .map_err(|e| WasmtimeError::Wasi {
+                    message: format!(
+                        "Failed to load wasi-nn model '{}' ({} bytes): {:?}",
+                        name,
+                        bytes.len(),
+                        e
+                    ),
+                })?;
+            self.wasi_nn_named_models.insert(name, graph);
+        }
+
+        log::debug!(
+            "Loaded {} wasi-nn named model(s) onto component linker",
+            self.wasi_nn_named_models.len()
+        );
+        Ok(())
+    }
+
+    #[cfg(not(feature = "wasi-nn"))]
+    pub fn enable_wasi_nn_with_models(
+        &mut self,
+        _named_models: Vec<(String, Vec<u8>)>,
+    ) -> WasmtimeResult<()> {
+        Err(WasmtimeError::Runtime {
+            message: "WASI-NN support not compiled in. Enable the 'wasi-nn' feature."
+                .to_string(),
+            backtrace: None,
+        })
+    }
+
+    /// Build a fresh `WasiNnCtx` for a new store, using the auto-detected
+    /// backend list. Populates the registry with clones of any models
+    /// registered via [`enable_wasi_nn_with_models`]; falls back to an
+    /// empty `InMemoryRegistry` when no models were registered.
+    ///
+    /// `Graph(Arc<dyn BackendGraph>)` in `wasmtime_wasi_nn` clones as a
+    /// pointer bump so the per-store registry doesn't re-decode.
     #[cfg(feature = "wasi-nn")]
     fn build_wasi_nn_ctx(&self) -> wasmtime_wasi_nn::wit::WasiNnCtx {
         let backends = wasmtime_wasi_nn::backend::list();
-        let registry = wasmtime_wasi_nn::InMemoryRegistry::new();
-        wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into())
+        if self.wasi_nn_named_models.is_empty() {
+            let registry = wasmtime_wasi_nn::InMemoryRegistry::new();
+            wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into())
+        } else {
+            let mut registry = NamedGraphRegistry::new();
+            for (name, graph) in &self.wasi_nn_named_models {
+                registry.insert(name.clone(), graph.clone());
+            }
+            wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into())
+        }
     }
 
     /// Create a configured WasiHttpCtx, applying any stored configuration
@@ -2019,6 +2151,8 @@ impl ComponentLinker {
             wasi_config_vars: self.wasi_config_vars.clone(),
             #[cfg(feature = "wasi-nn")]
             wasi_nn_enabled: self.wasi_nn_enabled,
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_named_models: self.wasi_nn_named_models.clone(),
             wasi_p2_config: self.wasi_p2_config.clone(),
             metadata: component.metadata().clone(),
             original_bytes: Arc::clone(component.original_bytes()),
@@ -2147,6 +2281,11 @@ pub struct ComponentInstancePreWrapper {
     /// shared across stores).
     #[cfg(feature = "wasi-nn")]
     wasi_nn_enabled: bool,
+    /// Named-model registry entries copied from the source linker so
+    /// stores built off this InstancePre see the same `graph.load-by-
+    /// name` results as the direct-instantiate path.
+    #[cfg(feature = "wasi-nn")]
+    wasi_nn_named_models: HashMap<String, wasmtime_wasi_nn::Graph>,
     /// WASI P2 configuration (cloned from linker at creation time)
     wasi_p2_config: WasiP2Config,
     /// Component metadata for creating ComponentInstanceHandle
@@ -2182,13 +2321,23 @@ impl ComponentInstancePreWrapper {
         config
     }
 
-    /// Build a fresh `WasiNnCtx` (auto-detected backends, empty registry)
-    /// for a new store when the source linker had wasi-nn enabled.
+    /// Build a fresh `WasiNnCtx` for a new store when the source linker
+    /// had wasi-nn enabled. Populates the registry with clones of any
+    /// models the source linker registered via
+    /// `enable_wasi_nn_with_models`; empty otherwise.
     #[cfg(feature = "wasi-nn")]
     fn build_wasi_nn_ctx(&self) -> wasmtime_wasi_nn::wit::WasiNnCtx {
         let backends = wasmtime_wasi_nn::backend::list();
-        let registry = wasmtime_wasi_nn::InMemoryRegistry::new();
-        wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into())
+        if self.wasi_nn_named_models.is_empty() {
+            let registry = wasmtime_wasi_nn::InMemoryRegistry::new();
+            wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into())
+        } else {
+            let mut registry = NamedGraphRegistry::new();
+            for (name, graph) in &self.wasi_nn_named_models {
+                registry.insert(name.clone(), graph.clone());
+            }
+            wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into())
+        }
     }
 
     /// Instantiate the component, creating a fresh store with the configured WASI context.
@@ -2763,6 +2912,8 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(
             wasi_p3_enabled: false,
             #[cfg(feature = "wasi-nn")]
             wasi_nn_enabled: false,
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_named_models: HashMap::new(),
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,

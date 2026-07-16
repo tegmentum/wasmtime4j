@@ -29,9 +29,10 @@ import java.util.Map;
  * (oxigraph-wf / qlever-wf) so byte-identical tensor output across JVM and native hosts is
  * achievable.
  *
- * <p><b>Extensibility.</b> The configuration surface is deliberately minimal in {@code
- * 46.0.1-1.4.0}. Future additions will land as additive setters/builder methods (a named-model
- * registry keyed by bytes, preferred backend enumeration ordering, per-graph execution target
+ * <p><b>Extensibility.</b> The configuration surface is deliberately minimal. As of {@code
+ * 46.0.1-1.4.1} the named-model registry {@link Builder#registerModel(String, byte[])
+ * registerModel} is wired through the native binding. Future additions will land as additive
+ * setters/builder methods (preferred backend enumeration ordering, per-graph execution target
  * hints). Guests that already work under the default config will continue to work; callers that
  * need finer control opt in.
  *
@@ -45,10 +46,12 @@ public final class WasiNnConfig {
   private static final WasiNnConfig DEFAULTS = new WasiNnConfig(Collections.emptyMap());
 
   /**
-   * Named-model registry entries. Reserved for a future release — the current native binding calls
-   * {@code InMemoryRegistry::new()} and ignores this map; guests expected to load models by bytes
-   * still function. Present now so callers can pass a builder-built config without a
-   * source-breaking API change later.
+   * Named-model registry entries. Wired end-to-end since {@code 46.0.1-1.4.1}: each entry is
+   * decoded once against the compiled wasi-nn backend (ONNX/ORT under this repo's workspace pin) at
+   * {@code enableWasiNn(WasiNnConfig)} time and the resulting {@code Arc<Graph>} is carried into
+   * every store built off this linker, so guests calling {@code wasi:nn/graph.load-by-name} resolve
+   * without re-decoding. Empty map = auto-decode-only ({@code graph.load(builders, encoding,
+   * target)} still works and is unaffected).
    */
   private final Map<String, byte[]> namedModels;
 
@@ -72,8 +75,10 @@ public final class WasiNnConfig {
   }
 
   /**
-   * Returns the (read-only) named-model registry entries supplied to this config. Consumed by the
-   * native binding when the registry plumbing is wired through; currently always ignored.
+   * Returns the (read-only) named-model registry entries supplied to this config. Since {@code
+   * 46.0.1-1.4.1} each entry is consumed by the native binding at {@link
+   * ai.tegmentum.wasmtime4j.component.ComponentLinker#enableWasiNn(WasiNnConfig)} time and becomes
+   * resolvable via {@code wasi:nn/graph.load-by-name}.
    */
   public Map<String, byte[]> namedModels() {
     return namedModels;
@@ -90,9 +95,11 @@ public final class WasiNnConfig {
      * Model bytes are copied at build time; the caller's array may be mutated afterwards without
      * affecting linker behaviour.
      *
-     * <p><b>Not yet wired through in 46.0.1-1.4.0.</b> Registered names are silently ignored by the
-     * current native binding. Present so downstream builders don't need a source-breaking update
-     * when it lands.
+     * <p><b>Wired through in 46.0.1-1.4.1.</b> Each entry is decoded once against the compiled
+     * wasi-nn backend (ONNX/ORT under this repo's workspace pin) at {@link
+     * ai.tegmentum.wasmtime4j.component.ComponentLinker#enableWasiNn(WasiNnConfig)} time. Under the
+     * ONNX-only backend the model bytes are treated as an ONNX file; other encodings are not yet
+     * selectable.
      */
     public Builder registerModel(final String name, final byte[] modelBytes) {
       if (name == null || name.isEmpty()) {

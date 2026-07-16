@@ -418,13 +418,17 @@ public interface ComponentLinker<T> extends Closeable {
   /**
    * Enables WASI-NN with a caller-supplied configuration.
    *
-   * <p>The {@link WasiNnConfig} shape is intentionally minimal in 1.4.0 — an empty config is
-   * equivalent to {@link #enableWasiNn()} and yields the auto-detected backend set (ORT / ONNX
-   * under our workspace feature pin). Named-model registry entries and backend selection will be
-   * added additively in a later release.
+   * <p>An empty {@link WasiNnConfig} is equivalent to {@link #enableWasiNn()} and yields the
+   * auto-detected backend set (ORT / ONNX under our workspace feature pin).
+   *
+   * <p>Since 1.4.1 the {@link WasiNnConfig#namedModels() named-model registry} is wired through:
+   * each entry is decoded once against the compiled wasi-nn backend at this call and carried into
+   * every store built off this linker, so guests calling {@code wasi:nn/graph.load-by-name} resolve
+   * without re-decoding. Backend selection is not yet exposed — under the ONNX-only workspace pin
+   * the sole backend receives every model.
    *
    * @param config the WASI-NN configuration (may not be null)
-   * @throws WasmException if WASI-NN cannot be enabled
+   * @throws WasmException if WASI-NN cannot be enabled, or if a registered model fails to decode
    * @throws IllegalArgumentException if config is null
    * @since 1.4.0
    */

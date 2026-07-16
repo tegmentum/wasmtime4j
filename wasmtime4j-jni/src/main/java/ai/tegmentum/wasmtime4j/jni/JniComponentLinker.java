@@ -766,11 +766,36 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
     if (config == null) {
       throw new IllegalArgumentException("config cannot be null");
     }
-    // 1.4.0: WasiNnConfig carries only a (currently ignored) named-model
-    // registry. Once the native side wires it through we'll pass the
-    // registry entries via a new native method; today the config-less
-    // path is byte-identical.
-    enableWasiNn();
+    beginOperation();
+    try {
+      final java.util.Map<String, byte[]> models = config.namedModels();
+      if (models.isEmpty()) {
+        // No models to register — the plain enableWasiNn path is byte-
+        // identical (native binding calls the wasi-nn linker glue plus
+        // an empty registry per store).
+        nativeEnableWasiNn(nativeHandle);
+      } else {
+        final String[] names = new String[models.size()];
+        final byte[][] bytes = new byte[models.size()][];
+        int i = 0;
+        for (final java.util.Map.Entry<String, byte[]> e : models.entrySet()) {
+          names[i] = e.getKey();
+          // WasiNnConfig.Builder#registerModel already defensive-copied at
+          // build() time so the array we're handing off can't be mutated
+          // out from under the native decoder.
+          bytes[i] = e.getValue();
+          i++;
+        }
+        nativeEnableWasiNnWithModels(nativeHandle, names, bytes);
+      }
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to enable WASI-NN with models", e);
+    } finally {
+      endOperation();
+    }
   }
 
   @Override
@@ -1389,6 +1414,23 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
    * feature-flag requirements.
    */
   private native void nativeEnableWasiNn(long linkerHandle);
+
+  /**
+   * Enables WASI-NN and preloads a caller-supplied named-model registry.
+   *
+   * <p>The two arrays are parallel — {@code modelNames[i]} maps to {@code modelBytes[i]}. Each pair
+   * is decoded once against the compiled backend set (ONNX/ORT under this repo's workspace pin) and
+   * the resulting {@code Arc<Graph>} is carried into every subsequent instantiation so a guest
+   * calling {@code wasi:nn/graph.load-by-name(name)} resolves without re-decoding.
+   *
+   * <p>Empty arrays are permitted and behave like {@link #nativeEnableWasiNn(long)}.
+   *
+   * @throws ai.tegmentum.wasmtime4j.exception.WasmException wrapped native error if the wasi-nn
+   *     feature is not compiled in, the arrays have unequal length, or a model fails to decode
+   * @since 1.4.1
+   */
+  private native void nativeEnableWasiNnWithModels(
+      long linkerHandle, String[] modelNames, byte[][] modelBytes);
 
   private native void nativeSetConfigVariables(long linkerHandle, String[] keys, String[] values);
 

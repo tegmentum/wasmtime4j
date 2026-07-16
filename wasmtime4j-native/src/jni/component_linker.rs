@@ -293,6 +293,114 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
     });
 }
 
+/// Enable WASI-NN with a caller-supplied named-model registry.
+///
+/// JNI binding for `JniComponentLinker.nativeEnableWasiNnWithModels`.
+/// Bridges the parallel `String[] modelNames` / `byte[][] modelBytes`
+/// arrays into `ComponentLinker::enable_wasi_nn_with_models`. The two
+/// arrays must have equal length; each `(name, bytes)` pair is decoded
+/// against the compiled backend set (ONNX/ORT under our workspace pin)
+/// exactly once, and the resulting `Arc<Graph>` is carried through
+/// subsequent instantiations so `wasi:nn/graph.load-by-name` resolves.
+///
+/// Empty arrays are equivalent to `nativeEnableWasiNn` — the wasi-nn
+/// linker binding is added but the per-store registry stays empty.
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiNnWithModels(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+    model_names: JObjectArray,
+    model_bytes: JObjectArray,
+) {
+    // Two mutable borrows of `env` inside a closure passed to
+    // `jni_try_void` conflict; nativeSetConfigVariables uses this
+    // inline-closure-plus-manual-throw pattern for the same reason.
+    let result: Result<(), WasmtimeError> = (|| {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+
+        let names_len = env
+            .get_array_length(&model_names)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to read modelNames length: {}", e),
+                backtrace: None,
+            })? as usize;
+        let bytes_len = env
+            .get_array_length(&model_bytes)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to read modelBytes length: {}", e),
+                backtrace: None,
+            })? as usize;
+
+        if names_len != bytes_len {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!(
+                    "modelNames length ({}) != modelBytes length ({})",
+                    names_len, bytes_len
+                ),
+            });
+        }
+
+        let mut named_models: Vec<(String, Vec<u8>)> = Vec::with_capacity(names_len);
+        for i in 0..names_len {
+            let name_obj = env
+                .get_object_array_element(&model_names, i as i32)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to read modelNames[{}]: {}", i, e),
+                    backtrace: None,
+                })?;
+            if name_obj.is_null() {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("modelNames[{}] is null", i),
+                });
+            }
+            let name: String = env
+                .get_string(&JString::from(name_obj))
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to decode modelNames[{}]: {}", i, e),
+                    backtrace: None,
+                })?
+                .into();
+
+            let bytes_obj = env
+                .get_object_array_element(&model_bytes, i as i32)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to read modelBytes[{}]: {}", i, e),
+                    backtrace: None,
+                })?;
+            if bytes_obj.is_null() {
+                return Err(WasmtimeError::InvalidParameter {
+                    message: format!("modelBytes[{}] is null", i),
+                });
+            }
+            let byte_array =
+                unsafe { jni::objects::JByteArray::from_raw(bytes_obj.as_raw()) };
+            let bytes = env
+                .convert_byte_array(&byte_array)
+                .map_err(|e| WasmtimeError::Runtime {
+                    message: format!("Failed to copy modelBytes[{}]: {}", i, e),
+                    backtrace: None,
+                })?;
+            // Forget the raw handle so we don't accidentally release it —
+            // `JByteArray::from_raw` doesn't take ownership, but explicit
+            // is good.
+            let _ = byte_array.into_raw();
+
+            named_models.push((name, bytes));
+        }
+
+        linker.enable_wasi_nn_with_models(named_models)?;
+        Ok(())
+    })();
+
+    if let Err(e) = result {
+        jni_utils::throw_jni_exception(&mut env, &e);
+    }
+}
+
 /// Enable experimental WASI P3 on the component linker
 /// JNI binding for JniComponentLinker.nativeEnableWasiP3
 #[allow(non_snake_case)]
