@@ -10,7 +10,18 @@ resolver = "2"
 wasmtime = { version = "46.0.1", features = ["component-model", "component-model-async", "component-model-bytes", "async", "call-hook", "coredump", "gc", "cache", "debug", "incremental-cache", "wave"] }
 wasmtime-wasi = { version = "46.0.1", features = ["p3"] }
 wasmtime-wasi-http = { version = "46.0.1", features = ["p3"] }
-wasmtime-wasi-nn = { version = "46.0.1" }
+# wasi-nn: default features pull in openvino + winml (system-installed).
+# We target the ORT-backed ONNX backend so the JVM plugins (Jena / RDF4J)
+# can execute the wf_sagegraph_nn guest byte-identically to the Rust
+# engines (oxigraph-wf / qlever-wf) which pin the same feature set.
+# Requires ORT to be built or resolved via ORT_STRATEGY=system +
+# ORT_LIB_LOCATION=/opt/homebrew (or /usr/local) with ONNX Runtime 1.20.x
+# installed. See scripts/build-wasi-nn.md.
+wasmtime-wasi-nn = { version = "46.0.1", default-features = false, features = ["onnx"] }
+# ort exact-pin is mandatory: wasmtime-wasi-nn 46.0.1 bakes in 2.0.0-rc.10
+# and later ort releases have breaking ABI shifts that surface as link-
+# time symbol mismatches. Same pin the Rust substrate engines carry.
+ort = "=2.0.0-rc.10"
 wasmtime-wasi-config = { version = "46.0.1" }
 wasmtime-wast = { version = "46.0.1", features = ["component-model", "component-model-async"] }
 

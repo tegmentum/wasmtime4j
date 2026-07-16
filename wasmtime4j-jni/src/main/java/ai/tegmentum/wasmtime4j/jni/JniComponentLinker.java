@@ -746,6 +746,34 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   }
 
   @Override
+  public void enableWasiNn() throws WasmException {
+    beginOperation();
+    try {
+      nativeEnableWasiNn(nativeHandle);
+    } catch (final Exception e) {
+      if (e instanceof WasmException) {
+        throw (WasmException) e;
+      }
+      throw new WasmException("Failed to enable WASI-NN", e);
+    } finally {
+      endOperation();
+    }
+  }
+
+  @Override
+  public void enableWasiNn(final ai.tegmentum.wasmtime4j.wasi.nn.WasiNnConfig config)
+      throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("config cannot be null");
+    }
+    // 1.4.0: WasiNnConfig carries only a (currently ignored) named-model
+    // registry. Once the native side wires it through we'll pass the
+    // registry entries via a new native method; today the config-less
+    // path is byte-identical.
+    enableWasiNn();
+  }
+
+  @Override
   public void setConfigVariables(final java.util.Map<String, String> variables)
       throws WasmException {
     if (variables == null) {
@@ -1353,6 +1381,14 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private native void nativeEnableWasiHttpP3(long linkerHandle);
 
   private native void nativeEnableWasiConfig(long linkerHandle);
+
+  /**
+   * Enables WASI-NN inference (component-model ABI) on the underlying wasmtime {@code
+   * component::Linker}. See {@link
+   * ai.tegmentum.wasmtime4j.component.ComponentLinker#enableWasiNn()} for behaviour and
+   * feature-flag requirements.
+   */
+  private native void nativeEnableWasiNn(long linkerHandle);
 
   private native void nativeSetConfigVariables(long linkerHandle, String[] keys, String[] values);
 

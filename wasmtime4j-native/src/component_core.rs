@@ -202,6 +202,8 @@ impl EnhancedComponentEngine {
             wasi_http_ctx: None, #[cfg(feature = "wasi-http")] wasi_http_hooks: [(); 0],
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_ctx: None,
             store_limits: None,
             #[cfg(feature = "wasi")]
             fs_access_observer: None,
@@ -313,6 +315,8 @@ impl EnhancedComponentEngine {
             wasi_http_hooks: [(); 0],
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_ctx: None,
             store_limits,
             fs_access_observer,
             start_time,
@@ -1198,6 +1202,8 @@ impl EnhancedComponentEngine {
                 wasi_http_ctx: None, #[cfg(feature = "wasi-http")] wasi_http_hooks: [(); 0],
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
+                #[cfg(feature = "wasi-nn")]
+                wasi_nn_ctx: None,
                 store_limits: None,
                 #[cfg(feature = "wasi")]
                 fs_access_observer: None,

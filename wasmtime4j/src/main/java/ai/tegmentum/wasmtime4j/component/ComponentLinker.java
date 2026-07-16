@@ -20,6 +20,7 @@ import ai.tegmentum.wasmtime4j.Store;
 import ai.tegmentum.wasmtime4j.exception.WasmException;
 import ai.tegmentum.wasmtime4j.wasi.WasiPreview2Config;
 import ai.tegmentum.wasmtime4j.wasi.http.WasiHttpConfig;
+import ai.tegmentum.wasmtime4j.wasi.nn.WasiNnConfig;
 import java.io.Closeable;
 import java.util.Map;
 import java.util.Set;
@@ -391,6 +392,48 @@ public interface ComponentLinker<T> extends Closeable {
    * @throws WasmException if WASI Config cannot be enabled
    */
   void enableWasiConfig() throws WasmException;
+
+  /**
+   * Enables WASI-NN neural-network inference support in this component linker.
+   *
+   * <p>Adds the {@code wasi:nn/{graph, tensor, inference, errors}} interfaces (component-model ABI)
+   * so a guest can load an ML graph from bytes, feed tensor inputs, run inference, and read tensor
+   * outputs entirely inside wasm. Requires the native library to be compiled with the {@code
+   * wasi-nn} feature and an ONNX Runtime installation reachable at build time via {@code
+   * ORT_STRATEGY=system} / {@code ORT_LIB_LOCATION}.
+   *
+   * <p>Idempotent: calling this method more than once on the same linker is a no-op.
+   *
+   * <p>Independent of {@link #enableWasiPreview2()}. A guest may import only {@code wasi:nn}
+   * without needing filesystem/network/clocks.
+   *
+   * @throws WasmException if WASI-NN cannot be enabled (native library missing the feature, linker
+   *     disposed, or wasmtime rejects the interface binding)
+   * @since 1.4.0
+   */
+  default void enableWasiNn() throws WasmException {
+    throw new WasmException("WASI-NN support is not implemented in this ComponentLinker provider");
+  }
+
+  /**
+   * Enables WASI-NN with a caller-supplied configuration.
+   *
+   * <p>The {@link WasiNnConfig} shape is intentionally minimal in 1.4.0 — an empty config is
+   * equivalent to {@link #enableWasiNn()} and yields the auto-detected backend set (ORT / ONNX
+   * under our workspace feature pin). Named-model registry entries and backend selection will be
+   * added additively in a later release.
+   *
+   * @param config the WASI-NN configuration (may not be null)
+   * @throws WasmException if WASI-NN cannot be enabled
+   * @throws IllegalArgumentException if config is null
+   * @since 1.4.0
+   */
+  default void enableWasiNn(WasiNnConfig config) throws WasmException {
+    if (config == null) {
+      throw new IllegalArgumentException("config cannot be null");
+    }
+    enableWasiNn();
+  }
 
   /**
    * Sets configuration variables for WASI Config.

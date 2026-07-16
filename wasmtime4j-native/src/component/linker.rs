@@ -794,6 +794,14 @@ pub struct ComponentLinker {
     /// Whether WASI P3 is enabled (experimental)
     #[cfg(feature = "wasi-p3")]
     wasi_p3_enabled: bool,
+    /// Whether WASI-NN inference is enabled on this linker.
+    ///
+    /// When true, `instantiate` builds a `WasiNnCtx` (using the auto-
+    /// detected backend list — ONNX/ORT under our feature set) and
+    /// injects it into `ComponentStoreData` so the generated
+    /// wasi:nn/{graph,inference,tensor,errors} host bindings can resolve.
+    #[cfg(feature = "wasi-nn")]
+    wasi_nn_enabled: bool,
     /// WASI Config variables to inject into store data during instantiation
     #[cfg(feature = "wasi-config")]
     wasi_config_vars: Vec<(String, String)>,
@@ -836,6 +844,8 @@ impl ComponentLinker {
             wasi_config_vars: Vec::new(),
             #[cfg(feature = "wasi-p3")]
             wasi_p3_enabled: false,
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -871,6 +881,8 @@ impl ComponentLinker {
             wasi_config_vars: Vec::new(),
             #[cfg(feature = "wasi-p3")]
             wasi_p3_enabled: false,
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,
@@ -1764,6 +1776,99 @@ impl ComponentLinker {
         })
     }
 
+    /// Enable WASI-NN (Neural Network) inference on this component linker.
+    ///
+    /// Adds the `wasi:nn/{graph, tensor, inference, errors}` interfaces
+    /// (WIT / component-model ABI) so a guest can load ML graphs from
+    /// bytes, feed tensor inputs, run inference, and read tensor outputs
+    /// without ever leaving wasm.
+    ///
+    /// Backends are auto-detected from the compiled feature set: with
+    /// `wasmtime-wasi-nn = { default-features = false, features = ["onnx"] }`
+    /// only the ORT (ONNX Runtime) backend registers, matching the pin
+    /// the Rust engines (oxigraph-wf / qlever-wf) use so byte-identical
+    /// tensor output across JVM and native hosts is achievable.
+    ///
+    /// Idempotent: repeated calls after the first are no-ops.
+    ///
+    /// # Errors
+    /// Returns `WasmtimeError::Runtime` if the linker has been disposed
+    /// or `WasmtimeError::Wasi` if wasmtime rejects the linker binding
+    /// (e.g. an interface name collides with a previously defined host
+    /// function).
+    #[cfg(feature = "wasi-nn")]
+    pub fn enable_wasi_nn(&mut self) -> WasmtimeResult<()> {
+        if self.disposed {
+            return Err(WasmtimeError::Runtime {
+                message: "ComponentLinker has been disposed".to_string(),
+                backtrace: None,
+            });
+        }
+        if self.wasi_nn_enabled {
+            return Ok(());
+        }
+
+        // Component-model add_to_linker takes a fn pointer (not a closure)
+        // that returns a `WasiNnView<'_>` reference bundling the resource
+        // table and the ctx. The ctx is populated during `instantiate` on
+        // the `ComponentStoreData`; if a guest imports wasi:nn but
+        // instantiation forgot to attach the ctx the .expect below traps
+        // deterministically instead of segfaulting.
+        wasmtime_wasi_nn::wit::add_to_linker(&mut self.linker, |data: &mut ComponentStoreData| {
+            let ctx = data
+                .wasi_nn_ctx
+                .as_mut()
+                .expect("ComponentStoreData missing wasi_nn_ctx; \
+                         ComponentLinker::enable_wasi_nn was called but the \
+                         store was built without a WasiNnCtx. This is a \
+                         wasmtime4j bug.");
+            wasmtime_wasi_nn::wit::WasiNnView::new(&mut data.resource_table, ctx)
+        })
+        .map_err(|e| WasmtimeError::Wasi {
+            message: format!("Failed to enable WASI-NN: {}", e),
+        })?;
+
+        self.wasi_nn_enabled = true;
+        log::debug!("WASI-NN enabled in component linker");
+        Ok(())
+    }
+
+    /// Stub when wasi-nn feature is not compiled in.
+    #[cfg(not(feature = "wasi-nn"))]
+    pub fn enable_wasi_nn(&mut self) -> WasmtimeResult<()> {
+        Err(WasmtimeError::Runtime {
+            message: "WASI-NN support not compiled in. Enable the 'wasi-nn' feature."
+                .to_string(),
+            backtrace: None,
+        })
+    }
+
+    /// Check if WASI-NN is enabled on this linker.
+    #[cfg(feature = "wasi-nn")]
+    pub fn is_wasi_nn_enabled(&self) -> bool {
+        self.wasi_nn_enabled
+    }
+
+    #[cfg(not(feature = "wasi-nn"))]
+    pub fn is_wasi_nn_enabled(&self) -> bool {
+        false
+    }
+
+    /// Build a fresh `WasiNnCtx` for a new store, using the auto-detected
+    /// backend list and an empty in-memory model registry.
+    ///
+    /// The registry is empty on purpose: the wf_sagegraph_nn guest and
+    /// its siblings load the model from bytes via `graph::load(builders,
+    /// encoding, target)` — they don't rely on host-side pre-registration
+    /// via `load-by-name`. Model-by-name registration can be added later
+    /// without breaking this construction path.
+    #[cfg(feature = "wasi-nn")]
+    fn build_wasi_nn_ctx(&self) -> wasmtime_wasi_nn::wit::WasiNnCtx {
+        let backends = wasmtime_wasi_nn::backend::list();
+        let registry = wasmtime_wasi_nn::InMemoryRegistry::new();
+        wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into())
+    }
+
     /// Create a configured WasiHttpCtx, applying any stored configuration
     #[cfg(feature = "wasi-http")]
     fn create_wasi_http_ctx(&self) -> wasmtime_wasi_http::WasiHttpCtx {
@@ -1798,7 +1903,7 @@ impl ComponentLinker {
 
         // Build store data with configured WASI context if WASI P2 is enabled
         #[cfg(feature = "wasi")]
-        let store_data = if self.wasi_p2_enabled {
+        let mut store_data = if self.wasi_p2_enabled {
             ComponentStoreData {
                 instance_id: 0,
                 user_data: None,
@@ -1814,6 +1919,8 @@ impl ComponentLinker {
                 wasi_http_hooks: [(); 0],
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
+                #[cfg(feature = "wasi-nn")]
+                wasi_nn_ctx: None,
                 store_limits: None,
                 #[cfg(feature = "wasi")]
                 fs_access_observer: None,
@@ -1830,13 +1937,26 @@ impl ComponentLinker {
         };
 
         #[cfg(not(feature = "wasi"))]
-        let store_data = ComponentStoreData {
+        let mut store_data = ComponentStoreData {
             instance_id: 0,
             user_data: None,
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: self.build_wasi_config_vars(),
             ..Default::default()
         };
+
+        // WASI-NN ctx is attached last, independent of wasi_p2_enabled —
+        // a component may import wasi:nn without wasi:cli / wasi:filesystem.
+        // If enable_wasi_nn was not called this stays None; the guest's
+        // wasi:nn imports (if any) will have failed to resolve at
+        // linker.add_to_linker time, so we never reach here with a
+        // wasi:nn-importing guest and a missing ctx.
+        #[cfg(feature = "wasi-nn")]
+        {
+            if self.wasi_nn_enabled {
+                store_data.wasi_nn_ctx = Some(self.build_wasi_nn_ctx());
+            }
+        }
 
         let mut store = Store::new(&self.engine, store_data);
 
@@ -1897,6 +2017,8 @@ impl ComponentLinker {
             wasi_http_field_size_limit: self.wasi_http_field_size_limit,
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: self.wasi_config_vars.clone(),
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_enabled: self.wasi_nn_enabled,
             wasi_p2_config: self.wasi_p2_config.clone(),
             metadata: component.metadata().clone(),
             original_bytes: Arc::clone(component.original_bytes()),
@@ -2019,6 +2141,12 @@ pub struct ComponentInstancePreWrapper {
     /// WASI Config variables (cloned from linker at creation time)
     #[cfg(feature = "wasi-config")]
     wasi_config_vars: Vec<(String, String)>,
+    /// Whether WASI-NN was enabled on the source linker; carried forward
+    /// so each fresh store built off this InstancePre gets its own
+    /// WasiNnCtx (an ONNX backend context isn't Sync so it can't be
+    /// shared across stores).
+    #[cfg(feature = "wasi-nn")]
+    wasi_nn_enabled: bool,
     /// WASI P2 configuration (cloned from linker at creation time)
     wasi_p2_config: WasiP2Config,
     /// Component metadata for creating ComponentInstanceHandle
@@ -2054,6 +2182,15 @@ impl ComponentInstancePreWrapper {
         config
     }
 
+    /// Build a fresh `WasiNnCtx` (auto-detected backends, empty registry)
+    /// for a new store when the source linker had wasi-nn enabled.
+    #[cfg(feature = "wasi-nn")]
+    fn build_wasi_nn_ctx(&self) -> wasmtime_wasi_nn::wit::WasiNnCtx {
+        let backends = wasmtime_wasi_nn::backend::list();
+        let registry = wasmtime_wasi_nn::InMemoryRegistry::new();
+        wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into())
+    }
+
     /// Instantiate the component, creating a fresh store with the configured WASI context.
     ///
     /// Returns a `ComponentInstanceHandle` containing the store and instance, ready for
@@ -2063,7 +2200,7 @@ impl ComponentInstancePreWrapper {
 
         // Build store data with configured WASI context if WASI P2 is enabled
         #[cfg(feature = "wasi")]
-        let store_data = if self.wasi_p2_enabled {
+        let mut store_data = if self.wasi_p2_enabled {
             ComponentStoreData {
                 instance_id: 0,
                 user_data: None,
@@ -2079,6 +2216,8 @@ impl ComponentInstancePreWrapper {
                 wasi_http_hooks: [(); 0],
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
+                #[cfg(feature = "wasi-nn")]
+                wasi_nn_ctx: None,
                 store_limits: None,
                 #[cfg(feature = "wasi")]
                 fs_access_observer: None,
@@ -2095,13 +2234,20 @@ impl ComponentInstancePreWrapper {
         };
 
         #[cfg(not(feature = "wasi"))]
-        let store_data = ComponentStoreData {
+        let mut store_data = ComponentStoreData {
             instance_id: 0,
             user_data: None,
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: self.build_wasi_config_vars(),
             ..Default::default()
         };
+
+        #[cfg(feature = "wasi-nn")]
+        {
+            if self.wasi_nn_enabled {
+                store_data.wasi_nn_ctx = Some(self.build_wasi_nn_ctx());
+            }
+        }
 
         let mut store = Store::new(&self.engine, store_data);
 
@@ -2182,7 +2328,7 @@ impl ComponentInstancePreWrapper {
         };
 
         #[cfg(feature = "wasi")]
-        let store_data = if self.wasi_p2_enabled {
+        let mut store_data = if self.wasi_p2_enabled {
             ComponentStoreData {
                 instance_id: 0,
                 user_data: None,
@@ -2198,6 +2344,8 @@ impl ComponentInstancePreWrapper {
                 wasi_http_hooks: [(); 0],
                 #[cfg(feature = "wasi-config")]
                 wasi_config_vars: self.build_wasi_config_vars(),
+                #[cfg(feature = "wasi-nn")]
+                wasi_nn_ctx: None,
                 store_limits,
                 #[cfg(feature = "wasi")]
                 fs_access_observer: None,
@@ -2215,7 +2363,7 @@ impl ComponentInstancePreWrapper {
         };
 
         #[cfg(not(feature = "wasi"))]
-        let store_data = ComponentStoreData {
+        let mut store_data = ComponentStoreData {
             instance_id: 0,
             user_data: None,
             store_limits,
@@ -2223,6 +2371,13 @@ impl ComponentInstancePreWrapper {
             wasi_config_vars: self.build_wasi_config_vars(),
             ..Default::default()
         };
+
+        #[cfg(feature = "wasi-nn")]
+        {
+            if self.wasi_nn_enabled {
+                store_data.wasi_nn_ctx = Some(self.build_wasi_nn_ctx());
+            }
+        }
 
         let mut store = Store::new(&self.engine, store_data);
 
@@ -2606,6 +2761,8 @@ pub unsafe extern "C" fn wasmtime4j_component_linker_new_with_engine(
             wasi_config_vars: Vec::new(),
             #[cfg(feature = "wasi-p3")]
             wasi_p3_enabled: false,
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_enabled: false,
             wasi_p2_config: WasiP2Config::default(),
             disposed: false,
             async_support: false,

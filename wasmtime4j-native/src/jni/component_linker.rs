@@ -268,6 +268,31 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 // WASI Config Enable/Set JNI Native Methods
 // ============================================================================
 
+/// Enable WASI-NN inference support on the component linker.
+///
+/// JNI binding for `JniComponentLinker.nativeEnableWasiNn`. Wires the
+/// `wasi:nn/{graph, tensor, inference, errors}` interfaces (component-
+/// model ABI, ONNX/ORT backend under our workspace feature pin) so the
+/// guest can load models from bytes and run tensor inference. The store
+/// side of the plumbing — building a `WasiNnCtx` per-instantiation —
+/// runs inside `ComponentLinker::instantiate` when the `wasi_nn_enabled`
+/// flag is set.
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiNn(
+    mut env: JNIEnv,
+    _obj: JObject,
+    linker_handle: jlong,
+) {
+    jni_utils::jni_try_void(&mut env, || {
+        let linker = unsafe {
+            component_linker_core::get_component_linker_mut(linker_handle as *mut c_void)?
+        };
+        linker.enable_wasi_nn()?;
+        Ok(())
+    });
+}
+
 /// Enable experimental WASI P3 on the component linker
 /// JNI binding for JniComponentLinker.nativeEnableWasiP3
 #[allow(non_snake_case)]

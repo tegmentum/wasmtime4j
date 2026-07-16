@@ -103,6 +103,14 @@ pub struct ComponentStoreData {
     /// WASI config variables for wasi:config/runtime support
     #[cfg(feature = "wasi-config")]
     pub wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables,
+    /// WASI-NN inference context — populated when the linker had
+    /// `enable_wasi_nn` called before instantiation. The generated
+    /// wasi:nn/{graph,inference,tensor,errors} host bindings pull
+    /// `&mut self.wasi_nn_ctx` (through a WasiNnView) on every guest
+    /// call, so this must be set before the guest imports resolve or
+    /// wasmtime will trap with a missing-host-import error.
+    #[cfg(feature = "wasi-nn")]
+    pub wasi_nn_ctx: Option<wasmtime_wasi_nn::wit::WasiNnCtx>,
     /// Optional store limits for resource governance
     pub store_limits: Option<wasmtime::StoreLimits>,
     /// Optional filesystem-access denial observer. When set, the interposing
@@ -138,6 +146,8 @@ impl Default for ComponentStoreData {
             wasi_http_hooks: [(); 0],
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
+            #[cfg(feature = "wasi-nn")]
+            wasi_nn_ctx: None,
             store_limits: None,
             #[cfg(feature = "wasi")]
             fs_access_observer: None,

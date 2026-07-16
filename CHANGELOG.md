@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.4.0] - 2026-07-16
+
+Wasmtime version unchanged (46.0.1). Minor release that lands WASI-NN
+(neural network inference) support on the Component Model linker so
+JVM hosts embedding wasmtime4j can run guests that import
+`wasi:nn/{graph, tensor, inference, errors}` — closing the gap that
+kept JVM-embedded engines (Jena, RDF4J, Stardog plugins) from parity
+with the Rust engines already carrying wasi-nn (oxigraph-wf,
+qlever-wf @ substrate v0.4).
+
+### Added
+
+- `ComponentLinker#enableWasiNn()` and
+  `ComponentLinker#enableWasiNn(WasiNnConfig)` (`ai.tegmentum.wasmtime4j.component`
+  and `ai.tegmentum.wasmtime4j.wasi.nn` respectively). Wires
+  `wasi:nn/{graph, tensor, inference, errors}` (component-model ABI)
+  onto the linker; a fresh `WasiNnCtx` (auto-detected backends, empty
+  in-memory registry) is attached to `ComponentStoreData` at each
+  instantiation so the generated host bindings can resolve.
+  Idempotent; independent of `enableWasiPreview2`.
+- `WasiNnConfig` operator-facing config type. Empty/default
+  configuration matches the zero-arg overload and yields the
+  auto-detected backend set. `WasiNnConfig.Builder#registerModel(String,
+  byte[])` is present so future named-model registry support lands
+  additively — the current native binding calls `InMemoryRegistry::new()`
+  and silently ignores registry entries.
+- JNI binding
+  `Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeEnableWasiNn`
+  and Rust `ComponentLinker::enable_wasi_nn`.
+- New `ComponentStoreData::wasi_nn_ctx` field (feature-gated).
+
+### Backend / Cargo
+
+- Workspace `wasmtime-wasi-nn` now pinned to
+  `{ default-features = false, features = ["onnx"] }` matching the
+  Rust substrate engines (oxigraph-wf, qlever-wf). Default features
+  pull `openvino + winml` — dropped so a stock Linux/macOS host with
+  ONNX Runtime installed via Homebrew is enough.
+- Workspace `ort = "=2.0.0-rc.10"` exact pin. `wasmtime-wasi-nn 46.0.1`
+  is source-compatible only with the rc.10 API surface; later ort
+  releases (rc.12) break at compile time (`ort::Error` shape change).
+- `wasi-nn` remains **opt-in** in `wasmtime4j-native` features
+  (not part of the default set). Build with
+  `cargo build --features wasi-nn` and the environment
+  `ORT_STRATEGY=system ORT_PREFER_DYNAMIC_LINK=1 ORT_LIB_LOCATION=<prefix>`
+  (on macOS: `/opt/homebrew` after `brew install onnxruntime`).
+
+### Notes
+
+- The Maven-published `wasmtime4j-native` artifact for 46.0.1-1.4.0
+  ships the default feature set (no wasi-nn). Downstream projects
+  that need wasi-nn build the native lib themselves and drop the
+  resulting `libwasmtime4j.{so,dylib}` alongside the shipped natives.
+  A wasi-nn-enabled release channel is a follow-up.
+
 ## [46.0.1-1.2.0] - 2026-07-05
 
 Wasmtime version unchanged (46.0.1). This is a wasmtime4j minor release
