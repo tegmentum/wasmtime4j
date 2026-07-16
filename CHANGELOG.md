@@ -54,13 +54,39 @@ wasi-nn follow-ups called out in 1.4.0:
   time. macOS: `brew install onnxruntime` places it under
   `/opt/homebrew/lib`. Linux: install `libonnxruntime` from the
   distribution package manager or ONNX Runtime GitHub releases.
-- **Publishing (out-of-band).** The `wasi-nn` classifier JARs are not
-  yet published from CI — the release pipeline needs an `ort_install`
-  step plus a `wasi-nn` matrix axis before Maven Central / GitHub
-  Packages upload. Until then downstream projects that need wasi:nn
-  build the classified artifact locally via
-  `mvn -pl wasmtime4j-native -am install -P wasi-nn` and depend on the
-  installed classifier from their own repos.
+- **Publishing (wired into CI).** `.github/workflows/release.yml` now
+  builds and publishes the `wasi-nn` classifier variant alongside the
+  plain artifacts on every `v*` tag:
+    * New `build-native-wasi-nn` job (parallel to `build-native`, matrix
+      over linux-x86_64, linux-aarch64, darwin-aarch64) installs ONNX
+      Runtime 1.20.1 — Homebrew on macOS
+      (`ORT_LIB_LOCATION=/opt/homebrew`), the Microsoft-published
+      prebuilt tarball on Linux (`onnxruntime-linux-{x64,aarch64}-1.20.1`
+      extracted to `$HOME/ort`, `ORT_LIB_LOCATION=$HOME/ort`) — and runs
+      `cargo build --release --features wasi-nn` under
+      `ORT_STRATEGY=system ORT_PREFER_DYNAMIC_LINK=1`. Windows is
+      intentionally omitted; ort's windows-x86_64 story via
+      `ORT_STRATEGY=system` is fragile and adding it can be a follow-up.
+      `fail-fast: false` so a wasi-nn build failure on one platform
+      doesn't sink the others.
+    * New `publish-wasi-nn` job runs after `publish`, overlays the
+      wasi-nn-linked natives into `wasmtime4j-native/src/main/resources/
+      natives/<platform>/`, and runs `mvn deploy -P
+      release,skip-native,wasi-nn -pl wasmtime4j-native -am` against
+      both Maven Central and GitHub Packages. Only the
+      `wasmtime4j-native` coordinate varies by wasi-nn; the other module
+      poms are unchanged so publishing them again would collide.
+    * `publish-wasi-nn` is guarded by
+      `if: always() && needs.publish.result == 'success'` so a broken
+      wasi-nn path never rolls back or blocks the plain release, and the
+      classifier JARs are appended to the same GitHub Release via
+      `softprops/action-gh-release@v3` (same tag).
+- **Runtime prerequisite reminder for consumers.** Even with the
+  classifier JAR published, the ONNX Runtime shared library must be on
+  the loader path at run time (`libonnxruntime.so` /
+  `libonnxruntime.dylib`). macOS: `brew install onnxruntime`. Linux:
+  install `libonnxruntime` via distro package or the Microsoft
+  onnxruntime GitHub release. See `README.md` (Platform Support).
 
 ### Docs / tests
 

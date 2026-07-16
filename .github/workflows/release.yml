@@ -71,6 +71,96 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
+  # Build wasi-nn-featured native libraries. Parallel to build-native; a
+  # separate job (rather than a matrix axis on build-native) so failures on
+  # this experimental path don't cascade into the plain build. Windows is
+  # deliberately omitted — the ort crate's windows-x86_64 story with
+  # ORT_STRATEGY=system is fragile and there's no cheap parity path; a
+  # wasi-nn Windows JAR can land in a follow-up.
+  build-native-wasi-nn:
+    name: Native wasi-nn (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            target: x86_64-unknown-linux-gnu
+            lib: libwasmtime4j.so
+            container: almalinux:8
+            ort_url: https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+            target: aarch64-unknown-linux-gnu
+            lib: libwasmtime4j.so
+            container: almalinux:8
+            ort_url: https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-aarch64-1.20.1.tgz
+          - os: macos-latest
+            platform: darwin-aarch64
+            target: aarch64-apple-darwin
+            lib: libwasmtime4j.dylib
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container || '' }}
+    steps:
+      - name: Install build prerequisites
+        if: matrix.container
+        run: dnf install -y gcc gcc-c++ make curl git perl-core tar gzip which
+
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install ONNX Runtime (macOS via Homebrew)
+        if: runner.os == 'macOS'
+        run: |
+          brew install onnxruntime
+          # brew formula installs libs to /opt/homebrew/lib and headers to
+          # /opt/homebrew/include/onnxruntime. ort's system strategy expects
+          # ORT_LIB_LOCATION to name the prefix directory.
+          echo "ORT_LIB_LOCATION=/opt/homebrew" >> "$GITHUB_ENV"
+
+      - name: Install ONNX Runtime (Linux prebuilt from Microsoft)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p "$HOME/ort"
+          curl -fsSL "${{ matrix.ort_url }}" -o /tmp/ort.tgz
+          tar -xzf /tmp/ort.tgz -C "$HOME/ort" --strip-components=1
+          # Prebuilt tarball layout: include/, lib/. ORT_LIB_LOCATION points
+          # at the prefix; ort finds lib/libonnxruntime.so beneath it.
+          echo "ORT_LIB_LOCATION=$HOME/ort" >> "$GITHUB_ENV"
+
+      - name: Cache Cargo
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            wasmtime4j-native/.cargo-target
+          key: cargo-wasi-nn-${{ matrix.platform }}-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: cargo-wasi-nn-${{ matrix.platform }}-
+
+      - name: Build wasi-nn native library
+        shell: bash
+        env:
+          CARGO_TARGET_DIR: wasmtime4j-native/.cargo-target
+          ORT_STRATEGY: system
+          ORT_PREFER_DYNAMIC_LINK: '1'
+        run: |
+          cargo build --release \
+            --manifest-path wasmtime4j-native/Cargo.toml \
+            --features wasi-nn \
+            --target ${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: native-wasi-nn-${{ matrix.platform }}
+          path: wasmtime4j-native/.cargo-target/${{ matrix.target }}/release/${{ matrix.lib }}
+          retention-days: 90
+          if-no-files-found: error
+
   # Test on each platform with JNI (Java 8) and Panama (Java 23)
   test:
     name: Test Java ${{ matrix.java }} (${{ matrix.platform }})
@@ -304,3 +394,127 @@ jobs:
             wasmtime4j-panama/target/*.jar.sha256
             wasmtime4j-native-loader/target/*.jar
             wasmtime4j-native-loader/target/*.jar.sha256
+
+  # Publish the wasi-nn classifier variant. Runs after the plain publish
+  # so the release exists to append to; independent success/failure so a
+  # broken wasi-nn build does not block or roll back the plain release.
+  # See CHANGELOG 46.0.1-1.4.1 (Packaging) for the consumer story.
+  publish-wasi-nn:
+    name: Publish (wasi-nn classifier)
+    needs: [publish, build-native-wasi-nn]
+    if: always() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '23'
+          distribution: 'temurin'
+          server-id: central
+          server-username: MAVEN_CENTRAL_USERNAME
+          server-password: MAVEN_CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASSPHRASE
+
+      - name: Cache Maven
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository
+          key: m2-publish-wasi-nn-${{ hashFiles('**/pom.xml') }}
+          restore-keys: m2-publish-wasi-nn-
+
+      # Overlay wasi-nn-linked natives into the same resource layout the
+      # non-wasi-nn publish job used. -P wasi-nn only changes classifiers +
+      # cargo.features; with -P skip-native the cargo step is bypassed so
+      # the classifier JARs pick up exactly the binaries staged here.
+      - name: Download wasi-nn native libraries
+        uses: actions/download-artifact@v8
+        with:
+          name: native-wasi-nn-linux-x86_64
+          path: wasmtime4j-native/src/main/resources/natives/linux-x86_64/
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-wasi-nn-linux-aarch64
+          path: wasmtime4j-native/src/main/resources/natives/linux-aarch64/
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-wasi-nn-darwin-aarch64
+          path: wasmtime4j-native/src/main/resources/natives/darwin-aarch64/
+
+      - name: Verify wasi-nn native libraries
+        run: |
+          echo "wasi-nn native library layout:"
+          find wasmtime4j-native/src/main/resources/natives/ -type f
+          test -f wasmtime4j-native/src/main/resources/natives/linux-x86_64/libwasmtime4j.so
+          test -f wasmtime4j-native/src/main/resources/natives/linux-aarch64/libwasmtime4j.so
+          test -f wasmtime4j-native/src/main/resources/natives/darwin-aarch64/libwasmtime4j.dylib
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # -pl wasmtime4j-native only: the wasi-nn profile lives on that
+      # module and it's the only artifact that varies by wasi-nn. The
+      # wasmtime4j / wasmtime4j-jni / wasmtime4j-panama /
+      # wasmtime4j-native-loader poms are unchanged between plain and
+      # wasi-nn — publishing them again would collide on Maven Central.
+      - name: Deploy wasi-nn classifier to Maven Central
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          ./mvnw deploy -B -P release,skip-native,wasi-nn \
+            -pl wasmtime4j-native -am \
+            -DskipTests -DskipQuality -Dmaven.test.skip=true \
+            -Drevision=${{ steps.version.outputs.version }}
+
+      - name: Deploy wasi-nn classifier to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings-github.xml <<'SETTINGS'
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>${env.GITHUB_ACTOR}</username>
+                <password>${env.GITHUB_TOKEN}</password>
+              </server>
+            </servers>
+          </settings>
+          SETTINGS
+          ./mvnw deploy -B -P skip-native,wasi-nn \
+            -pl wasmtime4j-native -am \
+            -DskipTests -DskipQuality -Dmaven.test.skip=true \
+            -Drevision=${{ steps.version.outputs.version }} \
+            -DaltDeploymentRepository=github::https://maven.pkg.github.com/${{ github.repository }} \
+            -Dgpg.skip=true \
+            -s ~/.m2/settings-github.xml
+
+      - name: Package wasi-nn release artifacts
+        run: |
+          ./mvnw package -B -P release,skip-native,wasi-nn \
+            -pl wasmtime4j-native -am \
+            -DskipTests -DskipQuality -Dmaven.test.skip=true \
+            -Drevision=${{ steps.version.outputs.version }}
+
+      - name: Create checksums for wasi-nn JARs
+        run: |
+          for jar in wasmtime4j-native/target/*-wasi-nn*.jar; do
+            [ -f "$jar" ] && sha256sum "$jar" > "$jar.sha256"
+          done
+
+      - name: Attach wasi-nn artifacts to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          # Append to release created by publish job (same tag).
+          files: |
+            wasmtime4j-native/target/*-wasi-nn*.jar
+            wasmtime4j-native/target/*-wasi-nn*.jar.sha256

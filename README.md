@@ -165,6 +165,43 @@ Debian 10+, and any other distribution shipping glibc 2.28 or newer.
 
 Additional platforms can be added on request.
 
+### Optional: wasi-nn (neural network inference)
+
+`wasmtime4j-native` is also published under a `wasi-nn` Maven classifier
+for hosts that want to run guests importing `wasi:nn/{graph, tensor,
+inference, errors}`. Consumers opt in by classifier:
+
+```xml
+<dependency>
+  <groupId>ai.tegmentum</groupId>
+  <artifactId>wasmtime4j-native</artifactId>
+  <version>${wasmtime4j.version}</version>
+  <classifier>wasi-nn</classifier>
+</dependency>
+```
+
+Per-platform classifier variants (`wasi-nn-linux-x86_64`,
+`wasi-nn-linux-aarch64`, `wasi-nn-darwin-aarch64`) are also published.
+The plain classifier-less coordinate is unchanged and does not carry
+wasi-nn.
+
+**Runtime prerequisite.** The wasi-nn classifier links against
+`wasmtime-wasi-nn` + `ort =2.0.0-rc.10`, which loads ONNX Runtime
+dynamically. Deployment hosts consuming the classifier must have
+`libonnxruntime.{so,dylib,dll}` on the loader path
+(`LD_LIBRARY_PATH` / `DYLD_LIBRARY_PATH` / `PATH`):
+
+- **macOS (arm64)**: `brew install onnxruntime` places the dylib under
+  `/opt/homebrew/lib`.
+- **Linux**: install `libonnxruntime` via distro package manager, or
+  extract the Microsoft prebuilt from
+  <https://github.com/microsoft/onnxruntime/releases> (1.20.x for the
+  currently pinned `ort` version) and add its `lib/` directory to
+  `LD_LIBRARY_PATH`.
+- **Windows**: no classifier is currently published (the ort
+  `ORT_STRATEGY=system` story on Windows is fragile). Consumers who
+  need Windows wasi-nn should file an issue.
+
 ## Benchmarks
 
 ```bash
