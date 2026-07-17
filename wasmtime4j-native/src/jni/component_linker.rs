@@ -268,6 +268,34 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativ
 // WASI Config Enable/Set JNI Native Methods
 // ============================================================================
 
+/// Report whether the loaded native library was compiled with the
+/// `wasi-nn` cargo feature.
+///
+/// JNI binding for `JniComponentLinker.nativeWasiNnAvailable` — a
+/// compile-time capability probe. Callers gate `nativeEnableWasiNn` /
+/// `nativeEnableWasiNnWithModels` on this: when it returns false the
+/// wasi:nn linker binding is not compiled in and calling the enable
+/// path throws a runtime "WASI-NN support not compiled in" error.
+///
+/// The return value is a compile-time constant — no wasmtime state is
+/// consulted — so it's safe to call before any linker exists (this is
+/// a static Java method with no receiver handle).
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponentLinker_nativeWasiNnAvailable(
+    _env: JNIEnv,
+    _cls: JClass,
+) -> jboolean {
+    #[cfg(feature = "wasi-nn")]
+    {
+        1u8
+    }
+    #[cfg(not(feature = "wasi-nn"))]
+    {
+        0u8
+    }
+}
+
 /// Enable WASI-NN inference support on the component linker.
 ///
 /// JNI binding for `JniComponentLinker.nativeEnableWasiNn`. Wires the
