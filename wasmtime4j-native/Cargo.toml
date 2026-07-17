@@ -17,7 +17,26 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 wasmtime.workspace = true
 wasmtime-wasi = { workspace = true, optional = true }
 wasmtime-wasi-http = { workspace = true, optional = true }
-wasmtime-wasi-nn = { workspace = true, optional = true }
+# `onnx-download` (below) activates `ort/download-binaries`, so on
+# `-P wasi-nn` builds ort-sys fetches a self-contained ONNX Runtime
+# bundle from pyke.io (once, then cached) and STATIC-links
+# libonnxruntime.a plus its bundled protobuf-lite / absl / re2 /
+# nsync / cpuinfo into libwasmtime4j.{so,dylib,dll}. That avoids the
+# host-protobuf ABI collision that blocked JVM engines: Homebrew's
+# libonnxruntime.1.25.0.dylib hard-references
+# libprotobuf-lite.34.1.0.dylib, but current brew protobuf is 35.x, so
+# any dlopen of the dynamically-linked wasi-nn native fails on plain
+# JVM hosts (Fuseki, Jetty, servlet containers) whose launch scripts
+# the operator can't patch with DYLD_FALLBACK_LIBRARY_PATH.
+#
+# IMPORTANT: the `-P wasi-nn` Maven profile also sets
+# LIBONNXRUNTIME_NO_PKG_CONFIG=1 in cargo's env — without it, ort-sys'
+# build.rs runs pkg_config::probe("libonnxruntime") BEFORE the
+# download-binaries path and, on hosts with brew's libonnxruntime.pc
+# discoverable, emits cargo:rustc-link-lib=onnxruntime, re-introducing
+# the dynamic linkage the download-binaries feature exists to avoid.
+# See wasmtime4j-native/pom.xml under the wasi-nn profile.
+wasmtime-wasi-nn = { workspace = true, optional = true, features = ["onnx-download"] }
 wasmtime-wasi-config = { workspace = true, optional = true }
 wasmtime-wast.workspace = true
 

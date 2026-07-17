@@ -853,30 +853,56 @@
             * Passes 'features default,wasi-nn' to cargo build, so the
               produced libwasmtime4j.{so,dylib,dll} links against
               wasmtime-wasi-nn + ort.
+            * ONNX Runtime is fetched and STATIC-linked via ort's
+              download-binaries feature (activated by wasmtime-wasi-nn's
+              onnx-download feature declared in the workspace root
+              Cargo.toml). ort-sys' build.rs downloads a self-contained
+              1.22.x bundle from pyke.io, verifies its SHA-256 against
+              dist.txt, extracts to cargo cache, and statically links
+              libonnxruntime.a plus its bundled protobuf-lite / absl /
+              re2 / nsync / cpuinfo into libwasmtime4j.{so,dylib,dll}.
+              The finished native has zero runtime dylib dep on
+              libonnxruntime OR libprotobuf-lite, so it dlopens cleanly
+              on JVM hosts (Fuseki, Jetty, servlet containers) that
+              can't inject DYLD_FALLBACK_LIBRARY_PATH to work around
+              the well-known brew onnxruntime 1.25 ->
+              libprotobuf-lite.34.1 hard-ref against brew protobuf
+              35.x. Verify with otool -L on macOS or ldd on Linux.
+            * Sets LIBONNXRUNTIME_NO_PKG_CONFIG=1 in cargo's env for
+              the build. Without it, ort-sys' build.rs runs
+              pkg_config::probe("libonnxruntime") BEFORE the
+              download-binaries path and, on a host with brew's
+              libonnxruntime.pc discoverable, emits
+              cargo:rustc-link-lib=onnxruntime — reintroducing the
+              exact dynamic linkage the download-binaries feature
+              exists to avoid.
             * Every packaged JAR (default + per-platform) receives a wasi-nn
-              classifier suffix (e.g. wasmtime4j-native-46.0.1-1.4.1-wasi-nn.jar
-              and wasmtime4j-native-46.0.1-1.4.1-wasi-nn-darwin-aarch64.jar).
+              classifier suffix (e.g. wasmtime4j-native-46.0.1-1.4.4-wasi-nn.jar
+              and wasmtime4j-native-46.0.1-1.4.4-wasi-nn-darwin-aarch64.jar).
 
           Operator prerequisites (build host):
             * Rust toolchain (as for the plain build).
-            * ONNX Runtime 1.20.x reachable via ORT_STRATEGY=system
-              ORT_PREFER_DYNAMIC_LINK=1 ORT_LIB_LOCATION=<prefix>. macOS
-              users: brew install onnxruntime + ORT_LIB_LOCATION=/opt/homebrew.
+            * Outbound network access to https://parcel.pyke.io (or the
+              CDN backing ort's dist.txt) so ort-sys can fetch the
+              prebuilt ONNX Runtime tgz on first build. Cached in
+              ~/.cache/ort.pyke.io on subsequent builds.
+            * ORT_LIB_LOCATION must NOT be set (or it wins and forces
+              system-link, bypassing download-binaries).
+            * A system ONNX Runtime is NOT required.
 
           Runtime prerequisites (deployment host):
-            * libonnxruntime.{so,dylib,dll} on the loader path
-              (LD_LIBRARY_PATH / DYLD_LIBRARY_PATH / PATH).
+            * NONE. libonnxruntime is baked in.
 
           Publishing story: consumers that want wasi:nn add the wasi-nn
           classifier to their dep coordinate (groupId ai.tegmentum, artifactId
-          wasmtime4j-native, version 46.0.1-1.4.1, classifier wasi-nn).
+          wasmtime4j-native, version 46.0.1-1.4.4, classifier wasi-nn).
           Consumers that don't want it keep the classifier-less dep and get
           the feature-parity-with-1.4.0 build.
 
           NOTE: publishing the wasi-nn classifier variant to Maven Central /
           the GitHub Packages release repo is out-of-band in this commit; the
-          Publish workflow needs an ort_install step + a matrix wasi-nn
-          axis. Documented in CHANGELOG 46.0.1-1.4.1 under Packaging.
+          Publish workflow needs a matrix wasi-nn axis. Documented in
+          CHANGELOG 46.0.1-1.4.1 under Packaging.
         -->
         <profile>
             <id>wasi-nn</id>
@@ -886,6 +912,26 @@
             </properties>
             <build>
                 <plugins>
+                    <!--
+                      Inject LIBONNXRUNTIME_NO_PKG_CONFIG=1 into the
+                      cargo-build execution's env so ort-sys' build.rs skips
+                      its pkg_config probe for libonnxruntime and falls
+                      through to the download-binaries static-link path.
+                      Maven merges this environmentVariables map with the
+                      base plugin config's map (RUST_BACKTRACE,
+                      CARGO_TARGET_DIR, RUSTFLAGS) rather than replacing it,
+                      so the other env vars are preserved.
+                    -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <configuration>
+                            <environmentVariables>
+                                <LIBONNXRUNTIME_NO_PKG_CONFIG>1</LIBONNXRUNTIME_NO_PKG_CONFIG>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>

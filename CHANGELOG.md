@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.4.4] - 2026-07-16
+
+Wasmtime version unchanged (46.0.1). Build-only fix for the `-P wasi-nn`
+Maven profile — permanently sidesteps the onnxruntime / protobuf-lite
+host-ABI collision that blocked wasi:nn on JVM engines.
+
+### Fixed
+
+- **`-P wasi-nn` native no longer depends on a host libonnxruntime or
+  libprotobuf-lite dylib.** The wasi-nn variant of
+  `libwasmtime4j.{so,dylib,dll}` previously dynamic-linked to the
+  system libonnxruntime the build host resolved via pkg-config
+  (typically `/opt/homebrew/opt/onnxruntime/lib/libonnxruntime.dylib`
+  on macOS). That dylib itself hard-references a specific
+  protobuf-lite ABI (`libprotobuf-lite.34.1.0.dylib` in brew's
+  onnxruntime 1.25.0), which then fails to dlopen when the host
+  protobuf has moved forward to 35.x. The workaround for the Rust
+  substrate engines was
+  `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/Cellar/protobuf/34.1/lib`,
+  but that lever is not available to plugin runtimes embedded in
+  Fuseki, Jetty, or arbitrary servlet containers whose launch scripts
+  the operator does not own.
+
+  Fix in two parts:
+
+  1. Workspace root `Cargo.toml` now activates the `onnx-download`
+     feature on `wasmtime-wasi-nn`, which in turn activates
+     `ort/download-binaries`. On build, ort-sys' `build.rs` downloads
+     a self-contained ONNX Runtime bundle from pyke.io, verifies its
+     SHA-256 against the shipped `dist.txt`, extracts to the cargo
+     cache, and static-links `libonnxruntime.a` plus its bundled
+     protobuf-lite / absl / re2 / nsync / cpuinfo into
+     `libwasmtime4j`.
+
+  2. The `-P wasi-nn` Maven profile now sets
+     `LIBONNXRUNTIME_NO_PKG_CONFIG=1` in cargo's env. Without it,
+     ort-sys' `try_setup_with_pkg_config` runs BEFORE
+     `download-binaries` on a host with brew's `libonnxruntime.pc`
+     discoverable and emits `cargo:rustc-link-lib=onnxruntime`,
+     re-introducing the exact dynamic linkage the download-binaries
+     feature exists to avoid.
+
+  Verify with:
+  ```
+  mvn install -P wasi-nn -pl wasmtime4j-native -am -DskipTests
+  otool -L .cargo-target/aarch64-apple-darwin/release/libwasmtime4j.dylib
+  ```
+  The output should contain no `libonnxruntime.*.dylib` or
+  `libprotobuf-lite.*.dylib` references. Only OS-provided libs
+  (`libSystem.B.dylib`, `libc++.1.dylib`, `libiconv.2.dylib`,
+  `Foundation`, `Security`, `CoreFoundation`, `CoreML`, `libobjc.A`).
+
+### Operator changes
+
+- **Removed prerequisite (build host):** you no longer need
+  `brew install onnxruntime` and `ORT_STRATEGY=system
+  ORT_LIB_LOCATION=/opt/homebrew` to build `-P wasi-nn`. The build
+  host does still need outbound network access to pyke.io for the
+  first build (cached on subsequent builds).
+- **Removed prerequisite (deployment host):** you no longer need
+  `libonnxruntime.{so,dylib,dll}` on the loader path
+  (`LD_LIBRARY_PATH` / `DYLD_LIBRARY_PATH` / `PATH`). It's baked in.
+- If you had `ORT_LIB_LOCATION` set globally for another build, unset
+  it before `-P wasi-nn` or ort-sys' build.rs will use it (system-link
+  wins over download-binaries).
+
 ## [46.0.1-1.4.3] - 2026-07-16
 
 Wasmtime version unchanged (46.0.1). Build-only fix for the `-P wasi-nn`

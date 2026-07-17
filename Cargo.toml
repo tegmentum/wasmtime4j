@@ -14,9 +14,10 @@ wasmtime-wasi-http = { version = "46.0.1", features = ["p3"] }
 # We target the ORT-backed ONNX backend so the JVM plugins (Jena / RDF4J)
 # can execute the wf_sagegraph_nn guest byte-identically to the Rust
 # engines (oxigraph-wf / qlever-wf) which pin the same feature set.
-# Requires ORT to be built or resolved via ORT_STRATEGY=system +
-# ORT_LIB_LOCATION=/opt/homebrew (or /usr/local) with ONNX Runtime 1.20.x
-# installed. See scripts/build-wasi-nn.md.
+# The `onnx-download` feature (activated at the member level in
+# wasmtime4j-native/Cargo.toml) is what actually swaps ort's default
+# system-link path for the download-binaries static-link path; see the
+# comment there.
 wasmtime-wasi-nn = { version = "46.0.1", default-features = false, features = ["onnx"] }
 # ort exact-pin is mandatory: wasmtime-wasi-nn 46.0.1 bakes in 2.0.0-rc.10
 # and later ort releases have breaking ABI shifts that surface as link-

@@ -185,21 +185,32 @@ Per-platform classifier variants (`wasi-nn-linux-x86_64`,
 The plain classifier-less coordinate is unchanged and does not carry
 wasi-nn.
 
-**Runtime prerequisite.** The wasi-nn classifier links against
-`wasmtime-wasi-nn` + `ort =2.0.0-rc.10`, which loads ONNX Runtime
-dynamically. Deployment hosts consuming the classifier must have
-`libonnxruntime.{so,dylib,dll}` on the loader path
-(`LD_LIBRARY_PATH` / `DYLD_LIBRARY_PATH` / `PATH`):
+**Runtime prerequisite.** None. As of `46.0.1-1.4.4` the wasi-nn
+classifier bundles ONNX Runtime — `libonnxruntime.a` plus its
+protobuf-lite / absl / re2 / nsync / cpuinfo dependencies are
+static-linked into `libwasmtime4j.{so,dylib,dll}` at build time via
+ort's `download-binaries` feature. Deployment hosts do NOT need
+`libonnxruntime.{so,dylib,dll}` on the loader path, and do NOT need a
+matching `libprotobuf-lite` — a critical fix for JVM plugin runtimes
+(Fuseki, Jetty, servlet containers) whose launch scripts the operator
+cannot patch with `DYLD_FALLBACK_LIBRARY_PATH`.
 
-- **macOS (arm64)**: `brew install onnxruntime` places the dylib under
-  `/opt/homebrew/lib`.
-- **Linux**: install `libonnxruntime` via distro package manager, or
-  extract the Microsoft prebuilt from
-  <https://github.com/microsoft/onnxruntime/releases> (1.20.x for the
-  currently pinned `ort` version) and add its `lib/` directory to
-  `LD_LIBRARY_PATH`.
-- **Windows**: no classifier is currently published (the ort
-  `ORT_STRATEGY=system` story on Windows is fragile). Consumers who
+Verify:
+
+```
+otool -L path/to/libwasmtime4j.dylib   # macOS
+ldd path/to/libwasmtime4j.so           # Linux
+```
+
+Neither `libonnxruntime.*` nor `libprotobuf-lite.*` should appear.
+
+**Build prerequisite.** Outbound network to the CDN backing ort's
+`dist.txt` (pyke.io) on first build to fetch the ORT bundle
+(~40 MB). Cached in `~/.cache/ort.pyke.io` on subsequent builds. Do
+not set `ORT_LIB_LOCATION` — if set, ort-sys will use it and skip
+`download-binaries`, re-introducing the host dylib dependency.
+
+- **Windows**: no classifier is currently published. Consumers who
   need Windows wasi-nn should file an issue.
 
 ## Benchmarks
