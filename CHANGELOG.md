@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.4.5] - 2026-07-16
+
+Wasmtime version unchanged (46.0.1). Ships the wasi:nn resource-registration
+fix on top of 1.4.4's `-P wasi-nn` static-ONNX-Runtime build.
+
+### Fixed
+
+- **`ComponentLinker::enable_wasi_nn` now propagates through the JVM
+  plugin's fresh-linker instantiation path.** Callers that route
+  through `JniComponentLinker.instantiate(store, component)` with a
+  WASI-preview-2 config set on the linker (the WasmtimeComponentAdapter
+  path — always taken by the Jena and RDF4J webfunction plugins) reach
+  `EnhancedComponentEngine::instantiate_component_with_wasi`, which
+  builds a FRESH `wasmtime::component::Linker` and does not use the
+  caller's ComponentLinker's own linker. Host functions registered via
+  `defineFunction` were already replayed onto that fresh linker via
+  the process-global `COMPONENT_HOST_FUNCTION_REGISTRY`, but wasi:nn
+  bindings were not — so `wf_sagegraph_nn` (which imports
+  `wasi:nn/{tensor,graph,inference,errors}@0.2.0-rc-2024-10-28`)
+  trapped at instantiation with:
+
+  ```
+  component imports instance `wasi:nn/tensor@0.2.0-rc-2024-10-28`,
+  but a matching implementation was not found in the linker:
+  instance export `tensor` has the wrong type:
+  resource implementation is missing
+  ```
+
+  Fix mirrors the host-function-registry pattern: a process-global
+  `WASI_NN_GLOBAL` state is set on the first `enable_wasi_nn` call
+  and by `enable_wasi_nn_with_models` (which also carries decoded
+  `Graph`s across for `graph.load-by-name` parity). Both fresh-linker
+  paths in `EnhancedComponentEngine` — `instantiate_component` and
+  `instantiate_component_with_wasi` — now call
+  `add_wasi_nn_to_linker_if_enabled` after their existing
+  `add_registered_host_functions_to_linker` and attach a fresh
+  per-store `WasiNnCtx` via `build_wasi_nn_ctx_if_enabled`. A no-op
+  when no linker has enabled wasi-nn, so guests that never import
+  wasi:nn are unaffected.
+
 ## [46.0.1-1.4.4] - 2026-07-16
 
 Wasmtime version unchanged (46.0.1). Build-only fix for the `-P wasi-nn`

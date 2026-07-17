@@ -40,13 +40,16 @@ pub use wit::{
 };
 
 pub use linker::{
-    add_registered_host_functions_to_linker, component_linker_core,
-    get_component_host_function_registry, parse_wit_path,
+    add_registered_host_functions_to_linker, add_wasi_nn_to_linker_if_enabled,
+    component_linker_core, get_component_host_function_registry, parse_wit_path,
     CallbackFsAccessObserver, CallbackMonotonicClock, CallbackRng, CallbackSocketAddrCheck,
     CallbackWallClock, ComponentHostCallback, ComponentHostFunctionEntry,
     ComponentInstancePreWrapper, ComponentLinker, ComponentValue, ResourceDestructorCallback,
     WasiP2Config, NEXT_COMPONENT_HOST_FUNCTION_ID,
 };
+
+#[cfg(feature = "wasi-nn")]
+pub use linker::build_wasi_nn_ctx_if_enabled;
 
 #[cfg(feature = "wasi")]
 pub use observed_fs::install_observed_filesystem;

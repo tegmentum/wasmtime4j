@@ -744,3 +744,51 @@ fn test_async_val_close_double_close_is_safe() {
     let second = super::async_val_close(id);
     assert!(!second, "Second close should return false (already removed)");
 }
+
+/// Regression coverage for the fresh-linker replay path used by the JVM
+/// plugin flow: `enable_wasi_nn` on a ComponentLinker must publish to the
+/// process-global so `EnhancedComponentEngine::instantiate_component[_with_wasi]`
+/// (which builds its own fresh `wasmtime::component::Linker` and doesn't
+/// consult the calling ComponentLinker) can replay the wasi:nn bindings
+/// and attach a matching per-store `WasiNnCtx`.
+///
+/// Before the fix, `build_wasi_nn_ctx_if_enabled` returned `None` even
+/// after `enable_wasi_nn`, and the fresh linker didn't call
+/// `wasmtime_wasi_nn::wit::add_to_linker`, so a wf_sagegraph_nn
+/// instantiation trapped with:
+///
+///   component imports instance `wasi:nn/tensor@0.2.0-rc-2024-10-28`,
+///   but a matching implementation was not found in the linker
+///
+/// This test asserts the publish side of the fix. The linker-side
+/// replay is covered by the sagegraph_text_features conformance case
+/// on the Jena and RDF4J adapters.
+#[cfg(feature = "wasi-nn")]
+#[test]
+fn test_enable_wasi_nn_publishes_to_fresh_linker_global() {
+    use crate::component::{
+        add_wasi_nn_to_linker_if_enabled, build_wasi_nn_ctx_if_enabled, ComponentLinker,
+        ComponentStoreData,
+    };
+    use wasmtime::component::Linker;
+
+    let safe_config = crate::engine::safe_wasmtime_config();
+    let engine = wasmtime::Engine::new(&safe_config).expect("engine");
+
+    let mut linker = ComponentLinker::new(&engine).expect("linker");
+    linker.enable_wasi_nn().expect("enable_wasi_nn");
+
+    // The publish side of the fix: after enable_wasi_nn, the global
+    // is set and both fresh-linker helpers report the enabled state.
+    let ctx = build_wasi_nn_ctx_if_enabled();
+    assert!(
+        ctx.is_some(),
+        "build_wasi_nn_ctx_if_enabled must return Some after enable_wasi_nn"
+    );
+
+    // Replaying onto a fresh wasmtime linker must succeed (this is
+    // exactly what instantiate_component_with_wasi does).
+    let mut fresh: Linker<ComponentStoreData> = Linker::new(&engine);
+    add_wasi_nn_to_linker_if_enabled(&mut fresh)
+        .expect("wasi-nn must be replay-able onto a fresh linker");
+}

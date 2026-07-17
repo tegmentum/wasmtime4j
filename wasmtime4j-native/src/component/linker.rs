@@ -196,6 +196,110 @@ impl wasmtime_wasi_nn::GraphRegistry for NamedGraphRegistry {
 }
 
 // =============================================================================
+// wasi-nn global state (for fresh-linker replay from
+// instantiate_component / instantiate_component_with_wasi)
+// =============================================================================
+//
+// The JVM plugin path routes through `nativeInstantiateComponentWithWasi`
+// (whenever a WASI-p2 config is present on the JniComponentLinker — which
+// the WasmtimeComponentAdapter always sets, even to defaults). That JNI
+// call reaches `EnhancedComponentEngine::instantiate_component_with_wasi`,
+// which builds a FRESH `wasmtime::component::Linker` and does NOT consult
+// the caller's ComponentLinker. Host functions defined via `defineFunction`
+// are replayed onto the fresh linker via the global
+// COMPONENT_HOST_FUNCTION_REGISTRY; wasi-nn was previously not, so the
+// `wasi:nn/{tensor,graph,inference,errors}` bindings the guest imports
+// resolved as "resource implementation is missing" at instantiate time.
+//
+// Mirror the host-function-registry pattern with a matching global for
+// wasi-nn: `ComponentLinker::enable_wasi_nn[_with_models]` publishes to
+// this state, and both fresh-linker instantiation paths replay it via
+// `add_wasi_nn_to_linker_if_enabled` + `build_wasi_nn_ctx_if_enabled`.
+
+#[cfg(feature = "wasi-nn")]
+#[derive(Default)]
+pub(crate) struct WasiNnGlobalState {
+    /// Set once any `ComponentLinker` calls `enable_wasi_nn`. Guests that
+    /// don't import wasi:nn are unaffected — the wasmtime linker ignores
+    /// registered interfaces the component never asks for.
+    enabled: bool,
+    /// Named models registered via `enable_wasi_nn_with_models`. Cloned
+    /// (Arc-backed) into each fresh per-store WasiNnCtx.
+    named_models: HashMap<String, wasmtime_wasi_nn::Graph>,
+}
+
+#[cfg(feature = "wasi-nn")]
+static WASI_NN_GLOBAL: std::sync::OnceLock<StdMutex<WasiNnGlobalState>> =
+    std::sync::OnceLock::new();
+
+#[cfg(feature = "wasi-nn")]
+pub(crate) fn wasi_nn_global() -> &'static StdMutex<WasiNnGlobalState> {
+    WASI_NN_GLOBAL.get_or_init(|| StdMutex::new(WasiNnGlobalState::default()))
+}
+
+/// Register wasi:nn/{tensor,graph,inference,errors} on a freshly-built
+/// `wasmtime::component::Linker<ComponentStoreData>` iff any
+/// `ComponentLinker::enable_wasi_nn` call has been made in-process. The
+/// generated bindings look up `ComponentStoreData::wasi_nn_ctx` via a
+/// closure, so callers MUST also populate the store with the ctx
+/// returned by `build_wasi_nn_ctx_if_enabled` before instantiation.
+///
+/// A no-op (returns `Ok(())`) when wasi-nn is not enabled globally, so
+/// unconditional calls from the fresh-linker instantiation paths are
+/// safe.
+#[cfg(feature = "wasi-nn")]
+pub fn add_wasi_nn_to_linker_if_enabled(
+    linker: &mut Linker<ComponentStoreData>,
+) -> WasmtimeResult<()> {
+    let g = wasi_nn_global().lock().unwrap_or_else(|e| e.into_inner());
+    if !g.enabled {
+        return Ok(());
+    }
+    drop(g);
+    wasmtime_wasi_nn::wit::add_to_linker(linker, |data: &mut ComponentStoreData| {
+        let ctx = data
+            .wasi_nn_ctx
+            .as_mut()
+            .expect("wasi_nn_ctx missing on store — fresh-linker path did not populate it");
+        wasmtime_wasi_nn::wit::WasiNnView::new(&mut data.resource_table, ctx)
+    })
+    .map_err(|e| WasmtimeError::Wasi {
+        message: format!("Failed to add wasi-nn to fresh linker: {}", e),
+    })
+}
+
+/// Build a fresh per-store `WasiNnCtx` iff wasi-nn is globally enabled.
+/// Populates the graph registry with clones of any models registered via
+/// `enable_wasi_nn_with_models` (Arc-backed clone, no re-decode).
+#[cfg(feature = "wasi-nn")]
+pub fn build_wasi_nn_ctx_if_enabled() -> Option<wasmtime_wasi_nn::wit::WasiNnCtx> {
+    let g = wasi_nn_global().lock().unwrap_or_else(|e| e.into_inner());
+    if !g.enabled {
+        return None;
+    }
+    let backends = wasmtime_wasi_nn::backend::list();
+    if g.named_models.is_empty() {
+        let registry = wasmtime_wasi_nn::InMemoryRegistry::new();
+        Some(wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into()))
+    } else {
+        let mut registry = NamedGraphRegistry::new();
+        for (name, graph) in &g.named_models {
+            registry.insert(name.clone(), graph.clone());
+        }
+        Some(wasmtime_wasi_nn::wit::WasiNnCtx::new(backends, registry.into()))
+    }
+}
+
+/// Stub used from `component_core` when wasi-nn is not compiled in — keeps
+/// the instantiation-path call sites feature-flag-free.
+#[cfg(not(feature = "wasi-nn"))]
+pub fn add_wasi_nn_to_linker_if_enabled<T>(
+    _linker: &mut Linker<T>,
+) -> WasmtimeResult<()> {
+    Ok(())
+}
+
+// =============================================================================
 // Val <-> ComponentValue conversions
 // =============================================================================
 
@@ -1879,6 +1983,21 @@ impl ComponentLinker {
             message: format!("Failed to enable WASI-NN: {}", e),
         })?;
 
+        // Publish enable to the process-global state so
+        // `instantiate_component[_with_wasi]` (which builds fresh linkers
+        // and does not consult `self.linker`) can replay the wasi:nn
+        // binding on their fresh linkers. Without this, the JVM plugin
+        // path — which always routes through
+        // `nativeInstantiateComponentWithWasi` — instantiates a fresh
+        // linker with wasi-p2 and the registered host functions but no
+        // wasi-nn, and wf_sagegraph_nn traps at instantiation with
+        // "resource implementation is missing" on wasi:nn/tensor.
+        {
+            let mut g = wasi_nn_global()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            g.enabled = true;
+        }
         self.wasi_nn_enabled = true;
         log::debug!("WASI-NN enabled in component linker");
         Ok(())
@@ -1957,7 +2076,15 @@ impl ComponentLinker {
                         e
                     ),
                 })?;
-            self.wasi_nn_named_models.insert(name, graph);
+            self.wasi_nn_named_models.insert(name.clone(), graph.clone());
+            // Mirror into the fresh-linker replay registry so the JVM
+            // plugin path (which builds its own linker inside
+            // `instantiate_component_with_wasi`) sees the same
+            // `graph.load-by-name` set as this ComponentLinker.
+            let mut g = wasi_nn_global()
+                .lock()
+                .unwrap_or_else(|e| e.into_inner());
+            g.named_models.insert(name, graph);
         }
 
         log::debug!(

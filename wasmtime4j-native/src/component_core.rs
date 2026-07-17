@@ -202,8 +202,14 @@ impl EnhancedComponentEngine {
             wasi_http_ctx: None, #[cfg(feature = "wasi-http")] wasi_http_hooks: [(); 0],
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
+            // wasi-nn ctx is attached below iff any ComponentLinker has
+            // published `enable_wasi_nn` to the process-global — matches
+            // what the fresh linker will register (both bindings and ctx
+            // are gated on the same global) so a guest importing wasi:nn
+            // resolves at instantiation instead of erroring with
+            // "resource implementation is missing".
             #[cfg(feature = "wasi-nn")]
-            wasi_nn_ctx: None,
+            wasi_nn_ctx: crate::component::build_wasi_nn_ctx_if_enabled(),
             store_limits: None,
             #[cfg(feature = "wasi")]
             fs_access_observer: None,
@@ -237,6 +243,13 @@ impl EnhancedComponentEngine {
         // This WASI-capability path builds a fresh linker; without re-registering them here, those
         // host imports resolve as "not found". Registering ones a component doesn't import is harmless.
         crate::component::add_registered_host_functions_to_linker(&mut linker)?;
+
+        // Same story for wasi-nn: this path does not use the caller's
+        // ComponentLinker's own wasmtime linker, so `enable_wasi_nn` on
+        // that ComponentLinker doesn't propagate here. Replay the wasi:nn
+        // bindings onto the fresh linker iff any ComponentLinker has
+        // enabled wasi-nn in-process (matches `wasi_nn_ctx` above).
+        crate::component::add_wasi_nn_to_linker_if_enabled(&mut linker)?;
 
         let instance = linker
             .instantiate(&mut store, component.wasmtime_component())
@@ -315,8 +328,13 @@ impl EnhancedComponentEngine {
             wasi_http_hooks: [(); 0],
             #[cfg(feature = "wasi-config")]
             wasi_config_vars: wasmtime_wasi_config::WasiConfigVariables::new(),
+            // wasi-nn ctx attached iff any ComponentLinker in-process
+            // published `enable_wasi_nn` before we got here. Gated on
+            // the same global that `add_wasi_nn_to_linker_if_enabled`
+            // below reads, so bindings and ctx stay in lock-step and
+            // the guest's wasi:nn imports resolve at instantiation.
             #[cfg(feature = "wasi-nn")]
-            wasi_nn_ctx: None,
+            wasi_nn_ctx: crate::component::build_wasi_nn_ctx_if_enabled(),
             store_limits,
             fs_access_observer,
             start_time,
@@ -348,6 +366,14 @@ impl EnhancedComponentEngine {
         // This WASI-capability path builds a fresh linker; without re-registering them here, those
         // host imports resolve as "not found". Registering ones a component doesn't import is harmless.
         crate::component::add_registered_host_functions_to_linker(&mut linker)?;
+
+        // Same story for wasi-nn — the caller's ComponentLinker's
+        // `enable_wasi_nn` state doesn't propagate into this fresh linker
+        // on its own. Replay it via the process-global (matches the
+        // `wasi_nn_ctx` attached to the store above); a no-op when no
+        // ComponentLinker has enabled wasi-nn or when wasi-nn is not a
+        // compiled feature.
+        crate::component::add_wasi_nn_to_linker_if_enabled(&mut linker)?;
 
         // When a filesystem-access denial observer is configured, install the interposing
         // `wasi:filesystem/types` binding AFTER the default WASI binding (it shadows it). This is
