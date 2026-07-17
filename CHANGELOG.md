@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.4.3] - 2026-07-16
+
+Wasmtime version unchanged (46.0.1). Build-only fix for the `-P wasi-nn`
+Maven profile.
+
+### Fixed
+
+- **`-P wasi-nn` no longer suppresses the classifier-less main artifact.**
+  The wasi-nn profile in `wasmtime4j-native/pom.xml` previously overrode
+  the `default-jar` maven-jar-plugin execution to attach a `wasi-nn`
+  classifier. That override removed the classifier-less main artifact
+  entirely, so `mvn install -P wasi-nn` produced only classified jars and
+  downstream tools that require a main artifact — notably
+  `stardog-admin server plugin install`, which errors with "no main
+  artifact" and hangs the classifier resolution — could not consume the
+  install. The only workaround was to hand-copy the classifier jars from
+  `target/` into `~/.m2/repository/ai/tegmentum/wasmtime4j-native/…/`
+  plus a flattened pom.
+
+  Fix: the wasi-nn profile no longer touches the `default-jar` execution.
+  It now adds a NEW `wasi-nn-jar` execution alongside it. The base
+  `default-jar` keeps producing the classifier-less main artifact under
+  `-P wasi-nn` (packaged with the wasi-nn-linked native library, since
+  the wasi-nn feature flag is what cargo built), and the new
+  `wasi-nn-jar` execution produces the `-wasi-nn`-classified variant
+  alongside. Per-platform executions still merge the profile's
+  `wasi-nn-<platform>` classifier override onto the base
+  `<platform>` executions and are unchanged by this fix.
+
+  Verify with:
+  ```
+  mvn install -P wasi-nn -pl wasmtime4j-native -am -DskipTests
+  ls ~/.m2/repository/ai/tegmentum/wasmtime4j-native/46.0.1-1.4.3/
+  ```
+  Both `wasmtime4j-native-46.0.1-1.4.3.jar` and
+  `wasmtime4j-native-46.0.1-1.4.3-wasi-nn.jar` should be present, and
+  `install-plugin` should succeed without any manual m2 copy.
+
 ## [46.0.1-1.4.1] - 2026-07-16
 
 Wasmtime version unchanged (46.0.1). Patch release that finishes the two

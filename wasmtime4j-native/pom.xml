@@ -890,8 +890,20 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>
                         <executions>
+                            <!--
+                              Do NOT override the base default-jar execution here.
+                              Overriding it with a classifier removes the
+                              classifier-less main artifact, which breaks any
+                              downstream that requires a main artifact (notably
+                              stardog-admin plugin install, which errors when
+                              only classified jars are attached). Instead, we
+                              add a NEW execution alongside default-jar that
+                              produces the wasi-nn-classified jar. The base
+                              default-jar keeps running and keeps producing the
+                              classifier-less main artifact.
+                            -->
                             <execution>
-                                <id>default-jar</id>
+                                <id>wasi-nn-jar</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jar</goal>
