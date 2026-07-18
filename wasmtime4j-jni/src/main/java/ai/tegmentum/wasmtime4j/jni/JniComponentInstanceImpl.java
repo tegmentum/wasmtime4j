@@ -322,6 +322,98 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
   }
 
   @Override
+  public ai.tegmentum.wasmtime4j.wit.WitValue invokeResourceMethodWit(
+      final ai.tegmentum.wasmtime4j.wit.WitResource receiver,
+      final String methodExportName,
+      final Object... args)
+      throws WasmException {
+    if (receiver == null) {
+      throw new IllegalArgumentException("receiver cannot be null");
+    }
+    Validation.requireNonEmpty(methodExportName, "methodExportName");
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+    final long nativeHandle = receiver.getHandle().getNativeHandle();
+    if (nativeHandle <= 0) {
+      // Fall back to the generic path — the receiver has no native registry backing so
+      // the marshaller must synthesize a bare u32 handle. Correct for pure-Java WitResources
+      // (rare — mostly test fixtures) and preserves current behavior.
+      return ComponentInstance.super.invokeResourceMethodWit(receiver, methodExportName, args);
+    }
+    try {
+      final Object[] callArgs = args == null ? new Object[0] : args;
+      final java.util.List<WitValue> witValues = new java.util.ArrayList<>(callArgs.length);
+      for (int i = 0; i < callArgs.length; i++) {
+        if (!(callArgs[i] instanceof WitValue)) {
+          throw new WasmException(
+              "Argument "
+                  + i
+                  + " must be a WitValue instance, got "
+                  + (callArgs[i] == null ? "null" : callArgs[i].getClass().getName()));
+        }
+        witValues.add((WitValue) callArgs[i]);
+      }
+
+      final java.util.List<WitValueMarshaller.MarshalledValue> marshalled =
+          WitValueMarshaller.marshalAll(witValues);
+      final int[] typeDiscriminators = new int[marshalled.size()];
+      final byte[][] data = new byte[marshalled.size()][];
+      for (int i = 0; i < marshalled.size(); i++) {
+        typeDiscriminators[i] = marshalled.get(i).getTypeDiscriminator();
+        data[i] = marshalled.get(i).getData();
+      }
+
+      final Object[] result =
+          JniComponent.nativeInvokeResourceMethod(
+              component.getEngine().getNativeHandle(),
+              nativeInstance.getNativeHandle(),
+              nativeHandle,
+              methodExportName,
+              typeDiscriminators,
+              data);
+
+      if (result == null || result.length == 0) {
+        return null;
+      }
+      final int resultType = (Integer) result[0];
+      final byte[] resultData = (byte[]) result[1];
+      return WitValueMarshaller.unmarshal(resultType, resultData);
+    } catch (final ValidationException e) {
+      throw new WasmException("WIT value marshalling failed: " + e.getMessage(), e);
+    } catch (final WasmException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new WasmException("Resource method invocation failed: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public void dropResource(final ai.tegmentum.wasmtime4j.wit.WitResource resource)
+      throws WasmException {
+    if (resource == null) {
+      throw new IllegalArgumentException("resource cannot be null");
+    }
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+    final long nativeHandle = resource.getHandle().getNativeHandle();
+    if (nativeHandle <= 0) {
+      throw new UnsupportedOperationException(
+          "dropResource requires a native-backed WitResource; got a pure-Java resource "
+              + "(nativeHandle="
+              + nativeHandle
+              + ")");
+    }
+    try {
+      JniComponent.nativeResourceAnyDrop(
+          component.getEngine().getNativeHandle(), nativeInstance.getNativeHandle(), nativeHandle);
+    } catch (final Exception e) {
+      throw new WasmException("Failed to drop resource: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
   public List<List<ComponentVal>> runConcurrent(final List<ConcurrentCall> calls)
       throws WasmException {
     if (calls == null || calls.isEmpty()) {

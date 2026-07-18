@@ -1672,6 +1672,175 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeAsync
     crate::component::async_val_close(handle as u64);
 }
 
+/// Invoke a resource method with the given resource handle as the receiver.
+///
+/// Component-model resource methods are ordinary exported functions whose first parameter is
+/// the resource handle (an `own<T>` / `borrow<T>`). This entry point looks up the receiver
+/// `ResourceAny` in the global registry, prepends it as arg 0, and calls the function.
+///
+/// The receiver is peeked (not removed) so it stays alive for further method calls — call
+/// `nativeResourceAnyDrop` explicitly when the receiver's ownership window ends.
+///
+/// # Layout
+///
+/// * `method_export_name` — the method's export path (top-level `[method]<type>.<name>` or
+///   `<interface>#[method]<type>.<name>` when nested in an exported interface).
+/// * `param_type_discriminators` / `param_data` — the ADDITIONAL args after the receiver,
+///   same shape as `nativeComponentInvokeFunction`.
+///
+/// Returns an `Object[]` of `[Integer disc, byte[] data]` for a single-result method, or
+/// `null` for a void method. Multi-result methods return the first result (mirroring
+/// `nativeComponentInvokeFunction`).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeInvokeResourceMethod(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    resource_handle_id: jlong,
+    method_export_name: jstring,
+    param_type_discriminators: jintArray,
+    param_data: jobjectArray,
+) -> jobjectArray {
+    jni_utils::jni_try_object(&mut env, |env| {
+        use crate::error::WasmtimeError;
+
+        if engine_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Engine pointer is null".to_string(),
+            });
+        }
+        if instance_id == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Instance ID is zero".to_string(),
+            });
+        }
+        if resource_handle_id <= 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!(
+                    "Resource handle id must be a positive registry id, got {}",
+                    resource_handle_id
+                ),
+            });
+        }
+
+        let engine =
+            unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
+
+        let method_jstring: JString = unsafe { JString::from_raw(method_export_name) };
+        let method_name: String = env
+            .get_string(&method_jstring)
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to convert method name: {}", e),
+            })?
+            .into();
+
+        // Deserialize the additional args (the receiver is prepended in Rust, so callers
+        // only ship the trailing args here).
+        let discriminators_obj: JObject = unsafe { JObject::from_raw(param_type_discriminators) };
+        let discriminators_array = jni::objects::JIntArray::from(discriminators_obj);
+        let discriminators = unsafe {
+            env.get_array_elements(
+                &discriminators_array,
+                jni::objects::ReleaseMode::NoCopyBack,
+            )
+            .map_err(|e| WasmtimeError::InvalidParameter {
+                message: format!("Failed to get type discriminators: {}", e),
+            })?
+        };
+        let discriminators: Vec<i32> =
+            unsafe { std::slice::from_raw_parts(discriminators.as_ptr(), discriminators.len()) }
+                .to_vec();
+
+        let param_count = discriminators.len();
+
+        let param_data_obj: JObject = unsafe { JObject::from_raw(param_data) };
+        let param_data_typed = jni::objects::JObjectArray::from(param_data_obj);
+
+        let mut args = Vec::with_capacity(param_count);
+        for i in 0..param_count {
+            let data_obj = env.get_object_array_element(&param_data_typed, i as i32).map_err(
+                |e| WasmtimeError::InvalidParameter {
+                    message: format!("Failed to get parameter {} data: {}", i, e),
+                },
+            )?;
+            let data_array = jni::objects::JByteArray::from(data_obj);
+            let data_bytes = env.convert_byte_array(data_array).map_err(|e| {
+                WasmtimeError::InvalidParameter {
+                    message: format!("Failed to convert parameter {} data: {}", i, e),
+                }
+            })?;
+            let val = crate::wit_value_marshal::deserialize_to_val(
+                discriminators[i],
+                &data_bytes,
+            )
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to deserialize parameter {}: {}", i, e),
+                backtrace: None,
+            })?;
+            args.push(val);
+        }
+
+        let maybe_result = engine.invoke_resource_method(
+            instance_id as u64,
+            resource_handle_id as u64,
+            &method_name,
+            args,
+        )?;
+
+        let result_val = match maybe_result {
+            None => return Ok(jni::objects::JObject::null()),
+            Some(v) => v,
+        };
+
+        let (result_discriminator, result_data) =
+            crate::wit_value_marshal::serialize_from_val(&result_val).map_err(|e| {
+                WasmtimeError::Runtime {
+                    message: format!("Failed to serialize result: {}", e),
+                    backtrace: None,
+                }
+            })?;
+
+        // Reuse the cached Object[] / Integer handles so this path pays the same
+        // per-call cost as the plain invoke.
+        let refs = reply_cache::get(env)?;
+        let object_class = unsafe { jni::objects::JClass::from_raw(refs.object_class.as_raw()) };
+        let integer_class =
+            unsafe { jni::objects::JClass::from_raw(refs.integer_class.as_raw()) };
+
+        let result_array = env
+            .new_object_array(2, &object_class, jni::objects::JObject::null())
+            .map_err(|e| {
+                WasmtimeError::JniError(format!("Failed to create result array: {}", e))
+            })?;
+
+        let integer_obj = unsafe {
+            env.new_object_unchecked(
+                &integer_class,
+                refs.integer_ctor,
+                &[jni::objects::JValue::Int(result_discriminator).as_jni()],
+            )
+        }
+        .map_err(|e| WasmtimeError::JniError(format!("Failed to create Integer: {}", e)))?;
+
+        env.set_object_array_element(&result_array, 0, integer_obj)
+            .map_err(|e| WasmtimeError::JniError(format!("Failed to set discriminator: {}", e)))?;
+
+        let data_jarray = env
+            .byte_array_from_slice(&result_data)
+            .map_err(|e| WasmtimeError::JniError(format!("Failed to create byte array: {}", e)))?;
+
+        env.set_object_array_element(
+            &result_array,
+            1,
+            jni::objects::JObject::from(data_jarray),
+        )
+        .map_err(|e| WasmtimeError::JniError(format!("Failed to set data in array: {}", e)))?;
+
+        Ok(unsafe { jni::objects::JObject::from_raw(result_array.as_raw()) })
+    })
+}
+
 /// Drop a ResourceAny held in the global resource registry.
 ///
 /// Takes the resource from the registry and calls resource_drop on it

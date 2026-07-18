@@ -500,6 +500,36 @@ public final class JniComponent {
   static native void nativeAsyncValClose(long handle);
 
   /**
+   * Invokes a resource method with a resource handle as the receiver.
+   *
+   * <p>Component-model resource methods are ordinary exported functions whose first parameter is
+   * the resource handle (an {@code own<T>} / {@code borrow<T>}). This entry point looks up the
+   * receiver {@code ResourceAny} in the global registry, prepends it as arg 0, then invokes the
+   * function.
+   *
+   * <p>The receiver is peeked (not removed): it remains alive for further method calls until
+   * dropped explicitly via {@link #nativeResourceAnyDrop}.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param instanceId the component instance ID that owns the store
+   * @param resourceHandleId the receiver's registry handle ID (as returned by a prior invocation
+   *     that produced an {@code own<T>})
+   * @param methodExportName the method's export path, either a top-level {@code
+   *     [method]<type>.<name>} or an interface-scoped {@code <interface>#[method]<type>.<name>}
+   * @param paramTypeDiscriminators discriminators for args AFTER the receiver
+   * @param paramData serialized arg data corresponding to each discriminator
+   * @return two-element array {@code [Integer disc, byte[] data]} for a single-result method, or
+   *     {@code null} for a void method
+   */
+  static native Object[] nativeInvokeResourceMethod(
+      long engineHandle,
+      long instanceId,
+      long resourceHandleId,
+      String methodExportName,
+      int[] paramTypeDiscriminators,
+      byte[][] paramData);
+
+  /**
    * Drops a ResourceAny held in the global resource registry.
    *
    * <p>Takes the resource from the registry and calls resource_drop on it using the store

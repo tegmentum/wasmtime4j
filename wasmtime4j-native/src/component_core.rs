@@ -843,6 +843,136 @@ impl EnhancedComponentEngine {
             })
     }
 
+    /// Invoke an exported resource method with the given resource handle as the receiver.
+    ///
+    /// Component-model resource methods are exported as ordinary functions whose first
+    /// parameter is the resource handle (an `own<T>` or `borrow<T>`). This helper looks up
+    /// the receiver `ResourceAny` in the global resource registry, resolves the method by
+    /// its export name (either a top-level `[method]<type>.<name>` or an interface-scoped
+    /// `<interface>#[method]<type>.<name>`), and calls it with `Val::Resource(receiver)`
+    /// prepended to `args`.
+    ///
+    /// The receiver is peeked from the registry (not removed) since methods are
+    /// canonically `borrow<T>` semantics — the caller's handle remains alive until it is
+    /// explicitly dropped via [`Self::resource_any_drop`].
+    ///
+    /// # Arguments
+    ///
+    /// * `instance_id` - The unique identifier for the component instance whose store
+    ///   owns the resource
+    /// * `resource_handle` - The handle ID from the global resource registry (obtained
+    ///   from a prior invocation that returned an `own<T>`)
+    /// * `method_export_name` - The export path of the method function
+    /// * `args` - Additional args to pass after the receiver
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(Val)` for a single-return method, `None` for a void method.
+    /// Multi-return methods return the first result value (this mirrors the existing
+    /// `nativeComponentInvokeFunction` contract; component-model methods return at most
+    /// one canonical result today).
+    pub fn invoke_resource_method(
+        &self,
+        instance_id: u64,
+        resource_handle: u64,
+        method_export_name: &str,
+        args: Vec<Val>,
+    ) -> WasmtimeResult<Option<Val>> {
+        // Peek — a method borrows the receiver, ownership stays with the caller.
+        let receiver = crate::wit_value_marshal::get_resource(resource_handle).ok_or_else(
+            || WasmtimeError::Resource {
+                message: format!(
+                    "Resource handle {} not found in registry (already dropped?)",
+                    resource_handle
+                ),
+            },
+        )?;
+
+        let mut instances =
+            self.instances
+                .write()
+                .map_err(|_| WasmtimeError::Concurrency {
+                    message: "Failed to acquire instances write lock".to_string(),
+                })?;
+
+        let handle = instances
+            .get_mut(&instance_id)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Instance {} not found", instance_id),
+            })?;
+        handle.last_accessed = Instant::now();
+
+        // Same lookup path as nativeComponentInvokeFunction: top-level by name, or drill
+        // through `interface#function` when the export lives inside an exported interface.
+        use wasmtime::component::Func;
+        let handle_ref = &mut *handle;
+        let func: Func = match handle_ref
+            .instance
+            .get_func(&mut handle_ref.store, method_export_name)
+        {
+            Some(f) => f,
+            None => {
+                let (iface, fname) = method_export_name.rsplit_once('#').ok_or_else(|| {
+                    WasmtimeError::ImportExport {
+                        message: format!(
+                            "Resource method '{}' not found in component exports",
+                            method_export_name
+                        ),
+                    }
+                })?;
+                let (_, iface_idx) = handle_ref
+                    .instance
+                    .get_export(&mut handle_ref.store, None, iface)
+                    .ok_or_else(|| WasmtimeError::ImportExport {
+                        message: format!("Exported interface '{}' not found", iface),
+                    })?;
+                let (_, func_idx) = handle_ref
+                    .instance
+                    .get_export(&mut handle_ref.store, Some(&iface_idx), fname)
+                    .ok_or_else(|| WasmtimeError::ImportExport {
+                        message: format!(
+                            "Method '{}' not found in interface '{}'",
+                            fname, iface
+                        ),
+                    })?;
+                handle_ref
+                    .instance
+                    .get_func(&mut handle_ref.store, &func_idx)
+                    .ok_or_else(|| WasmtimeError::ImportExport {
+                        message: format!(
+                            "Export '{}' is not a function",
+                            method_export_name
+                        ),
+                    })?
+            }
+        };
+
+        // Prepend the receiver as arg 0 — the ABI contract for `[method]<type>.<name>`.
+        let handle_ref = &mut *handle;
+        if let Some(fuel) = handle_ref.per_call_fuel {
+            let _ = handle_ref.store.set_fuel(fuel);
+        }
+        if let Some(deadline) = handle_ref.per_call_epoch_deadline {
+            handle_ref.store.set_epoch_deadline(deadline);
+        }
+        let mut params: Vec<Val> = Vec::with_capacity(args.len() + 1);
+        params.push(Val::Resource(receiver));
+        params.extend(args);
+        let results_len = func.ty(&handle_ref.store).results().len();
+        let mut results = vec![Val::Bool(false); results_len];
+        func.call(&mut handle_ref.store, &params, &mut results)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Resource method '{}' call failed: {}", method_export_name, e),
+                backtrace: None,
+            })?;
+
+        Ok(if results.is_empty() {
+            None
+        } else {
+            Some(results.remove(0))
+        })
+    }
+
     /// * `instance_id` - The unique identifier for the component instance to remove
     ///
     /// # Returns

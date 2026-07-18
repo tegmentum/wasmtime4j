@@ -315,6 +315,99 @@ public interface ComponentInstance extends AutoCloseable {
   }
 
   /**
+   * Invokes a resource method with the given resource as the receiver, returning the raw {@link
+   * ai.tegmentum.wasmtime4j.wit.WitValue} tree.
+   *
+   * <p>Component-model resource methods are ordinary exported functions whose first parameter is
+   * the resource handle (an {@code own<T>} or {@code borrow<T>}). This helper prepends the receiver
+   * as arg 0 and calls the method — the common shape for aggregate-state, iterator, or
+   * "handle-then-method" patterns emitted by {@code wit-bindgen}.
+   *
+   * <p>The receiver is passed by borrow: it is not consumed by the call and remains valid for
+   * further method invocations until dropped via {@link
+   * #dropResource(ai.tegmentum.wasmtime4j.wit.WitResource)}.
+   *
+   * <p>Default implementation composes {@link #invokeWit(String, Object...)} with the receiver as
+   * arg 0. Providers with a fast-path native entry point should override.
+   *
+   * @param receiver the resource to receive the call (must have a native handle backing)
+   * @param methodExportName the method's export path (a top-level {@code [method]<type>.<name>} or
+   *     an interface-scoped {@code <interface>#[method]<type>.<name>})
+   * @param args the additional args to pass after the receiver
+   * @return the method's return value as a {@link ai.tegmentum.wasmtime4j.wit.WitValue}, or {@code
+   *     null} for void methods
+   * @throws WasmException if invocation fails
+   * @since 1.5.0
+   */
+  default ai.tegmentum.wasmtime4j.wit.WitValue invokeResourceMethodWit(
+      final ai.tegmentum.wasmtime4j.wit.WitResource receiver,
+      final String methodExportName,
+      final Object... args)
+      throws WasmException {
+    if (receiver == null) {
+      throw new IllegalArgumentException("receiver cannot be null");
+    }
+    if (methodExportName == null || methodExportName.isEmpty()) {
+      throw new IllegalArgumentException("methodExportName cannot be null or empty");
+    }
+    final Object[] combined = new Object[(args == null ? 0 : args.length) + 1];
+    // Borrow — the receiver's ownership is retained by the caller.
+    combined[0] = receiver.toBorrow();
+    if (args != null && args.length > 0) {
+      System.arraycopy(args, 0, combined, 1, args.length);
+    }
+    return invokeWit(methodExportName, combined);
+  }
+
+  /**
+   * Invokes a resource method and unwraps the result via {@link
+   * ai.tegmentum.wasmtime4j.wit.WitValue#toJava()}. Symmetric with {@link #invoke(String,
+   * Object...)}.
+   *
+   * @param receiver the resource to receive the call
+   * @param methodExportName the method's export path
+   * @param args the additional args to pass after the receiver
+   * @return the unwrapped method result, or {@code null} for void methods
+   * @throws WasmException if invocation fails
+   * @since 1.5.0
+   */
+  default Object invokeResourceMethod(
+      final ai.tegmentum.wasmtime4j.wit.WitResource receiver,
+      final String methodExportName,
+      final Object... args)
+      throws WasmException {
+    final ai.tegmentum.wasmtime4j.wit.WitValue result =
+        invokeResourceMethodWit(receiver, methodExportName, args);
+    return result == null ? null : result.toJava();
+  }
+
+  /**
+   * Drops a resource, releasing it in the underlying store and removing it from the resource
+   * registry.
+   *
+   * <p>Call this exactly once per {@code own<T>} handle received back from a component call. After
+   * this returns, the receiver is no longer valid for {@link #invokeResourceMethodWit} — the
+   * registry entry is gone and any further call fails with a "handle not found" error.
+   *
+   * <p>Only resources backed by a native handle (produced by a native component call, not
+   * synthesized in pure Java) can be dropped through this path; a pure-Java resource without native
+   * backing throws {@link UnsupportedOperationException}.
+   *
+   * <p>The default implementation is unsupported: providers that host resources through a native
+   * store (currently only wasmtime4j) override.
+   *
+   * @param resource the resource to drop
+   * @throws WasmException if the drop fails
+   * @throws UnsupportedOperationException if the resource has no native backing
+   * @since 1.5.0
+   */
+  default void dropResource(final ai.tegmentum.wasmtime4j.wit.WitResource resource)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "dropResource requires a native-backed WitResource; provider must override");
+  }
+
+  /**
    * Executes multiple component function calls concurrently using Wasmtime's native concurrent call
    * support.
    *
