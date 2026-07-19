@@ -716,12 +716,22 @@ impl EnhancedComponentEngine {
         }
     }
 
-    /// Check if a component instance has a specific function export
+    /// Check if a component instance has a specific function export.
+    ///
+    /// Recognizes both bare top-level exports (`name`) and interface-qualified
+    /// exports of the form `<package>:<interface>@<version>#<function>`
+    /// (e.g. `tegmentum:webfunction/extension@0.1.0#call`).
+    ///
+    /// The bare lookup goes through `Instance::get_func`. If that misses and the
+    /// name carries a `#` separator, this method drills through the exported
+    /// interface's export index — mirroring the fallback used by
+    /// `nativeComponentInvokeFunction` — so that `hasFunction` agrees with the
+    /// invocation path: a name that can be called must also probe as present.
     ///
     /// # Arguments
     ///
     /// * `instance_id` - The unique identifier for the component instance
-    /// * `name` - The name of the function to check
+    /// * `name` - The name of the function to check (bare or interface-qualified)
     ///
     /// # Returns
     ///
@@ -746,7 +756,41 @@ impl EnhancedComponentEngine {
                 })?;
 
         handle.last_accessed = Instant::now();
-        Ok(handle.instance.get_func(&mut handle.store, name).is_some())
+
+        // Fast path: bare top-level export.
+        if handle.instance.get_func(&mut handle.store, name).is_some() {
+            return Ok(true);
+        }
+
+        // Fallback: interface-qualified export. Wasmtime's name-based
+        // `Instance::get_func` only sees top-level exports, so a nested
+        // `<interface>#<function>` name has to walk the interface's export
+        // index — the same shape used by `invoke_component_function` and by
+        // `nativeComponentInvokeFunction`'s get_func fallback.
+        let Some((iface, fname)) = name.rsplit_once('#') else {
+            return Ok(false);
+        };
+
+        // Split the handle borrow so we can pass &mut store while holding
+        // &instance across the two get_export calls.
+        let handle_ref = &mut *handle;
+        let Some((_, iface_idx)) = handle_ref
+            .instance
+            .get_export(&mut handle_ref.store, None, iface)
+        else {
+            return Ok(false);
+        };
+        let Some((_, func_idx)) =
+            handle_ref
+                .instance
+                .get_export(&mut handle_ref.store, Some(&iface_idx), fname)
+        else {
+            return Ok(false);
+        };
+        Ok(handle_ref
+            .instance
+            .get_func(&mut handle_ref.store, &func_idx)
+            .is_some())
     }
 
     /// Check if a component instance has a function at the given export index.

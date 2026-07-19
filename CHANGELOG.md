@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.4.6] - 2026-07-18
+
+Wasmtime version unchanged (46.0.1). Native-only fix — no Java API surface
+change, but plugins that use interface-qualified `hasFunction` probes will
+observe the intended `true` result after this bump.
+
+### Fixed
+
+- **`ComponentInstance.hasFunction` now recognizes interface-qualified export
+  names.** Prior versions routed all lookups through wasmtime's
+  `Instance::get_func(name)`, which only sees top-level (bare) exports — so a
+  probe like `hasFunction("tegmentum:webfunction/extension@0.1.0#call")`
+  always returned `false` even though the invocation path
+  (`nativeComponentInvokeFunction`) already knew how to walk the
+  `<interface>#<function>` shape and would happily invoke the same name.
+  The mismatch broke capability probes in downstream code — most visibly
+  `BridgingSparqlExtensionDispatch#filterIsNewShape` in webassembly4j, which
+  used the probe to pick between new-shape and old-shape ABI dispatch and
+  silently mis-detected every new-shape guest as old-shape. The fix in
+  `EnhancedComponentEngine::has_component_instance_func` first tries the
+  bare `Instance::get_func` (unchanged behavior for top-level exports) and,
+  on miss, mirrors the invocation fallback: split on the last `#`, walk
+  `Instance::get_export(iface)` → `get_export(index, fname)` → `get_func`,
+  and report `true` if the terminal `get_func` succeeds. Bare-name callers
+  see no behavior change; qualified-name callers now agree with the
+  invocation path.
+
 ## [46.0.1-1.4.5] - 2026-07-16
 
 Wasmtime version unchanged (46.0.1). Ships the wasi:nn resource-registration
