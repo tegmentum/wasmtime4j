@@ -799,17 +799,15 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   }
 
   /**
-   * Returns whether the loaded {@code libwasmtime4j} native was compiled with
-   * the {@code wasi-nn} cargo feature. Callers should probe this before
-   * invoking {@link #enableWasiNn()} / {@link
-   * #enableWasiNn(ai.tegmentum.wasmtime4j.wasi.nn.WasiNnConfig)} — when
-   * this returns {@code false} the native enable path throws a runtime
-   * "WASI-NN support not compiled in" error at instantiation time.
+   * Returns whether the loaded {@code libwasmtime4j} native was compiled with the {@code wasi-nn}
+   * cargo feature. Callers should probe this before invoking {@link #enableWasiNn()} / {@link
+   * #enableWasiNn(ai.tegmentum.wasmtime4j.wasi.nn.WasiNnConfig)} — when this returns {@code false}
+   * the native enable path throws a runtime "WASI-NN support not compiled in" error at
+   * instantiation time.
    *
-   * <p>The answer is a compile-time constant of the loaded native library
-   * and is cached after the first call. Requires the native to be loaded;
-   * a wrapping unsatisfied-link fault surfaces as {@link
-   * UnsatisfiedLinkError} to the caller.
+   * <p>The answer is a compile-time constant of the loaded native library and is cached after the
+   * first call. Requires the native to be loaded; a wrapping unsatisfied-link fault surfaces as
+   * {@link UnsatisfiedLinkError} to the caller.
    *
    * @return {@code true} if the native supports {@code wasi:nn}, else {@code false}
    * @since 1.4.2
@@ -1433,9 +1431,9 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
   private native void nativeEnableWasiConfig(long linkerHandle);
 
   /**
-   * Reports whether the loaded native was compiled with the {@code wasi-nn} cargo
-   * feature. Backs {@link #wasiNnAvailable()}. Static — no linker handle required
-   * and safe to call before any linker exists.
+   * Reports whether the loaded native was compiled with the {@code wasi-nn} cargo feature. Backs
+   * {@link #wasiNnAvailable()}. Static — no linker handle required and safe to call before any
+   * linker exists.
    *
    * @since 1.4.2
    */

@@ -481,6 +481,35 @@ public final class JniComponentInstanceImpl implements ComponentInstance {
     }
   }
 
+  @Override
+  public void consumeFuel(final long amount) throws WasmException {
+    if (amount < 0L) {
+      throw new IllegalArgumentException("amount must be non-negative, got " + amount);
+    }
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+    try {
+      JniComponent.nativeConsumeFuel(
+          component.getEngine().getNativeHandle(), nativeInstance.getNativeHandle(), amount);
+    } catch (final RuntimeException e) {
+      throw new WasmException("Failed to consume fuel: " + e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public long fuelConsumed() throws WasmException {
+    if (!isValid()) {
+      throw new WasmException("Component instance is not valid");
+    }
+    try {
+      return JniComponent.nativeFuelConsumed(
+          component.getEngine().getNativeHandle(), nativeInstance.getNativeHandle());
+    } catch (final RuntimeException e) {
+      throw new WasmException("Failed to read fuel consumed: " + e.getMessage(), e);
+    }
+  }
+
   /**
    * Gets the native instance handle.
    *

@@ -442,6 +442,46 @@ public interface ComponentInstance extends AutoCloseable {
   List<List<ComponentVal>> runConcurrent(List<ConcurrentCall> calls) throws WasmException;
 
   /**
+   * Decrements the store's remaining fuel by {@code amount}.
+   *
+   * <p>Delegates to the wasmtime store owned by this component instance so a host-side "toll" (fuel
+   * deducted against the same budget the guest consumes) is enforced against real store fuel — the
+   * guest traps once the store runs out, just as if the fuel had been burned by wasm instructions.
+   *
+   * <p>Default implementation throws {@link UnsupportedOperationException}; providers that host a
+   * wasmtime store per instance override.
+   *
+   * @param amount the units of fuel to deduct (must be non-negative)
+   * @throws WasmException if the store is not fuel-metered, or if {@code amount} exceeds the
+   *     currently-remaining fuel (no partial deduction)
+   * @since 1.4.7
+   */
+  default void consumeFuel(final long amount) throws WasmException {
+    throw new UnsupportedOperationException(
+        "consumeFuel requires a wasmtime store; provider must override");
+  }
+
+  /**
+   * Reports the amount of fuel consumed since the last time the store's fuel was set.
+   *
+   * <p>Fuel is set at instantiation (from the caller's fuel cap) and re-set on each invocation for
+   * per-call fuel modes; this returns {@code baseline - remaining} relative to the most recent
+   * {@code set_fuel}. Providers whose store is not fuel-metered (or whose instance was created
+   * outside a fuel-configured path) return {@code 0}.
+   *
+   * <p>Default implementation returns {@code 0}; providers that host a wasmtime store per instance
+   * override.
+   *
+   * @return the fuel consumed against the store since the last {@code set_fuel} on it, or {@code 0}
+   *     when not fuel-metered
+   * @throws WasmException if the underlying fuel query fails
+   * @since 1.4.7
+   */
+  default long fuelConsumed() throws WasmException {
+    return 0L;
+  }
+
+  /**
    * Checks if this component instance is still valid and usable.
    *
    * @return true if the instance is valid, false otherwise

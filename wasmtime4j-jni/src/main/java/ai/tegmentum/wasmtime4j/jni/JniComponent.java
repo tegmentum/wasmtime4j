@@ -490,6 +490,36 @@ public final class JniComponent {
       long linkerHandle, long componentHandle);
 
   /**
+   * Decrements the wasmtime store's remaining fuel by {@code amount} for the given component
+   * instance.
+   *
+   * <p>Delegates to the store owned by the instance. Returns the fuel remaining after the deduction
+   * on success. Throws when the store is not fuel-metered or when {@code amount} exceeds the
+   * currently-remaining fuel (no partial deduction).
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param instanceId the component instance ID whose store to charge
+   * @param amount the units of fuel to deduct (must be non-negative)
+   * @return the fuel remaining after the deduction
+   */
+  static native long nativeConsumeFuel(long engineHandle, long instanceId, long amount);
+
+  /**
+   * Reports the amount of fuel consumed against the wasmtime store since the last time its fuel was
+   * set for the given component instance.
+   *
+   * <p>Fuel is set at instantiation (from the caller's fuel cap) and re-set on each invocation when
+   * the instance is in per-call fuel mode; this method returns {@code baseline - remaining}
+   * relative to the most recent set. Returns {@code 0} for instances whose engine is not
+   * fuel-metered.
+   *
+   * @param engineHandle the enhanced component engine handle
+   * @param instanceId the component instance ID whose store to query
+   * @return the fuel consumed since the last {@code set_fuel} on the store
+   */
+  static native long nativeFuelConsumed(long engineHandle, long instanceId);
+
+  /**
    * Closes an async val handle (Future/Stream/ErrorContext) in the native AsyncValRegistry.
    *
    * <p>This removes the handle from the global registry, dropping the stored Val and releasing any
