@@ -2550,6 +2550,8 @@ impl ComponentInstancePreWrapper {
             // Native ComponentLinker path: limits stay as configured at instantiation.
             per_call_fuel: None,
             per_call_epoch_deadline: None,
+            // No fuel configured on this path — `fuelConsumed()` on such an instance returns 0.
+            fuel_baseline: None,
         })
     }
 
@@ -2693,6 +2695,14 @@ impl ComponentInstancePreWrapper {
         self.total_instantiation_time_ns
             .fetch_add(duration, Ordering::Relaxed);
 
+        // Capture post-instantiation fuel (when fuel was configured) as the baseline BEFORE
+        // moving `store` into the handle so `fuelConsumed()` reports fuel spent AFTER init.
+        // Not updated per call, since this path doesn't reset fuel each invoke.
+        let fuel_baseline = if fuel_limit > 0 {
+            Some(store.get_fuel().unwrap_or(fuel_limit))
+        } else {
+            None
+        };
         Ok(ComponentInstanceHandle {
             store,
             instance,
@@ -2704,6 +2714,7 @@ impl ComponentInstancePreWrapper {
             // This path already applies fuel/epoch/memory at instantiation; keep them as set.
             per_call_fuel: None,
             per_call_epoch_deadline: None,
+            fuel_baseline,
         })
     }
 

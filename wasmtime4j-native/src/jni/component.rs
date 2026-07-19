@@ -734,6 +734,9 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         // call. Only the high-level (policy) path sets these; other paths leave them as instantiated.
         if let Some(fuel) = handle_ref.per_call_fuel {
             let _ = handle_ref.store.set_fuel(fuel);
+            // Baseline tracks the last-set fuel so `fuelConsumed()` reports actual fuel consumed
+            // during THIS call rather than aggregating across the instance lifetime.
+            handle_ref.fuel_baseline = Some(fuel);
         }
         if let Some(deadline) = handle_ref.per_call_epoch_deadline {
             handle_ref.store.set_epoch_deadline(deadline);
@@ -1670,6 +1673,74 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeAsync
         return;
     }
     crate::component::async_val_close(handle as u64);
+}
+
+/// Decrement the wasmtime store's remaining fuel by `amount` for the component instance.
+///
+/// Delegates to `EnhancedComponentEngine::consume_fuel_on_instance`. Returns the fuel remaining
+/// after the deduction on success. Throws a Java exception if the store isn't fuel-metered or
+/// the deduction would exceed the currently-remaining fuel (no partial deduction).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeConsumeFuel(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+    amount: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0i64, || {
+        use crate::error::WasmtimeError;
+        if engine_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Engine pointer is null".to_string(),
+            });
+        }
+        if instance_id == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Instance ID is zero".to_string(),
+            });
+        }
+        if amount < 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: format!("consumeFuel amount must be non-negative, got {}", amount),
+            });
+        }
+        let engine =
+            unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
+        let remaining =
+            engine.consume_fuel_on_instance(instance_id as u64, amount as u64)?;
+        Ok(remaining as i64)
+    })
+}
+
+/// Report fuel consumed since the last time the store's fuel was set for the component instance.
+///
+/// Delegates to `EnhancedComponentEngine::fuel_consumed_on_instance`. Returns 0 for instances
+/// that were never fuel-metered.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeFuelConsumed(
+    mut env: JNIEnv,
+    _class: JClass,
+    engine_ptr: jlong,
+    instance_id: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, 0i64, || {
+        use crate::error::WasmtimeError;
+        if engine_ptr == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Engine pointer is null".to_string(),
+            });
+        }
+        if instance_id == 0 {
+            return Err(WasmtimeError::InvalidParameter {
+                message: "Instance ID is zero".to_string(),
+            });
+        }
+        let engine =
+            unsafe { &*(engine_ptr as *const crate::component_core::EnhancedComponentEngine) };
+        let consumed = engine.fuel_consumed_on_instance(instance_id as u64)?;
+        Ok(consumed as i64)
+    })
 }
 
 /// Invoke a resource method with the given resource handle as the receiver.

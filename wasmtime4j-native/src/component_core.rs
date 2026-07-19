@@ -76,6 +76,11 @@ pub struct ComponentInstanceHandle {
     /// Per-CALL epoch deadline (relative ticks) re-applied before each invoke, when set. `None`
     /// leaves the instantiation-time deadline in place; `Some` makes `deadline_ms` per call.
     pub per_call_epoch_deadline: Option<u64>,
+    /// Baseline fuel captured the last time this store's fuel was set (at instantiation, or when
+    /// `per_call_fuel` is re-applied). `fuel_consumed_on_instance` returns `baseline - remaining`
+    /// so the plugin can report actual fuel spent instead of the configured cap. `None` when the
+    /// engine is not fuel-metered (in which case `fuel_consumed_on_instance` returns 0).
+    pub fuel_baseline: Option<u64>,
 }
 
 /// Component performance metrics
@@ -257,6 +262,10 @@ impl EnhancedComponentEngine {
                 message: format!("Failed to instantiate component: {:#}", e),
             })?;
 
+        // Capture the post-instantiation fuel level as the baseline BEFORE moving `store` into
+        // the handle so `fuelConsumed()` reports fuel spent AFTER init, not "however much wasm
+        // init burned against u64::MAX".
+        let baseline = store.get_fuel().unwrap_or(u64::MAX);
         let handle = ComponentInstanceHandle {
             store,
             instance,
@@ -268,6 +277,7 @@ impl EnhancedComponentEngine {
             // No high-level caps on this path; leave the instantiation-time (unlimited) budgets.
             per_call_fuel: None,
             per_call_epoch_deadline: None,
+            fuel_baseline: Some(baseline),
         };
 
         // Store the instance in the engine's HashMap to maintain Engine/Store/Instance ownership
@@ -394,6 +404,9 @@ impl EnhancedComponentEngine {
                 message: format!("Failed to instantiate component: {:#}", e),
             })?;
 
+        // Capture post-instantiation fuel as the baseline BEFORE moving `store`; the per-call
+        // reset in the invoke JNI path realigns baseline with each subsequent set_fuel.
+        let baseline = store.get_fuel().unwrap_or(fuel_limit.unwrap_or(u64::MAX));
         let handle = ComponentInstanceHandle {
             store,
             instance,
@@ -405,6 +418,7 @@ impl EnhancedComponentEngine {
             // Re-applied before each invoke so fuel_per_call / deadline_ms are per CALL.
             per_call_fuel: Some(fuel_limit.unwrap_or(u64::MAX)),
             per_call_epoch_deadline: Some(epoch_deadline.unwrap_or(NO_EPOCH_DEADLINE)),
+            fuel_baseline: Some(baseline),
         };
 
         {
@@ -1044,6 +1058,85 @@ impl EnhancedComponentEngine {
             // Instance already removed or never existed - treat as success for idempotency
             Ok(())
         }
+    }
+
+    /// Decrement the store's remaining fuel by `amount`.
+    ///
+    /// Delegates to the wasmtime store owned by the component instance keyed by `instance_id`.
+    /// Returns the fuel remaining after the deduction on success. Errors if the store isn't
+    /// fuel-metered, or if `amount` exceeds the currently-remaining fuel (no partial deduction).
+    pub fn consume_fuel_on_instance(
+        &self,
+        instance_id: u64,
+        amount: u64,
+    ) -> WasmtimeResult<u64> {
+        let mut instances = self
+            .instances
+            .write()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances write lock".to_string(),
+            })?;
+
+        let handle = instances
+            .get_mut(&instance_id)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Instance {} not found", instance_id),
+            })?;
+
+        // wasmtime 46's Store only exposes get_fuel/set_fuel; implement consume as
+        // read-current-then-set-lower with an explicit insufficiency check.
+        let current = handle.store.get_fuel().map_err(|e| WasmtimeError::Runtime {
+            message: format!("Failed to read store fuel: {}", e),
+            backtrace: None,
+        })?;
+        if current < amount {
+            return Err(WasmtimeError::Runtime {
+                message: format!(
+                    "Insufficient fuel: requested {} but only {} available",
+                    amount, current
+                ),
+                backtrace: None,
+            });
+        }
+        let remaining = current - amount;
+        handle
+            .store
+            .set_fuel(remaining)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Failed to set store fuel: {}", e),
+                backtrace: None,
+            })?;
+        Ok(remaining)
+    }
+
+    /// Report fuel consumed since the last time the store's fuel was set.
+    ///
+    /// Computes `fuel_baseline - store.get_fuel()`. The baseline is captured at instantiation
+    /// (from `fuel_limit`) and re-captured on each per-call fuel reset in the invoke path, so
+    /// this measures consumption during the most recent invocation for per-call fuel modes and
+    /// aggregate consumption otherwise. Returns 0 for instances that were never fuel-metered.
+    pub fn fuel_consumed_on_instance(&self, instance_id: u64) -> WasmtimeResult<u64> {
+        let instances = self
+            .instances
+            .read()
+            .map_err(|_| WasmtimeError::Concurrency {
+                message: "Failed to acquire instances read lock".to_string(),
+            })?;
+
+        let handle = instances
+            .get(&instance_id)
+            .ok_or_else(|| WasmtimeError::InvalidParameter {
+                message: format!("Instance {} not found", instance_id),
+            })?;
+
+        let baseline = match handle.fuel_baseline {
+            Some(b) => b,
+            None => return Ok(0),
+        };
+        // get_fuel errors when the engine isn't fuel-metered; treat that as "0 consumed" rather
+        // than surface it — an instance without fuel metering has nothing to report.
+        let remaining = handle.store.get_fuel().unwrap_or(baseline);
+        Ok(baseline.saturating_sub(remaining))
     }
 
     /// Extract detailed metadata from a compiled component
