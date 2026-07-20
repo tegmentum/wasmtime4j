@@ -87,6 +87,7 @@ public final class WasiPreview2Config {
   private final WasiRandomSource insecureRandom;
   private final SocketAddrCheck socketAddrCheck;
   private final FsAccessObserver fsAccessObserver;
+  private final boolean wasiHttp;
 
   private WasiPreview2Config(final Builder builder) {
     this.args = Collections.unmodifiableList(new ArrayList<>(builder.args));
@@ -116,6 +117,7 @@ public final class WasiPreview2Config {
     this.insecureRandom = builder.insecureRandom;
     this.socketAddrCheck = builder.socketAddrCheck;
     this.fsAccessObserver = builder.fsAccessObserver;
+    this.wasiHttp = builder.wasiHttp;
   }
 
   /**
@@ -390,6 +392,23 @@ public final class WasiPreview2Config {
   }
 
   /**
+   * Reports whether the {@code wasi:http} import surface (outgoing-handler + types) should be
+   * enabled on the component linker when this configuration is applied via {@link
+   * ai.tegmentum.wasmtime4j.component.ComponentLinker#enableWasiPreview2(WasiPreview2Config)}.
+   *
+   * <p>Defaults to {@code false}. When set, a linker configured with this preview2 config will also
+   * call {@link ai.tegmentum.wasmtime4j.component.ComponentLinker#enableWasiHttp()} after enabling
+   * preview 2, so a component that imports {@code wasi:http/outgoing-handler} can instantiate
+   * without a separate host call.
+   *
+   * @return true if {@code wasi:http} should also be enabled
+   * @since 1.4.8
+   */
+  public boolean isWasiHttp() {
+    return wasiHttp;
+  }
+
+  /**
    * Creates a new builder.
    *
    * @return a new builder
@@ -534,6 +553,7 @@ public final class WasiPreview2Config {
     private WasiRandomSource insecureRandom = null;
     private SocketAddrCheck socketAddrCheck = null;
     private FsAccessObserver fsAccessObserver = null;
+    private boolean wasiHttp = false;
 
     Builder() {}
 
@@ -983,6 +1003,28 @@ public final class WasiPreview2Config {
      */
     public Builder fsAccessObserver(final FsAccessObserver observer) {
       this.fsAccessObserver = observer;
+      return this;
+    }
+
+    /**
+     * Requests that the {@code wasi:http} import surface be enabled alongside WASI Preview 2 when
+     * this configuration is applied to a {@link
+     * ai.tegmentum.wasmtime4j.component.ComponentLinker#enableWasiPreview2(WasiPreview2Config)}
+     * call.
+     *
+     * <p>Defaults to {@code false} — no behavioural change for existing embedders. When set to
+     * {@code true}, the linker additionally invokes {@link
+     * ai.tegmentum.wasmtime4j.component.ComponentLinker#enableWasiHttp()} after Preview 2 is
+     * enabled, publishing {@code wasi:http/types} + {@code wasi:http/outgoing-handler} so a
+     * component that imports them instantiates without a separate host call. Requires the native
+     * library to be compiled with the {@code wasi-http} feature (on by default).
+     *
+     * @param enable true to also enable {@code wasi:http}; false to leave it disabled
+     * @return this builder
+     * @since 1.4.8
+     */
+    public Builder wasiHttp(final boolean enable) {
+      this.wasiHttp = enable;
       return this;
     }
 

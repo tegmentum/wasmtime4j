@@ -660,6 +660,14 @@ public final class JniComponentLinker<T> extends JniResource implements Componen
 
       // Enable WASI Preview 2
       enableWasiPreview2();
+
+      // Optional wasi:http import surface: the config carries a hint (default false); when set,
+      // also enable wasi:http here so a component that imports wasi:http/outgoing-handler can
+      // instantiate off this linker without a separate host call. enableWasiHttp requires
+      // Preview 2 to already be enabled, which the line above guarantees.
+      if (config.isWasiHttp()) {
+        enableWasiHttp();
+      }
     } finally {
       endOperation();
     }

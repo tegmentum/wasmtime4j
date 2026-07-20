@@ -575,6 +575,14 @@ public final class PanamaComponentLinker<T> implements ComponentLinker<T> {
       // Enable WASI Preview 2
       enableWasiPreview2();
 
+      // Optional wasi:http import surface: default false; when the config sets the hint, also
+      // enable wasi:http here so a component that imports wasi:http/outgoing-handler can
+      // instantiate off this linker without a separate host call. enableWasiHttp requires
+      // Preview 2 to already be enabled, which the line above guarantees.
+      if (config.isWasiHttp()) {
+        enableWasiHttp();
+      }
+
       LOGGER.fine("Enabled WASI Preview 2 with custom configuration");
     } finally {
       resourceHandle.endOperation();

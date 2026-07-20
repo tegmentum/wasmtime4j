@@ -70,6 +70,26 @@ class WasiPreview2ConfigTest {
       assertNull(config.getInsecureRandom());
       assertNull(config.getSocketAddrCheck());
       assertNull(config.getFsAccessObserver());
+      assertFalse(config.isWasiHttp(), "wasi:http should default off");
+    }
+  }
+
+  @Nested
+  @DisplayName("wasi:http Toggle")
+  class WasiHttpToggle {
+
+    @Test
+    @DisplayName("wasiHttp(true) is carried on the built config")
+    void wasiHttpTrueIsCarried() {
+      WasiPreview2Config config = WasiPreview2Config.builder().wasiHttp(true).build();
+      assertTrue(config.isWasiHttp());
+    }
+
+    @Test
+    @DisplayName("wasiHttp(false) leaves the flag off (still the default)")
+    void wasiHttpFalseIsCarried() {
+      WasiPreview2Config config = WasiPreview2Config.builder().wasiHttp(false).build();
+      assertFalse(config.isWasiHttp());
     }
   }
 
