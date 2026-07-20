@@ -1236,4 +1236,14 @@
         <Bug pattern="PATH_TRAVERSAL_IN"/>
         <Class name="ai.tegmentum.wasmtime4j.wasi.AbstractWasiContextBuilder"/>
     </Match>
+
+    <!-- WasiNnConfig is an immutable value type with a private constructor plus a
+         static DEFAULTS instance and a defaults() accessor. SpotBugs' singleton
+         detector matches the shape and flags the compiler-synthesized accessor
+         used by the inner Builder as a "non-private" constructor. Not a real
+         singleton; not a defect. -->
+    <Match>
+        <Bug pattern="SING_SINGLETON_HAS_NONPRIVATE_CONSTRUCTOR"/>
+        <Class name="ai.tegmentum.wasmtime4j.wasi.nn.WasiNnConfig"/>
+    </Match>
 </FindBugsFilter>
