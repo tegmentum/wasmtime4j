@@ -45,9 +45,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   private final long storeNativeHandle;
 
   /**
-   * Cached mutability flag - global mutability never changes after creation. Computed
-   * lazily on first read so pre-native-call Java validation tests can construct JniGlobal
-   * instances with fake handles without tripping the native side.
+   * Cached mutability flag - global mutability never changes after creation. Computed lazily on
+   * first read so pre-native-call Java validation tests can construct JniGlobal instances with fake
+   * handles without tripping the native side.
    */
   private volatile Boolean mutableCache;
 
@@ -80,9 +80,9 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   }
 
   /**
-   * Returns whether this global is mutable, computing and caching the value on first call.
-   * Deferred out of the constructor so pre-native-call Java validation tests can construct
-   * JniGlobal instances with fake handles without tripping the native side.
+   * Returns whether this global is mutable, computing and caching the value on first call. Deferred
+   * out of the constructor so pre-native-call Java validation tests can construct JniGlobal
+   * instances with fake handles without tripping the native side.
    */
   private boolean mutableFlag() {
     Boolean cached = mutableCache;

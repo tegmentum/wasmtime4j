@@ -87,9 +87,9 @@ public final class JniMemory extends JniResource implements WasmMemory {
   }
 
   /**
-   * Returns whether this memory is a shared memory, computing and caching the value on
-   * first call. Deferred out of the constructor so pre-native-call Java validation tests
-   * can construct JniMemory instances with fake handles without tripping the native side.
+   * Returns whether this memory is a shared memory, computing and caching the value on first call.
+   * Deferred out of the constructor so pre-native-call Java validation tests can construct
+   * JniMemory instances with fake handles without tripping the native side.
    */
   private boolean sharedFlag() {
     Boolean cached = sharedCache;
