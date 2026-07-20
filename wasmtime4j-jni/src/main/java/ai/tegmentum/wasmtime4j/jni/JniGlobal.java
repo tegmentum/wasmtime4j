@@ -44,8 +44,12 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
   /** Cached store native handle to avoid redundant getNativeHandle() calls. */
   private final long storeNativeHandle;
 
-  /** Cached mutability flag - global mutability never changes after creation. */
-  private final boolean mutable;
+  /**
+   * Cached mutability flag - global mutability never changes after creation. Computed
+   * lazily on first read so pre-native-call Java validation tests can construct JniGlobal
+   * instances with fake handles without tripping the native side.
+   */
+  private volatile Boolean mutableCache;
 
   // Load native library when this class is first loaded
   static {
@@ -70,10 +74,23 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
     Validation.requireNonNull(store, "store");
     this.store = store;
     this.storeNativeHandle = store.getNativeHandle();
-    this.mutable = nativeIsMutable(nativeHandle);
     if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
       LOGGER.fine("Created JNI global with handle: 0x" + Long.toHexString(nativeHandle));
     }
+  }
+
+  /**
+   * Returns whether this global is mutable, computing and caching the value on first call.
+   * Deferred out of the constructor so pre-native-call Java validation tests can construct
+   * JniGlobal instances with fake handles without tripping the native side.
+   */
+  private boolean mutableFlag() {
+    Boolean cached = mutableCache;
+    if (cached == null) {
+      cached = nativeIsMutable(nativeHandle);
+      mutableCache = cached;
+    }
+    return cached;
   }
 
   /**
@@ -108,7 +125,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws RuntimeException if the mutability cannot be determined
    */
   public boolean isMutable() {
-    return mutable;
+    return mutableFlag();
   }
 
   /**
@@ -613,7 +630,7 @@ public final class JniGlobal extends JniResource implements WasmGlobal {
    * @throws UnsupportedOperationException if this global is immutable
    */
   private void validateMutable() {
-    if (!mutable) {
+    if (!mutableFlag()) {
       throw new UnsupportedOperationException("Cannot modify immutable global");
     }
   }

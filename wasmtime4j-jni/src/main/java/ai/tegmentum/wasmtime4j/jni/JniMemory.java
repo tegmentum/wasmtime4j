@@ -52,8 +52,10 @@ public final class JniMemory extends JniResource implements WasmMemory {
   // store.getNativeHandle()
   private final long storeNativeHandle;
 
-  // Cached shared flag to avoid redundant nativeIsShared JNI calls per atomic operation
-  private final boolean shared;
+  // Cached shared flag to avoid redundant nativeIsShared JNI calls per atomic operation.
+  // Computed lazily on first read so tests using fake handles never cross the JNI boundary
+  // from the constructor. Shared-ness never changes for a memory, so racing readers are safe.
+  private volatile Boolean sharedCache;
 
   // Instance handle for data segment operations (memory.init, data.drop)
   private long instanceHandle;
@@ -79,10 +81,23 @@ public final class JniMemory extends JniResource implements WasmMemory {
     super(nativeHandle);
     this.store = store;
     this.storeNativeHandle = store != null ? store.getNativeHandle() : 0;
-    this.shared = store != null && nativeIsShared(nativeHandle, this.storeNativeHandle);
     if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
       LOGGER.fine("Created JNI memory with handle: 0x" + Long.toHexString(nativeHandle));
     }
+  }
+
+  /**
+   * Returns whether this memory is a shared memory, computing and caching the value on
+   * first call. Deferred out of the constructor so pre-native-call Java validation tests
+   * can construct JniMemory instances with fake handles without tripping the native side.
+   */
+  private boolean sharedFlag() {
+    Boolean cached = sharedCache;
+    if (cached == null) {
+      cached = store != null && nativeIsShared(nativeHandle, storeNativeHandle);
+      sharedCache = cached;
+    }
+    return cached;
   }
 
   /**
@@ -950,7 +965,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
 
   @Override
   public boolean isShared() {
-    return shared;
+    return sharedFlag();
   }
 
   @Override
@@ -1325,7 +1340,7 @@ public final class JniMemory extends JniResource implements WasmMemory {
    * @throws UnsupportedOperationException if this memory is not shared
    */
   private void checkSharedMemory() {
-    if (!shared) {
+    if (!sharedFlag()) {
       throw new UnsupportedOperationException("Operation requires shared memory");
     }
   }
