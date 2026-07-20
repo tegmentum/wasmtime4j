@@ -22,7 +22,7 @@ wasmtime-wasi-nn = { version = "46.0.1", default-features = false, features = ["
 # ort exact-pin is mandatory: wasmtime-wasi-nn 46.0.1 bakes in 2.0.0-rc.10
 # and later ort releases have breaking ABI shifts that surface as link-
 # time symbol mismatches. Same pin the Rust substrate engines carry.
-ort = "=2.0.0-rc.10"
+ort = "=2.0.0-rc.12"
 wasmtime-wasi-config = { version = "46.0.1" }
 wasmtime-wast = { version = "46.0.1", features = ["component-model", "component-model-async"] }
 
