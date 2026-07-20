@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.4.7] - 2026-07-20
+
+Wasmtime version unchanged (46.0.1). Adds component-instance fuel
+accounting on the Java API, an opt-in `wasi:http` toggle on the
+Preview 2 config, and defers a JNI probe out of two constructors so
+Java-side validation tests can run without a live native resource.
+
+### Added
+
+- **`ComponentInstance.consumeFuel(long)` and `fuelConsumed()`.** Wires
+  the wasmtime4j-native JNI additions through the Java surface. The
+  interface carries default implementations
+  (`consumeFuel` → `UnsupportedOperationException`, `fuelConsumed` → 0)
+  so alternate `ComponentInstance` implementations are unaffected;
+  `JniComponentInstance` overrides both to delegate to
+  `nativeConsumeFuel` / `nativeFuelConsumed`. Callers that never enable
+  fuel metering on the store see no behavioural change.
+- **`WasiPreview2Config.wasiHttp` opt-in toggle.** Embedders that want
+  the `wasi:http` import surface can set the flag on the same config
+  they hand to `ComponentLinker.enableWasiPreview2(config)`; the JNI
+  and Panama linker implementations invoke `enableWasiHttp()` after
+  Preview 2 is enabled. Defaults to `false`, so existing callers see no
+  behavioural change. Requires the native library to be compiled with
+  the `wasi-http` cargo feature (on by default).
+
+### Fixed
+
+- **`JniGlobal` / `JniMemory` no longer cross the JNI boundary at
+  construction time.** Constructor-time caching of `nativeIsMutable()`
+  in `JniGlobal` (772eff98) and `nativeIsShared()` in `JniMemory`
+  forced every instance to make a native call at construction — which
+  broke the documented contract of the pre-native-call validation
+  tests (`JniLinkerTest`, `JniInputValidationTest`) that construct
+  fake-handle doubles to exercise Java-side null/range checks without
+  any live native resource. Both fields are now computed lazily on
+  first read into a `volatile Boolean` and cached; steady-state cost
+  is unchanged, plus one native call on the first probe per instance.
+  The four flagged tests
+  (`JniLinkerTest#testDefineGlobalWithNullStore`,
+  `JniLinkerTest#testDefineMemoryWithNullStore`,
+  `JniInputValidationTest#memoryGrowShouldRejectNegativePages`,
+  `JniInputValidationTest#readBytesShouldRejectNullBuffer`) pass again
+  on a clean build.
+
 ## [46.0.1-1.4.6] - 2026-07-18
 
 Wasmtime version unchanged (46.0.1). Native-only fix — no Java API surface
