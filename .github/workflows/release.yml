@@ -104,7 +104,7 @@ jobs:
     steps:
       - name: Install build prerequisites
         if: matrix.container
-        run: dnf install -y gcc gcc-c++ make curl git perl-core tar gzip which
+        run: dnf install -y gcc gcc-c++ make curl git perl-core tar gzip which openssl-devel pkgconfig
 
       - uses: actions/checkout@v7
 
