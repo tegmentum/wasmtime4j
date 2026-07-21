@@ -23,6 +23,16 @@ wasmtime-wasi-nn = { version = "46.0.1", default-features = false, features = ["
 # and later ort releases have breaking ABI shifts that surface as link-
 # time symbol mismatches. Same pin the Rust substrate engines carry.
 ort = "=2.0.0-rc.10"
+# ort-sys must be pinned separately: wasmtime-wasi-nn depends on ort-sys
+# directly with a loose spec, so a fresh CI resolve picks the latest
+# matching version and drifts off ort's own ort-sys pin. ort-sys 2.0.0-rc.12
+# added a mandatory TLS-feature gate on `download-binaries` that our
+# `onnx-download` path activates — with no TLS feature enabled the build
+# fails with `compile_error!("... enable exactly one of: tls-rustls, ...")`.
+# Pinning to the same rc.10 the local lockfile already resolves keeps the
+# ONNX Runtime version stable across local and CI builds without having to
+# opt into a specific TLS provider.
+ort-sys = "=2.0.0-rc.10"
 wasmtime-wasi-config = { version = "46.0.1" }
 wasmtime-wast = { version = "46.0.1", features = ["component-model", "component-model-async"] }
 
