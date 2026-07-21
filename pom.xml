@@ -938,7 +938,23 @@
                             <publishingServerId>central</publishingServerId>
                             <autoPublish>true</autoPublish>
                             <waitUntil>published</waitUntil>
-                            <waitMaxTime>60</waitMaxTime>
+                            <!--
+                              waitMaxTime is in seconds and applies to POLLING
+                              only (upload time is separate). 60s was fine for
+                              plain-only releases, but the single-bundle
+                              publish added by 46.0.1-1.4.8 also uploads the
+                              wasi-nn native binaries (~100 MB extra across
+                              three platforms). Portal validation of the
+                              larger bundle regularly takes several minutes
+                              past the upload completing; with 60s of poll
+                              budget the plugin gave up long before Portal
+                              actually reached PUBLISHED, marking the CI job
+                              red even though the deployment ultimately
+                              succeeded (as it did on 1.4.8). 1800s (30 min)
+                              is more than enough headroom for even the
+                              slowest observed Portal validation.
+                            -->
+                            <waitMaxTime>1800</waitMaxTime>
                         </configuration>
                     </plugin>
                 </plugins>
