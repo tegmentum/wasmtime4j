@@ -17,7 +17,7 @@
     <properties>
         <!-- CI-friendly version properties (single source of truth) -->
         <!-- Full version: ${wasmtime.version}-${wasmtime4j.version} -->
-        <wasmtime4j.version>1.4.8</wasmtime4j.version>
+        <wasmtime4j.version>1.5.0</wasmtime4j.version>
         <revision>${wasmtime.version}-${wasmtime4j.version}</revision>
 
         <!-- Java version properties -->
@@ -76,7 +76,7 @@
 
         <!-- Native build properties -->
         <native.library.name>wasmtime4j</native.library.name>
-        <wasmtime.version>46.0.1</wasmtime.version>
+        <wasmtime.version>47.0.2</wasmtime.version>
         <rust.version>1.94.0</rust.version>
         <cargo.version>1.94.0</cargo.version>
         

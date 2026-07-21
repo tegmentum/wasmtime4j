@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [47.0.2-1.5.0] - 2026-07-21
+
+Bumps the upstream Wasmtime runtime from 46.0.1 to 47.0.2. The
+wasmtime4j project version steps to 1.5.0 to reflect the underlying
+runtime major. Java surface is unchanged; the bump is source- and
+binary-compatible for consumers, with two upstream behaviour changes
+worth calling out below.
+
+### Changed
+
+- **Wasmtime 46.0.1 → 47.0.2.** All co-versioned crates move together:
+  `wasmtime`, `wasmtime-wasi`, `wasmtime-wasi-http`, `wasmtime-wasi-nn`,
+  `wasmtime-wasi-config`, `wasmtime-wast`. `ort` / `ort-sys` remain
+  pinned to `=2.0.0-rc.10` — wasmtime-wasi-nn 47.0.2 still bakes in
+  that exact rc, so the existing pin (introduced in 1.4.7) carries
+  over unchanged.
+- **GC and exception-handling proposals are now on by default in
+  wasmtime 47.** This is a behaviour change in the underlying engine,
+  not an API change. Guests that previously required an explicit
+  `wasm_gc(true)` / `wasm_exceptions(true)` opt-in via
+  `WasmtimeConfig.builder()` will validate and run without those
+  toggles now; guests that do not use either proposal are unaffected.
+  The `WasmtimeConfig` builder methods still exist and still take
+  effect — they just no longer flip the default.
+- **`Config::wasm_legacy_exceptions` is deprecated upstream.**
+  wasmtime4j's `WasmtimeConfig.wasmLegacyExceptions` toggle continues
+  to route to it for now (behaviour unchanged); a `@Deprecated` marker
+  and eventual removal will follow the upstream deprecation cycle.
+
+### Removed (upstream, non-breaking here)
+
+- **`wasi-common` crate and `wasi-threads` support removed upstream.**
+  Neither was consumed by wasmtime4j. Our WASI Preview 1 path lives on
+  `wasmtime_wasi::p1::WasiP1Ctx` (still present in 47), and the
+  internal `wasi_common_config` module — despite its name — imports
+  `wasmtime_wasi::{DirPerms, FilePerms, WasiCtxBuilder}`, not the
+  removed `wasi_common` crate. No wasmtime4j API surface is affected.
+
 ## [46.0.1-1.4.8] - 2026-07-20
 
 Wasmtime version unchanged (46.0.1). Release-plumbing fix so the

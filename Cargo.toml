@@ -7,9 +7,9 @@ resolver = "2"
 # Update wasmtime version here - it propagates to all crates
 [workspace.dependencies]
 # Wasmtime WebAssembly runtime - single source of truth for version
-wasmtime = { version = "46.0.1", features = ["component-model", "component-model-async", "component-model-bytes", "async", "call-hook", "coredump", "gc", "cache", "debug", "incremental-cache", "wave"] }
-wasmtime-wasi = { version = "46.0.1", features = ["p3"] }
-wasmtime-wasi-http = { version = "46.0.1", features = ["p3"] }
+wasmtime = { version = "47.0.2", features = ["component-model", "component-model-async", "component-model-bytes", "async", "call-hook", "coredump", "gc", "cache", "debug", "incremental-cache", "wave"] }
+wasmtime-wasi = { version = "47.0.2", features = ["p3"] }
+wasmtime-wasi-http = { version = "47.0.2", features = ["p3"] }
 # wasi-nn: default features pull in openvino + winml (system-installed).
 # We target the ORT-backed ONNX backend so the JVM plugins (Jena / RDF4J)
 # can execute the wf_sagegraph_nn guest byte-identically to the Rust
@@ -18,8 +18,8 @@ wasmtime-wasi-http = { version = "46.0.1", features = ["p3"] }
 # wasmtime4j-native/Cargo.toml) is what actually swaps ort's default
 # system-link path for the download-binaries static-link path; see the
 # comment there.
-wasmtime-wasi-nn = { version = "46.0.1", default-features = false, features = ["onnx"] }
-# ort exact-pin is mandatory: wasmtime-wasi-nn 46.0.1 bakes in 2.0.0-rc.10
+wasmtime-wasi-nn = { version = "47.0.2", default-features = false, features = ["onnx"] }
+# ort exact-pin is mandatory: wasmtime-wasi-nn 47.0.2 bakes in 2.0.0-rc.10
 # and later ort releases have breaking ABI shifts that surface as link-
 # time symbol mismatches. Same pin the Rust substrate engines carry.
 ort = "=2.0.0-rc.10"
@@ -33,8 +33,8 @@ ort = "=2.0.0-rc.10"
 # ONNX Runtime version stable across local and CI builds without having to
 # opt into a specific TLS provider.
 ort-sys = "=2.0.0-rc.10"
-wasmtime-wasi-config = { version = "46.0.1" }
-wasmtime-wast = { version = "46.0.1", features = ["component-model", "component-model-async"] }
+wasmtime-wasi-config = { version = "47.0.2" }
+wasmtime-wast = { version = "47.0.2", features = ["component-model", "component-model-async"] }
 
 # WebAssembly text format parser
 wat = "1.0"
