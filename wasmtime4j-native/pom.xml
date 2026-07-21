@@ -39,6 +39,33 @@
     </properties>
 
     <build>
+        <!--
+          Explicit <resources> so the wasi-nn staging area does NOT leak into
+          target/classes and, from there, into the plain classifier JARs.
+
+          Layout:
+            src/main/resources/natives/{platform}/         — plain native libs.
+                Consumed by the base jar-plugin executions via target/classes.
+                Locally populated by cargo build (process-classes phase);
+                in CI populated by the release workflow's actions/download-artifact
+                step for `native-<platform>` artifacts.
+            src/main/resources/natives-wasi-nn-src/{platform}/  — wasi-nn native libs.
+                Populated ONLY by the release workflow's
+                actions/download-artifact step for `native-wasi-nn-<platform>`
+                artifacts. Staged into a separate target/classes-wasi-nn/natives/
+                by the wasi-nn profile's stage-wasi-nn-natives execution, and
+                consumed only by the wasi-nn profile's classifier executions
+                (which point <classesDirectory> at target/classes-wasi-nn).
+        -->
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+                <excludes>
+                    <exclude>natives-wasi-nn-src/**</exclude>
+                </excludes>
+            </resource>
+        </resources>
+
         <plugins>
             <!-- Maven compiler plugin -->
             <plugin>
@@ -932,21 +959,87 @@
                         </configuration>
                     </plugin>
 
+                    <!--
+                      Stage wasi-nn natives into a separate output directory so
+                      the wasi-nn classifier JARs can be produced ALONGSIDE the
+                      plain classifier JARs in a single `mvn deploy`. This is
+                      what unblocks the single-bundle Maven Central publish
+                      (see the Publish job in .github/workflows/release.yml):
+                      Central Portal rejects a second `mvn deploy` against an
+                      already-published coordinate, so plain and wasi-nn have
+                      to ride in one atomic bundle.
+
+                      Copies src/main/resources/natives-wasi-nn-src/{platform}/*
+                      to target/classes-wasi-nn/natives/{platform}/*, remapping
+                      the source subtree name back to `natives/` so the built
+                      JAR entries land at the loader-expected /natives/{platform}/
+                      path (PathConvention.MAVEN_NATIVE — do NOT change that).
+                    -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>stage-wasi-nn-natives</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/classes-wasi-nn/natives</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/src/main/resources/natives-wasi-nn-src</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                    <!--
+                                      A dev-workstation `mvn package -P wasi-nn`
+                                      without staged wasi-nn libs does NOT
+                                      error here — copy-resources tolerates
+                                      a missing source directory silently.
+                                      The wasi-nn classifier JARs get built
+                                      empty (just META-INF) in that case,
+                                      which is fine for local iteration. In
+                                      the release workflow the wasi-nn
+                                      build-native matrix jobs always
+                                      populate the source dir before this
+                                      plugin runs.
+                                    -->
+                                    <overwrite>true</overwrite>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>
                         <executions>
                             <!--
-                              Do NOT override the base default-jar execution here.
-                              Overriding it with a classifier removes the
-                              classifier-less main artifact, which breaks any
-                              downstream that requires a main artifact (notably
-                              stardog-admin plugin install, which errors when
-                              only classified jars are attached). Instead, we
-                              add a NEW execution alongside default-jar that
-                              produces the wasi-nn-classified jar. The base
-                              default-jar keeps running and keeps producing the
-                              classifier-less main artifact.
+                              Every execution ID in this profile is UNIQUE (does
+                              not match any ID in the base plugin block). Maven
+                              merges profile executions with base executions
+                              when the IDs coincide — with same-name IDs the
+                              wasi-nn profile would REPLACE the plain classifier
+                              executions and the plain per-platform JARs would
+                              silently vanish from the build. Distinct IDs make
+                              each profile-level execution an ADDITIONAL JAR
+                              alongside the plain set, so a single
+                              `mvn package -P wasi-nn` produces both variants.
+
+                              We intentionally do not override the base
+                              default-jar execution: the classifier-less main
+                              artifact keeps its plain-native contents (some
+                              downstream installers, e.g. stardog-admin plugin
+                              install, error out when only classified jars are
+                              attached).
+
+                              Every execution sets classesDirectory to the
+                              wasi-nn staging area populated by the
+                              stage-wasi-nn-natives execution above; the
+                              default target/classes contains only plain
+                              natives.
                             -->
                             <execution>
                                 <id>wasi-nn-jar</id>
@@ -956,85 +1049,87 @@
                                 </goals>
                                 <configuration>
                                     <classifier>wasi-nn</classifier>
+                                    <classesDirectory>${project.build.directory}/classes-wasi-nn</classesDirectory>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>all-platforms-jar</id>
+                                <id>wasi-nn-all-platforms-jar</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
                                 <configuration>
                                     <classifier>wasi-nn-all-platforms</classifier>
+                                    <classesDirectory>${project.build.directory}/classes-wasi-nn</classesDirectory>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>linux-x86_64-jar</id>
+                                <id>wasi-nn-linux-x86_64-jar</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
                                 <configuration>
                                     <classifier>wasi-nn-linux-x86_64</classifier>
+                                    <classesDirectory>${project.build.directory}/classes-wasi-nn</classesDirectory>
                                     <includes>
                                         <include>natives/linux-x86_64/**</include>
-                                        <include>META-INF/**</include>
                                     </includes>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>linux-aarch64-jar</id>
+                                <id>wasi-nn-linux-aarch64-jar</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
                                 <configuration>
                                     <classifier>wasi-nn-linux-aarch64</classifier>
+                                    <classesDirectory>${project.build.directory}/classes-wasi-nn</classesDirectory>
                                     <includes>
                                         <include>natives/linux-aarch64/**</include>
-                                        <include>META-INF/**</include>
                                     </includes>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>windows-x86_64-jar</id>
+                                <id>wasi-nn-windows-x86_64-jar</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
                                 <configuration>
                                     <classifier>wasi-nn-windows-x86_64</classifier>
+                                    <classesDirectory>${project.build.directory}/classes-wasi-nn</classesDirectory>
                                     <includes>
                                         <include>natives/windows-x86_64/**</include>
-                                        <include>META-INF/**</include>
                                     </includes>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>darwin-x86_64-jar</id>
+                                <id>wasi-nn-darwin-x86_64-jar</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
                                 <configuration>
                                     <classifier>wasi-nn-darwin-x86_64</classifier>
+                                    <classesDirectory>${project.build.directory}/classes-wasi-nn</classesDirectory>
                                     <includes>
                                         <include>natives/darwin-x86_64/**</include>
-                                        <include>META-INF/**</include>
                                     </includes>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>darwin-aarch64-jar</id>
+                                <id>wasi-nn-darwin-aarch64-jar</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
                                 <configuration>
                                     <classifier>wasi-nn-darwin-aarch64</classifier>
+                                    <classesDirectory>${project.build.directory}/classes-wasi-nn</classesDirectory>
                                     <includes>
                                         <include>natives/darwin-aarch64/**</include>
-                                        <include>META-INF/**</include>
                                     </includes>
                                 </configuration>
                             </execution>

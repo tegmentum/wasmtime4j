@@ -261,9 +261,18 @@ jobs:
         run: ./mvnw compile pmd:check -B -P skip-native -pl wasmtime4j
 
   # Publish — requires manual approval via GitHub environment
+  #
+  # Single-bundle deploy: plain artifacts AND the wasi-nn classifier
+  # variants are uploaded in one atomic `mvn deploy` invocation.
+  # Sonatype Central Portal rejects a second deploy against a coordinate
+  # already staged in the first, so the wasi-nn classifiers HAVE to
+  # ride in the same bundle as the plain main JAR. The wasi-nn
+  # native binaries live under natives-wasi-nn-src/ in resources and
+  # are staged into target/classes-wasi-nn by the wasi-nn profile;
+  # see wasmtime4j-native/pom.xml for the packaging plumbing.
   publish:
     name: Publish
-    needs: [test, quality]
+    needs: [test, quality, build-native-wasi-nn]
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -292,8 +301,11 @@ jobs:
           key: m2-publish-${{ hashFiles('**/pom.xml') }}
           restore-keys: m2-publish-
 
-      # Download all 4 native libraries into resource directories
-      - name: Download native libraries
+      # Download all 4 plain native libraries into the loader-expected
+      # resource layout. The wasi-nn profile keeps them separate from
+      # its own natives-wasi-nn-src/ subtree — see the download step
+      # immediately below.
+      - name: Download plain native libraries
         uses: actions/download-artifact@v8
         with:
           name: native-linux-x86_64
@@ -311,19 +323,50 @@ jobs:
           name: native-windows-x86_64
           path: wasmtime4j-native/src/main/resources/natives/windows-x86_64/
 
+      # Wasi-nn natives go to a DIFFERENT resource subtree
+      # (natives-wasi-nn-src/) so they don't overwrite the plain natives
+      # in src/main/resources/natives/. wasmtime4j-native/pom.xml stages
+      # this subtree into target/classes-wasi-nn/natives/ during
+      # process-resources under -P wasi-nn, and the profile's classifier
+      # jar-plugin executions pick up from there.
+      - name: Download wasi-nn native libraries
+        uses: actions/download-artifact@v8
+        with:
+          name: native-wasi-nn-linux-x86_64
+          path: wasmtime4j-native/src/main/resources/natives-wasi-nn-src/linux-x86_64/
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-wasi-nn-linux-aarch64
+          path: wasmtime4j-native/src/main/resources/natives-wasi-nn-src/linux-aarch64/
+      - uses: actions/download-artifact@v8
+        with:
+          name: native-wasi-nn-darwin-aarch64
+          path: wasmtime4j-native/src/main/resources/natives-wasi-nn-src/darwin-aarch64/
+
       - name: Verify native libraries
         run: |
-          echo "Native library layout:"
+          echo "Plain native library layout:"
           find wasmtime4j-native/src/main/resources/natives/ -type f
+          echo "Wasi-nn native library layout:"
+          find wasmtime4j-native/src/main/resources/natives-wasi-nn-src/ -type f
           test -f wasmtime4j-native/src/main/resources/natives/linux-x86_64/libwasmtime4j.so
           test -f wasmtime4j-native/src/main/resources/natives/linux-aarch64/libwasmtime4j.so
           test -f wasmtime4j-native/src/main/resources/natives/darwin-aarch64/libwasmtime4j.dylib
           test -f wasmtime4j-native/src/main/resources/natives/windows-x86_64/wasmtime4j.dll
+          test -f wasmtime4j-native/src/main/resources/natives-wasi-nn-src/linux-x86_64/libwasmtime4j.so
+          test -f wasmtime4j-native/src/main/resources/natives-wasi-nn-src/linux-aarch64/libwasmtime4j.so
+          test -f wasmtime4j-native/src/main/resources/natives-wasi-nn-src/darwin-aarch64/libwasmtime4j.dylib
 
       - name: Extract version from tag
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      # `-P wasi-nn` activates the profile's classifier executions
+      # (wasi-nn, wasi-nn-all-platforms, wasi-nn-<platform>) alongside
+      # the base plain executions, so this single `mvn deploy` uploads
+      # POM + plain main JAR + plain per-platform classifiers +
+      # wasi-nn main classifier + wasi-nn per-platform classifiers in
+      # one atomic Central Portal deployment.
       - name: Deploy to Maven Central
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
@@ -331,7 +374,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           DEPLOY_MODULES="-pl wasmtime4j,wasmtime4j-native,wasmtime4j-native-loader,wasmtime4j-jni,wasmtime4j-panama"
-          ./mvnw deploy -B -P release,skip-native \
+          ./mvnw deploy -B -P release,skip-native,wasi-nn \
             -DskipTests -DskipQuality -Dmaven.test.skip=true \
             -Drevision=${{ steps.version.outputs.version }} \
             $DEPLOY_MODULES
@@ -353,7 +396,7 @@ jobs:
             </servers>
           </settings>
           SETTINGS
-          ./mvnw deploy -B -P skip-native \
+          ./mvnw deploy -B -P skip-native,wasi-nn \
             -DskipTests -DskipQuality -Dmaven.test.skip=true \
             -Drevision=${{ steps.version.outputs.version }} \
             -DaltDeploymentRepository=github::https://maven.pkg.github.com/${{ github.repository }} \
@@ -364,7 +407,7 @@ jobs:
       - name: Package release artifacts
         run: |
           DEPLOY_MODULES="-pl wasmtime4j,wasmtime4j-native,wasmtime4j-native-loader,wasmtime4j-jni,wasmtime4j-panama"
-          ./mvnw package -B -P release,skip-native \
+          ./mvnw package -B -P release,skip-native,wasi-nn \
             -DskipTests -DskipQuality -Dmaven.test.skip=true \
             -Drevision=${{ steps.version.outputs.version }} \
             $DEPLOY_MODULES
@@ -395,126 +438,3 @@ jobs:
             wasmtime4j-native-loader/target/*.jar
             wasmtime4j-native-loader/target/*.jar.sha256
 
-  # Publish the wasi-nn classifier variant. Runs after the plain publish
-  # so the release exists to append to; independent success/failure so a
-  # broken wasi-nn build does not block or roll back the plain release.
-  # See CHANGELOG 46.0.1-1.4.1 (Packaging) for the consumer story.
-  publish-wasi-nn:
-    name: Publish (wasi-nn classifier)
-    needs: [publish, build-native-wasi-nn]
-    if: always() && needs.publish.result == 'success'
-    runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      contents: write
-      packages: write
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-java@v5
-        with:
-          java-version: '23'
-          distribution: 'temurin'
-          server-id: central
-          server-username: MAVEN_CENTRAL_USERNAME
-          server-password: MAVEN_CENTRAL_PASSWORD
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: GPG_PASSPHRASE
-
-      - name: Cache Maven
-        uses: actions/cache@v6
-        with:
-          path: ~/.m2/repository
-          key: m2-publish-wasi-nn-${{ hashFiles('**/pom.xml') }}
-          restore-keys: m2-publish-wasi-nn-
-
-      # Overlay wasi-nn-linked natives into the same resource layout the
-      # non-wasi-nn publish job used. -P wasi-nn only changes classifiers +
-      # cargo.features; with -P skip-native the cargo step is bypassed so
-      # the classifier JARs pick up exactly the binaries staged here.
-      - name: Download wasi-nn native libraries
-        uses: actions/download-artifact@v8
-        with:
-          name: native-wasi-nn-linux-x86_64
-          path: wasmtime4j-native/src/main/resources/natives/linux-x86_64/
-      - uses: actions/download-artifact@v8
-        with:
-          name: native-wasi-nn-linux-aarch64
-          path: wasmtime4j-native/src/main/resources/natives/linux-aarch64/
-      - uses: actions/download-artifact@v8
-        with:
-          name: native-wasi-nn-darwin-aarch64
-          path: wasmtime4j-native/src/main/resources/natives/darwin-aarch64/
-
-      - name: Verify wasi-nn native libraries
-        run: |
-          echo "wasi-nn native library layout:"
-          find wasmtime4j-native/src/main/resources/natives/ -type f
-          test -f wasmtime4j-native/src/main/resources/natives/linux-x86_64/libwasmtime4j.so
-          test -f wasmtime4j-native/src/main/resources/natives/linux-aarch64/libwasmtime4j.so
-          test -f wasmtime4j-native/src/main/resources/natives/darwin-aarch64/libwasmtime4j.dylib
-
-      - name: Extract version from tag
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
-      # -pl wasmtime4j-native only: the wasi-nn profile lives on that
-      # module and it's the only artifact that varies by wasi-nn. The
-      # wasmtime4j / wasmtime4j-jni / wasmtime4j-panama /
-      # wasmtime4j-native-loader poms are unchanged between plain and
-      # wasi-nn — publishing them again would collide on Maven Central.
-      - name: Deploy wasi-nn classifier to Maven Central
-        env:
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
-          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-        run: |
-          ./mvnw deploy -B -P release,skip-native,wasi-nn \
-            -pl wasmtime4j-native -am \
-            -DskipTests -DskipQuality -Dmaven.test.skip=true \
-            -Drevision=${{ steps.version.outputs.version }}
-
-      - name: Deploy wasi-nn classifier to GitHub Packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings-github.xml <<'SETTINGS'
-          <settings>
-            <servers>
-              <server>
-                <id>github</id>
-                <username>${env.GITHUB_ACTOR}</username>
-                <password>${env.GITHUB_TOKEN}</password>
-              </server>
-            </servers>
-          </settings>
-          SETTINGS
-          ./mvnw deploy -B -P skip-native,wasi-nn \
-            -pl wasmtime4j-native -am \
-            -DskipTests -DskipQuality -Dmaven.test.skip=true \
-            -Drevision=${{ steps.version.outputs.version }} \
-            -DaltDeploymentRepository=github::https://maven.pkg.github.com/${{ github.repository }} \
-            -Dgpg.skip=true \
-            -s ~/.m2/settings-github.xml
-
-      - name: Package wasi-nn release artifacts
-        run: |
-          ./mvnw package -B -P release,skip-native,wasi-nn \
-            -pl wasmtime4j-native -am \
-            -DskipTests -DskipQuality -Dmaven.test.skip=true \
-            -Drevision=${{ steps.version.outputs.version }}
-
-      - name: Create checksums for wasi-nn JARs
-        run: |
-          for jar in wasmtime4j-native/target/*-wasi-nn*.jar; do
-            [ -f "$jar" ] && sha256sum "$jar" > "$jar.sha256"
-          done
-
-      - name: Attach wasi-nn artifacts to GitHub Release
-        uses: softprops/action-gh-release@v3
-        with:
-          # Append to release created by publish job (same tag).
-          files: |
-            wasmtime4j-native/target/*-wasi-nn*.jar
-            wasmtime4j-native/target/*-wasi-nn*.jar.sha256

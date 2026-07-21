@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Version format: `{wasmtime-version}-{wasmtime4j-version}`
 
+## [46.0.1-1.4.8] - 2026-07-20
+
+Wasmtime version unchanged (46.0.1). Release-plumbing fix so the
+wasi-nn classifier variant actually reaches Maven Central. No Java or
+native ABI changes for consumers of the plain artifacts.
+
+### Fixed
+
+- **`wasmtime4j-native` wasi-nn classifier JARs now publish alongside
+  the plain artifacts in a single atomic Central Portal deployment.**
+  The prior `publish-wasi-nn` job re-uploaded `wasmtime4j-native@X`
+  after the main `publish` job had already staged the same coordinate;
+  Sonatype's new Central Portal rejects the second deployment at
+  validation with `Component with package url: 'pkg:maven/ai.tegmentum/
+  wasmtime4j-native@X' already exists`, so every wasi-nn classifier
+  push since the workflow was written silently failed (main JARs
+  landed, wasi-nn classifiers did not). Fix restructures the packaging
+  path so a single `mvn deploy -P release,skip-native,wasi-nn`
+  produces both variants:
+
+  * `wasmtime4j-native/pom.xml`: wasi-nn native binaries now live under
+    `src/main/resources/natives-wasi-nn-src/{platform}/` (a NEW
+    subtree, explicitly excluded from the default resource copy so it
+    does not leak into plain JARs). A new
+    `stage-wasi-nn-natives` execution in the wasi-nn profile copies
+    them to `target/classes-wasi-nn/natives/{platform}/`, remapping
+    the source subtree name back to `natives/` so the built JAR
+    entries land at the loader-expected `/natives/{platform}/` path
+    (`PathConvention.MAVEN_NATIVE` — unchanged, so downstream loaders
+    are unaffected). Every wasi-nn classifier `maven-jar-plugin`
+    execution now points `<classesDirectory>` at that staging area,
+    and its execution ID has been renamed to `wasi-nn-<platform>-jar`
+    so it does NOT merge with (and REPLACE) the base plain classifier
+    execution of the same ID.
+  * `.github/workflows/release.yml`: the standalone `publish-wasi-nn`
+    job is folded into `publish`. The merged job adds
+    `build-native-wasi-nn` to `needs`, downloads the wasi-nn native
+    matrix into `natives-wasi-nn-src/{platform}/`, and runs every
+    downstream `mvn deploy|package` step with `-P wasi-nn` so plain
+    and wasi-nn classifiers ride in one Central Portal bundle.
+
+  Verified locally by staging fake plain and wasi-nn native libs in
+  their respective source subtrees and running
+  `mvn package -P skip-native,wasi-nn`: 14 JARs produced (7 plain +
+  7 wasi-nn), each classifier's `natives/{platform}/libwasmtime4j.*`
+  entry contains the correct variant's bytes.
+
 ## [46.0.1-1.4.7] - 2026-07-20
 
 Wasmtime version unchanged (46.0.1). Adds component-instance fuel
