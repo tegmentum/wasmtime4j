@@ -747,9 +747,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
             _t = invoke_profile::add(&invoke_profile::TY, _t);
         }
         func.call(&mut handle_ref.store, &params, &mut results)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Function call failed: {:#}", e),
-                backtrace: None,
+            .map_err(|e| {
+                // Route through from_wasmtime_error to embed `[trap_code:N]`
+                // so JNI dispatch resolves the correct TrapType.
+                WasmtimeError::from_wasmtime_error_with_context("Function call failed", e)
             })?;
         if prof {
             _t = invoke_profile::add(&invoke_profile::CALL, _t);
