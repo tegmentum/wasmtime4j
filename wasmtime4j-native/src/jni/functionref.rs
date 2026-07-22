@@ -189,9 +189,13 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunctionReference_nat
 
         // Call the function
         func.call(&mut *store_lock, &params, &mut results)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Function reference call trapped: {:#}", e),
-                backtrace: None,
+            .map_err(|e| {
+                // Route through from_wasmtime_error to embed `[trap_code:N]`
+                // so JNI dispatch resolves the correct TrapType.
+                WasmtimeError::from_wasmtime_error_with_context(
+                    "Function reference call trapped",
+                    e,
+                )
             })?;
 
         // Marshal results
