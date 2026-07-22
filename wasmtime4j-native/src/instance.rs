@@ -2155,8 +2155,15 @@ pub mod core {
             let mut results = vec![wasmtime::Val::I32(0); func_type.results().len()];
 
             func.call(&mut ctx, &wasmtime_params, &mut results)
-                .map_err(|e| WasmtimeError::Execution {
-                    message: format!("Function call failed: {:#}", e),
+                .map_err(|e| {
+                    // Route through from_wasmtime_error so a wasmtime::Trap downcast
+                    // surfaces as a [trap_code:N] prefix that JNI/Panama dispatch keys on.
+                    match WasmtimeError::from_wasmtime_error(e) {
+                        WasmtimeError::Runtime { message, .. } => WasmtimeError::Execution {
+                            message: format!("Function call failed: {}", message),
+                        },
+                        other => other,
+                    }
                 })?;
 
             Ok(results)
@@ -2195,8 +2202,15 @@ pub mod core {
         let runtime = crate::async_runtime::get_async_runtime();
         runtime
             .block_on(func.call_async(&mut *store_lock, &wasmtime_params, &mut results))
-            .map_err(|e| WasmtimeError::Execution {
-                message: format!("Async function call failed: {:#}", e),
+            .map_err(|e| {
+                // Route through from_wasmtime_error so a wasmtime::Trap downcast
+                // surfaces as a [trap_code:N] prefix that JNI/Panama dispatch keys on.
+                match WasmtimeError::from_wasmtime_error(e) {
+                    WasmtimeError::Runtime { message, .. } => WasmtimeError::Execution {
+                        message: format!("Async function call failed: {}", message),
+                    },
+                    other => other,
+                }
             })?;
 
         // Convert results back to WasmValue

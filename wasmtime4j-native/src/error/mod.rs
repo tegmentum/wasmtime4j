@@ -635,6 +635,35 @@ impl WasmtimeError {
         Self::from_wasmtime_error(error)
     }
 
+    /// Wrap a `wasmtime::Error` with a caller-supplied context string, routing
+    /// through [`Self::from_wasmtime_error`] so typed trap discriminators are
+    /// preserved.
+    ///
+    /// When the underlying error downcasts to `wasmtime::Trap`, the produced
+    /// [`WasmtimeError::Runtime`] message carries a `[trap_code:N]` prefix so
+    /// the JNI trap dispatch (see `error/jni_utils.rs`) can throw the correct
+    /// `TrapException` variant without parsing the anyhow chain. Any
+    /// `wasmtime::WasmCoreDump` in the error is registered with the coredump
+    /// registry, matching the behavior of `from_wasmtime_error`. WASI
+    /// `I32Exit` errors pass through as [`WasmtimeError::WasiExit`] so callers
+    /// can round-trip the exit code.
+    ///
+    /// Prefer this over ad-hoc `format!("... {:#}", e)` in `.map_err()` — the
+    /// anyhow `{:#}` chain formatter preserves message text but does not embed
+    /// the numeric trap code that Panama / JNI trap parsers key on.
+    pub fn from_wasmtime_error_with_context<S: AsRef<str>>(
+        context: S,
+        error: wasmtime::Error,
+    ) -> Self {
+        match Self::from_wasmtime_error(error) {
+            WasmtimeError::Runtime { message, backtrace } => WasmtimeError::Runtime {
+                message: format!("{}: {}", context.as_ref(), message),
+                backtrace,
+            },
+            other => other,
+        }
+    }
+
     /// Create from Wasmtime compilation error
     pub fn from_compilation_error(error: wasmtime::Error) -> Self {
         // Use anyhow's chain to get all error causes
