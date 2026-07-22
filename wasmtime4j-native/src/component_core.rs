@@ -522,13 +522,12 @@ impl EnhancedComponentEngine {
                 // explicit `Func::post_return` call is no longer required.
             }
             Err(e) => {
-                return Err(WasmtimeError::Runtime {
-                    message: format!(
-                        "Failed to call component function '{}': {:#}",
-                        function_name, e
-                    ),
-                    backtrace: None,
-                });
+                // Route through from_wasmtime_error to embed `[trap_code:N]`
+                // so JNI dispatch resolves the correct TrapType.
+                return Err(WasmtimeError::from_wasmtime_error_with_context(
+                    format!("Failed to call component function '{}'", function_name),
+                    e,
+                ));
             }
         }
 
@@ -1019,9 +1018,13 @@ impl EnhancedComponentEngine {
         let results_len = func.ty(&handle_ref.store).results().len();
         let mut results = vec![Val::Bool(false); results_len];
         func.call(&mut handle_ref.store, &params, &mut results)
-            .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Resource method '{}' call failed: {:#}", method_export_name, e),
-                backtrace: None,
+            .map_err(|e| {
+                // Route through from_wasmtime_error to embed `[trap_code:N]`
+                // so JNI dispatch resolves the correct TrapType.
+                WasmtimeError::from_wasmtime_error_with_context(
+                    format!("Resource method '{}' call failed", method_export_name),
+                    e,
+                )
             })?;
 
         Ok(if results.is_empty() {
@@ -1560,9 +1563,14 @@ impl EnhancedComponentEngine {
                             let mut results = vec![Val::Bool(false); result_count];
                             func.call_concurrent(accessor, params, &mut results)
                                 .await
-                                .map_err(|e| WasmtimeError::Runtime {
-                                    message: format!("Concurrent call failed: {:#}", e),
-                                    backtrace: None,
+                                .map_err(|e| {
+                                    // Route through from_wasmtime_error to embed
+                                    // `[trap_code:N]` so JNI dispatch resolves the correct
+                                    // TrapType.
+                                    WasmtimeError::from_wasmtime_error_with_context(
+                                        "Concurrent call failed",
+                                        e,
+                                    )
                                 })?;
                             Ok::<Vec<Val>, WasmtimeError>(results)
                         });
@@ -1571,9 +1579,13 @@ impl EnhancedComponentEngine {
                     futures::future::join_all(futures).await
                 })
                 .await
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to run concurrent scope: {:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context(
+                        "Failed to run concurrent scope",
+                        e,
+                    )
                 })?;
 
             // Collect results, propagating any errors
