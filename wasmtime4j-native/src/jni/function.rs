@@ -516,7 +516,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
             Err(trap) => {
                 // Handle Wasmtime trap
                 Err(WasmtimeError::Runtime {
-                    message: format!("Function call trapped: {}", trap),
+                    message: format!("Function call trapped: {:#}", trap),
                     backtrace: None,
                 })
             }
@@ -616,7 +616,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAs
             Err(trap) => {
                 // Handle Wasmtime trap
                 Err(WasmtimeError::Runtime {
-                    message: format!("Async function call trapped: {}", trap),
+                    message: format!("Async function call trapped: {:#}", trap),
                     backtrace: None,
                 })
             }
@@ -714,7 +714,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMu
             Err(trap) => {
                 // Handle Wasmtime trap
                 Err(WasmtimeError::Runtime {
-                    message: format!("Function call trapped: {}", trap),
+                    message: format!("Function call trapped: {:#}", trap),
                     backtrace: None,
                 })
             }
@@ -1025,7 +1025,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall_1
             typed
                 .call(store, ())
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         });
@@ -1050,7 +1050,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall_1
             typed
                 .call(store, ())
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         })
@@ -1076,7 +1076,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallI_
             typed
                 .call(store, arg0)
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         })
@@ -1103,7 +1103,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII
             typed
                 .call(store, (arg0, arg1))
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         })
@@ -1129,7 +1129,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallI_
             typed
                 .call(store, arg0)
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         });
@@ -1156,7 +1156,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII
             typed
                 .call(store, (arg0, arg1))
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         });
@@ -1182,7 +1182,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallJ_
             typed
                 .call(store, arg0)
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         })
@@ -1208,7 +1208,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallD_
             typed
                 .call(store, arg0)
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         })
@@ -1236,7 +1236,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII
             typed
                 .call(store, (arg0, arg1, arg2))
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{}", e),
+                    message: format!("{:#}", e),
                     backtrace: None,
                 })
         })

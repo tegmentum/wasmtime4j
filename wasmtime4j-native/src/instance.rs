@@ -2156,7 +2156,7 @@ pub mod core {
 
             func.call(&mut ctx, &wasmtime_params, &mut results)
                 .map_err(|e| WasmtimeError::Execution {
-                    message: format!("Function call failed: {}", e),
+                    message: format!("Function call failed: {:#}", e),
                 })?;
 
             Ok(results)
@@ -2196,7 +2196,7 @@ pub mod core {
         runtime
             .block_on(func.call_async(&mut *store_lock, &wasmtime_params, &mut results))
             .map_err(|e| WasmtimeError::Execution {
-                message: format!("Async function call failed: {}", e),
+                message: format!("Async function call failed: {:#}", e),
             })?;
 
         // Convert results back to WasmValue

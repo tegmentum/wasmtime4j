@@ -524,7 +524,7 @@ impl EnhancedComponentEngine {
             Err(e) => {
                 return Err(WasmtimeError::Runtime {
                     message: format!(
-                        "Failed to call component function '{}': {}",
+                        "Failed to call component function '{}': {:#}",
                         function_name, e
                     ),
                     backtrace: None,
@@ -1020,7 +1020,7 @@ impl EnhancedComponentEngine {
         let mut results = vec![Val::Bool(false); results_len];
         func.call(&mut handle_ref.store, &params, &mut results)
             .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Resource method '{}' call failed: {}", method_export_name, e),
+                message: format!("Resource method '{}' call failed: {:#}", method_export_name, e),
                 backtrace: None,
             })?;
 
@@ -1561,7 +1561,7 @@ impl EnhancedComponentEngine {
                             func.call_concurrent(accessor, params, &mut results)
                                 .await
                                 .map_err(|e| WasmtimeError::Runtime {
-                                    message: format!("Concurrent call failed: {}", e),
+                                    message: format!("Concurrent call failed: {:#}", e),
                                     backtrace: None,
                                 })?;
                             Ok::<Vec<Val>, WasmtimeError>(results)
@@ -1572,7 +1572,7 @@ impl EnhancedComponentEngine {
                 })
                 .await
                 .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("Failed to run concurrent scope: {}", e),
+                    message: format!("Failed to run concurrent scope: {:#}", e),
                     backtrace: None,
                 })?;
 

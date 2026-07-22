@@ -748,7 +748,7 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniComponent_nativeCompo
         }
         func.call(&mut handle_ref.store, &params, &mut results)
             .map_err(|e| WasmtimeError::Runtime {
-                message: format!("Function call failed: {}", e),
+                message: format!("Function call failed: {:#}", e),
                 backtrace: None,
             })?;
         if prof {
