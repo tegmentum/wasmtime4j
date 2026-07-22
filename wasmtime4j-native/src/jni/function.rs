@@ -514,11 +514,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall(
                 Ok(java_array.as_raw())
             }
             Err(trap) => {
-                // Handle Wasmtime trap
-                Err(WasmtimeError::Runtime {
-                    message: format!("Function call trapped: {:#}", trap),
-                    backtrace: None,
-                })
+                // Handle Wasmtime trap — route through from_wasmtime_error to embed
+                // `[trap_code:N]` so JNI dispatch resolves the correct TrapType.
+                Err(WasmtimeError::from_wasmtime_error_with_context(
+                    "Function call trapped",
+                    trap,
+                ))
             }
         }
     }));
@@ -614,11 +615,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallAs
                 Ok(java_array.as_raw())
             }
             Err(trap) => {
-                // Handle Wasmtime trap
-                Err(WasmtimeError::Runtime {
-                    message: format!("Async function call trapped: {:#}", trap),
-                    backtrace: None,
-                })
+                // Handle Wasmtime trap — route through from_wasmtime_error to embed
+                // `[trap_code:N]` so JNI dispatch resolves the correct TrapType.
+                Err(WasmtimeError::from_wasmtime_error_with_context(
+                    "Async function call trapped",
+                    trap,
+                ))
             }
         }
     }));
@@ -712,11 +714,12 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallMu
                 Ok(java_array.as_raw())
             }
             Err(trap) => {
-                // Handle Wasmtime trap
-                Err(WasmtimeError::Runtime {
-                    message: format!("Function call trapped: {:#}", trap),
-                    backtrace: None,
-                })
+                // Handle Wasmtime trap — route through from_wasmtime_error to embed
+                // `[trap_code:N]` so JNI dispatch resolves the correct TrapType.
+                Err(WasmtimeError::from_wasmtime_error_with_context(
+                    "Function call trapped",
+                    trap,
+                ))
             }
         }
     }));
@@ -1024,9 +1027,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall_1
                 })?;
             typed
                 .call(store, ())
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         });
     }
@@ -1049,9 +1053,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCall_1
                 })?;
             typed
                 .call(store, ())
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         })
     }
@@ -1075,9 +1080,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallI_
                 })?;
             typed
                 .call(store, arg0)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         })
     }
@@ -1102,9 +1108,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII
                 })?;
             typed
                 .call(store, (arg0, arg1))
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         })
     }
@@ -1128,9 +1135,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallI_
                 })?;
             typed
                 .call(store, arg0)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         });
     }
@@ -1155,9 +1163,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII
                 })?;
             typed
                 .call(store, (arg0, arg1))
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         });
     }
@@ -1181,9 +1190,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallJ_
                 })?;
             typed
                 .call(store, arg0)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         })
     }
@@ -1207,9 +1217,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallD_
                 })?;
             typed
                 .call(store, arg0)
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         })
     }
@@ -1235,9 +1246,10 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniFunction_nativeCallII
                 })?;
             typed
                 .call(store, (arg0, arg1, arg2))
-                .map_err(|e| WasmtimeError::Runtime {
-                    message: format!("{:#}", e),
-                    backtrace: None,
+                .map_err(|e| {
+                    // Route through from_wasmtime_error to embed `[trap_code:N]`
+                    // so JNI dispatch resolves the correct TrapType.
+                    WasmtimeError::from_wasmtime_error_with_context("Typed call failed", e)
                 })
         })
     }
