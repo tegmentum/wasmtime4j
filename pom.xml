@@ -68,7 +68,7 @@
         <pmd.plugin.version>3.28.0</pmd.plugin.version>
         <pmd.version>7.26.0</pmd.version>
         <jacoco.plugin.version>0.8.15</jacoco.plugin.version>
-        <pitest.plugin.version>1.25.7</pitest.plugin.version>
+        <pitest.plugin.version>1.25.8</pitest.plugin.version>
         <pitest.junit5.version>1.2.3</pitest.junit5.version>
 
         <!-- Default argLine for surefire (JaCoCo will prepend to this) -->
