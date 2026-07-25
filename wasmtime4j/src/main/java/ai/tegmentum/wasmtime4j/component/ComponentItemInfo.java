@@ -17,7 +17,7 @@ package ai.tegmentum.wasmtime4j.component;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -251,8 +251,8 @@ public interface ComponentItemInfo {
      */
     public ComponentInfo(
         Map<String, ComponentItemInfo> imports, Map<String, ComponentItemInfo> exports) {
-      this.imports = Collections.unmodifiableMap(new HashMap<>(imports));
-      this.exports = Collections.unmodifiableMap(new HashMap<>(exports));
+      this.imports = Collections.unmodifiableMap(new LinkedHashMap<>(imports));
+      this.exports = Collections.unmodifiableMap(new LinkedHashMap<>(exports));
     }
 
     /**
@@ -311,7 +311,7 @@ public interface ComponentItemInfo {
      * @param exports the instance's exports
      */
     public ComponentInstanceInfo(Map<String, ComponentItemInfo> exports) {
-      this.exports = Collections.unmodifiableMap(new HashMap<>(exports));
+      this.exports = Collections.unmodifiableMap(new LinkedHashMap<>(exports));
     }
 
     /**
