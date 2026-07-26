@@ -1,10 +1,15 @@
 # NOTES — Caller-Aware Host Function — r.1 RECON (2026-07-26)
 
+**STATUS**: CLOSED_SUCCEEDED_RECON — all six recon sections filled;
+r.2 has an actionable native-Rust implementation recipe (JNI-only
+scope; Panama defers to a separate charter).
+
 Static reconnaissance for the fijivm-coordinated charter
 `F-Wasmtime4j-Caller-Aware-Host-Function` (spec at
 `/Users/zacharywhitley/git/fijivm/doctrine/specs/f-wasmtime4j-caller-aware-host-function-charter-2026-07-26.md`).
 
-**Repo tip at recon**: `95789b27` (master, ahead of origin by 1). No code changes in r.1.
+**Repo tip at recon**: parent `95789b27` (master, ahead of origin by
+1). Recon commits added on top of that. No code changes in r.1.
 
 **Version reality**: repo is at `47.0.2-1.5.1` (Cargo + Maven agreed via
 `wasmtime-version.properties`), NOT the charter's assumed `46.0.1-1.3.0`.
