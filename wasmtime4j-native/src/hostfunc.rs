@@ -223,10 +223,23 @@ impl Clone for HostFunction {
     }
 }
 
-/// Trait for language-specific host function callback implementations
+/// Trait for language-specific host function callback implementations.
+///
+/// The `execute` method receives the live wasmtime `Caller<'_, StoreData>` so
+/// language bindings can propagate it to host-language code for scoped store
+/// mutation (grow_table, instantiate, ...). Implementers that do not need the
+/// caller may simply ignore the parameter.
 pub trait HostFunctionCallback: Send + Sync {
-    /// Execute the host function with parameter marshalling
-    fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>>;
+    /// Execute the host function with parameter marshalling.
+    ///
+    /// `caller` is the wasmtime callback's borrowed store context. It is valid
+    /// only for the duration of this call; language bindings must not retain
+    /// raw pointers to it beyond the call return.
+    fn execute(
+        &self,
+        caller: &mut Caller<'_, StoreData>,
+        params: &[WasmValue],
+    ) -> WasmtimeResult<Vec<WasmValue>>;
 
     /// Clone the callback (for implementing Clone on HostFunction)
     fn clone_callback(&self) -> Box<dyn HostFunctionCallback>;
@@ -354,10 +367,13 @@ impl HostFunction {
                     })?;
             }
 
-            let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                log::error!("[HOSTFUNC] Callback execution failed: {}", e);
-                wasmtime::Error::msg(format!("Host function execution failed: {}", e))
-            })?;
+            let wasm_results = host_function
+                .callback
+                .execute(&mut caller, &wasm_params)
+                .map_err(|e| {
+                    log::error!("[HOSTFUNC] Callback execution failed: {}", e);
+                    wasmtime::Error::msg(format!("Host function execution failed: {}", e))
+                })?;
 
             log::debug!(
                 "[HOSTFUNC] Callback returned {} results",
@@ -426,9 +442,12 @@ impl HostFunction {
                     marshal_params_from_valraw(args_and_results, &param_types, store_id)?;
 
                 // Execute the callback
-                let wasm_results = host_function.callback.execute(&wasm_params).map_err(|e| {
-                    wasmtime::Error::msg(format!("Host function execution failed: {}", e))
-                })?;
+                let wasm_results = host_function
+                    .callback
+                    .execute(&mut caller, &wasm_params)
+                    .map_err(|e| {
+                        wasmtime::Error::msg(format!("Host function execution failed: {}", e))
+                    })?;
 
                 // Clean up temporary funcref registrations
                 cleanup_temp_funcref_ids(&temp_ids);
@@ -503,8 +522,10 @@ impl HostFunction {
                         let _context = create_optimized_caller_context(&mut caller, usage)?;
                     }
 
-                    let wasm_results =
-                        host_function.callback.execute(&wasm_params).map_err(|e| {
+                    let wasm_results = host_function
+                        .callback
+                        .execute(&mut caller, &wasm_params)
+                        .map_err(|e| {
                             wasmtime::Error::msg(format!(
                                 "Host function execution failed: {}",
                                 e
@@ -1188,7 +1209,11 @@ mod tests {
 
     struct TestCallback;
     impl HostFunctionCallback for TestCallback {
-        fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
+        fn execute(
+            &self,
+            _caller: &mut Caller<'_, StoreData>,
+            params: &[WasmValue],
+        ) -> WasmtimeResult<Vec<WasmValue>> {
             // Simple add function for testing
             if params.len() != 2 {
                 return Err(WasmtimeError::Validation {

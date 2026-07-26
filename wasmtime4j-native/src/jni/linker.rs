@@ -9,10 +9,11 @@ use crate::error::{jni_utils, WasmtimeError, WasmtimeResult};
 use crate::hostfunc::HostFunctionCallback;
 use crate::instance::WasmValue;
 use crate::linker::core as linker_core;
+use crate::store::StoreData;
 
 use std::os::raw::c_void;
 use std::sync::Arc;
-use wasmtime::ValType;
+use wasmtime::{Caller, ValType};
 
 /// Extract the message from a pending Java exception and clear it.
 /// Returns the exception message or a default message if extraction fails.
@@ -77,9 +78,22 @@ pub struct JniHostFunctionCallback {
 }
 
 impl HostFunctionCallback for JniHostFunctionCallback {
-    fn execute(&self, params: &[WasmValue]) -> WasmtimeResult<Vec<WasmValue>> {
+    fn execute(
+        &self,
+        caller: &mut Caller<'_, StoreData>,
+        params: &[WasmValue],
+    ) -> WasmtimeResult<Vec<WasmValue>> {
         log::info!("JniHostFunctionCallback::execute - Starting callback execution for callback_id={}, is_function_reference={}",
             self.callback_id, self.is_function_reference);
+
+        // Grab store_id up-front (needed by Java side to look up its JniStore
+        // and by the caller-handle wire-through in the invokeHostFunctionCallback
+        // path below).
+        let store_id = caller.data().store_id as i64;
+        // Cast the caller mutable borrow to an opaque handle for propagation into
+        // Java. The pointer is valid only for the duration of this call; Java
+        // enforces use-after-return safety via JniStore's generation counter.
+        let caller_handle = caller as *mut Caller<'_, StoreData> as usize as i64;
 
         // Attach to current thread and get JNI environment
         log::debug!("Attaching to JVM thread");

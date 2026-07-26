@@ -43,7 +43,11 @@ struct PanamaHostFunctionCallbackImpl {
 }
 
 impl HostFunctionCallback for PanamaHostFunctionCallbackImpl {
-    fn execute(&self, params: &[WasmValue]) -> crate::WasmtimeResult<Vec<WasmValue>> {
+    fn execute(
+        &self,
+        _caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
+        params: &[WasmValue],
+    ) -> crate::WasmtimeResult<Vec<WasmValue>> {
         // Convert internal WasmValue to FFI-safe format
         let ffi_params: Vec<FfiWasmValue> =
             params.iter().map(FfiWasmValue::from_wasm_value).collect();
