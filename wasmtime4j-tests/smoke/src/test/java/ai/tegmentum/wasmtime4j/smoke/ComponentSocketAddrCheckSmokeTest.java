@@ -45,13 +45,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Smoke test proving that a host-supplied {@link SocketAddrCheck} (network-egress allow/deny policy)
- * installed on a {@link WasiPreview2Config} via {@link ComponentLinker#enableWasiPreview2} is
- * actually ENFORCED for a wasip2 Component that performs an outbound TCP connect.
+ * Smoke test proving that a host-supplied {@link SocketAddrCheck} (network-egress allow/deny
+ * policy) installed on a {@link WasiPreview2Config} via {@link ComponentLinker#enableWasiPreview2}
+ * is actually ENFORCED for a wasip2 Component that performs an outbound TCP connect.
  *
  * <p>Regression guard for the bug where the check was configured Java-side but never marshalled
- * across the component-with-wasi JNI boundary, so a deny-all check let every connect through and was
- * invoked zero times.
+ * across the component-with-wasi JNI boundary, so a deny-all check let every connect through and
+ * was invoked zero times.
  *
  * <p>The {@code webhook-notifier.component.wasm} component exports {@code notify(host, port, path,
  * body) -> string}; it performs exactly one outbound TCP connect and returns a string prefixed with
@@ -84,8 +84,8 @@ public final class ComponentSocketAddrCheckSmokeTest {
   }
 
   /**
-   * Instantiate the webhook component under a WASI config carrying the given egress check and invoke
-   * {@code notify} once against {@code 127.0.0.1:port}. Returns the guest's result string.
+   * Instantiate the webhook component under a WASI config carrying the given egress check and
+   * invoke {@code notify} once against {@code 127.0.0.1:port}. Returns the guest's result string.
    */
   private static String notifyUnder(final SocketAddrCheck check, final int port) throws Exception {
     try (WasmRuntime runtime = WasmRuntimeFactory.create(RuntimeType.JNI);
@@ -161,11 +161,13 @@ public final class ComponentSocketAddrCheckSmokeTest {
       // The source fix is present, but the loaded dylib may predate the native rebuild (native
       // source lands on master; binaries are rebuilt across platforms at release). If the check was
       // never consulted, the enforcing dylib is not built yet — skip rather than fail; a release
-      // rebuild flips this to a live assertion. Verified passing against a rebuilt dylib in the fix.
+      // rebuild flips this to a live assertion. Verified passing against a rebuilt dylib in the
+      // fix.
       assumeTrue(
           checkCalls.get() > 0,
-          "loaded dylib does not enforce SocketAddrCheck for wasip2 components — rebuild the native "
-              + "lib (cargo build --release); this becomes a live assertion once the enforcing dylib ships");
+          "loaded dylib does not enforce SocketAddrCheck for wasip2 components — rebuild the native"
+              + " lib (cargo build --release); this becomes a live assertion once the enforcing"
+              + " dylib ships");
       assertTrue(
           checkCalls.get() >= 1,
           "deny-all SocketAddrCheck must be invoked at least once (was " + checkCalls.get() + ")");
@@ -194,11 +196,13 @@ public final class ComponentSocketAddrCheckSmokeTest {
               port);
 
       LOGGER.info("allow-all result=" + result + " checkCalls=" + checkCalls.get());
-      // See denyAll: skip if the loaded dylib predates the native rebuild (source lands, binary at release).
+      // See denyAll: skip if the loaded dylib predates the native rebuild (source lands, binary at
+      // release).
       assumeTrue(
           checkCalls.get() > 0,
-          "loaded dylib does not enforce SocketAddrCheck for wasip2 components — rebuild the native "
-              + "lib (cargo build --release); this becomes a live assertion once the enforcing dylib ships");
+          "loaded dylib does not enforce SocketAddrCheck for wasip2 components — rebuild the native"
+              + " lib (cargo build --release); this becomes a live assertion once the enforcing"
+              + " dylib ships");
       assertTrue(
           checkCalls.get() >= 1,
           "allow-all SocketAddrCheck must be invoked at least once (was " + checkCalls.get() + ")");

@@ -119,21 +119,19 @@ public final class JniStore extends JniResource implements Store {
   private volatile JniWasiContextImpl trackedWasiContext;
 
   /**
-   * Wasmtime-assigned store id (StoreData.store_id), used as the lookup key in
-   * {@link #STORES_BY_ID} so the JNI host-function callback dispatcher can
-   * recover the owning {@link JniStore} given only a wasmtime
-   * {@code Caller<'_, StoreData>} handle.
+   * Wasmtime-assigned store id (StoreData.store_id), used as the lookup key in {@link
+   * #STORES_BY_ID} so the JNI host-function callback dispatcher can recover the owning {@link
+   * JniStore} given only a wasmtime {@code Caller<'_, StoreData>} handle.
    */
   private final long storeId;
 
   /**
    * Per-store generation counter for use-after-return safety on {@link JniCaller}.
    *
-   * <p>Bumped on host-callback entry and again on exit by
-   * {@link JniLinker#invokeHostFunctionCallback}. Each {@link JniCaller}
-   * constructed for a callback captures the value on entry and every scoped
-   * method call checks it — a mismatch means the caller escaped its
-   * callback scope and the underlying wasmtime {@code Caller} pointer is stale.
+   * <p>Bumped on host-callback entry and again on exit by {@link
+   * JniLinker#invokeHostFunctionCallback}. Each {@link JniCaller} constructed for a callback
+   * captures the value on entry and every scoped method call checks it — a mismatch means the
+   * caller escaped its callback scope and the underlying wasmtime {@code Caller} pointer is stale.
    *
    * @since 1.6.0
    */
@@ -142,9 +140,9 @@ public final class JniStore extends JniResource implements Store {
   /**
    * Registry of live JniStores keyed by their wasmtime-assigned {@code store_id}.
    *
-   * <p>Populated in the constructor and cleared in {@link #doClose()}. Used by
-   * {@link JniLinker#invokeHostFunctionCallback} to find the owning store from
-   * the {@code store_id} the native dispatcher passes through.
+   * <p>Populated in the constructor and cleared in {@link #doClose()}. Used by {@link
+   * JniLinker#invokeHostFunctionCallback} to find the owning store from the {@code store_id} the
+   * native dispatcher passes through.
    */
   private static final ConcurrentHashMap<Long, WeakReference<JniStore>> STORES_BY_ID =
       new ConcurrentHashMap<>();
@@ -177,10 +175,9 @@ public final class JniStore extends JniResource implements Store {
   }
 
   /**
-   * Bump the caller generation counter. Called by the host-callback dispatcher
-   * on both entry and exit of a Java host callback so that any
-   * {@link JniCaller} constructed during the callback becomes invalid the
-   * moment the callback returns.
+   * Bump the caller generation counter. Called by the host-callback dispatcher on both entry and
+   * exit of a Java host callback so that any {@link JniCaller} constructed during the callback
+   * becomes invalid the moment the callback returns.
    *
    * @return the post-increment generation value
    */

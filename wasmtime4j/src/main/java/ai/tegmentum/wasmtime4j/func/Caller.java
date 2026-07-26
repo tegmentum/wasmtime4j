@@ -275,11 +275,10 @@ public interface Caller<T> {
   /**
    * Compile a Module using this callback's store engine.
    *
-   * <p>Module compilation is engine-scoped, not store-scoped — it does not
-   * mutate the caller's store — but exposing it on {@code Caller} lets a host
-   * function build modules inside a callback with the guarantee that they
-   * share the caller's Engine (and therefore can be instantiated into the
-   * caller's store without cross-engine errors).
+   * <p>Module compilation is engine-scoped, not store-scoped — it does not mutate the caller's
+   * store — but exposing it on {@code Caller} lets a host function build modules inside a callback
+   * with the guarantee that they share the caller's Engine (and therefore can be instantiated into
+   * the caller's store without cross-engine errors).
    *
    * @param wasmBytes WebAssembly binary bytes (or WAT text)
    * @return the compiled Module
@@ -293,13 +292,12 @@ public interface Caller<T> {
   }
 
   /**
-   * Grow a caller-visible {@link ai.tegmentum.wasmtime4j.WasmTable} by
-   * {@code delta} slots, filling new slots with {@code init}.
+   * Grow a caller-visible {@link ai.tegmentum.wasmtime4j.WasmTable} by {@code delta} slots, filling
+   * new slots with {@code init}.
    *
-   * <p>For {@code funcref} tables {@code init} must be a
-   * {@link ai.tegmentum.wasmtime4j.WasmFunction} or {@code null}. For
-   * {@code externref} / {@code anyref} tables, r.2 only supports {@code null}
-   * (non-null externref writes deferred to a follow-up).
+   * <p>For {@code funcref} tables {@code init} must be a {@link
+   * ai.tegmentum.wasmtime4j.WasmFunction} or {@code null}. For {@code externref} / {@code anyref}
+   * tables, r.2 only supports {@code null} (non-null externref writes deferred to a follow-up).
    *
    * @param table the caller-visible table to grow
    * @param delta the number of slots to add
@@ -319,8 +317,8 @@ public interface Caller<T> {
   /**
    * Set an element in a caller-visible {@link ai.tegmentum.wasmtime4j.WasmTable}.
    *
-   * <p>For {@code funcref} tables {@code value} must be a
-   * {@link ai.tegmentum.wasmtime4j.WasmFunction} or {@code null}.
+   * <p>For {@code funcref} tables {@code value} must be a {@link
+   * ai.tegmentum.wasmtime4j.WasmFunction} or {@code null}.
    *
    * @param table the caller-visible table
    * @param index target slot index
@@ -337,13 +335,11 @@ public interface Caller<T> {
   }
 
   /**
-   * Grow a caller-visible {@link ai.tegmentum.wasmtime4j.WasmMemory} by
-   * {@code deltaPages} pages.
+   * Grow a caller-visible {@link ai.tegmentum.wasmtime4j.WasmMemory} by {@code deltaPages} pages.
    *
-   * <p>Only regular (non-shared) memories are supported by this scoped path;
-   * shared memories grow atomically via
-   * {@link ai.tegmentum.wasmtime4j.WasmMemory#grow(long)} and don't need a
-   * caller borrow.
+   * <p>Only regular (non-shared) memories are supported by this scoped path; shared memories grow
+   * atomically via {@link ai.tegmentum.wasmtime4j.WasmMemory#grow(long)} and don't need a caller
+   * borrow.
    *
    * @param memory the caller-visible memory to grow
    * @param deltaPages the number of 64 KiB pages to add
@@ -359,21 +355,19 @@ public interface Caller<T> {
   }
 
   /**
-   * Instantiate a pre-linked module using this callback's store, borrowed
-   * safely from the wasmtime callback context.
+   * Instantiate a pre-linked module using this callback's store, borrowed safely from the wasmtime
+   * callback context.
    *
-   * <p>The {@code InstancePre} must have been pre-instantiated against this
-   * callback's engine and linker BEFORE the host-callback fires — inside the
-   * callback, only the final {@code InstancePre::instantiate} step runs.
-   * This matches Rust wasmtime's discipline of pre-linking outside the borrow
-   * scope so the reentrant step is minimal.
+   * <p>The {@code InstancePre} must have been pre-instantiated against this callback's engine and
+   * linker BEFORE the host-callback fires — inside the callback, only the final {@code
+   * InstancePre::instantiate} step runs. This matches Rust wasmtime's discipline of pre-linking
+   * outside the borrow scope so the reentrant step is minimal.
    *
-   * <p><b>Note:</b> This method is declared for API-level parity with the
-   * charter's five scoped methods but is <b>not implemented</b> in wasmtime4j
-   * 1.6.0. The InstancePre wrapper's internal Store lock conflicts with the
-   * caller's live borrow — a caller-scoped InstancePre execution path is
-   * deferred to a follow-up (r.2.b) that adds a
-   * {@code InstancePreWrapper::instantiate_with_context} native method.
+   * <p><b>Note:</b> This method is declared for API-level parity with the charter's five scoped
+   * methods but is <b>not implemented</b> in wasmtime4j 1.6.0. The InstancePre wrapper's internal
+   * Store lock conflicts with the caller's live borrow — a caller-scoped InstancePre execution path
+   * is deferred to a follow-up (r.2.b) that adds a {@code
+   * InstancePreWrapper::instantiate_with_context} native method.
    *
    * @param pre pre-linked module to instantiate into the caller's store
    * @return the newly created Instance

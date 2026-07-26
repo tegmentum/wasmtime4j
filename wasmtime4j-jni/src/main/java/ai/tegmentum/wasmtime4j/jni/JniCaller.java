@@ -54,20 +54,19 @@ final class JniCaller<T> implements Caller<T> {
   private final JniStore store;
 
   /**
-   * Generation counter value captured at construction. Every scoped method call
-   * checks {@code store.getCallerGeneration() == capturedGeneration}; a mismatch
-   * indicates the caller was retained past its host-callback scope and the
-   * underlying wasmtime {@code Caller} borrow is no longer valid.
+   * Generation counter value captured at construction. Every scoped method call checks {@code
+   * store.getCallerGeneration() == capturedGeneration}; a mismatch indicates the caller was
+   * retained past its host-callback scope and the underlying wasmtime {@code Caller} borrow is no
+   * longer valid.
    */
   private final long capturedGeneration;
 
   /**
    * Creates a JNI caller context wrapper.
    *
-   * <p>Legacy constructor that binds the caller to generation 0. Retained for
-   * source-compatibility with the pre-generation-counter callsites; prefer
-   * {@link #JniCaller(long, JniStore, long)} in new code so use-after-return
-   * is caught.
+   * <p>Legacy constructor that binds the caller to generation 0. Retained for source-compatibility
+   * with the pre-generation-counter callsites; prefer {@link #JniCaller(long, JniStore, long)} in
+   * new code so use-after-return is caught.
    *
    * @param callerHandle the native caller handle from Wasmtime
    * @param store the store this caller is associated with
@@ -81,9 +80,8 @@ final class JniCaller<T> implements Caller<T> {
    *
    * @param callerHandle the native caller handle from Wasmtime
    * @param store the store this caller is associated with
-   * @param capturedGeneration the store's caller generation at the time this
-   *     caller was minted; every subsequent scoped call checks the store's
-   *     current generation against this value
+   * @param capturedGeneration the store's caller generation at the time this caller was minted;
+   *     every subsequent scoped call checks the store's current generation against this value
    * @since 1.6.0
    */
   JniCaller(final long callerHandle, final JniStore store, final long capturedGeneration) {
@@ -467,8 +465,7 @@ final class JniCaller<T> implements Caller<T> {
   // ==========================================================================
 
   @Override
-  public ai.tegmentum.wasmtime4j.Module compileModule(final byte[] wasmBytes)
-      throws WasmException {
+  public ai.tegmentum.wasmtime4j.Module compileModule(final byte[] wasmBytes) throws WasmException {
     if (wasmBytes == null) {
       throw new IllegalArgumentException("wasmBytes cannot be null");
     }
@@ -526,9 +523,9 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   /**
-   * Extract a native handle from a {@link JniResource}-backed wasmtime4j object.
-   * Callers responsible for providing an object owned by this JNI backend —
-   * mixing objects across backends throws {@link IllegalArgumentException}.
+   * Extract a native handle from a {@link JniResource}-backed wasmtime4j object. Callers
+   * responsible for providing an object owned by this JNI backend — mixing objects across backends
+   * throws {@link IllegalArgumentException}.
    */
   private static long extractHandle(final Object obj, final String argName) {
     if (obj instanceof ai.tegmentum.wasmtime4j.jni.util.JniResource) {
@@ -541,13 +538,12 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   /**
-   * Resolve a Java-side reference value (WasmFunction / null / etc) to the
-   * shared function reference registry id used by the caller-scoped natives.
+   * Resolve a Java-side reference value (WasmFunction / null / etc) to the shared function
+   * reference registry id used by the caller-scoped natives.
    *
-   * <p>{@code null} maps to id 0 (null reference). {@code WasmFunction}
-   * instances backed by {@link JniFunction} resolve to their reference id via
-   * {@link JniFunction#nativeFuncToRaw(long, long)}. Other object types are
-   * rejected in r.2 — extending to externref / anyref writes is deferred.
+   * <p>{@code null} maps to id 0 (null reference). {@code WasmFunction} instances backed by {@link
+   * JniFunction} resolve to their reference id via {@link JniFunction#nativeFuncToRaw(long, long)}.
+   * Other object types are rejected in r.2 — extending to externref / anyref writes is deferred.
    */
   private long objectToRefId(final Object value) throws WasmException {
     if (value == null) {
@@ -564,7 +560,8 @@ final class JniCaller<T> implements Caller<T> {
     }
     if (value instanceof WasmFunction) {
       throw new WasmException(
-          "growTable / setTableElement with a non-JniFunction WasmFunction is not supported in r.2");
+          "growTable / setTableElement with a non-JniFunction WasmFunction is not supported in"
+              + " r.2");
     }
     throw new WasmException(
         "growTable / setTableElement with element of type "

@@ -495,14 +495,13 @@ public final class JniHostFunction extends JniResource implements WasmFunction {
   /**
    * Gets the current caller context for the executing host function.
    *
-   * <p>This method is called by {@link JniCallerContextProvider} (via
-   * {@code CallerAwareHostFunction}) to access the caller during execution.
+   * <p>This method is called by {@link JniCallerContextProvider} (via {@code
+   * CallerAwareHostFunction}) to access the caller during execution.
    *
-   * <p>Returns {@code null} if no caller context is available on the current
-   * thread — {@link JniCallerContextProvider} chains against the
-   * {@link JniLinker#currentCaller()} path first and only falls through to this
-   * one for store-created host functions, so a null return here just means
-   * this thread is not currently inside a store-created-host-function frame.
+   * <p>Returns {@code null} if no caller context is available on the current thread — {@link
+   * JniCallerContextProvider} chains against the {@link JniLinker#currentCaller()} path first and
+   * only falls through to this one for store-created host functions, so a null return here just
+   * means this thread is not currently inside a store-created-host-function frame.
    *
    * @param <T> the type of user data
    * @return the current caller context, or {@code null} if not available

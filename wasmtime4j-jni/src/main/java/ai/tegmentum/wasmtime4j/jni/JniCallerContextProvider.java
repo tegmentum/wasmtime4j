@@ -24,13 +24,11 @@ import ai.tegmentum.wasmtime4j.spi.CallerContextProvider;
  * <p>Looks up the current caller in this order:
  *
  * <ol>
- *   <li>{@link JniLinker#currentCaller()} — the ThreadLocal set by
- *       {@code invokeHostFunctionCallback} for Linker-defined host functions
- *       (this is the live path connected to the wasmtime {@code Caller<'_, StoreData>}
- *       borrow since wasmtime4j 1.6.0).
- *   <li>{@link JniHostFunction#getCurrentCaller()} — the pre-existing ThreadLocal
- *       set by {@code JniHostFunction.hostFunctionCallback} for store-created
- *       host functions.
+ *   <li>{@link JniLinker#currentCaller()} — the ThreadLocal set by {@code
+ *       invokeHostFunctionCallback} for Linker-defined host functions (this is the live path
+ *       connected to the wasmtime {@code Caller<'_, StoreData>} borrow since wasmtime4j 1.6.0).
+ *   <li>{@link JniHostFunction#getCurrentCaller()} — the pre-existing ThreadLocal set by {@code
+ *       JniHostFunction.hostFunctionCallback} for store-created host functions.
  * </ol>
  *
  * @since 1.0.0

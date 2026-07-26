@@ -26,10 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Standalone decomposition micro-benchmark for a component export
- * render(u64, string, string, string) -> string.
+ * Standalone decomposition micro-benchmark for a component export render(u64, string, string,
+ * string) -> string.
  *
- * Isolates: Java-side arg marshalling+return unmarshalling, the native crossing (full invoke),
+ * <p>Isolates: Java-side arg marshalling+return unmarshalling, the native crossing (full invoke),
  * and a JNI+lock+lookup floor (nativeComponentInstanceHasFunc).
  */
 public final class MarshallDecompBench {
@@ -49,9 +49,11 @@ public final class MarshallDecompBench {
 
     // A component exporting render(u64,string,string,string)->string. Override with
     // -Dw4j.bench.component=/path/to.wasm; defaults to the Svalinn log4j witness core.
-    String wasmPath = System.getProperty("w4j.bench.component",
-        System.getProperty("user.home")
-            + "/git/svalinn/witness/log4j/component/svalinn-logging-core.component.wasm");
+    String wasmPath =
+        System.getProperty(
+            "w4j.bench.component",
+            System.getProperty("user.home")
+                + "/git/svalinn/witness/log4j/component/svalinn-logging-core.component.wasm");
     byte[] wasm = Files.readAllBytes(Paths.get(wasmPath));
 
     JniComponent.JniComponentEngine engine = JniComponent.createComponentEngine();
@@ -69,7 +71,8 @@ public final class MarshallDecompBench {
     byte[][] data = new byte[4][];
     buildArgs(0, disc, data);
     // canned result for JAVA_MARSHAL unmarshal
-    Object[] r = JniComponent.nativeComponentInvokeFunction(engineHandle, instanceId, FUNC, disc, data);
+    Object[] r =
+        JniComponent.nativeComponentInvokeFunction(engineHandle, instanceId, FUNC, disc, data);
     final int cannedType = (Integer) r[0];
     final byte[] cannedData = (byte[]) r[1];
 
@@ -85,26 +88,38 @@ public final class MarshallDecompBench {
     }
 
     System.out.println("\n--- results (ns/op, min of 5 trials, " + ITERS + " iters) ---");
-    report("TOTAL (java marshal + native + java unmarshal)", () -> {
-      long s = 0;
-      for (int i = 0; i < ITERS; i++) s += total(i).length();
-      return s;
-    }, ITERS);
-    report("NATIVE_ONLY (invoke, pre-marshalled args)", () -> {
-      long s = 0;
-      for (int i = 0; i < ITERS; i++) s += nativeOnly(disc, data);
-      return s;
-    }, ITERS);
-    report("JAVA_MARSHAL (arg marshal + return unmarshal, no native)", () -> {
-      long s = 0;
-      for (int i = 0; i < ITERS; i++) s += javaMarshal(i, cannedType, cannedData);
-      return s;
-    }, ITERS);
-    report("PROBE (nativeComponentInstanceHasFunc: JNI+lock+lookup)", () -> {
-      long s = 0;
-      for (int i = 0; i < ITERS; i++) s += probe();
-      return s;
-    }, ITERS);
+    report(
+        "TOTAL (java marshal + native + java unmarshal)",
+        () -> {
+          long s = 0;
+          for (int i = 0; i < ITERS; i++) s += total(i).length();
+          return s;
+        },
+        ITERS);
+    report(
+        "NATIVE_ONLY (invoke, pre-marshalled args)",
+        () -> {
+          long s = 0;
+          for (int i = 0; i < ITERS; i++) s += nativeOnly(disc, data);
+          return s;
+        },
+        ITERS);
+    report(
+        "JAVA_MARSHAL (arg marshal + return unmarshal, no native)",
+        () -> {
+          long s = 0;
+          for (int i = 0; i < ITERS; i++) s += javaMarshal(i, cannedType, cannedData);
+          return s;
+        },
+        ITERS);
+    report(
+        "PROBE (nativeComponentInstanceHasFunc: JNI+lock+lookup)",
+        () -> {
+          long s = 0;
+          for (int i = 0; i < ITERS; i++) s += probe();
+          return s;
+        },
+        ITERS);
 
     System.out.println("sink=" + sink);
     inst.close();
@@ -112,7 +127,9 @@ public final class MarshallDecompBench {
     engine.close();
   }
 
-  interface Loop { long run(); }
+  interface Loop {
+    long run();
+  }
 
   static void report(String name, Loop loop, int iters) {
     long best = Long.MAX_VALUE;
@@ -144,7 +161,8 @@ public final class MarshallDecompBench {
       int[] disc = new int[4];
       byte[][] data = new byte[4][];
       buildArgs(ts, disc, data);
-      Object[] r = JniComponent.nativeComponentInvokeFunction(engineHandle, instanceId, FUNC, disc, data);
+      Object[] r =
+          JniComponent.nativeComponentInvokeFunction(engineHandle, instanceId, FUNC, disc, data);
       int type = (Integer) r[0];
       byte[] rd = (byte[]) r[1];
       WitValue rv = WitValueMarshaller.unmarshal(type, rd);
@@ -155,7 +173,8 @@ public final class MarshallDecompBench {
   }
 
   static long nativeOnly(int[] disc, byte[][] data) {
-    Object[] r = JniComponent.nativeComponentInvokeFunction(engineHandle, instanceId, FUNC, disc, data);
+    Object[] r =
+        JniComponent.nativeComponentInvokeFunction(engineHandle, instanceId, FUNC, disc, data);
     return ((byte[]) r[1]).length;
   }
 

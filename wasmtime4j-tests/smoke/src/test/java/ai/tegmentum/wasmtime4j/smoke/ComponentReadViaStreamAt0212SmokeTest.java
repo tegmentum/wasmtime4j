@@ -42,22 +42,22 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Proves the host services {@code wasi:io/streams} read-via-stream at the CURRENT WASI version
- * ({@code 0.2.12}), not just at the older {@code 0.2.6} covered by
- * {@link ComponentFileInputStreamReadSmokeTest}. This is the host-side rebuttal to a hypothesis the
+ * ({@code 0.2.12}), not just at the older {@code 0.2.6} covered by {@link
+ * ComponentFileInputStreamReadSmokeTest}. This is the host-side rebuttal to a hypothesis the
  * Svalinn fsread witness briefly held — that the shipped dylib fails to service read-via-stream at
  * 0.2.12.
  *
  * <p>The {@code file-stream-reader-0212} component depends on the {@code wasi} crate, which unifies
- * its WASI imports up to {@code wasi:io/streams@0.2.12}, and reads the granted file EXPLICITLY through
- * the {@code wasi} crate's {@code read_via_stream} + {@code blocking_read} (a file-backed input
- * stream). It returns the bytes here — so the host is fine at 0.2.12.
+ * its WASI imports up to {@code wasi:io/streams@0.2.12}, and reads the granted file EXPLICITLY
+ * through the {@code wasi} crate's {@code read_via_stream} + {@code blocking_read} (a file-backed
+ * input stream). It returns the bytes here — so the host is fine at 0.2.12.
  *
  * <p>Context (why this matters): Svalinn observed a real trap on the file-backed input-stream path,
- * but only when a guest reads via {@code std::fs} in a component that links BOTH {@code std} (its own,
- * older wasip2 bindings) AND the {@code wasi} crate (0.2.12). That is a guest-side ABI mix inside the
- * component ({@code std::fs}'s compiled read-via-stream skews against the 0.2.12-unified imports), not
- * a host defect: the identical read-via-stream byte path driven through the {@code wasi} crate — as
- * this test does — succeeds. See {@code witness/fsread/FINDINGS.md}.
+ * but only when a guest reads via {@code std::fs} in a component that links BOTH {@code std} (its
+ * own, older wasip2 bindings) AND the {@code wasi} crate (0.2.12). That is a guest-side ABI mix
+ * inside the component ({@code std::fs}'s compiled read-via-stream skews against the 0.2.12-unified
+ * imports), not a host defect: the identical read-via-stream byte path driven through the {@code
+ * wasi} crate — as this test does — succeeds. See {@code witness/fsread/FINDINGS.md}.
  */
 @DisplayName("Component read-via-stream at wasi 0.2.12 (host-side) Smoke Test")
 public final class ComponentReadViaStreamAt0212SmokeTest {
@@ -110,7 +110,8 @@ public final class ComponentReadViaStreamAt0212SmokeTest {
   @Test
   @DisplayName("host returns bytes for an explicit wasi:io/streams@0.2.12 read-via-stream")
   void readViaStreamAt0212ReturnsBytes(@TempDir final Path tmp) throws Exception {
-    assumeTrue(componentBytes != null, "file-stream-reader-0212 component wasm not on test classpath");
+    assumeTrue(
+        componentBytes != null, "file-stream-reader-0212 component wasm not on test classpath");
     assumeTrue(jniAvailable, "JNI runtime not available");
 
     final String contents = "svalinn-read-via-stream-0212\nline2\n";

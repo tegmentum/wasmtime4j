@@ -53,19 +53,20 @@ import org.junit.jupiter.api.Test;
  * <p>Exercises the wire path added in r.2:
  *
  * <ul>
- *   <li>native JNI dispatcher passes the wasmtime {@code Caller<'_, StoreData>} handle across
- *       the {@code invokeHostFunctionCallback} boundary and constructs a live {@link JniCaller};
+ *   <li>native JNI dispatcher passes the wasmtime {@code Caller<'_, StoreData>} handle across the
+ *       {@code invokeHostFunctionCallback} boundary and constructs a live {@link JniCaller};
  *   <li>{@link JniCaller}'s scoped-store methods route through {@code caller.as_context_mut()}
- *       instead of acquiring a fresh Store lock, so reentrant mutation from a host callback
- *       does NOT trip the SIGSEGV that F-JIT-Loader-Java-Reference r.5.b witnessed;
- *   <li>the per-store generation counter invalidates any {@link Caller} reference that
- *       escapes its host-callback frame — accessing it after return throws
- *       {@link IllegalStateException} instead of dereferencing a stale native pointer.
+ *       instead of acquiring a fresh Store lock, so reentrant mutation from a host callback does
+ *       NOT trip the SIGSEGV that F-JIT-Loader-Java-Reference r.5.b witnessed;
+ *   <li>the per-store generation counter invalidates any {@link Caller} reference that escapes its
+ *       host-callback frame — accessing it after return throws {@link IllegalStateException}
+ *       instead of dereferencing a stale native pointer.
  * </ul>
  */
 public class JniCallerScopedMutationTest {
 
-  private static final Logger LOGGER = Logger.getLogger(JniCallerScopedMutationTest.class.getName());
+  private static final Logger LOGGER =
+      Logger.getLogger(JniCallerScopedMutationTest.class.getName());
 
   private final List<AutoCloseable> resources = new ArrayList<>();
 
@@ -209,9 +210,7 @@ public class JniCallerScopedMutationTest {
 
     final WasmValue[] results = instance.callFunction("run");
     assertEquals(
-        1,
-        results[0].asInt(),
-        "Previous page count should be 1 (memory declared with (memory 1))");
+        1, results[0].asInt(), "Previous page count should be 1 (memory declared with (memory 1))");
     assertEquals(1L, prevPages.get(), "growMemory return value observed inside callback");
 
     // Verify grow actually took: subsequent memory access at page 2 offset
@@ -248,9 +247,7 @@ public class JniCallerScopedMutationTest {
 
     final Module module = compileWat(eng, wat);
 
-    final HostFunction cb =
-        HostFunction.singleValue(
-            (params) -> WasmValue.i32(1234));
+    final HostFunction cb = HostFunction.singleValue((params) -> WasmValue.i32(1234));
 
     final AtomicInteger newSlot = new AtomicInteger(-1);
     final HostFunction install =

@@ -42,34 +42,36 @@ import org.junit.jupiter.api.io.TempDir;
 
 /**
  * Smoke test proving that a wasip2 Component can read a file through a FILE-BACKED INPUT STREAM
- * (Rust {@code std::fs::read} -&gt; {@code wasi:filesystem} {@code read-via-stream} -&gt;
- * {@code wasi:io/streams} {@code blocking-read}) on the component instantiation path.
+ * (Rust {@code std::fs::read} -&gt; {@code wasi:filesystem} {@code read-via-stream} -&gt; {@code
+ * wasi:io/streams} {@code blocking-read}) on the component instantiation path.
  *
- * <p>Regression guard tied to a symptom the Svalinn project reported twice (see
- * {@code witness/fsread/FINDINGS.md} and {@code svalinn-secure-log/FINDINGS.md}): {@code File::open}
- * of a granted file succeeds, but the subsequent stream read was observed to TRAP with no guest
- * panic, while the low-level positioned {@code descriptor.read}, file OUTPUT streams, and SOCKET
- * input streams worked. Investigation showed the wasi:io/streams file host on this component path is
- * stock {@code wasmtime_wasi::p2::add_to_linker_sync} — a consistently synchronous path — and that a
- * file-backed input-stream read returns the bytes on the shipped 46.0.1-1.2.0 dylib (as this test
- * asserts). This test therefore locks in the working behavior so any future regression that drops or
- * mis-wires the file-backed input-stream read fails loudly rather than silently degrading a
+ * <p>Regression guard tied to a symptom the Svalinn project reported twice (see {@code
+ * witness/fsread/FINDINGS.md} and {@code svalinn-secure-log/FINDINGS.md}): {@code File::open} of a
+ * granted file succeeds, but the subsequent stream read was observed to TRAP with no guest panic,
+ * while the low-level positioned {@code descriptor.read}, file OUTPUT streams, and SOCKET input
+ * streams worked. Investigation showed the wasi:io/streams file host on this component path is
+ * stock {@code wasmtime_wasi::p2::add_to_linker_sync} — a consistently synchronous path — and that
+ * a file-backed input-stream read returns the bytes on the shipped 46.0.1-1.2.0 dylib (as this test
+ * asserts). This test therefore locks in the working behavior so any future regression that drops
+ * or mis-wires the file-backed input-stream read fails loudly rather than silently degrading a
  * capability Svalinn depends on.
  *
  * <p>The {@code file-stream-reader.component.wasm} component exports {@code read-stream(path) ->
- * string}; it calls {@code std::fs::read} on the given guest path and returns {@code "OK:\n<bytes>"}
- * on success or {@code "ERR: <detail>"} on a clean Rust error. A host trap would produce no return at
- * all (the invoke would throw), which is what a stream-wiring regression would look like.
+ * string}; it calls {@code std::fs::read} on the given guest path and returns {@code
+ * "OK:\n<bytes>"} on success or {@code "ERR: <detail>"} on a clean Rust error. A host trap would
+ * produce no return at all (the invoke would throw), which is what a stream-wiring regression would
+ * look like.
  *
  * <p><b>What actually caused the Svalinn trap (resolved).</b> This component is pure {@code std}
- * (no {@code wasi} crate) and imports {@code wasi 0.2.6}; its {@code std::fs} read returns the bytes.
- * The Svalinn fsread witness trap was later isolated to a GUEST-SIDE ABI mix, not a host defect: its
- * component links BOTH {@code std} (its own older wasip2 bindings) AND the {@code wasi} crate, which
- * unifies the component's imports up to {@code 0.2.12}; {@code std::fs}'s compiled read-via-stream
- * then skews against the unified imports and traps, while the identical read-via-stream byte path
- * driven through the {@code wasi} crate succeeds. The host services read-via-stream at both 0.2.6
- * (this test) and 0.2.12 (see {@link ComponentReadViaStreamAt0212SmokeTest}). See
- * {@code witness/fsread/FINDINGS.md} for the full three-export isolation.
+ * (no {@code wasi} crate) and imports {@code wasi 0.2.6}; its {@code std::fs} read returns the
+ * bytes. The Svalinn fsread witness trap was later isolated to a GUEST-SIDE ABI mix, not a host
+ * defect: its component links BOTH {@code std} (its own older wasip2 bindings) AND the {@code wasi}
+ * crate, which unifies the component's imports up to {@code 0.2.12}; {@code std::fs}'s compiled
+ * read-via-stream then skews against the unified imports and traps, while the identical
+ * read-via-stream byte path driven through the {@code wasi} crate succeeds. The host services
+ * read-via-stream at both 0.2.6 (this test) and 0.2.12 (see {@link
+ * ComponentReadViaStreamAt0212SmokeTest}). See {@code witness/fsread/FINDINGS.md} for the full
+ * three-export isolation.
  */
 @DisplayName("Component File-Backed Input Stream Read Smoke Test")
 public final class ComponentFileInputStreamReadSmokeTest {
