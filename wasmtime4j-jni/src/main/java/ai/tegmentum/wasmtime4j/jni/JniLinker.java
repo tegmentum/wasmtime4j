@@ -703,7 +703,22 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
    * Invokes a host function callback from native code. This method is called by the native layer
    * when a WASM module calls a host function.
    *
+   * <p>Since 1.6.0 the native dispatcher passes the wasmtime {@code Caller<'_, StoreData>} handle
+   * and the wasmtime {@code StoreData.store_id} so that
+   * {@link ai.tegmentum.wasmtime4j.func.HostFunction.CallerAwareHostFunction} implementations
+   * can receive a real {@link JniCaller} rather than falling through to
+   * {@link UnsupportedOperationException}.
+   *
+   * <p>The caller handle is opaque and valid only for the duration of this invocation; the
+   * per-store generation counter maintained on {@link JniStore} is bumped on entry and again on
+   * exit, so any {@link JniCaller} retained past the callback boundary fails cleanly with
+   * {@link IllegalStateException} rather than dereferencing a stale native pointer.
+   *
    * @param callbackId the callback ID registered earlier
+   * @param callerHandle native handle to the wasmtime {@code Caller<'_, StoreData>}, or 0 if the
+   *     native layer could not obtain one
+   * @param storeId the wasmtime {@code StoreData.store_id} of the calling store, used to look up
+   *     the {@link JniStore} that owns this callback frame
    * @param params array of parameter values (i32/i64/f32/f64 as long/double)
    * @return array of return values
    * @throws WasmException if the callback fails
@@ -713,11 +728,19 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
       value = "UPM_UNCALLED_PRIVATE_METHOD",
       justification = "Called by native code through JNI")
   private static WasmValue[] invokeHostFunctionCallback(
-      final long callbackId, final WasmValue[] params) throws WasmException {
+      final long callbackId,
+      final long callerHandle,
+      final long storeId,
+      final WasmValue[] params)
+      throws WasmException {
     if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
       LOGGER.fine(
           "invokeHostFunctionCallback - Called with callbackId="
               + callbackId
+              + ", callerHandle=0x"
+              + Long.toHexString(callerHandle)
+              + ", storeId="
+              + storeId
               + ", params.length="
               + params.length);
     }
@@ -731,8 +754,25 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
     if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
       LOGGER.fine("Executing host function: " + wrapper.moduleName + "::" + wrapper.name);
     }
+
+    final HostFunction impl = wrapper.getImplementation();
+    final boolean isCallerAware = impl instanceof HostFunction.CallerAwareHostFunction;
+    final JniStore store = storeId >= 0 ? JniStore.lookupByStoreId(storeId) : null;
+    final boolean canSupplyCaller = isCallerAware && callerHandle != 0 && store != null;
+
+    // Bump generation on entry so any prior JniCaller (should not exist for a
+    // fresh callback frame, but nested-caller safety requires monotonic bumps
+    // regardless) is invalidated. Capture the entered value for the JniCaller
+    // built inside this frame.
+    final long enteredGeneration = canSupplyCaller ? store.bumpCallerGeneration() : 0L;
+    JniCaller<?> caller = null;
+    if (canSupplyCaller) {
+      caller = new JniCaller<>(callerHandle, store, enteredGeneration);
+      CALLER_CONTEXT.set(caller);
+    }
+
     try {
-      final WasmValue[] results = wrapper.getImplementation().execute(params);
+      final WasmValue[] results = impl.execute(params);
       if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
         LOGGER.fine(
             "invokeHostFunctionCallback - Completed successfully with "
@@ -750,7 +790,42 @@ public class JniLinker<T> extends JniResource implements Linker<T> {
               + "' threw exception: "
               + e.getMessage(),
           e);
+    } finally {
+      if (caller != null) {
+        CALLER_CONTEXT.remove();
+        // Bump again on exit so the just-minted JniCaller becomes invalid the
+        // instant this method returns. Any escaping reference to it will now
+        // trip the generation check on next use.
+        store.bumpCallerGeneration();
+      }
     }
+  }
+
+  /**
+   * Thread-local holding the caller for the currently-executing host callback
+   * frame on this thread.
+   *
+   * <p>Set by {@link #invokeHostFunctionCallback(long, long, long, WasmValue[])}
+   * so that {@link ai.tegmentum.wasmtime4j.func.HostFunction.CallerAwareHostFunction}'s
+   * {@code getCurrentCaller()} (delegated via the {@link JniCallerContextProvider}
+   * SPI) resolves to a valid {@link JniCaller}. Nested host frames re-set it and
+   * restore it on exit.
+   *
+   * @since 1.6.0
+   */
+  static final ThreadLocal<JniCaller<?>> CALLER_CONTEXT = new ThreadLocal<>();
+
+  /**
+   * Access the caller published by the currently-executing host callback frame
+   * on this thread, if any. Used by {@link JniCallerContextProvider}.
+   *
+   * @param <T> the store data type
+   * @return the current caller, or {@code null} if not inside a Linker-defined
+   *     caller-aware host callback
+   */
+  @SuppressWarnings("unchecked")
+  static <T> JniCaller<T> currentCaller() {
+    return (JniCaller<T>) CALLER_CONTEXT.get();
   }
 
   @Override

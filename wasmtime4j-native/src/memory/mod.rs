@@ -271,6 +271,38 @@ impl Memory {
     /// Returns the previous number of pages on success, or `u64::MAX` (which
     /// represents -1 as i64) on failure, consistent with the WebAssembly spec
     /// for `memory.grow`.
+    /// Grow the memory using a wasmtime `StoreContextMut` borrowed from an
+    /// active host callback (r.2 caller-scoped path).
+    ///
+    /// This is the borrow-safe counterpart to `grow`: it uses the callback's
+    /// wasmtime mutable-store context directly instead of acquiring a fresh
+    /// Store lock, so it can be invoked from within a host function without
+    /// tripping the reentrant-mutation SIGSEGV witnessed by
+    /// F-JIT-Loader-Java-Reference r.5.b.
+    ///
+    /// Only supported on regular (non-shared) memories — shared memories
+    /// grow atomically via `SharedMemory::grow` which doesn't need a store
+    /// context and should be called through a different path.
+    pub fn grow_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        additional_pages: u64,
+    ) -> WasmtimeResult<u64> {
+        match &self.inner {
+            MemoryVariant::Regular(mem) => mem
+                .grow(ctx, additional_pages)
+                .map_err(|e| WasmtimeError::Memory {
+                    message: format!("Caller-scoped memory grow failed: {}", e),
+                }),
+            MemoryVariant::Shared(_) => Err(WasmtimeError::Runtime {
+                message:
+                    "Caller-scoped grow_with_context is only supported for regular (non-shared) memories"
+                        .to_string(),
+                backtrace: None,
+            }),
+        }
+    }
+
     pub fn grow(&self, store: &mut Store, additional_pages: u64) -> WasmtimeResult<u64> {
         // Get current size
         let current_pages = self.size_pages(store)?;

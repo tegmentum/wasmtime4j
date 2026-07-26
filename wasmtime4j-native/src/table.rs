@@ -442,6 +442,50 @@ impl Table {
         })
     }
 
+    /// Grow the table by `delta` elements using a wasmtime `StoreContextMut`
+    /// borrowed from an active host callback (r.2 caller-scoped path).
+    ///
+    /// This is the borrow-safe counterpart to `grow`: it uses the callback's
+    /// wasmtime mutable-store context directly instead of acquiring a fresh
+    /// Store lock, so it can be invoked from within a host function without
+    /// tripping the reentrant-mutation SIGSEGV witnessed by
+    /// F-JIT-Loader-Java-Reference r.5.b.
+    pub fn grow_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        delta: u64,
+        init_value: wasmtime::Ref,
+    ) -> WasmtimeResult<u64> {
+        let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire table lock: {}", e),
+        })?;
+        table
+            .grow(ctx, delta, init_value)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Caller-scoped table grow failed: {}", e),
+                backtrace: None,
+            })
+    }
+
+    /// Set the table element at `index` using a wasmtime `StoreContextMut`
+    /// borrowed from an active host callback (r.2 caller-scoped path).
+    pub fn set_with_context<T: 'static>(
+        &self,
+        ctx: &mut wasmtime::StoreContextMut<'_, T>,
+        index: u64,
+        value: wasmtime::Ref,
+    ) -> WasmtimeResult<()> {
+        let table = self.inner.lock().map_err(|e| WasmtimeError::Concurrency {
+            message: format!("Failed to acquire table lock: {}", e),
+        })?;
+        table
+            .set(ctx, index, value)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Caller-scoped table set failed: {}", e),
+                backtrace: None,
+            })
+    }
+
     /// Grow the table by the specified number of elements
     pub fn grow(&self, store: &Store, delta: u32, init_value: TableElement) -> WasmtimeResult<u64> {
         // Validate that the init_value type matches the table's element type

@@ -54,12 +54,39 @@ final class JniCaller<T> implements Caller<T> {
   private final JniStore store;
 
   /**
+   * Generation counter value captured at construction. Every scoped method call
+   * checks {@code store.getCallerGeneration() == capturedGeneration}; a mismatch
+   * indicates the caller was retained past its host-callback scope and the
+   * underlying wasmtime {@code Caller} borrow is no longer valid.
+   */
+  private final long capturedGeneration;
+
+  /**
    * Creates a JNI caller context wrapper.
+   *
+   * <p>Legacy constructor that binds the caller to generation 0. Retained for
+   * source-compatibility with the pre-generation-counter callsites; prefer
+   * {@link #JniCaller(long, JniStore, long)} in new code so use-after-return
+   * is caught.
    *
    * @param callerHandle the native caller handle from Wasmtime
    * @param store the store this caller is associated with
    */
   JniCaller(final long callerHandle, final JniStore store) {
+    this(callerHandle, store, store == null ? 0L : store.getCallerGeneration());
+  }
+
+  /**
+   * Creates a JNI caller context wrapper with an explicit captured generation.
+   *
+   * @param callerHandle the native caller handle from Wasmtime
+   * @param store the store this caller is associated with
+   * @param capturedGeneration the store's caller generation at the time this
+   *     caller was minted; every subsequent scoped call checks the store's
+   *     current generation against this value
+   * @since 1.6.0
+   */
+  JniCaller(final long callerHandle, final JniStore store, final long capturedGeneration) {
     if (callerHandle == 0) {
       throw new IllegalArgumentException("Caller handle cannot be 0");
     }
@@ -69,15 +96,38 @@ final class JniCaller<T> implements Caller<T> {
 
     this.callerHandle = callerHandle;
     this.store = store;
+    this.capturedGeneration = capturedGeneration;
 
     if (LOGGER.isLoggable(Level.FINE)) {
-      LOGGER.fine("Created JniCaller with handle: 0x" + Long.toHexString(callerHandle));
+      LOGGER.fine(
+          "Created JniCaller with handle: 0x"
+              + Long.toHexString(callerHandle)
+              + " gen="
+              + capturedGeneration);
+    }
+  }
+
+  /**
+   * Verify the underlying wasmtime caller borrow is still live.
+   *
+   * @throws IllegalStateException if the callback has returned
+   */
+  private void checkStillValid() {
+    final long current = store.getCallerGeneration();
+    if (current != capturedGeneration) {
+      throw new IllegalStateException(
+          "Caller used after callback returned (captured generation "
+              + capturedGeneration
+              + ", store now at "
+              + current
+              + ")");
     }
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public T data() {
+    checkStillValid();
     // Get user data from the store
     final Object storeData = store.getData();
     return storeData != null ? (T) storeData : null;
@@ -88,6 +138,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Export name cannot be null");
     }
+    checkStillValid();
 
     try {
       // Try function
@@ -135,6 +186,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
+    checkStillValid();
 
     try {
       final long funcHandle = nativeGetFunction(callerHandle, name);
@@ -154,6 +206,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Memory name cannot be null");
     }
+    checkStillValid();
 
     try {
       final long memHandle = nativeGetMemory(callerHandle, name);
@@ -172,6 +225,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Table name cannot be null");
     }
+    checkStillValid();
 
     try {
       final long tableHandle = nativeGetTable(callerHandle, name);
@@ -190,6 +244,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Global name cannot be null");
     }
+    checkStillValid();
 
     try {
       final long globalHandle = nativeGetGlobal(callerHandle, name);
@@ -208,6 +263,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Export name cannot be null");
     }
+    checkStillValid();
 
     try {
       return nativeHasExport(callerHandle, name);
@@ -219,6 +275,7 @@ final class JniCaller<T> implements Caller<T> {
 
   @Override
   public Optional<Long> fuelRemaining() {
+    checkStillValid();
     try {
       final long fuel = nativeGetFuelRemaining(callerHandle);
       return fuel >= 0 ? Optional.of(fuel) : Optional.empty();
@@ -233,6 +290,7 @@ final class JniCaller<T> implements Caller<T> {
     if (fuel < 0) {
       throw new IllegalArgumentException("Fuel amount cannot be negative");
     }
+    checkStillValid();
 
     try {
       nativeAddFuel(callerHandle, fuel);
@@ -246,6 +304,7 @@ final class JniCaller<T> implements Caller<T> {
     if (fuel < 0) {
       throw new IllegalArgumentException("Fuel amount cannot be negative");
     }
+    checkStillValid();
 
     try {
       nativeSetFuel(callerHandle, fuel);
@@ -262,6 +321,7 @@ final class JniCaller<T> implements Caller<T> {
 
   @Override
   public void gc() throws WasmException {
+    checkStillValid();
     try {
       store.gc();
     } catch (Exception e) {
@@ -274,6 +334,7 @@ final class JniCaller<T> implements Caller<T> {
     if (interval < 0) {
       throw new IllegalArgumentException("interval cannot be negative");
     }
+    checkStillValid();
     nativeSetFuelAsyncYieldInterval(callerHandle, interval);
   }
 
@@ -376,6 +437,7 @@ final class JniCaller<T> implements Caller<T> {
   @Override
   public java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    checkStillValid();
     final int[] frameData = nativeDebugExitFrames(callerHandle);
     if (frameData == null) {
       return java.util.Collections.emptyList();
@@ -399,4 +461,149 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   private static native int[] nativeDebugExitFrames(long callerHandle);
+
+  // ==========================================================================
+  // r.2 scoped store-mutation methods.
+  // ==========================================================================
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Module compileModule(final byte[] wasmBytes)
+      throws WasmException {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    checkStillValid();
+    // Compilation is engine-scoped; delegate to the caller's store's engine so
+    // the resulting module is definitely-compatible with the caller's store.
+    final Engine callerEngine = store.getEngine();
+    return callerEngine.compileModule(wasmBytes);
+  }
+
+  @Override
+  public int growTable(final WasmTable table, final int delta, final Object init)
+      throws WasmException {
+    if (table == null) {
+      throw new IllegalArgumentException("table cannot be null");
+    }
+    if (delta < 0) {
+      throw new IllegalArgumentException("delta must be non-negative");
+    }
+    checkStillValid();
+    final long tableHandle = extractHandle(table, "table");
+    final long initRefId = objectToRefId(init);
+    return (int) nativeCallerGrowTable(callerHandle, tableHandle, delta, initRefId);
+  }
+
+  @Override
+  public void setTableElement(final WasmTable table, final int index, final Object value)
+      throws WasmException {
+    if (table == null) {
+      throw new IllegalArgumentException("table cannot be null");
+    }
+    if (index < 0) {
+      throw new IllegalArgumentException("index must be non-negative");
+    }
+    checkStillValid();
+    final long tableHandle = extractHandle(table, "table");
+    final long valueRefId = objectToRefId(value);
+    final boolean ok = nativeCallerSetTableElement(callerHandle, tableHandle, index, valueRefId);
+    if (!ok) {
+      throw new WasmException("Caller-scoped table set failed");
+    }
+  }
+
+  @Override
+  public long growMemory(final WasmMemory memory, final long deltaPages) throws WasmException {
+    if (memory == null) {
+      throw new IllegalArgumentException("memory cannot be null");
+    }
+    if (deltaPages < 0) {
+      throw new IllegalArgumentException("deltaPages must be non-negative");
+    }
+    checkStillValid();
+    final long memoryHandle = extractHandle(memory, "memory");
+    return nativeCallerGrowMemory(callerHandle, memoryHandle, deltaPages);
+  }
+
+  /**
+   * Extract a native handle from a {@link JniResource}-backed wasmtime4j object.
+   * Callers responsible for providing an object owned by this JNI backend —
+   * mixing objects across backends throws {@link IllegalArgumentException}.
+   */
+  private static long extractHandle(final Object obj, final String argName) {
+    if (obj instanceof ai.tegmentum.wasmtime4j.jni.util.JniResource) {
+      return ((ai.tegmentum.wasmtime4j.jni.util.JniResource) obj).getNativeHandle();
+    }
+    throw new IllegalArgumentException(
+        argName
+            + " must be a JNI-backed wasmtime4j object, got "
+            + (obj == null ? "null" : obj.getClass().getName()));
+  }
+
+  /**
+   * Resolve a Java-side reference value (WasmFunction / null / etc) to the
+   * shared function reference registry id used by the caller-scoped natives.
+   *
+   * <p>{@code null} maps to id 0 (null reference). {@code WasmFunction}
+   * instances backed by {@link JniFunction} resolve to their reference id via
+   * {@link JniFunction#nativeFuncToRaw(long, long)}. Other object types are
+   * rejected in r.2 — extending to externref / anyref writes is deferred.
+   */
+  private long objectToRefId(final Object value) throws WasmException {
+    if (value == null) {
+      return 0L;
+    }
+    if (value instanceof JniFunction) {
+      final JniFunction jniFunc = (JniFunction) value;
+      final long id =
+          JniFunction.nativeFuncToRaw(jniFunc.getNativeHandle(), store.getNativeHandle());
+      if (id == 0L) {
+        throw new WasmException("Could not resolve JniFunction to a funcref id");
+      }
+      return id;
+    }
+    if (value instanceof WasmFunction) {
+      throw new WasmException(
+          "growTable / setTableElement with a non-JniFunction WasmFunction is not supported in r.2");
+    }
+    throw new WasmException(
+        "growTable / setTableElement with element of type "
+            + value.getClass().getName()
+            + " not supported in r.2 (funcref-only)");
+  }
+
+  /**
+   * Grow a caller-visible Table (native side uses caller.as_context_mut()).
+   *
+   * @param callerHandle the native caller handle
+   * @param tableHandle the target table's native handle
+   * @param delta number of slots to add
+   * @param initRefId funcref registry id or 0 for null
+   * @return previous table size, or -1 on failure
+   */
+  private static native long nativeCallerGrowTable(
+      long callerHandle, long tableHandle, int delta, long initRefId);
+
+  /**
+   * Set a caller-visible Table element (native side uses caller.as_context_mut()).
+   *
+   * @param callerHandle the native caller handle
+   * @param tableHandle the target table's native handle
+   * @param index target slot index
+   * @param valueRefId funcref registry id or 0 for null
+   * @return true on success
+   */
+  private static native boolean nativeCallerSetTableElement(
+      long callerHandle, long tableHandle, int index, long valueRefId);
+
+  /**
+   * Grow a caller-visible Memory (native side uses caller.as_context_mut()).
+   *
+   * @param callerHandle the native caller handle
+   * @param memoryHandle the target memory's native handle
+   * @param deltaPages number of pages to add
+   * @return previous size in pages, or -1 on failure
+   */
+  private static native long nativeCallerGrowMemory(
+      long callerHandle, long memoryHandle, long deltaPages);
 }

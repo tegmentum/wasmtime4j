@@ -446,7 +446,11 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function(
         }
 
         impl HostFunctionCallback for StoreHostFunctionCallbackImpl {
-            fn execute(&self, params: &[WasmValue]) -> crate::WasmtimeResult<Vec<WasmValue>> {
+            fn execute(
+                &self,
+                _caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
+                params: &[WasmValue],
+            ) -> crate::WasmtimeResult<Vec<WasmValue>> {
                 log::debug!("[STORE_CB] StoreHostFunctionCallbackImpl.execute, callback_id={}, params.len={}, expected_results={}",
                     self.callback_id, params.len(), self.result_count);
 
@@ -614,7 +618,11 @@ pub extern "C" fn wasmtime4j_panama_store_create_host_function_unchecked(
         }
 
         impl HostFunctionCallback for StoreHostFunctionCallbackImpl {
-            fn execute(&self, params: &[WasmValue]) -> crate::WasmtimeResult<Vec<WasmValue>> {
+            fn execute(
+                &self,
+                _caller: &mut wasmtime::Caller<'_, crate::store::StoreData>,
+                params: &[WasmValue],
+            ) -> crate::WasmtimeResult<Vec<WasmValue>> {
                 let ffi_params: Vec<crate::instance::FfiWasmValue> = params
                     .iter()
                     .map(crate::instance::FfiWasmValue::from_wasm_value)
