@@ -254,4 +254,138 @@ public interface Caller<T> {
     throw new UnsupportedOperationException(
         "debugExitFrames requires guest debugging to be enabled via Config.guestDebug(true)");
   }
+
+  // ==========================================================================
+  // r.2 scoped store-mutation methods (F-Wasmtime4j-Caller-Aware-Host-Function).
+  //
+  // These are the borrow-safe reentrant-mutation entrypoints. They route through
+  // the callback's wasmtime Caller<'_, StoreData> handle instead of acquiring a
+  // fresh Store lock, so a host function can compile modules, grow tables /
+  // memories, and install funcref elements without tripping the
+  // reentrant-mutation SIGSEGV witnessed by F-JIT-Loader-Java-Reference r.5.b.
+  //
+  // Every call is generation-checked in the JNI implementation: if the caller
+  // reference escapes its host-callback frame and is used later, the method
+  // throws IllegalStateException instead of dereferencing a stale native pointer.
+  //
+  // Default methods throw UnsupportedOperationException so alternate Caller
+  // implementations (Panama, mocks) opt in explicitly.
+  // ==========================================================================
+
+  /**
+   * Compile a Module using this callback's store engine.
+   *
+   * <p>Module compilation is engine-scoped, not store-scoped — it does not
+   * mutate the caller's store — but exposing it on {@code Caller} lets a host
+   * function build modules inside a callback with the guarantee that they
+   * share the caller's Engine (and therefore can be instantiated into the
+   * caller's store without cross-engine errors).
+   *
+   * @param wasmBytes WebAssembly binary bytes (or WAT text)
+   * @return the compiled Module
+   * @throws WasmException on compilation failure
+   * @throws IllegalStateException if the callback has returned (use-after-return)
+   * @since 1.6.0
+   */
+  default ai.tegmentum.wasmtime4j.Module compileModule(byte[] wasmBytes) throws WasmException {
+    throw new UnsupportedOperationException(
+        "compileModule not implemented on this Caller backend (JNI-only in wasmtime4j 1.6.0)");
+  }
+
+  /**
+   * Grow a caller-visible {@link ai.tegmentum.wasmtime4j.WasmTable} by
+   * {@code delta} slots, filling new slots with {@code init}.
+   *
+   * <p>For {@code funcref} tables {@code init} must be a
+   * {@link ai.tegmentum.wasmtime4j.WasmFunction} or {@code null}. For
+   * {@code externref} / {@code anyref} tables, r.2 only supports {@code null}
+   * (non-null externref writes deferred to a follow-up).
+   *
+   * @param table the caller-visible table to grow
+   * @param delta the number of slots to add
+   * @param init initial value for new slots (may be null)
+   * @return the previous table size on success, -1 on failure
+   * @throws WasmException on runtime error
+   * @throws IllegalStateException if the callback has returned (use-after-return)
+   * @since 1.6.0
+   */
+  default int growTable(
+      final ai.tegmentum.wasmtime4j.WasmTable table, final int delta, final Object init)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "growTable not implemented on this Caller backend (JNI-only in wasmtime4j 1.6.0)");
+  }
+
+  /**
+   * Set an element in a caller-visible {@link ai.tegmentum.wasmtime4j.WasmTable}.
+   *
+   * <p>For {@code funcref} tables {@code value} must be a
+   * {@link ai.tegmentum.wasmtime4j.WasmFunction} or {@code null}.
+   *
+   * @param table the caller-visible table
+   * @param index target slot index
+   * @param value value to write (may be null)
+   * @throws WasmException on runtime error
+   * @throws IllegalStateException if the callback has returned (use-after-return)
+   * @since 1.6.0
+   */
+  default void setTableElement(
+      final ai.tegmentum.wasmtime4j.WasmTable table, final int index, final Object value)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "setTableElement not implemented on this Caller backend (JNI-only in wasmtime4j 1.6.0)");
+  }
+
+  /**
+   * Grow a caller-visible {@link ai.tegmentum.wasmtime4j.WasmMemory} by
+   * {@code deltaPages} pages.
+   *
+   * <p>Only regular (non-shared) memories are supported by this scoped path;
+   * shared memories grow atomically via
+   * {@link ai.tegmentum.wasmtime4j.WasmMemory#grow(long)} and don't need a
+   * caller borrow.
+   *
+   * @param memory the caller-visible memory to grow
+   * @param deltaPages the number of 64 KiB pages to add
+   * @return the previous size in pages on success, -1 on failure
+   * @throws WasmException on runtime error
+   * @throws IllegalStateException if the callback has returned (use-after-return)
+   * @since 1.6.0
+   */
+  default long growMemory(final ai.tegmentum.wasmtime4j.WasmMemory memory, final long deltaPages)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "growMemory not implemented on this Caller backend (JNI-only in wasmtime4j 1.6.0)");
+  }
+
+  /**
+   * Instantiate a pre-linked module using this callback's store, borrowed
+   * safely from the wasmtime callback context.
+   *
+   * <p>The {@code InstancePre} must have been pre-instantiated against this
+   * callback's engine and linker BEFORE the host-callback fires — inside the
+   * callback, only the final {@code InstancePre::instantiate} step runs.
+   * This matches Rust wasmtime's discipline of pre-linking outside the borrow
+   * scope so the reentrant step is minimal.
+   *
+   * <p><b>Note:</b> This method is declared for API-level parity with the
+   * charter's five scoped methods but is <b>not implemented</b> in wasmtime4j
+   * 1.6.0. The InstancePre wrapper's internal Store lock conflicts with the
+   * caller's live borrow — a caller-scoped InstancePre execution path is
+   * deferred to a follow-up (r.2.b) that adds a
+   * {@code InstancePreWrapper::instantiate_with_context} native method.
+   *
+   * @param pre pre-linked module to instantiate into the caller's store
+   * @return the newly created Instance
+   * @throws WasmException on runtime error
+   * @throws IllegalStateException if the callback has returned (use-after-return)
+   * @throws UnsupportedOperationException while this method remains deferred
+   * @since 1.6.0
+   */
+  default ai.tegmentum.wasmtime4j.Instance instantiate(
+      final ai.tegmentum.wasmtime4j.InstancePre pre) throws WasmException {
+    throw new UnsupportedOperationException(
+        "Caller-scoped instantiate is deferred to r.2.b — pre-instantiate outside the callback"
+            + " and call InstancePre::instantiate on the store instead");
+  }
 }

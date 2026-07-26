@@ -7,8 +7,9 @@ use jni::JNIEnv;
 use wasmtime::Caller as WasmtimeCaller;
 
 use crate::caller::core;
-use crate::error::jni_utils;
+use crate::error::{jni_utils, WasmtimeError};
 use crate::store::StoreData;
+use crate::table::TableElement;
 
 /// Get fuel remaining in the caller if fuel metering is enabled (JNI version)
 #[no_mangle]
@@ -245,6 +246,185 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetTable
             None => Err(crate::error::WasmtimeError::ExportNotFound { name: name_str }),
         }
     }) as jlong
+}
+
+// ===========================================================================
+// r.2: caller-scoped store-mutation natives.
+//
+// These operate on wasmtime objects (Table, Memory) via
+// `caller.as_context_mut()`, which is wasmtime's borrow-safe entrypoint for
+// reentrant store mutation from within a host callback. Contrast this with
+// the analogous JniTable / JniMemory paths which acquire a fresh Store
+// handle — that path is unsafe from a callback frame and is exactly what
+// F-JIT-Loader-Java-Reference r.5.b showed crashing at
+// libwasmtime4j.dylib:HostFunc::store_untyped_results.
+//
+// Java's JniCaller has already verified its generation counter before
+// calling these; the wasmtime borrow's validity is what the counter
+// enforces. Each native still null-checks the handles as defense in depth.
+// ===========================================================================
+
+/// Grow a caller-visible Table by `delta` slots, initialized to `init_value`.
+///
+/// `init_value` is a reference registry id (funcref / externref / anyref) or
+/// 0 for null, matching the shape of {@code JniTable.nativeTableGrow}.
+///
+/// Returns the previous table size on success or -1 on failure.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerGrowTable(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    table_handle: jlong,
+    delta: jint,
+    init_value: jlong,
+) -> jlong {
+    if caller_handle == 0 || table_handle == 0 {
+        return -1;
+    }
+
+    jni_utils::jni_try_with_default(&mut env, -1i64, || {
+        use std::os::raw::c_void;
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let table_wrapper =
+            unsafe { crate::table::core::get_table_ref(table_handle as *const c_void)? };
+
+        let metadata = crate::table::core::get_table_metadata(table_wrapper);
+        let init_element = table_element_from_ref_id(&metadata.element_type, init_value)?;
+        let init_ref = table_element_to_ref(init_element)?;
+
+        let prev_size =
+            table_wrapper.grow_with_context(&mut caller.as_context_mut(), delta as u64, init_ref)?;
+        Ok(prev_size as jlong)
+    })
+}
+
+/// Set a caller-visible Table's element at `index` to the value identified by
+/// `value_ref_id` (registry id or 0 for null).
+///
+/// Returns 1 on success, 0 on failure.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerSetTableElement(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    table_handle: jlong,
+    index: jint,
+    value_ref_id: jlong,
+) -> jboolean {
+    if caller_handle == 0 || table_handle == 0 {
+        return 0;
+    }
+
+    jni_utils::jni_try_bool(&mut env, || {
+        use std::os::raw::c_void;
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let table_wrapper =
+            unsafe { crate::table::core::get_table_ref(table_handle as *const c_void)? };
+
+        let metadata = crate::table::core::get_table_metadata(table_wrapper);
+        let element = table_element_from_ref_id(&metadata.element_type, value_ref_id)?;
+        let value_ref = table_element_to_ref(element)?;
+
+        table_wrapper.set_with_context(&mut caller.as_context_mut(), index as u64, value_ref)?;
+        Ok(true)
+    }) as jboolean
+}
+
+/// Grow a caller-visible Memory by `delta_pages`. Returns the previous size in
+/// pages on success or -1 on failure.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerGrowMemory(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    memory_handle: jlong,
+    delta_pages: jlong,
+) -> jlong {
+    if caller_handle == 0 || memory_handle == 0 {
+        return -1;
+    }
+
+    jni_utils::jni_try_with_default(&mut env, -1i64, || {
+        use std::os::raw::c_void;
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let memory =
+            unsafe { crate::memory::core::get_memory_ref(memory_handle as *const c_void)? };
+
+        let prev_pages =
+            memory.grow_with_context(&mut caller.as_context_mut(), delta_pages as u64)?;
+        Ok(prev_pages as jlong)
+    })
+}
+
+/// Look up a TableElement for the given (element_type, registry id) pair.
+///
+/// A `ref_id` of 0 encodes null. For funcref / externref, the id encodes into
+/// the corresponding variant. Non-reference table element types are rejected.
+fn table_element_from_ref_id(
+    element_type: &wasmtime::ValType,
+    ref_id: jlong,
+) -> crate::error::WasmtimeResult<TableElement> {
+    match element_type {
+        wasmtime::ValType::Ref(ref_type) => match ref_type.heap_type() {
+            wasmtime::HeapType::Func => Ok(if ref_id == 0 {
+                TableElement::FuncRef(None)
+            } else {
+                TableElement::FuncRef(Some(ref_id as u64))
+            }),
+            wasmtime::HeapType::Extern => Ok(if ref_id == 0 {
+                TableElement::ExternRef(None)
+            } else {
+                TableElement::ExternRef(Some(ref_id as u64))
+            }),
+            _ => Ok(if ref_id == 0 {
+                TableElement::AnyRef(None)
+            } else {
+                TableElement::AnyRef(Some(ref_id as u64))
+            }),
+        },
+        _ => Err(WasmtimeError::InvalidParameter {
+            message: format!(
+                "Caller-scoped table op on non-reference element type: {:?}",
+                element_type
+            ),
+        }),
+    }
+}
+
+/// Convert a TableElement (registry id) to a wasmtime::Ref by resolving the
+/// funcref through the shared function reference registry.
+fn table_element_to_ref(element: TableElement) -> crate::error::WasmtimeResult<wasmtime::Ref> {
+    match element {
+        TableElement::FuncRef(None) => Ok(wasmtime::Ref::Func(None)),
+        TableElement::FuncRef(Some(id)) => {
+            // The caller-scoped path uses the same funcref registry as the
+            // JniTable-based path so funcref ids stay round-trippable.
+            let func = crate::table::core::get_function_reference(id)?.ok_or_else(|| {
+                WasmtimeError::Runtime {
+                    message: format!("Funcref id {} not in registry", id),
+                    backtrace: None,
+                }
+            })?;
+            Ok(wasmtime::Ref::Func(Some(func)))
+        }
+        TableElement::ExternRef(_) | TableElement::AnyRef(_) => {
+            // The scoped path only implements funcref writes for r.2 — the
+            // primary r.5.b use case is JIT-loader installing funcrefs. Extern
+            // / any refs require the ExternRef::new/AnyRef::new path which
+            // needs additional wiring; deferred to a follow-up.
+            Err(WasmtimeError::Runtime {
+                message: "Caller-scoped set only supports funcref values in r.2".to_string(),
+                backtrace: None,
+            })
+        }
+    }
 }
 
 /// Get debug exit frames from the caller (JNI version)

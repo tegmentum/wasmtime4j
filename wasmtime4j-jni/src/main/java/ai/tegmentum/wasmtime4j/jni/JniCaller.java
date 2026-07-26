@@ -461,4 +461,149 @@ final class JniCaller<T> implements Caller<T> {
   }
 
   private static native int[] nativeDebugExitFrames(long callerHandle);
+
+  // ==========================================================================
+  // r.2 scoped store-mutation methods.
+  // ==========================================================================
+
+  @Override
+  public ai.tegmentum.wasmtime4j.Module compileModule(final byte[] wasmBytes)
+      throws WasmException {
+    if (wasmBytes == null) {
+      throw new IllegalArgumentException("wasmBytes cannot be null");
+    }
+    checkStillValid();
+    // Compilation is engine-scoped; delegate to the caller's store's engine so
+    // the resulting module is definitely-compatible with the caller's store.
+    final Engine callerEngine = store.getEngine();
+    return callerEngine.compileModule(wasmBytes);
+  }
+
+  @Override
+  public int growTable(final WasmTable table, final int delta, final Object init)
+      throws WasmException {
+    if (table == null) {
+      throw new IllegalArgumentException("table cannot be null");
+    }
+    if (delta < 0) {
+      throw new IllegalArgumentException("delta must be non-negative");
+    }
+    checkStillValid();
+    final long tableHandle = extractHandle(table, "table");
+    final long initRefId = objectToRefId(init);
+    return (int) nativeCallerGrowTable(callerHandle, tableHandle, delta, initRefId);
+  }
+
+  @Override
+  public void setTableElement(final WasmTable table, final int index, final Object value)
+      throws WasmException {
+    if (table == null) {
+      throw new IllegalArgumentException("table cannot be null");
+    }
+    if (index < 0) {
+      throw new IllegalArgumentException("index must be non-negative");
+    }
+    checkStillValid();
+    final long tableHandle = extractHandle(table, "table");
+    final long valueRefId = objectToRefId(value);
+    final boolean ok = nativeCallerSetTableElement(callerHandle, tableHandle, index, valueRefId);
+    if (!ok) {
+      throw new WasmException("Caller-scoped table set failed");
+    }
+  }
+
+  @Override
+  public long growMemory(final WasmMemory memory, final long deltaPages) throws WasmException {
+    if (memory == null) {
+      throw new IllegalArgumentException("memory cannot be null");
+    }
+    if (deltaPages < 0) {
+      throw new IllegalArgumentException("deltaPages must be non-negative");
+    }
+    checkStillValid();
+    final long memoryHandle = extractHandle(memory, "memory");
+    return nativeCallerGrowMemory(callerHandle, memoryHandle, deltaPages);
+  }
+
+  /**
+   * Extract a native handle from a {@link JniResource}-backed wasmtime4j object.
+   * Callers responsible for providing an object owned by this JNI backend —
+   * mixing objects across backends throws {@link IllegalArgumentException}.
+   */
+  private static long extractHandle(final Object obj, final String argName) {
+    if (obj instanceof ai.tegmentum.wasmtime4j.jni.util.JniResource) {
+      return ((ai.tegmentum.wasmtime4j.jni.util.JniResource) obj).getNativeHandle();
+    }
+    throw new IllegalArgumentException(
+        argName
+            + " must be a JNI-backed wasmtime4j object, got "
+            + (obj == null ? "null" : obj.getClass().getName()));
+  }
+
+  /**
+   * Resolve a Java-side reference value (WasmFunction / null / etc) to the
+   * shared function reference registry id used by the caller-scoped natives.
+   *
+   * <p>{@code null} maps to id 0 (null reference). {@code WasmFunction}
+   * instances backed by {@link JniFunction} resolve to their reference id via
+   * {@link JniFunction#nativeFuncToRaw(long, long)}. Other object types are
+   * rejected in r.2 — extending to externref / anyref writes is deferred.
+   */
+  private long objectToRefId(final Object value) throws WasmException {
+    if (value == null) {
+      return 0L;
+    }
+    if (value instanceof JniFunction) {
+      final JniFunction jniFunc = (JniFunction) value;
+      final long id =
+          JniFunction.nativeFuncToRaw(jniFunc.getNativeHandle(), store.getNativeHandle());
+      if (id == 0L) {
+        throw new WasmException("Could not resolve JniFunction to a funcref id");
+      }
+      return id;
+    }
+    if (value instanceof WasmFunction) {
+      throw new WasmException(
+          "growTable / setTableElement with a non-JniFunction WasmFunction is not supported in r.2");
+    }
+    throw new WasmException(
+        "growTable / setTableElement with element of type "
+            + value.getClass().getName()
+            + " not supported in r.2 (funcref-only)");
+  }
+
+  /**
+   * Grow a caller-visible Table (native side uses caller.as_context_mut()).
+   *
+   * @param callerHandle the native caller handle
+   * @param tableHandle the target table's native handle
+   * @param delta number of slots to add
+   * @param initRefId funcref registry id or 0 for null
+   * @return previous table size, or -1 on failure
+   */
+  private static native long nativeCallerGrowTable(
+      long callerHandle, long tableHandle, int delta, long initRefId);
+
+  /**
+   * Set a caller-visible Table element (native side uses caller.as_context_mut()).
+   *
+   * @param callerHandle the native caller handle
+   * @param tableHandle the target table's native handle
+   * @param index target slot index
+   * @param valueRefId funcref registry id or 0 for null
+   * @return true on success
+   */
+  private static native boolean nativeCallerSetTableElement(
+      long callerHandle, long tableHandle, int index, long valueRefId);
+
+  /**
+   * Grow a caller-visible Memory (native side uses caller.as_context_mut()).
+   *
+   * @param callerHandle the native caller handle
+   * @param memoryHandle the target memory's native handle
+   * @param deltaPages number of pages to add
+   * @return previous size in pages, or -1 on failure
+   */
+  private static native long nativeCallerGrowMemory(
+      long callerHandle, long memoryHandle, long deltaPages);
 }
