@@ -201,7 +201,28 @@ public final class JniStore extends JniResource implements Store {
   JniStore(final long nativeHandle, final Engine engine) {
     super(nativeHandle);
     this.engine = engine;
-    this.storeId = nativeGetStoreId(nativeHandle);
+
+    // Resolve the wasmtime store_id via native. This throws on unregistered /
+    // fake handles (unit-test JniStore instances built from sentinel handles
+    // like `0x12345678L`), in which case we degrade cleanly: storeId stays
+    // -1, no registry entry gets created, and the caller-aware dispatcher
+    // simply won't be able to look this store up (which is correct — it can
+    // never receive a real host callback).
+    long resolvedId;
+    try {
+      resolvedId = nativeGetStoreId(nativeHandle);
+    } catch (final Throwable t) {
+      LOGGER.fine(
+          "nativeGetStoreId failed for handle 0x"
+              + Long.toHexString(nativeHandle)
+              + " ("
+              + t.getClass().getSimpleName()
+              + ": "
+              + t.getMessage()
+              + "); JniStore will be unregistered");
+      resolvedId = -1L;
+    }
+    this.storeId = resolvedId;
     if (this.storeId >= 0) {
       STORES_BY_ID.put(this.storeId, new WeakReference<>(this));
     }
