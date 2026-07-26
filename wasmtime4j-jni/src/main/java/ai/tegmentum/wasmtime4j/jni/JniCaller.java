@@ -54,12 +54,39 @@ final class JniCaller<T> implements Caller<T> {
   private final JniStore store;
 
   /**
+   * Generation counter value captured at construction. Every scoped method call
+   * checks {@code store.getCallerGeneration() == capturedGeneration}; a mismatch
+   * indicates the caller was retained past its host-callback scope and the
+   * underlying wasmtime {@code Caller} borrow is no longer valid.
+   */
+  private final long capturedGeneration;
+
+  /**
    * Creates a JNI caller context wrapper.
+   *
+   * <p>Legacy constructor that binds the caller to generation 0. Retained for
+   * source-compatibility with the pre-generation-counter callsites; prefer
+   * {@link #JniCaller(long, JniStore, long)} in new code so use-after-return
+   * is caught.
    *
    * @param callerHandle the native caller handle from Wasmtime
    * @param store the store this caller is associated with
    */
   JniCaller(final long callerHandle, final JniStore store) {
+    this(callerHandle, store, store == null ? 0L : store.getCallerGeneration());
+  }
+
+  /**
+   * Creates a JNI caller context wrapper with an explicit captured generation.
+   *
+   * @param callerHandle the native caller handle from Wasmtime
+   * @param store the store this caller is associated with
+   * @param capturedGeneration the store's caller generation at the time this
+   *     caller was minted; every subsequent scoped call checks the store's
+   *     current generation against this value
+   * @since 1.6.0
+   */
+  JniCaller(final long callerHandle, final JniStore store, final long capturedGeneration) {
     if (callerHandle == 0) {
       throw new IllegalArgumentException("Caller handle cannot be 0");
     }
@@ -69,15 +96,38 @@ final class JniCaller<T> implements Caller<T> {
 
     this.callerHandle = callerHandle;
     this.store = store;
+    this.capturedGeneration = capturedGeneration;
 
     if (LOGGER.isLoggable(Level.FINE)) {
-      LOGGER.fine("Created JniCaller with handle: 0x" + Long.toHexString(callerHandle));
+      LOGGER.fine(
+          "Created JniCaller with handle: 0x"
+              + Long.toHexString(callerHandle)
+              + " gen="
+              + capturedGeneration);
+    }
+  }
+
+  /**
+   * Verify the underlying wasmtime caller borrow is still live.
+   *
+   * @throws IllegalStateException if the callback has returned
+   */
+  private void checkStillValid() {
+    final long current = store.getCallerGeneration();
+    if (current != capturedGeneration) {
+      throw new IllegalStateException(
+          "Caller used after callback returned (captured generation "
+              + capturedGeneration
+              + ", store now at "
+              + current
+              + ")");
     }
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public T data() {
+    checkStillValid();
     // Get user data from the store
     final Object storeData = store.getData();
     return storeData != null ? (T) storeData : null;
@@ -88,6 +138,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Export name cannot be null");
     }
+    checkStillValid();
 
     try {
       // Try function
@@ -135,6 +186,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Function name cannot be null");
     }
+    checkStillValid();
 
     try {
       final long funcHandle = nativeGetFunction(callerHandle, name);
@@ -154,6 +206,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Memory name cannot be null");
     }
+    checkStillValid();
 
     try {
       final long memHandle = nativeGetMemory(callerHandle, name);
@@ -172,6 +225,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Table name cannot be null");
     }
+    checkStillValid();
 
     try {
       final long tableHandle = nativeGetTable(callerHandle, name);
@@ -190,6 +244,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Global name cannot be null");
     }
+    checkStillValid();
 
     try {
       final long globalHandle = nativeGetGlobal(callerHandle, name);
@@ -208,6 +263,7 @@ final class JniCaller<T> implements Caller<T> {
     if (name == null) {
       throw new IllegalArgumentException("Export name cannot be null");
     }
+    checkStillValid();
 
     try {
       return nativeHasExport(callerHandle, name);
@@ -219,6 +275,7 @@ final class JniCaller<T> implements Caller<T> {
 
   @Override
   public Optional<Long> fuelRemaining() {
+    checkStillValid();
     try {
       final long fuel = nativeGetFuelRemaining(callerHandle);
       return fuel >= 0 ? Optional.of(fuel) : Optional.empty();
@@ -233,6 +290,7 @@ final class JniCaller<T> implements Caller<T> {
     if (fuel < 0) {
       throw new IllegalArgumentException("Fuel amount cannot be negative");
     }
+    checkStillValid();
 
     try {
       nativeAddFuel(callerHandle, fuel);
@@ -246,6 +304,7 @@ final class JniCaller<T> implements Caller<T> {
     if (fuel < 0) {
       throw new IllegalArgumentException("Fuel amount cannot be negative");
     }
+    checkStillValid();
 
     try {
       nativeSetFuel(callerHandle, fuel);
@@ -262,6 +321,7 @@ final class JniCaller<T> implements Caller<T> {
 
   @Override
   public void gc() throws WasmException {
+    checkStillValid();
     try {
       store.gc();
     } catch (Exception e) {
@@ -274,6 +334,7 @@ final class JniCaller<T> implements Caller<T> {
     if (interval < 0) {
       throw new IllegalArgumentException("interval cannot be negative");
     }
+    checkStillValid();
     nativeSetFuelAsyncYieldInterval(callerHandle, interval);
   }
 
@@ -376,6 +437,7 @@ final class JniCaller<T> implements Caller<T> {
   @Override
   public java.util.List<ai.tegmentum.wasmtime4j.debug.FrameHandle> debugExitFrames()
       throws ai.tegmentum.wasmtime4j.exception.WasmException {
+    checkStillValid();
     final int[] frameData = nativeDebugExitFrames(callerHandle);
     if (frameData == null) {
       return java.util.Collections.emptyList();

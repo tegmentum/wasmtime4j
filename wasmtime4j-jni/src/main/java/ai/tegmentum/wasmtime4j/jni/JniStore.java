@@ -35,7 +35,10 @@ import ai.tegmentum.wasmtime4j.jni.util.JniResource;
 import ai.tegmentum.wasmtime4j.type.FunctionType;
 import ai.tegmentum.wasmtime4j.util.Validation;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.lang.ref.WeakReference;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
@@ -116,6 +119,76 @@ public final class JniStore extends JniResource implements Store {
   private volatile JniWasiContextImpl trackedWasiContext;
 
   /**
+   * Wasmtime-assigned store id (StoreData.store_id), used as the lookup key in
+   * {@link #STORES_BY_ID} so the JNI host-function callback dispatcher can
+   * recover the owning {@link JniStore} given only a wasmtime
+   * {@code Caller<'_, StoreData>} handle.
+   */
+  private final long storeId;
+
+  /**
+   * Per-store generation counter for use-after-return safety on {@link JniCaller}.
+   *
+   * <p>Bumped on host-callback entry and again on exit by
+   * {@link JniLinker#invokeHostFunctionCallback}. Each {@link JniCaller}
+   * constructed for a callback captures the value on entry and every scoped
+   * method call checks it — a mismatch means the caller escaped its
+   * callback scope and the underlying wasmtime {@code Caller} pointer is stale.
+   *
+   * @since 1.6.0
+   */
+  private final AtomicLong callerGeneration = new AtomicLong(0);
+
+  /**
+   * Registry of live JniStores keyed by their wasmtime-assigned {@code store_id}.
+   *
+   * <p>Populated in the constructor and cleared in {@link #doClose()}. Used by
+   * {@link JniLinker#invokeHostFunctionCallback} to find the owning store from
+   * the {@code store_id} the native dispatcher passes through.
+   */
+  private static final ConcurrentHashMap<Long, WeakReference<JniStore>> STORES_BY_ID =
+      new ConcurrentHashMap<>();
+
+  /**
+   * Look up a live {@link JniStore} by its wasmtime {@code store_id}.
+   *
+   * @param storeId the wasmtime-assigned store id
+   * @return the store if still live, or {@code null} if unknown / collected
+   */
+  static JniStore lookupByStoreId(final long storeId) {
+    final WeakReference<JniStore> ref = STORES_BY_ID.get(storeId);
+    if (ref == null) {
+      return null;
+    }
+    final JniStore store = ref.get();
+    if (store == null) {
+      STORES_BY_ID.remove(storeId, ref);
+    }
+    return store;
+  }
+
+  /**
+   * Get the current caller generation for use-after-return safety enforcement.
+   *
+   * @return the current caller generation
+   */
+  long getCallerGeneration() {
+    return callerGeneration.get();
+  }
+
+  /**
+   * Bump the caller generation counter. Called by the host-callback dispatcher
+   * on both entry and exit of a Java host callback so that any
+   * {@link JniCaller} constructed during the callback becomes invalid the
+   * moment the callback returns.
+   *
+   * @return the post-increment generation value
+   */
+  long bumpCallerGeneration() {
+    return callerGeneration.incrementAndGet();
+  }
+
+  /**
    * Creates a new JNI store with the given native handle.
    *
    * <p>This constructor is package-private and should only be used by the JniEngine or other JNI
@@ -128,8 +201,16 @@ public final class JniStore extends JniResource implements Store {
   JniStore(final long nativeHandle, final Engine engine) {
     super(nativeHandle);
     this.engine = engine;
+    this.storeId = nativeGetStoreId(nativeHandle);
+    if (this.storeId >= 0) {
+      STORES_BY_ID.put(this.storeId, new WeakReference<>(this));
+    }
     if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
-      LOGGER.fine("Created JNI store with handle: 0x" + Long.toHexString(nativeHandle));
+      LOGGER.fine(
+          "Created JNI store with handle: 0x"
+              + Long.toHexString(nativeHandle)
+              + " storeId="
+              + this.storeId);
     }
   }
 
@@ -1112,6 +1193,10 @@ public final class JniStore extends JniResource implements Store {
       resourceLimiterAsync = null;
     }
 
+    if (this.storeId >= 0) {
+      STORES_BY_ID.remove(this.storeId);
+    }
+
     if (nativeHandle != 0) {
       nativeDestroyStore(nativeHandle);
       if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
@@ -1321,6 +1406,17 @@ public final class JniStore extends JniResource implements Store {
       long storeHandle, long moduleHandle, long[] externHandles, int[] externTypes);
 
   private static native void nativeDestroyStore(long storeHandle);
+
+  /**
+   * Get the wasmtime-assigned store id ({@code StoreData.store_id}) for the given native handle.
+   *
+   * <p>Returns -1 on error.
+   *
+   * @param storeHandle the native store handle
+   * @return the store id, or -1 on error
+   * @since 1.6.0
+   */
+  private static native long nativeGetStoreId(long storeHandle);
 
   private static native int nativeReapplyWasiContext(long storeHandle, long wasiContextHandle);
 

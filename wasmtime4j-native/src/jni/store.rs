@@ -82,6 +82,27 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeCreateSto
     }) as jlong
 }
 
+/// Get the wasmtime-assigned store id (StoreData.store_id).
+///
+/// This is a stable monotonically-increasing u64 assigned at store creation.
+/// Java uses it as a lookup key in a static `Map<Long, WeakReference<JniStore>>`
+/// so the JNI host-function callback dispatcher can recover the owning
+/// `JniStore` given only a wasmtime `Caller<'_, StoreData>` (which exposes
+/// `caller.data().store_id`).
+///
+/// Returns -1 on error.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeGetStoreId(
+    mut env: JNIEnv,
+    _class: JClass,
+    store_ptr: jlong,
+) -> jlong {
+    jni_utils::jni_try_with_default(&mut env, -1i64, || {
+        let store = unsafe { core::get_store_ref(store_ptr as *const c_void)? };
+        Ok(store.id() as jlong)
+    })
+}
+
 /// Add fuel to the store for execution limiting
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniStore_nativeAddFuel(

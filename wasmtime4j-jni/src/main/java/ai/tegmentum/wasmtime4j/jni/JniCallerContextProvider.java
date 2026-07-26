@@ -21,7 +21,17 @@ import ai.tegmentum.wasmtime4j.spi.CallerContextProvider;
 /**
  * JNI implementation of CallerContextProvider.
  *
- * <p>This provider delegates to JniHostFunction's ThreadLocal-based caller context mechanism.
+ * <p>Looks up the current caller in this order:
+ *
+ * <ol>
+ *   <li>{@link JniLinker#currentCaller()} — the ThreadLocal set by
+ *       {@code invokeHostFunctionCallback} for Linker-defined host functions
+ *       (this is the live path connected to the wasmtime {@code Caller<'_, StoreData>}
+ *       borrow since wasmtime4j 1.6.0).
+ *   <li>{@link JniHostFunction#getCurrentCaller()} — the pre-existing ThreadLocal
+ *       set by {@code JniHostFunction.hostFunctionCallback} for store-created
+ *       host functions.
+ * </ol>
  *
  * @since 1.0.0
  */
@@ -29,6 +39,15 @@ public final class JniCallerContextProvider implements CallerContextProvider {
 
   @Override
   public <T> Caller<T> getCurrentCaller() {
-    return JniHostFunction.getCurrentCaller();
+    final Caller<T> linkerCaller = JniLinker.currentCaller();
+    if (linkerCaller != null) {
+      return linkerCaller;
+    }
+    final Caller<T> storeCaller = JniHostFunction.getCurrentCaller();
+    if (storeCaller != null) {
+      return storeCaller;
+    }
+    throw new UnsupportedOperationException(
+        "Caller context not available - this thread is not inside a caller-aware host callback");
   }
 }

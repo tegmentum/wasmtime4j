@@ -155,13 +155,19 @@ impl HostFunctionCallback for JniHostFunctionCallback {
                         message: format!("Failed to find JniLinker class: {}", e),
                         backtrace: None,
                     })?;
-                log::debug!("Calling Java invokeHostFunctionCallback method");
+                log::debug!(
+                    "Calling Java invokeHostFunctionCallback method (callerHandle=0x{:x}, storeId={})",
+                    caller_handle,
+                    store_id
+                );
                 let result = env.call_static_method(
                 linker_class,
                 "invokeHostFunctionCallback",
-                "(J[Lai/tegmentum/wasmtime4j/WasmValue;)[Lai/tegmentum/wasmtime4j/WasmValue;",
+                "(JJJ[Lai/tegmentum/wasmtime4j/WasmValue;)[Lai/tegmentum/wasmtime4j/WasmValue;",
                 &[
                     jni::objects::JValue::Long(self.callback_id),
+                    jni::objects::JValue::Long(caller_handle),
+                    jni::objects::JValue::Long(store_id),
                     jni::objects::JValue::Object(&java_params),
                 ]
             ).map_err(|e| WasmtimeError::Runtime {
