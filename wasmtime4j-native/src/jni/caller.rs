@@ -269,6 +269,11 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetTable
 /// `init_value` is a reference registry id (funcref / externref / anyref) or
 /// 0 for null, matching the shape of {@code JniTable.nativeTableGrow}.
 ///
+/// `table_handle` is a pointer to a `Box<wasmtime::Table>` (as returned by
+/// {@link Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeGetTable}, i.e.
+/// the raw wasmtime type — NOT the {@code crate::table::Table} wrapper used
+/// by JniTable). This is what `caller.getTable(name)` hands back to Java.
+///
 /// Returns the previous table size on success or -1 on failure.
 #[no_mangle]
 pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerGrowTable(
@@ -284,19 +289,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerGr
     }
 
     jni_utils::jni_try_with_default(&mut env, -1i64, || {
-        use std::os::raw::c_void;
         use wasmtime::AsContextMut;
 
         let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
-        let table_wrapper =
-            unsafe { crate::table::core::get_table_ref(table_handle as *const c_void)? };
+        let table = unsafe { *(table_handle as *const wasmtime::Table) };
 
-        let metadata = crate::table::core::get_table_metadata(table_wrapper);
-        let init_element = table_element_from_ref_id(&metadata.element_type, init_value)?;
+        // Determine element type via the table's TableType so we can build
+        // the right Ref variant for init_value.
+        let table_ty = table.ty(&caller.as_context_mut());
+        let element_type = ValType_from_ref_type(table_ty.element());
+        let init_element = table_element_from_ref_id(&element_type, init_value)?;
         let init_ref = table_element_to_ref(init_element)?;
 
-        let prev_size =
-            table_wrapper.grow_with_context(&mut caller.as_context_mut(), delta as u64, init_ref)?;
+        let prev_size = table
+            .grow(&mut caller.as_context_mut(), delta as u64, init_ref)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Caller-scoped table grow failed: {}", e),
+                backtrace: None,
+            })?;
         Ok(prev_size as jlong)
     })
 }
@@ -319,18 +329,22 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerSe
     }
 
     jni_utils::jni_try_bool(&mut env, || {
-        use std::os::raw::c_void;
         use wasmtime::AsContextMut;
 
         let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
-        let table_wrapper =
-            unsafe { crate::table::core::get_table_ref(table_handle as *const c_void)? };
+        let table = unsafe { *(table_handle as *const wasmtime::Table) };
 
-        let metadata = crate::table::core::get_table_metadata(table_wrapper);
-        let element = table_element_from_ref_id(&metadata.element_type, value_ref_id)?;
+        let table_ty = table.ty(&caller.as_context_mut());
+        let element_type = ValType_from_ref_type(table_ty.element());
+        let element = table_element_from_ref_id(&element_type, value_ref_id)?;
         let value_ref = table_element_to_ref(element)?;
 
-        table_wrapper.set_with_context(&mut caller.as_context_mut(), index as u64, value_ref)?;
+        table
+            .set(&mut caller.as_context_mut(), index as u64, value_ref)
+            .map_err(|e| WasmtimeError::Runtime {
+                message: format!("Caller-scoped table set failed: {}", e),
+                backtrace: None,
+            })?;
         Ok(true)
     }) as jboolean
 }
@@ -350,17 +364,24 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerGr
     }
 
     jni_utils::jni_try_with_default(&mut env, -1i64, || {
-        use std::os::raw::c_void;
         use wasmtime::AsContextMut;
 
         let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
-        let memory =
-            unsafe { crate::memory::core::get_memory_ref(memory_handle as *const c_void)? };
+        let memory = unsafe { *(memory_handle as *const wasmtime::Memory) };
 
-        let prev_pages =
-            memory.grow_with_context(&mut caller.as_context_mut(), delta_pages as u64)?;
+        let prev_pages = memory
+            .grow(&mut caller.as_context_mut(), delta_pages as u64)
+            .map_err(|e| WasmtimeError::Memory {
+                message: format!("Caller-scoped memory grow failed: {}", e),
+            })?;
         Ok(prev_pages as jlong)
     })
+}
+
+/// Convert wasmtime::RefType to ValType for TableElement matching.
+#[allow(non_snake_case)]
+fn ValType_from_ref_type(ref_type: &wasmtime::RefType) -> wasmtime::ValType {
+    wasmtime::ValType::Ref(ref_type.clone())
 }
 
 /// Look up a TableElement for the given (element_type, registry id) pair.
