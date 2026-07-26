@@ -349,6 +349,53 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerSe
     }) as jboolean
 }
 
+/// Instantiate an `InstancePre` against the caller's live wasmtime context.
+///
+/// This is the reentrant-safe path used from inside a host-function callback:
+/// instead of routing through `JniInstancePre.nativeInstantiate` (which
+/// acquires the `Store` wrapper's ReentrantLock via `try_lock_store`),
+/// we borrow the caller's already-live `StoreContextMut<StoreData>` and hand
+/// it directly to `InstancePreWrapper::instantiate_with_context`. Prevents
+/// the deadlock/double-borrow that r.2 identified as the reason instantiate
+/// could not land in the first-cut caller surface.
+///
+/// Returns the resulting `Instance` handle (pointer to `Box<Instance>`) on
+/// success or 0 on failure. Errors are thrown as WasmException on the JNI side.
+///
+/// # Safety
+///
+/// `caller_handle` must be a valid `*mut Caller<'_, StoreData>` produced by
+/// the JNI callback dispatch (`jni::linker::JniHostFunctionCallback::execute`).
+/// `instance_pre_handle` must be a valid `*const InstancePreWrapper` produced
+/// by `wasmtime4j_linker_instantiate_pre` (matching `JniInstancePre.getNativeHandle()`).
+///
+/// The Java-side JniCaller checks its generation counter before calling here,
+/// so a stale caller pointer will be rejected at the Java layer.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerInstantiate(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    instance_pre_handle: jlong,
+) -> jlong {
+    if caller_handle == 0 || instance_pre_handle == 0 {
+        return 0;
+    }
+
+    jni_utils::jni_try_with_default(&mut env, 0i64, || {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let pre = unsafe {
+            &*(instance_pre_handle as *const crate::linker::InstancePreWrapper)
+        };
+
+        let ctx = caller.as_context_mut();
+        let instance = pre.instantiate_with_context(ctx)?;
+        Ok(Box::into_raw(Box::new(instance)) as jlong)
+    })
+}
+
 /// Grow a caller-visible Memory by `delta_pages`. Returns the previous size in
 /// pages on success or -1 on failure.
 #[no_mangle]

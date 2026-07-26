@@ -363,23 +363,23 @@ public interface Caller<T> {
    * InstancePre::instantiate} step runs. This matches Rust wasmtime's discipline of pre-linking
    * outside the borrow scope so the reentrant step is minimal.
    *
-   * <p><b>Note:</b> This method is declared for API-level parity with the charter's five scoped
-   * methods but is <b>not implemented</b> in wasmtime4j 1.6.0. The InstancePre wrapper's internal
-   * Store lock conflicts with the caller's live borrow — a caller-scoped InstancePre execution path
-   * is deferred to a follow-up (r.2.b) that adds a {@code
-   * InstancePreWrapper::instantiate_with_context} native method.
+   * <p>The JNI backend implements this via {@code InstancePreWrapper::instantiate_with_context},
+   * which borrows the caller's live {@code StoreContextMut} instead of re-acquiring the
+   * {@code Store} wrapper's reentrant lock — the lock-based path would deadlock from a callback
+   * frame. Other backends that inherit this default still throw {@link UnsupportedOperationException}
+   * pending their own scoped-instantiate implementation.
    *
    * @param pre pre-linked module to instantiate into the caller's store
    * @return the newly created Instance
    * @throws WasmException on runtime error
    * @throws IllegalStateException if the callback has returned (use-after-return)
-   * @throws UnsupportedOperationException while this method remains deferred
+   * @throws UnsupportedOperationException if the backend has not implemented scoped instantiate
    * @since 1.6.0
    */
   default ai.tegmentum.wasmtime4j.Instance instantiate(
       final ai.tegmentum.wasmtime4j.InstancePre pre) throws WasmException {
     throw new UnsupportedOperationException(
-        "Caller-scoped instantiate is deferred to r.2.b — pre-instantiate outside the callback"
-            + " and call InstancePre::instantiate on the store instead");
+        "instantiate(InstancePre) not implemented on this Caller backend (JNI-only in wasmtime4j"
+            + " 1.6.0)");
   }
 }
