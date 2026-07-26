@@ -1815,6 +1815,47 @@ impl InstancePreWrapper {
         }
     }
 
+    /// Instantiate using an existing wasmtime context (from a callback frame).
+    ///
+    /// This is the reentrant-safe counterpart to [`Self::instantiate`]: instead
+    /// of acquiring the [`Store`] wrapper's `ReentrantLock`, it borrows the
+    /// caller's already-live `StoreContextMut<StoreData>` directly. This is the
+    /// only path safe to call from within a host-function callback frame —
+    /// taking the store lock a second time from inside a callback would either
+    /// deadlock (if the outer call is holding the guard) or race under the
+    /// reentrant policy.
+    ///
+    /// Companion of [`crate::instance::Instance::from_wasmtime_instance_with_context`].
+    ///
+    /// Added for F-Wasmtime4j-Caller-Aware-Host-Function r.2.b.
+    pub fn instantiate_with_context(
+        &self,
+        mut ctx: wasmtime::StoreContextMut<'_, crate::store::StoreData>,
+    ) -> WasmtimeResult<Instance> {
+        let start = Instant::now();
+
+        let result = self.inner.instantiate(&mut ctx);
+
+        let duration = start.elapsed().as_nanos() as u64;
+        self.instance_count.fetch_add(1, Ordering::Relaxed);
+        self.total_instantiation_time_ns
+            .fetch_add(duration, Ordering::Relaxed);
+
+        match result {
+            Ok(wasmtime_instance) => Instance::from_wasmtime_instance_with_context(
+                wasmtime_instance,
+                &mut ctx,
+                &self.module,
+            ),
+            Err(e) => Err(WasmtimeError::Instance {
+                message: format!(
+                    "Failed to instantiate from InstancePre (caller-scoped): {}",
+                    e
+                ),
+            }),
+        }
+    }
+
     /// Get the module reference
     pub fn module(&self) -> &crate::module::Module {
         &self.module
