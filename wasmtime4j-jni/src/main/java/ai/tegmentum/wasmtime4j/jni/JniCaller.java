@@ -575,10 +575,16 @@ final class JniCaller<T> implements Caller<T> {
     }
     if (value instanceof JniFunction) {
       final JniFunction jniFunc = (JniFunction) value;
-      final long id =
-          JniFunction.nativeFuncToRaw(jniFunc.getNativeHandle(), store.getNativeHandle());
+      // F-Wasmtime4j-Caller-Scoped-Registry-Integration r.2.a (2026-07-27):
+      // route through the caller-scoped registry native. The prior path
+      // (nativeFuncToRaw) returned a wasmtime-internal raw pointer that
+      // nativeCallerGrowTable then treated as a REFERENCE_REGISTRY id,
+      // causing "Funcref id N not in registry". The new native registers
+      // the func into REFERENCE_REGISTRY under caller.data().store_id and
+      // returns the actual registry id.
+      final long id = nativeCallerFuncToRegistryId(callerHandle, jniFunc.getNativeHandle());
       if (id == 0L) {
-        throw new WasmException("Could not resolve JniFunction to a funcref id");
+        throw new WasmException("Could not resolve JniFunction to a funcref registry id");
       }
       return id;
     }
@@ -918,4 +924,12 @@ final class JniCaller<T> implements Caller<T> {
       String moduleName,
       String name,
       String callerExportName);
+
+  /**
+   * F-Wasmtime4j-Caller-Scoped-Registry-Integration r.2.a (2026-07-27).
+   * Register a caller-scoped function as a funcref in REFERENCE_REGISTRY under
+   * the caller's store_id, returning the registry id used by nativeCallerGrowTable
+   * / nativeCallerSetTableElement.
+   */
+  private static native long nativeCallerFuncToRegistryId(long callerHandle, long functionPtr);
 }

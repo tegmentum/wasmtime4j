@@ -683,6 +683,40 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerWr
     }
 }
 
+/// Register a caller-scoped {@link JniFunction} as a funcref in the shared
+/// REFERENCE_REGISTRY, keyed by the caller's store_id. Returns the registry id.
+///
+/// F-Wasmtime4j-Caller-Scoped-Registry-Integration r.2.a (2026-07-27).
+///
+/// The caller-scoped `objectToRefId` path in JniCaller.java previously routed
+/// through `nativeFuncToRaw` — which returns a wasmtime-internal raw pointer
+/// (not a REFERENCE_REGISTRY id). `nativeCallerGrowTable` then treated that raw
+/// pointer as a registry id and failed with "Funcref id N not in registry".
+///
+/// This native closes that mismatch: registers the func into REFERENCE_REGISTRY
+/// under `caller.data().store_id` and returns the id, so subsequent
+/// `nativeCallerGrowTable` / `nativeCallerSetTableElement` calls succeed.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerFuncToRegistryId(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    function_ptr: jlong,
+) -> jlong {
+    if caller_handle == 0 || function_ptr == 0 {
+        return 0;
+    }
+    jni_utils::jni_try_with_default(&mut env, 0i64, || {
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let store_id = caller.data().store_id;
+        let func_handle =
+            unsafe { &*(function_ptr as *const crate::jni::function::FunctionHandle) };
+        let func = func_handle.get_func().clone();
+        let id = crate::table::core::register_function_reference(func, store_id)?;
+        Ok(id as jlong)
+    })
+}
+
 /// Define a memory extern into a Linker using the caller's live store context
 /// (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
 ///
