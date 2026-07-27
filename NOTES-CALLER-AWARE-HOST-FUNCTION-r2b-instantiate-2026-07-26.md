@@ -263,4 +263,3 @@ If not, r.3 fiji integration can proceed now.
   other-platform dylibs will regenerate via CI cross-platform pipeline.
 - All existing wasmtime4j tests still pass unchanged (686 baseline + 4
   r.2 + 2 r.2.b = 692 target; landed 692 = matches). No test regressed.
-

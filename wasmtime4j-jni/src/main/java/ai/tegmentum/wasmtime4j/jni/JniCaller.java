@@ -629,9 +629,9 @@ final class JniCaller<T> implements Caller<T> {
 
   /**
    * Instantiate an {@link ai.tegmentum.wasmtime4j.InstancePre} against the caller's live wasmtime
-   * context (native side uses {@code caller.as_context_mut()} +
-   * {@code InstancePreWrapper::instantiate_with_context}). Skips the Store's ReentrantLock so it
-   * is reentrant-safe from a host-callback frame.
+   * context (native side uses {@code caller.as_context_mut()} + {@code
+   * InstancePreWrapper::instantiate_with_context}). Skips the Store's ReentrantLock so it is
+   * reentrant-safe from a host-callback frame.
    *
    * @param callerHandle the native caller handle
    * @param instancePreHandle the target InstancePre's native handle

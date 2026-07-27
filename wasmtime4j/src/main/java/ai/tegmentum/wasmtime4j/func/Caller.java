@@ -364,9 +364,9 @@ public interface Caller<T> {
    * outside the borrow scope so the reentrant step is minimal.
    *
    * <p>The JNI backend implements this via {@code InstancePreWrapper::instantiate_with_context},
-   * which borrows the caller's live {@code StoreContextMut} instead of re-acquiring the
-   * {@code Store} wrapper's reentrant lock — the lock-based path would deadlock from a callback
-   * frame. Other backends that inherit this default still throw {@link UnsupportedOperationException}
+   * which borrows the caller's live {@code StoreContextMut} instead of re-acquiring the {@code
+   * Store} wrapper's reentrant lock — the lock-based path would deadlock from a callback frame.
+   * Other backends that inherit this default still throw {@link UnsupportedOperationException}
    * pending their own scoped-instantiate implementation.
    *
    * @param pre pre-linked module to instantiate into the caller's store

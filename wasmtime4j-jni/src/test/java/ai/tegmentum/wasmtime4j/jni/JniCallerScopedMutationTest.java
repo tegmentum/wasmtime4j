@@ -427,7 +427,8 @@ public class JniCallerScopedMutationTest {
   // ==========================================================================
 
   @Test
-  @DisplayName("r.2.b instantiate(InstancePre): scoped instantiation from callback returns valid Instance")
+  @DisplayName(
+      "r.2.b instantiate(InstancePre): scoped instantiation from callback returns valid Instance")
   void testCallerScopedInstantiateBasic() throws Exception {
     final JniWasmRuntime rt = runtime();
     final Engine eng = engine(rt);
