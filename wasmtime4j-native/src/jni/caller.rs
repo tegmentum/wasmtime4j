@@ -1,5 +1,7 @@
 //! JNI bindings for Caller context operations
 
+use std::os::raw::c_void;
+
 use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jboolean, jbyteArray, jint, jintArray, jlong, jsize};
 use jni::JNIEnv;
@@ -8,6 +10,7 @@ use wasmtime::Caller as WasmtimeCaller;
 
 use crate::caller::core;
 use crate::error::{jni_utils, WasmtimeError};
+use crate::linker::core as linker_core;
 use crate::store::StoreData;
 use crate::table::TableElement;
 
@@ -678,4 +681,189 @@ pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerWr
     if let Err(msg) = write_result {
         let _ = env.throw_new("ai/tegmentum/wasmtime4j/exception/WasmException", msg);
     }
+}
+
+/// Define a memory extern into a Linker using the caller's live store context
+/// (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
+///
+/// Mirrors `nativeDefineMemory` in linker.rs but uses `caller.as_context_mut()`
+/// as the store context, so a callback frame can wire memory imports into a
+/// linker for a nested InstancePre without acquiring the store lock.
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerLinkerDefineMemory(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    linker_handle: jlong,
+    module_name: JString,
+    name: JString,
+    memory_handle: jlong,
+) -> jboolean {
+    if caller_handle == 0 || linker_handle == 0 || memory_handle == 0 {
+        return 0;
+    }
+    let module_name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+        let memory =
+            unsafe { crate::memory::core::get_memory_ref(memory_handle as *const c_void)? };
+
+        let extern_memory = if let Some(wasmtime_memory) = memory.inner() {
+            wasmtime::Extern::Memory(*wasmtime_memory)
+        } else if let Some(wasmtime_shared_memory) = memory.inner_shared() {
+            wasmtime::Extern::SharedMemory(wasmtime_shared_memory.clone())
+        } else {
+            return Err(WasmtimeError::Linker {
+                message: format!(
+                    "Memory '{}::{}' has invalid variant",
+                    module_name_str, name_str
+                ),
+            });
+        };
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                extern_memory,
+            )
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineMemory '{}::{}' failed: {}",
+                    module_name_str, name_str, e
+                ),
+            })?;
+
+        Ok(1)
+    })
+}
+
+/// Define a table extern into a Linker using the caller's live store context
+/// (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerLinkerDefineTable(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    linker_handle: jlong,
+    module_name: JString,
+    name: JString,
+    table_handle: jlong,
+) -> jboolean {
+    if caller_handle == 0 || linker_handle == 0 || table_handle == 0 {
+        return 0;
+    }
+    let module_name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+        let table = unsafe { crate::table::core::get_table_ref(table_handle as *const c_void)? };
+
+        let wasmtime_table_arc = table.wasmtime_table();
+        let wasmtime_table_lock =
+            wasmtime_table_arc
+                .lock()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to lock table: {}", e),
+                })?;
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                wasmtime::Extern::Table(*wasmtime_table_lock),
+            )
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineTable '{}::{}' failed: {}",
+                    module_name_str, name_str, e
+                ),
+            })?;
+
+        Ok(1)
+    })
+}
+
+/// Define a global extern into a Linker using the caller's live store context
+/// (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
+#[no_mangle]
+pub extern "system" fn Java_ai_tegmentum_wasmtime4j_jni_JniCaller_nativeCallerLinkerDefineGlobal(
+    mut env: JNIEnv,
+    _class: JClass,
+    caller_handle: jlong,
+    linker_handle: jlong,
+    module_name: JString,
+    name: JString,
+    global_handle: jlong,
+) -> jboolean {
+    if caller_handle == 0 || linker_handle == 0 || global_handle == 0 {
+        return 0;
+    }
+    let module_name_str: String = match env.get_string(&module_name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+    let name_str: String = match env.get_string(&name) {
+        Ok(s) => s.into(),
+        Err(_) => return 0,
+    };
+
+    jni_utils::jni_try_with_default(&mut env, 0, || {
+        use wasmtime::AsContextMut;
+
+        let caller = unsafe { &mut *(caller_handle as *mut WasmtimeCaller<'_, StoreData>) };
+        let linker = unsafe { linker_core::get_linker_ref(linker_handle as *const c_void)? };
+        let global =
+            unsafe { crate::global::core::get_global_ref(global_handle as *const c_void)? };
+
+        let wasmtime_global_arc = global.wasmtime_global();
+        let wasmtime_global_lock =
+            wasmtime_global_arc
+                .lock()
+                .map_err(|e| WasmtimeError::Concurrency {
+                    message: format!("Failed to lock global: {}", e),
+                })?;
+
+        let mut linker_lock = linker.inner()?;
+        linker_lock
+            .define(
+                &mut caller.as_context_mut(),
+                &module_name_str,
+                &name_str,
+                wasmtime::Extern::Global(*wasmtime_global_lock),
+            )
+            .map_err(|e| WasmtimeError::Linker {
+                message: format!(
+                    "Caller-scoped Linker.defineGlobal '{}::{}' failed: {}",
+                    module_name_str, name_str, e
+                ),
+            })?;
+
+        Ok(1)
+    })
 }

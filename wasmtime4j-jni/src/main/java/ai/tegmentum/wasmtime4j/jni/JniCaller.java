@@ -694,4 +694,128 @@ final class JniCaller<T> implements Caller<T> {
    */
   private static native void nativeCallerWriteMemory(
       long callerHandle, String memoryName, long offset, byte[] bytes);
+
+  /**
+   * Define a memory extern on a linker using this caller's live store context
+   * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
+   *
+   * <p>Package-private — the intended consumer is the webassembly4j
+   * WasmtimeCallerAdapter, which uses this to wire {@code MemoryImport}
+   * defs into a transient linker built from a callback frame.
+   *
+   * @param linker the JniLinker to define the memory on (its native handle
+   *     will be extracted internally)
+   * @param moduleName import module name (e.g. "env")
+   * @param name import field name (e.g. "memory")
+   * @param memory the WasmMemory extern to bind
+   * @throws WasmException on failure
+   * @since 1.5.2
+   */
+  void linkerDefineMemory(
+      final JniLinker<?> linker,
+      final String moduleName,
+      final String name,
+      final WasmMemory memory)
+      throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("linker cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("moduleName cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (memory == null) {
+      throw new IllegalArgumentException("memory cannot be null");
+    }
+    checkStillValid();
+    final long memoryHandle = extractHandle(memory, "memory");
+    final long linkerHandle = linker.getNativeHandle();
+    final boolean ok =
+        nativeCallerLinkerDefineMemory(callerHandle, linkerHandle, moduleName, name, memoryHandle);
+    if (!ok) {
+      throw new WasmException(
+          "Caller-scoped Linker.defineMemory '" + moduleName + "::" + name + "' returned false");
+    }
+  }
+
+  /**
+   * Define a table extern on a linker using this caller's live store context
+   * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
+   *
+   * @since 1.5.2
+   */
+  void linkerDefineTable(
+      final JniLinker<?> linker,
+      final String moduleName,
+      final String name,
+      final WasmTable table)
+      throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("linker cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("moduleName cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (table == null) {
+      throw new IllegalArgumentException("table cannot be null");
+    }
+    checkStillValid();
+    final long tableHandle = extractHandle(table, "table");
+    final long linkerHandle = linker.getNativeHandle();
+    final boolean ok =
+        nativeCallerLinkerDefineTable(callerHandle, linkerHandle, moduleName, name, tableHandle);
+    if (!ok) {
+      throw new WasmException(
+          "Caller-scoped Linker.defineTable '" + moduleName + "::" + name + "' returned false");
+    }
+  }
+
+  /**
+   * Define a global extern on a linker using this caller's live store context
+   * (F-Wasmtime4j-Caller-Scoped-Instantiate-Extern-Imports r.1 2026-07-27).
+   *
+   * @since 1.5.2
+   */
+  void linkerDefineGlobal(
+      final JniLinker<?> linker,
+      final String moduleName,
+      final String name,
+      final WasmGlobal global)
+      throws WasmException {
+    if (linker == null) {
+      throw new IllegalArgumentException("linker cannot be null");
+    }
+    if (moduleName == null) {
+      throw new IllegalArgumentException("moduleName cannot be null");
+    }
+    if (name == null) {
+      throw new IllegalArgumentException("name cannot be null");
+    }
+    if (global == null) {
+      throw new IllegalArgumentException("global cannot be null");
+    }
+    checkStillValid();
+    final long globalHandle = extractHandle(global, "global");
+    final long linkerHandle = linker.getNativeHandle();
+    final boolean ok =
+        nativeCallerLinkerDefineGlobal(callerHandle, linkerHandle, moduleName, name, globalHandle);
+    if (!ok) {
+      throw new WasmException(
+          "Caller-scoped Linker.defineGlobal '" + moduleName + "::" + name + "' returned false");
+    }
+  }
+
+  private static native boolean nativeCallerLinkerDefineMemory(
+      long callerHandle, long linkerHandle, String moduleName, String name, long memoryHandle);
+
+  private static native boolean nativeCallerLinkerDefineTable(
+      long callerHandle, long linkerHandle, String moduleName, String name, long tableHandle);
+
+  private static native boolean nativeCallerLinkerDefineGlobal(
+      long callerHandle, long linkerHandle, String moduleName, String name, long globalHandle);
 }
