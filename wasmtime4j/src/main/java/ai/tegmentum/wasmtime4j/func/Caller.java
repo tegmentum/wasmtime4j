@@ -382,4 +382,49 @@ public interface Caller<T> {
         "instantiate(InstancePre) not implemented on this Caller backend (JNI-only in wasmtime4j"
             + " 1.6.0)");
   }
+
+  /**
+   * Read a byte range from the caller's exported memory using the caller-scoped native path.
+   *
+   * <p>Safe inside a host-callback frame. Routes through wasmtime's {@code Caller::get_export(name)
+   * .into_memory()} + {@code Memory::read(&mut ctx, offset, buf)} with the same generation-counter
+   * guard as the other scoped methods. Preferable to {@code caller.getMemory(name).get().read(...)}
+   * from inside a callback because the api-layer Memory adapter's native handle may not be
+   * registered from the callback frame — see doctrine
+   * {@code doctrine-wasmtime4j-callback-frame-must-route-all-ops-through-caller-scoped-entrypoints}.
+   *
+   * @param memoryName name of the caller's exported memory (usually "memory")
+   * @param offset byte offset into memory
+   * @param length number of bytes to read
+   * @return the byte range
+   * @throws WasmException on runtime error (memory not found, bounds violation)
+   * @throws IllegalStateException if the callback has returned (use-after-return)
+   * @throws IllegalArgumentException if memoryName is null, offset is negative, or length is
+   *     negative
+   * @since 1.7.0
+   */
+  default byte[] readMemory(final String memoryName, final long offset, final int length)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "readMemory not implemented on this Caller backend (JNI-only in wasmtime4j 1.7.0)");
+  }
+
+  /**
+   * Write a byte array into the caller's exported memory using the caller-scoped native path.
+   *
+   * <p>Same safety guarantees as {@link #readMemory}.
+   *
+   * @param memoryName name of the caller's exported memory
+   * @param offset byte offset into memory
+   * @param bytes bytes to write
+   * @throws WasmException on runtime error
+   * @throws IllegalStateException if the callback has returned (use-after-return)
+   * @throws IllegalArgumentException if memoryName is null, offset is negative, or bytes is null
+   * @since 1.7.0
+   */
+  default void writeMemory(final String memoryName, final long offset, final byte[] bytes)
+      throws WasmException {
+    throw new UnsupportedOperationException(
+        "writeMemory not implemented on this Caller backend (JNI-only in wasmtime4j 1.7.0)");
+  }
 }
