@@ -303,6 +303,60 @@ impl Memory {
         }
     }
 
+    /// Get current memory size in pages using a wasmtime `StoreContext` borrowed
+    /// from an active host callback (F-Wasmtime4j-Caller-Scoped-Store-Reentrancy
+    /// r.2 slice 2 2026-07-27).
+    ///
+    /// Callback-safe counterpart to [`Memory::size_pages`] — the outer variant
+    /// calls `Store::with_context_ro` which re-acquires the store's ReentrantLock,
+    /// deadlocking / SIGSEGVing from a callback frame per
+    /// `doctrine-store-reentrant-lock-blocks-in-callback-2026-07-27`.
+    ///
+    /// Shared memories return their atomic size without touching the store
+    /// (matches the outer variant's shared-memory branch).
+    pub fn size_pages_with_context<T: 'static>(
+        &self,
+        ctx: &wasmtime::StoreContext<'_, T>,
+    ) -> WasmtimeResult<u64> {
+        match &self.inner {
+            MemoryVariant::Regular(mem) => Ok(mem.size(ctx)),
+            MemoryVariant::Shared(mem) => Ok(mem.size()),
+        }
+    }
+
+    /// Get current memory size in bytes via callback-safe path. See
+    /// [`Memory::size_pages_with_context`].
+    pub fn size_bytes_with_context<T: 'static>(
+        &self,
+        ctx: &wasmtime::StoreContext<'_, T>,
+    ) -> WasmtimeResult<usize> {
+        Ok((self.size_pages_with_context(ctx)? * 65536) as usize)
+    }
+
+    /// Get memory data size via callback-safe path. Callback-safe counterpart to
+    /// [`Memory::data_size`].
+    pub fn data_size_with_context<T: 'static>(
+        &self,
+        ctx: &wasmtime::StoreContext<'_, T>,
+    ) -> WasmtimeResult<usize> {
+        match &self.inner {
+            MemoryVariant::Regular(mem) => Ok(mem.data_size(ctx)),
+            MemoryVariant::Shared(mem) => Ok(mem.data().len()),
+        }
+    }
+
+    /// Get memory type information via callback-safe path. Callback-safe
+    /// counterpart to [`Memory::get_type`].
+    pub fn get_type_with_context<T: 'static>(
+        &self,
+        ctx: &wasmtime::StoreContext<'_, T>,
+    ) -> WasmtimeResult<MemoryType> {
+        match &self.inner {
+            MemoryVariant::Regular(mem) => Ok(mem.ty(ctx)),
+            MemoryVariant::Shared(mem) => Ok(mem.ty()),
+        }
+    }
+
     pub fn grow(&self, store: &mut Store, additional_pages: u64) -> WasmtimeResult<u64> {
         // Get current size
         let current_pages = self.size_pages(store)?;
