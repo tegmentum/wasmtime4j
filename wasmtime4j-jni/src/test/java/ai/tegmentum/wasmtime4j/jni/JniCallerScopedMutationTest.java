@@ -23,9 +23,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import ai.tegmentum.wasmtime4j.Engine;
 import ai.tegmentum.wasmtime4j.Instance;
+import ai.tegmentum.wasmtime4j.InstancePre;
 import ai.tegmentum.wasmtime4j.Linker;
 import ai.tegmentum.wasmtime4j.Module;
 import ai.tegmentum.wasmtime4j.Store;
+import ai.tegmentum.wasmtime4j.WasmFunction;
 import ai.tegmentum.wasmtime4j.WasmMemory;
 import ai.tegmentum.wasmtime4j.WasmTable;
 import ai.tegmentum.wasmtime4j.WasmValue;
@@ -418,5 +420,221 @@ public class JniCallerScopedMutationTest {
     } else {
       fail("Test setup failed: could not capture memory reference inside callback");
     }
+  }
+
+  // ==========================================================================
+  // r.2.b: instantiate(InstancePre) — full JIT-install-loop scenario.
+  // ==========================================================================
+
+  @Test
+  @DisplayName("r.2.b instantiate(InstancePre): scoped instantiation from callback returns valid Instance")
+  void testCallerScopedInstantiateBasic() throws Exception {
+    final JniWasmRuntime rt = runtime();
+    final Engine eng = engine(rt);
+
+    // Outer guest imports env.install (host-fn). Callback pre-instantiates
+    // the inner module OUTSIDE the callback frame (see setup below), then
+    // inside the callback calls caller.instantiate(pre) — the r.2.b scoped
+    // path — and returns i32.const 1 as a success sentinel.
+    final String outerWat =
+        "(module\n"
+            + "  (import \"env\" \"install\" (func $install (result i32)))\n"
+            + "  (func (export \"run\") (result i32)\n"
+            + "    call $install\n"
+            + "  )\n"
+            + ")";
+
+    // Inner module: standalone (no imports), single exported function
+    // returning i32.const 42. This is the shape a JIT-compiled kernel body
+    // takes in the fiji JIT-loader r.5.b path.
+    final String innerWat =
+        "(module\n" + "  (func (export \"main\") (result i32) i32.const 42)\n" + ")";
+
+    final Module outer = compileWat(eng, outerWat);
+    final Module inner = compileWat(eng, innerWat);
+
+    // Build an InstancePre for the inner module against a fresh linker that
+    // has no imports (matching innerWat). InstancePre construction only
+    // needs linker+module, no store — safe outside the callback per the
+    // r.2 discipline (pre-link outside, instantiate inside).
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final Linker<Void> innerLinker = (Linker) rt.createLinker(eng);
+    resources.add(innerLinker);
+    final InstancePre innerPre = innerLinker.instantiatePre(inner);
+    resources.add(innerPre);
+
+    final AtomicReference<Instance> instantiatedFromCallback = new AtomicReference<>();
+
+    final HostFunction install =
+        HostFunction.singleValueWithCaller(
+            (Caller<Void> caller, WasmValue[] params) -> {
+              try {
+                final Instance inst = caller.instantiate(innerPre);
+                assertNotNull(inst, "caller.instantiate must return a non-null Instance");
+                instantiatedFromCallback.set(inst);
+                return WasmValue.i32(1);
+              } catch (final WasmException e) {
+                throw new RuntimeException(e);
+              }
+            });
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final Linker<Void> outerLinker = (Linker) rt.createLinker(eng);
+    resources.add(outerLinker);
+    outerLinker.defineHostFunction(
+        "env",
+        "install",
+        FunctionType.of(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32}),
+        install);
+
+    final Store s = store(eng);
+    final Instance outerInst = outerLinker.instantiate(s, outer);
+    resources.add(outerInst);
+
+    final WasmValue[] results = outerInst.callFunction("run");
+    assertEquals(1, results[0].asInt(), "Callback should have returned 1 (success sentinel)");
+
+    final Instance inner1 = instantiatedFromCallback.get();
+    assertNotNull(inner1, "Callback should have captured the inner Instance");
+
+    // Verify the inner instance is actually functional by calling its export
+    // through the caller-scoped path is not directly possible from outside the
+    // callback (the Store is now idle), so use the ordinary Instance surface.
+    final WasmValue[] innerResults = inner1.callFunction("main");
+    assertEquals(
+        42,
+        innerResults[0].asInt(),
+        "Inner Instance created via caller.instantiate should be callable and return 42");
+  }
+
+  @Test
+  @DisplayName(
+      "r.2.b full JIT-install loop: caller.instantiate drives outer call_indirect (no SIGSEGV)")
+  void testCallerScopedJitInstallLoop() throws Exception {
+    final JniWasmRuntime rt = runtime();
+    final Engine eng = engine(rt);
+
+    // Outer guest: exports a funcref table + calls host `install_kernel`
+    // which is expected to inject a new funcref at slot 0 that returns 99.
+    // Post-install, guest calls call_indirect on that slot.
+    //
+    // NOTE on the funcref-install path: r.2 landed caller.setTableElement with
+    // a null-only test. The non-null funcref install through the caller path
+    // hits a pre-existing r.2 id-space mismatch (nativeFuncToRaw returns a raw
+    // wasmtime funcref pointer, but table_element_to_ref decodes as a
+    // REFERENCE_REGISTRY id — different id spaces). That bug is OUT OF SCOPE
+    // for r.2.b (which is specifically instantiate). The install below uses
+    // the outer instance's ordinary Table.set path, which is proven-working
+    // and matches how a real fiji JIT loader would drive the install after
+    // the callback returns with the newly-created inner Instance.
+    //
+    // The r.2.b claim this test carries: caller.instantiate(pre) INSIDE the
+    // callback frame returns a fully-functional Instance whose exports drive
+    // the outer guest's call_indirect. This IS the r.5.b scenario minus the
+    // r.2 funcref-encoding sub-bug.
+    final String outerWat =
+        "(module\n"
+            + "  (import \"env\" \"install_kernel\" (func $install (result i32)))\n"
+            + "  (table (export \"tbl\") 1 funcref)\n"
+            + "  (type $t (func (result i32)))\n"
+            + "  (func (export \"install\") (result i32)\n"
+            + "    call $install\n"
+            + "  )\n"
+            + "  (func (export \"run\") (result i32)\n"
+            + "    i32.const 0\n"
+            + "    call_indirect (type $t)\n"
+            + "  )\n"
+            + ")";
+
+    // Inner kernel: exports "kernel" returning i32.const 99. Represents a
+    // JIT-compiled kernel body the loader wants to install into the outer
+    // guest's dispatch table.
+    final String kernelWat =
+        "(module\n" + "  (func (export \"kernel\") (result i32) i32.const 99)\n" + ")";
+
+    final Module outer = compileWat(eng, outerWat);
+    final Module kernel = compileWat(eng, kernelWat);
+
+    // Pre-link the kernel outside the callback (r.2 discipline: pre-link
+    // outside, instantiate inside — matches Rust wasmtime).
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final Linker<Void> kernelLinker = (Linker) rt.createLinker(eng);
+    resources.add(kernelLinker);
+    final InstancePre kernelPre = kernelLinker.instantiatePre(kernel);
+    resources.add(kernelPre);
+
+    final AtomicReference<Instance> installedInstance = new AtomicReference<>();
+    final AtomicReference<WasmFunction> installedFunc = new AtomicReference<>();
+
+    // The install callback exercises the r.2.b path:
+    //   1. Look up caller's exported table (proves caller.getTable works)
+    //   2. Instantiate the pre-linked kernel via caller.instantiate (r.2.b)
+    //   3. Retrieve the kernel's exported funcref (proves the instance is real)
+    // The SIGSEGV from F-JIT-Loader r.5.b hit step 2 when routed through the
+    // Store-lock re-entry path; the caller-scoped variant should not.
+    final HostFunction install =
+        HostFunction.singleValueWithCaller(
+            (Caller<Void> caller, WasmValue[] params) -> {
+              try {
+                final Optional<WasmTable> tblOpt = caller.getTable("tbl");
+                assertTrue(tblOpt.isPresent(), "caller.getTable('tbl') must be present");
+
+                // r.2.b: this is the entire point of the arc.
+                final Instance kernelInst = caller.instantiate(kernelPre);
+                assertNotNull(kernelInst, "caller.instantiate returned non-null");
+                installedInstance.set(kernelInst);
+
+                final Optional<WasmFunction> kernelFuncOpt = kernelInst.getFunction("kernel");
+                assertTrue(
+                    kernelFuncOpt.isPresent(),
+                    "kernel instance must expose exported 'kernel' function");
+                installedFunc.set(kernelFuncOpt.get());
+                return WasmValue.i32(0);
+              } catch (final WasmException e) {
+                throw new RuntimeException(e);
+              }
+            });
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final Linker<Void> outerLinker = (Linker) rt.createLinker(eng);
+    resources.add(outerLinker);
+    outerLinker.defineHostFunction(
+        "env",
+        "install_kernel",
+        FunctionType.of(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32}),
+        install);
+
+    final Store s = store(eng);
+    final Instance outerInst = outerLinker.instantiate(s, outer);
+    resources.add(outerInst);
+
+    // Step A: fire the callback. This is where the r.5.b crash used to occur;
+    // no SIGSEGV expected here.
+    final WasmValue[] installResults = outerInst.callFunction("install");
+    assertEquals(0, installResults[0].asInt(), "install callback returned success sentinel");
+
+    final Instance kernelInst = installedInstance.get();
+    final WasmFunction kernelFunc = installedFunc.get();
+    assertNotNull(kernelInst, "kernel Instance was captured from callback");
+    assertNotNull(kernelFunc, "kernel funcref was captured from callback");
+
+    // Step B: install the kernel funcref into outer table slot 0 through the
+    // outer instance's ordinary Table.set surface (which works — see note
+    // above). This models the post-callback install step; the caller-scoped
+    // install would require the r.2 funcref-encoding follow-up.
+    final Optional<WasmTable> outerTblOpt = outerInst.getTable("tbl");
+    assertTrue(outerTblOpt.isPresent(), "outer table 'tbl' present");
+    outerTblOpt.get().set(0, kernelFunc);
+
+    // Step C: fire the guest's call_indirect against the newly-installed
+    // funcref. Success proves the caller-scoped Instance is fully functional
+    // and can be invoked by the outer guest as if it had always been there —
+    // the empirical retirement of the r.5.b crash class for the compile +
+    // instantiate half of the JIT install loop.
+    final WasmValue[] runResults = outerInst.callFunction("run");
+    assertEquals(
+        99,
+        runResults[0].asInt(),
+        "call_indirect(0) invokes the caller-scoped Instance's export and returns 99");
   }
 }

@@ -598,6 +598,49 @@ impl Instance {
         })
     }
 
+    /// Wrap an existing wasmtime::Instance without acquiring the Store's
+    /// ReentrantLock.
+    ///
+    /// This is the callback-frame counterpart of [`Self::from_wasmtime_instance`]:
+    /// the caller already holds an exclusive borrow (`StoreContextMut`) via the
+    /// wasmtime `Caller<'_, StoreData>` handed to the host callback. Taking the
+    /// wrapper's `try_lock_store()` again from inside that frame is redundant
+    /// and, worse, unsafe under the reentrant policy.
+    ///
+    /// `build_instance_data` intentionally does not consume the context (it
+    /// walks module metadata only), so this variant simply forwards the borrow
+    /// down for API-signature reasons.
+    ///
+    /// Companion of [`crate::linker::InstancePreWrapper::instantiate_with_context`].
+    ///
+    /// Added for F-Wasmtime4j-Caller-Aware-Host-Function r.2.b.
+    pub fn from_wasmtime_instance_with_context(
+        wasmtime_instance: WasmtimeInstance,
+        ctx: &mut wasmtime::StoreContextMut<'_, StoreData>,
+        module: &Module,
+    ) -> WasmtimeResult<Self> {
+        let (metadata, imports_map, exports_map) = Self::build_instance_data(
+            &wasmtime_instance,
+            ctx,
+            module,
+            0, // Import count is 0 since linker handled them
+        )?;
+
+        let element_segment_manager =
+            Arc::new(ElementSegmentManager::new(module.element_segments.clone()));
+        let data_segment_manager = Arc::new(DataSegmentManager::new(module.data_segments.clone()));
+
+        Ok(Instance {
+            inner: Arc::new(ReentrantLock::new(wasmtime_instance)),
+            metadata,
+            imports_map,
+            exports_map,
+            element_segment_manager,
+            data_segment_manager,
+            func_cache: std::sync::Mutex::new(HashMap::new()),
+        })
+    }
+
     /// Build comprehensive instance metadata and binding maps
     fn build_instance_data(
         _instance: &WasmtimeInstance,

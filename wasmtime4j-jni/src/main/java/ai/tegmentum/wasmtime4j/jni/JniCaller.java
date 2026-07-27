@@ -522,6 +522,29 @@ final class JniCaller<T> implements Caller<T> {
     return nativeCallerGrowMemory(callerHandle, memoryHandle, deltaPages);
   }
 
+  @Override
+  public ai.tegmentum.wasmtime4j.Instance instantiate(final ai.tegmentum.wasmtime4j.InstancePre pre)
+      throws WasmException {
+    if (pre == null) {
+      throw new IllegalArgumentException("pre cannot be null");
+    }
+    checkStillValid();
+    if (!(pre instanceof JniInstancePre)) {
+      throw new IllegalArgumentException(
+          "Caller.instantiate requires a JniInstancePre; got " + pre.getClass().getName());
+    }
+    final JniInstancePre jniPre = (JniInstancePre) pre;
+    if (!jniPre.isValid()) {
+      throw new WasmException("InstancePre has been closed");
+    }
+    final long preHandle = jniPre.getNativeHandle();
+    final long instanceHandle = nativeCallerInstantiate(callerHandle, preHandle);
+    if (instanceHandle == 0L) {
+      throw new WasmException("Caller-scoped instantiate returned null instance handle");
+    }
+    return new JniInstance(instanceHandle, jniPre.getModule(), store);
+  }
+
   /**
    * Extract a native handle from a {@link JniResource}-backed wasmtime4j object. Callers
    * responsible for providing an object owned by this JNI backend — mixing objects across backends
@@ -603,4 +626,17 @@ final class JniCaller<T> implements Caller<T> {
    */
   private static native long nativeCallerGrowMemory(
       long callerHandle, long memoryHandle, long deltaPages);
+
+  /**
+   * Instantiate an {@link ai.tegmentum.wasmtime4j.InstancePre} against the caller's live wasmtime
+   * context (native side uses {@code caller.as_context_mut()} +
+   * {@code InstancePreWrapper::instantiate_with_context}). Skips the Store's ReentrantLock so it
+   * is reentrant-safe from a host-callback frame.
+   *
+   * @param callerHandle the native caller handle
+   * @param instancePreHandle the target InstancePre's native handle
+   * @return handle to the newly constructed Instance (pointer to {@code Box<Instance>}), or 0 on
+   *     failure
+   */
+  private static native long nativeCallerInstantiate(long callerHandle, long instancePreHandle);
 }
