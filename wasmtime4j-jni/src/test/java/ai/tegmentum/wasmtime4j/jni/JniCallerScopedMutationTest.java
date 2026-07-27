@@ -638,4 +638,71 @@ public class JniCallerScopedMutationTest {
         runResults[0].asInt(),
         "call_indirect(0) invokes the caller-scoped Instance's export and returns 99");
   }
+
+  @Test
+  @DisplayName("F-Caller-Scoped-Memory-IO: readMemory/writeMemory round-trip from callback")
+  void testCallerScopedMemoryReadWrite() throws Exception {
+    final JniWasmRuntime rt = runtime();
+    final Engine eng = engine(rt);
+
+    // Module exports a linear memory + a host-provided callback that will exercise
+    // caller.writeMemory + caller.readMemory from the callback frame. On success
+    // the wasm-side observes the byte pattern the host wrote, confirming both
+    // scoped I/O primitives route safely through caller.get_export.into_memory().
+    final String wat =
+        "(module\n"
+            + "  (import \"env\" \"probe\" (func $probe (result i32)))\n"
+            + "  (memory (export \"memory\") 1)\n"
+            + "  (func (export \"trigger\") (result i32)\n"
+            + "    call $probe\n"
+            + "  )\n"
+            + ")";
+    final Module module = compileWat(eng, wat);
+
+    final AtomicInteger writeCount = new AtomicInteger(0);
+    final AtomicInteger readEqualsWrite = new AtomicInteger(0);
+    final byte[] payload = new byte[] { 0x11, 0x22, 0x33, 0x44 };
+
+    final HostFunction probe =
+        HostFunction.singleValueWithCaller(
+            (Caller<Void> caller, WasmValue[] params) -> {
+              try {
+                caller.writeMemory("memory", 8L, payload);
+                writeCount.incrementAndGet();
+
+                final byte[] readBack = caller.readMemory("memory", 8L, payload.length);
+                if (java.util.Arrays.equals(readBack, payload)) {
+                  readEqualsWrite.incrementAndGet();
+                }
+                return WasmValue.i32(readBack.length);
+              } catch (final WasmException e) {
+                throw new RuntimeException(e);
+              }
+            });
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    final Linker<Void> linker = (Linker) rt.createLinker(eng);
+    resources.add(linker);
+    linker.defineHostFunction(
+        "env",
+        "probe",
+        FunctionType.of(new WasmValueType[0], new WasmValueType[] {WasmValueType.I32}),
+        probe);
+
+    final Store s = store(eng);
+    final Instance instance = linker.instantiate(s, module);
+    resources.add(instance);
+
+    final WasmValue[] result = instance.callFunction("trigger");
+
+    assertEquals(1, writeCount.get(), "caller.writeMemory fired exactly once");
+    assertEquals(
+        1,
+        readEqualsWrite.get(),
+        "caller.readMemory returned the exact byte pattern caller.writeMemory just wrote");
+    assertEquals(
+        payload.length,
+        result[0].asInt(),
+        "wasm-side observes caller.readMemory's returned length");
+  }
 }
